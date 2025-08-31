@@ -61,7 +61,7 @@ namespace Content
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE_SCOPE("Content::Service::Tick");
+        ZYPHRYON_PROFILE;
 
         Lock<> Guard(mParserLatch);
 
@@ -200,8 +200,7 @@ namespace Content
 
         while (! Token.stop_requested())
         {
-            ZYPHRYON_PROFILE_SCOPE("Content::Service::Process");
-
+            ZYPHRYON_PROFILE;
 
             // Wait for new work or stop signal
             Scope Scope;
@@ -226,13 +225,15 @@ namespace Content
             // Do work outside lock
             if (OnLoaderParse(Scope))
             {
-                Scope.GetResource()->SetStatus(Resource::Status::Failed);
-
                 // Push parsed scope into parser list
                 {
                     Lock<> Guard(mParserLatch);
                     mParserList.push_back(Move(Scope));
                 }
+            }
+            else
+            {
+                Scope.GetResource()->SetStatus(Resource::Status::Failed);
             }
         }
 

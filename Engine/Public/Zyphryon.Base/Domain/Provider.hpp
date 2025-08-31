@@ -21,44 +21,55 @@
 
 inline namespace Base
 {
-    /// \brief A helper class that injects service dependencies into a derived class.
-    /// 
-    /// The `Provider` class template is used to statically fetch and store a tuple of
-    /// service dependencies from the system host during construction. It allows derived
-    /// classes to access their required services without manual lookup.
-    /// 
-    /// \tparam Dependencies The list of service types to inject.
+    /// \brief Provides automatic dependency injection of services into a derived class.
+    ///
+    /// Automatically retrieves a set of services from the system host at construction time, storing them internally.
+    /// This allows derived classes  to access their dependencies directly without repeated lookups.
+    ///
+    /// \tparam Dependencies List of service types to inject.
     template<typename... Dependencies>
     class Provider
     {
     public:
 
         /// \brief Constructs the provider and fetches all specified service dependencies.
-        /// 
+        ///
         /// \param Host The parent system host containing all registered services.
         ZYPHRYON_INLINE explicit Provider(Ref<Service::Host> Host)
             : mDependencies { Host.GetService<Dependencies>()... }
         {
+            (VerifyDependency(Fetch<Tracker<Dependencies>>(mDependencies)), ...);
         }
 
-        /// \brief Retrieves a mutable reference to a specific injected service.
-        /// 
+        /// \brief Retrieves a reference to a specific injected service.
+        ///
         /// \tparam Type The service type to retrieve.
-        /// \return A mutable reference to the requested service.
+        /// \return A reference to the requested service.
         template<typename Type>
         ZYPHRYON_INLINE Ref<Type> GetService()
         {
             return * Fetch<Tracker<Type>>(mDependencies);
         }
 
-        /// \brief Retrieves a const reference to a specific injected service.
-        /// 
+        /// \brief Retrieves a reference to a specific injected service.
+        ///
         /// \tparam Type The service type to retrieve.
-        /// \return A const reference to the requested service.
+        /// \return A reference to the requested service.
         template<typename Type>
         ZYPHRYON_INLINE ConstRef<Type> GetService() const
         {
             return * Fetch<Tracker<Type>>(mDependencies);
+        }
+
+    private:
+
+        /// \brief Verifies that a tracked service dependency is valid.
+        ///
+        /// \param Dependency A tracked reference to the service instance.
+        template<typename Service>
+        void VerifyDependency(ConstRef<Tracker<Service>> Dependency)
+        {
+            LOG_ASSERT(Dependency, "Missing service dependency: {}", typeid(Service).name());
         }
 
     protected:

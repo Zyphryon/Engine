@@ -40,6 +40,7 @@ inline namespace Math
             : mCenter { Center },
               mRadius { Radius }
         {
+            LOG_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
         }
 
         /// \brief Constructor initializing the circle with specified center coordinates and radius.
@@ -51,6 +52,7 @@ inline namespace Math
             : mCenter { X, Y },
               mRadius { Radius }
         {
+            LOG_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
         }
 
         /// \brief Checks if the circle is the zero circle.
@@ -256,6 +258,8 @@ inline namespace Math
         /// \return A new circle with scaled radius.
         ZYPHRYON_INLINE constexpr Circle operator/(Real32 Scalar) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             return Circle(mCenter, mRadius / Scalar);
         }
 
@@ -295,6 +299,8 @@ inline namespace Math
         /// \return A reference to the updated circle.
         ZYPHRYON_INLINE constexpr Ref<Circle> operator/=(Real32 Scalar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             mRadius /= Scalar;
             return (* this);
         }
@@ -337,6 +343,7 @@ inline namespace Math
         {
             const Vector2 Direction = Second.mCenter - First.mCenter;
             const Real32 Distance   = Direction.GetLength();
+            LOG_ASSERT(!Base::IsAlmostZero(Distance), "Centers are identical and neither circle contains the other");
 
             if (Distance + Second.mRadius <= First.mRadius)
             {
@@ -360,6 +367,8 @@ inline namespace Math
         /// \return A rectangle interpolated between the start and end circle.
         ZYPHRYON_INLINE constexpr static Circle Lerp(ConstRef<Circle> Start, ConstRef<Circle> End, Real32 Percentage)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             const Real32 Radius = Base::Lerp(Start.mRadius, End.mRadius, Percentage);
             return Circle(Vector2::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }

@@ -65,6 +65,8 @@ namespace Scene
         /// \brief Destroys the component and releases all its memory.
         ZYPHRYON_INLINE void Destruct()
         {
+            LOG_ASSERT(IsValid(), "Attempted to destroy an invalid component");
+
             mHandle.destruct();
         }
 

@@ -399,6 +399,8 @@ inline namespace Math
         /// \return A new rectangle with the scalar divided by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator/(Type Scalar) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             return AnyRect(mX1 / Scalar, mY1 / Scalar, mX2 / Scalar, mY2 / Scalar);
         }
 
@@ -408,6 +410,9 @@ inline namespace Math
         /// \return A new rectangle with the vector divided by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator/(ConstRef<AnyVector2<Type>> Vector) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+
             return AnyRect(mX1 / Vector.GetX(), mY1 / Vector.GetY(), mX2 / Vector.GetX(), mY2 / Vector.GetY());
         }
 
@@ -681,6 +686,8 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Lerp(ConstRef<AnyRect> Start, ConstRef<AnyRect> End, Type Percentage)
             requires (IsReal<Type>)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             return Start + (End - Start) * Percentage;
         }
 

@@ -40,18 +40,17 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE Reader(ConstPtr<Type> Pointer, UInt32 Length)
             : mData   { reinterpret_cast<ConstPtr<Byte>>(Pointer) },
-              mSize   { Length * sizeof(Type) },
+              mSize   { Length * static_cast<UInt32>(sizeof(Type)) },
               mOffset { 0 }
         {
+            LOG_ASSERT(Pointer || Length == 0, "Null pointer with non-zero length");
         }
 
         /// \brief Constructs a reader from a span.
         ///
         /// \param Block A span representing the block of memory.
         ZYPHRYON_INLINE explicit Reader(ConstSpan<Byte> Block)
-            : mData   { Block.data() },
-              mSize   { static_cast<UInt32>(Block.size_bytes()) },
-              mOffset { 0 }
+            : Reader(Block.data(), Block.size_bytes())
         {
         }
 
@@ -92,7 +91,9 @@ inline namespace Base
         /// \param Length The number of bytes to skip.
         ZYPHRYON_INLINE void Skip(UInt32 Length)
         {
-            mOffset += (mOffset + Length <= mSize ? Length : 0);
+            LOG_ASSERT(mOffset + Length <= mSize, "Attempted to access beyond available data");
+
+            mOffset += Length;
         }
 
         /// \brief Splits a portion of the data from the current offset.
@@ -102,9 +103,8 @@ inline namespace Base
         ZYPHRYON_INLINE Reader Split(UInt32 Length)
         {
             const UInt32 Offset   = mOffset;
-            const UInt32 Capacity = mOffset + Length <= mSize ? Length : 0;
-            Skip(Capacity);
-            return Reader(ConstSpan<Byte>(mData + Offset, Capacity));
+            Skip(Length);
+            return Reader(ConstSpan<Byte>(mData + Offset, Length));
         }
 
         /// \brief Peeks at data without advancing the offset.
@@ -125,10 +125,7 @@ inline namespace Base
                 Offset = mOffset;
             }
 
-            if (Offset + Length > mSize)
-            {
-                return {};
-            }
+            LOG_ASSERT(Offset + Length <= mSize, "Attempted to access beyond available data");
 
             if constexpr (IsPointer<Type>)
             {

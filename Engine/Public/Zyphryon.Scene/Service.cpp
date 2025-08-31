@@ -40,7 +40,7 @@ namespace Scene
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE_SCOPE("Scene::Service::Tick");
+        ZYPHRYON_PROFILE;
 
         /// Update the world time component.
         mWorld.set<Base::Time>(Time);
@@ -85,7 +85,7 @@ namespace Scene
     {
         mArchetypes.OnSerialize(Archive(Writer));
 
-        for (UInt32 Element = 1, Limit = mArchetypes.GetBack(); Element <= Limit; ++Element)
+        for (UInt32 Element = 1, Limit = mArchetypes.GetHead(); Element <= Limit; ++Element)
         {
             if (Entity Archetype = GetEntity(kMinRangeArchetypes + Element); Archetype.IsValid())
             {

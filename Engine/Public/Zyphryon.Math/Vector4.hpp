@@ -201,11 +201,10 @@ inline namespace Math
         /// \return Angle in radians between the two vectors (range [0, π]).
         ZYPHRYON_INLINE Real32 GetAngle(ConstRef<Vector4> Other) const
         {
-            if (const Real32 Length = GetLength() * Other.GetLength(); Length > kEpsilon<Real32>)
-            {
-                return InvCos(Dot3(* this, Other) / Length);
-            }
-            return 0.0f;
+            const Real32 Length = GetLength() * Other.GetLength();
+            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
+
+            return InvCos(Dot3(* this, Other) / Length);
         }
 
         /// \brief Stores the vector components into a float array.
@@ -293,6 +292,8 @@ inline namespace Math
         /// \return A new vector that is the quotient of the two vectors.
         ZYPHRYON_INLINE Vector4 operator/(ConstRef<Vector4> Vector) const
         {
+            LOG_ASSERT(!Vector.IsAlmostZero(), "Division by zero");
+
             return Vector4(_mm_div_ps(mRegister, Vector.mRegister));
         }
 
@@ -302,6 +303,8 @@ inline namespace Math
         /// \return A new vector with the scalar divided by all components.
         ZYPHRYON_INLINE Vector4 operator/(Real32 Scalar) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             return Vector4(_mm_div_ps(mRegister, _mm_set_ps1(Scalar)));
         }
 
@@ -389,6 +392,8 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE Ref<Vector4> operator/=(ConstRef<Vector4> Vector)
         {
+            LOG_ASSERT(!Vector.IsAlmostZero(), "Division by zero");
+
             mRegister = _mm_div_ps(mRegister, Vector.mRegister);
             return (* this);
         }
@@ -399,6 +404,8 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE Ref<Vector4> operator/=(Real32 Scalar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             mRegister = _mm_div_ps(mRegister, _mm_set_ps1(Scalar));
             return (* this);
         }
@@ -674,7 +681,10 @@ inline namespace Math
         /// \return A normalized vector.
         ZYPHRYON_INLINE static Vector4 Normalize(ConstRef<Vector4> Vector)
         {
-            const __m128 Length = _mm_sqrt_ps(_mm_dp_ps(Vector.mRegister, Vector.mRegister, 0xFF));
+            const Real32 LengthSquared = Vector.GetLengthSquared();
+            LOG_ASSERT(!Base::IsAlmostZero(LengthSquared), "Cannot normalize zero-length vector");
+
+            const __m128 Length = _mm_sqrt_ps(_mm_set_ps1(LengthSquared));
             return Vector4(_mm_div_ps(Vector.mRegister, Length));
         }
 
@@ -685,7 +695,10 @@ inline namespace Math
         /// \return The projection of source onto target.
         ZYPHRYON_INLINE static Vector4 Project(ConstRef<Vector4> Source, ConstRef<Vector4> Target)
         {
-            return Target * (Dot3(Source, Target) / Dot3(Target, Target));
+            const Real32 Denominator = Dot3(Target, Target);
+            LOG_ASSERT(!Base::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
+
+            return Target * (Dot3(Source, Target) / Denominator);
         }
 
         /// \brief Reflects the incident vector over the given normal.
@@ -695,6 +708,8 @@ inline namespace Math
         /// \return The reflected vector.
         ZYPHRYON_INLINE static Vector4 Reflect(ConstRef<Vector4> Incident, ConstRef<Vector4> Normal)
         {
+            LOG_ASSERT(Normal.IsNormalized(), "Normal must be normalized before reflection");
+
             return Incident - Normal * (2.0f * Dot3(Incident, Normal));
         }
 
@@ -812,6 +827,8 @@ inline namespace Math
         /// \return A vector interpolated between the start and end vectors.
         ZYPHRYON_INLINE static Vector4 Lerp(ConstRef<Vector4> Start, ConstRef<Vector4> End, Real32 Percentage)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             return Start + (End - Start) * Percentage;
         }
 

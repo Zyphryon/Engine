@@ -203,6 +203,8 @@ inline namespace Math
         /// \return A reference to this transform, modified by the scale.
         ZYPHRYON_INLINE Ref<Transform> Scale(Real32 Scalar)
         {
+            LOG_ASSERT(Scalar != 0.0f, "Scale factor must not be zero");
+
             mScale *= Scalar;
             return (* this);
         }
@@ -222,6 +224,10 @@ inline namespace Math
         /// \return A reference to this transform, modified by the scale.
         ZYPHRYON_INLINE Ref<Transform> Scale(ConstRef<Vector3> Vector)
         {
+            LOG_ASSERT(Vector.GetX() != 0.0f, "Scale X must not be zero");
+            LOG_ASSERT(Vector.GetY() != 0.0f, "Scale Y must not be zero");
+            LOG_ASSERT(Vector.GetZ() != 0.0f, "Scale Z must not be zero");
+
             mScale *= Vector;
             return (* this);
         }

@@ -56,6 +56,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type Linear(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time;
     }
 
@@ -66,6 +68,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InQuad(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time * Time;
     }
 
@@ -76,6 +80,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutQuad(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time * (2 - Time);
     }
 
@@ -86,6 +92,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutQuad(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time < 0.5 ? 2 * Time * Time : -1 + (4 - 2 * Time) * Time;
     }
 
@@ -96,6 +104,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InCubic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time * Time * Time;
     }
 
@@ -106,6 +116,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutCubic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         --Time;
         return Time * Time * Time + 1;
     }
@@ -117,6 +129,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutCubic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time < 0.5 ? 4 * Time * Time * Time : (Time - 1) * (2 * Time - 2) * (2 * Time - 2) + 1;
     }
 
@@ -127,6 +141,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type Smoothstep(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time * Time * (3 - 2 * Time);
     }
 
@@ -137,6 +153,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InSine(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return 1 - Cos(Time * kPI<Type> / 2);
     }
 
@@ -147,6 +165,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutSine(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Sin(Time * kPI<Type> / 2);
     }
 
@@ -157,6 +177,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutSine(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return -(Sin(kPI<Type> * Time) - 1) / 2;
     }
 
@@ -167,6 +189,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InExpo(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time == 0 ? 0 : Pow(Type(2), 10 * (Time - 1));
     }
 
@@ -177,6 +201,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutExpo(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time == 1 ? 1 : 1 - Pow(Type(2), -10 * Time);
     }
 
@@ -187,6 +213,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InCirc(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return 1 - Sqrt(1 - Time * Time);
     }
 
@@ -197,6 +225,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutCirc(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         --Time;
         return Sqrt(1 - Time * Time);
     }
@@ -208,6 +238,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InElastic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time == 0 ? 0 : Time == 1 ? 1 : -Pow(Type(2), 10 * Time - 10) * Sin((Time * 10 - 10.75) * (2 * kPI<Type> / 3));
     }
 
@@ -218,6 +250,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutElastic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type C4 = (2 * kPI<Type>) / 3;
         return Time == 0 ? 0 : Time == 1 ? 1 : Pow(Type(2), -10 * Time) * Sin((Time * 10 - 0.75) * C4) + 1;
     }
@@ -229,6 +263,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutElastic(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type C5 = (2 * kPI<Type>) / 4.5;
         return Time == 0 ? 0 : Time == 1 ? 1 : Time < 0.5
             ? -(Pow(Type(2), 20 * Time - 10) * Sin((20 * Time - 11.125) * C5)) / 2
@@ -242,6 +278,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutBounce(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type N1 = 7.5625;
         constexpr Type D1 = 2.75;
 
@@ -271,6 +309,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InBounce(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return 1 - OutBounce(1 - Time);
     }
 
@@ -281,6 +321,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutBounce(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         return Time < 0.5 ? (1 - OutBounce(1 - 2 * Time)) / 2 : (1 + OutBounce(2 * Time - 1)) / 2;
     }
 
@@ -291,6 +333,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InBack(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type C1 = 1.70158;
         constexpr Type C3 = C1 + 1;
         return C3 * Time * Time * Time - C1 * Time * Time;
@@ -303,6 +347,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type OutBack(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type C1 = 1.70158;
         constexpr Type C3 = C1 + 1;
         return 1 + C3 * Pow(Time - 1, Type(3)) + C1 * Pow(Time - 1, Type(2));
@@ -315,6 +361,8 @@ inline namespace Math
     template<typename Type>
     ZYPHRYON_INLINE constexpr static Type InOutBack(Type Time)
     {
+        LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
+
         constexpr Type C2 = 1.70158 * 1.525;
         return Time < 0.5
                ? (Pow(2 * Time, Type(2)) * ((C2 + 1) * 2 * Time - C2)) / 2

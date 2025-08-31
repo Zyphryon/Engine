@@ -215,13 +215,14 @@ inline namespace Math
         /// \return The rotated vector.
         ZYPHRYON_INLINE Vector3 Rotate(ConstRef<Vector3> Other) const
         {
-            const Vector4 AV(GetX(), GetY(), GetZ(), 0.0f);
-            const Vector4 BV(Other.GetX(), Other.GetY(), Other.GetZ(), 0.0f);
+            LOG_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
 
+            const Vector4 AV = Vector4::Blend<0b0111>(mData, Vector4::Zero());
+            const Vector4 BV = Vector4(Other.GetX(), Other.GetY(), Other.GetZ(), 0.0f);
             const Vector4 T  = Vector4::Cross(AV, BV) * 2.0f;
-            const Vector4 VP = BV + Vector4(GetW()) * T + Vector4::Cross(AV, T);
+            const Vector4 VP = BV + Vector4::SplatW(mData) * T + Vector4::Cross(AV, T);
 
-            return Vector3(VP.GetX(), VP.GetY(), VP.GetZ());
+            return VP.GetXYZ();
         }
 
         /// \brief Adds another quaternion to this quaternion.
@@ -446,11 +447,14 @@ inline namespace Math
 
         /// \brief Invert the given quaternion.
         /// 
-        /// \param Quaternion The quaternion to invert.
+        /// \param Quaternion The quaternion to invert. Must be normalized if representing a rotation.
         /// \return A inverse quaternion.
         ZYPHRYON_INLINE static Quaternion Inverse(ConstRef<Quaternion> Quaternion)
         {
-            return Math::Quaternion(Conjugate(Quaternion).mData / Quaternion.GetLengthSquared());
+            const Real32 LengthSquared = Quaternion.GetLengthSquared();
+            LOG_ASSERT(LengthSquared > kEpsilon<Real32>, "Cannot invert a zero-length quaternion");
+
+            return Math::Quaternion(Conjugate(Quaternion).mData / LengthSquared);
         }
 
         /// \brief Computes the dot product of two quaternions.
@@ -470,6 +474,8 @@ inline namespace Math
         /// \return A quaternion representing the rotation.
         ZYPHRYON_INLINE static Quaternion FromAngles(Real32 Angle, ConstRef<Vector3> Axis)
         {
+            LOG_ASSERT(Axis.IsNormalized(), "Axis must be normalized before constructing a quaternion");
+
             const Real32 HalfAngle = 0.5f * Angle;
             return Quaternion(Axis * Sin(HalfAngle), Cos(HalfAngle));
         }
@@ -499,19 +505,22 @@ inline namespace Math
 
         /// @brief Generates a quaternion from the given direction and up vectors.
         /// 
-        /// @param Direction The desired forward direction (usually the view direction).
-        /// @param Up        The desired up vector (typically, the world up vector).
+        /// @param Direction The desired forward (normalized) direction vector.
+        /// @param Up        The desired up (normalized) vector.
         /// 
         /// @return A quaternion representing the rotation from the given direction and up vectors.
         static Quaternion FromDirection(ConstRef<Vector3> Direction, ConstRef<Vector3> Up)
         {
-            const Vector3 vForward = Vector3::Normalize(Direction);
-            const Vector3 vRight   = Vector3::Normalize(Vector3::Cross(Up, vForward));
-            const Vector3 vUp      = Vector3::Cross(vForward, vRight);
+            LOG_ASSERT(Direction.IsNormalized(), "Direction must be normalized");
+            LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");
+            LOG_ASSERT(!Vector3::IsParallel(Direction, Up), "Direction and Up cannot be parallel");
 
-            const Real32 M00 = vRight.GetX(), M01 = vUp.GetX(), M02 = vForward.GetX();
-            const Real32 M10 = vRight.GetY(), M11 = vUp.GetY(), M12 = vForward.GetY();
-            const Real32 M20 = vRight.GetZ(), M21 = vUp.GetZ(), M22 = vForward.GetZ();
+            const Vector3 vRight = Vector3::Normalize(Vector3::Cross(Up, Direction));
+            const Vector3 vCross = Vector3::Cross(Direction, vRight);
+
+            const Real32 M00 = vRight.GetX(), M01 = vCross.GetX(), M02 = Direction.GetX();
+            const Real32 M10 = vRight.GetY(), M11 = vCross.GetY(), M12 = Direction.GetY();
+            const Real32 M20 = vRight.GetZ(), M21 = vCross.GetZ(), M22 = Direction.GetZ();
 
             const Real32 Trace = M00 + M11 + M22;
             if (Trace > 0.0f)
@@ -561,6 +570,8 @@ inline namespace Math
         /// \return A quaternion interpolated between Start and End.
         ZYPHRYON_INLINE static Quaternion Lerp(ConstRef<Quaternion> Start, ConstRef<Quaternion> End, Real32 Percentage)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             const Real32 Product = Dot(Start, End);
             return Start + ((Product < 0.0f ? -End : End) - Start) * Percentage;
         }
@@ -584,6 +595,8 @@ inline namespace Math
         /// \return A normalized quaternion interpolated between Start and End.
         ZYPHRYON_INLINE static Quaternion Slerp(ConstRef<Quaternion> Start, ConstRef<Quaternion> End, Real32 Percentage)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             if (const Real32 Dot = Clamp(Quaternion::Dot(Start, End), -1.0f, +1.0f); Dot > 0.9995f)
             {
                 return NLerp(Start, End, Percentage);

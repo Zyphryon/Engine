@@ -71,6 +71,8 @@ namespace Scene
         /// \brief Destroys the entity and releases all its memory.
         ZYPHRYON_INLINE void Destruct()
         {
+            LOG_ASSERT(IsValid(), "Attempted to destroy an invalid entity");
+
             mHandle.destruct();
         }
 

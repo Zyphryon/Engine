@@ -212,11 +212,10 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Type GetAngle(ConstRef<AnyVector3> Other) const
             requires(IsReal<Type>)
         {
-            if (const Type Length = GetLength() * Other.GetLength(); Length > kEpsilon<Type>)
-            {
-                return InvCos(Dot(* this, Other) / Length);
-            }
-            return Type(0);
+            const Type Length = GetLength() * Other.GetLength();
+            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
+
+            return InvCos(Dot(* this, Other) / Length);
         }
 
         /// \brief Adds another vector to this vector.
@@ -287,6 +286,10 @@ inline namespace Math
         /// \return A new vector that is the quotient of the two vectors.
         ZYPHRYON_INLINE constexpr AnyVector3 operator/(ConstRef<AnyVector3> Vector) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mZ), "Division by zero (Z)");
+
             return AnyVector3(mX / Vector.mX, mY / Vector.mY, mZ / Vector.mZ);
         }
 
@@ -296,6 +299,8 @@ inline namespace Math
         /// \return A new vector with the scalar divided into all components.
         ZYPHRYON_INLINE constexpr AnyVector3 operator/(Type Scalar) const
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             return AnyVector3(mX / Scalar, mY / Scalar, mZ / Scalar);
         }
 
@@ -399,6 +404,10 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator/=(ConstRef<AnyVector3> Vector)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.mZ), "Division by zero (Z)");
+
             mX /= Vector.mX;
             mY /= Vector.mY;
             mZ /= Vector.mZ;
@@ -411,6 +420,8 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator/=(Type Scalar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             mX /= Scalar;
             mY /= Scalar;
             mZ /= Scalar;
@@ -528,11 +539,20 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyVector3 Normalize(ConstRef<AnyVector3> Vector)
             requires(IsReal<Type>)
         {
-            if (const Type Length = Vector.GetLength(); Length > kEpsilon<Type>)
-            {
-                return Vector * (Type(1) / Length);
-            }
-            return Vector;
+            const Type Length = Vector.GetLength();
+            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot normalize a zero-length vector");
+
+            return Vector * (Type(1) / Length);
+        }
+
+        /// \brief Checks if two vectors are parallel.
+        ///
+        /// \param P0 The first vector.
+        /// \param P1 The second vector.
+        /// \return `true` if the vectors are parallel, `false` otherwise.
+        ZYPHRYON_INLINE constexpr static Bool IsParallel(ConstRef<AnyVector3> P0, ConstRef<AnyVector3> P1)
+        {
+            return Cross(P0, P1).IsAlmostZero();
         }
 
         /// \brief Projects the source vector onto the target vector.
@@ -543,7 +563,10 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyVector3 Project(ConstRef<AnyVector3> Source, ConstRef<AnyVector3> Target)
             requires(IsReal<Type>)
         {
-            return Target * (Dot(Source, Target) / Dot(Target, Target));
+            const Type Denominator = Dot(Target, Target);
+            LOG_ASSERT(!Base::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
+
+            return Target * (Dot(Source, Target) / Denominator);
         }
 
         /// \brief Reflects the incident vector over the given normal.
@@ -553,6 +576,8 @@ inline namespace Math
         /// \return The reflected vector.
         ZYPHRYON_INLINE constexpr static AnyVector3 Reflect(ConstRef<AnyVector3> Incident, ConstRef<AnyVector3> Normal)
         {
+            LOG_ASSERT(Normal.IsNormalized(), "Normal vector must be normalized");
+
             return Incident - Normal * (Type(2) * Dot(Incident, Normal));
         }
 
@@ -629,6 +654,8 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyVector3 Lerp(ConstRef<AnyVector3> Start, ConstRef<AnyVector3> End, Type Percentage)
             requires(IsReal<Type>)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             return Start + (End - Start) * Percentage;
         }
 

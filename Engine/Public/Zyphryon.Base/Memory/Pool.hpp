@@ -20,70 +20,75 @@
 
 inline namespace Base
 {
-    /// \brief A fixed-size memory pool for efficient allocation and management of objects.
+    /// \brief A fixed-size memory pool for efficient allocation and indexed access.
     template<typename Type, UInt32 Size>
     class Pool final
     {
     public:
 
-        /// \brief Allocates a new handle and constructs an object in place.
+        /// \brief Allocates storage for a new object and constructs it in-place.
         ///
-        /// \param Parameters The arguments to forward to the constructor of the new object.
-        /// \return A unique handle value if successful, or 0 if the pool is exhausted.
+        /// \param Parameters Arguments forwarded to the constructor.
+        /// \return A unique non-zero handle.
         template<typename... Arguments>
         ZYPHRYON_INLINE UInt32 Allocate(AnyRef<Arguments>... Parameters)
         {
             const UInt32 Handle = mAllocator.Allocate();
 
-            if (Handle)
-            {
-                InPlaceConstruct<Type>(mPool[Handle - 1], Forward<Arguments>(Parameters)...);
-            }
+            /// Construct a new object directly in the storage slot for this handle.
+            InPlaceConstruct<Type>(mPool[Handle - 1], Forward<Arguments>(Parameters)...);
+
             return Handle;
         }
 
-        /// \brief Frees a previously allocated handle for reuse.
+        /// \brief Releases a previously allocated handle back to the pool.
         ///
-        /// \param Handle The handle to release.
-        /// \return The released handle if valid, or \ref kInvalid if rejected.
-        ZYPHRYON_INLINE UInt32 Free(UInt32 Handle)
+        /// \param Handle A valid non-zero handle to free.
+        ZYPHRYON_INLINE void Free(UInt32 Handle)
         {
-            return mAllocator.Free(Handle);
+            mAllocator.Free(Handle);
+
+            /// Destroy the object stored at this handle in place before recycling.
+            InPlaceDelete<Type>(mPool[Handle - 1]);
         }
 
-        /// \brief Resets the allocator, clearing all handles.
+        /// \brief Resets the pool, clearing all allocations.
         ZYPHRYON_INLINE void Clear()
         {
+            for (Ref<Type> Element : ConstSpan<Type>(mPool, GetHead()))
+            {
+                InPlaceDelete<Type>(Element);   // TODO: Check if element is valid?
+            }
             mAllocator.Clear();
         }
 
-        /// \brief Returns whether all handles have been allocated and none are free.
+        /// \brief Checks if all slots are currently in use.
         ///
-        /// \return `true` if the allocator is full, `false` otherwise.
+        /// \return `true` if no further allocations are possible, otherwise `false`.
         ZYPHRYON_INLINE Bool IsFull() const
         {
             return mAllocator.IsFull();
         }
 
-        /// \brief Returns whether no handles have been allocated or all have been freed.
+        /// \brief Checks if no objects are currently allocated.
         ///
-        /// \return `true` if the allocator is empty, `false` otherwise.
+        /// \return `true` if the pool is empty, otherwise `false`.
         ZYPHRYON_INLINE Bool IsEmpty() const
         {
             return mAllocator.IsEmpty();
         }
 
-        /// \brief Returns the highest allocated handle.
+        /// \brief Returns the highest sequential handle ever issued.
         ///
-        /// \return The highest handle allocated so far.
-        ZYPHRYON_INLINE UInt32 GetBack() const
+        /// \return The maximum issued handle value.
+        ZYPHRYON_INLINE UInt32 GetHead() const
         {
-            return mAllocator.GetBack();
+            return mAllocator.GetHead();
         }
 
-        /// \brief Returns the number of currently active (allocated) handles.
+        /// \brief Gets the current number of active (allocated) handles.
         ///
-        /// \return The total count of handles in use.
+        /// \return The number of objects in use.
         ZYPHRYON_INLINE UInt32 GetSize() const
         {
             return mAllocator.GetSize();
@@ -95,6 +100,8 @@ inline namespace Base
         /// \return A reference to the element associated with the handle.
         ZYPHRYON_INLINE Ref<Type> operator[](UInt32 Handle)
         {
+            LOG_ASSERT(Handle && Handle <= GetHead(), "Attempted to access invalid or out-of-range handle");
+
             return mPool[Handle - 1];
         }
 
@@ -104,6 +111,8 @@ inline namespace Base
         /// \return A reference to the element associated with the handle.
         ZYPHRYON_INLINE ConstRef<Type> operator[](UInt32 Handle) const
         {
+            LOG_ASSERT(Handle && Handle <= GetHead(), "Attempted to access invalid or out-of-range handle");
+
             return mPool[Handle - 1];
         }
 

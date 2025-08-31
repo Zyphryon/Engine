@@ -102,6 +102,8 @@ namespace Audio
         /// \param Orientation New orientation quaternion.
         ZYPHRYON_INLINE void SetOrientation(ConstRef<Quaternion> Orientation)
         {
+            LOG_ASSERT(Orientation.IsNormalized(), "Orientation must be a unit quaternion");
+
             if (mOrientation != Orientation)
             {
                 mOrientation = Orientation;
@@ -122,6 +124,8 @@ namespace Audio
         /// \param Radius New radius value (world units).
         ZYPHRYON_INLINE void SetRadius(Real32 Radius)
         {
+            LOG_ASSERT(Radius >= 0.0f, "Emitter radius must be non-negative");
+
             if (!IsAlmostEqual(mRadius, Radius))
             {
                 mRadius = Radius;

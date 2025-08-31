@@ -57,6 +57,8 @@ namespace Audio
         /// \param Volume Volume multiplier (`1.0` = default, `0.0` = mute).
         ZYPHRYON_INLINE void SetMasterVolume(Real32 Volume)
         {
+            LOG_ASSERT(Volume >= 0.0f, "Volume must be non-negative");
+
             mDriver->SetMasterVolume(Volume);
         }
 
@@ -66,6 +68,8 @@ namespace Audio
         /// \param Volume   Volume multiplier (`1.0` = default, `0.0` = mute).
         ZYPHRYON_INLINE void SetSubmixVolume(Category Category, Real32 Volume)
         {
+            LOG_ASSERT(Volume >= 0.0f, "Volume must be non-negative");
+
             mDriver->SetSubmixVolume(Enum::Cast(Category), Volume);
         }
 

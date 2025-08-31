@@ -82,6 +82,7 @@ inline namespace Base
               mSize    { Size },
               mDeleter { Deleter }
         {
+            LOG_ASSERT(Deleter != nullptr, "Attempted to construct blob without a valid deleter");
         }
 
         /// \brief Move constructor.
@@ -107,8 +108,9 @@ inline namespace Base
             if (mPointer)
             {
                 mDeleter(mPointer);
+
+                mPointer = nullptr;
             }
-            mPointer = nullptr;
         }
 
         /// \brief Returns a mutable pointer to the payload data.
@@ -175,6 +177,8 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE void Copy(ConstPtr<Type> Source, UInt32 Size, UInt32 Offset = 0)
         {
+            LOG_ASSERT(Offset + Size <= mSize, "Copy operation exceeds buffer bounds");
+
             std::memcpy(mPointer + Offset, Source, Size);
         }
 
@@ -249,15 +253,6 @@ inline namespace Base
         ZYPHRYON_INLINE operator ConstSpan<Byte>() const
         {
             return GetSpan<Byte>();
-        }
-
-    public:
-
-        template<typename Type>
-        ZYPHRYON_INLINE static constexpr Blob FromImmutable(std::initializer_list<Type> Data)
-        {
-
-            return Blob(const_cast<Ptr<Type>>(Data.begin()), Data.size() * sizeof(Type), kEmptyDeleter);
         }
 
     private:

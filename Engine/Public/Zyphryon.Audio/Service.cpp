@@ -32,7 +32,7 @@ namespace Audio
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE_SCOPE("Audio::Service::Tick");
+        ZYPHRYON_PROFILE;
 
         mDriver->Advance(Time);
     }
@@ -99,8 +99,9 @@ namespace Audio
         if (mMusic)
         {
             mDriver->Stop(mMusic, true);
+
+            mMusic = 0;
         }
-        mMusic = 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

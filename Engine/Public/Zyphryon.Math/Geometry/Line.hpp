@@ -129,6 +129,8 @@ inline namespace Math
         /// \return The normalized direction vector of the line.
         ZYPHRYON_INLINE constexpr Vector2 GetDirection() const
         {
+            LOG_ASSERT(mStart != mEnd, "Cannot compute direction of a zero-length line");
+
             return Vector2::Normalize(mEnd - mStart);
         }
 
@@ -145,6 +147,8 @@ inline namespace Math
         /// \return The normalized normal vector of the line.
         ZYPHRYON_INLINE constexpr Vector2 GetNormal() const
         {
+            LOG_ASSERT(mStart != mEnd, "Cannot compute normal of a zero-length line");
+
             const Vector2 Direction = GetDirection();
             return Vector2(-Direction.GetY(), Direction.GetX());
         }
@@ -272,6 +276,8 @@ inline namespace Math
         /// \return A unit line segment in the specified direction starting from origin.
         ZYPHRYON_INLINE constexpr static Line Unit(ConstRef<Vector2> Direction)
         {
+            LOG_ASSERT(!Direction.IsAlmostZero(), "Direction must be non-zero");
+
             return Line(Vector2::Zero(), Vector2::Normalize(Direction));
         }
 
@@ -299,6 +305,8 @@ inline namespace Math
         /// \return A line interpolated between the start and end lines.
         ZYPHRYON_INLINE constexpr static Line Lerp(ConstRef<Line> Start, ConstRef<Line> End, Real32 Percentage)
         {
+            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
+
             return Line(Vector2::Lerp(Start.mStart, End.mStart, Percentage),
                         Vector2::Lerp(Start.mEnd,   End.mEnd,   Percentage));
         }

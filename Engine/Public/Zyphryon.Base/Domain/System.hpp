@@ -22,7 +22,7 @@
 
 inline namespace Base
 {
-    /// \brief A container for managing a collection of services.
+    /// \brief A container and lifecycle manager for service units.
     template<typename Unit>
     class System
     {
@@ -31,14 +31,14 @@ inline namespace Base
         /// \brief Specifies the execution mode of the system.
         enum class Mode : UInt8
         {
-            Client, ///< Runs only in client mode.
-            Server, ///< Runs only in server mode.
-            Both,   ///< Runs in both client and server modes.
+            Client, ///< Active only in client mode.
+            Server, ///< Active only in server mode.
+            Both,   ///< Active in both client and server modes.
         };
 
     public:
 
-        /// \brief Default destructor for the system.
+        /// \brief Virtual destructor to ensure proper cleanup through derived types.
         virtual ~System() = default;
 
         /// \brief Sets the execution mode of the system.

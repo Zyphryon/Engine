@@ -136,10 +136,9 @@ namespace Graphic
 
     void Service::DeleteBuffer(Object ID)
     {
-        if (mBuffers.Free(ID))
-        {
-            WriteCommand<CommandList::DeleteBuffer>(GetProducerFrame(), ID);
-        }
+        mBuffers.Free(ID);
+
+        WriteCommand<CommandList::DeleteBuffer>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -171,10 +170,9 @@ namespace Graphic
 
     void Service::DeletePass(Object ID)
     {
-        if (mPasses.Free(ID))
-        {
-            WriteCommand<CommandList::DeletePass>(GetProducerFrame(), ID);
-        }
+        mPasses.Free(ID);
+
+        WriteCommand<CommandList::DeletePass>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -212,10 +210,9 @@ namespace Graphic
 
     void Service::DeletePipeline(Object ID)
     {
-        if (mPipelines.Free(ID))
-        {
-            WriteCommand<CommandList::DeletePipeline>(GetProducerFrame(), ID);
-        }
+        mPipelines.Free(ID);
+
+        WriteCommand<CommandList::DeletePipeline>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -237,7 +234,7 @@ namespace Graphic
 
     void Service::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data)
     {
-        WriteCommand<CommandList::DeletePipeline>(GetProducerFrame(), mPipelines.Free(ID));
+        WriteCommand<CommandList::UpdateTexture>(GetProducerFrame(), ID, Level, X, Y, Width, Height, Pitch, Move(Data));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -245,10 +242,9 @@ namespace Graphic
 
     void Service::DeleteTexture(Object ID)
     {
-        if (mTextures.Free(ID))
-        {
-            WriteCommand<CommandList::DeleteTexture>(GetProducerFrame(), ID);
-        }
+        mTextures.Free(ID);
+
+        WriteCommand<CommandList::DeleteTexture>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -297,7 +293,7 @@ namespace Graphic
 
     void Service::Finish(Bool Abort)
     {
-        ZYPHRYON_PROFILE_SCOPE("Graphic::Service::Tick");
+        ZYPHRYON_PROFILE;
 
         FlushCommands(Abort);
     }
@@ -333,7 +329,7 @@ namespace Graphic
 
         while (!Token.stop_requested())
         {
-            ZYPHRYON_PROFILE_SCOPE("Graphic::Service::Process");
+            ZYPHRYON_PROFILE;
 
             // Put the thread to sleep until the flag indicates there is more work to process.
             mBusy.wait(false, std::memory_order_acquire);

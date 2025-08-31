@@ -17,6 +17,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 namespace Content
 {
     /// \brief Represents a lightweight, immutable parser for Uniform Resource Identifiers (URIs).
@@ -116,7 +117,7 @@ namespace Content
         ZYPHRYON_INLINE constexpr ConstText GetPath() const
         {
             const auto Offset = mUrl.find("://");
-            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 3, mUrl.length()) : mUrl);
+            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 3) : mUrl);
         }
 
         /// \brief Gets the folder portion of the URI.
@@ -124,7 +125,7 @@ namespace Content
         /// \return The folder path before the first slash, or an empty string if none exists.
         ZYPHRYON_INLINE constexpr ConstText GetFolder() const
         {
-            const auto Offset = mUrl.find('/');
+            const auto Offset = mUrl.rfind('/');
             return (Offset != ConstText::npos ? GetPath().substr(0, Offset) : "");
         }
 
@@ -134,7 +135,7 @@ namespace Content
         ZYPHRYON_INLINE constexpr ConstText GetFilename() const
         {
             const auto Offset = mUrl.rfind('/');
-            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 1, mUrl.length()) : GetPath());
+            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 1) : GetPath());
         }
 
         /// \brief Gets the file extension portion of the URI.

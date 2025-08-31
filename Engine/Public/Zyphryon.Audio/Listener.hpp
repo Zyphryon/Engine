@@ -100,6 +100,8 @@ namespace Audio
         /// \param Orientation New orientation quaternion.
         ZYPHRYON_INLINE void SetOrientation(ConstRef<Quaternion> Orientation)
         {
+            LOG_ASSERT(Orientation.IsNormalized(), "Orientation must be a unit quaternion");
+
             if (mOrientation != Orientation)
             {
                 mOrientation = Orientation;

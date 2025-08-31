@@ -21,16 +21,11 @@
 inline namespace Base
 {
     /// \brief A lightweight, bounded handle allocator with support for recycling.
-    /// 
+    ///
     /// \tparam Capacity Maximum number of active handles.
     template<UInt32 Capacity>
     class Handle final
     {
-    public:
-
-        /// \brief Invalid handle value.
-        constexpr static UInt32 kInvalid = 0;
-
     public:
 
         /// \brief Constructs a new handle allocator with empty state.
@@ -39,35 +34,29 @@ inline namespace Base
         {
         }
 
-        /// \brief Allocates a new handle from the pool.
-        /// 
-        /// \return A unique handle value, or \ref kInvalid if the pool is exhausted.
+        /// \brief Allocates a new unique handle.
+        ///
+        /// \return A unique non-zero handle.
         ZYPHRYON_INLINE UInt32 Allocate()
         {
             if (mPool.empty())
             {
-                return mHead >= Capacity ? kInvalid : ++mHead;
+                LOG_ASSERT(mHead < Capacity, "Attempted to allocate beyond maximum capacity");
+
+                return ++mHead;
             }
 
             const UInt32 Handle = mPool.back();
-
-            if (Handle != kInvalid)
-            {
-                mPool.pop_back();
-            }
+            mPool.pop_back();
             return Handle;
         }
 
-        /// \brief Frees a previously allocated handle for reuse.
-        /// 
-        /// \param Handle The handle to release.
-        /// \return The released handle if valid, or \ref kInvalid if rejected.
-        ZYPHRYON_INLINE UInt32 Free(UInt32 Handle)
+        /// \brief Releases a handle back to the allocator for reuse.
+        ///
+        /// \param Handle The handle to release (must be valid).
+        ZYPHRYON_INLINE void Free(UInt32 Handle)
         {
-            if (Handle == kInvalid || Handle > mHead)
-            {
-                return kInvalid;
-            }
+            LOG_ASSERT(Handle && Handle <= mHead, "Attempted to free invalid handle");
 
             if (Handle == mHead)
             {
@@ -75,19 +64,18 @@ inline namespace Base
             }
             else
             {
-                mPool.emplace_back(Handle);
+                mPool.emplace_back(Handle); // TODO: Check double free in debug version?
             }
-            return Handle;
         }
 
-        /// \brief Resets the allocator, clearing all handles.
+        /// \brief Clears all state and resets the allocator to empty.
         ZYPHRYON_INLINE void Clear()
         {
             mHead = 0;
             mPool.clear();
         }
 
-        /// \brief Returns whether all handles have been allocated and none are free.
+        /// \brief Checks whether the allocator has reached its capacity.
         /// 
         /// \return `true` if the allocator is full, `false` otherwise.
         ZYPHRYON_INLINE Bool IsFull() const
@@ -95,7 +83,7 @@ inline namespace Base
             return mPool.empty() && mHead == Capacity;
         }
 
-        /// \brief Returns whether no handles have been allocated or all have been freed.
+        /// \brief Checks whether the allocator has no active handles.
         /// 
         /// \return `true` if the allocator is empty, `false` otherwise.
         ZYPHRYON_INLINE Bool IsEmpty() const
@@ -103,15 +91,15 @@ inline namespace Base
             return mPool.empty() && mHead == 0;
         }
 
-        /// \brief Returns the highest allocated handle.
+        /// \brief Returns the highest sequential handle ever issued.
         /// 
-        /// \return The highest handle allocated so far.
-        ZYPHRYON_INLINE UInt32 GetBack() const
+        /// \return The maximum issued handle value.
+        ZYPHRYON_INLINE UInt32 GetHead() const
         {
             return mHead;
         }
 
-        /// \brief Returns the number of currently active (allocated) handles.
+        /// \brief Returns the number of currently active handles.
         /// 
         /// \return The total count of handles in use.
         ZYPHRYON_INLINE UInt32 GetSize() const

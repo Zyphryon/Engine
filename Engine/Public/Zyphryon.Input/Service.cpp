@@ -31,7 +31,7 @@ namespace Input
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE_SCOPE("Input::Service::Tick");
+        ZYPHRYON_PROFILE;
 
         // Polls all platform input events that occurred since the last frame.
         const ConstSpan<Event> Stack = mPoller.Poll();

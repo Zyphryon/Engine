@@ -318,7 +318,7 @@ TARGET_PRECOMPILE_HEADERS(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Pub
 ## Properties
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-TARGET_COMPILE_FEATURES(${PROJECT_NAME} PUBLIC cxx_std_20)
+TARGET_COMPILE_FEATURES(${PROJECT_NAME} PUBLIC cxx_std_23)
 
 IF    (WIN32)
 

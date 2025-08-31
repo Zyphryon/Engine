@@ -95,7 +95,17 @@ inline namespace Math
         /// \return `true` if matrix is orthogonal, `false` otherwise.
         ZYPHRYON_INLINE Bool IsOrthogonal() const
         {
+            LOG_ASSERT(IsFinite(), "Matrix contains invalid (NaN/Inf) values before orthogonality check");
+
             return (Transpose(*this) * (* this)).IsIdentity();
+        }
+
+        /// \brief Checks if all components of the matrix are finite (not NaN or Inf).
+        ///
+        /// \return `true` if all values are finite, `false` otherwise.
+        ZYPHRYON_INLINE Bool IsFinite() const
+        {
+            return mColumns[0].IsFinite() && mColumns[1].IsFinite() && mColumns[2].IsFinite() && mColumns[3].IsFinite();
         }
 
         /// \brief Retrieves a column vector from the matrix.
@@ -104,6 +114,8 @@ inline namespace Math
         /// \return Reference to the column vector at the specified index.
         ZYPHRYON_INLINE Ref<Vector4> GetColumn(UInt32 Column)
         {
+            LOG_ASSERT(Column < 4, "GetColumn index out of range");
+
             return mColumns[Column];
         }
 
@@ -404,6 +416,8 @@ inline namespace Math
                 Matrix.mColumns[3] * Vector4::SplatW(Vector);
 
             const Real32 W = Result.GetW();
+            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+
             return (W != 0.0f ? Result * (1.0f / W) : Result);
         }
 
@@ -438,6 +452,9 @@ inline namespace Math
                 const Real32 Len0 = Vector4::Dot3(Matrix.mColumns[0], Matrix.mColumns[0]);
                 const Real32 Len1 = Vector4::Dot3(Matrix.mColumns[1], Matrix.mColumns[1]);
                 const Real32 Len2 = Vector4::Dot3(Matrix.mColumns[2], Matrix.mColumns[2]);
+                LOG_ASSERT(!Base::IsAlmostZero(Len0)
+                        && !Base::IsAlmostZero(Len1)
+                        && !Base::IsAlmostZero(Len2), "Invalid affine matrix: zero-length basis vector");
 
                 const Vector4 Col0 = Matrix.mColumns[0] * (Len0 < kEpsilon<Real32> ? 1.0f : 1.0f / Len0);
                 const Vector4 Col1 = Matrix.mColumns[1] * (Len1 < kEpsilon<Real32> ? 1.0f : 1.0f / Len1);
@@ -478,6 +495,9 @@ inline namespace Math
         /// \return A perspective projection matrix.
         static Matrix4x4 CreatePerspective(Real32 FovY, Real32 Aspect, Real32 ZNear, Real32 ZFar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(ZFar - ZNear), "Invalid perspective matrix: near/far planes too close");
+            LOG_ASSERT(ZFar > ZNear, "Invalid perspective matrix: ZFar must be greater than ZNear");
+
             const Real32 ScaleY = 1.0f / Tan(0.5f * FovY);
             const Real32 ScaleX = ScaleY / Aspect;
 
@@ -499,6 +519,11 @@ inline namespace Math
         /// \return An orthographic projection matrix.
         static Matrix4x4 CreateOrthographic(Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Right - Left), "Invalid orthographic matrix: width is zero");
+            LOG_ASSERT(!Base::IsAlmostZero(Top - Bottom), "Invalid orthographic matrix: height is zero");
+            LOG_ASSERT(!Base::IsAlmostZero(ZFar - ZNear), "Invalid orthographic matrix: depth is zero");
+            LOG_ASSERT(ZFar > ZNear, "Invalid orthographic matrix: ZFar must be greater than ZNear");
+
             const Real32 InvWidth  = 1.0f / (Right - Left);
             const Real32 InvHeight = 1.0f / (Top - Bottom);
             const Real32 InvDepth  = 1.0f / (ZFar - ZNear);
@@ -518,6 +543,9 @@ inline namespace Math
         /// \return A look-at transformation matrix.
         static Matrix4x4 CreateLook(ConstRef<Vector3> Eye, ConstRef<Vector3> Focus, ConstRef<Vector3> Up)
         {
+            LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");
+            LOG_ASSERT(!Vector3::IsParallel(Up, Eye - Focus), "Up vector is parallel to forward direction");
+
             const Vector3 vForward = Vector3::Normalize(Eye - Focus);
             const Vector3 vRight   = Vector3::Normalize(Vector3::Cross(Up, vForward));
             const Vector3 vUp      = Vector3::Cross(vForward, vRight);

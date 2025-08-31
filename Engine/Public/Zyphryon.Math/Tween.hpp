@@ -55,6 +55,8 @@ inline namespace Math
         /// \return The current interpolated value.
         ZYPHRYON_INLINE Type Tick(Real64 Delta)
         {
+            LOG_ASSERT(mTime > 0.0, "Tween duration must be greater than zero");
+
             mAccumulator = Min(mAccumulator + Delta, mTime);
 
             if constexpr (IsInteger<Type> || IsReal<Type>)
