@@ -124,7 +124,7 @@ inline namespace Base
         {
             Archive.SerializeObject(mAllocator);
 
-            for (UInt32 Element = 0, Limit = mAllocator.GetBack(); Element < Limit; ++Element)
+            for (UInt32 Element = 0, Limit = mAllocator.GetHead(); Element < Limit; ++Element)
             {
                 Archive.SerializeObject(mPool[Element]);
             }
