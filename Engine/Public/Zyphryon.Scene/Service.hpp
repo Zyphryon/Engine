@@ -68,7 +68,7 @@ namespace Scene
         /// \tparam Target The component type.
         /// \return The component object associated with the type.
         template<typename Target>
-        ZYPHRYON_INLINE Component<Target> GetComponent()
+        ZYPHRYON_INLINE Component<Target> GetComponent() const
         {
             return Component<Target>(mWorld.template component<Target>());
         }
@@ -87,7 +87,7 @@ namespace Scene
         ///
         /// \param ID Specifies the entity identifier.
         /// \return The entity object if valid and alive, otherwise an empty entity.
-        ZYPHRYON_INLINE Entity GetEntity(UInt64 ID)
+        ZYPHRYON_INLINE Entity GetEntity(UInt64 ID) const
         {
             const Entity::Handle Handle = mWorld.entity(ID);
             return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
@@ -97,7 +97,7 @@ namespace Scene
         ///
         /// \param Name Specifies the entity name.
         /// \return The entity object if valid and alive, otherwise an empty entity.
-        ZYPHRYON_INLINE Entity GetEntity(ConstText Name)
+        ZYPHRYON_INLINE Entity GetEntity(ConstText Name) const
         {
             const Entity::Handle Handle = mWorld.lookup(Name.data());
             return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
@@ -109,7 +109,7 @@ namespace Scene
         /// \param Target The relation's target component.
         /// \return The entity object associated with the relation.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Entity GetEntity()
+        ZYPHRYON_INLINE Entity GetEntity() const
         {
             const Entity::Handle Handle = mWorld.entity(mWorld.template pair<Tag, Target>());
             return Entity(Handle);
@@ -120,7 +120,7 @@ namespace Scene
         /// \param Name The query name (can be empty).
         /// \return A query builder object.
         template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateQuery(ConstText Name = "")
+        ZYPHRYON_INLINE auto CreateQuery(ConstText Name = "") const
         {
             return mWorld.template query_builder<Components...>(Name.data());
         }
@@ -129,7 +129,7 @@ namespace Scene
         ///
         /// \param Callback The function invoked once per archetype entity.
         template<typename Function>
-        ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback)
+        ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
         {
             CreateQuery<>().with(EcsPrefab).each(Callback);
         }
@@ -138,7 +138,7 @@ namespace Scene
         ///
         /// \param Callback The function invoked once per matching entity.
         template<typename Tag, typename Function>
-        ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback)
+        ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
         {
             CreateQuery<>().with<Tag>().each(Callback);
         }
