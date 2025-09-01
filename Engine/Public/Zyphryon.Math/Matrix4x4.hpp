@@ -385,10 +385,18 @@ inline namespace Math
         /// \param Matrix The transformation matrix to apply to the vector.
         /// \param Vector The 2D vector to be projected.
         /// \return A 2D vector resulting from the projection.
-        ZYPHRYON_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector2> Vector) // TODO: Optimize
+        ZYPHRYON_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector2> Vector)
         {
-            const Vector4 Result = Project(Matrix, Vector4(Vector.GetX(), Vector.GetY(), 0.0f, 1.0f));
-            return Vector2(Result.GetX(), Result.GetY());
+            const Vector4 Result =
+                Matrix.mColumns[0] * Vector4(Vector.GetX()) +
+                Matrix.mColumns[1] * Vector4(Vector.GetY()) +
+                Matrix.mColumns[3];
+
+            const Real32 W = Result.GetW();
+            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+
+            const Real32 InvW = 1.0f / W;
+            return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
         }
 
         /// \brief Projects a 3D vector using a 4x4 transformation matrix.
@@ -396,10 +404,19 @@ inline namespace Math
         /// \param Matrix The transformation matrix to apply to the vector.
         /// \param Vector The 3D vector to be projected.
         /// \return A 3D vector resulting from the projection.
-        ZYPHRYON_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector3> Vector) // TODO: Optimize
+        ZYPHRYON_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector3> Vector)
         {
-            const Vector4 Result = Project(Matrix, Vector4(Vector.GetX(), Vector.GetY(), Vector.GetZ(), 1.0f));
-            return Vector3(Result.GetX(), Result.GetY(), Result.GetZ());
+            const Vector4 Result =
+                Matrix.mColumns[0] * Vector4(Vector.GetX()) +
+                Matrix.mColumns[1] * Vector4(Vector.GetY()) +
+                Matrix.mColumns[2] * Vector4(Vector.GetZ()) +
+                Matrix.mColumns[3];
+
+            const Real32 W = Result.GetW();
+            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+
+            const Real32 InvW = 1.0f / W;
+            return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
         }
 
         /// \brief Projects a 4D vector using a 4x4 transformation matrix.

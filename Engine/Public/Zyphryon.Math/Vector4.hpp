@@ -174,7 +174,7 @@ inline namespace Math
         /// \return The squared length of the vector (no square root).
         ZYPHRYON_INLINE Real32 GetLengthSquared() const
         {
-            return _mm_cvtss_f32(_mm_dp_ps(mRegister, mRegister, 0xFF));
+            return _mm_cvtss_f32(_mm_dp_ps(mRegister, mRegister, 0xF1));
         }
 
         /// \brief Calculates the distance between this vector and another vector.
@@ -551,6 +551,17 @@ inline namespace Math
             return _mm_cvtss_f32(_mm_hadd_ps(Lane, Lane));
         }
 
+        /// \brief Computes the component-wise reciprocal (1/x) using fast hardware approximation.
+        ///
+        /// This uses `_mm_rcp_ps` which is very fast but provides only ~12 bits of precision.
+        ///
+        /// \param Vector The input 4D vector to compute.
+        /// \return Approximate component-wise reciprocal.
+        ZYPHRYON_INLINE static Vector4 Reciprocal(ConstRef<Vector4> Vector)
+        {
+            return Vector4(_mm_rcp_ps(Vector.mRegister));
+        }
+
         /// \brief Calculates the horizontal difference of the components in the vector.
         /// 
         /// \param Vector The input 4D vector to compute the difference.
@@ -675,17 +686,16 @@ inline namespace Math
             return Splat<3>(Vector);
         }
 
-        /// \brief Normalizes the given vector.
-        /// 
+        /// \brief Normalizes the given vector using fast approximation.
+        ///
         /// \param Vector The vector to normalize.
-        /// \return A normalized vector.
+        /// \return A normalized vector with approximate length 1.0.
         ZYPHRYON_INLINE static Vector4 Normalize(ConstRef<Vector4> Vector)
         {
-            const Real32 LengthSquared = Vector.GetLengthSquared();
-            LOG_ASSERT(!Base::IsAlmostZero(LengthSquared), "Cannot normalize zero-length vector");
+            const __m128 Dot = _mm_dp_ps(Vector.mRegister, Vector.mRegister, 0xFF);
+            LOG_ASSERT(!Base::IsAlmostZero(_mm_cvtss_f32(Dot)), "Cannot normalize zero-length vector");
 
-            const __m128 Length = _mm_sqrt_ps(_mm_set_ps1(LengthSquared));
-            return Vector4(_mm_div_ps(Vector.mRegister, Length));
+            return Vector4(_mm_mul_ps(Vector.mRegister, _mm_rsqrt_ps(Dot)));
         }
 
         /// \brief Projects the source vector onto the target vector using XYZ components only (W ignored).
@@ -774,11 +784,10 @@ inline namespace Math
         /// \return The cross product of the two vectors, with W = 0.
         ZYPHRYON_INLINE static Vector4 Cross(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
         {
-            const Vector4 A = Swizzle<3, 0, 2, 1>(P0); // (y, z, x, w)
-            const Vector4 B = Swizzle<3, 1, 0, 2>(P1); // (z, x, y, w)
-            const Vector4 C = Swizzle<3, 0, 2, 1>(P1); // (y, z, x, w)
-            const Vector4 D = Swizzle<3, 1, 0, 2>(P0); // (z, x, y, w)
-            return Blend<0b1000>(A * B - C * D, Zero());
+            const Vector4 A = Swizzle<3, 0, 2, 1>(P0);     // (y, z, x, w)
+            const Vector4 B = Swizzle<3, 1, 0, 2>(P1);     // (z, x, y, w)
+            const Vector4 C = Swizzle<3, 0, 2, 1>(A * P1); // (A.y * P1.y, A.z * P1.z, A.x * P1.x, A.w * P1.w)
+            return (A * B) - C;
         }
 
         /// \brief Returns the component-wise minimum of two vectors.
@@ -791,6 +800,17 @@ inline namespace Math
             return Vector4(_mm_min_ps(P0.mRegister, P1.mRegister));
         }
 
+        /// \brief Returns the minimum value across all 4 components of the vector.
+        ///
+        /// \param Vector The vector.
+        /// \return The smallest component of the vector.
+        ZYPHRYON_INLINE static Real32 HorizontalMin(ConstRef<Vector4> Vector)
+        {
+            const __m128 T1 = _mm_min_ps(Vector.mRegister, _mm_movehl_ps(Vector.mRegister, Vector.mRegister));
+            const __m128 T2 = _mm_min_ps(T1, _mm_shuffle_ps(T1, T1, 0x55));
+            return _mm_cvtss_f32(T2);
+        }
+
         /// \brief Returns the component-wise maximum of two vectors.
         /// 
         /// \param P0 The first vector.
@@ -799,6 +819,17 @@ inline namespace Math
         ZYPHRYON_INLINE static Vector4 Max(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
         {
             return Vector4(_mm_max_ps(P0.mRegister, P1.mRegister));
+        }
+
+        /// \brief Returns the maximum value across all 4 components of the vector.
+        ///
+        /// \param Vector The vector.
+        /// \return The largest component of the vector.
+        ZYPHRYON_INLINE static Real32 HorizontalMax(ConstRef<Vector4> v)
+        {
+            const __m128 T1 = _mm_max_ps(v.mRegister, _mm_movehl_ps(v.mRegister, v.mRegister));
+            const __m128 T2 = _mm_max_ps(T1, _mm_shuffle_ps(T1, T1, 0x55));
+            return _mm_cvtss_f32(T2);
         }
 
         /// \brief Floors each component of the given vector.

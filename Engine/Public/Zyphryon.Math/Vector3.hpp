@@ -104,6 +104,42 @@ inline namespace Math
                    (Abs(GetY() - GetZ()) <= Tolerance);
         }
 
+        /// \brief Checks if this vector is component-wise less than another vector.
+        ///
+        /// \param Vector The vector to compare against.
+        /// \return `true` if all components are less, otherwise `false`.
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLess(ConstRef<AnyVector3> Vector) const
+        {
+            return mX < Vector.mX && mY < Vector.mY && mZ < Vector.mZ;
+        }
+
+        /// \brief Checks if this vector is component-wise less than or equal to another vector.
+        ///
+        /// \param Vector The vector to compare against.
+        /// \return `true` if all components are less or equal, otherwise `false`.
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLessOrEqual(ConstRef<AnyVector3> Vector) const
+        {
+            return mX <= Vector.mX && mY <= Vector.mY && mZ <= Vector.mZ;
+        }
+
+        /// \brief Checks if this vector is component-wise greater than another vector.
+        ///
+        /// \param Vector The vector to compare against.
+        /// \return `true` if all components are greater, otherwise `false`.
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreater(ConstRef<AnyVector3> Vector) const
+        {
+            return mX > Vector.mX && mY > Vector.mY && mZ > Vector.mZ;
+        }
+
+        /// \brief Checks if this vector is component-wise greater than or equal to another vector.
+        ///
+        /// \param Vector The vector to compare against.
+        /// \return `true` if all components are greater or equal, otherwise `false`.
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreaterOrEqual(ConstRef<AnyVector3> Vector) const
+        {
+            return mX >= Vector.mX && mY >= Vector.mY && mZ >= Vector.mZ;
+        }
+
         /// \brief Sets the components of the vector to new values.
         ///
         /// \param X New x value.
@@ -443,40 +479,48 @@ inline namespace Math
         /// \return `true` if the vectors are not equal, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyVector3> Other) const = default;
 
-        /// \brief Compares this vector with another for less-than relationship.
+        /// \brief Compares this vector with another for less-than relationship (lexicographic ordering).
         ///
         /// \param Vector The vector to compare against.
-        /// \return `true` if all components of this vector are less than the other vector’s components, otherwise `false`.
+        /// \return `true` if this vector is lexicographically less than the other vector, otherwise `false`.
         ZYPHRYON_INLINE constexpr Bool operator<(ConstRef<AnyVector3> Vector) const
         {
-            return mX < Vector.mX && mY < Vector.mY && mZ < Vector.mZ;
+            return (mX < Vector.mX) ||
+                   (mX == Vector.mX && mY < Vector.mY) ||
+                   (mX == Vector.mX && mY == Vector.mY && mZ < Vector.mZ);
         }
 
-        /// \brief Compares this vector with another for less-than or equal relationship.
+        /// \brief Compares this vector with another for less-than or equal relationship (lexicographic ordering).
         ///
         /// \param Vector The vector to compare against.
-        /// \return `true` if all components of this vector are less than or equal to the other vector’s components, otherwise `false`.
+        /// \return `true` if this vector is lexicographically less than or equal to the other vector, otherwise `false`.
         ZYPHRYON_INLINE constexpr Bool operator<=(ConstRef<AnyVector3> Vector) const
         {
-            return mX <= Vector.mX && mY <= Vector.mY && mZ <= Vector.mZ;
+            return (mX < Vector.mX) ||
+                   (mX == Vector.mX && mY < Vector.mY) ||
+                   (mX == Vector.mX && mY == Vector.mY && mZ <= Vector.mZ);
         }
 
-        /// \brief Compares this vector with another for greater-than relationship.
+        /// \brief Compares this vector with another for greater-than relationship (lexicographic ordering).
         ///
         /// \param Vector The vector to compare against.
-        /// \return `true` if all components of this vector are greater than the other vector’s components, otherwise `false`.
+        /// \return `true` if this vector is lexicographically greater than the other vector, otherwise `false`.
         ZYPHRYON_INLINE constexpr Bool operator>(ConstRef<AnyVector3> Vector) const
         {
-            return mX > Vector.mX && mY > Vector.mY && mZ > Vector.mZ;
+            return (mX > Vector.mX) ||
+                   (mX == Vector.mX && mY > Vector.mY) ||
+                   (mX == Vector.mX && mY == Vector.mY && mZ > Vector.mZ);
         }
 
-        /// \brief Compares this vector with another for greater-than or equal relationship.
+        /// \brief Compares this vector with another for greater-than or equal relationship (lexicographic ordering).
         ///
         /// \param Vector The vector to compare against.
-        /// \return `true` if all components of this vector are greater than or equal to the other vector’s components, otherwise `false`.
+        /// \return `true` if this vector is lexicographically greater than or equal to the other vector, otherwise `false`.
         ZYPHRYON_INLINE constexpr Bool operator>=(ConstRef<AnyVector3> Vector) const
         {
-            return mX >= Vector.mX && mY >= Vector.mY && mZ >= Vector.mZ;
+            return (mX > Vector.mX) ||
+                   (mX == Vector.mX && mY > Vector.mY) ||
+                   (mX == Vector.mX && mY == Vector.mY && mZ >= Vector.mZ);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.

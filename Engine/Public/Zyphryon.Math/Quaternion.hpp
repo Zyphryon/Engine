@@ -28,21 +28,13 @@ inline namespace Math
 
     public:
 
-        /// \brief Default quaternion.
+        /// \brief Constructs an identity quaternion.
         ZYPHRYON_INLINE Quaternion()
             : mData { 0.0f, 0.0f, 0.0f, 1.0f }
         {
         }
 
-        /// \brief All components set to the same value.
-        ///
-        /// \param Scalar Value for all components.
-        ZYPHRYON_INLINE explicit Quaternion(Real32 Scalar)
-            : mData { Scalar }
-        {
-        }
-
-        /// \brief Quaternion from components.
+        /// \brief Constructs a quaternion from explicit components.
         ///
         /// \param X X value.
         /// \param Y Y value.
@@ -166,7 +158,7 @@ inline namespace Math
         /// \return The forward direction in world space as a Vector3.
         ZYPHRYON_INLINE Vector3 GetForward() const
         {
-            return Rotate(Vector3::UnitZ());
+            return Rotate(* this, Vector3::UnitZ());
         }
 
         /// \brief Returns the back (Z–) direction vector rotated by this quaternion.
@@ -182,7 +174,7 @@ inline namespace Math
         /// \return The up direction in world space as a Vector3.
         ZYPHRYON_INLINE Vector3 GetUp() const
         {
-            return Rotate(Vector3::UnitY());
+            return Rotate(* this, Vector3::UnitY());
         }
 
         /// \brief Returns the down (Y–) direction vector rotated by this quaternion.
@@ -198,7 +190,7 @@ inline namespace Math
         /// \return The right direction in world space as a Vector3.
         ZYPHRYON_INLINE Vector3 GetRight() const
         {
-            return Rotate(Vector3::UnitX());
+            return Rotate(* this, Vector3::UnitX());
         }
 
         /// \brief Returns the left (X–) direction vector rotated by this quaternion.
@@ -209,22 +201,6 @@ inline namespace Math
             return -GetRight();
         }
 
-        /// \brief Rotates a 3D vector by this quaternion.
-        /// 
-        /// \param Other The vector to rotate (interpreted as a direction; w = 0).
-        /// \return The rotated vector.
-        ZYPHRYON_INLINE Vector3 Rotate(ConstRef<Vector3> Other) const
-        {
-            LOG_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
-
-            const Vector4 AV = Vector4::Blend<0b0111>(mData, Vector4::Zero());
-            const Vector4 BV = Vector4(Other.GetX(), Other.GetY(), Other.GetZ(), 0.0f);
-            const Vector4 T  = Vector4::Cross(AV, BV) * 2.0f;
-            const Vector4 VP = BV + Vector4::SplatW(mData) * T + Vector4::Cross(AV, T);
-
-            return VP.GetXYZ();
-        }
-
         /// \brief Adds another quaternion to this quaternion.
         /// 
         /// \param Other The quaternion to add.
@@ -232,15 +208,6 @@ inline namespace Math
         ZYPHRYON_INLINE Quaternion operator+(ConstRef<Quaternion> Other) const
         {
             return Quaternion(mData + Other.mData);
-        }
-
-        /// \brief Adds a scalar to all components of this quaternion.
-        /// 
-        /// \param Scalar The scalar to add.
-        /// \return A new quaternion with the scalar added to all components.
-        ZYPHRYON_INLINE Quaternion operator+(Real32 Scalar) const
-        {
-            return Quaternion(mData + Scalar);
         }
 
         /// \brief Negates the quaternion.
@@ -260,21 +227,14 @@ inline namespace Math
             return Quaternion(mData - Other.mData);
         }
 
-        /// \brief Subtracts a scalar from all components of this quaternion.
-        /// 
-        /// \param Scalar The scalar to subtract.
-        /// \return A new quaternion with the scalar subtracted from all components.
-        ZYPHRYON_INLINE Quaternion operator-(Real32 Scalar) const
-        {
-            return Quaternion(mData - Scalar);
-        }
-
-        /// \brief Multiplies the quaternion components by another quaternion.
+        /// \brief Multiplies the quaternion components by another quaternion (Hamilton product).
         /// 
         /// \param Other The quaternion to multiply.
-        /// \return A reference to the updated quaternion.
+        /// \return A new quaternion with the new rotation.
         ZYPHRYON_INLINE Quaternion operator*(ConstRef<Quaternion> Other) const
         {
+            LOG_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
+
             const Vector4 V1 = Vector4::Blend<0b1000>(mData, Vector4::Zero());
             const Vector4 V2 = Vector4::Blend<0b1000>(Other.mData, Vector4::Zero());
             const Vector4 W1 = Vector4::SplatW(mData);
@@ -287,30 +247,12 @@ inline namespace Math
         }
 
         /// \brief Multiplies all components of this quaternion by a scalar.
-        /// 
+        ///
         /// \param Scalar The scalar to multiply by.
         /// \return A new quaternion with the scalar multiplied by all components.
         ZYPHRYON_INLINE Quaternion operator*(Real32 Scalar) const
         {
             return Quaternion(mData * Scalar);
-        }
-
-        /// \brief Divides all components of this quaternion by another quaternion.
-        /// 
-        /// \param Other The quaternion to divide by.
-        /// \return A new quaternion that is the quotient of the two vectors.
-        ZYPHRYON_INLINE Quaternion operator/(ConstRef<Quaternion> Other) const
-        {
-            return (* this) * Inverse(Other);
-        }
-
-        /// \brief Divides all components of this quaternion by a scalar.
-        /// 
-        /// \param Scalar The scalar to divide by.
-        /// \return A new quaternion with the scalar divided by all components.
-        ZYPHRYON_INLINE Quaternion operator/(Real32 Scalar) const
-        {
-            return Quaternion(mData / Scalar);
         }
 
         /// \brief Adds another quaternion to the current quaternion.
@@ -320,16 +262,6 @@ inline namespace Math
         ZYPHRYON_INLINE Ref<Quaternion> operator+=(ConstRef<Quaternion> Other)
         {
             mData += Other.mData;
-            return (* this);
-        }
-
-        /// \brief Adds a scalar value to the quaternion.
-        /// 
-        /// \param Scalar The scalar value to add.
-        /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator+=(Real32 Scalar)
-        {
-            mData += Scalar;
             return (* this);
         }
 
@@ -343,17 +275,7 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Subtracts a scalar value from the quaternion.
-        /// 
-        /// \param Scalar The scalar value to subtract.
-        /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator-=(Real32 Scalar)
-        {
-            mData -= Scalar;
-            return (* this);
-        }
-
-        /// \brief Multiplies the quaternion components by another quaternion.
+        /// \brief Multiplies the quaternion components by another quaternion (Hamilton product).
         /// 
         /// \param Other The quaternion to multiply.
         /// \return A reference to the updated quaternion.
@@ -371,33 +293,13 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Multiplies the quaternion components by a scalar value.
-        /// 
-        /// \param Scalar The scalar value to multiply.
+        /// \brief Multiplies all components of this quaternion by a scalar.
+        ///
+        /// \param Scalar The scalar to multiply by.
         /// \return A reference to the updated quaternion.
         ZYPHRYON_INLINE Ref<Quaternion> operator*=(Real32 Scalar)
         {
             mData *= Scalar;
-            return (* this);
-        }
-
-        /// \brief Divides the quaternion components by another quaternion.
-        /// 
-        /// \param Other The quaternion to divide by.
-        /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator/=(ConstRef<Quaternion> Other)
-        {
-            (* this) *= Inverse(Other);
-            return (* this);
-        }
-
-        /// \brief Divides the quaternion components by a scalar value.
-        /// 
-        /// \param Scalar The scalar value to divide by.
-        /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator/=(Real32 Scalar)
-        {
-            mData /= Scalar;
             return (* this);
         }
 
@@ -407,7 +309,7 @@ inline namespace Math
         /// \return `true` if all vectors are approximately equal, `false` otherwise.
         ZYPHRYON_INLINE Bool operator==(ConstRef<Quaternion> Other) const
         {
-            return mData == Other.mData;
+            return mData == Other.mData || mData == (-Other.mData);
         }
 
         /// \brief Checks if this quaternion is not equal to another quaternion.
@@ -467,6 +369,23 @@ inline namespace Math
             return Vector4::Dot(P0.mData, P1.mData);
         }
 
+        /// \brief Rotates a 3D vector by the given quaternion.
+        ///
+        /// \param Rotation The quaternion that defines the rotation. Must be normalized.
+        /// \param Vector   The vector to rotate (treated as a direction, w = 0).
+        /// \return The rotated vector.
+        ZYPHRYON_INLINE static Vector3 Rotate(ConstRef<Quaternion> Rotation, ConstRef<Vector3> Vector)
+        {
+            LOG_ASSERT(Rotation.IsNormalized(), "Quaternion must be normalized before rotating");
+
+            const Vector4 AV = Vector4::Blend<0b0111>(Rotation.mData, Vector4::Zero());
+            const Vector4 BV = Vector4(Vector.GetX(), Vector.GetY(), Vector.GetZ(), 0.0f);
+            const Vector4 T  = Vector4::Cross(AV, BV) * 2.0f;
+            const Vector4 VP = BV + Vector4::SplatW(Rotation.mData) * T + Vector4::Cross(AV, T);
+
+            return VP.GetXYZ();
+        }
+
         /// \brief Creates a quaternion from an angle and an axis of rotation.
         /// 
         /// \param Angle The angle of rotation (in radians).
@@ -484,7 +403,7 @@ inline namespace Math
         /// 
         /// \param Angles A vector where X = pitch, Y = yaw, Z = roll (in radians).
         /// \return A quaternion representing the combined rotation.
-        static Quaternion FromEulerAngles(ConstRef<Vector3> Angles)
+        ZYPHRYON_INLINE static Quaternion FromEulerAngles(ConstRef<Vector3> Angles)
         {
             const Real32 HalfPitch = Angles.GetX() * 0.5f;
             const Real32 HalfYaw   = Angles.GetY() * 0.5f;
@@ -509,7 +428,7 @@ inline namespace Math
         /// @param Up        The desired up (normalized) vector.
         /// 
         /// @return A quaternion representing the rotation from the given direction and up vectors.
-        static Quaternion FromDirection(ConstRef<Vector3> Direction, ConstRef<Vector3> Up)
+        ZYPHRYON_INLINE static Quaternion FromDirection(ConstRef<Vector3> Direction, ConstRef<Vector3> Up)
         {
             LOG_ASSERT(Direction.IsNormalized(), "Direction must be normalized");
             LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");

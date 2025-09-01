@@ -691,25 +691,38 @@ inline namespace Math
             return Start + (End - Start) * Percentage;
         }
 
-        /// \brief Transforms an axis-aligned rectangle with a 4x4 matrix.
+        /// \brief Projects a 2D axis-aligned rectangle by a 4x4 matrix.
         ///
-        /// \param Rectangle The source rectangle in local space.
-        /// \param Transform The 4x4 transformation matrix to apply.
-        /// \return An axis-aligned rectangle bounding the transformed corners.
-        ZYPHRYON_INLINE static AnyRect Transform(ConstRef<AnyRect> Rectangle, ConstRef<Matrix4x4> Transform) // TODO: Optimize
+        /// \param Rectangle The input rectangle in local space.
+        /// \param Matrix    The transformation matrix.
+        /// \return An axis-aligned rectangle enclosing the projected corners.
+        ZYPHRYON_INLINE static AnyRect Project(ConstRef<AnyRect> Rectangle, ConstRef<Matrix4x4> Matrix)
             requires (IsReal<Type>)
         {
-            const Vector2 V0 = Matrix4x4::Project(Transform, Vector2(Rectangle.GetLeft(),  Rectangle.GetBottom()));
-            const Vector2 V1 = Matrix4x4::Project(Transform, Vector2(Rectangle.GetRight(), Rectangle.GetBottom()));
-            const Vector2 V2 = Matrix4x4::Project(Transform, Vector2(Rectangle.GetRight(), Rectangle.GetTop()));
-            const Vector2 V3 = Matrix4x4::Project(Transform, Vector2(Rectangle.GetLeft(),  Rectangle.GetTop()));
+            const Vector4 CornerX(Rectangle.GetLeft(), Rectangle.GetRight(), Rectangle.GetRight(), Rectangle.GetLeft());
+            const Vector4 CornerY(Rectangle.GetBottom(), Rectangle.GetBottom(), Rectangle.GetTop(), Rectangle.GetTop());
 
-            const Type MinX = Base::Min(V0.GetX(), V1.GetX(), V2.GetX(), V3.GetX());
-            const Type MinY = Base::Min(V0.GetY(), V1.GetY(), V2.GetY(), V3.GetY());
-            const Type MaxX = Base::Max(V0.GetX(), V1.GetX(), V2.GetX(), V3.GetX());
-            const Type MaxY = Base::Max(V0.GetY(), V1.GetY(), V2.GetY(), V3.GetY());
+            // Homogeneous W for all corners: w = m30*x + m31*y + m33
+            const Vector4 W = CornerX * Vector4::SplatW(Matrix.GetColumn(0)) +
+                              CornerY * Vector4::SplatW(Matrix.GetColumn(1)) +
+                                        Vector4::SplatW(Matrix.GetColumn(3));
 
-            return AnyRect(MinX, MinY, MaxX, MaxY);
+            LOG_ASSERT(W.IsAlmostZero(), "Division by zero (W)");
+            const Vector4 InvW = Vector4::Reciprocal(W);
+
+            // Projected X coordinates: (m00*x + m01*y + m03) / w
+            const Vector4 ProjectionX = (CornerX * Vector4::SplatX(Matrix.GetColumn(0)) +
+                                         CornerY * Vector4::SplatX(Matrix.GetColumn(1)) +
+                                                   Vector4::SplatX(Matrix.GetColumn(3))) * InvW;
+
+            // Projected Y coordinates: (m10*x + m11*y + m13) / w
+            const Vector4 ProjectionY = (CornerX * Vector4::SplatY(Matrix.GetColumn(0)) +
+                                         CornerY * Vector4::SplatY(Matrix.GetColumn(1)) +
+                                                   Vector4::SplatY(Matrix.GetColumn(3))) * InvW;
+
+            // Min/max across the 4 results
+            return AnyRect(Vector4::HorizontalMin(ProjectionX), Vector4::HorizontalMin(ProjectionY),
+                           Vector4::HorizontalMax(ProjectionX), Vector4::HorizontalMax(ProjectionY));
         }
 
     private:
