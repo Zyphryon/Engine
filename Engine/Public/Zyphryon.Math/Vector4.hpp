@@ -85,9 +85,9 @@ inline namespace Math
         /// \return `true` if the vector is normalized, `false` otherwise.
         ZYPHRYON_INLINE Bool IsNormalized() const
         {
-            const __m128 Diff = _mm_sub_ps(_mm_dp_ps(mRegister, mRegister, 0xFF), _mm_set_ps1(1.0f));
-            const __m128 Mask = _mm_cmplt_ps(_mm_andnot_ps(_mm_set1_ps(-0.0f), Diff), _mm_set1_ps(kEpsilon<Real32>));
-            return _mm_movemask_ps(Mask) == 0xF;
+            const __m128 Diff    = _mm_sub_ss(_mm_dp_ps(mRegister, mRegister, 0xF1), _mm_set_ss(1.0f));
+            const __m128 AbsDiff = _mm_andnot_ps(_mm_set1_ps(-0.0f), Diff);
+            return _mm_comilt_ss(AbsDiff, _mm_set_ss(kEpsilon<Real32>));
         }
 
         /// \brief Checks if the vector is finite.

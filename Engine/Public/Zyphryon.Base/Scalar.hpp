@@ -28,24 +28,16 @@ inline namespace Base
     /// \brief The smallest difference detectable between two values of type Type.
     template<typename Type>
     inline constexpr Type kEpsilon =
-        IsEqual<Type, Real32> ? Type(1.19209290e-07F)        :
-        IsEqual<Type, Real64> ? Type(2.2204460492503131e-16) :
-        Type(0);
-
-    /// \brief Relative epsilon for floating-point comparisons.
-    template<typename Type>
-    inline constexpr Type kRelativeEpsilon =
-        IsEqual<Type, Real32> ? Type(1e-5f) :
-        IsEqual<Type, Real64> ? Type(1e-12) :
-        Type(0);
-
-    /// \brief Absolute epsilon for floating-point comparisons.
-    template<typename Type>
-    inline constexpr Type kAbsoluteEpsilon =
         IsEqual<Type, Real32> ? Type(1e-6f) :
         IsEqual<Type, Real64> ? Type(1e-14) :
         Type(0);
 
+    /// \brief Relative epsilon for floating-point comparisons.
+    template<typename Type>
+    inline constexpr Type kSmallerEpsilon =
+        IsEqual<Type, Real32> ? Type(1e-5f) :
+        IsEqual<Type, Real64> ? Type(1e-12) :
+        Type(0);
 
     /// \brief Converts degrees to radians.
     /// 
@@ -369,11 +361,11 @@ inline namespace Base
     /// 
     /// \param First    Left-hand value.
     /// \param Second   Right-hand value.
-    /// \param Relative Relative tolerance (defaults to `kRelativeEpsilon<Type>`; must be ≥ 0).
-    /// \param Absolute Absolute tolerance (defaults to `kAbsoluteEpsilon<Type>`; must be ≥ 0).
+    /// \param Relative Relative tolerance (defaults to `kSmallerEpsilon<Type>`; must be ≥ 0).
+    /// \param Absolute Absolute tolerance (defaults to `kEpsilon<Type>`; must be ≥ 0).
     /// \return `true` if the values are considered almost equal; otherwise `false`.
     template<typename Type>
-    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Relative = kRelativeEpsilon<Type>, Type Absolute = kAbsoluteEpsilon<Type>)
+    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Relative = kSmallerEpsilon<Type>, Type Absolute = kEpsilon<Type>)
     {
         if constexpr (IsReal<Type>)
         {
