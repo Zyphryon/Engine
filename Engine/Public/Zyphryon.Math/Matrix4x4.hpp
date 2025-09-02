@@ -499,7 +499,120 @@ inline namespace Math
             }
             else
             {
-                return { }; // TODO: Implement it using SIMD.
+                ConstRef<Vector4> Col0 = Matrix.mColumns[0];
+                ConstRef<Vector4> Col1 = Matrix.mColumns[1];
+                ConstRef<Vector4> Col2 = Matrix.mColumns[2];
+                ConstRef<Vector4> Col3 = Matrix.mColumns[3];
+
+                // Calculate cofactors
+                Vector4 Fac0, Fac1, Fac2, Fac3, Fac4, Fac5;
+
+                // Fac0: SubFactor00 = m[2][2] * m[3][3] - m[3][2] * m[2][3]
+                //       SubFactor06 = m[1][2] * m[3][3] - m[3][2] * m[1][3]
+                //       SubFactor13 = m[1][2] * m[2][3] - m[2][2] * m[1][3]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
+
+                    Fac0 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                // Fac1: SubFactor01 = m[2][1] * m[3][3] - m[3][1] * m[2][3]
+                //       SubFactor07 = m[1][1] * m[3][3] - m[3][1] * m[1][3]
+                //       SubFactor14 = m[1][1] * m[2][3] - m[2][1] * m[1][3]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
+
+                    Fac1 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                // Fac2: SubFactor02 = m[2][1] * m[3][2] - m[3][1] * m[2][2]
+                //       SubFactor08 = m[1][1] * m[3][2] - m[3][1] * m[1][2]
+                //       SubFactor15 = m[1][1] * m[2][2] - m[2][1] * m[1][2]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
+
+                    Fac2 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                // Fac3: SubFactor03 = m[2][0] * m[3][3] - m[3][0] * m[2][3]
+                //       SubFactor09 = m[1][0] * m[3][3] - m[3][0] * m[1][3]
+                //       SubFactor16 = m[1][0] * m[2][3] - m[2][0] * m[1][3]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
+
+                    Fac3 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                // Fac4: SubFactor04 = m[2][0] * m[3][2] - m[3][0] * m[2][2]
+                //       SubFactor10 = m[1][0] * m[3][2] - m[3][0] * m[1][2]
+                //       SubFactor17 = m[1][0] * m[2][2] - m[2][0] * m[1][2]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
+
+                    Fac4 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                // Fac5: SubFactor05 = m[2][0] * m[3][1] - m[3][0] * m[2][1]
+                //       SubFactor12 = m[1][0] * m[3][1] - m[3][0] * m[1][1]
+                //       SubFactor18 = m[1][0] * m[2][1] - m[2][0] * m[1][1]
+                {
+                    const Vector4 Swp0a = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+                    const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+                    const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
+                    const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
+                    const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+                    const Vector4 Swp03 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
+
+                    Fac5 = (Swp00 * Swp01) - (Swp02 * Swp03);
+                }
+
+                const Vector4 SignA = Vector4(1.0f, -1.0f, 1.0f, -1.0f);
+                const Vector4 SignB = Vector4(-1.0f, 1.0f, -1.0f, 1.0f);
+
+                const Vector4 Vec0 = Vector4::Swizzle<2, 2, 2, 0>(Vector4::Swizzle<0, 0, 0, 0>(Col1, Col0));
+                const Vector4 Vec1 = Vector4::Swizzle<2, 2, 2, 0>(Vector4::Swizzle<1, 1, 1, 1>(Col1, Col0));
+                const Vector4 Vec2 = Vector4::Swizzle<2, 2, 2, 0>(Vector4::Swizzle<2, 2, 2, 2>(Col1, Col0));
+                const Vector4 Vec3 = Vector4::Swizzle<2, 2, 2, 0>(Vector4::Swizzle<3, 3, 3, 3>(Col1, Col0));
+
+                const Vector4 Inv0 = SignB * (Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
+                const Vector4 Inv1 = SignA * (Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
+                const Vector4 Inv2 = SignB * (Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
+                const Vector4 Inv3 = SignA * (Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
+
+                const Vector4 Row0 = Vector4::Swizzle<0, 0, 0, 0>(Inv0, Inv1);
+                const Vector4 Row1 = Vector4::Swizzle<0, 0, 0, 0>(Inv2, Inv3);
+                const Vector4 Row2 = Vector4::Swizzle<2, 0, 2, 0>(Row0, Row1);
+
+                const Real32 Determinant = Vector4::Dot(Col0, Row2);
+                LOG_ASSERT(!Base::IsAlmostZero(Determinant), "Matrix is singular, cannot invert");
+
+                const Real32 InvDet = 1.0f / Determinant;
+                return Matrix4x4(Inv0 * InvDet, Inv1 * InvDet, Inv2 * InvDet, Inv3 * InvDet);
             }
         }
 
