@@ -326,8 +326,8 @@ inline namespace Math
         /// \return A new vector that is the quotient of the two vectors.
         ZYPHRYON_INLINE constexpr AnyVector2 operator/(ConstRef<AnyVector2> Vector) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
             return AnyVector2(mX / Vector.mX, mY / Vector.mY);
         }
@@ -435,8 +435,8 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator/=(ConstRef<AnyVector2> Vector)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
             mX /= Vector.mX;
             mY /= Vector.mY;

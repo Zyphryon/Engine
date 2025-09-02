@@ -410,8 +410,8 @@ inline namespace Math
         /// \return A new rectangle with the vector divided by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator/(ConstRef<AnyVector2<Type>> Vector) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mX), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.mY), "Division by zero (Y)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
             return AnyRect(mX1 / Vector.GetX(), mY1 / Vector.GetY(), mX2 / Vector.GetX(), mY2 / Vector.GetY());
         }
@@ -530,6 +530,8 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator/=(Type Scalar)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+
             mX1 /= Scalar;
             mY1 /= Scalar;
             mX2 /= Scalar;
@@ -544,6 +546,9 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator/=(ConstRef<AnyVector2<Type>> Vector)
         {
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+
             mX1 /= Vector.GetX();
             mY1 /= Vector.GetY();
             mX2 /= Vector.GetX();
