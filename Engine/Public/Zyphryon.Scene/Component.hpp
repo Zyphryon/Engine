@@ -412,18 +412,22 @@ namespace Scene
         /// \brief Declares that entities created from this scope will include the specified component type by default.
         ///
         /// \tparam Type Specifies the component type to associate.
+        /// \return This component, to allow chained calls.
         template<typename Type>
-        ZYPHRYON_INLINE void With()
+        ZYPHRYON_INLINE Component With()
         {
             mHandle.add(EcsWith, mHandle.world().template component<Type>());
+            return (* this);
         }
 
         /// \brief Declares that entities created from this scope will include the specified component by default.
         ///
         /// \param Component Specifies the component handle to associate.
-        ZYPHRYON_INLINE void With(Component Component)
+        /// \return This component, to allow chained calls.
+        ZYPHRYON_INLINE Component With(Component Component)
         {
             mHandle.add(EcsWith, Component.GetHandle());
+            return (* this);
         }
 
         /// \brief Sets this component’s parent to a type.
@@ -479,16 +483,18 @@ namespace Scene
         /// \brief Applies multiple behavioral traits to the component definition.
         ///
         /// \param Traits The trait flags to apply to the component.
+        /// \return This component, to allow chained calls.
         template<typename... Arguments>
         ZYPHRYON_INLINE Component SetTrait(Arguments... Traits)
         {
-            (InsertTrait(Traits), ...);
+            (AddTrait(Traits), ...);
             return (* this);
         }
 
         /// \brief Removes multiple behavioral traits from the component definition.
         ///
         /// \param Traits The trait flags to remove to the component.
+        /// \return This component, to allow chained calls.
         template<typename... Arguments>
         ZYPHRYON_INLINE Component UnsetTrait(Arguments... Traits)
         {
@@ -570,7 +576,7 @@ namespace Scene
         /// \brief Inserts a specific behavioral trait to the component definition.
         ///
         /// \param Trait The behavioral trait to apply to the component.
-        ZYPHRYON_INLINE void InsertTrait(Trait Trait)
+        ZYPHRYON_INLINE void AddTrait(Trait Trait)
         {
             switch (Trait)
             {
