@@ -584,10 +584,7 @@ namespace Scene
         ///
         /// \param Other The entity to compare to.
         /// \return `true` if the entities are not the same, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Entity> Other) const
-        {
-            return !(*this == Other);
-        }
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Entity> Other) const = default;
 
     public:
 

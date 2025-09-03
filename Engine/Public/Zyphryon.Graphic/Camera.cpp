@@ -35,21 +35,19 @@ namespace Graphic
 
         if (Dirty)
         {
-            // If the transformation matrix has been modified (dirty flag is set),
-            // compute the inverse scene matrix from the updated transformation.
+            // Recompute the view matrix if the transform was modified.
             if (HasBit(mDirty, kDirtyBitTransformation))
             {
                 mView = Matrix4x4::Inverse<true>(mTransform.Compute());
             }
 
-            // Calculate the view-projection matrix by multiplying the projection matrix
-            // with the (possibly updated) view matrix.
+            // Build a new view-projection matrix from projection and view.
             mViewProjection        = mProjection * mView;
 
-            // Compute the inverse of the view-projection matrix
+            // Derive the inverse view-projection for unprojection operations.
             mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);
 
-            // Clear the dirty flag to indicate that the transformation has been processed.
+            // Clear all dirty bits to mark matrices as up-to-date.
             mDirty = 0;
         }
         return Dirty;
@@ -60,16 +58,11 @@ namespace Graphic
 
     Vector3 Camera::GetWorldCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const
     {
-        // Undo the Z normalization first
-        const Real32 Z = Position.GetZ() * 2.0f - 1.0f;
-
-        // Calculate X and Y in normalized device coordinates
-        const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width  * 2.0f - 1.0f;
+        const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
         const Real32 Y = (Viewport.Height - (Position.GetY() - Viewport.Y)) / Viewport.Height * 2.0f - 1.0f;
+        const Real32 Z = (Position.GetZ() - Viewport.MinDepth) / (Viewport.MaxDepth - Viewport.MinDepth);
 
-        // Transform the normalized device coordinates back to world space
-        const Vector4 WorldPosition = Matrix4x4::Project(mViewProjectionInverse, Vector4(X, Y, Z, 1.0f));
-        return Vector3(WorldPosition.GetX(), WorldPosition.GetY(), WorldPosition.GetZ());
+        return Matrix4x4::Project(mViewProjectionInverse, Vector3(X, Y, Z));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -77,9 +70,10 @@ namespace Graphic
 
     Vector2 Camera::GetWorldCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
     {
-        const Vector3 Coordinates = GetWorldCoordinates(Vector3(Position.GetX(), Position.GetY(), 0), Viewport);
+        const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
+        const Real32 Y = (Viewport.Height - (Position.GetY() - Viewport.Y)) / Viewport.Height * 2.0f - 1.0f;
 
-        return Vector2(Coordinates.GetX(), Coordinates.GetY());
+        return Matrix4x4::Project(mViewProjectionInverse, Vector2(X, Y));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -90,8 +84,8 @@ namespace Graphic
         const Vector3 Point = Matrix4x4::Project(mViewProjection, Position);
 
         const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
-        const Real32 Y = Viewport.Height - Viewport.Height * (Point.GetY() + 1.0f) * 0.5f + Viewport.Y;
-        const Real32 Z = (Point.GetZ() + 1.0f) * 0.5f;
+        const Real32 Y = Viewport.Height - (Viewport.Height * (Point.GetY() + 1.0f) * 0.5f + Viewport.Y);
+        const Real32 Z = Point.GetZ() * (Viewport.MaxDepth - Viewport.MinDepth) + Viewport.MinDepth;
 
         return Vector3(X, Y, Z);
     }
@@ -101,8 +95,11 @@ namespace Graphic
 
     Vector2 Camera::GetScreenCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
     {
-        const Vector3 Coordinates = GetScreenCoordinates(Vector3(Position.GetX(), Position.GetY(), 0), Viewport);
+        const Vector2 Point = Matrix4x4::Project(mViewProjection, Position);
 
-        return Vector2(Coordinates.GetX(), Coordinates.GetY());
+        const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
+        const Real32 Y = Viewport.Height - (Viewport.Height * (Point.GetY() + 1.0f) * 0.5f + Viewport.Y);
+
+        return Vector2(X, Y);
     }
 }

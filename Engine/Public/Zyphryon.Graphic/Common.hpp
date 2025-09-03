@@ -299,7 +299,7 @@ namespace Graphic
         RGBA16SIntNorm,        ///< 4×16-bit signed normalized.
         RGBA16UInt,            ///< 4×16-bit unsigned integers.
         RGBA16UIntNorm,        ///< 4×16-bit unsigned normalized.
-        RGBA16F,               ///< 4×16-bit floating-point.
+        RGBA16Float,           ///< 4×16-bit floating-point.
         RGBA32SInt,            ///< 4×32-bit signed integers.
         RGBA32UInt,            ///< 4×32-bit unsigned integers.
         RGBA32Float,           ///< 4×32-bit floating-point.
@@ -346,7 +346,7 @@ namespace Graphic
     /// \brief Specifies the format of a vertex attribute.
     enum class VertexFormat : UInt8
     {
-        Float16x2,       ///< Two 16-bit float point.
+        Float16x2,       ///< Two 16-bit floating-point.
         Float16x4,       ///< Four 16-bit floating-point.
         Float32x1,       ///< One 32-bit floating-point.
         Float32x2,       ///< Two 32-bit floating-point.
@@ -504,20 +504,20 @@ namespace Graphic
         {
         }
 
-            /// Semantic meaning of the attribute.
-            VertexSemantic Semantic = VertexSemantic::None;
+        /// Semantic meaning of the attribute.
+        VertexSemantic Semantic = VertexSemantic::None;
 
-            /// Data format of the attribute.
-            VertexFormat   Format   = VertexFormat::Float32x4;
+        /// Data format of the attribute.
+        VertexFormat   Format   = VertexFormat::Float32x4;
 
-            /// Byte offset from the start of the vertex to this attribute.
-            UInt16         Offset   = 0;
+        /// Byte offset from the start of the vertex to this attribute.
+        UInt16         Offset   = 0;
 
-            /// Index of the vertex buffer stream that provides this attribute.
-            UInt16         Stream   = 0;
+        /// Index of the vertex buffer stream that provides this attribute.
+        UInt16         Stream   = 0;
 
-            /// Rate at which the attribute advances during instanced rendering.
-            UInt16         Divisor  = 0;
+        /// Rate at which the attribute advances during instanced rendering.
+        UInt16         Divisor  = 0;
     };
 
     /// \brief Describes the graphics capabilities of the current system and backend.
@@ -690,8 +690,8 @@ namespace Graphic
 
         /// \brief Initializes a scissor region with specified position and size.
         /// 
-        /// \param X      X coordinate of the top-left corner, in pixels.
-        /// \param Y      Y coordinate of the top-left corner, in pixels.
+        /// \param X      X screen coordinate of the region’s origin, in pixels.
+        /// \param Y      Y screen coordinate of the region’s origin, in pixels.
         /// \param Width  Width of the scissor region, in pixels.
         /// \param Height Height of the scissor region, in pixels.
         ZYPHRYON_INLINE constexpr Scissor(UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height)
@@ -702,16 +702,16 @@ namespace Graphic
         {
         }
 
-        /// X coordinate of the top-left corner.
+        /// X screen coordinate of the region’s origin, in pixels.
         UInt16 X      = 0;
 
-        /// Y coordinate of the top-left corner.
+        /// Y screen coordinate of the region’s origin, in pixels.
         UInt16 Y      = 0;
 
-        /// Width of the scissor region in pixels.
+        /// Width of the scissor region, in pixels.
         UInt16 Width  = UINT16_MAX;
 
-        /// Height of the scissor region in pixels.
+        /// Height of the scissor region, in pixels.
         UInt16 Height = UINT16_MAX;
     };
 
@@ -725,7 +725,7 @@ namespace Graphic
         /// 
         /// \param Buffer Handle to the GPU buffer object.
         /// \param Stride Size in bytes of each element in the buffer.
-        /// \param Offset Byte offset from the start of the buffer to the first element (default
+        /// \param Offset Byte offset from the start of the buffer to the first element.
         ZYPHRYON_INLINE constexpr Stream(Object Buffer, UInt16 Stride, UInt32 Offset)
             : Buffer { Buffer },
               Stride { Stride },
@@ -736,7 +736,7 @@ namespace Graphic
         /// Handle to the bound GPU buffer.
         Object Buffer = 0;
 
-        /// Size in bytes of each bound element.
+        /// Size in bytes of each element in the buffer.
         UInt16 Stride = 0;
 
         /// Byte offset from the start of the buffer to the first element.

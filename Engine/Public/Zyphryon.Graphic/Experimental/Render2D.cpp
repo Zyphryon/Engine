@@ -308,7 +308,7 @@ namespace Graphic
         }
 
         // Flush all batches to the GPU
-        mGraphics->Submit(mEncoder);
+        mGraphics->Submit(mEncoder.GetSubmissions());
         mEncoder.Clear();
 
         // Reset all stack(s) back to original states

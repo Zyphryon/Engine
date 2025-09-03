@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Driver.hpp"
-#include "Encoder.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -228,10 +227,10 @@ namespace Graphic
         /// \param Stencil  Stencil clear value (used if clearing stencil).
         void Prepare(Object ID, ConstRef<Viewport> Viewport, Clear Target, ConstRef<Color> Tint, Real32 Depth, UInt8 Stencil);
 
-        /// \brief Submits recorded rendering commands for execution.
+        /// \brief Submits a batch of rendering commands to the GPU for execution.
         ///
-        /// \param Encoder Command encoder that contains the recorded draw submissions.
-        void Submit(Ref<Encoder> Encoder);
+        /// \param Submissions Collection of draw submissions to execute in order.
+        void Submit(ConstSpan<Submission> Submissions);
 
         /// \brief Resolves and finalizes render target.
         ///

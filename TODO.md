@@ -14,7 +14,7 @@
 
 **Graphic**: Descriptor Set (for binding to different shaders, instead of all)
 
-**Math**: Implement Matrix4x4::Inverse for general matrices using SIMD.
+~~**Math**: Implement Matrix4x4::Inverse for general matrices using SIMD.~~
 
 **Network**: Implement it from scratch with proper abstraction.
 
@@ -23,3 +23,7 @@
 **Scene**: Abstraction of Pair, Query, System.
 
 **Scene**: Feature rich Tag system (Name, Category, Etc).
+
+**Dependencies**: Own implementation for asset loading (PNG, DXT, MP3, WAV, TOML, GLTF)
+
+**Dependencies**: Remove FAudio with own implementation of 3D using SDL_Mixer

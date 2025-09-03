@@ -485,9 +485,9 @@ namespace Scene
         /// \param Traits The trait flags to apply to the component.
         /// \return This component, to allow chained calls.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component SetTrait(Arguments... Traits)
+        ZYPHRYON_INLINE Component AddTrait(Arguments... Traits)
         {
-            (AddTrait(Traits), ...);
+            (ApplyTrait(Traits), ...);
             return (* this);
         }
 
@@ -496,9 +496,9 @@ namespace Scene
         /// \param Traits The trait flags to remove to the component.
         /// \return This component, to allow chained calls.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component UnsetTrait(Arguments... Traits)
+        ZYPHRYON_INLINE Component RemoveTrait(Arguments... Traits)
         {
-            (RemoveTrait(Traits), ...);
+            (EraseTrait(Traits), ...);
             return (* this);
         }
 
@@ -566,17 +566,14 @@ namespace Scene
         ///
         /// \param Other The component to compare to.
         /// \return `true` if the entities are not the same, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const
-        {
-            return !(*this == Other);
-        }
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const = default;
 
     private:
 
-        /// \brief Inserts a specific behavioral trait to the component definition.
+        /// \brief Apply a specific behavioral trait to the component definition.
         ///
         /// \param Trait The behavioral trait to apply to the component.
-        ZYPHRYON_INLINE void AddTrait(Trait Trait)
+        ZYPHRYON_INLINE void ApplyTrait(Trait Trait)
         {
             switch (Trait)
             {
@@ -604,10 +601,10 @@ namespace Scene
             }
         }
 
-        /// \brief Removes a specific behavioral trait from the component definition.
+        /// \brief Erase a specific behavioral trait from the component definition.
         ///
         /// \param Trait The behavioral trait to remove from the component.
-        ZYPHRYON_INLINE void RemoveTrait(Trait Trait)
+        ZYPHRYON_INLINE void EraseTrait(Trait Trait)
         {
             switch (Trait)
             {

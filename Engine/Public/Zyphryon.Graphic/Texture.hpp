@@ -18,6 +18,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 namespace Graphic
 {
     /// \brief Represents a texture asset within the content system.
@@ -104,17 +105,17 @@ namespace Graphic
             return mHeight;
         }
 
-        /// \brief Returns the number of mipmap levels.
+        /// \brief Returns the mipmap level.
         ///
-        /// \return The number of mipmap levels in the texture.
+        /// \return The mipmap level in the texture.
         ZYPHRYON_INLINE UInt8 GetLevel() const
         {
             return mLevel;
         }
 
-        /// \brief Returns the number of samples used for multisampling.
+        /// \brief Returns the multisample count used for multisampling.
         ///
-        /// \return The number of samples.
+        /// \return The multisample count.
         ZYPHRYON_INLINE Samples GetSamples() const
         {
             return mSamples;

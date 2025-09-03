@@ -92,7 +92,7 @@ FetchContent_MakeAvailable(External_SDL)
 LIST(APPEND PROJECT_DEPENDENCIES "SDL3-static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (FAudio)
+## Dependency (FAudio)-> TODO: Remove (Use SDL Audio?)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 SET(XNASONG            OFF                                CACHE BOOL   "" FORCE)
@@ -111,7 +111,7 @@ INSTALL(TARGETS SDL3_Headers EXPORT FAudio-targets-static)
 LIST(APPEND PROJECT_DEPENDENCIES "FAudio-static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (in-drop replacement for unordered_map and unordered_set)
+## Dependency (in-drop replacement for unordered_map and unordered_set) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 FetchContent_Declare(External_Ankerl
@@ -125,7 +125,7 @@ TARGET_INCLUDE_DIRECTORIES(Ankerl INTERFACE ${external_ankerl_SOURCE_DIR}/includ
 LIST(APPEND PROJECT_DEPENDENCIES "Ankerl")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (in-drop replacement for array)
+## Dependency (in-drop replacement for array) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 FetchContent_Declare(External_Inplace_Vector
@@ -272,7 +272,7 @@ TARGET_INCLUDE_DIRECTORIES(GLTF INTERFACE ${external_gltf_SOURCE_DIR})
 LIST(APPEND PROJECT_DEPENDENCIES "GLTF")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Tracy) -> TODO: Remove
+## Dependency (Tracy)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 SET(TRACY_ENABLE     ON  CACHE BOOL "" FORCE)

@@ -321,15 +321,20 @@ namespace Scene
         mWorld.set<flecs::Rest>({});
 #endif // ZYPHRYON_PROFILE_MODE
 
-        /// Create observer to release archetype IDs when prefab entities are removed.
-        CreateObserver<>("_Archetypes::OnDelete").with(flecs::Prefab).event(flecs::OnRemove).each([this](Entity Actor)
-        {
-            mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
-        });
+        // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
+        CreateObserver<>("_Archetypes::OnDelete").with(flecs::Prefab).event(flecs::OnRemove)
+            .each([this](Entity Actor)
+            {
+                mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
+            });
 
-        /// Registers the engine's default set of components with the ECS.
-        RegisterComponent<Transient>("Transient");
-        RegisterComponent<Factory>("Factory");
-        RegisterComponent<Time>("Time").SetTrait(Trait::Singleton);
+        // Register Factory component (serialization).
+        RegisterComponent<Factory>("Factory").AddTrait(Trait::Final);
+
+        // Register Time component as singleton (tracks global time state).
+        RegisterComponent<Time>("Time").AddTrait(Trait::Final, Trait::Singleton);
+
+        // Register Transient component (marks entities as non serializable).
+        RegisterComponent<Transient>("Transient").AddTrait(Trait::Associative);
     }
 }

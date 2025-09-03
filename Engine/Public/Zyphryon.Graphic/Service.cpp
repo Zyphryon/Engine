@@ -268,16 +268,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Submit(Ref<Encoder> Encoder)
+    void Service::Submit(ConstSpan<Submission> Submissions)
     {
         Ref<Writer> Writer = GetProducerFrame().Stream;
 
-        if (ConstSpan<Submission> Submissions = Encoder.GetSubmissions(); !Submissions.empty())
-        {
-            Writer.WriteEnum(CommandType::Submit);
-            Writer.WriteUInt32(Submissions.size());
-            Writer.Write(Submissions.data(), Submissions.size_bytes());
-        }
+        Writer.WriteEnum(CommandType::Submit);
+        Writer.WriteUInt32(Submissions.size());
+        Writer.Write(Submissions.data(), Submissions.size_bytes());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

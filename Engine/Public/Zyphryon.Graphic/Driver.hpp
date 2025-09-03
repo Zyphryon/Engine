@@ -27,7 +27,7 @@ namespace Graphic
     {
     public:
 
-        /// \brief Destructor.
+        /// \brief Ensures derived class can be destroyed polymorphically.
         virtual ~Driver() = default;
 
         /// \brief Initializes the rendering backend.

@@ -313,7 +313,7 @@ namespace Graphic
         /// \param Pitch The pitch angle in radians.
         /// \param Yaw   The yaw angle in radians.
         /// \param Roll  The roll angle in radians.
-        void SetRotation(Real32 Pitch, Real32 Yaw, Real32 Roll)
+        ZYPHRYON_INLINE void SetRotation(Real32 Pitch, Real32 Yaw, Real32 Roll)
         {
             mTransform.SetRotation(Quaternion::FromEulerAngles(Vector3(Pitch, Yaw, Roll)));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -484,32 +484,32 @@ namespace Graphic
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
         }
 
-        /// \brief Converts screen coordinates to world space.
+        /// \brief Transforms a screen-space coordinates into world-space position.
         ///
-        /// \param Translation 3D Screen position.
-        /// \param Viewport    Viewport rectangle.
-        /// \return Reconstructed world-space 3D position.
+        /// \param Position The 3D point in screen space to transform.
+        /// \param Viewport The viewport definition, including dimensions and depth range.
+        /// \return The reconstructed world-space position.
         Vector3 GetWorldCoordinates(ConstRef<Vector3> Translation, ConstRef<Viewport> Viewport) const;
 
-        /// \brief Converts screen coordinates to world space.
+        /// \brief Transforms a screen-space coordinates into world-space position.
         ///
-        /// \param Translation 2D screen position.
-        /// \param Viewport    Viewport rectangle.
-        /// \return Reconstructed world-space 2D position.
+        /// \param Position The 2D point in screen space to transform.
+        /// \param Viewport The viewport definition, including dimensions and depth range.
+        /// \return The reconstructed world-space position.
         Vector2 GetWorldCoordinates(ConstRef<Vector2> Translation, ConstRef<Viewport> Viewport) const;
 
-        /// \brief Converts world coordinates to screen space.
+        /// \brief Transforms a world-space position into screen-space coordinates.
         ///
-        /// \param Translation 3D World position.
-        /// \param Viewport    Viewport rectangle.
-        /// \return Projected screen-space 3D position.
+        /// \param Position The 3D point in world space to transform.
+        /// \param Viewport The viewport definition, including dimensions and depth range.
+        /// \return The screen-space position, where X and Y are in pixel coordinates and Z is in depth range.
         Vector3 GetScreenCoordinates(ConstRef<Vector3> Translation, ConstRef<Viewport> Viewport) const;
 
-        /// \brief Converts world coordinates to screen space.
+        /// \brief Transforms a world-space position into screen-space coordinates.
         ///
-        /// \param Translation 2D world position.
-        /// \param Viewport    Viewport rectangle.
-        /// \return Projected screen-space 2D position.
+        /// \param Position The 2D point in world space to transform.
+        /// \param Viewport The viewport definition, including dimensions and depth range.
+        /// \return The screen-space position, where X and Y are in pixel coordinates.
         Vector2 GetScreenCoordinates(ConstRef<Vector2> Translation, ConstRef<Viewport> Viewport) const;
 
     private:

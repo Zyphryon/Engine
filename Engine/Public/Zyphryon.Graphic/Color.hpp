@@ -44,7 +44,7 @@ namespace Graphic
 
         /// \brief Returns the red component of the color.
         /// 
-        /// \return Red component.
+        /// \return The red component value.
         ZYPHRYON_INLINE constexpr Real32 GetRed() const
         {
             return mComponents[0];
@@ -52,7 +52,7 @@ namespace Graphic
 
         /// \brief Returns the green component of the color.
         /// 
-        /// \return Green component.
+        /// \return The green component value.
         ZYPHRYON_INLINE constexpr Real32 GetGreen() const
         {
             return mComponents[1];
@@ -60,7 +60,7 @@ namespace Graphic
 
         /// \brief Returns the blue component of the color.
         /// 
-        /// \return Blue component.
+        /// \return The blue component value.
         ZYPHRYON_INLINE constexpr Real32 GetBlue() const
         {
             return mComponents[2];
@@ -68,7 +68,7 @@ namespace Graphic
 
         /// \brief Returns the alpha component of the color.
         /// 
-        /// \return Alpha component.
+        /// \return The alpha component value.
         ZYPHRYON_INLINE constexpr Real32 GetAlpha() const
         {
             return mComponents[3];
@@ -80,10 +80,7 @@ namespace Graphic
         template<typename Serializer>
         ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
         {
-            Archive.SerializeObject(mComponents[0]);
-            Archive.SerializeObject(mComponents[1]);
-            Archive.SerializeObject(mComponents[2]);
-            Archive.SerializeObject(mComponents[3]);
+            Archive.SerializeArray(mComponents);
         }
 
     public:

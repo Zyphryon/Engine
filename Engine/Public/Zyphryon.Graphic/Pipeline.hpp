@@ -18,6 +18,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 namespace Graphic
 {
     /// \brief Represents a pipeline asset within the content system.
@@ -69,9 +70,9 @@ namespace Graphic
         /// \param Properties Pipeline-specific render state and metadata.
         void Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<MappingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties);
 
-        /// \brief Returns the GPU-specific pipeline identifier.
+        /// \brief Returns the GPU object ID associated with this pipeline.
         ///
-        /// \return Driver-level pipeline handle.
+        /// \return The driver-level pipeline handle.
         ZYPHRYON_INLINE Object GetID() const
         {
             return mID;
