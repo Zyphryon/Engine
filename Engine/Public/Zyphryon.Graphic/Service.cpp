@@ -270,11 +270,11 @@ namespace Graphic
 
     void Service::Submit(ConstSpan<Submission> Submissions)
     {
-        Ref<Writer> Writer = GetProducerFrame().Stream;
+        LOG_ASSERT(!Submissions.empty(), "Requires at least one draw submission");
 
+        Ref<Writer> Writer = GetProducerFrame().Stream;
         Writer.WriteEnum(CommandType::Submit);
-        Writer.WriteUInt32(Submissions.size());
-        Writer.Write(Submissions.data(), Submissions.size_bytes());
+        Writer.WriteBlock(Submissions);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -452,9 +452,7 @@ namespace Graphic
             }
             case CommandType::Submit:
             {
-                const auto Size = Frame.ReadUInt32();
-                const auto Data = Frame.Read<ConstPtr<Submission>>(Size * sizeof(Submission));
-                mDriver->Submit(ConstSpan<Submission>(Data, Size));
+                mDriver->Submit(Frame.ReadBlock<Submission>());
                 break;
             }
             case CommandType::Commit:

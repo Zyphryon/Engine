@@ -609,8 +609,7 @@ inline namespace Math
                 const Vector4 Row2 = Vector4::Swizzle<2, 0, 2, 0>(Row0, Row1);
 
                 const Real32 Determinant = Vector4::Dot(Col0, Row2);
-                LOG_ASSERT(!Base::IsAlmostZero(Determinant), "Matrix is singular, cannot invert");
-
+                
                 const Real32 InvDet = 1.0f / Determinant;
                 return Matrix4x4(Inv0 * InvDet, Inv1 * InvDet, Inv2 * InvDet, Inv3 * InvDet);
             }

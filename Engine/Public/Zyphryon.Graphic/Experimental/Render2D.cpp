@@ -308,8 +308,12 @@ namespace Graphic
         }
 
         // Flush all batches to the GPU
-        mGraphics->Submit(mEncoder.GetSubmissions());
-        mEncoder.Clear();
+        if (ConstSpan<Submission> Submissions = mEncoder.GetSubmissions(); !Submissions.empty())
+        {
+            mGraphics->Submit(Submissions);
+
+            mEncoder.Clear();
+        }
 
         // Reset all stack(s) back to original states
         mCommandTracker.clear();
