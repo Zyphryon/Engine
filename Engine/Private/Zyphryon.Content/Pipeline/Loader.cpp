@@ -47,7 +47,7 @@ namespace Content
             {
                 if (const HMODULE Module = ::LoadLibraryW(Library))
                 {
-                    D3DCompilePointer = (pD3DCompile) GetProcAddress(Module, "D3DCompile");
+                    D3DCompilePointer = reinterpret_cast<pD3DCompile>(GetProcAddress(Module, "D3DCompile"));
                     break;
                 }
             }
@@ -250,7 +250,7 @@ namespace Content
             }
             else
             {
-                LOG_ERROR("Failed to compile shader: {}", reinterpret_cast<Ptr<Char>>(Error->GetBufferPointer()));
+                LOG_ERROR("Failed to compile shader: {}", static_cast<Ptr<Char>>(Error->GetBufferPointer()));
             }
         }
         else

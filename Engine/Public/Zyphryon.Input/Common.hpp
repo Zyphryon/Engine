@@ -50,7 +50,7 @@ namespace Input
     enum class Key : UInt8
     {
         Unknown,        ///< Unknown or unmapped key.
-        Space,          ///< Spacebar.
+        Space,          ///< Space bar.
         Apostrophe,     ///< Apostrophe (') key.
         Comma,          ///< Comma (,) key.
         Minus,          ///< Minus (-) key.

@@ -557,6 +557,14 @@ inline namespace Math
             return (* this);
         }
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE UInt Hash() const
+        {
+            return HashCombine(mX1, mY1, mX2, mY2);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -651,7 +659,7 @@ inline namespace Math
 
         /// \brief Returns a rectangle of type \p Target that tightly encloses this rectangle.
         ///
-        /// \param Rect The source rectangle to enclose.
+        /// \param Rectangle The source rectangle to enclose.
         /// \return A rectangle of type \p Target that fully contains the input.
         template<typename Target>
         ZYPHRYON_INLINE constexpr static Target Enclose(ConstRef<AnyRect> Rectangle)

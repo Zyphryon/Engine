@@ -271,6 +271,14 @@ inline namespace Math
             return Rotate(Quaternion::FromAngles(Angle, Axis));
         }
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE constexpr UInt Hash() const
+        {
+            return HashCombine(mTranslation, mScale, mRotation);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         /// 
         /// \param Archive The archive to serialize the object with.

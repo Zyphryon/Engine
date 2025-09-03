@@ -27,9 +27,9 @@ inline namespace Base
     /// \param Object The object to move.
     /// \return An rvalue reference to the object.
     template<typename Type>
-    constexpr Unref<Type>&& Move(Type&& Object)
+    constexpr UnRef<Type>&& Move(Type&& Object)
     {
-        return static_cast<Unref<Type>&&>(Object);
+        return static_cast<UnRef<Type>&&>(Object);
     }
 
     /// \brief Perfectly forwards an object to another function.
@@ -37,7 +37,7 @@ inline namespace Base
     /// \param Object The object to forward.
     /// \return An lvalue or rvalue reference depending on the input type.
     template<typename Type>
-    constexpr Type&& Forward(Unref<Type>& Object)
+    constexpr Type&& Forward(UnRef<Type>& Object)
     {
         return static_cast<Type&&>(Object);
     }
@@ -47,7 +47,7 @@ inline namespace Base
     /// \param Object The object to forward.
     /// \return An lvalue or rvalue reference depending on the input type.
     template<typename Type>
-    constexpr Type&& Forward(Unref<Type>&& Object)
+    constexpr Type&& Forward(UnRef<Type>&& Object)
     {
         return static_cast<Type&&>(Object);
     }
@@ -80,7 +80,7 @@ inline namespace Base
     /// \param Block   The string data to hash.
     /// \param Counter Initial hash value (defaults to FNV offset basis).
     /// \return The 64-bit FNV-1a hash.
-    constexpr auto Hash(ConstText Block, UInt64 Counter = 14695981039346656037ull)
+    constexpr auto HashText(ConstText Block, UInt64 Counter = 14695981039346656037ull)
     {
         for (const Char Character : Block)
         {
@@ -100,23 +100,33 @@ inline namespace Base
     constexpr auto Hash()
     {
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
-        return Hash(__PRETTY_FUNCTION__);
+        return HashText(__PRETTY_FUNCTION__);
 #else
-        return Hash(__FUNCSIG__);
+        return HashText(__FUNCSIG__);
 #endif
     }
 
     /// \brief Combines an existing hash value with a new value using a mixing function.
     ///
-    /// \param Seed   Reference to the current hash seed. Updated in-place.
-    /// \param Value  The value to incorporate into the hash.
+    /// \param Parameters The values to incorporate into the hash.
     /// \return Reference to the updated seed, for chaining.
-    template<typename Base, typename Type>
-    constexpr auto Hash(Ref<Base> Seed, ConstRef<Type> Value)
+    template<typename... Arguments>
+    constexpr auto HashCombine(AnyRef<Arguments>... Parameters)
     {
-        std::hash<std::decay_t<decltype(Value)>> Hasher;
+        UInt Seed = 0;
 
-        Seed ^= Hasher(Value) + 0x9e3779b9 + (Seed << 6) + (Seed >> 2);
+        (..., (Seed ^= ([]<typename Type>(ConstRef<Type> Value)
+        {
+            if constexpr (requires(ConstRef<Type> Value) { Value.Hash(); })
+            {
+                return Value.Hash();
+            }
+            else
+            {
+                return std::hash<std::decay_t<Type>>()(Value);
+            }
+        }(Parameters) + 0x9E3779B97F4A7C15ULL + (Seed << 6) + (Seed >> 2))));
+
         return Seed;
     }
 

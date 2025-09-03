@@ -249,7 +249,5 @@ namespace Graphic
         Array<D3D11Pipeline, kMaxPipelines> mPipelines;
         Array<D3D11Sampler, kMaxSamplers>   mSamplers;
         Array<D3D11Texture, kMaxTextures>   mTextures;
-
     };
-
 }

@@ -46,7 +46,7 @@ namespace Scene
 
         /// \brief Deserializes a component.
         ///
-        /// \param Writer    The archive instance performing the deserialization operation.
+        /// \param Reader    The archive instance performing the deserialization operation.
         /// \param Component The raw component being deserialized.
         ZYPHRYON_INLINE void Read(Ref<Reader> Reader, Ptr<void> Component) const
         {

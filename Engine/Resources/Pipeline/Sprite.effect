@@ -27,7 +27,7 @@
 [Program.Vertex]
 
     Entry           = "vertex"
-    Filename        = "$://Sprite.shader"
+    Filename        = "Sprite.shader"
     Defines  	    = [
         "ENABLE_ALPHA_TEST"
     ]
@@ -35,7 +35,7 @@
 [Program.Fragment]
 
     Entry           = "fragment"
-    Filename        = "$://Sprite.shader"
+    Filename        = "Sprite.shader"
     Defines  	    = [
         "ENABLE_ALPHA_TEST"
     ]

@@ -324,7 +324,7 @@ namespace Audio
                 Process(Instance, mListener, true);
             }
 
-            // Submit up to kMaxBuffers or until sound ends.
+            // Fill all buffers or until sound finishes.
             for (UInt Stream = 0; Stream < kMaxBuffers && !Instance.Finished; ++Stream)
             {
                 Instance.Tick();

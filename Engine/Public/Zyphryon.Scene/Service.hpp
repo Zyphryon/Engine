@@ -45,11 +45,14 @@ namespace Scene
         template<typename Function, typename ...Arguments>
         ZYPHRYON_INLINE void Schedule(AnyRef<Function> Callback, AnyRef<Arguments>... Parameters)
         {
-            mWorld.defer_begin();
+            const Bool Dirty = mWorld.defer_begin();
+
+            Callback(Forward<Arguments>(Parameters)...);
+
+            if (Dirty)
             {
-                Callback(Forward<Arguments>(Parameters)...);
+                mWorld.defer_end();
             }
-            mWorld.defer_end();
         }
 
         /// \brief Registers a component type.

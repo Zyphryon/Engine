@@ -45,25 +45,25 @@ namespace Graphic
         struct Metrics final
         {
             /// Nominal font size used when generating glyphs.
-            Real32 Size;
+            Real32 Size              = 0.0f;
 
             /// Signed distance field spread value.
-            Real32 Distance;
+            Real32 Distance          = 0.0f;
 
             /// Distance from baseline to top of typical ascenders.
-            Real32 Ascender;
+            Real32 Ascender          = 0.0f;
 
             /// Distance from baseline to bottom of typical descenders.
-            Real32 Descender;
+            Real32 Descender         = 0.0f;
 
             /// Vertical offset from baseline to top of underline.
-            Real32 UnderlineOffset;
+            Real32 UnderlineOffset   = 0.0f;
 
             /// Total vertical space occupied by the underline.
-            Real32 UnderlineSize;
+            Real32 UnderlineSize     = 0.0f;
 
             /// Visual thickness of the underline stroke.
-            Real32 UnderlineThickness;
+            Real32 UnderlineThickness = 0.0f;
         };
 
     public:

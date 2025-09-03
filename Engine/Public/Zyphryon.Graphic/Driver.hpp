@@ -32,10 +32,10 @@ namespace Graphic
 
         /// \brief Initializes the rendering backend.
         ///
-        /// \param Window  Native window handle for presentation.
-        /// \param Width   Initial surface width in pixels.
-        /// \param Height  Initial surface height in pixels.
-        /// \param Samples Initial multisampling level.
+        /// \param Swapchain Native window handle for presentation.
+        /// \param Width     Initial surface width in pixels.
+        /// \param Height    Initial surface height in pixels.
+        /// \param Samples   Initial multisampling level.
         /// \return `true` if the initialization was successful, `false` otherwise.
         virtual Bool Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples) = 0;
 

@@ -136,7 +136,7 @@ namespace Graphic
 
     void Font::OnDelete(Ref<Service::Host> Host)
     {
-        if (mMaterial && mMaterial->HasPolicy(Content::Resource::Policy::Exclusive))
+        if (mMaterial && mMaterial->HasPolicy(Policy::Exclusive))
         {
             mMaterial->Delete(Host);
         }

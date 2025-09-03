@@ -507,6 +507,14 @@ inline namespace Math
             return (mX > Vector.mX) || (mX == Vector.mX && mY >= Vector.mY);
         }
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE constexpr UInt Hash() const
+        {
+            return HashCombine(mX, mY);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.

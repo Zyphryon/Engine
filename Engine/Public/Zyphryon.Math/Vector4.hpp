@@ -463,6 +463,17 @@ inline namespace Math
             return _mm_movemask_ps(_mm_cmpge_ps(mRegister, Vector.mRegister)) == 0xF;
         }
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE UInt Hash() const
+        {
+            ZYPHRYON_ALIGN(16) Real32 Array[4];
+            _mm_store_ps(Array, mRegister);
+
+            return HashCombine(Array[0], Array[1], Array[2], Array[3]);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         /// 
         /// \param Archive The archive to serialize the object with.
@@ -592,8 +603,8 @@ inline namespace Math
         /// \tparam Y The index (0–3) of the component to place in the Y position.
         /// \tparam X The index (0–3) of the component to place in the X position.
         /// \tparam W The index (0–3) of the component to place in the W position.
-        /// \param Vec1 The first input vector.
-        /// \param Vec2 The second input vector.
+        /// \param First  The first input vector.
+        /// \param Second The second input vector.
         /// \return A new vector with reordered components based on the specified indices.
         template<UInt8 Z, UInt8 Y, UInt8 X, UInt8 W>
         ZYPHRYON_INLINE static Vector4 Swizzle(ConstRef<Vector4> First, ConstRef<Vector4> Second)
@@ -825,9 +836,9 @@ inline namespace Math
         ///
         /// \param Vector The vector.
         /// \return The largest component of the vector.
-        ZYPHRYON_INLINE static Real32 HorizontalMax(ConstRef<Vector4> v)
+        ZYPHRYON_INLINE static Real32 HorizontalMax(ConstRef<Vector4> Vector)
         {
-            const __m128 T1 = _mm_max_ps(v.mRegister, _mm_movehl_ps(v.mRegister, v.mRegister));
+            const __m128 T1 = _mm_max_ps(Vector.mRegister, _mm_movehl_ps(Vector.mRegister, Vector.mRegister));
             const __m128 T2 = _mm_max_ps(T1, _mm_shuffle_ps(T1, T1, 0x55));
             return _mm_cvtss_f32(T2);
         }

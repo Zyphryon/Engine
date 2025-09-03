@@ -30,9 +30,6 @@ namespace Content
     {
     public:
 
-        /// \brief Ensures derived class can be destroyed polymorphically.
-        virtual ~Loader() = default;
-
         /// \brief Gets the list of file extensions this loader can decode.
         ///
         /// Extensions should be provided without a leading dot and in lowercase

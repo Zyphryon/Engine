@@ -152,14 +152,6 @@ namespace Content
         {
             return Iterator->second->Read(Key.GetPath());
         }
-
-        for (const auto & [_, Mount] : mMounts)
-        {
-            if (Blob Data = Mount->Read(Key.GetPath()); Data != nullptr)
-            {
-                return Move(Data);
-            }
-        }
         return Blob();
     }
 
@@ -198,7 +190,7 @@ namespace Content
 
         LOG_INFO("Content: I/O Thread initialized.");
 
-        while (! Token.stop_requested())
+        while (!Token.stop_requested())
         {
             ZYPHRYON_PROFILE;
 
@@ -251,7 +243,7 @@ namespace Content
         {
             ConstTracker<Loader> Loader = Iterator->second;
 
-            if (Blob File = Find(Key); File != nullptr)
+            if (Blob File = Find(Key); File)
             {
                 if (Loader->Load(* this, Scope, Move(File)))
                 {
@@ -321,7 +313,7 @@ namespace Content
 
     void Service::RegisterDefaultResources()
     {
-        AddMount("Engine://", Tracker<EmbeddedMount>::Create());
+        AddMount("Engine", Tracker<EmbeddedMount>::Create());
 
         if (IsClientMode())
         {
@@ -346,13 +338,7 @@ namespace Content
 #endif // ZYPHRYON_LOADER_GLTF
 
 #ifdef    ZYPHRYON_LOADER_EFFECT
-            Graphic::Capabilities Capabilities;
-
-            if (ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>())
-            {
-                Capabilities = Graphics->GetCapabilities();
-            }
-
+            Graphic::Capabilities Capabilities = GetService<Graphic::Service>()->GetCapabilities();
             AddLoader(Tracker<PipelineLoader>::Create(Capabilities.Backend, Capabilities.Language));
 #endif // ZYPHRYON_LOADER_EFFECT
         }

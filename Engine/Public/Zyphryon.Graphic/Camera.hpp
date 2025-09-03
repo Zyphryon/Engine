@@ -489,28 +489,28 @@ namespace Graphic
         /// \param Position The 3D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        Vector3 GetWorldCoordinates(ConstRef<Vector3> Translation, ConstRef<Viewport> Viewport) const;
+        Vector3 GetWorldCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const;
 
         /// \brief Transforms a screen-space coordinates into world-space position.
         ///
         /// \param Position The 2D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        Vector2 GetWorldCoordinates(ConstRef<Vector2> Translation, ConstRef<Viewport> Viewport) const;
+        Vector2 GetWorldCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const;
 
         /// \brief Transforms a world-space position into screen-space coordinates.
         ///
         /// \param Position The 3D point in world space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates and Z is in depth range.
-        Vector3 GetScreenCoordinates(ConstRef<Vector3> Translation, ConstRef<Viewport> Viewport) const;
+        Vector3 GetScreenCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const;
 
         /// \brief Transforms a world-space position into screen-space coordinates.
         ///
         /// \param Position The 2D point in world space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates.
-        Vector2 GetScreenCoordinates(ConstRef<Vector2> Translation, ConstRef<Viewport> Viewport) const;
+        Vector2 GetScreenCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const;
 
     private:
 

@@ -41,7 +41,7 @@ namespace Graphic
         // Creates the textures if it requires exclusive allocation on this host.
         for (ConstTracker<Texture> Texture : mTextures)
         {
-            if (Texture && Texture->HasPolicy(Content::Resource::Policy::Exclusive))
+            if (Texture && Texture->HasPolicy(Policy::Exclusive))
             {
                 Texture->Create(Host);
             }
@@ -58,7 +58,7 @@ namespace Graphic
         // Releases the textures if it requires exclusive allocation on this host.
         for (ConstTracker<Texture> Texture : mTextures)
         {
-            if (Texture && Texture->HasPolicy(Content::Resource::Policy::Exclusive))
+            if (Texture && Texture->HasPolicy(Policy::Exclusive))
             {
                 Texture->Delete(Host);
             }

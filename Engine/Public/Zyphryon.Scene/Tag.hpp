@@ -29,5 +29,5 @@ namespace Scene
     };
 
     /// \brief Tag component to exclude entities from serialization.
-    using Transient = Tag<Hash("Transient")>;
+    using Transient = Tag<HashText("Transient")>;
 }

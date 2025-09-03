@@ -364,7 +364,15 @@ inline namespace Math
         ///
         /// \param Other The matrix to compare to.
         /// \return `true` if the matrices are not equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Matrix4x4> Matrix) const = default;
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Matrix4x4> Other) const = default;
+
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE UInt Hash() const
+        {
+            return HashCombine(mColumns[0], mColumns[1], mColumns[2], mColumns[3]);
+        }
 
         /// \brief Serializes the state of the object to or from the specified archive.
         ///

@@ -35,7 +35,7 @@ inline namespace Base
     /// \tparam Type The type to remove the reference from.
     /// \return The unqualified type (e.g., `int&` → `int`, `int&&` → `int`).
     template<typename Type>
-    using Unref       = std::remove_reference_t<Type>;
+    using UnRef       = std::remove_reference_t<Type>;
 
     /// \brief Checks if \a Type and \a Types are equal.
     template<class Type, class ...Types>

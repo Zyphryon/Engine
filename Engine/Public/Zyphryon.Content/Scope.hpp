@@ -29,7 +29,7 @@ namespace Content
     public:
 
         /// \brief Maximum number of dependencies tracked by a single scope.
-        constexpr static UInt32 kMaxDependencies = 14;
+        constexpr static UInt32 kMaxDependencies = 12;
 
     public:
 

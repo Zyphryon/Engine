@@ -166,7 +166,7 @@ namespace Content
         /// \return The expanded absolute URI.
         ZYPHRYON_INLINE constexpr static Uri Expand(ConstRef<Uri> Relative, ConstRef<Uri> Parent)
         {
-            if (Relative.GetSchema() == "$")
+            if (!Relative.HasSchema())
             {
                 return Uri(Format("{}/{}", Parent.GetUrlWithoutFile(), Relative.GetPath()));
             }

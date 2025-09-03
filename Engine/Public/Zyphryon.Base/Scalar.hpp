@@ -34,7 +34,7 @@ inline namespace Base
 
     /// \brief Relative epsilon for floating-point comparisons.
     template<typename Type>
-    inline constexpr Type kSmallerEpsilon =
+    inline constexpr Type kRelativeEpsilon =
         IsEqual<Type, Real32> ? Type(1e-5f) :
         IsEqual<Type, Real64> ? Type(1e-12) :
         Type(0);
@@ -361,11 +361,11 @@ inline namespace Base
     /// 
     /// \param First    Left-hand value.
     /// \param Second   Right-hand value.
-    /// \param Relative Relative tolerance (defaults to `kSmallerEpsilon<Type>`; must be ≥ 0).
+    /// \param Relative Relative tolerance (defaults to `kRelativeEpsilon<Type>`; must be ≥ 0).
     /// \param Absolute Absolute tolerance (defaults to `kEpsilon<Type>`; must be ≥ 0).
     /// \return `true` if the values are considered almost equal; otherwise `false`.
     template<typename Type>
-    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Relative = kSmallerEpsilon<Type>, Type Absolute = kEpsilon<Type>)
+    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Relative = kRelativeEpsilon<Type>, Type Absolute = kEpsilon<Type>)
     {
         if constexpr (IsReal<Type>)
         {

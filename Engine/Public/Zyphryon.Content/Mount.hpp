@@ -27,9 +27,6 @@ namespace Content
     {
     public:
 
-        /// \brief Ensures derived mount implementations can be destroyed polymorphically.
-        virtual ~Mount() = default;
-
         /// \brief Reads all bytes from a file located at the specified path.
         ///
         /// \param Path Path to the file within this mount.

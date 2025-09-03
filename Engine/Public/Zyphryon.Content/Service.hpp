@@ -188,7 +188,7 @@ namespace Content
         /// \param Key    The URI that may be relative and require expansion.
         /// \param Parent Optional parent scope providing context.
         /// \return The absolute URI.
-        Uri Resolve(ConstRef<Uri> Key, ConstPtr<Scope> Parent)
+        ZYPHRYON_INLINE static constexpr Uri Resolve(ConstRef<Uri> Key, ConstPtr<Scope> Parent)
         {
             return (Parent ? Uri::Expand(Key, Parent->GetResource()->GetKey()) : Key);
         }

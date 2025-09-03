@@ -88,7 +88,7 @@ namespace Graphic
             Blob   Data;
 
             /// GPU-side buffer handle.
-            Object Buffer;
+            Object Buffer = 0;
         };
 
     public:

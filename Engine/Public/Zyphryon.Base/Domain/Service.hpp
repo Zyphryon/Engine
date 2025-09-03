@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "System.hpp"
+#include "Zyphryon.Base/Memory/Trackable.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -37,7 +38,7 @@ inline namespace Base
         /// \brief Constructs a service with a reference to its managing system and a unique identifier.
         /// 
         /// \param Host The parent system managing this service.
-        /// \param Id   The unique identifier of this service (typically a type hash).
+        /// \param Guid The unique identifier of this service (typically a type hash).
         ZYPHRYON_INLINE Service(Ref<Host> Host, UInt64 Guid)
             : mHost { Host },
               mGuid { Guid }

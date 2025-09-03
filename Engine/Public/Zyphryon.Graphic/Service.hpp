@@ -47,7 +47,7 @@ namespace Graphic
         /// \brief Initializes the rendering backend.
         ///
         /// \param Backend   Rendering backend to initialize.
-        /// \param Window    Native window handle for presentation.
+        /// \param Swapchain Native window handle for presentation.
         /// \param Width     Initial surface width in pixels.
         /// \param Height    Initial surface height in pixels.
         /// \param Samples   Initial multisampling level.

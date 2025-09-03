@@ -18,7 +18,7 @@
 
 namespace Graphic
 {
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Render2D::Render2D(Ref<Service::Host> Host)
@@ -97,28 +97,6 @@ namespace Graphic
         Command.Edges[1] = { Origin.GetRight(), Origin.GetBottom(), Depth };
         Command.Edges[2] = { Origin.GetRight(), Origin.GetTop(),    Depth };
         Command.Edges[3] = { Origin.GetLeft(),  Origin.GetTop(),    Depth };
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Render2D::DrawTerrain(ConstRef<Vector3> WorldPosition, ConstRef<Vector2> Size,
-                               ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material)
-    {
-        Ref<Command> Command = Create(Type::Sprite, GetUniqueKey(Material->GetKind(), Type::Sprite, WorldPosition.GetY(), Material->GetID()));
-        Command.Material = Material;
-        Command.Tint = Tint;
-
-        // Create a flat quad on the XZ plane (Y is constant for terrain)
-        float halfWidth = Size.GetX() / 2.0f;
-        float halfDepth = Size.GetY() / 2.0f;
-
-        Command.Edges[0] = { WorldPosition.GetX() - halfWidth, WorldPosition.GetY(), WorldPosition.GetZ() - halfDepth }; // Back-left
-        Command.Edges[1] = { WorldPosition.GetX() + halfWidth, WorldPosition.GetY(), WorldPosition.GetZ() - halfDepth }; // Back-right
-        Command.Edges[2] = { WorldPosition.GetX() + halfWidth, WorldPosition.GetY(), WorldPosition.GetZ() + halfDepth }; // Front-right
-        Command.Edges[3] = { WorldPosition.GetX() - halfWidth, WorldPosition.GetY(), WorldPosition.GetZ() + halfDepth }; // Front-left
-
-        Command.Uv = Uv;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

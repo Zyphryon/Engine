@@ -22,9 +22,9 @@
 [Program.Vertex]
 
     Entry           = "vertex"
-    Filename        = "$://Primitive.shader"
+    Filename        = "Primitive.shader"
 
 [Program.Fragment]
 
     Entry           = "fragment"
-    Filename        = "$://Primitive.shader"
+    Filename        = "Primitive.shader"

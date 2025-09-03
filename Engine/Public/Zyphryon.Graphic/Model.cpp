@@ -43,7 +43,7 @@ namespace Graphic
         Bool Result = true;
 
         // Creates the mesh if it requires exclusive allocation on this host.
-        if (mMesh->HasPolicy(Content::Resource::Policy::Exclusive))
+        if (mMesh->HasPolicy(Policy::Exclusive))
         {
             Result &= mMesh->Create(Host);
         }
@@ -51,7 +51,7 @@ namespace Graphic
         // Creates material resources if it requires exclusive allocation on this host.
         for (ConstTracker<Material> Material : mPalette)
         {
-            if (Material->HasPolicy(Content::Resource::Policy::Exclusive))
+            if (Material->HasPolicy(Policy::Exclusive))
             {
                 Result &= Material->Create(Host);
             }
@@ -66,7 +66,7 @@ namespace Graphic
     void Model::OnDelete(Ref<Service::Host> Host)
     {
         // Releases the mesh if it requires exclusive allocation on this host.
-        if (mMesh->HasPolicy(Content::Resource::Policy::Exclusive))
+        if (mMesh->HasPolicy(Policy::Exclusive))
         {
             mMesh->Delete(Host);
         }
@@ -74,7 +74,7 @@ namespace Graphic
         // Releases material resources if it requires exclusive allocation on this host.
         for (ConstTracker<Material> Material : mPalette)
         {
-            if (Material->HasPolicy(Content::Resource::Policy::Exclusive))
+            if (Material->HasPolicy(Policy::Exclusive))
             {
                 Material->Delete(Host);
             }

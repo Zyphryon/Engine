@@ -25,6 +25,7 @@ namespace Graphic
     Texture::Texture(AnyRef<Content::Uri> Key)
         : AbstractResource(Move(Key)),
           mID      { 0 },
+          mAccess  { Access::Device },
           mFormat  { TextureFormat::RGBA8UInt },
           mLayout  { TextureLayout::Source },
           mWidth   { 0 },

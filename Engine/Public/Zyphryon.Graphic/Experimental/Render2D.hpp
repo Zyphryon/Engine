@@ -79,19 +79,14 @@ namespace Graphic
             // Hash function
             UInt64 Hash() const
             {
-                UInt64 Seed = 0;
-
-                Base::Hash(Seed, uRounded);
-                Base::Hash(Seed, uInvThreshold);
-                Base::Hash(Seed, uOutlineBias);
-                Base::Hash(Seed, uOutlineWidthAbsolute);
-                Base::Hash(Seed, uOutlineWidthRelative);
-                Base::Hash(Seed, uOutlineBlur);
-                Base::Hash(Seed, uOuterColor.GetRed());
-                Base::Hash(Seed, uOuterColor.GetGreen());
-                Base::Hash(Seed, uOuterColor.GetBlue());
-                Base::Hash(Seed, uOuterColor.GetAlpha());
-                return Seed;
+                return HashCombine(
+                    uRounded,
+                    uInvThreshold,
+                    uOutlineBias,
+                    uOutlineWidthAbsolute,
+                    uOutlineWidthRelative,
+                    uOutlineBlur,
+                    uOuterColor);
             }
         };
 
@@ -131,10 +126,6 @@ namespace Graphic
 
         // -=(Undocumented)=-
         void DrawRectFilled(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint);
-
-        // -=(Undocumented)=-
-        void DrawTerrain(ConstRef<Vector3> WorldPosition, ConstRef<Vector2> Size,
-                         ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
 
         // -=(Undocumented)=-
         void DrawSprite(ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
@@ -252,6 +243,7 @@ namespace Graphic
         // -=(Undocumented)=-
         void WriteSprites(UInt32 Offset, UInt32 Count, Ref<Pipeline> Pipeline, Ref<Material> Material);
 
+        // -=(Undocumented)=-
         void PushFontData();
 
     private:

@@ -14,7 +14,6 @@
 
 #include "Zyphryon.Audio/Driver.hpp"
 #include <FAudio.h>
-#include <FAudioFX.h>
 #include <F3DAudio.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

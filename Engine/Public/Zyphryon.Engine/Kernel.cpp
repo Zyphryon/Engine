@@ -174,7 +174,7 @@ namespace Engine
                 Samples = Graphic::Samples::X8;
                 break;
             default:
-                LOG_WARNING("{} invalid samples count, default to 1", Properties.GetWindowSamples());
+                LOG_WARNING("{} invalid samples count, fallback to one", Properties.GetWindowSamples());
                 break;
         }
 

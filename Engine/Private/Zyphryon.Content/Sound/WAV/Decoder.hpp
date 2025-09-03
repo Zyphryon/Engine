@@ -27,7 +27,7 @@ namespace Audio
 
         /// \brief Constructs a WAV decoder.
         /// 
-        /// \param File   The WAV audio data (uncompressed PCM frames).
+        /// \param Frames The WAV audio data (uncompressed PCM frames).
         /// \param Schema The WAV audio schema.
         WAVDecoder(ConstRef<Blob> Frames, ConstRef<Schema> Schema);
 
