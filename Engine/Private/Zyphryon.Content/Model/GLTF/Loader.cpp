@@ -26,7 +26,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Graphic::VertexSemantic As(ConstText Name)
+    Graphic::VertexSemantic As(ConstStr8 Name)
     {
         static TextTable<Graphic::VertexSemantic> kMapping
         {
@@ -123,7 +123,7 @@ namespace Content
         tinygltf::Model    GLTFModel;
 
         // Parse the model asset using TinyGLTF
-        Text Error;
+        Str8 Error;
 
         const Bool Result = GLTFLoader.LoadBinaryFromMemory(
             &GLTFModel, &Error, nullptr, Data.GetData<Byte>(), Data.GetSize());

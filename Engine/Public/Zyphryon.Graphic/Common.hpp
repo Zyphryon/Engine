@@ -410,7 +410,7 @@ namespace Graphic
     struct Adapter final
     {
         /// The human-readable name of the graphics adapter.
-        Text   Description;
+        Str8   Description;
 
         /// The dedicated video memory in megabytes (MB).
         UInt32 DedicatedMemoryInMBs;

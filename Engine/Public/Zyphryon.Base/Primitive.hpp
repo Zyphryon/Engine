@@ -98,10 +98,10 @@ inline namespace Base
     using ConstSpan = Span<const Type>;
 
     /// \brief An owning UTF-8 encoded string used for textual storage and manipulation.
-    using Text      = std::string;
+    using Str8      = std::string;
 
     /// \brief A non-owning, read-only view of a UTF-8 encoded string.
-    using ConstText = std::string_view;
+    using ConstStr8 = std::string_view;
 
     /// \brief Alias for a fixed-size heterogeneous collection of values.
     template<typename... Type>

@@ -38,7 +38,7 @@ namespace Log
     /// \brief Initializes the logging system with the specified output file.
     /// 
     /// \param Filename The output file path for log messages.
-    void Initialize(ConstText Filename);
+    void Initialize(ConstStr8 Filename);
 
     /// \brief Shuts down the logging system.
     void Shutdown();

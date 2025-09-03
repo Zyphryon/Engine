@@ -166,8 +166,8 @@ namespace Content
         if (!Section.IsEmpty())
         {
             const Blob         Data     = Service.Find(Section.GetString("Filename"), Scope);
-            const ConstText    Code     = Data.GetText();
-            const ConstText    Entry    = Section.GetString("Entry", "main");
+            const ConstStr8    Code     = Data.GetText();
+            const ConstStr8    Entry    = Section.GetString("Entry", "main");
             const TOMLArray    Defines  = Section.GetArray("Defines");
 
             if (Code.empty())
@@ -181,12 +181,12 @@ namespace Content
 
             for (UInt32 Index = 0, Limit = Defines.GetSize(); Index < Limit; ++Index)
             {
-                const ConstText Definition = Defines.GetString(Index);
+                const ConstStr8 Definition = Defines.GetString(Index);
                 const UInt Delimiter       = Definition.find_first_of('=');
 
                 Properties.emplace_back(
-                    Delimiter != ConstText::npos ? Definition.substr(0, Delimiter) : Definition,
-                    Delimiter != ConstText::npos ? Definition.substr(Delimiter) : "true");
+                    Delimiter != ConstStr8::npos ? Definition.substr(0, Delimiter) : Definition,
+                    Delimiter != ConstStr8::npos ? Definition.substr(Delimiter) : "true");
             }
 
 #ifdef    ZYPHRYON_PLATFORM_WINDOWS
@@ -199,7 +199,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob PipelineLoader::CompileDXBC(ConstText Entry, ConstText Code, Ref<Vector<Property>> Properties, Graphic::Stage Stage)
+    Blob PipelineLoader::CompileDXBC(ConstStr8 Entry, ConstStr8 Code, Ref<Vector<Property>> Properties, Graphic::Stage Stage)
     {
         Blob Compilation;
 
@@ -216,7 +216,7 @@ namespace Content
         Ptr<ID3DBlob> Error    = nullptr;
         Ptr<ID3DBlob> Bytecode = nullptr;
 
-        constexpr ConstText kShaderProfiles[][3] = {
+        constexpr ConstStr8 kShaderProfiles[][3] = {
             { "vs_4_0_level_9_1", "ps_4_0_level_9_1", ""       },
             { "vs_4_0_level_9_1", "ps_4_0_level_9_1", ""       },
             { "vs_4_0_level_9_3", "ps_4_0_level_9_3", ""       },
@@ -225,7 +225,7 @@ namespace Content
             { "vs_6_0",           "ps_6_0",           "gs_6_0" }
         };
 
-        ConstRef<ConstText> Profile = kShaderProfiles[Enum::Cast(mTarget)][Enum::Cast(Stage)];
+        ConstRef<ConstStr8> Profile = kShaderProfiles[Enum::Cast(mTarget)][Enum::Cast(Stage)];
 
         if (const pD3DCompile D3DCompile = GetD3DCompileFunction())
         {

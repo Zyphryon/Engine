@@ -29,7 +29,7 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Device::Device(UInt Handle, ConstText Title, UInt16 Width, UInt16 Height, Bool Fullscreen, Bool Borderless)
+    Device::Device(UInt Handle, ConstStr8 Title, UInt16 Width, UInt16 Height, Bool Fullscreen, Bool Borderless)
         : mHandle { nullptr }
     {
         const SDL_PropertiesID Config = SDL_CreateProperties();
@@ -43,6 +43,7 @@ namespace Engine
         SDL_SetBooleanProperty(Config, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, true);
         SDL_SetBooleanProperty(Config, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
         SDL_SetBooleanProperty(Config, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, !Borderless);
+        SDL_SetBooleanProperty(Config, SDL_PROP_WINDOW_CREATE_HIGH_PIXEL_DENSITY_BOOLEAN, true);
 
 #ifdef     SDL_PLATFORM_WIN32
 

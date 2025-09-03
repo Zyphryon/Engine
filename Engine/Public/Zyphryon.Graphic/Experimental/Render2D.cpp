@@ -132,7 +132,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Render2D::DrawFont(ConstRef<Rect> Origin, Real32 Depth, ConstText Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
+    void Render2D::DrawFont(ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
     {
         if (!Font->HasCompleted())   // TODO: Prevent checking this per frame.
         {
@@ -186,7 +186,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Render2D::DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstText Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
+    void Render2D::DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
     {
         if (!Font->HasCompleted())   // TODO: Prevent checking this per frame.
         {

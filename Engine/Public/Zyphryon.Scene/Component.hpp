@@ -523,7 +523,7 @@ namespace Scene
         /// \brief Sets the name of this component.
         ///
         /// \param Name The new name.
-        ZYPHRYON_INLINE void SetName(ConstText Name)
+        ZYPHRYON_INLINE void SetName(ConstStr8 Name)
         {
             mHandle.set_name(Name.data());
         }
@@ -531,10 +531,10 @@ namespace Scene
         /// \brief Gets the name of this component.
         ///
         /// \return The component’s name.
-        ZYPHRYON_INLINE ConstText GetName() const
+        ZYPHRYON_INLINE ConstStr8 GetName() const
         {
             const flecs::string_view Name = mHandle.name();
-            return ConstText(Name.c_str(), Name.size());
+            return ConstStr8(Name.c_str(), Name.size());
         }
 
         /// \brief Gets the first element of a pair relation.

@@ -34,7 +34,7 @@ namespace Audio
         ~FAudioDriver() override;
 
         /// \copydoc Driver::Initialize
-        Bool Initialize(ConstText Device, UInt8 Submixes) override;
+        Bool Initialize(ConstStr8 Device, UInt8 Submixes) override;
 
         /// \copydoc Driver::GetCapabilities
         ConstRef<Capabilities> GetCapabilities() const override;
@@ -149,7 +149,7 @@ namespace Audio
         ///
         /// \param Device The name of the preferred audio device to search for.
         /// \return The index of the selected audio device in the device list.
-        UInt32 FindDeviceAndLoadCapabilities(ConstText Device);
+        UInt32 FindDeviceAndLoadCapabilities(ConstStr8 Device);
 
         /// \brief Retrieves a compatible source voice from the pool or creates a new one.
         ///

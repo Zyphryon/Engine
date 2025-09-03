@@ -282,7 +282,7 @@ inline namespace Base
         /// \brief Serializes a text string.
         /// 
         /// \param Value Reference to the value.
-        ZYPHRYON_INLINE void SerializeText(Ref<Text> Value)
+        ZYPHRYON_INLINE void SerializeText(Ref<Str8> Value)
         {
             if constexpr (IsReader)
             {

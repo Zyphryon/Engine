@@ -993,9 +993,9 @@ namespace Graphic
 
             // Apply the scissor rect
             const Bool ScissorDirty = (OldestSubmission.Scissor.X      != NewestSubmission.Scissor.X)
-                                      || (OldestSubmission.Scissor.Y      != NewestSubmission.Scissor.Y)
-                                      || (OldestSubmission.Scissor.Width  != NewestSubmission.Scissor.Width)
-                                      || (OldestSubmission.Scissor.Height != NewestSubmission.Scissor.Height);
+                                   || (OldestSubmission.Scissor.Y      != NewestSubmission.Scissor.Y)
+                                   || (OldestSubmission.Scissor.Width  != NewestSubmission.Scissor.Width)
+                                   || (OldestSubmission.Scissor.Height != NewestSubmission.Scissor.Height);
 
             if (ScissorDirty)
             {

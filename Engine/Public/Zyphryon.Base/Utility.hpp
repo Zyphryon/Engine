@@ -80,7 +80,7 @@ inline namespace Base
     /// \param Block   The string data to hash.
     /// \param Counter Initial hash value (defaults to FNV offset basis).
     /// \return The 64-bit FNV-1a hash.
-    constexpr auto HashText(ConstText Block, UInt64 Counter = 14695981039346656037ull)
+    constexpr auto HashText(ConstStr8 Block, UInt64 Counter = 14695981039346656037ull)
     {
         for (const Char Character : Block)
         {
@@ -158,14 +158,14 @@ inline namespace Base
     /// \param Parameters The parameters to substitute into the format string.
     /// \return A formatted UTF-8 string.
     template<typename... Arguments>
-    auto Format(ConstText Format, AnyRef<Arguments>... Parameters)
+    auto Format(ConstStr8 Format, AnyRef<Arguments>... Parameters)
     {
         static thread_local std::array<Char, 2048> Buffer;
 
         const auto Result = std::vformat_to(Buffer.begin(), Format, std::make_format_args(Parameters...));
         (* Result) = '\0';
 
-        return ConstText(Buffer.data(), std::distance(Buffer.begin(), Result));
+        return ConstStr8(Buffer.data(), std::distance(Buffer.begin(), Result));
     }
 
     /// \brief Binds the first N arguments of a callable and returns a new invocable.

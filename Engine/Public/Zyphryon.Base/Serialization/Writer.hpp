@@ -255,7 +255,7 @@ inline namespace Base
         /// \brief Writes a string prefixed with its character count.
         ///
         /// \param Value The string to write.
-        ZYPHRYON_INLINE void WriteText(ConstText Value)
+        ZYPHRYON_INLINE void WriteText(ConstStr8 Value)
         {
             WriteInt(Value.size());
 

@@ -46,7 +46,7 @@ namespace Engine
         /// \brief Sets the window title string.
         ///
         /// \param Title Window title as UTF-8 text.
-        ZYPHRYON_INLINE void SetWindowTitle(ConstText Title)
+        ZYPHRYON_INLINE void SetWindowTitle(ConstStr8 Title)
         {
             mWindowTitle = Title;
         }
@@ -54,7 +54,7 @@ namespace Engine
         /// \brief Returns the current window title.
         ///
         /// \return Window title as UTF-8 text.
-        ZYPHRYON_INLINE ConstText GetWindowTitle() const
+        ZYPHRYON_INLINE ConstStr8 GetWindowTitle() const
         {
             return mWindowTitle;
         }
@@ -142,7 +142,7 @@ namespace Engine
         /// \brief Sets the preferred audio output device.
         ///
         /// \param Device Identifier or name of the audio device.
-        ZYPHRYON_INLINE void SetAudioDevice(ConstText Device)
+        ZYPHRYON_INLINE void SetAudioDevice(ConstStr8 Device)
         {
             mAudioDevice = Device;
         }
@@ -150,7 +150,7 @@ namespace Engine
         /// \brief Returns the selected audio device.
         ///
         /// \return Identifier or name of the audio device.
-        ZYPHRYON_INLINE ConstText GetAudioDevice() const
+        ZYPHRYON_INLINE ConstStr8 GetAudioDevice() const
         {
             return mAudioDevice;
         }
@@ -158,7 +158,7 @@ namespace Engine
         /// \brief Sets the name of the graphics API driver.
         ///
         /// \param Driver Driver name or backend (e.g., "Direct3D11", "OpenGL").
-        ZYPHRYON_INLINE void SetVideoDriver(ConstText Driver)
+        ZYPHRYON_INLINE void SetVideoDriver(ConstStr8 Driver)
         {
             mVideoDriver = Driver;
         }
@@ -166,7 +166,7 @@ namespace Engine
         /// \brief Returns the active graphics driver.
         ///
         /// \return Driver name (e.g., "Direct3D11", "OpenGL").
-        ZYPHRYON_INLINE ConstText GetVideoDriver() const
+        ZYPHRYON_INLINE ConstStr8 GetVideoDriver() const
         {
             return mVideoDriver;
         }
@@ -174,7 +174,7 @@ namespace Engine
         /// \brief Sets the GPU or video device to be used.
         ///
         /// \param Device Identifier of the video device.
-        ZYPHRYON_INLINE void SetVideoDevice(ConstText Device)
+        ZYPHRYON_INLINE void SetVideoDevice(ConstStr8 Device)
         {
             mVideoDevice = Device;
         }
@@ -182,7 +182,7 @@ namespace Engine
         /// \brief Returns the selected video device.
         ///
         /// \return Identifier of the video device.
-        ZYPHRYON_INLINE ConstText GetVideoDevice() const
+        ZYPHRYON_INLINE ConstStr8 GetVideoDevice() const
         {
             return mVideoDevice;
         }
@@ -193,14 +193,14 @@ namespace Engine
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         UInt   mWindowHandle;
-        Text   mWindowTitle;
+        Str8   mWindowTitle;
         UInt16 mWindowWidth;
         UInt16 mWindowHeight;
         UInt8  mWindowSamples;
         Bool   mWindowFullscreen;
         Bool   mWindowBorderless;
-        Text   mAudioDevice;
-        Text   mVideoDriver;
-        Text   mVideoDevice;
+        Str8   mAudioDevice;
+        Str8   mVideoDriver;
+        Str8   mVideoDevice;
     };
 }

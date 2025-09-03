@@ -53,7 +53,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    TOMLSection TOMLSection::GetSection(ConstText Key, Bool CreateIfNeeded) const
+    TOMLSection TOMLSection::GetSection(ConstStr8 Key, Bool CreateIfNeeded) const
     {
         Ptr<toml::table> Table = mTable->get_as<toml::table>(Key);
 
@@ -67,7 +67,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    TOMLSection TOMLSection::SetSection(ConstText Key)
+    TOMLSection TOMLSection::SetSection(ConstStr8 Key)
     {
         Ptr<toml::table> Table = mTable->emplace<toml::table>(Key).first->second.as_table();
         return TOMLSection(Table);
@@ -76,7 +76,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    TOMLArray TOMLSection::GetArray(ConstText Key, Bool CreateIfNeeded) const
+    TOMLArray TOMLSection::GetArray(ConstStr8 Key, Bool CreateIfNeeded) const
     {
         Ptr<toml::array> Array = mTable->get_as<toml::array>(Key);
 
@@ -90,7 +90,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    TOMLArray TOMLSection::SetArray(ConstText Key)
+    TOMLArray TOMLSection::SetArray(ConstStr8 Key)
     {
         Ptr<toml::array> Array = mTable->emplace<toml::array>(Key).first->second.as_array();
         return TOMLArray(Array);
@@ -99,7 +99,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void TOMLSection::SetBool(ConstText Key, Bool Value)
+    void TOMLSection::SetBool(ConstStr8 Key, Bool Value)
     {
         mTable->insert_or_assign(Key, Value);
     }
@@ -107,7 +107,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool TOMLSection::GetBool(ConstText Key, Bool Default) const
+    Bool TOMLSection::GetBool(ConstStr8 Key, Bool Default) const
     {
         return (* mTable)[Key].value_or(Default);
     }
@@ -115,7 +115,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void TOMLSection::SetInteger(ConstText Key, SInt64 Value)
+    void TOMLSection::SetInteger(ConstStr8 Key, SInt64 Value)
     {
         mTable->insert_or_assign(Key, Value);
     }
@@ -123,7 +123,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    SInt64 TOMLSection::GetInteger(ConstText Key, SInt64 Default) const
+    SInt64 TOMLSection::GetInteger(ConstStr8 Key, SInt64 Default) const
     {
         return (* mTable)[Key].value_or(Default);
     }
@@ -131,7 +131,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void TOMLSection::SetReal(ConstText Key, Real64 Value)
+    void TOMLSection::SetReal(ConstStr8 Key, Real64 Value)
     {
         mTable->insert_or_assign(Key, Value);
     }
@@ -139,7 +139,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real64 TOMLSection::GetReal(ConstText Key, Real64 Default) const
+    Real64 TOMLSection::GetReal(ConstStr8 Key, Real64 Default) const
     {
         return (* mTable)[Key].value_or(Default);
     }
@@ -147,7 +147,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void TOMLSection::SetString(ConstText Key, ConstText Value)
+    void TOMLSection::SetString(ConstStr8 Key, ConstStr8 Value)
     {
         mTable->insert_or_assign(Key, Value);
     }
@@ -155,7 +155,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ConstText TOMLSection::GetString(ConstText Key, ConstText Default) const
+    ConstStr8 TOMLSection::GetString(ConstStr8 Key, ConstStr8 Default) const
     {
         return (* mTable)[Key].value_or(Default);
     }

@@ -36,7 +36,7 @@ namespace Engine
         /// \param Height     Height of the window in pixels.
         /// \param Fullscreen `true` to start in fullscreen mode, otherwise `false`.
         /// \param Borderless `true` to remove window borders, otherwise `false`.
-        Device(UInt Handle, ConstText Title, UInt16 Width, UInt16 Height, Bool Fullscreen, Bool Borderless);
+        Device(UInt Handle, ConstStr8 Title, UInt16 Width, UInt16 Height, Bool Fullscreen, Bool Borderless);
 
         /// \brief Destroys the window and releases its resources.
         ~Device();
@@ -52,7 +52,7 @@ namespace Engine
         /// \brief Sets the window title.
         ///
         /// \param Title UTF-8 title string.
-        ZYPHRYON_INLINE void SetTitle(ConstText Title)
+        ZYPHRYON_INLINE void SetTitle(ConstStr8 Title)
         {
             SDL_SetWindowTitle(mHandle, Title.data());
         }
@@ -60,7 +60,7 @@ namespace Engine
         /// \brief Returns the current window title.
         ///
         /// \return UTF-8 title string.
-        ZYPHRYON_INLINE ConstText GetTitle() const
+        ZYPHRYON_INLINE ConstStr8 GetTitle() const
         {
             return SDL_GetWindowTitle(mHandle);
         }
@@ -172,7 +172,7 @@ namespace Engine
         /// \brief Sets the clipboard text.
         ///
         /// \param Text UTF-8 string to copy to clipboard.
-        ZYPHRYON_INLINE void SetClipboard(ConstText Text)
+        ZYPHRYON_INLINE void SetClipboard(ConstStr8 Text)
         {
             SDL_SetClipboardText(Text.data());
         }
@@ -180,7 +180,7 @@ namespace Engine
         /// \brief Returns the current clipboard text.
         ///
         /// \return UTF-8 clipboard contents.
-        ZYPHRYON_INLINE Text GetClipboard() const
+        ZYPHRYON_INLINE Str8 GetClipboard() const
         {
             return SDL_GetClipboardText();
         }

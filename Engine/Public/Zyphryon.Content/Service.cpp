@@ -113,7 +113,7 @@ namespace Content
 
     void Service::AddLoader(ConstTracker<Loader> Loader)
     {
-        for (const ConstText Extension : Loader->GetExtensions())
+        for (const ConstStr8 Extension : Loader->GetExtensions())
         {
             mLoaders.try_emplace(Extension, Loader);
         }
@@ -122,7 +122,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::RemoveLoader(ConstText Extension)
+    void Service::RemoveLoader(ConstStr8 Extension)
     {
         mLoaders.erase(Extension);
     }
@@ -130,7 +130,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::AddMount(ConstText Schema, ConstTracker<Mount> Mount)
+    void Service::AddMount(ConstStr8 Schema, ConstTracker<Mount> Mount)
     {
         mMounts.try_emplace(Schema, Mount);
     }
@@ -138,7 +138,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::RemoveMount(ConstText Schema)
+    void Service::RemoveMount(ConstStr8 Schema)
     {
         mMounts.erase(Schema);
     }

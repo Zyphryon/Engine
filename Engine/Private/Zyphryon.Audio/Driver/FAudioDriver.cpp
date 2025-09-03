@@ -107,7 +107,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool FAudioDriver::Initialize(ConstText Device, UInt8 Submixes)
+    Bool FAudioDriver::Initialize(ConstStr8 Device, UInt8 Submixes)
     {
         if (FAudioCreate(&mDevice, 0, FAUDIO_DEFAULT_PROCESSOR))
         {
@@ -405,7 +405,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 FAudioDriver::FindDeviceAndLoadCapabilities(ConstText Device)
+    UInt32 FAudioDriver::FindDeviceAndLoadCapabilities(ConstStr8 Device)
     {
         UInt32 Count = 0;
         FAudio_GetDeviceCount(mDevice, & Count);

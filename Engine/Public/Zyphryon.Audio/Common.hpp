@@ -68,7 +68,7 @@ namespace Audio
     struct Adapter final
     {
         /// Human-readable name of the audio adapter.
-        Text Name;
+        Str8 Name;
     };
 
     /// \brief Describes the capabilities and state of the audio backend.
@@ -78,7 +78,7 @@ namespace Audio
         Backend         Backend;
 
         /// Name of the currently selected audio device.
-        Text            Device;
+        Str8            Device;
 
         /// List of available audio adapters.
         Vector<Adapter> Adapters;

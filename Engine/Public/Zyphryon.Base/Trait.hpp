@@ -59,7 +59,7 @@ inline namespace Base
 
     /// \brief Checks if \a Type is a text.
     template<class Type>
-    concept IsText    = IsEqual<Type, Text, ConstText>;
+    concept IsText    = IsEqual<Type, Str8, ConstStr8>;
 
     /// \brief Checks if \a Type is a pointer.
     template<class Type>

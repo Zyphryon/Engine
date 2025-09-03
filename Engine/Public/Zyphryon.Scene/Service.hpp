@@ -61,7 +61,7 @@ namespace Scene
         /// \param ID      Specifies the identifier of the component (defaults to the type’s symbol name).
         /// \return The component object associated with the type.
         template<typename Target>
-        ZYPHRYON_INLINE Component<Target> RegisterComponent(ConstText ID = flecs::_::symbol_name<Target>())
+        ZYPHRYON_INLINE Component<Target> RegisterComponent(ConstStr8 ID = flecs::_::symbol_name<Target>())
         {
             return Component<Target>(mWorld.template component<Target>(ID.data()));
         }
@@ -100,7 +100,7 @@ namespace Scene
         ///
         /// \param Name Specifies the entity name.
         /// \return The entity object if valid and alive, otherwise an empty entity.
-        ZYPHRYON_INLINE Entity GetEntity(ConstText Name) const
+        ZYPHRYON_INLINE Entity GetEntity(ConstStr8 Name) const
         {
             const Entity::Handle Handle = mWorld.lookup(Name.data());
             return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
@@ -123,7 +123,7 @@ namespace Scene
         /// \param Name The query name (can be empty).
         /// \return A query builder object.
         template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateQuery(ConstText Name = "") const
+        ZYPHRYON_INLINE auto CreateQuery(ConstStr8 Name = "") const
         {
             return mWorld.template query_builder<Components...>(Name.data());
         }
@@ -151,7 +151,7 @@ namespace Scene
         /// \param Name The observer name (can be empty).
         /// \return An observer object.
         template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateObserver(ConstText Name = "")
+        ZYPHRYON_INLINE auto CreateObserver(ConstStr8 Name = "")
         {
             return mWorld.template observer<Components...>(Name.data());
         }
@@ -161,7 +161,7 @@ namespace Scene
         /// \param Name The system name (can be empty).
         /// \return A system object.
         template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateSystem(ConstText Name = "")
+        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name = "")
         {
             return mWorld.template system<Components...>(Name.data());
         }

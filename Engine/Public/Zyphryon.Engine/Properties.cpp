@@ -21,7 +21,7 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    constexpr ConstText kDefaultTitle   = "Zyphryon Engine";
+    constexpr ConstStr8 kDefaultTitle   = "Zyphryon Engine";
     constexpr UInt      kDefaultWidth   = 1024;
     constexpr UInt      kDefaultHeight  = 768;
 

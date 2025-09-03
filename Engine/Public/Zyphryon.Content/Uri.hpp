@@ -31,7 +31,7 @@ namespace Content
         /// \brief Constructs a URI from a text string.
         ///
         /// \param Url The full URI string to store.
-        ZYPHRYON_INLINE constexpr Uri(AnyRef<Text> Url)
+        ZYPHRYON_INLINE constexpr Uri(AnyRef<Str8> Url)
             : mUrl { Move(Url) }
         {
         }
@@ -39,7 +39,7 @@ namespace Content
         /// \brief Constructs a URI from a constant string view.
         ///
         /// \param Url The full URI string to store.
-        ZYPHRYON_INLINE constexpr Uri(ConstText Url)
+        ZYPHRYON_INLINE constexpr Uri(ConstStr8 Url)
             : mUrl { Url }
         {
         }
@@ -79,7 +79,7 @@ namespace Content
         /// \brief Gets the full raw URI string.
         ///
         /// \return The full URI string.
-        ZYPHRYON_INLINE constexpr ConstText GetUrl() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetUrl() const
         {
             return mUrl;
         }
@@ -87,64 +87,64 @@ namespace Content
         /// \brief Gets the URI without the filename.
         ///
         /// \return The URI string without its filename.
-        ZYPHRYON_INLINE constexpr ConstText GetUrlWithoutFile() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetUrlWithoutFile() const
         {
             const auto Offset = mUrl.rfind('/');
-            return (Offset != ConstText::npos ? GetUrl().substr(0, Offset) : GetUrl());
+            return (Offset != ConstStr8::npos ? GetUrl().substr(0, Offset) : GetUrl());
         }
 
         /// \brief Gets the URI without the file extension.
         ///
         /// \return The URI string without its file extension.
-        ZYPHRYON_INLINE constexpr ConstText GetUrlWithoutExtension() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetUrlWithoutExtension() const
         {
             const auto Offset = mUrl.rfind('.');
-            return (Offset != ConstText::npos ? GetUrl().substr(0, Offset) : GetUrl());
+            return (Offset != ConstStr8::npos ? GetUrl().substr(0, Offset) : GetUrl());
         }
 
         /// \brief Gets the schema portion of the URI.
         ///
         /// \return The schema string (e.g., `http`, `file`), or an empty string if none exists.
-        ZYPHRYON_INLINE constexpr ConstText GetSchema() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetSchema() const
         {
             const auto Offset = mUrl.find("://");
-            return (Offset != ConstText::npos ? GetUrl().substr(0, Offset) : "");
+            return (Offset != ConstStr8::npos ? GetUrl().substr(0, Offset) : "");
         }
 
         /// \brief Gets the path portion of the URI, excluding the schema.
         ///
         /// \return The path string after the schema, or the full URI if no schema is present.
-        ZYPHRYON_INLINE constexpr ConstText GetPath() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetPath() const
         {
             const auto Offset = mUrl.find("://");
-            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 3) : mUrl);
+            return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 3) : mUrl);
         }
 
         /// \brief Gets the folder portion of the URI.
         ///
         /// \return The folder path before the first slash, or an empty string if none exists.
-        ZYPHRYON_INLINE constexpr ConstText GetFolder() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetFolder() const
         {
             const auto Offset = mUrl.rfind('/');
-            return (Offset != ConstText::npos ? GetPath().substr(0, Offset) : "");
+            return (Offset != ConstStr8::npos ? GetPath().substr(0, Offset) : "");
         }
 
         /// \brief Gets the filename portion of the URI.
         ///
         /// \return The part after the last slash, or the full path if no slash exists.
-        ZYPHRYON_INLINE constexpr ConstText GetFilename() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetFilename() const
         {
             const auto Offset = mUrl.rfind('/');
-            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 1) : GetPath());
+            return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1) : GetPath());
         }
 
         /// \brief Gets the file extension portion of the URI.
         ///
         /// \return The part after the last dot, or an empty string if none exists.
-        ZYPHRYON_INLINE constexpr ConstText GetExtension() const
+        ZYPHRYON_INLINE constexpr ConstStr8 GetExtension() const
         {
             const auto Offset = mUrl.rfind('.');
-            return (Offset != ConstText::npos ? GetUrl().substr(Offset + 1, mUrl.length()) : "");
+            return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1, mUrl.length()) : "");
         }
 
     public:
@@ -154,7 +154,7 @@ namespace Content
         /// \param Parent      The base URI.
         /// \param Subresource The subresource name to append.
         /// \return A new URI with the subresource appended.
-        ZYPHRYON_INLINE constexpr static Uri Merge(ConstRef<Uri> Parent, ConstText Subresource)
+        ZYPHRYON_INLINE constexpr static Uri Merge(ConstRef<Uri> Parent, ConstStr8 Subresource)
         {
             return Uri(Format("{}#{}", Parent.GetUrlWithoutExtension(), Subresource));
         }
@@ -178,6 +178,6 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        const Text mUrl;
+        const Str8 mUrl;
     };
 }

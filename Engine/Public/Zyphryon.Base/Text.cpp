@@ -21,9 +21,9 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Text ConvertUTF16ToUTF8(std::wstring_view Value)
+    Str8 ConvertUTF16ToUTF8(std::wstring_view Value)
     {
-        Text Result;
+        Str8 Result;
         Result.reserve(Value.size() * 4);
 
         for (auto Iterator = Value.begin(); Iterator != Value.end(); ++Iterator)

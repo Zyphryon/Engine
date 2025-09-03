@@ -34,7 +34,7 @@ inline namespace Base
         /// \brief Constructs a parser from a TOML-formatted text source.
         /// 
         /// \param Text The TOML text to parse.
-        TOMLParser(ConstText Text);
+        TOMLParser(ConstStr8 Text);
 
         /// \brief Returns the root section of the parsed TOML document.
         /// 
@@ -46,19 +46,19 @@ inline namespace Base
         /// \param Key            The section name.
         /// \param CreateIfNeeded If `true`, creates the section if it does not exist.
         /// \return A handle to the specified section.
-        TOMLSection GetSection(ConstText Key, Bool CreateIfNeeded = true);
+        TOMLSection GetSection(ConstStr8 Key, Bool CreateIfNeeded = true);
 
         /// \brief Retrieves or creates an array from the root.
         /// 
         /// \param Key            The array name.
         /// \param CreateIfNeeded If `true`, creates the array if it does not exist.
         /// \return A handle to the specified array.
-        TOMLArray GetArray(ConstText Key, Bool CreateIfNeeded = true);
+        TOMLArray GetArray(ConstStr8 Key, Bool CreateIfNeeded = true);
 
         /// \brief Serializes the current TOML tree back to text.
         /// 
         /// \return A textual representation of the current TOML structure.
-        Text Dump() const;
+        Str8 Dump() const;
 
     private:
 

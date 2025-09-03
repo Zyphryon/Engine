@@ -42,7 +42,7 @@ namespace Audio
         /// \param Backend The audio backend to use.
         /// \param Device  Name or identifier of the output device to initialize.
         /// \return `true` if initialization succeeded, `false` otherwise.
-        Bool Initialize(Backend Backend, ConstText Device);
+        Bool Initialize(Backend Backend, ConstStr8 Device);
 
         /// \brief Sets the active listener used for spatial audio.
         ///

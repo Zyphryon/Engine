@@ -37,7 +37,7 @@ namespace Content
         /// handle these extensions during content system initialization.
         ///
         /// \return A contiguous span of supported file extensions.
-        virtual ConstSpan<ConstText> GetExtensions() const = 0;
+        virtual ConstSpan<ConstStr8> GetExtensions() const = 0;
 
         /// \brief Loads a resource from serialized binary data.
         ///

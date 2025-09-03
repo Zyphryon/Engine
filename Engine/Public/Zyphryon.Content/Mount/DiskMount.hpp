@@ -28,16 +28,16 @@ namespace Content
         /// \brief Constructs a system mount rooted at the given path.
         /// 
         /// \param Path The root path for the mount, or empty for the working directory.
-        explicit DiskMount(ConstText Path = "");
+        explicit DiskMount(ConstStr8 Path = "");
 
         /// \copydoc Mount::Read
-        Blob Read(ConstText Path) override;
+        Blob Read(ConstStr8 Path) override;
 
         /// \copydoc Mount::Write
-        void Write(ConstText Path, ConstSpan<Byte> Bytes) override;
+        void Write(ConstStr8 Path, ConstSpan<Byte> Bytes) override;
 
         /// \copydoc Mount::Delete
-        void Delete(ConstText Path) override;
+        void Delete(ConstStr8 Path) override;
 
     private:
 
@@ -45,13 +45,13 @@ namespace Content
         /// 
         /// \param Path The virtual path to convert.
         /// \return A string representing the full system path.
-        static Text CreatePath(ConstText Path);
+        static Str8 CreatePath(ConstStr8 Path);
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        const Text mPath;
+        const Str8 mPath;
     };
 }

@@ -24,5 +24,5 @@ inline namespace Base
     /// 
     /// \param Value The UTF-16 encoded string to convert.
     /// \return A UTF-8 encoded string containing the converted text.
-    Text ConvertUTF16ToUTF8(std::wstring_view Value);
+    Str8 ConvertUTF16ToUTF8(std::wstring_view Value);
 }

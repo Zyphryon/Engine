@@ -106,25 +106,25 @@ inline namespace Base
         /// \return The hash of the string.
         [[nodiscard]] size_t operator()(ConstPtr<Char> Value) const
         {
-            return ankerl::unordered_dense::hash<ConstText>{ }(Value);
+            return ankerl::unordered_dense::hash<ConstStr8>{ }(Value);
         }
 
         /// \brief Computes the hash of a text view.
         /// 
         /// \param Value The view into the text.
         /// \return The hash of the string.
-        [[nodiscard]] size_t operator()(ConstText Value) const
+        [[nodiscard]] size_t operator()(ConstStr8 Value) const
         {
-            return ankerl::unordered_dense::hash<ConstText>{ }(Value);
+            return ankerl::unordered_dense::hash<ConstStr8>{ }(Value);
         }
 
         /// \brief Computes the hash of a text reference.
         /// 
         /// \param Value The reference to a text object.
         /// \return The hash of the string.
-        [[nodiscard]] size_t operator()(ConstRef<Text> Value) const
+        [[nodiscard]] size_t operator()(ConstRef<Str8> Value) const
         {
-            return ankerl::unordered_dense::hash<ConstText>{ }(Value);
+            return ankerl::unordered_dense::hash<ConstStr8>{ }(Value);
         }
     };
 
@@ -132,5 +132,5 @@ inline namespace Base
     /// 
     /// \tparam Value The value type to associate with each key.
     template<typename Value>
-    using TextTable = Table<Text, Value, TextTableHash>;
+    using TextTable = Table<Str8, Value, TextTableHash>;
 }

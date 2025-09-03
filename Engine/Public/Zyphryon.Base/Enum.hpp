@@ -26,7 +26,7 @@ namespace Enum
     /// \param Value The enum value.
     /// \return The string representation of the enum value.
     template<typename Type>
-    constexpr ConstText GetName(Type Value)
+    constexpr ConstStr8 GetName(Type Value)
     {
         return enchantum::to_string(Value);
     }
@@ -57,7 +57,7 @@ namespace Enum
     /// \return The matched enum value or the provided default.
 
     template<typename Enum>
-    constexpr Enum Cast(ConstText Name, Enum Default)
+    constexpr Enum Cast(ConstStr8 Name, Enum Default)
     {
         return enchantum::cast<Enum>(Name, [](Char X, Char Y)
         {

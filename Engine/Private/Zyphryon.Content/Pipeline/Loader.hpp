@@ -33,9 +33,9 @@ namespace Content
         PipelineLoader(Graphic::Backend Backend, Graphic::Language Target);
 
         /// \copydoc Loader::GetExtensions
-        ConstSpan<ConstText> GetExtensions() const override
+        ConstSpan<ConstStr8> GetExtensions() const override
         {
-            static constexpr List<ConstText> EXTENSION_LIST = { "effect" };
+            static constexpr List<ConstStr8> EXTENSION_LIST = { "effect" };
             return EXTENSION_LIST;
         }
 
@@ -54,17 +54,17 @@ namespace Content
             /// 
             /// \param Key   Property name (e.g., define or option).
             /// \param Value Property value as text.
-            ZYPHRYON_INLINE constexpr Property(ConstText Key, ConstText Value)
+            ZYPHRYON_INLINE constexpr Property(ConstStr8 Key, ConstStr8 Value)
                 : Key   { Key },
                   Value { Value }
             {
             }
 
             /// Property name.
-            Text Key;
+            Str8 Key;
 
             /// Property value.
-            Text Value;
+            Str8 Value;
         };
 
     private:
@@ -85,7 +85,7 @@ namespace Content
         /// \param Properties Optional properties (e.g., defines) applied at compile time.
         /// \param Stage      Shader stage to compile.
         /// \return Direct3D bytecode blob suitable for pipeline creation.
-        Blob CompileDXBC(ConstText Entry, ConstText Code, Ref<Vector<Property>> Properties, Graphic::Stage Stage);
+        Blob CompileDXBC(ConstStr8 Entry, ConstStr8 Code, Ref<Vector<Property>> Properties, Graphic::Stage Stage);
 
     private:
 

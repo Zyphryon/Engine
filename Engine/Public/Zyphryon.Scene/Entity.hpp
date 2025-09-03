@@ -524,35 +524,35 @@ namespace Scene
         /// \brief Sets the name of this entity.
         ///
         /// \param Name The new name.
-        ZYPHRYON_INLINE void SetName(ConstText Name)
+        ZYPHRYON_INLINE void SetName(ConstStr8 Name)
         {
-            mHandle.set_name(Text(Name).c_str()); // TODO: Remove heap allocation (Flecs Limitation)
+            mHandle.set_name(Str8(Name).c_str()); // TODO: Remove heap allocation (Flecs Limitation)
         }
 
         /// \brief Gets the name of this entity.
         ///
         /// \return The entity’s name.
-        ZYPHRYON_INLINE ConstText GetName() const
+        ZYPHRYON_INLINE ConstStr8 GetName() const
         {
             const flecs::string_view Name = mHandle.name();
-            return ConstText(Name.c_str(), Name.size());
+            return ConstStr8(Name.c_str(), Name.size());
         }
 
         /// \brief Sets the display name of this entity.
         ///
         /// \param Name The new display name.
-        ZYPHRYON_INLINE void SetDisplayName(ConstText Name)
+        ZYPHRYON_INLINE void SetDisplayName(ConstStr8 Name)
         {
-            mHandle.set_doc_name(Text(Name).c_str()); // TODO: Remove heap allocation (Flecs Limitation)
+            mHandle.set_doc_name(Str8(Name).c_str()); // TODO: Remove heap allocation (Flecs Limitation)
         }
 
         /// \brief Gets the display name of this entity.
         ///
         /// \return The entity’s display name.
-        ZYPHRYON_INLINE ConstText GetDisplayName() const
+        ZYPHRYON_INLINE ConstStr8 GetDisplayName() const
         {
             const ConstPtr<Char> Name = mHandle.doc_name();
-            return ConstText(Name ? Name : "");
+            return ConstStr8(Name ? Name : "");
         }
 
         /// \brief Gets the first element of a pair relation.

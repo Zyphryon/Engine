@@ -27,9 +27,9 @@ namespace Content
     public:
 
         /// \copydoc Loader::GetExtensions
-        ConstSpan<ConstText> GetExtensions() const override
+        ConstSpan<ConstStr8> GetExtensions() const override
         {
-            static constexpr List<ConstText> EXTENSION_LIST = { "glb", "gltf" };
+            static constexpr List<ConstStr8> EXTENSION_LIST = { "glb", "gltf" };
             return EXTENSION_LIST;
         }
 

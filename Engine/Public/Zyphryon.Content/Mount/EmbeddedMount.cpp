@@ -28,11 +28,11 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob EmbeddedMount::Read(ConstText Path)
+    Blob EmbeddedMount::Read(ConstStr8 Path)
     {
         ConstRef<cmrc::embedded_filesystem> Filesystem = cmrc::Resources::get_filesystem();
 
-        if (const Text Filename(Path); Filesystem.exists(Filename))
+        if (const Str8 Filename(Path); Filesystem.exists(Filename))
         {
             const cmrc::file File = Filesystem.open(Filename);
 
@@ -44,7 +44,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void EmbeddedMount::Write(ConstText Path, ConstSpan<Byte> Bytes)
+    void EmbeddedMount::Write(ConstStr8 Path, ConstSpan<Byte> Bytes)
     {
         LOG_CRITICAL("Write operation is not supported.");
     }
@@ -52,7 +52,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void EmbeddedMount::Delete(ConstText Path)
+    void EmbeddedMount::Delete(ConstStr8 Path)
     {
         LOG_CRITICAL("Delete operation is not supported.");
     }

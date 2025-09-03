@@ -40,7 +40,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector2 Font::Measure(ConstText Text, Real32 Size, Real32 Spacing) const
+    Vector2 Font::Measure(ConstStr8 Text, Real32 Size, Real32 Spacing) const
     {
         Real32 CurrentX = 0.0f;
         Real32 MaximumX = 0.0f;
@@ -76,7 +76,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Rect Font::Layout(ConstText Word, Real32 Size, Pivot Alignment, Real32 Spacing) const
+    Rect Font::Layout(ConstStr8 Word, Real32 Size, Pivot Alignment, Real32 Spacing) const
     {
         const Vector2 Measurement = Measure(Word, Size, Spacing);
 

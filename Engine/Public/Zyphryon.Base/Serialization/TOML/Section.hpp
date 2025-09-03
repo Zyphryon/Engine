@@ -50,78 +50,78 @@ inline namespace Base
         /// \param Key            The name of the section.
         /// \param CreateIfNeeded If `true`, creates the section if it does not exist.
         /// \return The requested section.
-        TOMLSection GetSection(ConstText Key, Bool CreateIfNeeded = true) const;
+        TOMLSection GetSection(ConstStr8 Key, Bool CreateIfNeeded = true) const;
 
         /// \brief Creates or replaces a nested section under the given key.
         /// 
         /// \param Key The name of the section.
         /// \return A handle to the new section.
-        TOMLSection SetSection(ConstText Key);
+        TOMLSection SetSection(ConstStr8 Key);
 
         /// \brief Retrieves a nested array by key.
         /// 
         /// \param Key            The name of the array.
         /// \param CreateIfNeeded If `true`, creates the array if it does not exist.
         /// \return The requested array.
-        TOMLArray GetArray(ConstText Key, Bool CreateIfNeeded = true) const;
+        TOMLArray GetArray(ConstStr8 Key, Bool CreateIfNeeded = true) const;
 
         /// \brief Creates or replaces a nested array under the given key.
         /// 
         /// \param Key The name of the array.
         /// \return A handle to the new array.
-        TOMLArray SetArray(ConstText Key);
+        TOMLArray SetArray(ConstStr8 Key);
 
         /// \brief Sets a boolean value under the specified key.
         /// 
         /// \param Key   The key name.
         /// \param Value The boolean value to store.
-        void SetBool(ConstText Key, Bool Value);
+        void SetBool(ConstStr8 Key, Bool Value);
 
         /// \brief Retrieves a boolean value from the section.
         /// 
         /// \param Key     The key name.
         /// \param Default Value to return if the key is not found.
         /// \return The boolean value stored at the key.
-        Bool GetBool(ConstText Key, Bool Default = false) const;
+        Bool GetBool(ConstStr8 Key, Bool Default = false) const;
 
         /// \brief Sets an integer value under the specified key.
         /// 
         /// \param Key   The key name.
         /// \param Value The integer value to store.
-        void SetInteger(ConstText Key, SInt64 Value);
+        void SetInteger(ConstStr8 Key, SInt64 Value);
 
         /// \brief Retrieves an integer value from the section.
         /// 
         /// \param Key     The key name.
         /// \param Default Value to return if the key is not found.
         /// \return The integer value stored at the key.
-        SInt64 GetInteger(ConstText Key, SInt64 Default = 0) const;
+        SInt64 GetInteger(ConstStr8 Key, SInt64 Default = 0) const;
 
         /// \brief Sets a real (floating-point) value under the specified key.
         /// 
         /// \param Key   The key name.
         /// \param Value The real value to store.
-        void SetReal(ConstText Key, Real64 Value);
+        void SetReal(ConstStr8 Key, Real64 Value);
 
         /// \brief Retrieves a real value from the section.
         /// 
         /// \param Key     The key name.
         /// \param Default Value to return if the key is not found.
         /// \return The real value stored at the key.
-        Real64 GetReal(ConstText Key, Real64 Default = 0) const;
+        Real64 GetReal(ConstStr8 Key, Real64 Default = 0) const;
 
         /// \brief Sets a string value under the specified key.
         /// 
         /// \param Key   The key name.
         /// \param Value The string value to store.
-        void SetString(ConstText Key, ConstText Value);
+        void SetString(ConstStr8 Key, ConstStr8 Value);
 
         /// \brief Retrieves a string value from the section.
         /// 
         /// \param Key     The key name.
         /// \param Default Value to return if the key is not found.
         /// \return The string value stored at the key.
-        ConstText GetString(ConstText Key, ConstText Default = "") const;
+        ConstStr8 GetString(ConstStr8 Key, ConstStr8 Default = "") const;
 
     private:
 

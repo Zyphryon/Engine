@@ -274,11 +274,11 @@ inline namespace Base
         /// \brief Reads a string preceded by its length.
         ///
         /// \return A view over the read string.
-        ZYPHRYON_INLINE ConstText ReadText()
+        ZYPHRYON_INLINE ConstStr8 ReadText()
         {
             const auto Size = ReadInt<UInt32>();
             const auto Data = Read<ConstPtr<Char>>(Size * sizeof(Char));
-            return ConstText(Data, Size);
+            return ConstStr8(Data, Size);
         }
 
         /// \brief Reads a plain old data (POD) object from the buffer with proper alignment.

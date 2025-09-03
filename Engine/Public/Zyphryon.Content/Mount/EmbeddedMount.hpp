@@ -26,12 +26,12 @@ namespace Content
     public:
 
         /// \copydoc Mount::Read
-        Blob Read(ConstText Path) override;
+        Blob Read(ConstStr8 Path) override;
 
         /// \copydoc Mount::Write
-        void Write(ConstText Path, ConstSpan<Byte> Bytes) override;
+        void Write(ConstStr8 Path, ConstSpan<Byte> Bytes) override;
 
         /// \copydoc Mount::Delete
-        void Delete(ConstText Path) override;
+        void Delete(ConstStr8 Path) override;
     };
 }

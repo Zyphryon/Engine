@@ -62,7 +62,7 @@ namespace Scene
             Entity Archetype = Allocate<true>(kMinRangeArchetypes + Reader.ReadInt<UInt32>());
 
             /// Read and set archetype name.
-            if (ConstText Name = Reader.ReadText(); !Name.empty())
+            if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
             {
                 Archetype.SetName(Name);
             }
@@ -113,13 +113,13 @@ namespace Scene
         Entity Actor = Allocate<false>();
 
         /// Read and assign entity name if present.
-        if (ConstText Name = Reader.ReadText(); !Name.empty())
+        if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetName(Name);
         }
 
         /// Read and assign entity display name if present.
-        if (ConstText Name = Reader.ReadText(); !Name.empty())
+        if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetDisplayName(Name);
         }
@@ -208,11 +208,11 @@ namespace Scene
         while (Reader.Peek<UInt32>() != -1)
         {
             /// Read first element of the pair (tag/relationship); empty means single component.
-            const Text   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
+            const Str8   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
             const Entity First = Pair.empty() ? Entity() : mWorld.component(Pair.c_str());
 
             /// Read component name and resolve the component entity.
-            const Text   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
+            const Str8   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
             const Entity Second = mWorld.component(Name.c_str());
 
             /// Read serialized component payload.

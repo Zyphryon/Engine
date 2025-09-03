@@ -31,17 +31,17 @@ namespace Content
         ///
         /// \param Path Path to the file within this mount.
         /// \return A \ref Blob containing the file's raw binary data.
-        virtual Blob Read(ConstText Path) = 0;
+        virtual Blob Read(ConstStr8 Path) = 0;
 
         /// \brief Writes raw bytes to a file at the specified path.
         ///
         /// \param Path  Path to the file within this mount.
         /// \param Bytes Contiguous buffer of bytes to write.
-        virtual void Write(ConstText Path, ConstSpan<Byte> Bytes) = 0;
+        virtual void Write(ConstStr8 Path, ConstSpan<Byte> Bytes) = 0;
 
         /// \brief Deletes a file located at the specified path.
         ///
         /// \param Path Path to the file within this mount.
-        virtual void Delete(ConstText Path) = 0;
+        virtual void Delete(ConstStr8 Path) = 0;
     };
 }

@@ -52,18 +52,18 @@ namespace Content
         /// \brief Removes the loader associated with a file extension.
         /// 
         /// \param Extension The file extension.
-        void RemoveLoader(ConstText Extension);
+        void RemoveLoader(ConstStr8 Extension);
 
         /// \brief Registers a mount point for a URI schema.
         /// 
         /// \param Schema The URI schema (e.g., "disk").
         /// \param Mount  The mount to associate with the schema.
-        void AddMount(ConstText Schema, ConstTracker<Mount> Mount);
+        void AddMount(ConstStr8 Schema, ConstTracker<Mount> Mount);
 
         /// \brief Removes a mount associated with a URI schema.
         /// 
         /// \param Schema The URI schema.
-        void RemoveMount(ConstText Schema);
+        void RemoveMount(ConstStr8 Schema);
 
         /// \brief Sets the memory limit for a specific resource type.
         /// 

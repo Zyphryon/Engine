@@ -133,7 +133,7 @@ namespace Graphic
         /// \param Size    The size at which the font is evaluated.
         /// \param Spacing Additional spacing applied between characters.
         /// \return The dimensions of the text in pixels.
-        Vector2 Measure(ConstText Word, Real32 Size, Real32 Spacing = 0.0f) const;
+        Vector2 Measure(ConstStr8 Word, Real32 Size, Real32 Spacing = 0.0f) const;
 
         /// \brief Calculates the bounding rectangle for a text string at the specified font size.
         ///
@@ -142,7 +142,7 @@ namespace Graphic
         /// \param Alignment The pivot point used to align the rectangle.
         /// \param Spacing   Additional spacing applied between characters, in pixels.
         /// \return The bounding rectangle of the text in pixels, positioned according to the alignment.
-        Rect Layout(ConstText Word, Real32 Size, Pivot Alignment, Real32 Spacing = 0.0f) const;
+        Rect Layout(ConstStr8 Word, Real32 Size, Pivot Alignment, Real32 Spacing = 0.0f) const;
 
     private:
 

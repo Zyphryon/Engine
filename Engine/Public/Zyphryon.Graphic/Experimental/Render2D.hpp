@@ -134,10 +134,10 @@ namespace Graphic
         void DrawSprite(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
 
         // -=(Undocumented)=-
-        void DrawFont(ConstRef<Rect> Origin, Real32 Depth, ConstText Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
+        void DrawFont(ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
 
         // -=(Undocumented)=-
-        void DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstText Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
+        void DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
 
         // -=(Undocumented)=-
         void Flush();

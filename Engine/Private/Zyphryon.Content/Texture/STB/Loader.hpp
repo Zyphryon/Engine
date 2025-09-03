@@ -27,9 +27,9 @@ namespace Content
     public:
 
         /// \copydoc Loader::GetExtensions
-        ConstSpan<ConstText> GetExtensions() const override
+        ConstSpan<ConstStr8> GetExtensions() const override
         {
-            static constexpr List<ConstText> EXTENSION_LIST = { "png", "bmp", "jpg", "jpeg" };
+            static constexpr List<ConstStr8> EXTENSION_LIST = { "png", "bmp", "jpg", "jpeg" };
             return EXTENSION_LIST;
         }
 

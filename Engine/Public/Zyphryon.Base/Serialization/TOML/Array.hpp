@@ -107,13 +107,13 @@ inline namespace Base
         /// \brief Appends a string to the array.
         /// 
         /// \param Value The string to add.
-        void AddString(ConstText Value);
+        void AddString(ConstStr8 Value);
 
         /// \brief Retrieves a string from the array.
         /// 
         /// \param Index The zero-based index.
         /// \return The string at the specified index.
-        ConstText GetString(UInt32 Index) const;
+        ConstStr8 GetString(UInt32 Index) const;
 
     private:
 

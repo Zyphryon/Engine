@@ -35,7 +35,7 @@ namespace Audio
         /// \param Device   Identifier of the audio device to use.
         /// \param Submixes Number of submix channels to support.
         /// \return `true` if the driver initialized successfully, `false` otherwise.
-        virtual Bool Initialize(ConstText Device, UInt8 Submixes) = 0;
+        virtual Bool Initialize(ConstStr8 Device, UInt8 Submixes) = 0;
 
         /// \brief Returns the hardware or driver capabilities.
         ///

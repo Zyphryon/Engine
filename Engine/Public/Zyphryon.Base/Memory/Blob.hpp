@@ -156,9 +156,9 @@ inline namespace Base
         /// \brief Returns a read-only text representation of the payload.
         /// 
         /// \return A textual view over the payload buffer.
-        ZYPHRYON_INLINE ConstText GetText() const
+        ZYPHRYON_INLINE ConstStr8 GetText() const
         {
-            return ConstText(reinterpret_cast<Ptr<Char>>(mPointer), mSize);
+            return ConstStr8(reinterpret_cast<Ptr<Char>>(mPointer), mSize);
         }
 
         /// \brief Returns the size of the payload in bytes.
