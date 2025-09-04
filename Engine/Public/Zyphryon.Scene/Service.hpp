@@ -55,6 +55,34 @@ namespace Scene
             }
         }
 
+        /// \brief Provides a singleton tag of type \p Component to the world.
+        ///
+        /// \tparam Component The tag to provide.
+        template<typename Component>
+        ZYPHRYON_INLINE void Provide()
+        {
+            mWorld.template add<Component>();
+        }
+
+        /// \brief Removes the singleton of type \p Component from the world, if it exists.
+        ///
+        /// \tparam Component The tag or component type to remove.
+        template<typename Component>
+        ZYPHRYON_INLINE void Remove()
+        {
+            mWorld.template remove<Component>();
+        }
+
+        /// \brief Checks whether the world currently holds a singleton of type \p Component.
+        ///
+        /// \tparam Component The tag or component type to query.
+        /// \return `true` if the component is present, `false` otherwise.
+        template<typename Component>
+        ZYPHRYON_INLINE bool Contains() const
+        {
+            return mWorld.template has<Component>();
+        }
+
         /// \brief Registers a component type.
         ///
         /// \tparam Target The component type.
