@@ -154,7 +154,7 @@ namespace Graphic
 
     Object Service::CreatePass(ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary)
     {
-        const Object ID = mPipelines.Allocate();
+        const Object ID = mPasses.Allocate();
 
         if (ID)
         {
