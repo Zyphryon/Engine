@@ -843,19 +843,19 @@ inline namespace Math
             return _mm_cvtss_f32(T2);
         }
 
-        /// \brief Floors each component of the given vector.
-        /// 
-        /// \param Vector The vector to floor.
-        /// \return A vector with floored components.
+        /// \brief Returns a vector with each component floored to the nearest integer.
+        ///
+        /// \param Vector The source vector with real-valued components.
+        /// \return A vector with all components rounded down.
         ZYPHRYON_INLINE static Vector4 Floor(ConstRef<Vector4> Vector)
         {
             return Vector4(_mm_floor_ps(Vector.mRegister));
         }
 
-        /// \brief Ceils each component of the given vector.
-        /// 
-        /// \param Vector The vector to ceil.
-        /// \return A vector with ceiled components.
+        /// \brief Returns a vector with each component ceiled to the nearest integer.
+        ///
+        /// \param Vector The source vector with real-valued components.
+        /// \return A vector with all components rounded up.
         ZYPHRYON_INLINE static Vector4 Ceil(ConstRef<Vector4> Vector)
         {
             return Vector4(_mm_ceil_ps(Vector.mRegister));

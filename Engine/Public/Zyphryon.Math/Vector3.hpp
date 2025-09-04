@@ -679,20 +679,20 @@ inline namespace Math
             return AnyVector3(Base::Max(P0.mX, P1.mX), Base::Max(P0.mY, P1.mY), Base::Max(P0.mZ, P1.mZ));
         }
 
-        /// \brief Floors each component of the given vector.
+        /// \brief Returns a vector with each component floored to the nearest integer.
         ///
-        /// \param Vector The vector to floor.
-        /// \return A vector with floored components.
+        /// \param Vector The source vector with real-valued components.
+        /// \return A vector with all components rounded down.
         ZYPHRYON_INLINE constexpr static AnyVector3 Floor(ConstRef<AnyVector3> Vector)
             requires(IsReal<Type>)
         {
             return AnyVector3(Base::Floor(Vector.mX), Base::Floor(Vector.mY), Base::Floor(Vector.mZ));
         }
 
-        /// \brief Ceils each component of the given vector.
+        /// \brief Returns a vector with each component ceiled to the nearest integer.
         ///
-        /// \param Vector The vector to ceil.
-        /// \return A vector with ceiled components.
+        /// \param Vector The source vector with real-valued components.
+        /// \return A vector with all components rounded up.
         ZYPHRYON_INLINE constexpr static AnyVector3 Ceil(ConstRef<AnyVector3> Vector)
             requires(IsReal<Type>)
         {

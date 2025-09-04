@@ -641,6 +641,34 @@ inline namespace Math
                 Base::Max(First.mY2, Second.mY2));
         }
 
+        /// \brief Returns a rectangle with all coordinates floored to the nearest integer.
+        ///
+        /// \param Rectangle The source rectangle with real-valued coordinates.
+        /// \return A rectangle with all coordinates rounded down.
+        ZYPHRYON_INLINE constexpr static AnyRect Floor(ConstRef<AnyRect> Rectangle)
+            requires(IsReal<Type>)
+        {
+            return AnyRect(
+                Base::Floor(Rectangle.mX1),
+                Base::Floor(Rectangle.mY1),
+                Base::Floor(Rectangle.mX2),
+                Base::Floor(Rectangle.mY2));
+        }
+
+        /// \brief Returns a rectangle with all coordinates ceiled to the nearest integer.
+        ///
+        /// \param Rectangle The source rectangle with real-valued coordinates.
+        /// \return A rectangle with all coordinates rounded up.
+        ZYPHRYON_INLINE constexpr static AnyRect Ceil(ConstRef<AnyRect> Rectangle)
+            requires(IsReal<Type>)
+        {
+             return AnyRect(
+                Base::Ceil(Rectangle.mX1),
+                Base::Ceil(Rectangle.mY1),
+                Base::Ceil(Rectangle.mX2),
+                Base::Ceil(Rectangle.mY2));
+        }
+
         /// \brief Returns the intersection of two rectangles.
         ///
         /// \param First  The first rectangle.
@@ -669,15 +697,15 @@ inline namespace Math
                 Base::Max(First.mY2, Second.mY2));
         }
 
-        /// \brief Returns a rectangle of type \p Target that tightly encloses this rectangle.
+        /// \brief Computes an integer-aligned rectangle that fully encloses the given rectangle.
         ///
-        /// \param Rectangle The source rectangle to enclose.
-        /// \return A rectangle of type \p Target that fully contains the input.
-        template<typename Target>
-        ZYPHRYON_INLINE constexpr static Target Enclose(ConstRef<AnyRect> Rectangle)
+        /// \param Rectangle The source rectangle with real-valued coordinates.
+        /// \return A rectangle with integer-aligned edges that fully contains the input.
+        ZYPHRYON_INLINE constexpr static AnyRect Enclose(ConstRef<AnyRect> Rectangle)
+            requires(IsReal<Type>)
         {
-            return Target(Base::Floor(Rectangle.mX1), Base::Floor(Rectangle.mY1),
-                           Base::Ceil(Rectangle.mX2),  Base::Ceil(Rectangle.mY2));
+            return AnyRect(Base::Floor(Rectangle.mX1), Base::Floor(Rectangle.mY1),
+                            Base::Ceil(Rectangle.mX2),  Base::Ceil(Rectangle.mY2));
         }
 
         /// \brief Anchors a rectangle relative to a pivot point.
