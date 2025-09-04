@@ -73,6 +73,15 @@ namespace Scene
             mWorld.template remove<Component>();
         }
 
+        /// \brief Removes all instances of type \p Component from the world.
+        ///
+        /// \tparam Component The tag or component type to remove.
+        template<typename Component>
+        ZYPHRYON_INLINE void RemoveAllFromEntities()
+        {
+            mWorld.template remove_all<Component>();
+        }
+
         /// \brief Checks whether the world currently holds a singleton of type \p Component.
         ///
         /// \tparam Component The tag or component type to query.
