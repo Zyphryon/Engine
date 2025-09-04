@@ -877,19 +877,19 @@ namespace Graphic
             }
         }
 
+        Ref<D3D11Texture> Object = mTextures[ID];
+        Object.Format = Format;
+
         const ConstPtr<D3D11_SUBRESOURCE_DATA> Memory = Fill(Data.data(), Mipmaps, Width, Height, Format);
-        CheckIfFail(mDevice->CreateTexture2D(&Description, Memory, mTextures[ID].Resource.GetAddressOf()));
+        CheckIfFail(mDevice->CreateTexture2D(&Description, Memory, Object.Resource.GetAddressOf()));
 
         if (Layout != TextureLayout::Target)
         {
-            mTextures[ID].Format = Format;
-
             const D3D11_SRV_DIMENSION Type
                 = Samples != Samples::X1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
 
             const CD3D11_SHADER_RESOURCE_VIEW_DESC Descriptor(Type, As<1>(Format), 0, Mipmaps);
-            CheckIfFail(mDevice->CreateShaderResourceView(
-                mTextures[ID].Resource.Get(), &Descriptor, mTextures[ID].Accessor.GetAddressOf()));
+            CheckIfFail(mDevice->CreateShaderResourceView(Object.Resource.Get(), &Descriptor, Object.Accessor.GetAddressOf()));
         }
     }
 

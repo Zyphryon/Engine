@@ -63,6 +63,18 @@ inline namespace Math
         {
         }
 
+        /// \brief Conversion constructor from another rectangle with a different base type.
+        ///
+        /// \param Other The source rectangle to convert from.
+        template<typename Base>
+        ZYPHRYON_INLINE constexpr AnyRect(ConstRef<AnyRect<Base>> Other)
+            : mX1 { static_cast<Type>(Other.GetLeft()) },
+              mY1 { static_cast<Type>(Other.GetTop()) },
+              mX2 { static_cast<Type>(Other.GetRight()) },
+              mY2 { static_cast<Type>(Other.GetBottom()) }
+        {
+        }
+
         /// \brief Checks if the rectangle is the zero rectangle.
         ///
         /// \return `true` if all coordinates are approximately zero, `false` otherwise.

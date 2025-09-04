@@ -52,12 +52,13 @@ inline namespace Math
         {
         }
 
-        /// \brief Copy constructor.
+        /// \brief Conversion constructor from another vector with a different base type.
         ///
-        /// \param Other The vector to copy.
-        ZYPHRYON_INLINE constexpr AnyVector2(ConstRef<AnyVector2> Other)
-            : mX { Other.GetX() },
-              mY { Other.GetY() }
+        /// \param Other The source vector to convert from.
+        template<typename Base>
+        ZYPHRYON_INLINE constexpr AnyVector2(ConstRef<AnyVector2<Base>> Other)
+            : mX { static_cast<Type>(Other.GetX()) },
+              mY { static_cast<Type>(Other.GetY()) }
         {
         }
 
