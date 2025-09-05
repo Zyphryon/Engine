@@ -586,6 +586,14 @@ namespace Scene
         /// \return `true` if the entities are not the same, `false` otherwise.
         ZYPHRYON_INLINE Bool operator!=(ConstRef<Entity> Other) const = default;
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE constexpr UInt Hash() const
+        {
+            return GetID();
+        }
+
     public:
 
         /// \brief Conditionally enables or disables a component on the specified entity.

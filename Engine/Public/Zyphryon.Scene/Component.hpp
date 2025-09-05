@@ -568,6 +568,14 @@ namespace Scene
         /// \return `true` if the entities are not the same, `false` otherwise.
         ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const = default;
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE constexpr UInt Hash() const
+        {
+            return GetID();
+        }
+
     private:
 
         /// \brief Apply a specific behavioral trait to the component definition.
