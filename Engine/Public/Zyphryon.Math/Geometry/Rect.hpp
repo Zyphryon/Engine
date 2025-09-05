@@ -760,7 +760,7 @@ inline namespace Math
                               CornerY * Vector4::SplatW(Matrix.GetColumn(1)) +
                                         Vector4::SplatW(Matrix.GetColumn(3));
 
-            LOG_ASSERT(W.IsAlmostZero(), "Division by zero (W)");
+            LOG_ASSERT(!W.IsAlmostZero(), "Division by zero (W)");
             const Vector4 InvW = Vector4::Reciprocal(W);
 
             // Projected X coordinates: (m00*x + m01*y + m03) / w
