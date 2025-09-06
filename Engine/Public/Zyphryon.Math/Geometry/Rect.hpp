@@ -790,8 +790,11 @@ inline namespace Math
     };
 
     /// \brief Represents a 2D rectangle defined by (X1, Y1, X2, Y2) floating-point coordinates.
-    using Rect    = AnyRect<Real32>;
+    using Rect     = AnyRect<Real32>;
 
     /// \brief Represents a 2D rectangle defined by (X1, Y1, X2, Y2) signed integer coordinates.
-    using IntRect = AnyRect<SInt32>;
+    using IntRect  = AnyRect<SInt32>;
+
+    /// \brief Represents a 2D rectangle defined by (X1, Y1, X2, Y2) unsigned integer coordinates.
+    using UIntRect = AnyRect<UInt32>;
 }

@@ -724,8 +724,11 @@ inline namespace Math
     };
 
     /// \brief Represents a vector with (x, y, z) floating-point components.
-    using Vector3    = AnyVector3<Real32>;
+    using Vector3     = AnyVector3<Real32>;
 
     /// \brief Represents a vector with (x, y, z) signed integer components.
-    using IntVector3 = AnyVector3<SInt32>;
+    using IntVector3  = AnyVector3<SInt32>;
+
+    /// \brief Represents a vector with (x, y, z) unsigned integer components.
+    using UIntVector3 = AnyVector3<UInt32>;
 }
