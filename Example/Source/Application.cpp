@@ -48,17 +48,13 @@ namespace Example
         Graphic::Viewport Viewport(0, 0, GetDevice().GetWidth(), GetDevice().GetHeight());
         Graphics->Prepare(Graphic::kDisplay, Viewport, Graphic::Clear::All, Graphic::Color(0.65f, 0.50f, 0.55f), 1, 0);
         {
-
             AppRenderer->SetGlobalParameters(ConstSpan<Matrix4x4>(&AppCamera.GetViewProjection(), 1));
 
             AppRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Graphic::Color::Red().ToRGBA8(), 4.0f);
             AppRenderer->DrawRect(Rect({100, 200, 200, 300}), 0.0f, Graphic::Color::Green().ToRGBA8(), 4.0f);
             AppRenderer->DrawRectFilled(Rect({100, 350, 200, 450}), 0.0f, Graphic::Color::Blue().ToRGBA8());
 
-
             AppRenderer->Flush();
-
-
         }
         Graphics->Commit(Graphic::kDisplay);
         Graphics->Finish(false);

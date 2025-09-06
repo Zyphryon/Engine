@@ -676,11 +676,16 @@ inline namespace Math
         /// \return A rectangle representing the overlapping region. If they don't overlap, the rect may be invalid.
         ZYPHRYON_INLINE constexpr static AnyRect Intersection(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
-            return AnyRect(
-                Base::Max(First.mX1, Second.mX1),
-                Base::Max(First.mY1, Second.mY1),
-                Base::Min(First.mX2, Second.mX2),
-                Base::Min(First.mY2, Second.mY2));
+            const Type X1 = Base::Max(First.mX1, Second.mX1);
+            const Type Y1 = Base::Max(First.mY1, Second.mY1);
+            const Type X2 = Base::Min(First.mX2, Second.mX2);
+            const Type Y2 = Base::Min(First.mY2, Second.mY2);
+
+            if (X2 <= X1 || Y2 <= Y1)
+            {
+                return AnyRect(0, 0, 0, 0);
+            }
+            return AnyRect(X1, Y1, X2, Y2);
         }
 
         /// \brief Returns the union (bounding box) of two rectangles.
