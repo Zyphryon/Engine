@@ -308,7 +308,7 @@ namespace Graphic
         }
 
         auto [VtxPointer, VtxDescription] = mGraphics->Allocate<Layout>(Usage::Vertex, 4 * Count);
-        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt16>(Usage::Index, 6 * Count);
+        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt32>(Usage::Index, 6 * Count);
 
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
@@ -336,7 +336,7 @@ namespace Graphic
         mEncoder.SetVertices(0, VtxDescription.Buffer, 0, VtxDescription.Stride);
         mEncoder.SetIndices(IdxDescription.Buffer, 0, IdxDescription.Stride);
         mEncoder.SetPipeline(Pipeline);
-        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt16));
+        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt32));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -350,7 +350,7 @@ namespace Graphic
         }
 
         auto [VtxPointer, VtxDescription] = mGraphics->Allocate<Layout>(Usage::Vertex, 4 * Count);
-        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt16>(Usage::Index, 6 * Count);
+        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt32>(Usage::Index, 6 * Count);
 
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
@@ -398,7 +398,7 @@ namespace Graphic
         mEncoder.SetIndices(IdxDescription.Buffer, 0, IdxDescription.Stride);
         mEncoder.SetPipeline(Pipeline);
         mEncoder.Bind(Pipeline, Material);
-        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt16));
+        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt32));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -412,7 +412,7 @@ namespace Graphic
         }
 
         auto [VtxPointer, VtxDescription] = mGraphics->Allocate<Layout>(Usage::Vertex, 4 * Count);
-        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt16>(Usage::Index, 6 * Count);
+        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt32>(Usage::Index, 6 * Count);
 
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
@@ -457,7 +457,7 @@ namespace Graphic
         mEncoder.SetIndices(IdxDescription.Buffer, 0, IdxDescription.Stride);
         mEncoder.SetPipeline(Pipeline);
         mEncoder.Bind(Pipeline, Material);
-        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt16));
+        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt32));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
