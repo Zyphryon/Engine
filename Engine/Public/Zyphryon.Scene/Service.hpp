@@ -270,7 +270,14 @@ namespace Scene
                 Actor = (ID ? mWorld.entity(ID) : mWorld.entity());
             }
 
-            mWorld.make_alive(Actor);
+            if (const Entity::Handle Generation = mWorld.get_alive(Actor); Generation)
+            {
+                mWorld.set_version(Actor);
+            }
+            else
+            {
+                Actor = mWorld.make_alive(Actor);
+            }
 
             if constexpr(Archetype)
             {
