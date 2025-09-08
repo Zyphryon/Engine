@@ -29,26 +29,21 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector<Mount::Entry> DiskMount::Enumerate(ConstStr8 Path) const
+    Vector<Mount::Item> DiskMount::Enumerate(ConstStr8 Path) const
     {
-        Vector<Mount::Entry> Entries;
+        Vector<Mount::Item> Entries;
 
         constexpr auto OnEnumerate = [](Ptr<void> User, ConstPtr<Char> Directory, ConstPtr<Char> Entry)
         {
-            Ptr<Vector<Mount::Entry>> Entries = reinterpret_cast<Ptr<Vector<Mount::Entry>>>(User);
+            Ptr<Vector<Mount::Item>> Items = reinterpret_cast<Ptr<Vector<Mount::Item>>>(User);
 
-            if (Directory)
+            SDL_PathInfo Info;
+
+            if (SDL_GetPathInfo(Format("{}{}", Directory, Entry).data(), &Info))
             {
-                SDL_PathInfo File;
-
-                if (SDL_GetPathInfo(Format("{}{}", Directory, Entry).data(), &File))
-                {
-                    const Bool IsFolder = File.type == SDL_PathType::SDL_PATHTYPE_DIRECTORY;
-
-                    Entries->emplace_back(Entry, IsFolder, File.size, File.modify_time);
-                }
+                const Mount::Entry Type = (Info.type == SDL_PATHTYPE_DIRECTORY ? Entry::Directory : Entry::File);
+                Items->emplace_back(Entry, Type, Info.size, Info.modify_time);
             }
-
             return SDL_EnumerationResult::SDL_ENUM_CONTINUE;
         };
 

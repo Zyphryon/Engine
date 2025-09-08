@@ -26,7 +26,7 @@ namespace Content
     public:
 
         /// \copydoc Mount::Enumerate
-        Vector<Entry> Enumerate(ConstStr8 Path) const override;
+        Vector<Item> Enumerate(ConstStr8 Path) const override;
 
         /// \copydoc Mount::Read
         Blob Read(ConstStr8 Path) override;

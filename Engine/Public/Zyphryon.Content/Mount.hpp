@@ -27,14 +27,21 @@ namespace Content
     {
     public:
 
+        /// \brief Enumeration of file system entry types.
+        enum class Entry : UInt8
+        {
+            File,
+            Directory,
+        };
+
         /// \brief Metadata information for a file system entry.
-        struct Entry
+        struct Item
         {
             /// \brief The name of the entry including extension (for files).
-            Str8   Filename;
+            Str8   Name;
 
-            /// \brief Whether this entry represents a folder or a file.
-            Bool   Folder;
+            /// \brief The type of the entry (file or directory).
+            Entry  Type;
 
             /// \brief The size of the entry in bytes.
             UInt64 Size;
@@ -48,8 +55,8 @@ namespace Content
         /// \brief Enumerates all file system entries (files and folders) at the specified path.
         ///
         /// \param Path The directory path to enumerate. Empty string indicates the mount's root directory.
-        /// \return A vector of \ref Entry objects containing metadata for each file and directory.
-        virtual Vector<Entry> Enumerate(ConstStr8 Path) const = 0;
+        /// \return A vector of \ref Item objects containing metadata for each file and directory.
+        virtual Vector<Item> Enumerate(ConstStr8 Path) const = 0;
 
         /// \brief Reads all bytes from a file located at the specified path.
         ///

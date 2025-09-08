@@ -146,13 +146,13 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector<Mount::Entry> Service::Enumerate(ConstRef<Uri> Key) const
+    Vector<Mount::Item> Service::Enumerate(ConstRef<Uri> Key) const
     {
         if (const auto Iterator = mMounts.find(Key.GetSchema()); Iterator != mMounts.end())
         {
             return Iterator->second->Enumerate(Key.GetPath());
         }
-        return Vector<Mount::Entry>();
+        return Vector<Mount::Item>();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

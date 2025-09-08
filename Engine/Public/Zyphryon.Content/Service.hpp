@@ -98,8 +98,8 @@ namespace Content
         /// \brief Enumerates all file system entries (files and folders) at the specified URI path.
         ///
         /// \param Key The URI of the directory to enumerate. The URI should resolve to a directory path.
-        /// \return A vector of \ref Entry objects containing metadata for each file and folder.
-        Vector<Mount::Entry> Enumerate(ConstRef<Uri> Key) const;
+        /// \return A vector of \ref Item objects containing metadata for each file and folder.
+        Vector<Mount::Item> Enumerate(ConstRef<Uri> Key) const;
 
         /// \brief Synchronously loads a blob from the appropriate mount.
         /// 

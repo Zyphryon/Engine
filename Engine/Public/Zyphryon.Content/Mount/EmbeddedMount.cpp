@@ -28,23 +28,23 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector<Mount::Entry> EmbeddedMount::Enumerate(ConstStr8 Path) const
+    Vector<Mount::Item> EmbeddedMount::Enumerate(ConstStr8 Path) const
     {
         ConstRef<cmrc::embedded_filesystem> Filesystem = cmrc::Resources::get_filesystem();
 
-        Vector<Mount::Entry> Entries;
+        Vector<Mount::Item> Entries;
 
         for (ConstRef<cmrc::directory_entry> Directory : Filesystem.iterate_directory(Path.data()))
         {
-            UInt64 Size = 0;
-
             if (Directory.is_file())
             {
                 const ConstStr8  Filename = Format("{}/{}", Path, Directory.filename());
-
-                Size = Filesystem.open(Filename.data()).size();
+                Entries.emplace_back(Directory.filename(), Entry::File, Filesystem.open(Filename.data()).size(), 0);
             }
-            Entries.emplace_back(Directory.filename(), Directory.is_directory(), Size, 0);
+            else
+            {
+                Entries.emplace_back(Directory.filename(), Entry::Directory, 0, 0);
+            }
         }
         return Entries;
     }
