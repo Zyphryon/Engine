@@ -315,6 +315,16 @@ inline namespace Math
                      mY2 <= Other.mY1 || mY1 >= Other.mY2);
         }
 
+        /// \brief Checks if this rectangle collides with another rectangle.
+        ///
+        /// \param Other The other rectangle to check.
+        /// \return `true` if the rectangles collides, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool Collides(ConstRef<AnyRect> Other) const
+        {
+            return !(mX2 < Other.mX1 || mX1 > Other.mX2 ||
+                     mY2 < Other.mY1 || mY1 > Other.mY2);
+        }
+
         /// \brief Checks if this rectangle is equal to another rectangle.
         ///
         /// \param Other The rectangle to compare to.
