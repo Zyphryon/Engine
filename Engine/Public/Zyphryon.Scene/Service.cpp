@@ -67,6 +67,12 @@ namespace Scene
                 Archetype.SetName(Name);
             }
 
+            /// Read and set archetype display name.
+            if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
+            {
+                Archetype.SetDisplayName(Name);
+            }
+
             /// Read and set base archetype reference if present.
             if (const UInt32 Base = Reader.ReadInt<UInt32>(); Base)
             {
@@ -94,6 +100,9 @@ namespace Scene
 
                 /// Write archetype name.
                 Writer.WriteText(Archetype.GetName());
+
+                /// Write archetype display name.
+                Writer.WriteText(Archetype.GetDisplayName());
 
                 /// Write base archetype reference or `0` if none.
                 const Entity Base = Archetype.GetArchetype();
