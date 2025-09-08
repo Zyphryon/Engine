@@ -142,6 +142,52 @@ namespace Graphic
         // -=(Undocumented)=-
         void Flush();
 
+    public:
+
+        ZYPHRYON_INLINE static constexpr FontStyleSDF FontStyleOutline()
+        {
+            return Graphic::Render2D::FontStyleSDF {
+                .uInvThreshold =  1.0f - 0.5f,
+                .uOutlineBias = 1.0f/4.0f,
+                .uOutlineWidthAbsolute = 1.0f/3.0f,
+                .uOutlineWidthRelative = 1.0f/20.0f,
+                .uOutlineBlur = 0
+            };
+        }
+
+        ZYPHRYON_INLINE static constexpr FontStyleSDF FontStyleThick()
+        {
+            return Graphic::Render2D::FontStyleSDF {
+                .uInvThreshold =  1.0f - 0.5f,
+                .uOutlineBias = 0.0f,
+                .uOutlineWidthAbsolute = 1.0f/16.0f,
+                .uOutlineWidthRelative = 1.0f/50.0f,
+                .uOutlineBlur = 0
+            };
+        }
+
+        ZYPHRYON_INLINE static constexpr FontStyleSDF FontStyleThicker()
+        {
+            return Graphic::Render2D::FontStyleSDF {
+                .uInvThreshold =  1.0f - 0.6f,
+                .uOutlineBias = 0.0f,
+                .uOutlineWidthAbsolute = 1.0f/16.0f,
+                .uOutlineWidthRelative = 1.0f/7.0f,
+                .uOutlineBlur = 0
+            };
+        }
+
+        ZYPHRYON_INLINE static constexpr FontStyleSDF FontStyleShadow()
+        {
+            return Graphic::Render2D::FontStyleSDF {
+                .uInvThreshold =  1.0f - 0.5f,
+                .uOutlineBias = 0.0f,
+                .uOutlineWidthAbsolute = 1.0f/3.0f,
+                .uOutlineWidthRelative = 1.0f/5.0f,
+                .uOutlineBlur = 1
+            };
+        }
+
     private:
 
         // -=(Undocumented)=-
