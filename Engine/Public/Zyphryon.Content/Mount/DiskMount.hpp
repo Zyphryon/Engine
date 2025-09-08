@@ -30,6 +30,9 @@ namespace Content
         /// \param Path The root path for the mount, or empty for the working directory.
         explicit DiskMount(ConstStr8 Path = "");
 
+        /// \copydoc Mount::Enumerate
+        Vector<Entry> Enumerate(ConstStr8 Path) const override;
+
         /// \copydoc Mount::Read
         Blob Read(ConstStr8 Path) override;
 

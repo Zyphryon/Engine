@@ -95,6 +95,12 @@ namespace Content
             return Type::GetCache().GetMemoryUsage();
         }
 
+        /// \brief Enumerates all file system entries (files and folders) at the specified URI path.
+        ///
+        /// \param Key The URI of the directory to enumerate. The URI should resolve to a directory path.
+        /// \return A vector of \ref Entry objects containing metadata for each file and folder.
+        Vector<Mount::Entry> Enumerate(ConstRef<Uri> Key) const;
+
         /// \brief Synchronously loads a blob from the appropriate mount.
         /// 
         /// \param Key The URI of the resource.
@@ -110,6 +116,13 @@ namespace Content
         {
             return Find(Resolve(Key, &Scope));
         }
+
+        /// \brief Synchronously copies a resource from a source URI to a destination URI.
+        ///
+        /// \param Source      The URI of the source resource to copy.
+        /// \param Destination The URI of the destination where the resource will be copied.
+        /// \return `true` if the copy operation succeeded, `false` otherwise.
+        Bool Copy(ConstRef<Uri> Source, ConstRef<Uri> Destination);
 
         /// \brief Synchronously saves a resource to the appropriate mount.
         /// 

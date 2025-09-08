@@ -27,6 +27,30 @@ namespace Content
     {
     public:
 
+        /// \brief Metadata information for a file system entry.
+        struct Entry
+        {
+            /// \brief The name of the entry including extension (for files).
+            Str8   Filename;
+
+            /// \brief Whether this entry represents a folder or a file.
+            Bool   Folder;
+
+            /// \brief The size of the entry in bytes.
+            UInt64 Size;
+
+            /// \brief The last modification time in milliseconds since epoch.
+            UInt64 Time;
+        };
+
+    public:
+
+        /// \brief Enumerates all file system entries (files and folders) at the specified path.
+        ///
+        /// \param Path The directory path to enumerate. Empty string indicates the mount's root directory.
+        /// \return A vector of \ref Entry objects containing metadata for each file and directory.
+        virtual Vector<Entry> Enumerate(ConstStr8 Path) const = 0;
+
         /// \brief Reads all bytes from a file located at the specified path.
         ///
         /// \param Path Path to the file within this mount.

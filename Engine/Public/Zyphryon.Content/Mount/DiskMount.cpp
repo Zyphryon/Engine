@@ -26,6 +26,37 @@ namespace Content
         : mPath { CreatePath(Path) }
     {
     }
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Vector<Mount::Entry> DiskMount::Enumerate(ConstStr8 Path) const
+    {
+        Vector<Mount::Entry> Entries;
+
+        constexpr auto OnEnumerate = [](Ptr<void> User, ConstPtr<Char> Directory, ConstPtr<Char> Entry)
+        {
+            Ptr<Vector<Mount::Entry>> Entries = reinterpret_cast<Ptr<Vector<Mount::Entry>>>(User);
+
+            if (Directory)
+            {
+                SDL_PathInfo File;
+
+                if (SDL_GetPathInfo(Format("{}{}", Directory, Entry).data(), &File))
+                {
+                    const Bool IsFolder = File.type == SDL_PathType::SDL_PATHTYPE_DIRECTORY;
+
+                    Entries->emplace_back(Entry, IsFolder, File.size, File.modify_time);
+                }
+            }
+
+            return SDL_EnumerationResult::SDL_ENUM_CONTINUE;
+        };
+
+        const Bool Result = SDL_EnumerateDirectory(Format("{}{}", mPath, Path).data(), OnEnumerate, &Entries);
+        LOG_ASSERT(Result, "Failed to enumerate directory {}", Path);
+
+        return Entries;
+    }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
