@@ -114,6 +114,16 @@ inline namespace Math
             mMaximumY = MaximumY;
         }
 
+        /// \brief Sets the minimum coordinates of the rectangle.
+        ///
+        /// \param MinimumX The minimum X coordinate of the rectangle.
+        /// \param MinimumY The minimum Y coordinate of the rectangle.
+        ZYPHRYON_INLINE constexpr void SetMinimum(Type MinimumX, Type MinimumY)
+        {
+            mMinimumX = MinimumX;
+            mMinimumY = MinimumY;
+        }
+
         /// \brief Gets the minimum X coordinate of the rectangle.
         ///
         /// \return The minimum X coordinate value.
@@ -128,6 +138,16 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Type GetMinimumY() const
         {
             return mMinimumY;
+        }
+
+        /// \brief Sets the maximum coordinates of the rectangle.
+        ///
+        /// \param MinimumX The maximum X coordinate of the rectangle.
+        /// \param MinimumY The maximum Y coordinate of the rectangle.
+        ZYPHRYON_INLINE constexpr void SetMaximum(Type MaximumX, Type MaximumY)
+        {
+            mMaximumX = MaximumX;
+            mMaximumY = MaximumY;
         }
 
         /// \brief Gets the maximum X coordinate of the rectangle.
@@ -694,7 +714,7 @@ inline namespace Math
 
             if (MaximumX > MinimumX && MaximumY > MinimumY)
             {
-                return AnyRect(MinimumX, MinimumY, MaximumY, MaximumY);
+                return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
             }
             return AnyRect::Zero();
         }
