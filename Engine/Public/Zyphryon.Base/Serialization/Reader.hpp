@@ -171,7 +171,7 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE Type ReadEnum()
         {
-            return static_cast<Type>(ReadInt<__underlying_type(Type)>());
+            return static_cast<Type>(ReadUInt<__underlying_type(Type)>());
         }
 
         /// \brief Reads a variable-length encoded signed integer.
