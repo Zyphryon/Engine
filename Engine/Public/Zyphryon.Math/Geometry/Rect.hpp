@@ -452,6 +452,36 @@ inline namespace Math
                            mMaximumY / Vector.GetY());
         }
 
+        /// \brief Shift left all coordinates of this rectangle by a scalar.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A new rectangle with the scalar shifted by all coordinates.
+        ZYPHRYON_INLINE constexpr AnyRect operator<<(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            return AnyRect(mMinimumX << Scalar,
+                           mMinimumY << Scalar,
+                           mMaximumX << Scalar,
+                           mMaximumY << Scalar);
+        }
+
+        /// \brief Shift right all coordinates of this rectangle by a scalar.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A new rectangle with the scalar shifted by all coordinates.
+        ZYPHRYON_INLINE constexpr AnyRect operator>>(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            return AnyRect(mMinimumX >> Scalar,
+                           mMinimumY >> Scalar,
+                           mMaximumX >> Scalar,
+                           mMaximumY >> Scalar);
+        }
+
         /// \brief Adds another rectangle to the current rectangle.
         ///
         /// \param Other The rectangle to add.
@@ -589,6 +619,38 @@ inline namespace Math
             mMinimumY /= Vector.GetY();
             mMaximumX /= Vector.GetX();
             mMaximumY /= Vector.GetY();
+
+            return (* this);
+        }
+
+        /// \brief Shifts left all coordinates of the rectangle by a scalar value.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A reference to the updated rectangle.
+        ZYPHRYON_INLINE constexpr Ref<AnyRect> operator<<=(Type Scalar)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            mMinimumX <<= Scalar;
+            mMinimumY <<= Scalar;
+            mMaximumX <<= Scalar;
+            mMaximumY <<= Scalar;
+
+            return (* this);
+        }
+
+        /// \brief Shifts right all coordinates of the rectangle by a scalar value.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A reference to the updated rectangle.
+        ZYPHRYON_INLINE constexpr Ref<AnyRect> operator>>=(Type Scalar)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            mMinimumX >>= Scalar;
+            mMinimumY >>= Scalar;
+            mMaximumX >>= Scalar;
+            mMaximumY >>= Scalar;
 
             return (* this);
         }

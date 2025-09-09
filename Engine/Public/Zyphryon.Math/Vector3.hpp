@@ -342,6 +342,30 @@ inline namespace Math
             return AnyVector3(mX / Scalar, mY / Scalar, mZ / Scalar);
         }
 
+        /// \brief Shift left all coordinates of this vector by a scalar.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A new vector with the components shifted.
+        ZYPHRYON_INLINE constexpr AnyVector3 operator<<(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            return AnyVector3(mX << Scalar, mY << Scalar, mZ << Scalar);
+        }
+
+        /// \brief Shift right all coordinates of this vector by a scalar.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A new vector with the components shifted.
+        ZYPHRYON_INLINE constexpr AnyVector3 operator>>(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            return AnyVector3(mX >> Scalar, mY >> Scalar, mZ >> Scalar);
+        }
+
         /// \brief Pre-increments all components of the vector.
         ///
         /// \return A reference to the updated vector.
@@ -463,6 +487,38 @@ inline namespace Math
             mX /= Scalar;
             mY /= Scalar;
             mZ /= Scalar;
+            return (* this);
+        }
+
+        /// \brief Shifts left all components of the vector by a scalar value.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A reference to the updated vector.
+        ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator<<=(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            mX <<= Scalar;
+            mY <<= Scalar;
+            mZ <<= Scalar;
+
+            return (* this);
+        }
+
+        /// \brief Shifts right all components of the vector by a scalar value.
+        ///
+        /// \param Scalar The scalar to shift by.
+        /// \return A reference to the updated vector.
+        ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator>>=(Type Scalar)
+            requires(IsInteger<Type>)
+        {
+            LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
+
+            mX >>= Scalar;
+            mY >>= Scalar;
+            mZ >>= Scalar;
+
             return (* this);
         }
 
