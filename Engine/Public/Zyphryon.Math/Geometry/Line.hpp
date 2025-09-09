@@ -153,6 +153,26 @@ inline namespace Math
             return Vector2(-Direction.GetY(), Direction.GetX());
         }
 
+        /// \brief Calculates the normal vector of the line.
+        ///
+        /// \return The normalized normal vector of the line.
+        template<Coordinates Origin = Coordinates::Southwest>
+        ZYPHRYON_INLINE constexpr Vector2 GetNormal() const
+        {
+            LOG_ASSERT(mStart != mEnd, "Cannot compute normal of a zero-length line");
+
+            const Vector2 Direction = GetDirection();
+
+            if constexpr(Origin == Coordinates::Northwest)
+            {
+                return Vector2(-Direction.GetY(), Direction.GetX());
+            }
+            else
+            {
+                return Vector2(Direction.GetY(), -Direction.GetX());
+            }
+        }
+
         /// \brief Returns a point on the line segment by linear interpolation.
         ///
         /// \param Factor Interpolation parameter (0 = start, 1 = end).
@@ -216,7 +236,10 @@ inline namespace Math
         ///
         /// \param Other The line to compare to.
         /// \return `true` if the lines are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Line> Other) const = default;
+        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Line> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Adds a vector to both points of the line.
         ///

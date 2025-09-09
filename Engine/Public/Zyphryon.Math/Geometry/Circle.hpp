@@ -110,6 +110,7 @@ inline namespace Math
         /// \param Radius The new radius.
         ZYPHRYON_INLINE constexpr void SetRadius(Real32 Radius)
         {
+            LOG_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
             mRadius = Radius;
         }
 
@@ -187,8 +188,13 @@ inline namespace Math
         /// \return `true` if this circle contains the other, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<Circle> Other) const
         {
-            const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
-            return DistanceSquared <= ((mRadius - Other.mRadius) * (mRadius - Other.mRadius));
+            if (mRadius >= Other.mRadius)
+            {
+                const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
+                const Real32 DistanceRadius  = mRadius - Other.mRadius;
+                return DistanceSquared <= (DistanceRadius * DistanceRadius);
+            }
+            return false;
         }
 
         /// \brief Checks if this circle contains a point.
@@ -207,7 +213,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<Circle> Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
-            return DistanceSquared <= ((mRadius + Other.mRadius) * 2);
+            return DistanceSquared <= (mRadius + Other.mRadius);
         }
 
         /// \brief Checks if this circle is equal to another circle.
@@ -223,7 +229,10 @@ inline namespace Math
         ///
         /// \param Other The circle to compare to.
         /// \return `true` if the circles are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Circle> Other) const = default;
+        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Circle> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Adds a vector to the circle's center.
         ///

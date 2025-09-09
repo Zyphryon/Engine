@@ -30,36 +30,36 @@ inline namespace Math
 
         /// \brief Constructor initializing all components zero.
         ZYPHRYON_INLINE constexpr AnyRect()
-            : mX1 { 0 },
-              mY1 { 0 },
-              mX2 { 0 },
-              mY2 { 0 }
+            : mMinimumX { 0 },
+              mMinimumY { 0 },
+              mMaximumX { 0 },
+              mMaximumY { 0 }
         {
         }
 
-        /// \brief Constructor initializing the rectangle with specified left, top, right, and bottom values.
+        /// \brief Constructor initializing the rectangle with specified values.
         ///
-        /// \param Left   The left coordinate of the rectangle.
-        /// \param Top    The top coordinate of the rectangle.
-        /// \param Right  The right coordinate of the rectangle.
-        /// \param Bottom The bottom coordinate of the rectangle.
-        ZYPHRYON_INLINE constexpr AnyRect(Type Left, Type Top, Type Right, Type Bottom)
-            : mX1 { Left },
-              mY1 { Top },
-              mX2 { Right },
-              mY2 { Bottom }
+        /// \param MinimumX The minimum X coordinate of the rectangle.
+        /// \param MinimumY The minimum Y coordinate of the rectangle.
+        /// \param MaximumX The maximum X coordinate of the rectangle.
+        /// \param MaximumY the maximum Y coordinate of the rectangle.
+        ZYPHRYON_INLINE constexpr AnyRect(Type MinimumX, Type MinimumY, Type MaximumX, Type MaximumY)
+            : mMinimumX { MinimumX },
+              mMinimumY { MinimumY },
+              mMaximumX { MaximumX },
+              mMaximumY { MaximumY }
         {
         }
 
         /// \brief Constructor initializing the rectangle from minimum and maximum points.
         ///
-        /// \param Minimum The minimum point (top-left) of the rectangle.
-        /// \param Maximum The maximum point (bottom-right) of the rectangle.
+        /// \param Minimum The minimum point of the rectangle.
+        /// \param Maximum The maximum point of the rectangle.
         ZYPHRYON_INLINE constexpr AnyRect(ConstRef<AnyVector2<Type>> Minimum, ConstRef<AnyVector2<Type>> Maximum)
-            : mX1 { Minimum.GetX() },
-              mY1 { Minimum.GetY() },
-              mX2 { Maximum.GetX() },
-              mY2 { Maximum.GetY() }
+            : mMinimumX { Minimum.GetX() },
+              mMinimumY { Minimum.GetY() },
+              mMaximumX { Maximum.GetX() },
+              mMaximumY { Maximum.GetY() }
         {
         }
 
@@ -68,10 +68,10 @@ inline namespace Math
         /// \param Other The source rectangle to convert from.
         template<typename Base>
         ZYPHRYON_INLINE constexpr AnyRect(ConstRef<AnyRect<Base>> Other)
-            : mX1 { static_cast<Type>(Other.GetLeft()) },
-              mY1 { static_cast<Type>(Other.GetTop()) },
-              mX2 { static_cast<Type>(Other.GetRight()) },
-              mY2 { static_cast<Type>(Other.GetBottom()) }
+            : mMinimumX { static_cast<Type>(Other.GetMinimumX()) },
+              mMinimumY { static_cast<Type>(Other.GetMinimumY()) },
+              mMaximumX { static_cast<Type>(Other.GetMaximumX()) },
+              mMaximumY { static_cast<Type>(Other.GetMaximumY()) }
         {
         }
 
@@ -80,18 +80,16 @@ inline namespace Math
         /// \return `true` if all coordinates are approximately zero, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
         {
-            return Base::IsAlmostZero(mX1)
-                && Base::IsAlmostZero(mY1)
-                && Base::IsAlmostZero(mX2)
-                && Base::IsAlmostZero(mY2);
+            return Base::IsAlmostZero(mMinimumX) && Base::IsAlmostZero(mMinimumY) &&
+                   Base::IsAlmostZero(mMaximumX) && Base::IsAlmostZero(mMaximumY);
         }
 
-        /// \brief Checks if the rectangle is valid (left <= right and top <= bottom).
+        /// \brief Checks if the rectangle is valid (X1 <= X2 and Y1 <= Y2).
         ///
         /// \return `true` if the rectangle is valid, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsValid() const
         {
-            return mX1 <= mX2 && mY1 <= mY2;
+            return mMinimumX <= mMaximumX && mMinimumY <= mMaximumY;
         }
 
         /// \brief Checks if the rectangle has zero area.
@@ -99,101 +97,69 @@ inline namespace Math
         /// \return `true` if the rectangle has zero area, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsEmpty() const
         {
-            return Base::IsAlmostEqual(mX1, mX2) || Base::IsAlmostEqual(mY1, mY2);
+            return Base::IsAlmostEqual(mMinimumX, mMaximumX) || Base::IsAlmostEqual(mMinimumY, mMaximumY);
         }
 
-        /// \brief Sets the coordinates of the rectangle to new values.
+        /// \brief Sets the coordinates of the rectangle.
         ///
-        /// \param Left   New left coordinate.
-        /// \param Top    New top coordinate.
-        /// \param Right  New right coordinate.
-        /// \param Bottom New bottom coordinate.
-        ZYPHRYON_INLINE constexpr void Set(Type Left, Type Top, Type Right, Type Bottom)
+        /// \param MinimumX The minimum X coordinate of the rectangle.
+        /// \param MinimumY The minimum Y coordinate of the rectangle.
+        /// \param MaximumX The maximum X coordinate of the rectangle.
+        /// \param MaximumY the maximum Y coordinate of the rectangle.
+        ZYPHRYON_INLINE constexpr void Set(Type MinimumX, Type MinimumY, Type MaximumX, Type MaximumY)
         {
-            mX1 = Left;
-            mY1 = Top;
-            mX2 = Right;
-            mY2 = Bottom;
+            mMinimumX = MinimumX;
+            mMinimumY = MinimumY;
+            mMaximumX = MaximumX;
+            mMaximumY = MaximumY;
         }
 
-        /// \brief Sets the left coordinate of the rectangle.
+        /// \brief Gets the minimum X coordinate of the rectangle.
         ///
-        /// \param Value The new left coordinate.
-        ZYPHRYON_INLINE constexpr void SetLeft(Type Value)
+        /// \return The minimum X coordinate value.
+        ZYPHRYON_INLINE constexpr Type GetMinimumX() const
         {
-            mX1 = Value;
+            return mMinimumX;
         }
 
-        /// \brief Gets the left coordinate of the rectangle.
+        /// \brief Gets the minimum Y coordinate of the rectangle.
         ///
-        /// \return The left coordinate.
-        ZYPHRYON_INLINE constexpr Type GetLeft() const
+        /// \return The minimum Y coordinate value.
+        ZYPHRYON_INLINE constexpr Type GetMinimumY() const
         {
-            return mX1;
+            return mMinimumY;
         }
 
-        /// \brief Sets the top coordinate of the rectangle.
+        /// \brief Gets the maximum X coordinate of the rectangle.
         ///
-        /// \param Value The new top coordinate.
-        ZYPHRYON_INLINE constexpr void SetTop(Type Value)
+        /// \return The maximum X coordinate value.
+        ZYPHRYON_INLINE constexpr Type GetMaximumX() const
         {
-            mY1 = Value;
+            return mMaximumX;
         }
 
-        /// \brief Gets the top coordinate of the rectangle.
+        /// \brief Gets the maximum Y coordinate of the rectangle.
         ///
-        /// \return The top coordinate.
-        ZYPHRYON_INLINE constexpr Type GetTop() const
+        /// \return The maximum Y coordinate value.
+        ZYPHRYON_INLINE constexpr Type GetMaximumY() const
         {
-            return mY1;
+            return mMaximumY;
         }
 
-        /// \brief Sets the right coordinate of the rectangle.
-        ///
-        /// \param Value The new right coordinate.
-        ZYPHRYON_INLINE constexpr void SetRight(Type Value)
-        {
-            mX2 = Value;
-        }
-
-        /// \brief Gets the right coordinate of the rectangle.
-        ///
-        /// \return The right coordinate.
-        ZYPHRYON_INLINE constexpr Type GetRight() const
-        {
-            return mX2;
-        }
-
-        /// \brief Sets the bottom coordinate of the rectangle.
-        ///
-        /// \param Value The new bottom coordinate.
-        ZYPHRYON_INLINE constexpr void SetBottom(Type Value)
-        {
-            mY2 = Value;
-        }
-
-        /// \brief Gets the bottom coordinate of the rectangle.
-        ///
-        /// \return The bottom coordinate.
-        ZYPHRYON_INLINE constexpr Type GetBottom() const
-        {
-            return mY2;
-        }
-
-        /// \brief Gets the X coordinate of the rectangle (equivalent to left).
+        /// \brief Gets the X coordinate of the rectangle.
         ///
         /// \return The X coordinate.
         ZYPHRYON_INLINE constexpr Type GetX() const
         {
-            return GetLeft();
+            return mMinimumX;
         }
 
-        /// \brief Gets the Y coordinate of the rectangle (equivalent to top).
+        /// \brief Gets the Y coordinate of the rectangle.
         ///
         /// \return The Y coordinate.
         ZYPHRYON_INLINE constexpr Type GetY() const
         {
-            return GetTop();
+            return mMinimumY;
         }
 
         /// \brief Calculates the width of the rectangle.
@@ -201,7 +167,7 @@ inline namespace Math
         /// \return The width of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetWidth() const
         {
-            return GetRight() - GetLeft();
+            return GetMaximumX() - GetMinimumX();
         }
 
         /// \brief Calculates the height of the rectangle.
@@ -209,20 +175,20 @@ inline namespace Math
         /// \return The height of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetHeight() const
         {
-            return GetBottom() - GetTop();
+            return GetMaximumY() - GetMinimumY();
         }
 
-        /// \brief Gets the position of the rectangle (top-left corner).
+        /// \brief Gets the position of the rectangle.
         ///
-        /// \return The position of the rectangle2.
+        /// \return The position of the rectangle.
         ZYPHRYON_INLINE constexpr AnyVector2<Type> GetPosition() const
         {
-            return Vector2(GetX(), GetY());
+            return Vector2(mMinimumX, mMinimumY);
         }
 
         /// \brief Gets the size of the rectangle.
         ///
-        /// \return The size of the rectangle as a Vector2.
+        /// \return The size of the rectangle.
         ZYPHRYON_INLINE constexpr AnyVector2<Type> GetSize() const
         {
             return Vector2(GetWidth(), GetHeight());
@@ -235,11 +201,11 @@ inline namespace Math
         {
             if constexpr(IsReal<Type>)
             {
-                return AnyVector2<Type>(mX1 + GetWidth() * Type(0.5), mY1 + GetHeight() * Type(0.5));
+                return AnyVector2<Type>(mMinimumX + GetWidth() * Type(0.5), mMinimumY + GetHeight() * Type(0.5));
             }
             else
             {
-                return AnyVector2<Type>(mX1 + GetWidth() / Type(2), mY1 + GetHeight() / Type(2));
+                return AnyVector2<Type>(mMinimumX + GetWidth() / Type(2), mMinimumY + GetHeight() / Type(2));
             }
         }
 
@@ -265,7 +231,7 @@ inline namespace Math
         /// \return The expanded rectangle.
         ZYPHRYON_INLINE constexpr AnyRect Expand(Type Amount) const
         {
-            return AnyRect(mX1 - Amount, mY1 - Amount, mX2 + Amount, mY2 + Amount);
+            return AnyRect(mMinimumX - Amount, mMinimumY - Amount, mMaximumX + Amount, mMaximumY + Amount);
         }
 
         /// \brief Contracts the rectangle by the given amount in all directions.
@@ -274,7 +240,7 @@ inline namespace Math
         /// \return The contracted rectangle.
         ZYPHRYON_INLINE constexpr AnyRect Contract(Type Amount) const
         {
-            return AnyRect(mX1 + Amount, mY1 + Amount, mX2 - Amount, mY2 - Amount);
+            return AnyRect(mMinimumX + Amount, mMinimumY + Amount, mMaximumX - Amount, mMaximumY - Amount);
         }
 
         /// \brief Checks if this rectangle completely contains another rectangle.
@@ -283,7 +249,10 @@ inline namespace Math
         /// \return `true` if this rectangle contains the other, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<AnyRect> Other) const
         {
-            return mX1 <= Other.mX1 && mX2 >= Other.mX2 && mY1 <= Other.mY1 && mY2 >= Other.mY2;
+            return mMinimumX <= Other.mMinimumX &&
+                   mMaximumX >= Other.mMaximumX &&
+                   mMinimumY <= Other.mMinimumY &&
+                   mMaximumY >= Other.mMaximumY;
         }
 
         /// \brief Checks if this rectangle contains a point.
@@ -293,7 +262,7 @@ inline namespace Math
         /// \return `true` if the point is inside the rectangle, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(Type X, Type Y) const
         {
-            return X >= mX1 && X < mX2 && Y >= mY1 && Y < mY2;
+            return X >= mMinimumX && X < mMaximumX && Y >= mMinimumY && Y < mMaximumY;
         }
 
         /// \brief Checks if this rectangle contains a point.
@@ -311,8 +280,10 @@ inline namespace Math
         /// \return `true` if the rectangles intersect, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<AnyRect> Other) const
         {
-            return !(mX2 <= Other.mX1 || mX1 >= Other.mX2 ||
-                     mY2 <= Other.mY1 || mY1 >= Other.mY2);
+            return !(mMaximumX <= Other.mMinimumX ||
+                     mMinimumX >= Other.mMaximumX ||
+                     mMaximumY <= Other.mMinimumY ||
+                     mMinimumY >= Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle collides with another rectangle.
@@ -321,8 +292,10 @@ inline namespace Math
         /// \return `true` if the rectangles collides, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Collides(ConstRef<AnyRect> Other) const
         {
-            return !(mX2 < Other.mX1 || mX1 > Other.mX2 ||
-                     mY2 < Other.mY1 || mY1 > Other.mY2);
+            return !(mMaximumX < Other.mMinimumX ||
+                     mMinimumX > Other.mMaximumX ||
+                     mMaximumY < Other.mMinimumY ||
+                     mMinimumY > Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle is equal to another rectangle.
@@ -331,17 +304,20 @@ inline namespace Math
         /// \return `true` if all coordinates are approximately equal, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<AnyRect> Other) const
         {
-            return Base::IsAlmostEqual(mX1, Other.mX1) &&
-                   Base::IsAlmostEqual(mY1, Other.mY1) &&
-                   Base::IsAlmostEqual(mX2, Other.mX2) &&
-                   Base::IsAlmostEqual(mY2, Other.mY2);
+            return Base::IsAlmostEqual(mMinimumX, Other.mMinimumX) &&
+                   Base::IsAlmostEqual(mMinimumY, Other.mMinimumY) &&
+                   Base::IsAlmostEqual(mMaximumX, Other.mMaximumX) &&
+                   Base::IsAlmostEqual(mMaximumY, Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle is not equal to another rectangle.
         ///
         /// \param Other The rectangle to compare to.
         /// \return `true` if the rectangles are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyRect> Other) const = default;
+        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyRect> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Adds another rectangle to this rectangle.
         ///
@@ -349,7 +325,10 @@ inline namespace Math
         /// \return A new rectangle that is the sum of the two rectangles.
         ZYPHRYON_INLINE constexpr AnyRect operator+(ConstRef<AnyRect> Other) const
         {
-            return AnyRect(mX1 + Other.mX1, mY1 + Other.mY1, mX2 + Other.mX2, mY2 + Other.mY2);
+            return AnyRect(mMinimumX + Other.mMinimumX,
+                           mMinimumY + Other.mMinimumY,
+                           mMaximumX + Other.mMaximumX,
+                           mMaximumY + Other.mMaximumY);
         }
 
         /// \brief Adds a scalar to all coordinates of this rectangle.
@@ -358,7 +337,7 @@ inline namespace Math
         /// \return A new rectangle with the scalar added to all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator+(Type Scalar) const
         {
-            return AnyRect(mX1 + Scalar, mY1 + Scalar, mX2 + Scalar, mY2 + Scalar);
+            return AnyRect(mMinimumX + Scalar, mMinimumY + Scalar, mMaximumX + Scalar, mMaximumY + Scalar);
         }
 
         /// \brief Adds a vector to all coordinates of this rectangle.
@@ -367,7 +346,10 @@ inline namespace Math
         /// \return A new rectangle with the vector added to all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator+(ConstRef<AnyVector2<Type>> Vector) const
         {
-            return AnyRect(mX1 + Vector.GetX(), mY1 + Vector.GetY(), mX2 + Vector.GetX(), mY2 + Vector.GetY());
+            return AnyRect(mMinimumX + Vector.GetX(),
+                           mMinimumY + Vector.GetY(),
+                           mMaximumX + Vector.GetX(),
+                           mMaximumY + Vector.GetY());
         }
 
         /// \brief Subtracts another rectangle from this rectangle.
@@ -376,7 +358,10 @@ inline namespace Math
         /// \return A new rectangle that is the difference of the two rectangles.
         ZYPHRYON_INLINE constexpr AnyRect operator-(ConstRef<AnyRect> Other) const
         {
-            return AnyRect(mX1 - Other.mX1, mY1 - Other.mY1, mX2 - Other.mX2, mY2 - Other.mY2);
+            return AnyRect(mMinimumX - Other.mMinimumX,
+                           mMinimumY - Other.mMinimumY,
+                           mMaximumX - Other.mMaximumX,
+                           mMaximumY - Other.mMaximumY);
         }
 
         /// \brief Subtracts a scalar from all coordinates of this rectangle.
@@ -385,7 +370,7 @@ inline namespace Math
         /// \return A new rectangle with the scalar subtracted from all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator-(Type Scalar) const
         {
-            return AnyRect(mX1 - Scalar, mY1 - Scalar, mX2 - Scalar, mY2 - Scalar);
+            return AnyRect(mMinimumX - Scalar, mMinimumY - Scalar, mMaximumX - Scalar, mMaximumY - Scalar);
         }
 
         /// \brief Subtracts a vector from all coordinates of this rectangle.
@@ -394,7 +379,10 @@ inline namespace Math
         /// \return A new rectangle with the vector subtracted from all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator-(ConstRef<AnyVector2<Type>> Vector) const
         {
-            return AnyRect(mX1 - Vector.GetX(), mY1 - Vector.GetY(), mX2 - Vector.GetX(), mY2 - Vector.GetY());
+            return AnyRect(mMinimumX - Vector.GetX(),
+                           mMinimumY - Vector.GetY(),
+                           mMaximumX - Vector.GetX(),
+                           mMaximumY - Vector.GetY());
         }
 
         /// \brief Multiplies all coordinates of this rectangle by a scalar.
@@ -403,7 +391,7 @@ inline namespace Math
         /// \return A new rectangle with the scalar multiplied by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator*(Type Scalar) const
         {
-            return AnyRect(mX1 * Scalar, mY1 * Scalar, mX2 * Scalar, mY2 * Scalar);
+            return AnyRect(mMinimumX * Scalar, mMinimumY * Scalar, mMaximumX * Scalar, mMaximumY * Scalar);
         }
 
         /// \brief Multiplies all coordinates of this rectangle by a vector.
@@ -412,7 +400,10 @@ inline namespace Math
         /// \return A new rectangle with the vector multiplied by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator*(ConstRef<AnyVector2<Type>> Vector) const
         {
-            return AnyRect(mX1 * Vector.GetX(), mY1 * Vector.GetY(), mX2 * Vector.GetX(), mY2 * Vector.GetY());
+            return AnyRect(mMinimumX * Vector.GetX(),
+                           mMinimumY * Vector.GetY(),
+                           mMaximumX * Vector.GetX(),
+                           mMaximumY * Vector.GetY());
         }
 
         /// \brief Divides all coordinates of this rectangle by a scalar.
@@ -423,7 +414,7 @@ inline namespace Math
         {
             LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
 
-            return AnyRect(mX1 / Scalar, mY1 / Scalar, mX2 / Scalar, mY2 / Scalar);
+            return AnyRect(mMinimumX / Scalar, mMinimumY / Scalar, mMaximumX / Scalar, mMaximumY / Scalar);
         }
 
         /// \brief Divides all coordinates of this rectangle by a vector.
@@ -435,7 +426,10 @@ inline namespace Math
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
-            return AnyRect(mX1 / Vector.GetX(), mY1 / Vector.GetY(), mX2 / Vector.GetX(), mY2 / Vector.GetY());
+            return AnyRect(mMinimumX / Vector.GetX(),
+                           mMinimumY / Vector.GetY(),
+                           mMaximumX / Vector.GetX(),
+                           mMaximumY / Vector.GetY());
         }
 
         /// \brief Adds another rectangle to the current rectangle.
@@ -444,10 +438,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator+=(ConstRef<AnyRect> Other)
         {
-            mX1 += Other.mX1;
-            mY1 += Other.mY1;
-            mX2 += Other.mX2;
-            mY2 += Other.mY2;
+            mMinimumX += Other.mMinimumX;
+            mMinimumY += Other.mMinimumY;
+            mMaximumX += Other.mMaximumX;
+            mMaximumY += Other.mMaximumY;
             return (* this);
         }
 
@@ -457,10 +451,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator+=(Type Scalar)
         {
-            mX1 += Scalar;
-            mY1 += Scalar;
-            mX2 += Scalar;
-            mY2 += Scalar;
+            mMinimumX += Scalar;
+            mMinimumY += Scalar;
+            mMaximumX += Scalar;
+            mMaximumY += Scalar;
             return (* this);
         }
 
@@ -470,10 +464,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator+=(AnyVector2<Type> Vector)
         {
-            mX1 += Vector.GetX();
-            mY1 += Vector.GetY();
-            mX2 += Vector.GetX();
-            mY2 += Vector.GetY();
+            mMinimumX += Vector.GetX();
+            mMinimumY += Vector.GetY();
+            mMaximumX += Vector.GetX();
+            mMaximumY += Vector.GetY();
 
             return (* this);
         }
@@ -484,10 +478,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator-=(ConstRef<AnyRect> Other)
         {
-            mX1 -= Other.mX1;
-            mY1 -= Other.mY1;
-            mX2 -= Other.mX2;
-            mY2 -= Other.mY2;
+            mMinimumX -= Other.mMinimumX;
+            mMinimumY -= Other.mMinimumY;
+            mMaximumX -= Other.mMaximumX;
+            mMaximumY -= Other.mMaximumY;
             return (* this);
         }
 
@@ -497,10 +491,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator-=(Type Scalar)
         {
-            mX1 -= Scalar;
-            mY1 -= Scalar;
-            mX2 -= Scalar;
-            mY2 -= Scalar;
+            mMinimumX -= Scalar;
+            mMinimumY -= Scalar;
+            mMaximumX -= Scalar;
+            mMaximumY -= Scalar;
             return (* this);
         }
 
@@ -510,10 +504,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator-=(ConstRef<AnyVector2<Type>> Vector)
         {
-            mX1 -= Vector.GetX();
-            mY1 -= Vector.GetY();
-            mX2 -= Vector.GetX();
-            mY2 -= Vector.GetY();
+            mMinimumX -= Vector.GetX();
+            mMinimumY -= Vector.GetY();
+            mMaximumX -= Vector.GetX();
+            mMaximumY -= Vector.GetY();
 
             return (* this);
         }
@@ -524,10 +518,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator*=(Type Scalar)
         {
-            mX1 *= Scalar;
-            mY1 *= Scalar;
-            mX2 *= Scalar;
-            mY2 *= Scalar;
+            mMinimumX *= Scalar;
+            mMinimumY *= Scalar;
+            mMaximumX *= Scalar;
+            mMaximumY *= Scalar;
 
             return (* this);
         }
@@ -538,10 +532,10 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator*=(ConstRef<AnyVector2<Type>> Vector)
         {
-            mX1 *= Vector.GetX();
-            mY1 *= Vector.GetY();
-            mX2 *= Vector.GetX();
-            mY2 *= Vector.GetY();
+            mMinimumX *= Vector.GetX();
+            mMinimumY *= Vector.GetY();
+            mMaximumX *= Vector.GetX();
+            mMaximumY *= Vector.GetY();
 
             return (* this);
         }
@@ -554,10 +548,10 @@ inline namespace Math
         {
             LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
 
-            mX1 /= Scalar;
-            mY1 /= Scalar;
-            mX2 /= Scalar;
-            mY2 /= Scalar;
+            mMinimumX /= Scalar;
+            mMinimumY /= Scalar;
+            mMaximumX /= Scalar;
+            mMaximumY /= Scalar;
 
             return (* this);
         }
@@ -571,10 +565,10 @@ inline namespace Math
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
-            mX1 /= Vector.GetX();
-            mY1 /= Vector.GetY();
-            mX2 /= Vector.GetX();
-            mY2 /= Vector.GetY();
+            mMinimumX /= Vector.GetX();
+            mMinimumY /= Vector.GetY();
+            mMaximumX /= Vector.GetX();
+            mMaximumY /= Vector.GetY();
 
             return (* this);
         }
@@ -584,7 +578,7 @@ inline namespace Math
         /// \return A hash value uniquely representing the current state of the object.
         ZYPHRYON_INLINE UInt Hash() const
         {
-            return HashCombine(mX1, mY1, mX2, mY2);
+            return HashCombine(mMinimumX, mMinimumY, mMaximumX, mMaximumY);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.
@@ -593,13 +587,21 @@ inline namespace Math
         template<typename Serializer>
         ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
         {
-            Archive.SerializeObject(mX1);
-            Archive.SerializeObject(mY1);
-            Archive.SerializeObject(mX2);
-            Archive.SerializeObject(mY2);
+            Archive.SerializeObject(mMinimumX);
+            Archive.SerializeObject(mMinimumY);
+            Archive.SerializeObject(mMaximumX);
+            Archive.SerializeObject(mMaximumY);
         }
 
     public:
+
+        /// \brief Returns the unit rect with size 0.
+        ///
+        /// \return An zero rect.
+        ZYPHRYON_INLINE constexpr static AnyRect Zero()
+        {
+            return AnyRect(Type(0), Type(0), Type(0), Type(0));
+        }
 
         /// \brief Returns the unit rect with size 1.
         ///
@@ -609,18 +611,17 @@ inline namespace Math
             return AnyRect(Type(0), Type(0), Type(1), Type(1));
         }
 
-        /// \brief Canonicalizes a rectangle by ensuring Left <= Right and Top <= Bottom.
+        /// \brief Canonicalizes a rectangle by ensuring X1 <= X2 and Y1 <= Y2.
         ///
         /// \param Rectangle The rectangle to canonicalize.
         /// \return A canonicalized rectangle.
         ZYPHRYON_INLINE constexpr static AnyRect Canonicalize(ConstRef<AnyRect> Rectangle)
         {
-            const Type Left   = Base::Min(Rectangle.mX1, Rectangle.mX2);
-            const Type Right  = Base::Max(Rectangle.mX1, Rectangle.mX2);
-            const Type Top    = Base::Min(Rectangle.mY1, Rectangle.mY2);
-            const Type Bottom = Base::Max(Rectangle.mY1, Rectangle.mY2);
-
-            return AnyRect(Left, Top, Right, Bottom);
+            const Type X1 = Base::Min(Rectangle.mMinimumX, Rectangle.mMaximumX);
+            const Type X2 = Base::Max(Rectangle.mMinimumX, Rectangle.mMaximumX);
+            const Type Y1 = Base::Min(Rectangle.mMinimumY, Rectangle.mMaximumY);
+            const Type Y2 = Base::Max(Rectangle.mMinimumY, Rectangle.mMaximumY);
+            return AnyRect(X1, Y1, X2, Y2);
         }
 
         /// \brief Returns the component-wise minimum of two rectangles.
@@ -631,10 +632,10 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Min(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
             return AnyRect(
-                Base::Min(First.mX1, Second.mX1),
-                Base::Min(First.mY1, Second.mY1),
-                Base::Min(First.mX2, Second.mX2),
-                Base::Min(First.mY2, Second.mY2));
+                Base::Min(First.mMinimumX, Second.mMinimumX),
+                Base::Min(First.mMinimumY, Second.mMinimumY),
+                Base::Min(First.mMaximumX, Second.mMaximumX),
+                Base::Min(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Returns the component-wise maximum of two rectangles.
@@ -645,10 +646,10 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Max(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
             return AnyRect(
-                Base::Max(First.mX1, Second.mX1),
-                Base::Max(First.mY1, Second.mY1),
-                Base::Max(First.mX2, Second.mX2),
-                Base::Max(First.mY2, Second.mY2));
+                Base::Max(First.mMinimumX, Second.mMinimumX),
+                Base::Max(First.mMinimumY, Second.mMinimumY),
+                Base::Max(First.mMaximumX, Second.mMaximumX),
+                Base::Max(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Returns a rectangle with all coordinates floored to the nearest integer.
@@ -659,10 +660,10 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             return AnyRect(
-                Base::Floor(Rectangle.mX1),
-                Base::Floor(Rectangle.mY1),
-                Base::Floor(Rectangle.mX2),
-                Base::Floor(Rectangle.mY2));
+                Base::Floor(Rectangle.mMinimumX),
+                Base::Floor(Rectangle.mMinimumY),
+                Base::Floor(Rectangle.mMaximumX),
+                Base::Floor(Rectangle.mMaximumY));
         }
 
         /// \brief Returns a rectangle with all coordinates ceiled to the nearest integer.
@@ -672,11 +673,11 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Ceil(ConstRef<AnyRect> Rectangle)
             requires(IsReal<Type>)
         {
-             return AnyRect(
-                Base::Ceil(Rectangle.mX1),
-                Base::Ceil(Rectangle.mY1),
-                Base::Ceil(Rectangle.mX2),
-                Base::Ceil(Rectangle.mY2));
+            return AnyRect(
+                Base::Ceil(Rectangle.mMinimumX),
+                Base::Ceil(Rectangle.mMinimumY),
+                Base::Ceil(Rectangle.mMaximumX),
+                Base::Ceil(Rectangle.mMaximumY));
         }
 
         /// \brief Returns the intersection of two rectangles.
@@ -686,16 +687,16 @@ inline namespace Math
         /// \return A rectangle representing the overlapping region. If they don't overlap, the rect may be invalid.
         ZYPHRYON_INLINE constexpr static AnyRect Intersection(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
-            const Type X1 = Base::Max(First.mX1, Second.mX1);
-            const Type Y1 = Base::Max(First.mY1, Second.mY1);
-            const Type X2 = Base::Min(First.mX2, Second.mX2);
-            const Type Y2 = Base::Min(First.mY2, Second.mY2);
+            const Type MinimumX = Base::Max(First.mMinimumX, Second.mMinimumX);
+            const Type MinimumY = Base::Max(First.mMinimumY, Second.mMinimumY);
+            const Type MaximumX = Base::Min(First.mMaximumX, Second.mMaximumX);
+            const Type MaximumY = Base::Min(First.mMaximumY, Second.mMaximumY);
 
-            if (X2 <= X1 || Y2 <= Y1)
+            if (MaximumX > MinimumX && MaximumY > MinimumY)
             {
-                return AnyRect(0, 0, 0, 0);
+                return AnyRect(MinimumX, MinimumY, MaximumY, MaximumY);
             }
-            return AnyRect(X1, Y1, X2, Y2);
+            return AnyRect::Zero();
         }
 
         /// \brief Returns the union (bounding box) of two rectangles.
@@ -706,10 +707,10 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Union(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
             return AnyRect(
-                Base::Min(First.mX1, Second.mX1),
-                Base::Min(First.mY1, Second.mY1),
-                Base::Max(First.mX2, Second.mX2),
-                Base::Max(First.mY2, Second.mY2));
+                Base::Min(First.mMinimumX, Second.mMinimumX),
+                Base::Min(First.mMinimumY, Second.mMinimumY),
+                Base::Max(First.mMaximumX, Second.mMaximumX),
+                Base::Max(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Computes an integer-aligned rectangle that fully encloses the given rectangle.
@@ -719,8 +720,12 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static AnyRect Enclose(ConstRef<AnyRect> Rectangle)
             requires(IsReal<Type>)
         {
-            return AnyRect(Base::Floor(Rectangle.mX1), Base::Floor(Rectangle.mY1),
-                            Base::Ceil(Rectangle.mX2),  Base::Ceil(Rectangle.mY2));
+            const Type MinimumX = Base::Floor(Rectangle.mMinimumX);
+            const Type MinimumY = Base::Floor(Rectangle.mMinimumY);
+            const Type MaximumX = Base::Ceil(Rectangle.mMaximumX);
+            const Type MaximumY = Base::Ceil(Rectangle.mMaximumY);
+
+            return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
         }
 
         /// \brief Anchors a rectangle relative to a pivot point.
@@ -752,7 +757,7 @@ inline namespace Math
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A rectangle interpolated between the start and end rectangles.
         ZYPHRYON_INLINE constexpr static AnyRect Lerp(ConstRef<AnyRect> Start, ConstRef<AnyRect> End, Type Percentage)
-            requires (IsReal<Type>)
+        requires (IsReal<Type>)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
@@ -767,8 +772,10 @@ inline namespace Math
         ZYPHRYON_INLINE static AnyRect Project(ConstRef<AnyRect> Rectangle, ConstRef<Matrix4x4> Matrix)
             requires (IsReal<Type>)
         {
-            const Vector4 CornerX(Rectangle.GetLeft(), Rectangle.GetRight(), Rectangle.GetRight(), Rectangle.GetLeft());
-            const Vector4 CornerY(Rectangle.GetBottom(), Rectangle.GetBottom(), Rectangle.GetTop(), Rectangle.GetTop());
+            const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
+                                  Rectangle.GetMaximumX(), Rectangle.GetMinimumX());
+            const Vector4 CornerY(Rectangle.GetMaximumY(), Rectangle.GetMaximumY(),
+                                  Rectangle.GetMinimumY(), Rectangle.GetMinimumY());
 
             // Homogeneous W for all corners: w = m30*x + m31*y + m33
             const Vector4 W = CornerX * Vector4::SplatW(Matrix.GetColumn(0)) +
@@ -798,10 +805,10 @@ inline namespace Math
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Type mX1;
-        Type mY1;
-        Type mX2;
-        Type mY2;
+        Type mMinimumX;
+        Type mMinimumY;
+        Type mMaximumX;
+        Type mMaximumY;
     };
 
     /// \brief Represents a 2D rectangle defined by (X1, Y1, X2, Y2) floating-point coordinates.

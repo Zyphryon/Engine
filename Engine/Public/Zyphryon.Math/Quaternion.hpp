@@ -316,7 +316,10 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to compare to.
         /// \return `true` if the vectors are not equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Quaternion> Other) const = default;
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Quaternion> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Computes a hash value for the object.
         ///

@@ -425,7 +425,10 @@ inline namespace Math
         /// 
         /// \param Other The vector to compare to.
         /// \return `true` if the vectors are not equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Vector4> Other) const = default;
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Vector4> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Compares this vector with another for less-than relationship.
         ///

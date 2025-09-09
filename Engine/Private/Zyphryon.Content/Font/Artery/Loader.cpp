@@ -26,23 +26,23 @@ namespace Content
     {
         UInt32 CurrentOffset = 0;
 
-#define ARTERY_FONT_DECODE_ALIGN()                                                                    \
+#define ARTERY_FONT_DECODE_ALIGN()                                                                     \
         if (CurrentOffset & 0x03u) CurrentOffset += (0x04u - (CurrentOffset & 0x03u));
 
-#define ARTERY_FONT_DECODE_READ(Target, Size)                                                         \
-        Target = * reinterpret_cast<Ptr<decltype(Target)>>(Data.GetSpan<UInt8>(CurrentOffset).data());  \
+#define ARTERY_FONT_DECODE_READ(Target, Size)                                                          \
+        Target = * reinterpret_cast<Ptr<decltype(Target)>>(Data.GetSpan<UInt8>(CurrentOffset).data()); \
         CurrentOffset += Size;
 
 #define ARTERY_FONT_DECODE_READ_PTR(Target, Size)                                                     \
-        Target = reinterpret_cast<decltype(Target)>(Data.GetSpan<UInt8>(CurrentOffset).data());         \
+        Target = reinterpret_cast<decltype(Target)>(Data.GetSpan<UInt8>(CurrentOffset).data());       \
         CurrentOffset += Size;
 
-#define ARTERY_FONT_DECODE_READ_STRING(Str, Size)                  \
+#define ARTERY_FONT_DECODE_READ_STRING(Str, Size)                    \
         if (Size > 0)                                                \
         {                                                            \
             Ptr<Char> Characters;                                    \
-            ARTERY_FONT_DECODE_READ_PTR(Characters, Size);         \
-            ARTERY_FONT_DECODE_ALIGN();                            \
+            ARTERY_FONT_DECODE_READ_PTR(Characters, Size);           \
+            ARTERY_FONT_DECODE_ALIGN();                              \
         }
 
         // Font Data
@@ -90,8 +90,8 @@ namespace Content
                 Ref<ArteryGlyph> Glyph = Glyphs[Element];
 
                 FontGlyphs.try_emplace(Glyph.Codepoint, Graphic::Font::Glyph {
-                    Rect(Glyph.PlaneBounds.Left, Glyph.PlaneBounds.Top, Glyph.PlaneBounds.Right, Glyph.PlaneBounds.Bottom),
-                    Rect(Glyph.ImageBounds.Left, Glyph.ImageBounds.Top, Glyph.ImageBounds.Right, Glyph.ImageBounds.Bottom),
+                    Rect(Glyph.PlaneBounds.Left, Glyph.PlaneBounds.Bottom, Glyph.PlaneBounds.Right, Glyph.PlaneBounds.Top),
+                    Rect(Glyph.ImageBounds.Left, Glyph.ImageBounds.Bottom, Glyph.ImageBounds.Right, Glyph.ImageBounds.Top),
                     Glyph.Advance.Horizontal
                 });
             }
@@ -165,19 +165,14 @@ namespace Content
         Material->SetSampler(Graphic::TextureSemantic::Diffuse, kDefaultSample);
         Material->SetParameter(0, Vector2(FontMetrics.Distance / FontAtlasWidth, FontMetrics.Distance / FontAtlasHeight));
 
-        // Normalize Glyphs coordinates to use Y-TopLeft instead of Y-BottomLeft
+        // Normalize Glyphs coordinates.
         const Vector2 AtlasCoordNormalized(1.0f / FontAtlasWidth, 1.0f / FontAtlasHeight);
 
         for (auto & Iterator : FontGlyphs)
         {
             Ref<Graphic::Font::Glyph> Element = Iterator.second;
 
-            const Real32 MinY = FontMetrics.Ascender - Element.LocalBounds.GetTop();
-            const Real32 MaxY = MinY + Element.LocalBounds.GetTop() - Element.LocalBounds.GetBottom();
-
             Element.AtlasBounds *= AtlasCoordNormalized;
-            Element.LocalBounds.SetTop(MinY);
-            Element.LocalBounds.SetBottom(MaxY);
         }
 
         // Read appendices?

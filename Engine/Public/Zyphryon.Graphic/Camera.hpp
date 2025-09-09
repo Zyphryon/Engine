@@ -489,33 +489,115 @@ namespace Graphic
         /// \param Position The 3D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        Vector3 GetWorldCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const;
+        template<Coordinates Origin = Coordinates::Southwest>
+        Vector3 GetWorldCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const
+        {
+            LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
+            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+
+            const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
+            const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
+            const Real32 Z = (Position.GetZ() - Viewport.MinDepth) / (Viewport.MaxDepth - Viewport.MinDepth);
+
+            return Matrix4x4::Project(mViewProjectionInverse, Vector3(X, Y, Z));
+        }
 
         /// \brief Transforms a screen-space coordinates into world-space position.
         ///
         /// \param Position The 2D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        Vector2 GetWorldCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const;
+        template<Coordinates Origin = Coordinates::Southwest>
+        Vector2 GetWorldCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
+        {
+            LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
+            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+
+            const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
+            const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
+
+            return Matrix4x4::Project(mViewProjectionInverse, Vector2(X, Y));
+        }
 
         /// \brief Transforms a world-space position into screen-space coordinates.
         ///
         /// \param Position The 3D point in world space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates and Z is in depth range.
-        Vector3 GetScreenCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const;
+        template<Coordinates Origin = Coordinates::Southwest>
+        Vector3 GetScreenCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const
+        {
+            LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
+            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+
+            const Vector3 Point = Matrix4x4::Project(mViewProjection, Position);
+
+            const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
+            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);
+            const Real32 Z = Point.GetZ() * (Viewport.MaxDepth - Viewport.MinDepth) + Viewport.MinDepth;
+
+            return Vector3(X, Y, Z);
+        }
 
         /// \brief Transforms a world-space position into screen-space coordinates.
         ///
         /// \param Position The 2D point in world space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates.
-        Vector2 GetScreenCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const;
+        template<Coordinates Origin = Coordinates::Southwest>
+        Vector2 GetScreenCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
+        {
+            LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
+            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+
+            const Vector2 Point = Matrix4x4::Project(mViewProjection, Position);
+
+            const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
+            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);
+
+            return Vector2(X, Y);
+        }
 
     private:
 
         static constexpr UInt32 kDirtyBitTransformation = 1 << 0;
         static constexpr UInt32 kDirtyBitProjection     = 1 << 1;
+
+        /// \brief Converts a screen-space Y coordinate to a normalized device Y coordinate.
+        ///
+        /// \param Y        The screen-space Y coordinate to transform.
+        /// \param Viewport The viewport definition providing the origin offset and dimensions.
+        /// \return The corresponding Y coordinate in normalized device space `[-1.0, 1.0]`.
+        template<Coordinates Origin>
+        ZYPHRYON_INLINE constexpr Real32 ScreenYToNormalizedDeviceY(Real32 Y, ConstRef<Viewport> Viewport) const
+        {
+            if constexpr(Origin == Coordinates::Northwest)
+            {
+                return (Viewport.Height - (Y - Viewport.Y)) / Viewport.Height * 2.0f - 1.0f;
+            }
+            else
+            {
+                return ((Y - Viewport.Y) / Viewport.Height ) * 2.0f - 1.0f;
+            }
+        }
+
+        /// \brief Converts a normalized device Y coordinate to a screen-space Y coordinate.
+        ///
+        /// \param Y        The normalized device Y coordinate `[-1.0, 1.0]` to transform.
+        /// \param Viewport The viewport definition providing the origin offset and dimensions.
+        /// \return The corresponding Y coordinate in screen space.
+        template<Coordinates Origin>
+        ZYPHRYON_INLINE constexpr Real32 NormalizedDeviceYToScreenY(Real32 Y, ConstRef<Viewport> Viewport) const
+        {
+            if constexpr(Origin == Coordinates::Northwest)
+            {
+                return Viewport.Height - (Viewport.Height * (Y + 1.0f) * 0.5f + Viewport.Y);
+            }
+            else
+            {
+                return Viewport.Height * (Y + 1.0f) * 0.5f + Viewport.Y;
+            }
+        }
 
     private:
 
