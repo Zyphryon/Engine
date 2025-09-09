@@ -87,7 +87,7 @@ inline namespace Base
             }
         }
 
-        /// \brief Serializes an integer value using platform-native size and format.
+        /// \brief Serializes a signed integer value using platform-native size and format.
         /// 
         /// \param Value Reference to the value.
         template<typename Type>
@@ -100,6 +100,22 @@ inline namespace Base
             else
             {
                 mArchive.WriteInt(Value);
+            }
+        }
+
+        /// \brief Serializes an unsigned integer value using platform-native size and format.
+        ///
+        /// \param Value Reference to the value.
+        template<typename Type>
+        ZYPHRYON_INLINE void SerializeUInt(Ref<Type> Value)
+        {
+            if constexpr (IsReader)
+            {
+                Value = mArchive.template ReadUInt<Type>();
+            }
+            else
+            {
+                mArchive.WriteUInt(Value);
             }
         }
 
@@ -310,7 +326,14 @@ inline namespace Base
             }
             else if constexpr(IsInteger<Type>)
             {
-                SerializeInt(Value);
+                if constexpr (IsUnsigned<Type>)
+                {
+                    SerializeUInt(Value);
+                }
+                else
+                {
+                    SerializeInt(Value);
+                }
             }
             else if constexpr(IsReal<Type>)
             {
@@ -346,11 +369,11 @@ inline namespace Base
         {
             if constexpr (IsReader)
             {
-                Vector.resize(mArchive.template ReadInt<UInt32>());
+                Vector.resize(mArchive.template ReadUInt<UInt32>());
             }
             else
             {
-                mArchive.template WriteInt<UInt32>(Vector.size());
+                mArchive.template WriteUInt<UInt32>(Vector.size());
             }
 
             for (UInt32 Element = 0, Size = Vector.size(); Element < Size; ++Element)

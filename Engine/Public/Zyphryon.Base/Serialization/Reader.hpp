@@ -174,19 +174,33 @@ inline namespace Base
             return static_cast<Type>(ReadInt<__underlying_type(Type)>());
         }
 
-        /// \brief Reads a variable-length encoded integer.
+        /// \brief Reads a variable-length encoded signed integer.
         ///
-        /// \return The decoded integer value.
+        /// \return The decoded signed integer value.
         template<typename Type>
         ZYPHRYON_INLINE Type ReadInt()
         {
+            using UnsignedType = typename std::make_unsigned<Type>::type;
+
+            const UnsignedType Value = ReadUInt<UnsignedType>();
+            return static_cast<Type>((Value >> 1) ^ -(Value & 1));
+        }
+
+        /// \brief Reads a variable-length encoded unsigned integer.
+        ///
+        /// \return The decoded unsigned integer value.
+        template<typename Type>
+        ZYPHRYON_INLINE Type ReadUInt()
+        {
             Type   Result   = 0u;
             UInt32 Position = 0u;
+            UInt8  Byte;
 
             do
             {
-                Result |= static_cast<Type>((Peek<UInt8>() & 0x7Fu)) << (7u * Position++);
-            } while (ReadUInt8() & 0x80u);
+                Byte    = ReadUInt8();
+                Result |= static_cast<Type>(Byte & 0x7Fu) << (7u * Position++);
+            } while (Byte & 0x80u);
 
             return Result;
         }
@@ -276,7 +290,7 @@ inline namespace Base
         /// \return A view over the read string.
         ZYPHRYON_INLINE ConstStr8 ReadText()
         {
-            const auto Size = ReadInt<UInt32>();
+            const auto Size = ReadUInt<UInt32>();
             const auto Data = Read<ConstPtr<Char>>(Size * sizeof(Char));
             return ConstStr8(Data, Size);
         }
@@ -297,7 +311,7 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE ConstSpan<Type> ReadBlock()
         {
-            const auto Size = ReadInt<UInt32>();
+            const auto Size = ReadUInt<UInt32>();
             const auto Data = Read<ConstPtr<Type>>(Size * sizeof(Type));
             return ConstSpan<Type>(Data, Size);
         }

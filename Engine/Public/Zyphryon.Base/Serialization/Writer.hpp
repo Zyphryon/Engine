@@ -155,14 +155,26 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE void WriteEnum(Type Value)
         {
-            WriteInt(Enum::Cast(Value));
+            WriteUInt(Enum::Cast(Value));
         }
 
-        /// \brief Writes an integer using variable-length encoding.
+        /// \brief Writes a signed integer using variable-length encoding.
         ///
-        /// \param Value The integer value to write.
+        /// \param Value The signed integer value to write.
         template<typename Type>
         ZYPHRYON_INLINE void WriteInt(Type Value)
+        {
+            typename std::make_unsigned<Type>::type ZigZag =
+                (static_cast<typename std::make_unsigned<Type>::type>(Value) << 1) ^
+                (Value >> (sizeof(Type) * 8 - 1));
+            WriteUInt(ZigZag);
+        }
+
+        /// \brief Writes an unsigned integer using variable-length encoding.
+        ///
+        /// \param Value The unsigned integer value to write.
+        template<typename Type>
+        ZYPHRYON_INLINE void WriteUInt(Type Value)
         {
             while (Value > 0x7F)
             {
@@ -257,7 +269,7 @@ inline namespace Base
         /// \param Value The string to write.
         ZYPHRYON_INLINE void WriteText(ConstStr8 Value)
         {
-            WriteInt(Value.size());
+            WriteUInt(Value.size());
 
             if (!Value.empty())
             {
@@ -289,7 +301,7 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE void WriteBlock(Span<Type> Value)
         {
-            WriteInt<UInt32>(Value.size());
+            WriteUInt<UInt32>(Value.size());
 
             if (!Value.empty())
             {
