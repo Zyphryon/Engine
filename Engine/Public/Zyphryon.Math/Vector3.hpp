@@ -346,7 +346,7 @@ inline namespace Math
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
-        ZYPHRYON_INLINE constexpr AnyVector3 operator<<(Type Scalar)
+        ZYPHRYON_INLINE constexpr AnyVector3 operator<<(Type Scalar) const
             requires(IsInteger<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
@@ -358,7 +358,7 @@ inline namespace Math
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
-        ZYPHRYON_INLINE constexpr AnyVector3 operator>>(Type Scalar)
+        ZYPHRYON_INLINE constexpr AnyVector3 operator>>(Type Scalar) const
             requires(IsInteger<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
