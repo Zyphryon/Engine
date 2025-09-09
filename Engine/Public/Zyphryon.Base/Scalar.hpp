@@ -285,6 +285,37 @@ inline namespace Base
         }
     }
 
+    /// \brief Computes the logarithm of a real value with a given base.
+    ///
+    /// \param Value The value whose logarithm is to be computed.
+    /// \param Base  The base of the logarithm.
+    /// \return The logarithm of \p Value in the given \p Base.
+    template<typename Type>
+    constexpr Type Log(Type Value, Type Base)
+        requires (IsReal<Type>)
+    {
+        return std::log(Value) / std::log(Base);
+    }
+
+    /// \brief Computes the integer logarithm of a value with a given base.
+    ///
+    /// \param Value The value whose logarithm is to be computed.
+    /// \param Base  The base of the logarithm.
+    /// \return The floor of the logarithm of \p Value in the given \p Base.
+    template<typename Type>
+    constexpr Type Log(Type Value, Type Base)
+        requires (IsInteger<Type>)
+    {
+        Type Result = Type(0);
+
+        while (Value >= Base)
+        {
+            Value /= Base;
+            ++Result;
+        }
+        return Result;
+    }
+
     /// \brief Linearly interpolates between two scalar.
     /// 
     /// \param Start      The starting scalar.
