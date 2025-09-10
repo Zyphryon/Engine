@@ -69,6 +69,10 @@ inline namespace Base
     template<class Base, class Derived>
     concept IsDerived  = std::is_base_of_v<Base, Derived>;
 
+    /// \brief Checks if \a Type is constant.
+    template<class Type>
+    concept IsMutable  = !std::is_const_v<Type>;
+
     /// \brief Checks if \a Type is an unsigned integer.
     template<class Type>
     concept IsUnsigned = std::is_unsigned_v<Type>;

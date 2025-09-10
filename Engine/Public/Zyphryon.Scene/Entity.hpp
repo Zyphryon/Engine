@@ -293,13 +293,13 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE auto Lookup() const
         {
-            if constexpr (std::is_const_v<Component>)
+            if constexpr (IsMutable<Component>)
             {
-                return mHandle.template try_get<Component>();
+                return mHandle.template try_get_mut<Component>();
             }
             else
             {
-                return mHandle.template try_get_mut<Component>();
+                return mHandle.template try_get<Component>();
             }
         }
 
@@ -341,13 +341,13 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE auto Lookup() const
         {
-            if constexpr (std::is_const_v<Target>)
+            if constexpr (IsMutable<Target>)
             {
-                return mHandle.template try_get<Tag, Target>();
+                return mHandle.template try_get_mut<Tag, Target>();
             }
             else
             {
-                return mHandle.template try_get_mut<Tag, Target>();
+                return mHandle.template try_get<Tag, Target>();
             }
         }
 

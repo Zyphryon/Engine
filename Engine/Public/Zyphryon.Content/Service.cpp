@@ -234,7 +234,7 @@ namespace Content
                     continue;
                 }
 
-                Scope = std::move(mLoaderList.back());
+                Scope = Move(mLoaderList.back());
                 mLoaderList.pop_back();
             }
 

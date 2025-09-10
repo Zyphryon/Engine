@@ -79,13 +79,13 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE auto Lookup() const
         {
-            if constexpr (std::is_const_v<Component>)
+            if constexpr (IsMutable<Component>)
             {
-                return mWorld.template try_get<Component>();
+                return mWorld.template try_get_mut<Component>();
             }
             else
             {
-                return mWorld.template try_get_mut<Component>();
+                return mWorld.template try_get<Component>();
             }
         }
 
