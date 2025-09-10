@@ -64,6 +64,31 @@ namespace Scene
             mWorld.template add<Component>();
         }
 
+        /// \brief Provides a singleton data component of type \p Component to the world.
+        ///
+        /// \param Data The component's data.
+        template<typename Component>
+        ZYPHRYON_INLINE void Provide(AnyRef<Component> Data)
+        {
+            mWorld.template set<Component>(Move(Data));
+        }
+
+        /// \brief Lookup a singleton component of type \p Component from this entity.
+        ///
+        /// \return Pointer to the component, or `nullptr` if not present.
+        template<typename Component>
+        ZYPHRYON_INLINE auto Lookup() const
+        {
+            if constexpr (std::is_const_v<Component>)
+            {
+                return mWorld.template try_get<Component>();
+            }
+            else
+            {
+                return mWorld.template try_get_mut<Component>();
+            }
+        }
+
         /// \brief Removes the singleton of type \p Component from the world, if it exists.
         ///
         /// \tparam Component The tag or component type to remove.
