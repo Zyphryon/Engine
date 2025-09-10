@@ -291,7 +291,7 @@ inline namespace Base
     /// \param Base  The base of the logarithm.
     /// \return The logarithm of \p Value in the given \p Base.
     template<typename Type>
-    constexpr Type Log(Type Value, Type Base)
+    constexpr Type Log(Type Value, Type Base = Type(2))
         requires (IsReal<Type>)
     {
         return std::log(Value) / std::log(Base);
@@ -303,7 +303,7 @@ inline namespace Base
     /// \param Base  The base of the logarithm.
     /// \return The floor of the logarithm of \p Value in the given \p Base.
     template<typename Type>
-    constexpr Type Log(Type Value, Type Base)
+    constexpr Type Log(Type Value, Type Base = Type(2))
         requires (IsInteger<Type>)
     {
         Type Result = Type(0);
