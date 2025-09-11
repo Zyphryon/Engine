@@ -102,9 +102,7 @@ namespace Content
 
             if (const auto Iterator = mRegistry.find(Key.GetUrl()); Iterator != mRegistry.end())
             {
-                ConstTracker<Type> Asset = Iterator->second;
-
-                if (Asset->HasFinished())
+                if (ConstTracker<Type> Asset = Iterator->second; Asset->HasFinished())
                 {
                     mRegistry.erase(Iterator);
                     return true;

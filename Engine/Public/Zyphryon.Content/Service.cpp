@@ -172,7 +172,7 @@ namespace Content
 
     Bool Service::Copy(ConstRef<Uri> Source, ConstRef<Uri> Destination)
     {
-        if (Blob Data = Find(Source); Data)
+        if (const Blob Data = Find(Source); Data)
         {
             return Save(Destination, Data);
         }

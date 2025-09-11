@@ -77,7 +77,7 @@ namespace Scene
         ///
         /// \return Pointer to the component, or `nullptr` if not present.
         template<typename Component>
-        ZYPHRYON_INLINE auto Lookup() const
+        ZYPHRYON_INLINE Ptr<Component> Lookup() const
         {
             if constexpr (IsMutable<Component>)
             {
@@ -102,7 +102,7 @@ namespace Scene
         ///
         /// \tparam Component The tag or component type to remove.
         template<typename Component>
-        ZYPHRYON_INLINE void RemoveAllFromEntities()
+        ZYPHRYON_INLINE void RemoveAll()
         {
             mWorld.template remove_all<Component>();
         }
@@ -170,8 +170,8 @@ namespace Scene
 
         /// \brief Retrieves a relation entity.
         ///
-        /// \tparam Tag   The relation's tag component.
-        /// \param Target The relation's target component.
+        /// \tparam Tag    The relation's tag component.
+        /// \tparam Target The relation's target component.
         /// \return The entity object associated with the relation.
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Entity GetEntity() const

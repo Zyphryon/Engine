@@ -23,7 +23,7 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     TOMLParser::TOMLParser()
-        : mResult { }
+        : mResult { toml::table() }
     {
     }
 
@@ -45,7 +45,7 @@ inline namespace Base
 
     TOMLSection TOMLParser::GetRoot()
     {
-        return TOMLSection(reinterpret_cast<Ptr<toml::table>>(& mResult.table()));
+        return TOMLSection(& mResult.table());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

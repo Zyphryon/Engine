@@ -58,7 +58,8 @@ inline namespace Base
         /// \tparam Derived The tracked type, must be derived from `Type`.
         /// \param Other The other tracker to copy from.
         template<typename Derived>
-        ZYPHRYON_INLINE Tracker(ConstRef<Tracker<Derived>> Other) requires IsDerived<Type, Derived>
+        ZYPHRYON_INLINE Tracker(ConstRef<Tracker<Derived>> Other)
+            requires IsDerived<Type, Derived>
             : mInstance(static_cast<Ptr<Type>>(Other.mInstance))
         {
             Acquire();
@@ -87,7 +88,8 @@ inline namespace Base
         /// \tparam Derived The source type, must be derived from `Type`.
         /// \param Other The tracker to move from.
         template<typename Derived>
-        ZYPHRYON_INLINE Tracker(AnyRef<Tracker<Derived>> Other) requires IsDerived<Type, Derived>
+        ZYPHRYON_INLINE Tracker(AnyRef<Tracker<Derived>> Other)
+            requires IsDerived<Type, Derived>
             : mInstance(static_cast<Ptr<Type>>(Other.mInstance))
         {
             Other.mInstance = nullptr;

@@ -343,7 +343,7 @@ inline namespace Base
             {
                 SerializeText(Value);
             }
-            else if constexpr(CanSerialize<Type, Archive<T>>)
+            else if constexpr(CanSerialize<Type, Archive>)
             {
                 Value.OnSerialize(* this);
             }

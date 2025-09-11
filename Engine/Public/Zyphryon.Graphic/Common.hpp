@@ -435,7 +435,7 @@ namespace Graphic
         ///
         /// \param Texture The render target texture (must be non-multisample).
         /// \param Level   The mipmap level to render into (default = 0 for base level).
-        ZYPHRYON_INLINE constexpr Attachment(Object Texture, UInt8 Level = 0)
+        ZYPHRYON_INLINE constexpr explicit Attachment(Object Texture, UInt8 Level = 0)
             : Target      { Texture },
               TargetLevel { Level }
         {

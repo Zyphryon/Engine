@@ -81,9 +81,9 @@ inline namespace Math
         /// \return The luminance of the color as a normalized value in [0, 1].
         ZYPHRYON_INLINE constexpr Real32 GetLuminance() const
         {
-            const Real32 R = Real32(GetRed())   / Real32(Limit());
-            const Real32 G = Real32(GetGreen()) / Real32(Limit());
-            const Real32 B = Real32(GetBlue())  / Real32(Limit());
+            const Real32 R = static_cast<Real32>(GetRed())   / static_cast<Real32>(Limit());
+            const Real32 G = static_cast<Real32>(GetGreen()) / static_cast<Real32>(Limit());
+            const Real32 B = static_cast<Real32>(GetBlue())  / static_cast<Real32>(Limit());
             return R * 0.2126f + G * 0.7152f + B * 0.0722f;
         }
 
@@ -318,7 +318,7 @@ inline namespace Math
             mComponents[1] /= Scalar;
             mComponents[2] /= Scalar;
             mComponents[3] /= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Checks if this color is equal to another color.
@@ -335,9 +335,12 @@ inline namespace Math
 
         /// \brief Checks if this color is not equal to another color.
         ///
-        /// \param Color The color to compare to.
+        /// \param Other The color to compare to.
         /// \return `true` if any channel differs, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyColor> Color) const = default;
+        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyColor> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Computes a hash value for the object.
         ///

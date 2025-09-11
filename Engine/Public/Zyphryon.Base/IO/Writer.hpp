@@ -47,7 +47,7 @@ inline namespace Base
         /// \return Span representing the valid portion of the buffer.
         ZYPHRYON_INLINE Span<Byte> GetData()
         {
-            return Span<Byte>(mBuffer.data(), mOffset);
+            return Span(mBuffer.data(), mOffset);
         }
 
         /// \brief Returns the total capacity of the buffer.
@@ -164,10 +164,9 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE void WriteInt(Type Value)
         {
-            typename std::make_unsigned<Type>::type ZigZag =
-                (static_cast<typename std::make_unsigned<Type>::type>(Value) << 1) ^
-                (Value >> (sizeof(Type) * 8 - 1));
-            WriteUInt(ZigZag);
+            using Unsigned = std::make_unsigned_t<Type>;
+
+            WriteUInt((static_cast<Unsigned>(Value) << 1) ^ (Value >> (sizeof(Type) * 8 - 1)));
         }
 
         /// \brief Writes an unsigned integer using variable-length encoding.

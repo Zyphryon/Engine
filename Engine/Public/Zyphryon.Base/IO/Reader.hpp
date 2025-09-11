@@ -59,7 +59,7 @@ inline namespace Base
         /// \return A span that covers all the data held by the reader.
         ZYPHRYON_INLINE ConstSpan<UInt8> GetData() const
         {
-            return ConstSpan<UInt8>(mData, mSize);
+            return ConstSpan(mData, mSize);
         }
 
         /// \brief Gets the total capacity of the data.
@@ -104,7 +104,7 @@ inline namespace Base
         {
             const UInt32 Offset   = mOffset;
             Skip(Length);
-            return Reader(ConstSpan<Byte>(mData + Offset, Length));
+            return Reader(ConstSpan(mData + Offset, Length));
         }
 
         /// \brief Peeks at data without advancing the offset.
@@ -180,9 +180,9 @@ inline namespace Base
         template<typename Type>
         ZYPHRYON_INLINE Type ReadInt()
         {
-            using UnsignedType = typename std::make_unsigned<Type>::type;
+            using Unsigned = std::make_unsigned_t<Type>;
 
-            const UnsignedType Value = ReadUInt<UnsignedType>();
+            const Unsigned Value = ReadUInt<Unsigned>();
             return static_cast<Type>((Value >> 1) ^ -(Value & 1));
         }
 

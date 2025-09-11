@@ -34,7 +34,7 @@ namespace Graphic
         /// \brief Constructs an encoder with optional submission capacity.
         /// 
         /// \param Capacity Number of submissions to reserve space for.
-        ZYPHRYON_INLINE Encoder(UInt32 Capacity = kDefaultCapacity)
+        ZYPHRYON_INLINE explicit Encoder(UInt32 Capacity = kDefaultCapacity)
         {
             mInFlightSubmission.reserve(Capacity);
         }

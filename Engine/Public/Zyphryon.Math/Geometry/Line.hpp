@@ -191,7 +191,7 @@ inline namespace Math
             const Vector2 Direction = mEnd - mStart;
             const Vector2 Offset    = Point - mStart;
 
-            if (const Real32 Cross = Vector2::Cross(Direction, Offset); Base::Abs(Cross) > kEpsilon<Real32>)
+            if (const Real32 Cross = Vector2::Cross(Direction, Offset); Abs(Cross) > kEpsilon<Real32>)
             {
                 return false;
             }

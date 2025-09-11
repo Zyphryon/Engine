@@ -179,7 +179,7 @@ inline namespace Math
         /// \return The contracted circle.
         ZYPHRYON_INLINE constexpr Circle Contract(Real32 Amount) const
         {
-            return Circle(mCenter, Base::Max(0.0f, mRadius - Amount));
+            return Circle(mCenter, Max(0.0f, mRadius - Amount));
         }
 
         /// \brief Checks if this circle completely contains another circle.
@@ -222,7 +222,7 @@ inline namespace Math
         /// \return `true` if center and radius are approximately equal, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<Circle> Other) const
         {
-            return mCenter == Other.mCenter && Base::IsAlmostEqual(mRadius, Other.mRadius);
+            return mCenter == Other.mCenter && IsAlmostEqual(mRadius, Other.mRadius);
         }
 
         /// \brief Checks if this circle is not equal to another circle.
@@ -348,7 +348,7 @@ inline namespace Math
         /// \return A circle with non-negative radius.
         ZYPHRYON_INLINE constexpr static Circle Canonicalize(ConstRef<Circle> Circle)
         {
-            return Math::Circle(Circle.mCenter, Base::Abs(Circle.mRadius));
+            return Math::Circle(Circle.mCenter, Abs(Circle.mRadius));
         }
 
         /// \brief Returns the bounding circle of two circles.

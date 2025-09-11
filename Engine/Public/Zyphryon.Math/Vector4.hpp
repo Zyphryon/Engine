@@ -37,7 +37,7 @@ inline namespace Math
         /// \brief Constructor initializing all components to the same value.
         /// 
         /// \param Scalar The scalar value used to initialize all components.
-        ZYPHRYON_INLINE Vector4(Real32 Scalar)
+        ZYPHRYON_INLINE explicit Vector4(Real32 Scalar)
             : mRegister { _mm_set_ps1(Scalar) }
         {
         }

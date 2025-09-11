@@ -566,7 +566,10 @@ namespace Scene
         ///
         /// \param Other The component to compare to.
         /// \return `true` if the entities are not the same, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const = default;
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const
+        {
+            return !(* this == Other);
+        }
 
         /// \brief Computes a hash value for the object.
         ///

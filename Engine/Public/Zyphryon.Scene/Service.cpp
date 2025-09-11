@@ -122,13 +122,13 @@ namespace Scene
         Entity Actor = Allocate<false>();
 
         /// Read and assign entity name if present.
-        if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
+        if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetName(Name);
         }
 
         /// Read and assign entity display name if present.
-        if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
+        if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetDisplayName(Name);
         }
@@ -150,7 +150,7 @@ namespace Scene
     Entity Service::LoadEntityHierarchy(Ref<Reader> Reader)
     {
         /// Read and construct the root entity.
-        Entity Actor = LoadEntity(Reader);
+        const Entity Actor = LoadEntity(Reader);
 
         /// Recursively read and attach all child entities.
         while (Reader.Peek<UInt32>() != -1)
@@ -225,7 +225,7 @@ namespace Scene
             const Entity Second = mWorld.component(Name.c_str());
 
             /// Read serialized component payload.
-            ConstSpan<Byte> Bundle = Reader.ReadBlock<Byte>();
+            const ConstSpan<Byte> Bundle = Reader.ReadBlock<Byte>();
 
             /// Apply payload if present; otherwise attach component without data.
             if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
@@ -292,7 +292,7 @@ namespace Scene
                 Second = Component;
             }
 
-            ConstPtr<Factory> Serializer = Second.IsValid() ? Second.Lookup<const Factory>() : nullptr;
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.Lookup<const Factory>() : nullptr;
 
             if (Serializer && (!First.IsValid() || First.Contains<Factory>()))
             {

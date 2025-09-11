@@ -160,7 +160,7 @@ inline namespace Base
     template<typename... Arguments>
     auto Format(ConstStr8 Format, AnyRef<Arguments>... Parameters)
     {
-        static thread_local std::array<Char, 2048> Buffer;
+        thread_local std::array<Char, 2048> Buffer;
 
         const auto Result = std::vformat_to(Buffer.begin(), Format, std::make_format_args(Parameters...));
         (* Result) = '\0';

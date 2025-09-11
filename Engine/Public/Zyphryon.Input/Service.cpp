@@ -64,6 +64,6 @@ namespace Input
 
     void Service::Detach(ConstTracker<Listener> Listener)
     {
-        mListeners.erase(std::find(mListeners.begin(), mListeners.end(), Listener));
+        mListeners.erase(std::ranges::find(mListeners, Listener));
     }
 }

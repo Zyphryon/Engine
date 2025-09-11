@@ -67,7 +67,7 @@ inline namespace Math
         ///
         /// \param Other The source rectangle to convert from.
         template<typename Base>
-        ZYPHRYON_INLINE constexpr AnyRect(ConstRef<AnyRect<Base>> Other)
+        ZYPHRYON_INLINE constexpr explicit AnyRect(ConstRef<AnyRect<Base>> Other)
             : mMinimumX { static_cast<Type>(Other.GetMinimumX()) },
               mMinimumY { static_cast<Type>(Other.GetMinimumY()) },
               mMaximumX { static_cast<Type>(Other.GetMaximumX()) },
@@ -142,8 +142,8 @@ inline namespace Math
 
         /// \brief Sets the maximum coordinates of the rectangle.
         ///
-        /// \param MinimumX The maximum X coordinate of the rectangle.
-        /// \param MinimumY The maximum Y coordinate of the rectangle.
+        /// \param MaximumX The maximum X coordinate of the rectangle.
+        /// \param MaximumY The maximum Y coordinate of the rectangle.
         ZYPHRYON_INLINE constexpr void SetMaximum(Type MaximumX, Type MaximumY)
         {
             mMaximumX = MaximumX;

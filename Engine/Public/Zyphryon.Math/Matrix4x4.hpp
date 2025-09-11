@@ -37,7 +37,7 @@ inline namespace Math
         /// \brief Constructs a diagonal matrix with specified value.
         ///
         /// \param Diagonal Value to set for all diagonal elements.
-        ZYPHRYON_INLINE Matrix4x4(Real32 Diagonal)
+        ZYPHRYON_INLINE explicit Matrix4x4(Real32 Diagonal)
             : Matrix4x4 { Diagonal, 0.0f, 0.0f, 0.0f,
                           0.0f, Diagonal, 0.0f, 0.0f,
                           0.0f, 0.0f, Diagonal, 0.0f,

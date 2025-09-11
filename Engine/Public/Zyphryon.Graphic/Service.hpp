@@ -304,7 +304,7 @@ namespace Graphic
             /// \brief Constructs command from argument values.
             ///
             /// \param Parameters Argument values to store.
-            ZYPHRYON_INLINE Command(Arguments... Parameters)
+            ZYPHRYON_INLINE explicit Command(Arguments... Parameters)
                 : Parameters { Move(Parameters)... }
             {
             }
@@ -316,8 +316,8 @@ namespace Graphic
             template<auto Method>
             ZYPHRYON_INLINE void Execute(Ref<Driver> Driver) const
             {
-                std::apply([& Driver](auto&&... Parameters) {
-                    (Driver.*Method)(Forward<decltype(Parameters)>(Parameters)...);
+                std::apply([& Driver]<typename... T0>(AnyRef<T0>... Parameters) {
+                    (Driver.*Method)(Forward<T0>(Parameters)...);
                 }, Parameters);
             }
 
@@ -401,7 +401,7 @@ namespace Graphic
         /// \brief Main GPU thread loop for processing and executing queued commands.
         ///
         /// \param Token Stop token used to request thread termination.
-        void OnCommandThread(std::stop_token Token);
+        void OnCommandThread(ConstRef<std::stop_token> Token);
 
         /// \brief Dispatches execution of a single GPU command from the frame stream.
         ///

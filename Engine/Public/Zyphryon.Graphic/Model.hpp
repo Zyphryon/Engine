@@ -38,7 +38,7 @@ namespace Graphic
         /// \brief Constructs a new model with the given resource key.
         /// 
         /// \param Key URI that uniquely identifies this model asset.
-        Model(AnyRef<Content::Uri> Key);
+        explicit Model(AnyRef<Content::Uri> Key);
 
         /// \brief Initializes the model with mesh geometry and associated materials.
         /// 

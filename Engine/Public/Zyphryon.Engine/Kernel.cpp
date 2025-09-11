@@ -156,27 +156,8 @@ namespace Engine
         }
 
         // Initializes graphic service.
-        const Graphic::Backend Backend = Enum::Cast(Properties.GetVideoDriver(), Graphic::Backend::D3D11);
-
-        Graphic::Samples Samples = Graphic::Samples::X1;
-        switch (Properties.GetWindowSamples())
-        {
-            case 1:
-                Samples = Graphic::Samples::X1;
-                break;
-            case 2:
-                Samples = Graphic::Samples::X2;
-                break;
-            case 4:
-                Samples = Graphic::Samples::X4;
-                break;
-            case 8:
-                Samples = Graphic::Samples::X8;
-                break;
-            default:
-                LOG_WARNING("{} invalid samples count, fallback to one", Properties.GetWindowSamples());
-                break;
-        }
+        const Graphic::Backend Backend = Enum::Cast(Properties.GetVideoDriver(), Graphic::Backend::None);
+        const Graphic::Samples Samples = Enum::Cast(Format("X{}", Properties.GetWindowSamples()), Graphic::Samples::X1);
 
         LOG_INFO("Kernel: Creating graphics service");
         ConstTracker<Graphic::Service> Graphics = AddService<Graphic::Service>();

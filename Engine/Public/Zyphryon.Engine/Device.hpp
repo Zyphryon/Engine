@@ -44,7 +44,7 @@ namespace Engine
         /// \brief Returns the internal SDL window handle.
         ///
         /// \return Pointer to the underlying SDL_Window.
-        ZYPHRYON_INLINE Ptr<SDL_Window> GetHandle()
+        ZYPHRYON_INLINE Ptr<SDL_Window> GetHandle() const
         {
             return mHandle;
         }

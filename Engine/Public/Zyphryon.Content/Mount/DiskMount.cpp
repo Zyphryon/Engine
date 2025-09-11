@@ -31,20 +31,20 @@ namespace Content
 
     Vector<Mount::Item> DiskMount::Enumerate(ConstStr8 Path) const
     {
-        Vector<Mount::Item> Entries;
+        Vector<Item> Entries;
 
         constexpr auto OnEnumerate = [](Ptr<void> User, ConstPtr<Char> Directory, ConstPtr<Char> Entry)
         {
-            Ptr<Vector<Mount::Item>> Items = reinterpret_cast<Ptr<Vector<Mount::Item>>>(User);
+            const Ptr<Vector<Item>> Entries = static_cast<Ptr<Vector<Item>>>(User);
 
             SDL_PathInfo Info;
 
             if (SDL_GetPathInfo(Format("{}{}", Directory, Entry).data(), &Info))
             {
                 const Mount::Entry Type = (Info.type == SDL_PATHTYPE_DIRECTORY ? Entry::Directory : Entry::File);
-                Items->emplace_back(Entry, Type, Info.size, Info.modify_time);
+                Entries->emplace_back(Entry, Type, Info.size, Info.modify_time);
             }
-            return SDL_EnumerationResult::SDL_ENUM_CONTINUE;
+            return SDL_ENUM_CONTINUE;
         };
 
         const Bool Result = SDL_EnumerateDirectory(Format("{}{}", mPath, Path).data(), OnEnumerate, &Entries);

@@ -40,15 +40,15 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector2 Font::Measure(ConstStr8 Text, Real32 Size, Real32 Spacing) const
+    Vector2 Font::Measure(ConstStr8 Word, Real32 Size, Real32 Spacing) const
     {
         Real32 CurrentX = 0.0f;
         Real32 MaximumX = 0.0f;
         Real32 MaximumY = (mMetrics.Ascender - mMetrics.Descender);
 
-        for (UInt Previous = 0, Symbol = 0; Symbol < Text.size(); ++Symbol)
+        for (UInt Previous = 0, Symbol = 0; Symbol < Word.size(); ++Symbol)
         {
-            const UInt32 Codepoint = Text[Symbol];
+            const UInt32 Codepoint = Word[Symbol];
 
             switch (Codepoint)
             {

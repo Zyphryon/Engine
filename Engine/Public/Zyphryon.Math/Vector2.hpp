@@ -57,7 +57,7 @@ inline namespace Math
         ///
         /// \param Other The source vector to convert from.
         template<typename Base>
-        ZYPHRYON_INLINE constexpr AnyVector2(ConstRef<AnyVector2<Base>> Other)
+        ZYPHRYON_INLINE constexpr explicit AnyVector2(ConstRef<AnyVector2<Base>> Other)
             : mX { static_cast<Type>(Other.GetX()) },
               mY { static_cast<Type>(Other.GetY()) }
         {
