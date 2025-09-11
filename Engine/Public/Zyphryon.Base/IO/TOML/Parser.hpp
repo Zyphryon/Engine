@@ -29,12 +29,12 @@ inline namespace Base
     public:
 
         /// \brief Constructs an empty TOML parser.
-        TOMLParser();
+        TOMLParser() = default;
 
         /// \brief Constructs a parser from a TOML-formatted text source.
         /// 
         /// \param Text The TOML text to parse.
-        TOMLParser(ConstStr8 Text);
+        explicit TOMLParser(ConstStr8 Text);
 
         /// \brief Returns the root section of the parsed TOML document.
         /// 
@@ -65,6 +65,6 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        toml::parse_result mResult;
+        toml::table mTable;
     };
 }

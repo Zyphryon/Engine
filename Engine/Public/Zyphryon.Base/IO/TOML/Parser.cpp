@@ -22,21 +22,17 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    TOMLParser::TOMLParser()
-        : mResult { toml::table() }
-    {
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     TOMLParser::TOMLParser(ConstStr8 Text)
     {
-        mResult = toml::parse(Text);
+        const toml::parse_result Result = toml::parse(Text);
 
-        if (mResult.failed())
+        if (Result.succeeded())
         {
-            LOG_ERROR("Failed to parse TOML file: {}", mResult.error().description());
+            mTable = Result;
+        }
+        else
+        {
+            LOG_ERROR("Failed to parse TOML file: {}", Result.error().description());
         }
     }
 
@@ -45,7 +41,7 @@ inline namespace Base
 
     TOMLSection TOMLParser::GetRoot()
     {
-        return TOMLSection(& mResult.table());
+        return TOMLSection(& mTable);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -53,11 +49,11 @@ inline namespace Base
 
     TOMLSection TOMLParser::GetSection(ConstStr8 Key, Bool CreateIfNeeded)
     {
-        Ptr<toml::table> Table = mResult.table()[Key].as_table();
+        Ptr<toml::table> Table = mTable[Key].as_table();
 
         if (Table == nullptr && CreateIfNeeded)
         {
-            Table = mResult.table().emplace<toml::table>(Key).first->second.as_table();
+            Table = mTable.emplace<toml::table>(Key).first->second.as_table();
         }
         return TOMLSection(Table);
     }
@@ -67,11 +63,11 @@ inline namespace Base
 
     TOMLArray TOMLParser::GetArray(ConstStr8 Key, Bool CreateIfNeeded)
     {
-        Ptr<toml::array> Array = mResult.table()[Key].as_array();
+        Ptr<toml::array> Array = mTable[Key].as_array();
 
         if (Array == nullptr && CreateIfNeeded)
         {
-            Array = mResult.table().emplace<toml::array>(Key).first->second.as_array();
+            Array = mTable.emplace<toml::array>(Key).first->second.as_array();
         }
         return TOMLArray(Array);
     }
@@ -82,7 +78,7 @@ inline namespace Base
     Str8 TOMLParser::Dump() const
     {
         std::ostringstream Stream;
-        Stream << mResult.table() << std::endl;
+        Stream << mTable << std::endl;
         return Stream.str();
     }
 }
