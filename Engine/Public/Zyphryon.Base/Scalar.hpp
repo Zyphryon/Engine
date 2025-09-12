@@ -39,13 +39,6 @@ inline namespace Base
         IsEqual<Type, Real64> ? Type(1e-12) :
         Type(0);
 
-    /// \brief Specifies the origin location for the coordinate systems.
-    enum class Coordinates : UInt8
-    {
-        Northwest,  ///< Origin at the top-left corner (Y increases downward).
-        Southwest   ///< Origin at the bottom-left corner (Y increases upward).
-    };
-
     /// \brief Converts degrees to radians.
     /// 
     /// \param Degrees Angle in degrees.

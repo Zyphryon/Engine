@@ -16,7 +16,13 @@
 
 ~~**Math**: Implement Matrix4x4::Inverse for general matrices using SIMD.~~
 
-**Collision**: Basic shape implementation.
+~~**Collision**: Basic shape implementation.~~
+
+**Collision**: Add OBB, Pill and Convex shapes for 2D.
+
+**Collision**: Add 3D shapes.
+
+**Collision**: Add Spatial Grid.
 
 **Network**: Implement it from scratch with proper abstraction.
 

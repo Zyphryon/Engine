@@ -58,7 +58,7 @@ namespace Graphic
     {
         ConstRef<Vector2> Start = Origin.GetStart();
         ConstRef<Vector2> End   = Origin.GetEnd();
-        const Vector2 Normal    = Origin.GetNormal<Coordinates::Southwest>() * (Thickness * 0.5f);
+        const Vector2 Normal    = Origin.GetNormal() * (Thickness * 0.5f);
 
         Ref<Command> Command = Create(Type::Primitive, GetUniqueKey(Material::Kind::Opaque, Type::Primitive, Depth, 0));
         Command.Material = nullptr;

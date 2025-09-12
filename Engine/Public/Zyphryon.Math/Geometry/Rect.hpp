@@ -223,9 +223,18 @@ inline namespace Math
         /// \brief Gets the perimeter of the rectangle.
         ///
         /// \return The perimeter of the rectangle.
-        ZYPHRYON_INLINE  constexpr Type GetPerimeter() const
+        ZYPHRYON_INLINE constexpr Type GetPerimeter() const
         {
             return Type(2) * (GetWidth() + GetHeight());
+        }
+
+        /// \brief Returns the nearest point on or inside the rectangle to a given point.
+        ///
+        /// \param Point The query point in 2D space.
+        /// \return The point clamped to the rectangle's boundaries.
+        ZYPHRYON_INLINE constexpr Vector2 GetNearest(ConstRef<Vector2> Point) const
+        {
+            return Vector2(Clamp(Point.GetX(), mMinimumX, mMaximumX), Clamp(Point.GetY(), mMinimumY, mMaximumY));
         }
 
         /// \brief Expands the rectangle by the given amount in all directions.

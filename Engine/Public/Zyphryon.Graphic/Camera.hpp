@@ -569,7 +569,7 @@ namespace Graphic
         /// \param Viewport The viewport definition providing the origin offset and dimensions.
         /// \return The corresponding Y coordinate in normalized device space `[-1.0, 1.0]`.
         template<Coordinates Origin>
-        ZYPHRYON_INLINE constexpr Real32 ScreenYToNormalizedDeviceY(Real32 Y, ConstRef<Viewport> Viewport) const
+        ZYPHRYON_INLINE static constexpr Real32 ScreenYToNormalizedDeviceY(Real32 Y, ConstRef<Viewport> Viewport)
         {
             if constexpr(Origin == Coordinates::Northwest)
             {
@@ -587,7 +587,7 @@ namespace Graphic
         /// \param Viewport The viewport definition providing the origin offset and dimensions.
         /// \return The corresponding Y coordinate in screen space.
         template<Coordinates Origin>
-        ZYPHRYON_INLINE constexpr Real32 NormalizedDeviceYToScreenY(Real32 Y, ConstRef<Viewport> Viewport) const
+        ZYPHRYON_INLINE static constexpr Real32 NormalizedDeviceYToScreenY(Real32 Y, ConstRef<Viewport> Viewport)
         {
             if constexpr(Origin == Coordinates::Northwest)
             {

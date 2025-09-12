@@ -147,6 +147,13 @@ namespace Graphic
         All,         ///< Clear color, depth, and stencil buffers.
     };
 
+    /// \brief Specifies the origin location for the coordinate systems.
+    enum class Coordinates : UInt8
+    {
+        Northwest,  ///< Origin at the top-left corner (Y increases downward).
+        Southwest   ///< Origin at the bottom-left corner (Y increases upward).
+    };
+
     /// \brief Specifies face culling behavior in rasterization.
     enum class Cull : UInt8
     {

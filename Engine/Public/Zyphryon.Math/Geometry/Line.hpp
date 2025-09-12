@@ -145,25 +145,14 @@ inline namespace Math
         /// \brief Calculates the normal vector of the line.
         ///
         /// \return The normalized normal vector of the line.
-        ZYPHRYON_INLINE constexpr Vector2 GetNormal() const
-        {
-            LOG_ASSERT(mStart != mEnd, "Cannot compute normal of a zero-length line");
-
-            const Vector2 Direction = GetDirection();
-            return Vector2(-Direction.GetY(), Direction.GetX());
-        }
-
-        /// \brief Calculates the normal vector of the line.
-        ///
-        /// \return The normalized normal vector of the line.
-        template<Coordinates Origin = Coordinates::Southwest>
+        template<Bool Clockwise = false>
         ZYPHRYON_INLINE constexpr Vector2 GetNormal() const
         {
             LOG_ASSERT(mStart != mEnd, "Cannot compute normal of a zero-length line");
 
             const Vector2 Direction = GetDirection();
 
-            if constexpr(Origin == Coordinates::Northwest)
+            if constexpr (Clockwise)
             {
                 return Vector2(-Direction.GetY(), Direction.GetX());
             }
