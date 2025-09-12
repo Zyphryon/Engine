@@ -16,6 +16,8 @@
 
 ~~**Math**: Implement Matrix4x4::Inverse for general matrices using SIMD.~~
 
+**Collision**: Basic shape implementation.
+
 **Network**: Implement it from scratch with proper abstraction.
 
 **Scene**: Builder Pattern For Query/System.

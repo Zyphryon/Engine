@@ -164,8 +164,8 @@ namespace Content
         {
             if (Asset->HasFinished())
             {
-                // Reset internal state (e.g., release memory).
-                OnAssetDelete(* Asset);
+                // Prepares the asset for reload by resetting its status to idle.
+                Asset->SetStatus(Resource::Status::Idle);
 
                 // Reschedules the resource for loading through the standard pipeline.
                 OnAssetLoad(Asset, nullptr);

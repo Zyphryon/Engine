@@ -199,7 +199,7 @@ inline namespace Base
                 mSize    = Exchange(Other.mSize, 0);
                 mDeleter = Exchange(Other.mDeleter, nullptr);
             }
-            return (*this);
+            return (* this);
         }
 
         /// \brief Deleted copy assignment operator.
@@ -220,7 +220,7 @@ inline namespace Base
         /// \return `true` if data or size differ, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Blob> Other) const
         {
-            return !(*this == Other);
+            return !(* this == Other);
         }
 
         /// \brief Checks if the payload is null.

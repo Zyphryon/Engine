@@ -162,7 +162,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> SetX(Type X)
         {
             mX = X;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Gets the x-component of the vector.
@@ -179,7 +179,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> SetY(Type Y)
         {
             mY = Y;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Gets the y-component of the vector.
@@ -196,7 +196,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> SetZ(Type Z)
         {
             mZ = Z;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Gets the z-component of the vector.
@@ -231,7 +231,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Type GetDistance(ConstRef<AnyVector3> Vector) const
             requires(IsReal<Type>)
         {
-            return (* this - Vector).GetLength();
+            return ((* this) - Vector).GetLength();
         }
 
         /// \brief Calculates the squared distance between this vector and another vector.
@@ -240,7 +240,7 @@ inline namespace Math
         /// \return The squared distance between the two vectors.
         ZYPHRYON_INLINE constexpr Type GetDistanceSquared(ConstRef<AnyVector3> Vector) const
         {
-            return (* this - Vector).GetLengthSquared();
+            return ((* this) - Vector).GetLengthSquared();
         }
 
         /// \brief Returns the angle in radians between this vector and another.

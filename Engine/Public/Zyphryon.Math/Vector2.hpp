@@ -144,7 +144,7 @@ inline namespace Math
         {
             mX = X;
             mY = Y;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Sets the x-component of the vector.
@@ -153,7 +153,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Ref<AnyVector2> SetX(Type X)
         {
             mX = X;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Gets the x-component of the vector.
@@ -170,7 +170,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Ref<AnyVector2> SetY(Type Y)
         {
             mY = Y;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Gets the y-component of the vector.
@@ -225,7 +225,7 @@ inline namespace Math
         /// \return The distance between the two vectors.
         ZYPHRYON_INLINE constexpr Type GetDistanceChebyshev(ConstRef<AnyVector2> Vector) const
         {
-            const AnyVector2 Difference = (*this) - Vector;
+            const AnyVector2 Difference = (* this) - Vector;
             return Max(Abs(Difference.GetX()), Abs(Difference.GetY()));
         }
 
@@ -235,7 +235,7 @@ inline namespace Math
         /// \return The squared distance between the two vectors.
         ZYPHRYON_INLINE constexpr Type GetDistanceSquared(ConstRef<AnyVector2> Vector) const
         {
-            return (*this - Vector).GetLengthSquared();
+            return ((* this) - Vector).GetLengthSquared();
         }
 
         /// \brief Calculates the angle of the vector relative to the x-axis.
@@ -376,7 +376,7 @@ inline namespace Math
         {
             ++mX;
             ++mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Pre-decrements all components of the vector.
@@ -386,7 +386,7 @@ inline namespace Math
         {
             --mX;
             --mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Adds another vector to the current vector.
@@ -397,7 +397,7 @@ inline namespace Math
         {
             mX += Vector.mX;
             mY += Vector.mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Adds a scalar value to all components of the vector.
@@ -408,7 +408,7 @@ inline namespace Math
         {
             mX += Scalar;
             mY += Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Subtracts another vector from the current vector.
@@ -419,7 +419,7 @@ inline namespace Math
         {
             mX -= Vector.mX;
             mY -= Vector.mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Subtracts a scalar value from all components of the vector.
@@ -430,7 +430,7 @@ inline namespace Math
         {
             mX -= Scalar;
             mY -= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Multiplies all components of the vector by another vector.
@@ -441,7 +441,7 @@ inline namespace Math
         {
             mX *= Vector.mX;
             mY *= Vector.mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Multiplies all components of the vector by a scalar value.
@@ -452,7 +452,7 @@ inline namespace Math
         {
             mX *= Scalar;
             mY *= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Divides all components of the vector by another vector.
@@ -466,7 +466,7 @@ inline namespace Math
 
             mX /= Vector.mX;
             mY /= Vector.mY;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Divides all components of the vector by a scalar value.
@@ -479,7 +479,7 @@ inline namespace Math
 
             mX /= Scalar;
             mY /= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Shifts left all components of the vector by a scalar value.

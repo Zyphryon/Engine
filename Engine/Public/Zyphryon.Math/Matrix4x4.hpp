@@ -58,10 +58,22 @@ inline namespace Math
 
         /// \brief Constructs matrix from 16 scalar values (column-major order).
         ///
-        /// \param S00 ,S10,S20,S30 First column elements
-        /// \param S01 ,S11,S21,S31 Second column elements
-        /// \param S02 ,S12,S22,S32 Third column elements
-        /// \param S03 ,S13,S23,S33 Fourth column elements
+        /// \param S00 Element at column 0, row 0
+        /// \param S10 Element at column 0, row 1
+        /// \param S20 Element at column 0, row 2
+        /// \param S30 Element at column 0, row 3
+        /// \param S01 Element at column 1, row 0
+        /// \param S11 Element at column 1, row 1
+        /// \param S21 Element at column 1, row 2
+        /// \param S31 Element at column 1, row 3
+        /// \param S02 Element at column 2, row 0
+        /// \param S12 Element at column 2, row 1
+        /// \param S22 Element at column 2, row 2
+        /// \param S32 Element at column 2, row 3
+        /// \param S03 Element at column 3, row 0
+        /// \param S13 Element at column 3, row 1
+        /// \param S23 Element at column 3, row 2
+        /// \param S33 Element at column 3, row 3
         ZYPHRYON_INLINE Matrix4x4(
             Real32 S00, Real32 S10, Real32 S20, Real32 S30,
             Real32 S01, Real32 S11, Real32 S21, Real32 S31,
@@ -97,7 +109,7 @@ inline namespace Math
         {
             LOG_ASSERT(IsFinite(), "Matrix contains invalid (NaN/Inf) values before orthogonality check");
 
-            return (Transpose(*this) * (* this)).IsIdentity();
+            return (Transpose(* this) * (* this)).IsIdentity();
         }
 
         /// \brief Checks if all components of the matrix are finite (not NaN or Inf).

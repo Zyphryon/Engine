@@ -75,29 +75,12 @@ inline namespace Math
         {
         }
 
-        /// \brief Checks if the rectangle is the zero rectangle.
-        ///
-        /// \return `true` if all coordinates are approximately zero, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
-        {
-            return Base::IsAlmostZero(mMinimumX) && Base::IsAlmostZero(mMinimumY) &&
-                   Base::IsAlmostZero(mMaximumX) && Base::IsAlmostZero(mMaximumY);
-        }
-
         /// \brief Checks if the rectangle is valid (X1 <= X2 and Y1 <= Y2).
         ///
         /// \return `true` if the rectangle is valid, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsValid() const
         {
             return mMinimumX <= mMaximumX && mMinimumY <= mMaximumY;
-        }
-
-        /// \brief Checks if the rectangle has zero area.
-        ///
-        /// \return `true` if the rectangle has zero area, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool IsEmpty() const
-        {
-            return Base::IsAlmostEqual(mMinimumX, mMaximumX) || Base::IsAlmostEqual(mMinimumY, mMaximumY);
         }
 
         /// \brief Sets the coordinates of the rectangle.
@@ -187,7 +170,7 @@ inline namespace Math
         /// \return The width of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetWidth() const
         {
-            return GetMaximumX() - GetMinimumX();
+            return GetMaximumX() - GetMinimumX() + 1;
         }
 
         /// \brief Calculates the height of the rectangle.
@@ -195,7 +178,7 @@ inline namespace Math
         /// \return The height of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetHeight() const
         {
-            return GetMaximumY() - GetMinimumY();
+            return GetMaximumY() - GetMinimumY() + 1;
         }
 
         /// \brief Gets the position of the rectangle.
@@ -282,7 +265,7 @@ inline namespace Math
         /// \return `true` if the point is inside the rectangle, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(Type X, Type Y) const
         {
-            return X >= mMinimumX && X < mMaximumX && Y >= mMinimumY && Y < mMaximumY;
+            return X >= mMinimumX && X <= mMaximumX && Y >= mMinimumY && Y <= mMaximumY;
         }
 
         /// \brief Checks if this rectangle contains a point.
@@ -300,10 +283,10 @@ inline namespace Math
         /// \return `true` if the rectangles intersect, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<AnyRect> Other) const
         {
-            return !(mMaximumX <= Other.mMinimumX ||
-                     mMinimumX >= Other.mMaximumX ||
-                     mMaximumY <= Other.mMinimumY ||
-                     mMinimumY >= Other.mMaximumY);
+            return !(mMaximumX < Other.mMinimumX ||
+                     mMinimumX > Other.mMaximumX ||
+                     mMaximumY < Other.mMinimumY ||
+                     mMinimumY > Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle collides with another rectangle.
@@ -312,10 +295,10 @@ inline namespace Math
         /// \return `true` if the rectangles collides, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Collides(ConstRef<AnyRect> Other) const
         {
-            return !(mMaximumX < Other.mMinimumX ||
-                     mMinimumX > Other.mMaximumX ||
-                     mMaximumY < Other.mMinimumY ||
-                     mMinimumY > Other.mMaximumY);
+            return !(mMaximumX <= Other.mMinimumX ||
+                     mMinimumX >= Other.mMaximumX ||
+                     mMaximumY <= Other.mMinimumY ||
+                     mMinimumY >= Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle is equal to another rectangle.
@@ -677,20 +660,20 @@ inline namespace Math
 
     public:
 
-        /// \brief Returns the unit rect with size 0.
+        /// \brief Returns the invalid rect.
         ///
-        /// \return An zero rect.
-        ZYPHRYON_INLINE constexpr static AnyRect Zero()
+        /// \return An invalid rect.
+        ZYPHRYON_INLINE constexpr static AnyRect Invalid()
         {
-            return AnyRect(Type(0), Type(0), Type(0), Type(0));
+            return AnyRect(Type(1), Type(1), Type(0), Type(0));
         }
 
         /// \brief Returns the unit rect with size 1.
         ///
         /// \return An unit rect.
-        ZYPHRYON_INLINE constexpr static AnyRect Unit()
+        ZYPHRYON_INLINE constexpr static AnyRect One()
         {
-            return AnyRect(Type(0), Type(0), Type(1), Type(1));
+            return AnyRect(Type(0), Type(0), Type(0), Type(0));
         }
 
         /// \brief Canonicalizes a rectangle by ensuring X1 <= X2 and Y1 <= Y2.
@@ -774,11 +757,11 @@ inline namespace Math
             const Type MaximumX = Base::Min(First.mMaximumX, Second.mMaximumX);
             const Type MaximumY = Base::Min(First.mMaximumY, Second.mMaximumY);
 
-            if (MaximumX > MinimumX && MaximumY > MinimumY)
+            if (MaximumX >= MinimumX && MaximumY >= MinimumY)
             {
                 return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
             }
-            return AnyRect::Zero();
+            return AnyRect::Invalid();
         }
 
         /// \brief Returns the union (bounding box) of two rectangles.

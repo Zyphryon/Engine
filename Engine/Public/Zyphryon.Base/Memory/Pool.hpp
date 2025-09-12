@@ -94,6 +94,14 @@ inline namespace Base
             return mAllocator.GetSize();
         }
 
+        /// \brief Returns a contiguous read-only view of the pool storage.
+        ///
+        /// \return A span providing read-only access to the pool storage.
+        ZYPHRYON_INLINE ConstSpan<Type> GetSpan() const
+        {
+            return ConstSpan<Type>(mPool.data(), GetHead());
+        }
+
         /// \brief Accesses the element associated with the given handle.
         ///
         /// \param Handle The handle of the element to access. Must be a valid, allocated handle.

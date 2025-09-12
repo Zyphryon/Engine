@@ -220,7 +220,7 @@ inline namespace Math
             mComponents[1] += Color.mComponents[1];
             mComponents[2] += Color.mComponents[2];
             mComponents[3] += Color.mComponents[3];
-            return (*this);
+            return (* this);
         }
 
         /// \brief Adds a scalar value to all channels of the color.
@@ -233,7 +233,7 @@ inline namespace Math
             mComponents[1] += Scalar;
             mComponents[2] += Scalar;
             mComponents[3] += Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Subtracts another color from the current color (component-wise RGBA).
@@ -246,7 +246,7 @@ inline namespace Math
             mComponents[1] -= Color.mComponents[1];
             mComponents[2] -= Color.mComponents[2];
             mComponents[3] -= Color.mComponents[3];
-            return (*this);
+            return (* this);
         }
 
         /// \brief Subtracts a scalar value from all channels of the color.
@@ -259,7 +259,7 @@ inline namespace Math
             mComponents[1] -= Scalar;
             mComponents[2] -= Scalar;
             mComponents[3] -= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Multiplies all channels of the color by another color (component-wise RGBA).
@@ -272,7 +272,7 @@ inline namespace Math
             mComponents[1] *= Color.mComponents[1];
             mComponents[2] *= Color.mComponents[2];
             mComponents[3] *= Color.mComponents[3];
-            return (*this);
+            return (* this);
         }
 
         /// \brief Multiplies all channels of the color by a scalar value.
@@ -285,7 +285,7 @@ inline namespace Math
             mComponents[1] *= Scalar;
             mComponents[2] *= Scalar;
             mComponents[3] *= Scalar;
-            return (*this);
+            return (* this);
         }
 
         /// \brief Divides all channels of the color by another color (component-wise RGBA).
@@ -303,7 +303,7 @@ inline namespace Math
             mComponents[1] /= Color.mComponents[1];
             mComponents[2] /= Color.mComponents[2];
             mComponents[3] /= Color.mComponents[3];
-            return (*this);
+            return (* this);
         }
 
         /// \brief Divides all channels of the color by a scalar value.
