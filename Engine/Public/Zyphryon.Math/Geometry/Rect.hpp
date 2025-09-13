@@ -83,6 +83,15 @@ inline namespace Math
             return mMinimumX <= mMaximumX && mMinimumY <= mMaximumY;
         }
 
+        /// \brief Checks if the rectangle is the zero rectangle.
+        ///
+        /// \return `true` if all coordinates are approximately zero, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
+        {
+            return Base::IsAlmostZero(mMinimumX) && Base::IsAlmostZero(mMinimumY) &&
+                   Base::IsAlmostZero(mMaximumX) && Base::IsAlmostZero(mMaximumY);
+        }
+
         /// \brief Sets the coordinates of the rectangle.
         ///
         /// \param MinimumX The minimum X coordinate of the rectangle.
