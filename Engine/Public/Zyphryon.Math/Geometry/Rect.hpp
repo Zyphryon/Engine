@@ -179,7 +179,7 @@ inline namespace Math
         /// \return The width of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetWidth() const
         {
-            return GetMaximumX() - GetMinimumX() + 1;
+            return GetMaximumX() - GetMinimumX();
         }
 
         /// \brief Calculates the height of the rectangle.
@@ -187,7 +187,7 @@ inline namespace Math
         /// \return The height of the rectangle.
         ZYPHRYON_INLINE constexpr Type GetHeight() const
         {
-            return GetMaximumY() - GetMinimumY() + 1;
+            return GetMaximumY() - GetMinimumY();
         }
 
         /// \brief Gets the position of the rectangle.
@@ -270,10 +270,8 @@ inline namespace Math
         /// \return `true` if this rectangle contains the other, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<AnyRect> Other) const
         {
-            return mMinimumX <= Other.mMinimumX &&
-                   mMaximumX >= Other.mMaximumX &&
-                   mMinimumY <= Other.mMinimumY &&
-                   mMaximumY >= Other.mMaximumY;
+            return mMinimumX <= Other.mMinimumX && mMaximumX >= Other.mMaximumX &&
+                   mMinimumY <= Other.mMinimumY && mMaximumY >= Other.mMaximumY;
         }
 
         /// \brief Checks if this rectangle contains a point.
@@ -283,7 +281,7 @@ inline namespace Math
         /// \return `true` if the point is inside the rectangle, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Contains(Type X, Type Y) const
         {
-            return X >= mMinimumX && X <= mMaximumX && Y >= mMinimumY && Y <= mMaximumY;
+            return X >= mMinimumX && X < mMaximumX && Y >= mMinimumY && Y < mMaximumY;
         }
 
         /// \brief Checks if this rectangle contains a point.
@@ -301,22 +299,8 @@ inline namespace Math
         /// \return `true` if the rectangles intersect, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<AnyRect> Other) const
         {
-            return !(mMaximumX < Other.mMinimumX ||
-                     mMinimumX > Other.mMaximumX ||
-                     mMaximumY < Other.mMinimumY ||
-                     mMinimumY > Other.mMaximumY);
-        }
-
-        /// \brief Checks if this rectangle collides with another rectangle.
-        ///
-        /// \param Other The other rectangle to check.
-        /// \return `true` if the rectangles collides, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Collides(ConstRef<AnyRect> Other) const
-        {
-            return !(mMaximumX <= Other.mMinimumX ||
-                     mMinimumX >= Other.mMaximumX ||
-                     mMaximumY <= Other.mMinimumY ||
-                     mMinimumY >= Other.mMaximumY);
+            return mMinimumX < Other.mMaximumX && mMaximumX > Other.mMinimumX &&
+                   mMinimumY < Other.mMaximumY && mMaximumY > Other.mMinimumY;
         }
 
         /// \brief Checks if this rectangle is equal to another rectangle.
@@ -686,12 +670,20 @@ inline namespace Math
             return AnyRect(Type(1), Type(1), Type(0), Type(0));
         }
 
+        /// \brief Returns an empty rect.
+        ///
+        /// \return An empty rect.
+        ZYPHRYON_INLINE constexpr static AnyRect Zero()
+        {
+            return AnyRect(Type(0), Type(0), Type(0), Type(0));
+        }
+
         /// \brief Returns the unit rect with size 1.
         ///
         /// \return An unit rect.
         ZYPHRYON_INLINE constexpr static AnyRect One()
         {
-            return AnyRect(Type(0), Type(0), Type(0), Type(0));
+            return AnyRect(Type(0), Type(0), Type(1), Type(1));
         }
 
         /// \brief Canonicalizes a rectangle by ensuring X1 <= X2 and Y1 <= Y2.
@@ -775,11 +767,11 @@ inline namespace Math
             const Type MaximumX = Base::Min(First.mMaximumX, Second.mMaximumX);
             const Type MaximumY = Base::Min(First.mMaximumY, Second.mMaximumY);
 
-            if (MaximumX >= MinimumX && MaximumY >= MinimumY)
+            if (MaximumX > MinimumX && MaximumY > MinimumY)
             {
                 return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
             }
-            return AnyRect::Invalid();
+            return AnyRect::Zero();
         }
 
         /// \brief Returns the union (bounding box) of two rectangles.
@@ -820,15 +812,15 @@ inline namespace Math
             requires (IsReal<Type>)
         {
             constexpr AnyRect kMultiplier[] = {
-                AnyRect( Type(0.0),  Type(0.0), Type(1.0), Type(1.0)),  // LeftTop
+                AnyRect( Type(0.0), -Type(1.0), Type(1.0), Type(0.0)),  // LeftTop
                 AnyRect( Type(0.0), -Type(0.5), Type(1.0), Type(0.5)),  // LeftMiddle
-                AnyRect( Type(0.0), -Type(1.0), Type(1.0), Type(0.0)),  // LeftBottom
-                AnyRect(-Type(0.5),  Type(0.0), Type(0.5), Type(1.0)),  // CenterTop
+                AnyRect( Type(0.0),  Type(0.0), Type(1.0), Type(1.0)),  // LeftBottom
+                AnyRect(-Type(0.5), -Type(1.0), Type(0.5), Type(0.0)),  // CenterTop
                 AnyRect(-Type(0.5), -Type(0.5), Type(0.5), Type(0.5)),  // CenterMiddle
-                AnyRect(-Type(0.5), -Type(1.0), Type(0.5), Type(0.0)),  // CenterBottom
-                AnyRect(-Type(1.0),  Type(0.0), Type(0.0), Type(1.0)),  // RightTop
+                AnyRect(-Type(0.5),  Type(0.0), Type(0.5), Type(1.0)),  // CenterBottom
+                AnyRect(-Type(1.0), -Type(1.0), Type(0.0), Type(0.0)),  // RightTop
                 AnyRect(-Type(1.0), -Type(0.5), Type(0.0), Type(0.5)),  // RightMiddle
-                AnyRect(-Type(1.0), -Type(1.0), Type(0.0), Type(0.0)),  // RightBottom
+                AnyRect(-Type(1.0),  Type(0.0), Type(0.0), Type(1.0)),  // RightBottom
             };
             return kMultiplier[Enum::Cast(Pivot)] * Rectangle.GetSize() + Rectangle.GetPosition();
         }

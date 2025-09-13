@@ -386,15 +386,15 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr static Circle Anchor(ConstRef<Circle> Circle, Pivot Pivot)
         {
             constexpr Vector2 kMultiplier[] = {
-                Vector2( 0.0f,  0.0f),  // LeftTop
+                Vector2( 0.0f, -1.0f),  // LeftTop
                 Vector2( 0.0f, -0.5f),  // LeftMiddle
-                Vector2( 0.0f, -1.0f),  // LeftBottom
-                Vector2(-0.5f,  0.0f),  // CenterTop
+                Vector2( 0.0f,  0.0f),  // LeftBottom
+                Vector2(-0.5f, -1.0f),  // CenterTop
                 Vector2(-0.5f, -0.5f),  // CenterMiddle
-                Vector2(-0.5f, -1.0f),  // CenterBottom
-                Vector2(-1.0f,  0.0f),  // RightTop
+                Vector2(-0.5f,  0.0f),  // CenterBottom
+                Vector2(-1.0f, -1.0f),  // RightTop
                 Vector2(-1.0f, -0.5f),  // RightMiddle
-                Vector2(-1.0f, -1.0f),  // RightBottom
+                Vector2(-1.0f,  0.0f),  // RightBottom
             };
             return Math::Circle(Circle.GetCenter() + kMultiplier[Enum::Cast(Pivot)] * (Circle.mRadius * 2), Circle.mRadius);
         }
