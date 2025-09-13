@@ -12,6 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Pivot.hpp"
 #include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -376,6 +378,27 @@ inline namespace Math
             return Circle(First.mCenter + Direction * ((Radius - First.mRadius) / Distance), Radius);
         }
 
+        /// \brief Anchors a circle relative to a pivot point.
+        ///
+        /// \param Circle The source circle.
+        /// \param Pivot  The pivot alignment mode.
+        /// \return A circle anchored according to the pivot.
+        ZYPHRYON_INLINE constexpr static Circle Anchor(ConstRef<Circle> Circle, Pivot Pivot)
+        {
+            constexpr Vector2 kMultiplier[] = {
+                Vector2( 0.0f,  0.0f),  // LeftTop
+                Vector2( 0.0f, -0.5f),  // LeftMiddle
+                Vector2( 0.0f, -1.0f),  // LeftBottom
+                Vector2(-0.5f,  0.0f),  // CenterTop
+                Vector2(-0.5f, -0.5f),  // CenterMiddle
+                Vector2(-0.5f, -1.0f),  // CenterBottom
+                Vector2(-1.0f,  0.0f),  // RightTop
+                Vector2(-1.0f, -0.5f),  // RightMiddle
+                Vector2(-1.0f, -1.0f),  // RightBottom
+            };
+            return Math::Circle(Circle.GetCenter() + kMultiplier[Enum::Cast(Pivot)] * (Circle.mRadius * 2), Circle.mRadius);
+        }
+
         /// \brief Linearly interpolates between two circles.
         ///
         /// \param Start      The starting circle.
@@ -388,6 +411,26 @@ inline namespace Math
 
             const Real32 Radius = Base::Lerp(Start.mRadius, End.mRadius, Percentage);
             return Circle(Vector2::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
+        }
+
+        /// \brief Projects a 2D circle by a 4x4 transformation matrix.
+        ///
+        /// \param Circle The input circle in local space.
+        /// \param Matrix The transformation matrix to apply.
+        /// \return A transformed circle in world space.
+        ZYPHRYON_INLINE static Circle Project(ConstRef<Circle> Circle, ConstRef<Matrix4x4> Matrix)
+        {
+            const Vector2 Center = Matrix4x4::Project(Matrix, Circle.GetCenter());
+
+            const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
+            const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
+            if (IsAlmostEqual(ScaleX, ScaleY))
+            {
+                return Math::Circle(Center, Circle.GetRadius() * ScaleX);
+            }
+
+            const Vector2 Edge = Matrix4x4::Project(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
+            return Math::Circle(Center, (Edge - Center).GetLength());
         }
 
     private:

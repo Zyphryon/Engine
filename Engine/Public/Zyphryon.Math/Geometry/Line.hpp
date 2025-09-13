@@ -12,6 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Pivot.hpp"
 #include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -317,6 +319,30 @@ inline namespace Math
             return Line(Vector2::Zero(), Vector2::UnitY());
         }
 
+        /// \brief Anchors a line relative to a pivot point.
+        ///
+        /// \param Line  The line circle.
+        /// \param Pivot The pivot alignment mode.
+        /// \return A line anchored according to the pivot.
+        ZYPHRYON_INLINE constexpr static Line Anchor(ConstRef<Line> Line, Pivot Pivot)
+        {
+            constexpr Vector2 kMultiplier[] = {
+                Vector2( 0.0f, 0.0f),  // LeftTop
+                Vector2( 0.0f, 0.0f),  // LeftMiddle
+                Vector2( 0.0f, 0.0f),  // LeftBottom
+                Vector2(-0.5f, 0.0f),  // CenterTop
+                Vector2(-0.5f, 0.0f),  // CenterMiddle
+                Vector2(-0.5f, 0.0f),  // CenterBottom
+                Vector2(-1.0f, 0.0f),  // RightTop
+                Vector2(-1.0f, 0.0f),  // RightMiddle
+                Vector2(-1.0f, 0.0f),  // RightBottom
+            };
+
+            const Vector2 Size   = Vector2::Max(Line.GetStart(), Line.GetEnd()) - Vector2::Min(Line.GetStart(), Line.GetEnd());
+            const Vector2 Offset = kMultiplier[Enum::Cast(Pivot)] * Size;
+            return Math::Line(Line.GetStart() + Offset, Line.GetEnd() + Offset);
+        }
+
         /// \brief Linearly interpolates between two lines.
         ///
         /// \param Start      The starting line.
@@ -329,6 +355,16 @@ inline namespace Math
 
             return Line(Vector2::Lerp(Start.mStart, End.mStart, Percentage),
                         Vector2::Lerp(Start.mEnd,   End.mEnd,   Percentage));
+        }
+
+        /// \brief Projects a 2D line by a 4x4 transformation matrix.
+        ///
+        /// \param Line   The input line in local space.
+        /// \param Matrix The transformation matrix to apply.
+        /// \return A transformed line in world space.
+        ZYPHRYON_INLINE static Line Project(ConstRef<Line> Line, ConstRef<Matrix4x4> Matrix)
+        {
+            return Math::Line(Matrix4x4::Project(Matrix, Line.GetStart()), Matrix4x4::Project(Matrix, Line.GetEnd()));
         }
 
     private:
