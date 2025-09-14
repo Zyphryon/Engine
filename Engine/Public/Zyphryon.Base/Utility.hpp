@@ -136,7 +136,7 @@ inline namespace Base
     /// \param Tuple The tuple-like container to fetch from.
     /// \return A reference (or value, if rvalue) to the extracted element.
     template<typename Type, typename Container>
-    constexpr auto Fetch(AnyRef<Container> Tuple)
+    constexpr decltype(auto) Fetch(AnyRef<Container> Tuple)
     {
         return std::get<Type>(Forward<Container>(Tuple));
     }
@@ -147,7 +147,7 @@ inline namespace Base
     /// \param Tuple The tuple-like container to fetch from.
     /// \return A reference (or value, if rvalue) to the extracted element.
     template<UInt Type, typename Container>
-    constexpr auto Fetch(AnyRef<Container> Tuple)
+    constexpr decltype(auto) Fetch(AnyRef<Container> Tuple)
     {
         return std::get<Type>(Forward<Container>(Tuple));
     }
@@ -158,7 +158,7 @@ inline namespace Base
     /// \param Parameters The parameters to substitute into the format string.
     /// \return A formatted UTF-8 string.
     template<typename... Arguments>
-    auto Format(ConstStr8 Format, AnyRef<Arguments>... Parameters)
+    ConstStr8 Format(ConstStr8 Format, AnyRef<Arguments>... Parameters)
     {
         thread_local std::array<Char, 2048> Buffer;
 
@@ -184,6 +184,33 @@ inline namespace Base
     constexpr auto Capture(AnyRef<Type> Function, AnyRef<Arguments>... Parameters)
     {
         return std::bind_front(Forward<Type>(Function), Forward<Arguments>(Parameters)...);
+    }
+
+    /// \brief Iterates over each index in the sequence and applies the specified action.
+    ///
+    /// This function applies the given action to every index in the provided index sequence.
+    /// It's equivalent to a compile-time for-loop over the indices.
+    ///
+    /// \param Sequence The index sequence to iterate over.
+    /// \param Action   The action to apply to each index.
+    template <typename Callback, UInt... Values>
+    constexpr void ForEachIndex(std::index_sequence<Values...> Sequence, AnyRef<Callback> Action)
+    {
+        (Action.template operator()<Values>(), ...);
+    }
+
+    /// \brief Iterates over each index in the sequence and applies the action to indices that satisfy the predicate.
+    ///
+    /// This function filters the indices based on the predicate and applies the action only to those
+    /// that satisfy the condition. The action is applied to at most one index (due to short-circuiting).
+    ///
+    /// \param Sequence  The index sequence to iterate over.
+    /// \param Predicate The filter condition.
+    /// \param Action    The action to apply to matching indices.
+    template <typename Filter, typename Callback, UInt... Values>
+    constexpr void ForEachIndex(std::index_sequence<Values...> Sequence, AnyRef<Filter> Predicate, AnyRef<Callback> Action)
+    {
+        ((Predicate.template operator()<Values>() ? (Action.template operator()<Values>(), true) : false) || ...);
     }
 
     /// \brief Constructs an object of type `Type` in-place at the specified memory location.
