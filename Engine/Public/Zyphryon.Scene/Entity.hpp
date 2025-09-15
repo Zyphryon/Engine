@@ -114,7 +114,7 @@ namespace Scene
         template<typename Tag>
         ZYPHRYON_INLINE void Attach()
         {
-            mHandle.template add<Tag>();
+            mHandle.add<Tag>();
         }
 
         /// \brief Attaches a component identified by an entity.
@@ -132,7 +132,7 @@ namespace Scene
         template<typename Tag>
         ZYPHRYON_INLINE void Attach(Entity Target)
         {
-            mHandle.template add<Tag>(Target.GetID());
+            mHandle.add<Tag>(Target.GetID());
         }
 
         /// \brief Attaches a relation between two tag components.
@@ -142,7 +142,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE void Attach()
         {
-            mHandle.template add<Tag, Target>();
+            mHandle.add<Tag, Target>();
         }
 
         /// \brief Attaches a relation between two entities.
@@ -160,7 +160,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Attach(AnyRef<Component> Data)
         {
-            mHandle.template set<Component>(Move(Data));
+            mHandle.set<Component>(Move(Data));
         }
 
         /// \brief Attaches a relation between a tag component and a component of type \p Component.
@@ -169,8 +169,9 @@ namespace Scene
         /// \param Data The relation's target component.
         template<typename Tag, typename Component>
         ZYPHRYON_INLINE void Attach(AnyRef<Component> Data)
+            requires(!IsEqual<Component, Entity>)
         {
-            mHandle.template set_second<Tag>(Move(Data));
+            mHandle.set_second<Tag>(Move(Data));
         }
 
         /// \brief Attaches a relation between a tag component and a component of type \p Component.
@@ -200,7 +201,7 @@ namespace Scene
         template<typename Tag>
         ZYPHRYON_INLINE Ptr<void> Ensure(Entity Target)
         {
-            return mHandle.template ensure<Tag>(Target.GetID());
+            return mHandle.ensure<Tag>(Target.GetID());
         }
 
         /// \brief Ensures a relation between two entities is present.
@@ -217,7 +218,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Detach()
         {
-            mHandle.template remove<Component>();
+            mHandle.remove<Component>();
         }
 
         /// \brief Removes a component from this entity.
@@ -235,7 +236,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE void Detach()
         {
-            mHandle.template remove<Tag, Target>();
+            mHandle.remove<Tag, Target>();
         }
 
         /// \brief Removes a relation component from this entity.
@@ -245,7 +246,7 @@ namespace Scene
         template<typename Tag>
         ZYPHRYON_INLINE void Detach(Entity Target)
         {
-            mHandle.template remove<Tag>(Target.GetID());
+            mHandle.remove<Tag>(Target.GetID());
         }
 
         /// \brief Removes a relation component from this entity.
@@ -264,7 +265,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE Bool Contains() const
         {
-            return mHandle.template has<Component>();
+            return mHandle.has<Component>();
         }
 
         /// \brief Checks if this entity has a component.
@@ -284,7 +285,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Bool Contains() const
         {
-            return mHandle.template has<Tag, Target>();
+            return mHandle.has<Tag, Target>();
         }
 
         /// \brief Checks if this entity has a relation between \p Tag and \p Target.
@@ -305,11 +306,11 @@ namespace Scene
         {
             if constexpr (IsMutable<Component>)
             {
-                return mHandle.template try_get_mut<Component>();
+                return mHandle.try_get_mut<Component>();
             }
             else
             {
-                return mHandle.template try_get<Component>();
+                return mHandle.try_get<Component>();
             }
         }
 
@@ -330,7 +331,7 @@ namespace Scene
         template<typename Tag>
         ZYPHRYON_INLINE auto Lookup(Entity Target) const
         {
-            return mHandle.template try_get_mut<Tag>(Target.GetID());
+            return mHandle.try_get_mut<Tag>(Target.GetID());
         }
 
         /// \brief Lookup a component from this entity.
@@ -353,11 +354,11 @@ namespace Scene
         {
             if constexpr (IsMutable<Target>)
             {
-                return mHandle.template try_get_mut<Tag, Target>();
+                return mHandle.try_get_mut<Tag, Target>();
             }
             else
             {
-                return mHandle.template try_get<Tag, Target>();
+                return mHandle.try_get<Tag, Target>();
             }
         }
 
@@ -365,7 +366,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Notify() const
         {
-            mHandle.template modified<Component>();
+            mHandle.modified<Component>();
         }
 
         /// \brief Marks a component as modified.
@@ -383,7 +384,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE void Notify() const
         {
-            mHandle.template modified<Tag, Target>();
+            mHandle.modified<Tag, Target>();
         }
 
         /// \brief Marks a relation between two entities as modified.
@@ -399,7 +400,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Enable()
         {
-            mHandle.template enable<Component>();
+            mHandle.enable<Component>();
         }
 
         /// \brief Enables a component.
@@ -417,7 +418,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE void Enable()
         {
-            mHandle.template enable<Tag, Target>();
+            mHandle.enable<Tag, Target>();
         }
 
         /// \brief Enables a relation component.
@@ -433,7 +434,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Disable()
         {
-            mHandle.template disable<Component>();
+            mHandle.disable<Component>();
         }
 
         /// \brief Disables a component.
@@ -451,7 +452,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE void Disable()
         {
-            mHandle.template disable<Tag, Target>();
+            mHandle.disable<Tag, Target>();
         }
 
         /// \brief Disables a relation component.
@@ -469,7 +470,7 @@ namespace Scene
         template<typename Type>
         ZYPHRYON_INLINE void SetParent()
         {
-            mHandle.template child_of<Type>();
+            mHandle.child_of<Type>();
         }
 
         /// \brief Sets this entity’s parent to another entity.
@@ -494,7 +495,7 @@ namespace Scene
         template<typename Type>
         ZYPHRYON_INLINE void SetArchetype()
         {
-            mHandle.template is_a<Type>();
+            mHandle.is_a<Type>();
         }
 
         /// \brief Sets this entity’s archetype to another entity.
@@ -616,11 +617,11 @@ namespace Scene
         {
             if constexpr(Enable)
             {
-                Actor.template Enable<Component>();
+                Actor.Enable<Component>();
             }
             else
             {
-                Actor.template Disable<Component>();
+                Actor.Disable<Component>();
             }
         }
 
@@ -634,11 +635,11 @@ namespace Scene
         {
             if constexpr(Enable)
             {
-                Actor.template Enable<Component>();
+                Actor.Enable<Component>();
             }
             else
             {
-                Actor.template Disable<Component>();
+                Actor.Disable<Component>();
             }
             Actor.Children(&ToggleComponentInHierarchy<Component, Enable>);
         }

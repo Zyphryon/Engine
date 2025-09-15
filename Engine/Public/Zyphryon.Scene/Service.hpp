@@ -61,7 +61,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Provide()
         {
-            mWorld.template add<Component>();
+            mWorld.add<Component>();
         }
 
         /// \brief Provides a singleton data component of type \p Component to the world.
@@ -70,7 +70,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Provide(AnyRef<Component> Data)
         {
-            mWorld.template set<Component>(Move(Data));
+            mWorld.set<Component>(Move(Data));
         }
 
         /// \brief Lookup a singleton component of type \p Component from this entity.
@@ -81,11 +81,11 @@ namespace Scene
         {
             if constexpr (IsMutable<Component>)
             {
-                return mWorld.template try_get_mut<Component>();
+                return mWorld.try_get_mut<Component>();
             }
             else
             {
-                return mWorld.template try_get<Component>();
+                return mWorld.try_get<Component>();
             }
         }
 
@@ -95,16 +95,16 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE void Remove()
         {
-            mWorld.template remove<Component>();
+            mWorld.remove<Component>();
         }
 
-        /// \brief Removes all instances of type \p Component from the world.
+        /// \brief Clear all instances of type \p Component from the world.
         ///
         /// \tparam Component The tag or component type to remove.
         template<typename Component>
-        ZYPHRYON_INLINE void RemoveAll()
+        ZYPHRYON_INLINE void Clear()
         {
-            mWorld.template remove_all<Component>();
+            mWorld.remove_all<Component>();
         }
 
         /// \brief Checks whether the world currently holds a singleton of type \p Component.
@@ -114,7 +114,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE bool Contains() const
         {
-            return mWorld.template has<Component>();
+            return mWorld.has<Component>();
         }
 
         /// \brief Registers a component type.
@@ -125,7 +125,7 @@ namespace Scene
         template<typename Target>
         ZYPHRYON_INLINE Component<Target> RegisterComponent(ConstStr8 ID = flecs::_::symbol_name<Target>())
         {
-            return Component<Target>(mWorld.template component<Target>(ID.data()));
+            return Component<Target>(mWorld.component<Target>(ID.data()));
         }
 
         /// \brief Retrieves an existing component type.
@@ -135,7 +135,7 @@ namespace Scene
         template<typename Target>
         ZYPHRYON_INLINE Component<Target> GetComponent() const
         {
-            return Component<Target>(mWorld.template component<Target>());
+            return Component<Target>(mWorld.component<Target>());
         }
 
         /// \brief Creates a new entity.
@@ -176,7 +176,7 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Entity GetEntity() const
         {
-            const Entity::Handle Handle = mWorld.entity(mWorld.template pair<Tag, Target>());
+            const Entity::Handle Handle = mWorld.entity(mWorld.pair<Tag, Target>());
             return Entity(Handle);
         }
 
@@ -187,7 +187,7 @@ namespace Scene
         template<typename ...Components>
         ZYPHRYON_INLINE auto CreateQuery(ConstStr8 Name = "") const
         {
-            return mWorld.template query_builder<Components...>(Name.data());
+            return mWorld.query_builder<Components...>(Name.data());
         }
 
         /// \brief Iterates over all archetype entities.
@@ -215,7 +215,7 @@ namespace Scene
         template<typename ...Components>
         ZYPHRYON_INLINE auto CreateObserver(ConstStr8 Name = "")
         {
-            return mWorld.template observer<Components...>(Name.data());
+            return mWorld.observer<Components...>(Name.data());
         }
 
         /// \brief Creates a system for the specified components.
@@ -225,7 +225,7 @@ namespace Scene
         template<typename ...Components>
         ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name = "")
         {
-            return mWorld.template system<Components...>(Name.data());
+            return mWorld.system<Components...>(Name.data());
         }
 
         /// \brief Loads all archetypes.
