@@ -75,7 +75,7 @@ namespace Collision
         /// \return The zero-based index of the active geometry type.
         ZYPHRYON_INLINE UInt32 GetIndex() const
         {
-            return mGeometry.index();
+            return mGeometry.GetIndex();
         }
 
         /// \brief Checks whether the shape currently holds the specified geometry type.
