@@ -15,6 +15,7 @@
 #include "Trait.hpp"
 #include <array>
 #include <format>
+#include <rapidhash.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -75,12 +76,52 @@ inline namespace Base
         Second = Exchange(First, Move(Second));
     }
 
+    /// \brief Combines multiple values into a single hash .
+    ///
+    /// \param Parameters References to the values to be combined into the hash.
+    /// \return An integer value representing the combined hash of all input parameters.
+    template<typename... Arguments>
+    constexpr UInt64 HashCombine(AnyRef<Arguments>... Parameters)
+    {
+        UInt64 Seed = 0;
+
+        (..., (Seed = rapid_mix(Seed ^ ([]<typename Type>(ConstRef<Type> Value)
+        {
+            if constexpr (requires(ConstRef<Type> Instance) { Instance.Hash(); })
+            {
+                return Value.Hash();
+            }
+            else
+            {
+                if constexpr (IsPointer<Type>)
+                {
+                    return rapidhash(Value, sizeof(std::remove_pointer_t<Type>));
+                }
+                else
+                {
+                    return rapidhash(&Value, sizeof(Type));
+                }
+            }
+        }(Parameters)), 0x9DDFEA08EB382D69ULL)));
+
+        return Seed;
+    }
+
+    /// \brief Computes a hash value for a block of text data.
+    ///
+    /// \param Block A string view representing the text data to be hashed.
+    /// \return An integer value representing the hash of the input text block.
+    ZYPHRYON_INLINE UInt64 HashText(ConstStr8 Block)
+    {
+        return rapidhash(Block.data(), Block.size());
+    }
+
     /// \brief Computes a 64-bit FNV-1a hash of a string view at compile or run time.
-    /// 
+    ///
     /// \param Block   The string data to hash.
     /// \param Counter Initial hash value (defaults to FNV offset basis).
     /// \return The 64-bit FNV-1a hash.
-    constexpr auto HashText(ConstStr8 Block, UInt64 Counter = 14695981039346656037ull)
+    constexpr UInt64 HashTextType(ConstStr8 Block, UInt64 Counter = 14695981039346656037ull)
     {
         for (const Char Character : Block)
         {
@@ -89,47 +130,18 @@ inline namespace Base
         return Counter;
     }
 
-    /// \brief Computes a compile-time hash for the type \c Type using its decorated name.
-    /// 
-    /// leverages the type name to compute a unique 64-bit FNV-1a hash at compile time.
-    /// It is typically used for type-based identifiers or registration systems.
-    /// 
-    /// \tparam Type The type to compute the hash for.
-    /// \return The 64-bit FNV-1a hash of the type's decorated name.
+    /// \brief Generates a compile-time hash identifier for a specific type.
+    ///
+    /// \tparam Type The type for which to generate a hash identifier.
+    /// \return An integer value representing the unique hash of the type's name.
     template<typename Type>
-    constexpr auto Hash()
+    constexpr UInt64 HashType()
     {
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
         return HashText(__PRETTY_FUNCTION__);
 #else
-        return HashText(__FUNCSIG__);
+        return HashTextType(__FUNCSIG__);
 #endif
-    }
-
-    /// \brief Combines an existing hash value with a new value using a mixing function.
-    ///
-    /// \param Parameters The values to incorporate into the hash.
-    /// \return Reference to the updated seed, for chaining.
-    template<typename... Arguments>
-    constexpr auto HashCombine(AnyRef<Arguments>... Parameters)
-    {
-        using namespace ankerl::unordered_dense::detail;
-
-        UInt Seed = 0;
-
-        (..., (Seed = wyhash::mix(Seed + ([]<typename Type>(ConstRef<Type> Value)
-        {
-            if constexpr (requires(ConstRef<Type> Value) { Value.Hash(); })
-            {
-                return Value.Hash();
-            }
-            else
-            {
-                return wyhash::hash(Value);
-            }
-        }(Parameters)), 0x9DDFEA08EB382D69ULL)));
-
-        return Seed;
     }
 
     /// \brief Extracts an element of the specified type from a tuple-like container.
@@ -181,7 +193,6 @@ inline namespace Base
     /// \param Function   The callable object to bind to.
     /// \param Parameters The arguments to capture and bind to the front of the callable.
     /// \return A new callable object with the bound arguments.
-    /// 
     template<typename Type, typename... Arguments>
     constexpr auto Capture(AnyRef<Type> Function, AnyRef<Arguments>... Parameters)
     {

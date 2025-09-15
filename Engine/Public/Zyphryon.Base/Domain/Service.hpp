@@ -136,7 +136,7 @@ inline namespace Base
         /// 
         /// \param Host The parent system managing this service.
         ZYPHRYON_INLINE explicit AbstractService(Ref<Host> Host)
-            : Service { Host, Hash<Type>() }
+            : Service { Host, HashType<Type>() }
         {
         }
     };

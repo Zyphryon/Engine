@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Trait.hpp"
+#include "Utility.hpp"
 #include <beman/inplace_vector/inplace_vector.hpp>
 #include <bitset>
 #include <unordered_dense.h>
@@ -64,7 +64,7 @@ inline namespace Base
         [[nodiscard]] size_t operator()(ConstRef<T>  Value) const
             requires (!requires { Value.Hash(); })
         {
-            return ankerl::unordered_dense::detail::wyhash::hash(Value);
+            return HashCombine(Value);
         }
 
         /// \brief Computes a hash using the object’s custom `Hash()` member.
@@ -137,7 +137,7 @@ inline namespace Base
         /// \return Hash value of the string contents.
         [[nodiscard]] size_t operator()(ConstPtr<Char> Value) const
         {
-            return ankerl::unordered_dense::detail::wyhash::hash(Value, strlen(Value));
+            return HashText(Value);
         }
 
         /// \brief Computes the hash of a UTF-8 string view.
@@ -146,7 +146,7 @@ inline namespace Base
         /// \return Hash value of the string contents.
         [[nodiscard]] size_t operator()(ConstStr8 Value) const
         {
-            return ankerl::unordered_dense::detail::wyhash::hash(Value.data(), Value.size());
+            return HashText(Value);
         }
 
         /// \brief Computes the hash of a UTF-8 string reference.
@@ -155,7 +155,7 @@ inline namespace Base
         /// \return Hash value of the string contents.
         [[nodiscard]] size_t operator()(ConstRef<Str8> Value) const
         {
-            return ankerl::unordered_dense::detail::wyhash::hash(Value.data(), Value.size());
+            return HashText(Value);
         }
     };
 

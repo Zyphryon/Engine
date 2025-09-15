@@ -98,7 +98,7 @@ inline namespace Base
         {
             for (ConstTracker<Unit> Service : mRegistry)
             {
-                if (Service->GetGuid() == Hash<Type>())
+                if (Service->GetGuid() == HashType<Type>())
                 {
                     return Tracker<Type>::Cast(Service);
                 }

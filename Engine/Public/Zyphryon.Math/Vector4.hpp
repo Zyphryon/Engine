@@ -469,12 +469,9 @@ inline namespace Math
         /// \brief Computes a hash value for the object.
         ///
         /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt Hash() const
+        ZYPHRYON_INLINE UInt64 Hash() const
         {
-            ZYPHRYON_ALIGN(16) Real32 Array[4];
-            _mm_store_ps(Array, mRegister);
-
-            return HashCombine(Array[0], Array[1], Array[2], Array[3]);
+            return HashCombine(this);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.

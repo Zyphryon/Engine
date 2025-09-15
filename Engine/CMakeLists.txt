@@ -217,6 +217,19 @@ TARGET_INCLUDE_DIRECTORIES(Toml INTERFACE ${external_toml_SOURCE_DIR})
 LIST(APPEND PROJECT_DEPENDENCIES "Toml")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Rapid-Hash) -> TODO: Remove
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+FetchContent_Declare(External_RapidHash
+        GIT_REPOSITORY https://github.com/Nicoshev/rapidhash)
+FetchContent_MakeAvailable(External_RapidHash)
+
+ADD_LIBRARY(RapidHash INTERFACE)
+TARGET_INCLUDE_DIRECTORIES(RapidHash INTERFACE ${external_rapidhash_SOURCE_DIR})
+
+LIST(APPEND PROJECT_DEPENDENCIES "RapidHash")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (BMP / PNG) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

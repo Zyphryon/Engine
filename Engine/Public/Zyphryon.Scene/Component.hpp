@@ -584,7 +584,7 @@ namespace Scene
         /// \brief Computes a hash value for the object.
         ///
         /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt Hash() const
+        ZYPHRYON_INLINE UInt64 Hash() const
         {
             return GetID();
         }

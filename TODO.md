@@ -32,6 +32,8 @@
 
 **Scene**: Feature rich Tag system (Name, Category, Etc).
 
+**Core**: Clean core and remove external dependencies (Own STL).
+
 **Dependencies**: Own implementation for asset loading (PNG, DXT, MP3, WAV, TOML, GLTF)
 
 **Dependencies**: Remove FAudio with own implementation of 3D using SDL_Mixer
