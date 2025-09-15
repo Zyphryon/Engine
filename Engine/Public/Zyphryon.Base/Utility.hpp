@@ -113,9 +113,11 @@ inline namespace Base
     template<typename... Arguments>
     constexpr auto HashCombine(AnyRef<Arguments>... Parameters)
     {
+        using namespace ankerl::unordered_dense::detail;
+
         UInt Seed = 0;
 
-        (..., (Seed ^= ([]<typename Type>(ConstRef<Type> Value)
+        (..., (Seed = wyhash::mix(Seed + ([]<typename Type>(ConstRef<Type> Value)
         {
             if constexpr (requires(ConstRef<Type> Value) { Value.Hash(); })
             {
@@ -123,9 +125,9 @@ inline namespace Base
             }
             else
             {
-                return std::hash<std::decay_t<Type>>()(Value);
+                return wyhash::hash(Value);
             }
-        }(Parameters) + 0x9E3779B97F4A7C15ULL + (Seed << 6) + (Seed >> 2))));
+        }(Parameters)), 0x9DDFEA08EB382D69ULL)));
 
         return Seed;
     }
