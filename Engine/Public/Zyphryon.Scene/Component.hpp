@@ -34,7 +34,7 @@ namespace Scene
 
         /// \brief Constructs a null component.
         ZYPHRYON_INLINE Component()
-            : mHandle { Handle::null() }
+            : mHandle { nullptr }
         {
         }
 
@@ -156,7 +156,17 @@ namespace Scene
         template<typename Tag, typename Component>
         ZYPHRYON_INLINE void Attach(AnyRef<Component> Data)
         {
-            mHandle.template set_second<Component>(Move(Data));
+            mHandle.template set_second<Tag>(Move(Data));
+        }
+
+        /// \brief Attaches a relation between a tag component and a component of type \p Component.
+        ///
+        /// \param Tag  The relation's tag component.
+        /// \param Data The relation's target component.
+        template<typename Component>
+        ZYPHRYON_INLINE void Attach(Component Tag, AnyRef<Component> Data)
+        {
+            mHandle.set_second(Tag.GetID(), Move(Data));
         }
 
         /// \brief Ensures a component is present.
@@ -609,6 +619,9 @@ namespace Scene
                 case Trait::Final:
                     mHandle.add(flecs::Final);
                     break;
+                case Trait::Symmetric:
+                    mHandle.add(flecs::Symmetric);
+                    break;
             }
         }
 
@@ -620,25 +633,28 @@ namespace Scene
             switch (Trait)
             {
                 case Trait::Serializable:
-                    Detach<Factory>();
+                    mHandle.template remove<Factory>();
                     break;
                 case Trait::Inheritable:
-                    Detach(flecs::OnInstantiate, flecs::Inherit);
+                    mHandle.remove(flecs::OnInstantiate, flecs::Inherit);
                     break;
                 case Trait::Toggleable:
-                    Detach(flecs::CanToggle);
+                    mHandle.remove(flecs::CanToggle);
                     break;
                 case Trait::Sparse:
-                    Detach(flecs::Sparse);
+                    mHandle.remove(flecs::Sparse);
                     break;
                 case Trait::Associative:
-                    Detach(flecs::PairIsTag);
+                    mHandle.remove(flecs::PairIsTag);
                     break;
                 case Trait::Singleton:
-                    Detach(flecs::Singleton);
+                    mHandle.remove(flecs::Singleton);
                     break;
                 case Trait::Final:
-                    Detach(flecs::Final);
+                    mHandle.remove(flecs::Final);
+                    break;
+                case Trait::Symmetric:
+                    mHandle.remove(flecs::Symmetric);
                     break;
             }
         }

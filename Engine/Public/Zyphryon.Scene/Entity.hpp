@@ -173,6 +173,16 @@ namespace Scene
             mHandle.template set_second<Tag>(Move(Data));
         }
 
+        /// \brief Attaches a relation between a tag component and a component of type \p Component.
+        ///
+        /// \param Tag  The relation's tag component.
+        /// \param Data The relation's target component.
+        template<typename Component>
+        ZYPHRYON_INLINE void Attach(Entity Tag, AnyRef<Component> Data)
+        {
+            mHandle.set_second(Tag.GetID(), Move(Data));
+        }
+
         /// \brief Ensures a component is present.
         ///
         /// \param Component The entity that represents the component type.

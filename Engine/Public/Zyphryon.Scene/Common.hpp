@@ -62,6 +62,7 @@ namespace Scene
         Associative,   ///< Component can be used as a tag in associative pairs/relationships.
         Singleton,     ///< Component is a singleton.
         Final,         ///< Component cannot be inherited (opposite of Inheritable).
+        Symmetric,     ///< Component is symmetric (A -> B -> A).
     };
 
     /// \brief Represents a relationship in the ECS of the form (Tag, Target).
