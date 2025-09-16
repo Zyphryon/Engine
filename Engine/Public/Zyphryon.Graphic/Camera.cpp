@@ -45,7 +45,7 @@ namespace Graphic
             mViewProjection        = mProjection * mView;
 
             // Derive the inverse view-projection for unprojection operations.
-            mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);
+            mViewProjectionInverse = Matrix4x4::Inverse<false>(mViewProjection);
 
             // Clear all dirty bits to mark matrices as up-to-date.
             mDirty = 0;

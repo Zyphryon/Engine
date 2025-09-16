@@ -19,6 +19,7 @@
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Math/Geometry/Line.hpp"
 #include "Zyphryon.Math/Geometry/Rect.hpp"
+#include "Zyphryon.Math/Geometry/Quad.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -119,25 +120,25 @@ namespace Graphic
         void SetFontStyle(ConstRef<FontStyleSDF> Style);
 
         // -=(Undocumented)=-
-        void DrawLine(ConstRef<Line> Origin, Real32 Depth, UInt32 Tint, float Thickness = 1.0f);
+        void DrawLine(ConstRef<Line> Origin, Real32 Depth, UInt32 Tint, float Thickness);
 
         // -=(Undocumented)=-
-        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint, float Thickness = 1.0f);
+        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint, float Thickness);
 
         // -=(Undocumented)=-
-        void DrawRectFilled(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint);
+        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint);
 
         // -=(Undocumented)=-
         void DrawSprite(ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
 
         // -=(Undocumented)=-
-        void DrawSprite(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
+        void DrawSprite(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
 
         // -=(Undocumented)=-
         void DrawFont(ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
 
         // -=(Undocumented)=-
-        void DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
+        void DrawFont(ConstRef<Matrix4x4> Transform, ConstStr8 Text, Pivot Anchor, Real32 Size, UInt32 Tint, ConstTracker<Font> Font);
 
         // -=(Undocumented)=-
         void Flush();
@@ -212,7 +213,10 @@ namespace Graphic
             Tracker<Material>  Material;
 
             // -=(Undocumented)=-
-            Array<Vector3, 4>  Edges;
+            Quad               Quad;
+
+            // -=(Undocumented)=-
+            Real32             Depth;
 
             // -=(Undocumented)=-
             Rect               Uv;
@@ -268,7 +272,10 @@ namespace Graphic
         struct Layout
         {
             // -=(Undocumented)=-
-            Vector3 Position;
+            Vector2 Position;
+
+            // -=(Undocumented)=-
+            Real32  Depth;
 
             // -=(Undocumented)=-
             Vector2 Texture;

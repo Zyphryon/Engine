@@ -405,9 +405,12 @@ inline namespace Math
 
         /// \brief Projects a 2D vector using a 4x4 transformation matrix.
         ///
+        /// \tparam Affine When `true`, uses the affine fast path, otherwise uses the general 4×4 inverse.
+        ///
         /// \param Matrix The transformation matrix to apply to the vector.
         /// \param Vector The 2D vector to be projected.
         /// \return A 2D vector resulting from the projection.
+        template<Bool Affine>
         ZYPHRYON_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector2> Vector)
         {
             const Vector4 Result =
@@ -415,18 +418,28 @@ inline namespace Math
                 Matrix.mColumns[1] * Vector4(Vector.GetY()) +
                 Matrix.mColumns[3];
 
-            const Real32 W = Result.GetW();
-            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+            if constexpr(Affine)
+            {
+                return Result.GetXY();
+            }
+            else
+            {
+                const Real32 W = Result.GetW();
+                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
 
-            const Real32 InvW = 1.0f / W;
-            return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
+                const Real32 InvW = 1.0f / W;
+                return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
+            }
         }
 
         /// \brief Projects a 3D vector using a 4x4 transformation matrix.
         ///
+        /// \tparam Affine When `true`, uses the affine fast path, otherwise uses the general 4×4 inverse.
+        ///
         /// \param Matrix The transformation matrix to apply to the vector.
         /// \param Vector The 3D vector to be projected.
         /// \return A 3D vector resulting from the projection.
+        template<Bool Affine>
         ZYPHRYON_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector3> Vector)
         {
             const Vector4 Result =
@@ -435,18 +448,28 @@ inline namespace Math
                 Matrix.mColumns[2] * Vector4(Vector.GetZ()) +
                 Matrix.mColumns[3];
 
-            const Real32 W = Result.GetW();
-            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+            if constexpr(Affine)
+            {
+                return Result.GetXYZ();
+            }
+            else
+            {
+                const Real32 W = Result.GetW();
+                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
 
-            const Real32 InvW = 1.0f / W;
-            return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
+                const Real32 InvW = 1.0f / W;
+                return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
+            }
         }
 
         /// \brief Projects a 4D vector using a 4x4 transformation matrix.
         ///
+        /// \tparam Affine When `true`, uses the affine fast path, otherwise uses the general 4×4 inverse.
+        ///
         /// \param Matrix The transformation matrix to apply to the vector.
         /// \param Vector The 4D vector to be projected.
         /// \return A 4D vector resulting from the projection.
+        template<Bool Affine>
         ZYPHRYON_INLINE static Vector4 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector4> Vector)
         {
             const Vector4 Result =
@@ -455,10 +478,17 @@ inline namespace Math
                 Matrix.mColumns[2] * Vector4::SplatZ(Vector) +
                 Matrix.mColumns[3] * Vector4::SplatW(Vector);
 
-            const Real32 W = Result.GetW();
-            LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+            if constexpr(Affine)
+            {
+                return Result;
+            }
+            else
+            {
+                const Real32 W = Result.GetW();
+                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
 
-            return (W != 0.0f ? Result * (1.0f / W) : Result);
+                return (W != 0.0f ? Result * (1.0f / W) : Result);
+            }
         }
 
         /// \brief Computes the transpose of a 4x4 matrix.
@@ -484,7 +514,7 @@ inline namespace Math
         /// \tparam Affine When `true`, uses the affine fast path, otherwise uses the general 4×4 inverse.
         ///
         /// \param Matrix The matrix to invert.
-        template<Bool Affine = false>
+        template<Bool Affine>
         ZYPHRYON_INLINE static Matrix4x4 Inverse(ConstRef<Matrix4x4> Matrix)
         {
             if constexpr (Affine)

@@ -499,7 +499,7 @@ namespace Graphic
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
             const Real32 Z = (Position.GetZ() - Viewport.MinDepth) / (Viewport.MaxDepth - Viewport.MinDepth);
 
-            return Matrix4x4::Project(mViewProjectionInverse, Vector3(X, Y, Z));
+            return Matrix4x4::Project<false>(mViewProjectionInverse, Vector3(X, Y, Z));
         }
 
         /// \brief Transforms a screen-space coordinates into world-space position.
@@ -516,7 +516,7 @@ namespace Graphic
             const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
 
-            return Matrix4x4::Project(mViewProjectionInverse, Vector2(X, Y));
+            return Matrix4x4::Project<false>(mViewProjectionInverse, Vector2(X, Y));
         }
 
         /// \brief Transforms a world-space position into screen-space coordinates.
@@ -530,7 +530,7 @@ namespace Graphic
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
-            const Vector3 Point = Matrix4x4::Project(mViewProjection, Position);
+            const Vector3 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
             const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);
@@ -550,7 +550,7 @@ namespace Graphic
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
-            const Vector2 Point = Matrix4x4::Project(mViewProjection, Position);
+            const Vector2 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
             const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);

@@ -125,16 +125,16 @@ namespace Collision
             });
         }
 
-        /// \brief Projects the source shape using the specified transformation matrix.
+        /// \brief Transform the source shape using the specified transformation matrix.
         ///
         /// \param Source The source shape to project.
         /// \param Matrix The transformation matrix to apply.
         /// \return A new shape representing the projection of the source shape.
-        ZYPHRYON_INLINE static Shape Project(ConstRef<Shape> Source, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Shape Transform(ConstRef<Shape> Source, ConstRef<Matrix4x4> Matrix)
         {
             return (Source.mGeometry).Visit([&]<typename Type>(ConstRef<Type> Data)
             {
-                return Shape(Type::Project(Data, Matrix));
+                return Shape(Type::Transform(Data, Matrix));
             });
         }
 

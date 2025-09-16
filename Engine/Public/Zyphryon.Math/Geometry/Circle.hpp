@@ -12,9 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
-#include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -413,14 +413,14 @@ inline namespace Math
             return Circle(Vector2::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }
 
-        /// \brief Projects a 2D circle by a 4x4 transformation matrix.
+        /// \brief Transform a 2D circle by a 4x4 transformation matrix.
         ///
         /// \param Circle The input circle in local space.
         /// \param Matrix The transformation matrix to apply.
         /// \return A transformed circle in world space.
-        ZYPHRYON_INLINE static Circle Project(ConstRef<Circle> Circle, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Circle Transform(ConstRef<Circle> Circle, ConstRef<Matrix4x4> Matrix)
         {
-            const Vector2 Center = Matrix4x4::Project(Matrix, Circle.GetCenter());
+            const Vector2 Center = Matrix4x4::Project<true>(Matrix, Circle.GetCenter());
 
             const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
             const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
@@ -429,7 +429,7 @@ inline namespace Math
                 return Math::Circle(Center, Circle.GetRadius() * ScaleX);
             }
 
-            const Vector2 Edge = Matrix4x4::Project(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
+            const Vector2 Edge = Matrix4x4::Project<true>(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
             return Math::Circle(Center, (Edge - Center).GetLength());
         }
 

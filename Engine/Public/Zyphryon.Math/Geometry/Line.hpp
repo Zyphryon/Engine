@@ -12,9 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
-#include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -357,14 +357,15 @@ inline namespace Math
                         Vector2::Lerp(Start.mEnd,   End.mEnd,   Percentage));
         }
 
-        /// \brief Projects a 2D line by a 4x4 transformation matrix.
+        /// \brief Transform a 2D line by a 4x4 transformation matrix.
         ///
         /// \param Line   The input line in local space.
         /// \param Matrix The transformation matrix to apply.
         /// \return A transformed line in world space.
-        ZYPHRYON_INLINE static Line Project(ConstRef<Line> Line, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Line Transform(ConstRef<Line> Line, ConstRef<Matrix4x4> Matrix)
         {
-            return Math::Line(Matrix4x4::Project(Matrix, Line.GetStart()), Matrix4x4::Project(Matrix, Line.GetEnd()));
+            return Math::Line(Matrix4x4::Project<true>(Matrix, Line.GetStart()),
+                              Matrix4x4::Project<true>(Matrix, Line.GetEnd()));
         }
 
     private:

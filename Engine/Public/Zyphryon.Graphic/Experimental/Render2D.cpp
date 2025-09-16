@@ -63,10 +63,11 @@ namespace Graphic
         Ref<Command> Command = Create(Type::Primitive, GetUniqueKey(Material::Kind::Opaque, Type::Primitive, Depth, 0));
         Command.Material = nullptr;
         Command.Tint     = Tint;
-        Command.Edges[0] = { Start.GetX() + Normal.GetX(), Start.GetY() + Normal.GetY(), Depth };
-        Command.Edges[1] = {   End.GetX() + Normal.GetX(),   End.GetY() + Normal.GetY(), Depth };
-        Command.Edges[2] = {   End.GetX() - Normal.GetX(),   End.GetY() - Normal.GetY(), Depth };
-        Command.Edges[3] = { Start.GetX() - Normal.GetX(), Start.GetY() - Normal.GetY(), Depth };
+        Command.Quad.SetCorner(0, { Start.GetX() + Normal.GetX(), Start.GetY() + Normal.GetY() });
+        Command.Quad.SetCorner(1, {   End.GetX() + Normal.GetX(),   End.GetY() + Normal.GetY() });
+        Command.Quad.SetCorner(2, {   End.GetX() - Normal.GetX(),   End.GetY() - Normal.GetY() });
+        Command.Quad.SetCorner(3, { Start.GetX() - Normal.GetX(), Start.GetY() - Normal.GetY() });
+        Command.Depth = Depth;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -79,24 +80,25 @@ namespace Graphic
         const Vector2 EdgeRightTop(Origin.GetMaximumX(), Origin.GetMaximumY());
         const Vector2 EdgeRightBottom(Origin.GetMaximumX(), Origin.GetMinimumY());
 
-        DrawLine(Line(EdgeLeftBottom, EdgeLeftTop), Depth, Tint, Thickness);
-        DrawLine(Line(EdgeLeftTop, EdgeRightTop), Depth, Tint, Thickness);
-        DrawLine(Line(EdgeRightTop, EdgeRightBottom), Depth, Tint, Thickness);
-        DrawLine(Line(EdgeRightBottom, EdgeLeftBottom), Depth, Tint, Thickness);
+        DrawLine(Line(EdgeLeftBottom,  EdgeLeftTop),     Depth, Tint, Thickness);
+        DrawLine(Line(EdgeLeftTop,     EdgeRightTop),    Depth, Tint, Thickness);
+        DrawLine(Line(EdgeRightTop,    EdgeRightBottom), Depth, Tint, Thickness);
+        DrawLine(Line(EdgeRightBottom, EdgeLeftBottom),  Depth, Tint, Thickness);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Render2D::DrawRectFilled(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint)
+    void Render2D::DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint)
     {
         Ref<Command> Command  = Create(Type::Primitive, GetUniqueKey(Material::Kind::Opaque, Type::Primitive, Depth, 0));
         Command.Material = nullptr;
         Command.Tint     = Tint;
-        Command.Edges[0] = { Origin.GetMinimumX(),  Origin.GetMinimumY(), Depth };
-        Command.Edges[1] = { Origin.GetMaximumX(),  Origin.GetMinimumY(), Depth };
-        Command.Edges[2] = { Origin.GetMaximumX(),  Origin.GetMaximumY(), Depth };
-        Command.Edges[3] = { Origin.GetMinimumX(),  Origin.GetMaximumY(), Depth };
+        Command.Quad.SetCorner(0, { Origin.GetMinimumX(),  Origin.GetMinimumY() });
+        Command.Quad.SetCorner(1, { Origin.GetMaximumX(),  Origin.GetMinimumY() });
+        Command.Quad.SetCorner(2, { Origin.GetMaximumX(),  Origin.GetMaximumY() });
+        Command.Quad.SetCorner(3, { Origin.GetMinimumX(),  Origin.GetMaximumY() });
+        Command.Depth = Depth;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -107,25 +109,26 @@ namespace Graphic
         Ref<Command> Command = Create(Type::Sprite, GetUniqueKey(Material->GetKind(), Type::Sprite, Depth, Material->GetID()));
         Command.Material = Material;
         Command.Tint     = Tint;
-        Command.Edges[0] = { Origin.GetMinimumX(),  Origin.GetMinimumY(), Depth };
-        Command.Edges[1] = { Origin.GetMaximumX(),  Origin.GetMinimumY(), Depth };
-        Command.Edges[2] = { Origin.GetMaximumX(),  Origin.GetMaximumY(), Depth };
-        Command.Edges[3] = { Origin.GetMinimumX(),  Origin.GetMaximumY(), Depth };
+        Command.Quad.SetCorner(0, { Origin.GetMinimumX(),  Origin.GetMinimumY() });
+        Command.Quad.SetCorner(1, { Origin.GetMaximumX(),  Origin.GetMinimumY() });
+        Command.Quad.SetCorner(2, { Origin.GetMaximumX(),  Origin.GetMaximumY() });
+        Command.Quad.SetCorner(3, { Origin.GetMinimumX(),  Origin.GetMaximumY() });
+        Command.Depth = Depth;
         Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMaximumY(), Uv.GetMaximumX(), Uv.GetMinimumY() );
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Render2D::DrawSprite(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material)
+    void Render2D::DrawSprite(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material)
     {
+        const Real32 Depth = Transform.GetTranslation().GetZ();
+
         Ref<Command> Command = Create(Type::Sprite, GetUniqueKey(Material->GetKind(), Type::Sprite, Depth, Material->GetID()));
         Command.Material = Material;
         Command.Tint     = Tint;
-        Command.Edges[0] = Matrix4x4::Project(Transform, Vector3(Origin.GetMinimumX(),  Origin.GetMinimumY(), Depth));
-        Command.Edges[1] = Matrix4x4::Project(Transform, Vector3(Origin.GetMaximumX(), Origin.GetMinimumY(),  Depth));
-        Command.Edges[2] = Matrix4x4::Project(Transform, Vector3(Origin.GetMaximumX(), Origin.GetMaximumY(),  Depth));
-        Command.Edges[3] = Matrix4x4::Project(Transform, Vector3(Origin.GetMinimumX(),  Origin.GetMaximumY(), Depth));
+        Command.Quad     = Quad::Transform(Origin, Transform);
+        Command.Depth    = Depth;
         Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMaximumY(), Uv.GetMaximumX(), Uv.GetMinimumY() );
     }
 
@@ -169,10 +172,11 @@ namespace Graphic
                         Ref<Command> Command = Create(Type::Font, GetUniqueKey(Font->GetMaterial()->GetKind(), Type::Font, Depth, ID));
                         Command.Material = Font->GetMaterial();
                         Command.Tint     = Tint;
-                        Command.Edges[0] = Vector3(Boundaries.GetMinimumX(),  Boundaries.GetMinimumY(), Depth);
-                        Command.Edges[1] = Vector3(Boundaries.GetMaximumX(), Boundaries.GetMinimumY(), Depth);
-                        Command.Edges[2] = Vector3(Boundaries.GetMaximumX(), Boundaries.GetMaximumY(),    Depth);
-                        Command.Edges[3] = Vector3(Boundaries.GetMinimumX(),  Boundaries.GetMaximumY(),    Depth);
+                        Command.Quad.SetCorner(0, { Boundaries.GetMinimumX(),  Boundaries.GetMinimumY() });
+                        Command.Quad.SetCorner(1, { Boundaries.GetMaximumX(),  Boundaries.GetMinimumY() });
+                        Command.Quad.SetCorner(2, { Boundaries.GetMaximumX(),  Boundaries.GetMaximumY() });
+                        Command.Quad.SetCorner(3, { Boundaries.GetMinimumX(),  Boundaries.GetMaximumY() });
+                        Command.Depth = Depth;
                         Command.Uv       = Glyph->AtlasBounds;
                         Command.Instance = mFontStylesSelected;
                     }
@@ -186,7 +190,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Render2D::DrawFont(ConstRef<Matrix4x4> Transform, ConstRef<Rect> Origin, Real32 Depth, ConstStr8 Text, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
+    void Render2D::DrawFont(ConstRef<Matrix4x4> Transform, ConstStr8 Text, Pivot Anchor, Real32 Size, UInt32 Tint, ConstTracker<Font> Font)
     {
         if (!Font->HasCompleted())   // TODO: Prevent checking this per frame.
         {
@@ -196,6 +200,9 @@ namespace Graphic
         const UInt32 ID = Font->GetMaterial()->GetID();
 
         // TODO: Automatically wrapping
+        const Rect Origin = Font->Layout(Text, Size, Anchor);
+        const Real32 Depth = Transform.GetTranslation().GetZ();
+
         Real32 CurrentX = Origin.GetX();
         Real32 CurrentY = Origin.GetY();
 
@@ -216,17 +223,15 @@ namespace Graphic
 
                     if (Glyph->LocalBounds.GetWidth() > 0 && Glyph->LocalBounds.GetHeight() > 0)
                     {
-                        const Rect Boundaries = (Glyph->LocalBounds * Size) + Vector2(CurrentX, CurrentY);
+                        Rect Boundaries = (Glyph->LocalBounds * Size) + Vector2(CurrentX, CurrentY);
 
                         // TODO: Create a command for all font, not each letter
                         // TODO: Calculate Transformation over the origin, not individual
                         Ref<Command> Command = Create(Type::Font, GetUniqueKey(Font->GetMaterial()->GetKind(), Type::Font, Depth, ID));
                         Command.Material = Font->GetMaterial();
                         Command.Tint     = Tint;
-                        Command.Edges[0] = Matrix4x4::Project(Transform, Vector3(Boundaries.GetMinimumX(),  Boundaries.GetMinimumY(), Depth));
-                        Command.Edges[1] = Matrix4x4::Project(Transform, Vector3(Boundaries.GetMaximumX(), Boundaries.GetMinimumY(), Depth));
-                        Command.Edges[2] = Matrix4x4::Project(Transform, Vector3(Boundaries.GetMaximumX(), Boundaries.GetMaximumY(),    Depth));
-                        Command.Edges[3] = Matrix4x4::Project(Transform, Vector3(Boundaries.GetMinimumX(),  Boundaries.GetMaximumY(),    Depth));
+                        Command.Quad     = Quad::Transform(Boundaries, Transform);
+                        Command.Depth    = Depth;
                         Command.Uv       = Glyph->AtlasBounds;
                         Command.Instance = mFontStylesSelected;
                     }
@@ -313,13 +318,17 @@ namespace Graphic
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
             Ptr<Command> CommandPtr = mCommandTracker[Element];
-            VtxPointer[0].Position = CommandPtr->Edges[0];
+            VtxPointer[0].Position = CommandPtr->Quad.GetCorner(0);
+            VtxPointer[0].Depth    = CommandPtr->Depth;
             VtxPointer[0].Color    = CommandPtr->Tint;
-            VtxPointer[1].Position = CommandPtr->Edges[1];
+            VtxPointer[1].Position = CommandPtr->Quad.GetCorner(1);
+            VtxPointer[1].Depth    = CommandPtr->Depth;
             VtxPointer[1].Color    = CommandPtr->Tint;
-            VtxPointer[2].Position = CommandPtr->Edges[2];
+            VtxPointer[2].Position = CommandPtr->Quad.GetCorner(2);
+            VtxPointer[2].Depth    = CommandPtr->Depth;
             VtxPointer[2].Color    = CommandPtr->Tint;
-            VtxPointer[3].Position = CommandPtr->Edges[3];
+            VtxPointer[3].Position = CommandPtr->Quad.GetCorner(3);
+            VtxPointer[3].Depth    = CommandPtr->Depth;
             VtxPointer[3].Color    = CommandPtr->Tint;
 
             IdxPointer[0] = Index;
@@ -355,19 +364,23 @@ namespace Graphic
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
             Ptr<Command> CommandPtr = mCommandTracker[Element];
-            VtxPointer[0].Position = CommandPtr->Edges[0];
+            VtxPointer[0].Position = CommandPtr->Quad.GetCorner(0);
+            VtxPointer[0].Depth    = CommandPtr->Depth;
             VtxPointer[0].Texture.Set(CommandPtr->Uv.GetMinimumX(), CommandPtr->Uv.GetMinimumY());
             VtxPointer[0].Color    = CommandPtr->Tint;
             VtxPointer[0].Instance = CommandPtr->Instance;
-            VtxPointer[1].Position = CommandPtr->Edges[1];
+            VtxPointer[1].Position = CommandPtr->Quad.GetCorner(1);
+            VtxPointer[1].Depth    = CommandPtr->Depth;
             VtxPointer[1].Texture.Set(CommandPtr->Uv.GetMaximumX(), CommandPtr->Uv.GetMinimumY());
             VtxPointer[1].Color    = CommandPtr->Tint;
             VtxPointer[1].Instance = CommandPtr->Instance;
-            VtxPointer[2].Position = CommandPtr->Edges[2];
+            VtxPointer[2].Position = CommandPtr->Quad.GetCorner(2);
+            VtxPointer[2].Depth    = CommandPtr->Depth;
             VtxPointer[2].Texture.Set(CommandPtr->Uv.GetMaximumX(), CommandPtr->Uv.GetMaximumY());
             VtxPointer[2].Color    = CommandPtr->Tint;
             VtxPointer[2].Instance = CommandPtr->Instance;
-            VtxPointer[3].Position = CommandPtr->Edges[3];
+            VtxPointer[3].Position = CommandPtr->Quad.GetCorner(3);
+            VtxPointer[3].Depth    = CommandPtr->Depth;
             VtxPointer[3].Texture.Set(CommandPtr->Uv.GetMinimumX(),  CommandPtr->Uv.GetMaximumY());
             VtxPointer[3].Color    = CommandPtr->Tint;
             VtxPointer[3].Instance = CommandPtr->Instance;
@@ -417,19 +430,23 @@ namespace Graphic
         for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
         {
             Ptr<Command> CommandPtr = mCommandTracker[Element];
-            VtxPointer[0].Position = CommandPtr->Edges[0];
+            VtxPointer[0].Position = CommandPtr->Quad.GetCorner(0);
+            VtxPointer[0].Depth    = CommandPtr->Depth;
             VtxPointer[0].Texture.Set(CommandPtr->Uv.GetMinimumX(), CommandPtr->Uv.GetMinimumY());
             VtxPointer[0].Color    = CommandPtr->Tint;
             VtxPointer[0].Instance = CommandPtr->Instance;
-            VtxPointer[1].Position = CommandPtr->Edges[1];
+            VtxPointer[1].Position = CommandPtr->Quad.GetCorner(1);
+            VtxPointer[1].Depth    = CommandPtr->Depth;
             VtxPointer[1].Texture.Set(CommandPtr->Uv.GetMaximumX(), CommandPtr->Uv.GetMinimumY());
             VtxPointer[1].Color    = CommandPtr->Tint;
             VtxPointer[1].Instance = CommandPtr->Instance;
-            VtxPointer[2].Position = CommandPtr->Edges[2];
+            VtxPointer[2].Position = CommandPtr->Quad.GetCorner(2);
+            VtxPointer[2].Depth    = CommandPtr->Depth;
             VtxPointer[2].Texture.Set(CommandPtr->Uv.GetMaximumX(), CommandPtr->Uv.GetMaximumY());
             VtxPointer[2].Color    = CommandPtr->Tint;
             VtxPointer[2].Instance = CommandPtr->Instance;
-            VtxPointer[3].Position = CommandPtr->Edges[3];
+            VtxPointer[3].Position = CommandPtr->Quad.GetCorner(3);
+            VtxPointer[3].Depth    = CommandPtr->Depth;
             VtxPointer[3].Texture.Set(CommandPtr->Uv.GetMinimumX(),  CommandPtr->Uv.GetMaximumY());
             VtxPointer[3].Color    = CommandPtr->Tint;
             VtxPointer[3].Instance = CommandPtr->Instance;

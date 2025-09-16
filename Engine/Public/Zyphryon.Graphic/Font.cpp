@@ -86,15 +86,16 @@ namespace Graphic
         switch (Alignment)
         {
             case Pivot::LeftTop:
+                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
             case Pivot::LeftMiddle:
                 OffsetY -= mMetrics.Ascender * 0.5f * Size;
                 break;
             case Pivot::LeftBottom:
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
             case Pivot::CenterTop:
                 OffsetX -= Measurement.GetX() * 0.5f;
+                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
             case Pivot::CenterMiddle:
                 OffsetX -= Measurement.GetX() * 0.5f;
@@ -102,10 +103,10 @@ namespace Graphic
                 break;
             case Pivot::CenterBottom:
                 OffsetX -= Measurement.GetX() * 0.5f;
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
             case Pivot::RightTop:
                 OffsetX -= Measurement.GetX();
+                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
             case Pivot::RightMiddle:
                 OffsetX -= Measurement.GetX();
@@ -113,7 +114,6 @@ namespace Graphic
                 break;
             case Pivot::RightBottom:
                 OffsetX -= Measurement.GetX();
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
                 break;
         }
         return Rect(OffsetX, OffsetY, OffsetX + Measurement.GetX(), OffsetY + Measurement.GetY());

@@ -703,7 +703,7 @@ inline namespace Math
         ///
         /// \param First  The first rectangle.
         /// \param Second The second rectangle.
-        /// \return A vector with the component-wise minimum values.
+        /// \return A rect with the component-wise minimum values.
         ZYPHRYON_INLINE constexpr static AnyRect Min(ConstRef<AnyRect> First, ConstRef<AnyRect> Second)
         {
             return AnyRect(
@@ -832,19 +832,19 @@ inline namespace Math
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A rectangle interpolated between the start and end rectangles.
         ZYPHRYON_INLINE constexpr static AnyRect Lerp(ConstRef<AnyRect> Start, ConstRef<AnyRect> End, Type Percentage)
-        requires (IsReal<Type>)
+            requires (IsReal<Type>)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
             return Start + (End - Start) * Percentage;
         }
 
-        /// \brief Projects a 2D axis-aligned rectangle by a 4x4 matrix.
+        /// \brief Transform a 2D axis-aligned rectangle by a 4x4 matrix.
         ///
         /// \param Rectangle The input rectangle in local space.
         /// \param Matrix    The transformation matrix.
         /// \return An axis-aligned rectangle enclosing the projected corners.
-        ZYPHRYON_INLINE static AnyRect Project(ConstRef<AnyRect> Rectangle, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static AnyRect Transform(ConstRef<AnyRect> Rectangle, ConstRef<Matrix4x4> Matrix)
             requires (IsReal<Type>)
         {
             const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
@@ -852,23 +852,15 @@ inline namespace Math
             const Vector4 CornerY(Rectangle.GetMaximumY(), Rectangle.GetMaximumY(),
                                   Rectangle.GetMinimumY(), Rectangle.GetMinimumY());
 
-            // Homogeneous W for all corners: w = m30*x + m31*y + m33
-            const Vector4 W = CornerX * Vector4::SplatW(Matrix.GetColumn(0)) +
-                              CornerY * Vector4::SplatW(Matrix.GetColumn(1)) +
-                                        Vector4::SplatW(Matrix.GetColumn(3));
-
-            LOG_ASSERT(!W.IsAlmostZero(), "Division by zero (W)");
-            const Vector4 InvW = Vector4::Reciprocal(W);
-
             // Projected X coordinates: (m00*x + m01*y + m03) / w
             const Vector4 ProjectionX = (CornerX * Vector4::SplatX(Matrix.GetColumn(0)) +
                                          CornerY * Vector4::SplatX(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatX(Matrix.GetColumn(3))) * InvW;
+                                                   Vector4::SplatX(Matrix.GetColumn(3)));
 
             // Projected Y coordinates: (m10*x + m11*y + m13) / w
             const Vector4 ProjectionY = (CornerX * Vector4::SplatY(Matrix.GetColumn(0)) +
                                          CornerY * Vector4::SplatY(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatY(Matrix.GetColumn(3))) * InvW;
+                                                   Vector4::SplatY(Matrix.GetColumn(3)));
 
             // Min/max across the 4 results
             return AnyRect(Vector4::HorizontalMin(ProjectionX), Vector4::HorizontalMin(ProjectionY),
