@@ -196,7 +196,8 @@ namespace Scene
         template<typename Function>
         ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
         {
-            CreateQuery<>().with(EcsPrefab).each(Callback);
+            Query<> Instance = CreateQuery<>("OnQueryArchetypes").with(EcsPrefab).build();
+            Instance.Each(Callback);
         }
 
         /// \brief Iterates over all entities with a given tag.
@@ -205,7 +206,8 @@ namespace Scene
         template<typename Tag, typename Function>
         ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
         {
-            CreateQuery<>().with<Tag>().each(Callback);
+            Query<> Instance = CreateQuery<>("OnQueryTag").with<Tag>().build();
+            Instance.Each(Callback);
         }
 
         /// \brief Creates an observer for the specified components.
