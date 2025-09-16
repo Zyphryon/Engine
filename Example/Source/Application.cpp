@@ -30,7 +30,7 @@ namespace Example
 
         AppRenderer = NewUniquePtr<Graphic::Render2D>(* this);
 
-        AppCamera.SetOrthographic(0.0f, GetDevice().GetHeight(), GetDevice().GetWidth(), 0.0f, -1.0f, 1.0f);
+        AppCamera.SetOrthographic(0.0f, GetDevice().GetHeight(), 0.0f, GetDevice().GetWidth(), -1.0f, 1.0f);
         AppCamera.Compute();
 
         return true;
@@ -52,7 +52,7 @@ namespace Example
 
             AppRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Color::Red().ToRGBA8(), 4.0f);
             AppRenderer->DrawRect(Rect({100, 200, 200, 300}), 0.0f, Color::Green().ToRGBA8(), 4.0f);
-            AppRenderer->DrawRectFilled(Rect({100, 350, 200, 450}), 0.0f, Color::Blue().ToRGBA8());
+            AppRenderer->DrawRect(Rect({100, 350, 200, 450}), 0.0f, Color::Blue().ToRGBA8());
 
             AppRenderer->Flush();
         }
