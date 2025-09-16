@@ -25,16 +25,16 @@ namespace Collision
     {
         const Vector2 Delta      = P1.GetCenter() - P0.GetCenter();
         const Real32  SqDistance = Delta.GetLengthSquared();
-        const Real32  Radius     = P0.GetRadius() + P1.GetRadius();
+        const Real32  SumRadius  = P0.GetRadius() + P1.GetRadius();
 
-        const Bool Result = (SqDistance <= Radius * Radius);
+        const Bool Result = (SqDistance <= SumRadius * SumRadius);
 
         if (Result && Manifold)
         {
             const Real32 Distance = Sqrt(SqDistance);
-            const Vector2 Normal  = (Distance > kEpsilon<Real32> ? Delta / Distance : Vector2::UnitX());
+            const Vector2 Normal  = (IsAlmostZero(Distance) ? Vector2::UnitX() : Delta / Distance);
 
-            Manifold->SetPenetration(Radius - Distance);
+            Manifold->SetPenetration(SumRadius - Distance);
             Manifold->SetNormal(Normal);
             Manifold->AddPoint(P0.GetCenter() + Normal * P0.GetRadius());
         }
@@ -74,7 +74,7 @@ namespace Collision
         const Vector2 AC = P0.GetCenter() - P1.GetStart();
 
         const Vector2 Closest   = P1.GetStart() + AB * Clamp(Vector2::Dot(AB, AC) / AB.GetLengthSquared(), 0.0f, 1.0f);
-        const Vector2 Delta     = P0.GetCenter() - Closest;
+        const Vector2 Delta     = Closest - P0.GetCenter();
         const Real32 SqDistance = Delta.GetLengthSquared();
 
         const Bool Result = (SqDistance <= P0.GetRadius() * P0.GetRadius());
@@ -85,13 +85,13 @@ namespace Collision
 
             Manifold->SetPenetration(P0.GetRadius() - Distance);
 
-            if (Distance > kEpsilon<Real32>)
+            if (IsAlmostZero(Distance))
             {
-                Manifold->SetNormal(Delta / Distance);
+                Manifold->SetNormal(Vector2::Normalize(Vector2(AB.GetY(), -AB.GetX())));
             }
             else
             {
-                Manifold->SetNormal(Vector2::Normalize(Vector2(AB.GetY(), -AB.GetX())));
+                Manifold->SetNormal(Delta / Distance);
             }
             Manifold->AddPoint(Closest);
         }
@@ -120,12 +120,12 @@ namespace Collision
             if (OverlapX < OverlapY)
             {
                 Manifold->SetPenetration(OverlapX);
-                Manifold->SetNormal(Vector2((P0.GetCenter().GetX() < P1.GetCenter().GetX()) ? -1 : 1, 0));
+                Manifold->SetNormal(Vector2((P0.GetCenter().GetX() < P1.GetCenter().GetX()) ? 1 : -1, 0));
             }
             else
             {
                 Manifold->SetPenetration(OverlapY);
-                Manifold->SetNormal(Vector2(0, (P0.GetCenter().GetY() < P1.GetCenter().GetY()) ? -1 : 1));
+                Manifold->SetNormal(Vector2(0, (P0.GetCenter().GetY() < P1.GetCenter().GetY()) ? 1 : -1));
             }
 
             if (IsAlmostZero(OverlapX))
@@ -324,7 +324,7 @@ namespace Collision
         if (Result && Manifold)
         {
             Manifold->SetPenetration(kEpsilon<Real32>);
-            Manifold->SetNormal(P0.GetNormal());
+            Manifold->SetNormal(Vector2::Normalize(Vector2(-Dir0.GetY(), Dir0.GetX())));
             Manifold->AddPoint(P0.GetStart() + Dir0 * Alpha0);
         }
         return Result;
