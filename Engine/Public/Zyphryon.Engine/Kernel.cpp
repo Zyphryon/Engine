@@ -80,11 +80,11 @@ namespace Engine
         // Updates the current time by calculating the absolute time.
         mTime.SetAbsolute(static_cast<Real64>(SDL_GetTicksNS()) * (1.0 / SDL_NS_PER_SECOND));
 
-        // Tick services (order matters).
-        Tick(mTime);
-
         // Tick application.
         OnTick(mTime);
+
+        // Tick services (order matters).
+        Tick(mTime);
 
         ZYPHRYON_PROFILE_FRAME;
     }
