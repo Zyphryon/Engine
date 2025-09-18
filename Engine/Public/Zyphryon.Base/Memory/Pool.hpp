@@ -55,7 +55,7 @@ inline namespace Base
         /// \brief Resets the pool, clearing all allocations.
         ZYPHRYON_INLINE void Clear()
         {
-            for (Ref<Type> Element : ConstSpan<Type>(mPool, GetHead()))
+            for (Ref<Type> Element : GetSpan())
             {
                 InPlaceDelete<Type>(Element);   // TODO: Check if element is valid?
             }
@@ -92,6 +92,14 @@ inline namespace Base
         ZYPHRYON_INLINE UInt32 GetSize() const
         {
             return mAllocator.GetSize();
+        }
+
+        /// \brief Returns a contiguous read-only view of the pool storage.
+        ///
+        /// \return A span providing read-only access to the pool storage.
+        ZYPHRYON_INLINE Span<Type> GetSpan()
+        {
+            return Span<Type>(mPool.data(), GetHead());
         }
 
         /// \brief Returns a contiguous read-only view of the pool storage.

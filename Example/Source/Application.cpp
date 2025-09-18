@@ -19,6 +19,7 @@
 
 namespace Example
 {
+    bool RENDER_NEW = false;
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -30,7 +31,7 @@ namespace Example
 
         AppRenderer = NewUniquePtr<Graphic::Render2D>(* this);
 
-        AppCamera.SetOrthographic(0.0f, GetDevice().GetHeight(), 0.0f, GetDevice().GetWidth(), -1.0f, 1.0f);
+        AppCamera.SetOrthographic(0.0f, GetDevice().GetWidth(), 0.0f, GetDevice().GetHeight(), -1.0f, 1.0f);
         AppCamera.Compute();
 
         return true;
@@ -45,16 +46,28 @@ namespace Example
 
         ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>();
 
+        static Real32 Thickness = 1.0f;
+        Thickness += (Time.GetDelta() * 1);
+
         Graphic::Viewport Viewport(0, 0, GetDevice().GetWidth(), GetDevice().GetHeight());
-        Graphics->Prepare(Graphic::kDisplay, Viewport, Graphic::Clear::All, Color(0.65f, 0.50f, 0.55f), 1, 0);
+        Graphics->Prepare(Graphic::kDisplay, Viewport, Graphic::Clear::All, Color::Black(), 1, 0);
         {
-            AppRenderer->SetGlobalParameters(ConstSpan<Matrix4x4>(&AppCamera.GetViewProjection(), 1));
+            if (AppRenderer->IsReady())
+            {
+                AppRenderer->SetGlobalParameters(ConstSpan<Matrix4x4>(&AppCamera.GetViewProjection(), 1));
 
-            AppRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Color::Red().ToRGBA8(), 4.0f);
-            AppRenderer->DrawRect(Rect({100, 200, 200, 300}), 0.0f, Color::Green().ToRGBA8(), 4.0f);
-            AppRenderer->DrawRect(Rect({100, 350, 200, 450}), 0.0f, Color::Blue().ToRGBA8());
+                AppRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Color::Red().ToRGBA8(), Thickness);
+                AppRenderer->DrawStrokeRect(Rect({100, 200, 200, 300}), 0.3f, Color::Green().ToRGBA8(), 4.0f);
+                AppRenderer->DrawRect(Rect({100, 350, 200, 450}), 0.2f, Color::Blue().ToRGBA8());
 
-            AppRenderer->Flush();
+                AppRenderer->DrawCircle(Circle({600, 600}, 128), 0.3f, Color::White().ToRGBA8());
+                AppRenderer->DrawRing(Circle({200, 200}, 64), 0.4f, Color::Red().ToRGBA8(), 1);
+                AppRenderer->DrawRing(Circle({400, 400}, 32), 0.5f, Color::Yellow().ToRGBA8(), 2);
+                AppRenderer->DrawRing(Circle({300, 300}, 16), 0.6f, Color::Blue().ToRGBA8(), 3);
+                AppRenderer->DrawLine(Line({0, 0}, {800, 800}), 0.1f, Color::Green().ToRGBA8(), Thickness);
+
+                AppRenderer->Flush();
+            }
         }
         Graphics->Commit(Graphic::kDisplay);
         Graphics->Finish(false);

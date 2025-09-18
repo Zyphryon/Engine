@@ -22,7 +22,8 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Render2D::Render2D(Ref<Service::Host> Host)
-        : mGraphics { Host.GetService<Graphic::Service>() }
+        : mGraphics { Host.GetService<Graphic::Service>() },
+          mShapeRenderer { Host }
     {
         CreateDefaultResources(Host.GetService<Content::Service>());
     }
@@ -49,56 +50,6 @@ namespace Graphic
         {
             Flush();
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Render2D::DrawLine(ConstRef<Line> Origin, Real32 Depth, UInt32 Tint, float Thickness)
-    {
-        ConstRef<Vector2> Start = Origin.GetStart();
-        ConstRef<Vector2> End   = Origin.GetEnd();
-        const Vector2 Normal    = Origin.GetNormal() * (Thickness * 0.5f);
-
-        Ref<Command> Command = Create(Type::Primitive, GetUniqueKey(Material::Kind::Opaque, Type::Primitive, Depth, 0));
-        Command.Material = nullptr;
-        Command.Tint     = Tint;
-        Command.Quad.SetCorner(0, { Start.GetX() + Normal.GetX(), Start.GetY() + Normal.GetY() });
-        Command.Quad.SetCorner(1, {   End.GetX() + Normal.GetX(),   End.GetY() + Normal.GetY() });
-        Command.Quad.SetCorner(2, {   End.GetX() - Normal.GetX(),   End.GetY() - Normal.GetY() });
-        Command.Quad.SetCorner(3, { Start.GetX() - Normal.GetX(), Start.GetY() - Normal.GetY() });
-        Command.Depth = Depth;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Render2D::DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint, float Thickness)
-    {
-        const Vector2 EdgeLeftBottom(Origin.GetMinimumX(), Origin.GetMinimumY());
-        const Vector2 EdgeLeftTop(Origin.GetMinimumX(), Origin.GetMaximumY());
-        const Vector2 EdgeRightTop(Origin.GetMaximumX(), Origin.GetMaximumY());
-        const Vector2 EdgeRightBottom(Origin.GetMaximumX(), Origin.GetMinimumY());
-
-        DrawLine(Line(EdgeLeftBottom,  EdgeLeftTop),     Depth, Tint, Thickness);
-        DrawLine(Line(EdgeLeftTop,     EdgeRightTop),    Depth, Tint, Thickness);
-        DrawLine(Line(EdgeRightTop,    EdgeRightBottom), Depth, Tint, Thickness);
-        DrawLine(Line(EdgeRightBottom, EdgeLeftBottom),  Depth, Tint, Thickness);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Render2D::DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint)
-    {
-        Ref<Command> Command  = Create(Type::Primitive, GetUniqueKey(Material::Kind::Opaque, Type::Primitive, Depth, 0));
-        Command.Material = nullptr;
-        Command.Tint     = Tint;
-        Command.Quad.SetCorner(0, { Origin.GetMinimumX(),  Origin.GetMinimumY() });
-        Command.Quad.SetCorner(1, { Origin.GetMaximumX(),  Origin.GetMinimumY() });
-        Command.Quad.SetCorner(2, { Origin.GetMaximumX(),  Origin.GetMaximumY() });
-        Command.Quad.SetCorner(3, { Origin.GetMinimumX(),  Origin.GetMaximumY() });
-        Command.Depth = Depth;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -247,6 +198,8 @@ namespace Graphic
 
     void Render2D::Flush()
     {
+        mShapeRenderer.Flush();
+
         if (mCommandTracker.empty())
         {
             return;
@@ -274,9 +227,6 @@ namespace Graphic
                 // Ensure we have enough space for the batch otherwise flush previous batches
                 switch (Current->Kind)
                 {
-                    case Type::Primitive:
-                        WritePrimitives(Start, Count, * Current->Pipeline);
-                        break;
                     case Type::Font:        // TODO Efficient hot path
                         WriteFonts(Start, Count, * Current->Pipeline, * Current->Material);
                         break;
@@ -300,52 +250,6 @@ namespace Graphic
 
         // Reset all stack(s) back to original states
         mCommandTracker.clear();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Render2D::WritePrimitives(UInt32 Offset, UInt32 Count, Ref<Pipeline> Pipeline)
-    {
-        if (!Pipeline.HasCompleted())   // TODO: Prevent checking this per frame.
-        {
-            return;
-        }
-
-        auto [VtxPointer, VtxDescription] = mGraphics->Allocate<Layout>(Usage::Vertex, 4 * Count);
-        auto [IdxPointer, IdxDescription] = mGraphics->Allocate<UInt32>(Usage::Index, 6 * Count);
-
-        for (UInt32 Index = 0, Element = Offset; Element < Offset + Count; ++Element, Index += 4, VtxPointer += 4, IdxPointer += 6)
-        {
-            Ptr<Command> CommandPtr = mCommandTracker[Element];
-            VtxPointer[0].Position = CommandPtr->Quad.GetCorner(0);
-            VtxPointer[0].Depth    = CommandPtr->Depth;
-            VtxPointer[0].Color    = CommandPtr->Tint;
-            VtxPointer[1].Position = CommandPtr->Quad.GetCorner(1);
-            VtxPointer[1].Depth    = CommandPtr->Depth;
-            VtxPointer[1].Color    = CommandPtr->Tint;
-            VtxPointer[2].Position = CommandPtr->Quad.GetCorner(2);
-            VtxPointer[2].Depth    = CommandPtr->Depth;
-            VtxPointer[2].Color    = CommandPtr->Tint;
-            VtxPointer[3].Position = CommandPtr->Quad.GetCorner(3);
-            VtxPointer[3].Depth    = CommandPtr->Depth;
-            VtxPointer[3].Color    = CommandPtr->Tint;
-
-            IdxPointer[0] = Index;
-            IdxPointer[1] = Index + 1;
-            IdxPointer[2] = Index + 2;
-            IdxPointer[3] = Index;
-            IdxPointer[4] = Index + 2;
-            IdxPointer[5] = Index + 3;
-        }
-
-        mEncoder.SetUniform(Enum::Cast(Scope::Global), mParameters[Enum::Cast(Scope::Global)]);
-        mEncoder.SetUniform(Enum::Cast(Scope::Effect), mParameters[Enum::Cast(Scope::Effect)]);
-
-        mEncoder.SetVertices(0, VtxDescription.Buffer, 0, VtxDescription.Stride);
-        mEncoder.SetIndices(IdxDescription.Buffer, 0, IdxDescription.Stride);
-        mEncoder.SetPipeline(Pipeline);
-        mEncoder.Draw(6 * Count, VtxDescription.Offset / sizeof(Layout), IdxDescription.Offset / sizeof(UInt32));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -500,7 +404,6 @@ namespace Graphic
     void Render2D::CreateDefaultResources(ConstTracker<Content::Service> Content)
     {
         // Initialize the default pipelines
-        mPipelines[Enum::Cast(Type::Primitive)] = Content->Load<Pipeline>("Engine://Pipeline/Primitive.effect");
         mPipelines[Enum::Cast(Type::Font)]      = Content->Load<Pipeline>("Engine://Pipeline/MSDF.effect");
         mPipelines[Enum::Cast(Type::Sprite)]    = Content->Load<Pipeline>("Engine://Pipeline/Sprite.effect");
     }

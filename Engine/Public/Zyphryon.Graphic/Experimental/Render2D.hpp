@@ -14,12 +14,7 @@
 
 #include "Zyphryon.Graphic/Camera.hpp"
 #include "Zyphryon.Graphic/Font.hpp"
-#include "Zyphryon.Graphic/Encoder.hpp"
-#include "Zyphryon.Graphic/Service.hpp"
-#include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Math/Geometry/Line.hpp"
-#include "Zyphryon.Math/Geometry/Rect.hpp"
-#include "Zyphryon.Math/Geometry/Quad.hpp"
+#include "ShapeRenderer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -39,9 +34,6 @@ namespace Graphic
         // -=(Undocumented)=-
         enum class Type : UInt8
         {
-            // -=(Undocumented)=-
-            Primitive,
-
             // -=(Undocumented)=-
             Font,
 
@@ -100,7 +92,9 @@ namespace Graphic
         template<typename Format>
         ZYPHRYON_INLINE void SetGlobalParameters(ConstSpan<Format> Parameters)
         {
-            mParameters[Enum::Cast(Scope::Global)] = mGraphics->Allocate(Usage::Uniform, Parameters);
+            Graphic::Stream Data = mGraphics->Allocate(Usage::Uniform, Parameters);
+            mParameters[Enum::Cast(Scope::Global)] = Data;
+            mShapeRenderer.SetGlobalParameters(Data);
         }
 
         // -=(Undocumented)=-
@@ -111,7 +105,7 @@ namespace Graphic
         }
 
         // -=(Undocumented)=-
-        void SetPipeline(Type Type, ConstTracker<Pipeline> Pipeline)
+        ZYPHRYON_INLINE void SetPipeline(Type Type, ConstTracker<Pipeline> Pipeline)
         {
             mPipelines[Enum::Cast(Type)] = Pipeline;
         }
@@ -120,13 +114,34 @@ namespace Graphic
         void SetFontStyle(ConstRef<FontStyleSDF> Style);
 
         // -=(Undocumented)=-
-        void DrawLine(ConstRef<Line> Origin, Real32 Depth, UInt32 Tint, float Thickness);
+        ZYPHRYON_INLINE void DrawCircle(ConstRef<Circle> Shape, Real32 Depth, UInt32 Tint)
+        {
+            mShapeRenderer.DrawCircle(Shape, Depth, Tint);
+        }
 
         // -=(Undocumented)=-
-        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint, float Thickness);
+        ZYPHRYON_INLINE void DrawRing(ConstRef<Circle> Shape, Real32 Depth, UInt32 Tint, Real32 Thickness = 0.1f)
+        {
+            mShapeRenderer.DrawRing(Shape, Depth, Tint, Thickness);
+        }
 
         // -=(Undocumented)=-
-        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint);
+        ZYPHRYON_INLINE void DrawLine(ConstRef<Line> Shape, Real32 Depth, UInt32 Tint, Real32 Thickness = 1.0f)
+        {
+            mShapeRenderer.DrawLine(Shape, Depth, Tint, Thickness);
+        }
+
+        // -=(Undocumented)=-
+        ZYPHRYON_INLINE void DrawStrokeRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint, Real32 Thickness = 1.0f)
+        {
+            mShapeRenderer.DrawStrokeRect(Shape, Depth, Tint, Thickness);
+        }
+
+        // -=(Undocumented)=-
+        ZYPHRYON_INLINE void DrawRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint)
+        {
+            mShapeRenderer.DrawRect(Shape, Depth, Tint);
+        }
 
         // -=(Undocumented)=-
         void DrawSprite(ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
@@ -142,6 +157,19 @@ namespace Graphic
 
         // -=(Undocumented)=-
         void Flush();
+
+        // -=(Undocumented)=-
+        ZYPHRYON_INLINE Bool IsReady() const
+        {
+            for (ConstTracker<Graphic::Pipeline> Pipeline : mPipelines)
+            {
+                if (!Pipeline->HasCompleted())
+                {
+                    return false;
+                }
+            }
+            return mShapeRenderer.IsReady();
+        }
 
     public:
 
@@ -248,7 +276,7 @@ namespace Graphic
 
             if (Order == Material::Kind::Opaque)
             {
-                const UInt32 DepthBits = std::bit_cast<UInt32>(1.0f + Depth);
+                const UInt32 DepthBits = std::bit_cast<UInt32>(1.0f - Depth);
 
                 // TODO: Consider Byte Endianness
                 return   (static_cast<UInt64>(DepthBits)                  << 32)
@@ -310,10 +338,10 @@ namespace Graphic
         Array<Tracker<Pipeline>, Enum::Count<Type>()> mPipelines;
         Array<Command, kMaxDrawPerBatch>              mCommands;
         Vector<Ptr<Command>, kMaxDrawPerBatch>        mCommandTracker;
-
         Table<UInt64, UInt32>                         mFontStylesToUniform;
         Vector<FontStyleSDF, 128>                     mFontStyles;
         UInt32                                        mFontStylesSelected = 0;
         Stream                                        mFontStream;
+        ShapeRenderer                                 mShapeRenderer;
     };
 }
