@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Common.hpp"
+#include "Entity.hpp"
 #include "Factory.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -21,585 +21,110 @@
 
 namespace Scene
 {
-    /// \brief Represents a data container that stores properties or state for an entity.
+    /// \brief Represents a typed component within the ECS (Entity-Component System).
+    ///
+    /// \tparam Class The C++ type that defines this component.
     template<typename Class>
-    class Component final
+    class Component : public Entity
     {
     public:
 
-        /// \brief Underlying flecs component handle type.
-        using Handle = flecs::component<Class>;
+        /// \brief Constructs an empty component.
+        ZYPHRYON_INLINE Component() = default;
 
-    public:
-
-        /// \brief Constructs a null component.
-        ZYPHRYON_INLINE Component()
-            : mHandle { nullptr }
-        {
-        }
-
-        /// \brief Constructs an component.
+        /// \brief Constructs a component from an existing entity handle.
         ///
-        /// \param Handle The component handle.
+        /// \param Handle The handle of this component.
         ZYPHRYON_INLINE Component(Handle Handle)
-            : mHandle { Handle }
+            : Entity(Handle)
         {
         }
 
-        /// \brief Returns the raw component ID.
+        /// \brief Constructs a component from an identifier.
         ///
-        /// \return A 64-bit unsigned integer representing the component ID.
-        ZYPHRYON_INLINE UInt64 GetID() const
+        /// \param Id The identifier that defines this component.
+        ZYPHRYON_INLINE Component(flecs::id Id)
+            : Entity(Id)
         {
-            return mHandle.raw_id();
         }
 
-        /// \brief Returns the underlying component handle.
+        /// \brief Retrieves the size, in bytes, of the component type.
         ///
-        /// \return The component handle.
-        ZYPHRYON_INLINE Handle GetHandle() const
+        /// \return The size of the component in bytes.
+        ZYPHRYON_INLINE UInt32 GetSize() const
         {
-            return mHandle;
+            return Get<flecs::Component>()->size;
         }
 
-        /// \brief Destroys the component and releases all its memory.
-        ZYPHRYON_INLINE void Destruct()
-        {
-            LOG_ASSERT(IsValid(), "Attempted to destroy an invalid component");
-
-            mHandle.destruct();
-        }
-
-        /// \brief Checks if the component is valid.
+        /// \brief Retrieves the alignment requirement of the component type.
         ///
-        /// \return `true` if valid, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsValid() const
+        /// \return The alignment of the component in bytes.
+        ZYPHRYON_INLINE UInt32 GetAlignment() const
         {
-            return mHandle.is_valid();
+            return Get<flecs::Component>()->alignment;
         }
 
-        /// \brief Checks if the component is a pair relation.
+        /// \brief Adds one or more behavioral traits to this component.
         ///
-        /// \return `true` if this component represents a pair relation, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsPair() const
-        {
-            return mHandle.is_pair();
-        }
-
-        /// \brief Checks if the component is a tag.
+        /// \param Traits The traits to apply.
         ///
-        /// \return `true` if this component is a tag, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsTag() const
-        {
-            return ecs_id_is_tag(mHandle.world(), mHandle.id());
-        }
-
-        /// \brief Attaches a tag component to this component.
-        ///
-        /// \tparam Tag The tag to attach.
-        template<typename Tag>
-        ZYPHRYON_INLINE void Attach()
-        {
-            mHandle.template add<Tag>();
-        }
-
-        /// \brief Attaches a component identified by an component.
-        ///
-        /// \param Component The component that represents the component type.
-        ZYPHRYON_INLINE void Attach(Component Component)
-        {
-            mHandle.add(Component.GetID());
-        }
-
-        /// \brief Attaches a relation between a tag component and an component.
-        ///
-        /// \tparam Tag   The relation's tag component.
-        /// \param Target The relation's target component.
-        template<typename Tag>
-        ZYPHRYON_INLINE void Attach(Component Target)
-        {
-            mHandle.template add<Tag>(Target.GetID());
-        }
-
-        /// \brief Attaches a relation between two tag components.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE void Attach()
-        {
-            mHandle.template add<Tag, Target>();
-        }
-
-        /// \brief Attaches a relation between two entities.
-        ///
-        /// \param Tag       The relation's tag component.
-        /// \param Component The relation's target component.
-        ZYPHRYON_INLINE void Attach(Component Tag, Component Component)
-        {
-            mHandle.add(Tag.GetID(), Component.GetID());
-        }
-
-        /// \brief Attaches or modifies a component of type \p Component.
-        ///
-        /// \param Data The component's data.
-        template<typename Component>
-        ZYPHRYON_INLINE void Attach(AnyRef<Component> Data)
-        {
-            mHandle.template set<Component>(Move(Data));
-        }
-
-        /// \brief Attaches a relation between a tag component and a component of type \p Component.
-        ///
-        /// \tparam Tag The relation's tag component.
-        /// \param Data The relation's target component.
-        template<typename Tag, typename Component>
-        ZYPHRYON_INLINE void Attach(AnyRef<Component> Data)
-        {
-            mHandle.template set_second<Tag>(Move(Data));
-        }
-
-        /// \brief Attaches a relation between a tag component and a component of type \p Component.
-        ///
-        /// \param Tag  The relation's tag component.
-        /// \param Data The relation's target component.
-        template<typename Component>
-        ZYPHRYON_INLINE void Attach(Component Tag, AnyRef<Component> Data)
-        {
-            mHandle.set_second(Tag.GetID(), Move(Data));
-        }
-
-        /// \brief Ensures a component is present.
-        ///
-        /// \param Component The component that represents the component type.
-        /// \return A pointer to the component’s raw storage.
-        ZYPHRYON_INLINE Ptr<void> Ensure(Component Component)
-        {
-            return mHandle.ensure(Component.GetID());
-        }
-
-        /// \brief Ensures a relation between a tag and an component is present.
-        ///
-        /// \tparam Tag   The relation's tag component.
-        /// \param Target The relation's target component.
-        /// \return A pointer to the component’s raw storage.
-        template<typename Tag>
-        ZYPHRYON_INLINE Ptr<void> Ensure(Component Target)
-        {
-            return mHandle.template ensure<Tag>(Target.GetID());
-        }
-
-        /// \brief Ensures a relation between two entities is present.
-        ///
-        /// \param Tag       The relation's tag component.
-        /// \param Component The relation's target component.
-        /// \return A pointer to the component’s raw storage.
-        ZYPHRYON_INLINE Ptr<void> Ensure(Component Tag, Component Component)
-        {
-            return mHandle.ensure(Tag.GetID(), Component.GetID());
-        }
-
-        /// \brief Removes a component of type \p Component from this component.
-        template<typename Component>
-        ZYPHRYON_INLINE void Detach()
-        {
-            mHandle.template remove<Component>();
-        }
-
-        /// \brief Removes a component from this component.
-        ///
-        /// \param Component The component representing the component type.
-        ZYPHRYON_INLINE void Detach(Component Component)
-        {
-            mHandle.remove(Component.GetID());
-        }
-
-        /// \brief Removes a relation component from this component.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE void Detach()
-        {
-            mHandle.template remove<Tag, Target>();
-        }
-
-        /// \brief Removes a relation component from this component.
-        ///
-        /// \tparam Tag   The relation's tag component.
-        /// \param Target The relation's target component.
-        template<typename Tag>
-        ZYPHRYON_INLINE void Detach(Component Target)
-        {
-            mHandle.template remove<Tag>(Target.GetID());
-        }
-
-        /// \brief Removes a relation component from this component.
-        ///
-        /// \param Tag    The relation's tag component.
-        /// \param Target The relation's target component.
-        ZYPHRYON_INLINE void Detach(Component Tag, Component Target)
-        {
-            mHandle.remove(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Checks if this component has a component of type \p Component.
-        ///
-        /// \tparam Component The component type.
-        /// \return `true` if the component is present, `false` otherwise.
-        template<typename Component>
-        ZYPHRYON_INLINE Bool Contains() const
-        {
-            return mHandle.template has<Component>();
-        }
-
-        /// \brief Checks if this component has a component.
-        ///
-        /// \param Component The component representing the component type.
-        /// \return `true` if the component is present, `false` otherwise.
-        ZYPHRYON_INLINE Bool Contains(Component Component) const
-        {
-            return mHandle.has(Component.GetID());
-        }
-
-        /// \brief Checks if this component has a relation between \p Tag and \p Target.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        /// \return `true` if the relation is present, `false` otherwise.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Bool Contains() const
-        {
-            return mHandle.template has<Tag, Target>();
-        }
-
-        /// \brief Checks if this component has a relation between \p Tag and \p Target.
-        ///
-        /// \param Tag    The relation's tag component.
-        /// \param Target The relation's target component.
-        /// \return `true` if the relation is present, `false` otherwise.
-        ZYPHRYON_INLINE Bool Contains(Component Tag, Component Target) const
-        {
-            return mHandle.has(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Lookup a component of type \p Component from this entity.
-        ///
-        /// \return Pointer to the component, or `nullptr` if not present.
-        template<typename Component>
-        ZYPHRYON_INLINE auto Lookup() const
-        {
-            if constexpr (IsMutable<Component>)
-            {
-                return mHandle.template try_get_mut<Component>();
-            }
-            else
-            {
-                return mHandle.template try_get<Component>();
-            }
-        }
-
-        /// \brief Lookup a component of type \p Target from this component.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        /// \return Pointer to the component, or `nullptr` if not present.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE auto Lookup() const
-        {
-            if constexpr (IsMutable<Target>)
-            {
-                return mHandle.template try_get_mut<Tag, Target>();
-            }
-            else
-            {
-                return mHandle.template try_get<Tag, Target>();
-            }
-        }
-
-        /// \brief Marks a component of type \p Component as modified.
-        template<typename Component>
-        ZYPHRYON_INLINE void Notify()
-        {
-            mHandle.template modified<Component>();
-        }
-
-        /// \brief Marks a component as modified.
-        ///
-        /// \param Component The component representing the component type.
-        ZYPHRYON_INLINE void Notify(Component Component)
-        {
-            mHandle.modified(Component.GetID());
-        }
-
-        /// \brief Marks a relation between two entities as modified.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE void Notify()
-        {
-            mHandle.template modified<Tag, Target>();
-        }
-
-        /// \brief Marks a relation between two entities as modified.
-        ///
-        /// \param Tag    The relation's tag component.
-        /// \param Target The relation's target component.
-        ZYPHRYON_INLINE void Notify(Component Tag, Component Target)
-        {
-            mHandle.modified(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Enables a component of type \p Component on this component.
-        template<typename Component>
-        ZYPHRYON_INLINE void Enable()
-        {
-            mHandle.template enable<Component>();
-        }
-
-        /// \brief Enables a component.
-        ///
-        /// \param Component The component representing the component type.
-        ZYPHRYON_INLINE void Enable(Component Component)
-        {
-            mHandle.enable(Component.GetID());
-        }
-
-        /// \brief Enables a relation between two entities as modified.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE void Enable()
-        {
-            mHandle.template enable<Tag, Target>();
-        }
-
-        /// \brief Enables a relation component.
-        ///
-        /// \param Tag    The relation's tag component.
-        /// \param Target The relation's target component.
-        ZYPHRYON_INLINE void Enable(Component Tag, Component Target)
-        {
-            mHandle.enable(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Disables a component of type \p Component on this component.
-        template<typename Component>
-        ZYPHRYON_INLINE void Disable()
-        {
-            mHandle.template disable<Component>();
-        }
-
-        /// \brief Disables a component.
-        ///
-        /// \param Component The component representing the component type.
-        ZYPHRYON_INLINE void Disable(Component Component)
-        {
-            mHandle.disable(Component.GetID());
-        }
-
-        /// \brief Disables a relation between two entities as modified.
-        ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE void Disable()
-        {
-            mHandle.template disable<Tag, Target>();
-        }
-
-        /// \brief Disables a relation component.
-        ///
-        /// \param Tag    The relation's tag component.
-        /// \param Target The relation's target component.
-        ZYPHRYON_INLINE void Disable(Component Tag, Component Target)
-        {
-            mHandle.disable(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Declares that entities created from this scope will include the specified component type by default.
-        ///
-        /// \tparam Type Specifies the component type to associate.
-        /// \return This component, to allow chained calls.
-        template<typename Type>
-        ZYPHRYON_INLINE Component With()
-        {
-            mHandle.add(EcsWith, mHandle.world().template component<Type>());
-            return (* this);
-        }
-
-        /// \brief Declares that entities created from this scope will include the specified component by default.
-        ///
-        /// \param Component Specifies the component handle to associate.
-        /// \return This component, to allow chained calls.
-        ZYPHRYON_INLINE Component With(Component Component)
-        {
-            mHandle.add(EcsWith, Component.GetHandle());
-            return (* this);
-        }
-
-        /// \brief Sets this component’s parent to a type.
-        ///
-        /// \tparam Type The parent type.
-        template<typename Type>
-        ZYPHRYON_INLINE void SetParent()
-        {
-            mHandle.template child_of<Type>();
-        }
-
-        /// \brief Sets this component’s parent to another component.
-        ///
-        /// \param Parent The parent component.
-        ZYPHRYON_INLINE void SetParent(Component Parent)
-        {
-            mHandle.child_of(Parent.GetHandle());
-        }
-
-        /// \brief Gets this component’s parent.
-        ///
-        /// \return The parent component, or null if none.
-        ZYPHRYON_INLINE Component GetParent() const
-        {
-            return Component(mHandle.parent());
-        }
-
-        /// \brief Sets this component’s archetype to a type.
-        ///
-        /// \tparam Type The archetype type.
-        template<typename Type>
-        ZYPHRYON_INLINE void SetArchetype()
-        {
-            mHandle.template is_a<Type>();
-        }
-
-        /// \brief Sets this component’s archetype to another component.
-        ///
-        /// \param Archetype The archetype component.
-        ZYPHRYON_INLINE void SetArchetype(Component Archetype)
-        {
-            mHandle.is_a(Archetype.GetHandle());
-        }
-
-        /// \brief Gets this component’s archetype.
-        ///
-        /// \return The archetype component.
-        ZYPHRYON_INLINE Component GetArchetype() const
-        {
-            return Component(mHandle.target(flecs::IsA));
-        }
-
-        /// \brief Applies multiple behavioral traits to the component definition.
-        ///
-        /// \param Traits The trait flags to apply to the component.
-        /// \return This component, to allow chained calls.
+        /// \return A reference to this component.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component AddTrait(Arguments... Traits)
+        ZYPHRYON_INLINE ConstRef<Component> AddTrait(Arguments... Traits) const
         {
             (ApplyTrait(Traits), ...);
             return (* this);
         }
 
-        /// \brief Removes multiple behavioral traits from the component definition.
+        /// \brief Removes one or more behavioral traits from this component.
         ///
-        /// \param Traits The trait flags to remove to the component.
-        /// \return This component, to allow chained calls.
+        /// \param Traits The traits to remove.
+        ///
+        /// \return A reference to this component.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component RemoveTrait(Arguments... Traits)
+        ZYPHRYON_INLINE ConstRef<Component> RemoveTrait(Arguments... Traits) const
         {
             (EraseTrait(Traits), ...);
             return (* this);
         }
 
-        /// \brief Iterates over this component’s children.
+        /// \brief Establishes a "with" context between this component and another component type.
         ///
-        /// \param Callback The function to invoke for each child.
-        template<typename Function>
-        ZYPHRYON_INLINE void Children(AnyRef<Function> Callback) const
+        /// When set, entities created while this component is in scope will also
+        /// automatically include the specified component type.
+        ///
+        /// \tparam Component The component type to associate with this component.
+        ///
+        /// \return A reference to this component.
+        template<typename Component>
+        ZYPHRYON_INLINE ConstRef<Component> With() const
         {
-            mHandle.children(Callback);
+            mHandle.add(EcsWith, mHandle.world().template component<Component>());
+            return (* this);
         }
 
-        /// \brief Iterates over this component’s components.
+        /// \brief Establishes a "with" context between this component and another component entity.
         ///
-        /// \param Callback The function to invoke for each component.
-        template<typename Function>
-        ZYPHRYON_INLINE void Iterate(AnyRef<Function> Callback) const
-        {
-            mHandle.each(Callback);
-        }
-
-        /// \brief Sets the name of this component.
+        /// \param Component The entity representing the component to associate.
         ///
-        /// \param Name The new name.
-        ZYPHRYON_INLINE void SetName(ConstStr8 Name)
+        /// \return A reference to this component.
+        ZYPHRYON_INLINE ConstRef<Component> With(Component Component) const
         {
-            mHandle.set_name(Name.data());
-        }
-
-        /// \brief Gets the name of this component.
-        ///
-        /// \return The component’s name.
-        ZYPHRYON_INLINE ConstStr8 GetName() const
-        {
-            const flecs::string_view Name = mHandle.name();
-            return ConstStr8(Name.c_str(), Name.size());
-        }
-
-        /// \brief Gets the first element of a pair relation.
-        ///
-        /// \return The first component in the pair.
-        ZYPHRYON_INLINE Component GetFirst() const
-        {
-            return mHandle.first();
-        }
-
-        /// \brief Gets the second element of a pair relation.
-        ///
-        /// \return The second component in the pair.
-        ZYPHRYON_INLINE Component GetSecond() const
-        {
-            return mHandle.second();
-        }
-
-        /// \brief Checks if this component is equal to another component.
-        ///
-        /// \param Other The component to compare to.
-        /// \return `true` if the entities are the same, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator==(ConstRef<Component> Other) const
-        {
-            return GetHandle() == Other.GetHandle();
-        }
-
-        /// \brief Checks if this component is not equal to another component.
-        ///
-        /// \param Other The component to compare to.
-        /// \return `true` if the entities are not the same, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Component> Other) const
-        {
-            return !(* this == Other);
-        }
-
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt64 Hash() const
-        {
-            return GetID();
+            mHandle.add(EcsWith, Component.GetHandle());
+            return (* this);
         }
 
     private:
 
-        /// \brief Apply a specific behavioral trait to the component definition.
+        /// \brief Applies a specific trait to this component.
         ///
-        /// \param Trait The behavioral trait to apply to the component.
-        ZYPHRYON_INLINE void ApplyTrait(Trait Trait)
+        /// \param Trait The trait to apply.
+        ZYPHRYON_INLINE void ApplyTrait(Trait Trait) const
         {
             switch (Trait)
             {
                 case Trait::Serializable:
-                    mHandle.template set<Factory>(Factory::Create<Class>());
+                    mHandle.set<Factory>(Factory::Create<Class>());
                     break;
                 case Trait::Inheritable:
                     mHandle.add(flecs::OnInstantiate, flecs::Inherit);
@@ -625,15 +150,15 @@ namespace Scene
             }
         }
 
-        /// \brief Erase a specific behavioral trait from the component definition.
+        /// \brief Removes a specific trait from this component.
         ///
-        /// \param Trait The behavioral trait to remove from the component.
-        ZYPHRYON_INLINE void EraseTrait(Trait Trait)
+        /// \param Trait The trait to remove.
+        ZYPHRYON_INLINE void EraseTrait(Trait Trait) const
         {
             switch (Trait)
             {
                 case Trait::Serializable:
-                    mHandle.template remove<Factory>();
+                    mHandle.remove<Factory>();
                     break;
                 case Trait::Inheritable:
                     mHandle.remove(flecs::OnInstantiate, flecs::Inherit);
@@ -658,12 +183,5 @@ namespace Scene
                     break;
             }
         }
-
-    private:
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        Handle mHandle;
     };
 }

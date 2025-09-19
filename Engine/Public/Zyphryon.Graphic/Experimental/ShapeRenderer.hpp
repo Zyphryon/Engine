@@ -46,6 +46,9 @@ namespace Graphic
 
             // -=(Undocumented)=-
             Rect,
+
+            // -=(Undocumented)=-
+            RoundedRect,
         };
 
         // -=(Undocumented)=-
@@ -75,7 +78,10 @@ namespace Graphic
         void DrawStrokeRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint, Real32 Thickness = 1.0f);
 
         // -=(Undocumented)=-
-        void DrawRect(ConstRef<Rect> Origin, Real32 Depth, UInt32 Tint);
+        void DrawRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint);
+
+        // -=(Undocumented)=-
+        void DrawRoundedRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint, Real32 Radius = 1.0f);
 
         // -=(Undocumented)=-
         void Flush();

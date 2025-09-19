@@ -13,12 +13,14 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <Zyphryon.Engine/Kernel.hpp>
-#include <Zyphryon.Graphic/Camera.hpp>
+#include <Zyphryon.Math/Geometry/Circle.hpp>
+#include <Zyphryon.Math/Transform.hpp>
 #include <Zyphryon.Graphic/Experimental/Render2D.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 namespace Example
 {
     // -=(Undocumented)=-
@@ -40,7 +42,8 @@ namespace Example
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Graphic::Camera           AppCamera;
-        Unique<Graphic::Render2D> AppRenderer;
+        Graphic::Camera           mCamera;
+        Unique<Graphic::Render2D> mRenderer;
+        Scene::Query<const Circle, const Matrix4x4> mEcsQueryCircles;
     };
 }

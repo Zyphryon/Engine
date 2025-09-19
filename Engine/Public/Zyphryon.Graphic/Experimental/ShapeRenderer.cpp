@@ -101,6 +101,19 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void ShapeRenderer::DrawRoundedRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint, Real32 Radius)
+    {
+        Ref<Command> Command = Create(Type::RoundedRect, GetUniqueKey(Type::RoundedRect, Depth));
+        Command.Instance.Center = Shape.GetCenter();
+        Command.Instance.Depth  = Depth;
+        Command.Instance.Color  = Tint;
+        Command.Instance.Data0  = Shape.GetSize() * 0.5f;
+        Command.Instance.Data1  = Vector2(Radius);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void ShapeRenderer::Flush()
     {
         if (mCommandTracker.empty())
@@ -158,5 +171,6 @@ namespace Graphic
         mPipelines[1] = Content->Load<Pipeline>("Engine://Pipeline/Shapes/Ring.effect");
         mPipelines[2] = Content->Load<Pipeline>("Engine://Pipeline/Shapes/Line.effect");
         mPipelines[3] = Content->Load<Pipeline>("Engine://Pipeline/Shapes/Rect.effect");
+        mPipelines[4] = Content->Load<Pipeline>("Engine://Pipeline/Shapes/RoundedRect.effect");
     }
 }

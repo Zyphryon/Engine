@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Common.hpp"
+#include "Builder.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,75 +20,86 @@
 
 namespace Scene
 {
-    /// \brief Represents a predefined filter for iterating over entities based on their component composition.
-    template<typename ...Components>
-    class Query final
+    /// \brief Represents a query over entities within the ECS (Entity-Component System).
+    ///
+    /// \tparam Types The component types this query will match against.
+    template<typename... Types>
+    class Query
     {
     public:
 
-        /// \brief Underlying flecs query handle type.
-        using Handle = flecs::query<Components...>;
+        /// \brief Underlying handle to the ECS query object.
+        using Handle = flecs::query<>;
 
     public:
 
-        /// \brief Constructs an empty, invalid query.
+        /// \brief Constructs an empty query with no associated handle.
         ZYPHRYON_INLINE Query() = default;
 
-        /// \brief Constructs a query from a query handle.
+        /// \brief Constructs a query from an existing handle.
         ///
-        /// \param Handle The query handle.
-        template<typename Type>
-        ZYPHRYON_INLINE Query(Type Handle)
-            : mHandle { Handle }
+        /// \param Handle The handle of this query.
+        ZYPHRYON_INLINE Query(AnyRef<Handle> Handle)
+            : mHandle { Move(Handle) }
         {
         }
 
-        /// \brief Move constructor.
+        /// \brief Move-constructs a query from another query instance.
         ///
-        /// \param Other The query object to move resources from.
+        /// \param Other The query to move from.
         ZYPHRYON_INLINE Query(AnyRef<Query> Other) noexcept
             : mHandle { Exchange(Other.mHandle, Handle()) }
         {
         }
 
-        /// \brief Ensures the underlying query resources are properly released.
+        /// \brief Destroys the query and releases its underlying resources.
         ZYPHRYON_INLINE ~Query()
         {
             Destruct();
         }
 
-        /// \brief Explicitly releases the underlying query resources.
-        ZYPHRYON_INLINE void Destruct()
+        /// \brief Explicitly destroys the query and resets its handle.
+        ///
+        /// \note The query becomes invalid after destruction.
+        ZYPHRYON_INLINE void Destruct() const
         {
-            if (mHandle)
+            if (mHandle && mHandle.entity())
             {
                 mHandle.destruct();
                 mHandle = Handle();
             }
         }
 
-        /// \brief Iterates over all entities matching the query, invoking the callback for each one.
+        /// \brief Executes the query, invoking a callback for each matching entity.
         ///
-        /// \param Callback The function to invoke.
-        template<typename Function>
-        ZYPHRYON_INLINE void Each(AnyRef<Function> Callback)
+        /// \param Each The function or functor to execute for every matching entity.
+        template<typename FEach>
+        ZYPHRYON_INLINE void Run(AnyRef<FEach> Each) const
         {
-            mHandle.each(Callback);
+            mHandle.run([Each](Ref<flecs::iter> Iterator)
+            {
+                Invoke(Iterator, Each);
+            });
         }
 
-        /// \brief Runs a callback for the entire set of matching entities at once.
+        /// \brief Executes the query with optional begin and end callbacks.
         ///
-        /// \param Callback The function to invoke.
-        template<typename Function>
-        ZYPHRYON_INLINE void Run(AnyRef<Function> Callback)
+        /// \param Begin The function or functor executed before processing entities.
+        /// \param Each  The function or functor executed for each matching entity.
+        /// \param End   The function or functor executed after processing entities.
+        template<typename FBegin, typename FEach, typename FEnd>
+        ZYPHRYON_INLINE void Run(AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End) const
         {
-            mHandle.run(Callback);
+            mHandle.run([Begin, Each, End](Ref<flecs::iter> Iterator)
+            {
+                Invoke(Iterator, Begin, Each, End);
+            });
         }
 
-        /// \brief Transfers ownership of resources from another object.
+        /// \brief Move-assigns a query from another query instance.
         ///
-        /// \param Other The source object to move resources from.
-        /// \return A reference to this object after the ownership transfer.
+        /// \param Other The query to move from.
+        /// \return Reference to this query.
         ZYPHRYON_INLINE Ref<Query> operator=(AnyRef<Query> Other)
         {
             if (this != &Other)
@@ -98,8 +109,42 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Deleted copy assignment operator.
+        /// \brief Copy assignment is explicitly disabled.
         ZYPHRYON_INLINE Ref<Query> operator=(ConstRef<Query>) = delete;
+
+    public:
+
+        /// \brief Internal helper for invoking per-entity callbacks during iteration.
+        ///
+        /// \param Iterator The iterator over matching entities.
+        /// \param Each     The function or functor to execute for each entity.
+        template<typename FEach>
+        ZYPHRYON_INLINE static void Invoke(Ref<flecs::iter> Iterator, AnyRef<FEach> Each)
+        {
+            while (Iterator.next())
+            {
+                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<ecs_iter_t*>(Iterator.c_ptr()));
+            }
+        }
+
+        /// \brief Internal helper for invoking begin, per-entity, and end callbacks during iteration.
+        ///
+        /// \param Iterator The iterator over matching entities.
+        /// \param Begin    The callback executed before iteration begins.
+        /// \param Each     The callback executed for each entity.
+        /// \param End      The callback executed after iteration completes.
+        template<typename FBegin, typename FEach, typename FEnd>
+        ZYPHRYON_INLINE static void Invoke(Ref<flecs::iter> Iterator, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End)
+        {
+            Begin();
+
+            while (Iterator.next())
+            {
+                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<ecs_iter_t*>(Iterator.c_ptr()));
+            }
+
+            End();
+        }
 
     private:
 

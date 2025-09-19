@@ -26,9 +26,9 @@
 
 **Network**: Implement it from scratch with proper abstraction.
 
-**Scene**: Builder Pattern For Query/System.
+~~**Scene**: Builder Pattern For Query/System.~~
 
-**Scene**: Abstraction of Pair, Query, System.
+~~**Scene**: Abstraction of Pair, Query, System.~~
 
 **Scene**: Feature rich Tag system (Name, Category, Etc).
 

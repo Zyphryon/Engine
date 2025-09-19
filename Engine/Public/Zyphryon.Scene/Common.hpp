@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Base.hpp"
-#include <flecs.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -53,22 +52,23 @@ namespace Scene
     };
 
     /// \brief Enumerates behavioral traits that define component capabilities.
-    enum class Trait : UInt32
+    enum class Trait : UInt8
     {
-        Serializable,  ///< Component can be serialized/deserialized.
-        Inheritable,   ///< Component can be inherited by child entities.
-        Toggleable,    ///< Component can be enabled/disabled at runtime.
-        Sparse,        ///< Component uses sparse storage for memory efficiency.
-        Associative,   ///< Component can be used as a tag in associative pairs/relationships.
-        Singleton,     ///< Component is a singleton.
-        Final,         ///< Component cannot be inherited (opposite of Inheritable).
-        Symmetric,     ///< Component is symmetric (A -> B -> A).
+        Serializable, ///< Component can be serialized to or from an archive.
+        Inheritable,  ///< Component values can be inherited across entities.
+        Toggleable,   ///< Component can be toggled on/off without removal.
+        Sparse,       ///< Component is stored sparsely for memory efficiency.
+        Associative,  ///< Component behaves like a key-value association.
+        Singleton,    ///< Component exists only once globally (per world).
+        Final,        ///< Component cannot be extended or overridden.
+        Symmetric,    ///< Component has symmetric behavior in relationships.
     };
 
-    /// \brief Represents a relationship in the ECS of the form (Tag, Target).
-    ///
-    /// \tparam Tag    The relation's tag component.
-    /// \tparam Target The relation's target component.
-    template<typename Tag, typename Target>
-    using Pair = flecs::pair<Tag, Target>;
+    /// \brief Defines execution modes for system scheduling.
+    enum class Execution : UInt8
+    {
+        Default,      ///< Normal scheduled execution (deferred to the pipeline).
+        Immediate,    ///< Executes immediately when triggered.
+        Asynchronous, ///< Executes concurrently in worker threads.
+    };
 }

@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Component.hpp"
-#include "Entity.hpp"
 #include "Query.hpp"
+#include "System.hpp"
 #include "Tag.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -35,12 +35,17 @@ namespace Scene
 
         /// \brief Advances the scene once per frame.
         ///
+        /// This updates systems, processes deferred commands, and executes scheduled tasks.
+        ///
         /// \param Time The time step data for the current frame.
         void OnTick(ConstRef<Time> Time) override;
 
         /// \brief Defers execution of a callback until the end of the current frame.
         ///
-        /// \param Callback   The function to execute deferred.
+        /// If called during iteration, the callback is queued and executed safely once iteration ends.
+        /// Otherwise, it executes immediately.
+        ///
+        /// \param Callback   The function to execute.
         /// \param Parameters The arguments to forward to the callback.
         template<typename Function, typename ...Arguments>
         ZYPHRYON_INLINE void Schedule(AnyRef<Function> Callback, AnyRef<Arguments>... Parameters)
@@ -55,92 +60,74 @@ namespace Scene
             }
         }
 
-        /// \brief Provides a singleton tag of type \p Component to the world.
+        /// \brief Provides a singleton tag of the given type to the world.
         ///
-        /// \tparam Component The tag to provide.
+        /// \tparam Component The tag type to register.
         template<typename Component>
         ZYPHRYON_INLINE void Provide()
         {
             mWorld.add<Component>();
         }
 
-        /// \brief Provides a singleton data component of type \p Component to the world.
+        /// \brief Provides a singleton component of the given type in the world.
         ///
-        /// \param Data The component's data.
+        /// \param Data The instance of the component to associate with the singleton.
         template<typename Component>
         ZYPHRYON_INLINE void Provide(AnyRef<Component> Data)
         {
             mWorld.set<Component>(Move(Data));
         }
 
-        /// \brief Lookup a singleton component of type \p Component from this entity.
+        /// \brief Fetches the singleton component of the given type from the world.
         ///
-        /// \return Pointer to the component, or `nullptr` if not present.
+        /// \tparam Component The component type to fetch.
+        /// \return A reference to the singleton instance.
         template<typename Component>
-        ZYPHRYON_INLINE Ptr<Component> Lookup() const
+        ZYPHRYON_INLINE Ref<Component> Fetch() const
         {
             if constexpr (IsMutable<Component>)
             {
-                return mWorld.try_get_mut<Component>();
+                return mWorld.get_mut<Component>();
             }
             else
             {
-                return mWorld.try_get<Component>();
+                return mWorld.get<Component>();
             }
         }
 
-        /// \brief Removes the singleton of type \p Component from the world, if it exists.
+        /// \brief Checks whether the world currently contains a singleton of the given type.
         ///
-        /// \tparam Component The tag or component type to remove.
-        template<typename Component>
-        ZYPHRYON_INLINE void Remove()
-        {
-            mWorld.remove<Component>();
-        }
-
-        /// \brief Clear all instances of type \p Component from the world.
-        ///
-        /// \tparam Component The tag or component type to remove.
-        template<typename Component>
-        ZYPHRYON_INLINE void Clear()
-        {
-            mWorld.remove_all<Component>();
-        }
-
-        /// \brief Checks whether the world currently holds a singleton of type \p Component.
-        ///
-        /// \tparam Component The tag or component type to query.
-        /// \return `true` if the component is present, `false` otherwise.
+        /// \tparam Component The tag or component type to check.
+        /// \return `true` if the singleton exists, `false` otherwise.
         template<typename Component>
         ZYPHRYON_INLINE bool Contains() const
         {
             return mWorld.has<Component>();
         }
 
-        /// \brief Registers a component type.
+        /// \brief Revokes a singleton of the given type from the world.
         ///
-        /// \tparam Target The component type.
-        /// \param ID      Specifies the identifier of the component (defaults to the type’s symbol name).
-        /// \return The component object associated with the type.
-        template<typename Target>
-        ZYPHRYON_INLINE Component<Target> RegisterComponent(ConstStr8 ID = flecs::_::symbol_name<Target>())
+        /// \tparam Component The tag or component type to remove.
+        template<typename Component>
+        ZYPHRYON_INLINE void Revoke()
         {
-            return Component<Target>(mWorld.component<Target>(ID.data()));
+            mWorld.remove<Component>();
         }
 
-        /// \brief Retrieves an existing component type.
+        /// \brief Clears all instances of a component type from the world.
         ///
-        /// \tparam Target The component type.
-        /// \return The component object associated with the type.
-        template<typename Target>
-        ZYPHRYON_INLINE Component<Target> GetComponent() const
+        /// This removes the specified component from every entity that currently has it.
+        ///
+        /// \tparam Component The component type to clear from all entities.
+        template<typename Component>
+        ZYPHRYON_INLINE void Clear()
         {
-            return Component<Target>(mWorld.component<Target>());
+            mWorld.remove_all<Component>();
         }
 
         /// \brief Creates a new entity.
         ///
-        /// \tparam Archetype If `true`, creates an archetype entity; otherwise, creates a regular entity.
+        /// \tparam Archetype If `true`, creates an archetype entity; otherwise a regular entity.
         /// \return The newly created entity object.
         template<Bool Archetype>
         ZYPHRYON_INLINE Entity CreateEntity()
@@ -148,140 +135,220 @@ namespace Scene
             return Allocate<Archetype>();
         }
 
-        /// \brief Retrieves an entity by an identifier.
+        /// \brief Retrieves an entity by its identifier.
         ///
-        /// \param ID Specifies the entity identifier.
-        /// \return The entity object if valid and alive, otherwise an empty entity.
+        /// \param ID The unique entity identifier.
+        /// \return A valid entity if alive, otherwise an empty entity.
         ZYPHRYON_INLINE Entity GetEntity(UInt64 ID) const
         {
             const Entity::Handle Handle = mWorld.entity(ID);
             return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
         }
 
-        /// \brief Retrieves an entity by name.
+        /// \brief Retrieves an entity by its name.
         ///
-        /// \param Name Specifies the entity name.
-        /// \return The entity object if valid and alive, otherwise an empty entity.
+        /// \param Name The name of the entity.
+        /// \return A valid entity if alive, otherwise an empty entity.
         ZYPHRYON_INLINE Entity GetEntity(ConstStr8 Name) const
         {
             const Entity::Handle Handle = mWorld.lookup(Name.data());
             return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
         }
 
-        /// \brief Retrieves a relation entity.
+        /// \brief Retrieves a relation entity by tag and target.
         ///
-        /// \tparam Tag    The relation's tag component.
-        /// \tparam Target The relation's target component.
-        /// \return The entity object associated with the relation.
+        /// \tparam Tag    The relation tag component.
+        /// \tparam Target The relation target component.
+        /// \return The entity associated with the relation.
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Entity GetEntity() const
         {
-            const Entity::Handle Handle = mWorld.entity(mWorld.pair<Tag, Target>());
-            return Entity(Handle);
+            return Entity(mWorld.entity(mWorld.pair<Tag, Target>()));
         }
 
-        /// \brief Creates a query for entities with the specified components.
+        /// \brief Retrieves a component entity definition by type.
         ///
-        /// \param Name The query name (can be empty).
-        /// \return A query builder object.
-        template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateQuery(ConstStr8 Name = "") const
+        /// \param ID      Optional identifier override. Defaults to the symbol name of the type.
+        /// \tparam Target The component type.
+        /// \return The component entity object.
+        template<typename Target>
+        ZYPHRYON_INLINE Component<Target> GetComponent(ConstStr8 ID = flecs::_::symbol_name<Target>()) const
         {
-            return mWorld.query_builder<Components...>(Name.data());
+            return Component<Target>(mWorld.component<Target>(ID.data()));
         }
 
-        /// \brief Iterates over all archetype entities.
+        /// \brief Creates an observer for reacting to ECS events.
         ///
-        /// \param Callback The function invoked once per archetype entity.
-        template<typename Function>
-        ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
+        /// \param Name    The name of the observer.
+        /// \param Event   The event entity to subscribe to (e.g. OnAdd).
+        /// \param Each    The callback to invoke for each matching entity.
+        /// \param Runtime Optional runtime expressions to refine the query.
+        template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
+        ZYPHRYON_INLINE void CreateObserver(ConstStr8 Name, Entity Event,
+            AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
-            Query<> Instance = CreateQuery<>("OnQueryArchetypes").with(EcsPrefab).build();
-            Instance.Each(Callback);
+            flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
+
+            (CompileExpression::Apply(Builder), ...);
+
+            (Runtime.ApplyRuntime(Builder), ...);
+
+            Builder.event(Event.GetHandle());
+            Builder.each(Forward<FEach>(Each));
         }
 
-        /// \brief Iterates over all entities with a given tag.
+        /// \brief Creates a query with optional compile-time and runtime expressions.
         ///
-        /// \param Callback The function invoked once per matching entity.
-        template<typename Tag, typename Function>
-        ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
+        /// \param Name    The name of the query.
+        /// \param Runtime Optional runtime expressions to refine the query.
+        /// \return The constructed query object.
+        template<typename... CompileExpression, typename... RuntimeExpression>
+        ZYPHRYON_INLINE auto CreateQuery(ConstStr8 Name, AnyRef<RuntimeExpression>... Runtime) const
         {
-            Query<> Instance = CreateQuery<>("OnQueryTag").with<Tag>().build();
-            Instance.Each(Callback);
+            flecs::query_builder<> Builder = mWorld.query_builder<>(Name.empty() ? nullptr : Name.data());
+            (CompileExpression::Apply(Builder), ...);
+
+            (Runtime.ApplyRuntime(Builder), ...);
+
+            using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
+            return Query(Builder.build());
         }
 
-        /// \brief Creates an observer for the specified components.
+        /// \brief Creates a system with a single execution callback.
         ///
-        /// \param Name The observer name (can be empty).
-        /// \return An observer object.
-        template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateObserver(ConstStr8 Name = "")
-        {
-            return mWorld.observer<Components...>(Name.data());
-        }
-
-        /// \brief Creates a system for the specified components.
+        /// \param Name      The name of the system.
+        /// \param Phase     The phase entity (e.g. PreUpdate, OnUpdate).
+        /// \param Execution Execution mode for the system.
+        /// \param Each      The callback to run for each entity.
+        /// \param Runtime   Optional runtime expressions to refine the query.
         ///
-        /// \param Name The system name (can be empty).
-        /// \return A system object.
-        template<typename ...Components>
-        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name = "")
+        /// \return The constructed system object.
+        template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
+        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution,
+            AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
-            return mWorld.system<Components...>(Name.data());
+            flecs::system_builder<> Builder = mWorld.system<>(Name.empty() ? nullptr : Name.data());
+
+            (CompileExpression::Apply(Builder), ...);
+
+            (Runtime.ApplyRuntime(Builder), ...);
+
+            switch (Execution)
+            {
+            case Execution::Default:
+                break;
+            case Execution::Immediate:
+                Builder.immediate();
+                break;
+            case Execution::Asynchronous:
+                Builder.multi_threaded();
+                break;
+            }
+
+            Builder.kind(Phase.GetHandle());
+            return System(Builder.run([Each](Ref<flecs::iter> Iterator)
+            {
+                using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
+                Query::Invoke(Iterator, Each);
+            }));
         }
 
-        /// \brief Loads all archetypes.
+        /// \brief Creates a system with begin, each, and end callbacks.
+        ///
+        /// \param Name      The name of the system.
+        /// \param Phase     The phase entity (e.g. PreUpdate, OnUpdate).
+        /// \param Execution Execution mode for the system.
+        /// \param Begin     Callback invoked before iteration.
+        /// \param Each      Callback invoked for each entity.
+        /// \param End       Callback invoked after iteration.
+        /// \param Runtime   Optional runtime expressions to refine the query.
+        ///
+        /// \return The constructed system object.
+        template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
+        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution,
+            AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
+        {
+            flecs::system_builder<> Builder = mWorld.system<>(Name.empty() ? nullptr : Name.data());
+
+            (CompileExpression::Apply(Builder), ...);
+
+            (Runtime.ApplyRuntime(Builder), ...);
+
+            switch (Execution)
+            {
+            case Execution::Default:
+                break;
+            case Execution::Immediate:
+                Builder.immediate();
+                break;
+            case Execution::Asynchronous:
+                Builder.multi_threaded();
+                break;
+            }
+
+            Builder.kind(Phase.GetHandle());
+            return System(Builder.run([Begin, Each, End](Ref<flecs::iter> Iterator)
+            {
+                using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
+                Query::Invoke(Iterator, Begin, Each, End);
+            }));
+        }
+
+        /// \brief Loads all archetypes from a stream.
         ///
         /// \param Reader The stream containing serialized archetypes.
         void LoadArchetypes(Ref<Reader> Reader);
 
-        /// \brief Saves all archetypes.
+        /// \brief Saves all archetypes to a stream.
         ///
-        /// \param Writer The stream that receives serialized archetypes.
+        /// \param Writer The stream to write serialized archetypes to.
         void SaveArchetypes(Ref<Writer> Writer);
 
-        /// \brief Loads a single entity.
+        /// \brief Loads a single entity from a stream.
         ///
         /// \param Reader The stream containing the serialized entity.
-        /// \return An entity created from the stream.
+        /// \return The deserialized entity.
         Entity LoadEntity(Ref<Reader> Reader);
 
-        /// \brief Loads an entity hierarchy.
+        /// \brief Loads an entity hierarchy from a stream.
         ///
         /// \param Reader The stream containing the serialized hierarchy.
-        /// \return An entity created from the stream.
+        /// \return The root entity of the deserialized hierarchy.
         Entity LoadEntityHierarchy(Ref<Reader> Reader);
 
-        /// \brief Saves a single entity.
+        /// \brief Saves a single entity to a stream.
         ///
-        /// \param Writer The stream that receives the serialized entity.
+        /// \param Writer The stream to write the entity to.
         /// \param Actor  The entity to serialize.
         void SaveEntity(Ref<Writer> Writer, Entity Actor);
 
-        /// \brief Saves an entity hierarchy.
+        /// \brief Saves an entity hierarchy to a stream.
         ///
-        /// \param Writer The stream that receives the serialized hierarchy.
-        /// \param Actor  The entity to serialize.
+        /// \param Writer The stream to write the hierarchy to.
+        /// \param Actor  The root entity to serialize.
         void SaveEntityHierarchy(Ref<Writer> Writer, Entity Actor);
 
-        /// \brief Loads components of an entity.
+        /// \brief Loads all components of an entity.
         ///
         /// \param Reader The stream containing the serialized components.
-        /// \param Actor  The entity to serialize.
+        /// \param Actor  The entity to apply the components to.
         void LoadComponents(Ref<Reader> Reader, Entity Actor);
 
-        /// \brief Saves components of an entity.
+        /// \brief Saves all components of an entity.
         ///
-        /// \param Writer The stream that receives the serialized components.
-        /// \param Actor  The entity to serialize.
+        /// \param Writer The stream to write the components to.
+        /// \param Actor  The entity whose components to serialize.
         void SaveComponents(Ref<Writer> Writer, Entity Actor);
 
     private:
 
+        /// \brief Registers the engine’s built-in components and systems.
+        void RegisterDefaultComponentsAndSystems();
+
         /// \brief Allocates a new entity.
         ///
-        /// \tparam Archetype If `true`, creates an archetype entity; otherwise, creates a regular entity.
-        /// \param ID         Specifies the entity identifier. If `0`, a new unique ID is generated.
+        /// \tparam Archetype If `true`, creates an archetype entity; otherwise a regular entity.
+        /// \param ID         Optional explicit identifier. If `0`, a new unique ID is generated.
         /// \return The newly allocated entity object.
         template<Bool Archetype>
         ZYPHRYON_INLINE Entity Allocate(UInt64 ID = 0)
@@ -316,9 +383,6 @@ namespace Scene
             }
             return Actor;
         }
-
-        /// \brief Registers the engine’s built-in components and systems.
-        void RegisterDefaultComponentsAndSystems();
 
     private:
 

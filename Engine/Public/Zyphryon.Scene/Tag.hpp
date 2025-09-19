@@ -20,14 +20,18 @@
 
 namespace Scene
 {
-    /// \brief Represents a compile-time marker used to assign categories or states to entities.
+    /// \brief Compile-time unique tag identified by a constant 64-bit ID.
+    ///
+    /// \tparam ID Unique 64-bit identifier associated with this tag.
     template<UInt64 ID>
     struct Tag final
     {
-        /// \brief The unique compile-time identifier for this tag.
+        /// \brief The unique identifier of the tag.
         static constexpr UInt64 kID = ID;
     };
 
-    /// \brief Tag component to exclude entities from serialization.
-    using Transient = Tag<HashTextType("Transient")>;
+    /// \brief Special tag identifying transient objects.
+    ///
+    /// Mark objects that are not intended to persist across serialization boundaries.
+    using EcsTransient = Tag<HashTextType("Transient")>;
 }

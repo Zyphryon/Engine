@@ -11,7 +11,10 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Application.hpp"
-#include <Zyphryon.Content/Mount/DiskMount.hpp>
+#include "Zyphryon.Math/Transform.hpp"
+#include "Zyphryon.Math/Geometry/Rect.hpp"
+#include "Zyphryon.Scene/Builder.hpp"
+#include "Zyphryon.Scene/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -19,20 +22,36 @@
 
 namespace Example
 {
-    bool RENDER_NEW = false;
-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Bool Application::OnInitialize()
     {
-        auto Content = GetService<Content::Service>();
-        Content->AddMount("Resources", Tracker<Content::DiskMount>::Create("Resources"));
+        ConstTracker<Scene::Service> Scene = GetService<Scene::Service>();
+        Scene->GetComponent<Circle>();      // Register component
+        Scene->GetComponent<Matrix4x4>();   // Register component
 
-        AppRenderer = NewUniquePtr<Graphic::Render2D>(* this);
+        // Create a query to fetch all circles.
+        mEcsQueryCircles = Scene->CreateQuery<Scene::DSL::In<const Circle, const Matrix4x4>>("EcsQueryCircles");
 
-        AppCamera.SetOrthographic(0.0f, GetDevice().GetWidth(), 0.0f, GetDevice().GetHeight(), -1.0f, 1.0f);
-        AppCamera.Compute();
+        // Create some circles.
+        for (UInt Count = 0; Count < 1'000; ++Count)
+        {
+            Scene::Entity Actor = Scene->CreateEntity<false>();
+            Actor.Emplace<Circle>(Vector2(0, 0), 1.0f);
+            Actor.Set(Matrix4x4::FromTranslation(Vector2(rand()%(1024), rand()%(1024))));
+        }
+
+        // (Until Fix) -> wait for the renderer to load
+        mRenderer = NewUniquePtr<Graphic::Render2D>(* this);
+        while (!mRenderer->IsReady())
+        {
+            GetService<Content::Service>()->OnTick({});
+        }
+
+        mCamera.SetOrthographic(0.0f, GetDevice().GetWidth(), 0.0f, GetDevice().GetHeight(), -1.0f, 1.0f);
+        mCamera.Compute();
+
 
         return true;
     }
@@ -44,30 +63,36 @@ namespace Example
     {
         ZYPHRYON_PROFILE;
 
-        ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>();
+        static Real32 Thickness = 0.0f;
+        Thickness += (Time.GetDelta() * 1.0f);
 
-        static Real32 Thickness = 1.0f;
-        Thickness += (Time.GetDelta() * 1);
+        ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>();
 
         Graphic::Viewport Viewport(0, 0, GetDevice().GetWidth(), GetDevice().GetHeight());
         Graphics->Prepare(Graphic::kDisplay, Viewport, Graphic::Clear::All, Color::Black(), 1, 0);
         {
-            if (AppRenderer->IsReady())
+            mRenderer->SetGlobalParameters(ConstSpan(&mCamera.GetViewProjection(), 1));
+
+            mRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Color::Red().ToRGBA8(), 1.0f);
+            mRenderer->DrawStrokeRect(Rect({400, 200, 500, 300}), 0.3f, Color::Green().ToRGBA8(), 4.0f);
+            mRenderer->DrawRect(Rect({100, 350, 200, 450}), 0.2f, Color::Blue().ToRGBA8());
+
+            mRenderer->DrawCircle(Circle({600, 600}, 128), 0.3f, Color::White().ToRGBA8());
+            mRenderer->DrawRing(Circle({200, 200}, 64), 0.4f, Color::Red().ToRGBA8(), 1);
+            mRenderer->DrawRing(Circle({400, 400}, 32), 0.5f, Color::Yellow().ToRGBA8(), 2);
+            mRenderer->DrawRing(Circle({300, 300}, 16), 0.6f, Color::Blue().ToRGBA8(), 3);
+            mRenderer->DrawLine(Line({0, 0}, {800, 800}), 0.1f, Color::Green().ToRGBA8(), 1.0f);
+            mRenderer->DrawRoundedRect(Rect{200, 500, 400, 700}, 0.5f, Color::White().ToRGBA8(), 0.5f);
+            mRenderer->DrawRoundedRect(Rect{250, 500, 350, 700}, 0.4f, Color::Red().ToRGBA8(), 0.25f);
+            mRenderer->DrawRoundedRect(Rect{275, 500, 325, 700}, 0.3f, Color::Green().ToRGBA8(), 0.75f);
+
+            mEcsQueryCircles.Run([this](ConstRef<Circle> Shape, ConstRef<Matrix4x4> Worldspace)
             {
-                AppRenderer->SetGlobalParameters(ConstSpan<Matrix4x4>(&AppCamera.GetViewProjection(), 1));
+                const Circle Transformation = Circle::Transform(Shape, Worldspace);
+                mRenderer->DrawRing(Transformation, 1.0f, Color::Gray().ToRGBA8(), 0.7f);
+            });
 
-                AppRenderer->DrawLine(Line({100, 100}, {200, 100}), 0.0f, Color::Red().ToRGBA8(), Thickness);
-                AppRenderer->DrawStrokeRect(Rect({100, 200, 200, 300}), 0.3f, Color::Green().ToRGBA8(), 4.0f);
-                AppRenderer->DrawRect(Rect({100, 350, 200, 450}), 0.2f, Color::Blue().ToRGBA8());
-
-                AppRenderer->DrawCircle(Circle({600, 600}, 128), 0.3f, Color::White().ToRGBA8());
-                AppRenderer->DrawRing(Circle({200, 200}, 64), 0.4f, Color::Red().ToRGBA8(), 1);
-                AppRenderer->DrawRing(Circle({400, 400}, 32), 0.5f, Color::Yellow().ToRGBA8(), 2);
-                AppRenderer->DrawRing(Circle({300, 300}, 16), 0.6f, Color::Blue().ToRGBA8(), 3);
-                AppRenderer->DrawLine(Line({0, 0}, {800, 800}), 0.1f, Color::Green().ToRGBA8(), Thickness);
-
-                AppRenderer->Flush();
-            }
+            mRenderer->Flush();
         }
         Graphics->Commit(Graphic::kDisplay);
         Graphics->Finish(false);
@@ -78,6 +103,7 @@ namespace Example
 
     void Application::OnTeardown()
     {
+        mEcsQueryCircles.Destruct();
     }
 }
 

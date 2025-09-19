@@ -30,12 +30,19 @@ inline namespace Base
     template<Bool Result, class Type, class Other>
     using Switch       = std::conditional_t<Result, Type, Other>;
 
-    /// \brief Removes any lvalue or rvalue reference qualifier from a type.
-    /// 
-    /// \tparam Type The type to remove the reference from.
-    /// \return The unqualified type (e.g., `int&` → `int`, `int&&` → `int`).
+    /// \brief Removes any reference qualifier from a type.
+    ///
+    /// \tparam Type The type to transform.
+    /// \return The underlying type with no reference qualifier.
     template<typename Type>
     using UnRef        = std::remove_reference_t<Type>;
+
+    /// \brief Removes any pointer qualifier from a type.
+    ///
+    /// \tparam Type The type to transform.
+    /// \return The underlying type with no pointer qualifier.
+    template<typename Type>
+    using UnPtr        = std::remove_pointer_t<Type>;
 
     /// \brief Checks if \a Type and \a Types are equal.
     template<class Type, class ...Types>

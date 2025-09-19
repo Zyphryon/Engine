@@ -31,32 +31,32 @@ namespace Scene
 
     public:
 
-        /// \brief Constructs an empty factory.
+        /// \brief Constructs an empty factory with no serializers.
         ZYPHRYON_INLINE Factory() = default;
 
         /// \brief Constructs a factory with explicit serializer functions.
         ///
-        /// \param Reader Function pointer for component deserialization.
-        /// \param Writer Function pointer for component serialization.
+        /// \param Reader Function pointer used for deserialization.
+        /// \param Writer Function pointer used for serialization.
         ZYPHRYON_INLINE Factory(Serializer<Reader> Reader, Serializer<Writer> Writer)
             : mReader { Reader },
               mWriter { Writer }
         {
         }
 
-        /// \brief Deserializes a component.
+        /// \brief Deserializes a component from an archive.
         ///
-        /// \param Reader    The archive instance performing the deserialization operation.
-        /// \param Component The raw component being deserialized.
+        /// \param Reader    The archive instance performing the deserialization.
+        /// \param Component Pointer to the raw memory of the component instance.
         ZYPHRYON_INLINE void Read(Ref<Reader> Reader, Ptr<void> Component) const
         {
             mReader(Archive(Reader), Component);
         }
 
-        /// \brief Serializes a component.
+        /// \brief Serializes a component into an archive.
         ///
-        /// \param Writer    The archive instance performing the serialization operation.
-        /// \param Component The raw component being serialized.
+        /// \param Writer    The archive instance performing the serialization.
+        /// \param Component Pointer to the raw memory of the component instance.
         ZYPHRYON_INLINE void Write(Ref<Writer> Writer, Ptr<void> Component) const
         {
             mWriter(Archive(Writer), Component);
@@ -67,6 +67,7 @@ namespace Scene
         /// \brief Creates a Factory instance for a specific component type.
         ///
         /// \tparam Component The component type to generate serialization support for.
+        ///
         /// \return Factory instance with type-specific serialization handlers.
         template<typename Component>
         ZYPHRYON_INLINE static Factory Create()
@@ -78,8 +79,8 @@ namespace Scene
 
         /// \brief Static deserialization callback for component data.
         ///
-        /// \param Archive   The archive instance performing the deserialization operation.
-        /// \param Component The raw component data being serialized.
+        /// \param Archive   The archive instance performing the deserialization.
+        /// \param Component Pointer to the raw memory of the component instance.
         template<typename Type>
         ZYPHRYON_INLINE static void OnComponentRead(Archive<Reader> Archive, Ptr<void> Component)
         {
@@ -91,8 +92,8 @@ namespace Scene
 
         /// \brief Static serialization callback for component data.
         ///
-        /// \param Archive   The archive instance performing the serialization operation.
-        /// \param Component The raw component data being serialized.
+        /// \param Archive   The archive instance performing the serialization.
+        /// \param Component Pointer to the raw memory of the component instance.
         template<typename Type>
         ZYPHRYON_INLINE static void OnComponentWrite(Archive<Writer> Archive, Ptr<void> Component)
         {

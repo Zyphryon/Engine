@@ -144,6 +144,12 @@ namespace Graphic
         }
 
         // -=(Undocumented)=-
+        ZYPHRYON_INLINE void DrawRoundedRect(ConstRef<Rect> Shape, Real32 Depth, UInt32 Tint, Real32 Radius = 1.0f)
+        {
+            mShapeRenderer.DrawRoundedRect(Shape, Depth, Tint, Radius);
+        }
+
+        // -=(Undocumented)=-
         void DrawSprite(ConstRef<Rect> Origin, Real32 Depth, ConstRef<Rect> Uv, UInt32 Tint, ConstTracker<Material> Material);
 
         // -=(Undocumented)=-

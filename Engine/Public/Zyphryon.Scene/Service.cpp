@@ -169,7 +169,7 @@ namespace Scene
 
     void Service::SaveEntity(Ref<Writer> Writer, Entity Actor)
     {
-        if (Actor.Contains<Transient>())
+        if (Actor.Has<EcsTransient>())
         {
             return;
         }
@@ -191,7 +191,7 @@ namespace Scene
 
     void Service::SaveEntityHierarchy(Ref<Writer> Writer, Entity Actor)
     {
-        if (Actor.Contains<Transient>())
+        if (Actor.Has<EcsTransient>())
         {
             return;
         }
@@ -230,7 +230,7 @@ namespace Scene
             /// Apply payload if present; otherwise attach component without data.
             if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
             {
-                if (const ConstPtr<Factory> Serializer = Second.Lookup<const Factory>())
+                if (const ConstPtr<Factory> Serializer = Second.Get<const Factory>())
                 {
                     if (First.IsValid())
                     {
@@ -258,11 +258,11 @@ namespace Scene
             {
                 if (First.IsValid())
                 {
-                    Actor.Attach(First, Second);
+                    Actor.Add(First, Second);
                 }
                 else
                 {
-                    Actor.Attach(Second);
+                    Actor.Add(Second);
                 }
             }
         }
@@ -292,9 +292,9 @@ namespace Scene
                 Second = Component;
             }
 
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.Lookup<const Factory>() : nullptr;
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.Get<const Factory>() : nullptr;
 
-            if (Serializer && (!First.IsValid() || First.Contains<Factory>()))
+            if (Serializer && (!First.IsValid() || First.Has<Factory>()))
             {
                 /// Write the name of the relation tag if valid, otherwise an empty string.
                 Writer.WriteText(First.IsValid() ? First.GetName() : "");
@@ -305,7 +305,7 @@ namespace Scene
                 /// Serialize the component data into a temporary bundle.
                 // TODO: Prevent heap Allocation.
                 Base::Writer Bundle;
-                Serializer->Write(Bundle, Actor.Lookup(Component));
+                Serializer->Write(Bundle, Actor.Get(Component));
 
                 /// Write the serialized component bundle to the output stream.
                 Writer.WriteBlock(Bundle.GetData());
@@ -327,23 +327,22 @@ namespace Scene
         mWorld.import<flecs::stats>();
 
         /// Enable REST service for remote ECS inspection.
-        mWorld.set<flecs::Rest>({});
+        mWorld.emplace<flecs::Rest>();
 #endif // ZYPHRYON_PROFILE_MODE
 
         // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
-        CreateObserver<>("_Archetypes::OnDelete").with(flecs::Prefab).event(flecs::OnRemove)
-            .each([this](Entity Actor)
-            {
-                mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
-            });
+        CreateObserver("_Archetypes::OnRemove", flecs::OnRemove, [this](Entity Actor)
+        {
+            mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
+        }, DSL::In(flecs::Prefab));
 
         // Register Factory component (serialization).
-        RegisterComponent<Factory>("Factory").AddTrait(Trait::Final);
+        GetComponent<Factory>("Factory").AddTrait(Trait::Final);
 
         // Register Time component as singleton (tracks global time state).
-        RegisterComponent<Time>("Time").AddTrait(Trait::Final, Trait::Singleton);
+        GetComponent<Time>("Time").AddTrait(Trait::Final, Trait::Singleton);
 
         // Register Transient component (marks entities as non serializable).
-        RegisterComponent<Transient>("Transient").AddTrait(Trait::Associative);
+        GetComponent<EcsTransient>("Transient").AddTrait(Trait::Associative);
     }
 }

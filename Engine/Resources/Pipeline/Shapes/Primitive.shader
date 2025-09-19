@@ -33,7 +33,7 @@ struct ps_Input
     float2 Local     : CUSTOM0;
 #endif
 
-#if   defined(SHAPE_RING) || defined(SHAPE_LINE)
+#if   defined(SHAPE_RING) || defined(SHAPE_LINE) || defined(SHAPE_ROUNDED_RECT)
     float  Thickness : CUSTOM1;
 #endif
 };
@@ -68,9 +68,13 @@ ps_Input vertex(vs_Input Input)
 
     Offset = Local * float2(Input.Data0.xx);
 
-#elif defined(SHAPE_RECT)
+#elif defined(SHAPE_RECT) || defined(SHAPE_ROUNDED_RECT)
 
     Offset = Local * Input.Data0;
+
+    #ifdef SHAPE_ROUNDED_RECT
+        Result.Thickness = Input.Data1.x;
+    #endif
 
 #elif defined(SHAPE_LINE)
 
@@ -109,6 +113,12 @@ float sdLine(float2 Point, float Thickness)
     return abs(Point.y) - Thickness;
 }
 
+float sdRoundedRect(float2 Point, float Radius)
+{
+    float2 q = abs(Point) - 1.0 + Radius;
+    return length(max(q, 0.0)) - Radius + min(max(q.x, q.y), 0.0);
+}
+
 float4 fragment(ps_Input Input) : SV_Target
 {
     float4 Result = Input.Color;
@@ -123,6 +133,8 @@ float4 fragment(ps_Input Input) : SV_Target
         Distance = sdRing(Input.Local, 1.0, Input.Thickness);
     #elif defined(SHAPE_LINE)
         Distance = sdLine(Input.Local, normalizedThickness);
+    #elif defined(SHAPE_ROUNDED_RECT)
+        Distance = sdRoundedRect(Input.Local, Input.Thickness);
     #endif
 
     #if defined(USE_AA)
@@ -132,7 +144,7 @@ float4 fragment(ps_Input Input) : SV_Target
         Result.a *= step(Distance, 0.5);
     #endif
 
-    #if defined(SHAPE_CIRCLE) || defined(SHAPE_RING)
+    #if defined(SHAPE_CIRCLE) || defined(SHAPE_RING) || defined(SHAPE_ROUNDED_RECT)
         clip(Result.a - 0.001);
     #endif
 
