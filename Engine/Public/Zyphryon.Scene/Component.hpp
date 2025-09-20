@@ -93,13 +93,13 @@ namespace Scene
         /// When set, entities created while this component is in scope will also
         /// automatically include the specified component type.
         ///
-        /// \tparam Component The component type to associate with this component.
+        /// \tparam Target The component type to associate with this component.
         ///
         /// \return A reference to this component.
-        template<typename Component>
+        template<typename Target>
         ZYPHRYON_INLINE ConstRef<Component> With() const
         {
-            mHandle.add(EcsWith, mHandle.world().template component<Component>());
+            mHandle.add(EcsWith, mHandle.world().template component<Target>());
             return (* this);
         }
 
