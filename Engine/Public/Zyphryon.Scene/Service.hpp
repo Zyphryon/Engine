@@ -269,7 +269,7 @@ namespace Scene
         ///
         /// \return The constructed system object.
         template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
-        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution,
+        ZYPHRYON_INLINE auto CreateSystemWithLifecycle(ConstStr8 Name, Entity Phase, Execution Execution,
             AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::system_builder<> Builder = mWorld.system<>(Name.empty() ? nullptr : Name.data());
