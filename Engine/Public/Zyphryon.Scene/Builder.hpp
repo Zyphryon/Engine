@@ -179,6 +179,47 @@ namespace Scene::DSL
 
 namespace Scene::DSL::_
 {
+    /// \brief Maps a DSL term to its resolved component type.
+    template<typename Term, typename = void>
+    struct MapTypeFromTerm
+    {
+        using Type = Component<Term>;
+    };
+
+    /// \brief Maps a pair term to the component type of its second element.
+    template<typename Term>
+    struct MapTypeFromTerm<Term, std::void_t<typename Term::Second>>
+    {
+        using Type = Component<typename Term::Second>;
+    };
+
+    /// \brief Convenience alias for the resolved component type of a DSL term.
+    template<typename Term>
+    using MapType = MapTypeFromTerm<Term>::Type;
+    
+    /// \brief Extracts component types from a list of DSL terms and removes empty marker types.
+    ///
+    /// \tparam Terms The list of DSL terms to process.
+    template<typename... Terms>
+    struct ExtractAndFilterTypes
+    {
+        using ExtractedTypes = Tuple<MapType<Terms>...>;
+
+        template<typename Tuple, typename = void>
+        struct FilterEmpty;
+
+        template<typename... Types>
+        struct FilterEmpty<Tuple<Types...>, std::void_t<std::enable_if_t<true>>>
+        {
+            using Type = decltype([]<typename... T0>(Tuple<T0...>)
+            {
+                return std::tuple_cat(std::conditional_t<!std::is_empty_v<T0>, Tuple<T0>, Tuple<> >{}...);
+            }(Tuple<Types...>{}));
+        };
+
+        using Type = FilterEmpty<ExtractedTypes>::Type;
+    };
+
     /// \brief Extracts component types from a DSL expression.
     ///
     /// \tparam Expression The query expression to analyze.
@@ -189,21 +230,21 @@ namespace Scene::DSL::_
     template<typename... Types>
     struct ExtractTypesFromExpression<In<Types...>>
     {
-        using Type = Tuple<Types...>;
+        using Type = ExtractAndFilterTypes<Types...>::Type;
     };
 
     /// \brief Extracts component types from an \c InCascade expression.
     template<typename Types>
     struct ExtractTypesFromExpression<InCascade<Types>>
     {
-        using Type = Tuple<Types>;
+        using Type = ExtractAndFilterTypes<Types>::Type;
     };
 
     /// \brief Extracts component types from an \c Out expression.
     template<typename... Types>
     struct ExtractTypesFromExpression<Out<Types...>>
     {
-        using Type = Tuple<Types...>;
+        using Type = ExtractAndFilterTypes<Types...>::Type;
     };
 
     /// \brief Combines the extracted component types from multiple DSL expressions into a tuple.
