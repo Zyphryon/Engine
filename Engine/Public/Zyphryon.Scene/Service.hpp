@@ -194,7 +194,11 @@ namespace Scene
             (Runtime.ApplyRuntime(Builder), ...);
 
             Builder.event(Event.GetHandle());
-            Builder.each(Forward<FEach>(Each));
+            Builder.run([Each](Ref<flecs::iter> Iterator)
+            {
+                using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
+                Query::Invoke(Iterator, Each);
+            });
         }
 
         /// \brief Creates a query with optional compile-time and runtime expressions.

@@ -196,7 +196,7 @@ namespace Scene::DSL::_
     /// \brief Convenience alias for the resolved component type of a DSL term.
     template<typename Term>
     using MapType = MapTypeFromTerm<Term>::Type;
-    
+
     /// \brief Extracts component types from a list of DSL terms and removes empty marker types.
     ///
     /// \tparam Terms The list of DSL terms to process.
@@ -213,11 +213,11 @@ namespace Scene::DSL::_
         {
             using Type = decltype([]<typename... T0>(Tuple<T0...>)
             {
-                return std::tuple_cat(std::conditional_t<!std::is_empty_v<T0>, Tuple<T0>, Tuple<> >{}...);
+                return std::tuple_cat(Switch<!std::is_empty_v<T0>, Tuple<T0>, Tuple<> >{}...);
             }(Tuple<Types...>{}));
         };
 
-        using Type = FilterEmpty<ExtractedTypes>::Type;
+        using Type = typename FilterEmpty<ExtractedTypes>::Type;
     };
 
     /// \brief Extracts component types from a DSL expression.
@@ -230,21 +230,21 @@ namespace Scene::DSL::_
     template<typename... Types>
     struct ExtractTypesFromExpression<In<Types...>>
     {
-        using Type = ExtractAndFilterTypes<Types...>::Type;
+        using Type = typename ExtractAndFilterTypes<Types...>::Type;
     };
 
     /// \brief Extracts component types from an \c InCascade expression.
     template<typename Types>
     struct ExtractTypesFromExpression<InCascade<Types>>
     {
-        using Type = ExtractAndFilterTypes<Types>::Type;
+        using Type = typename ExtractAndFilterTypes<Types>::Type;
     };
 
     /// \brief Extracts component types from an \c Out expression.
     template<typename... Types>
     struct ExtractTypesFromExpression<Out<Types...>>
     {
-        using Type = ExtractAndFilterTypes<Types...>::Type;
+        using Type = typename ExtractAndFilterTypes<Types...>::Type;
     };
 
     /// \brief Extracts component types from an \c InCascade expression.
