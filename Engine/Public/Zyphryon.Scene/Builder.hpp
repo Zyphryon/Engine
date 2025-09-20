@@ -193,6 +193,13 @@ namespace Scene::DSL::_
         using Type = Component<Switch<IsMutable<Term>, typename Term::Second, const typename Term::Second>>;
     };
 
+    /// \brief Maps a pair term to the component type of its second element.
+    template<typename Term>
+    struct MapTypeFromTerm<Ptr<Term>, std::void_t<typename Term::Second>>
+    {
+        using Type = std::add_pointer_t<Component<Switch<IsMutable<Term>, typename Term::Second, const typename Term::Second>>>;
+    };
+
     /// \brief Convenience alias for the resolved component type of a DSL term.
     template<typename Term>
     using MapType = MapTypeFromTerm<Term>::Type;
