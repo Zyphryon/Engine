@@ -141,7 +141,7 @@ namespace Scene::DSL
         template<typename Constructor>
         ZYPHRYON_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
         {
-            (With<Types>::Apply(Builder).inout(flecs::Out), ...);
+            (With<Types>::Apply(Builder).inout_stage(flecs::Out), ...);
             return Builder;
         }
     };
