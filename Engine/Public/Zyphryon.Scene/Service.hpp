@@ -298,6 +298,26 @@ namespace Scene
             }));
         }
 
+        /// \brief Iterates over all archetype entities.
+        ///
+        /// \param Callback The function invoked once per archetype entity.
+        template<typename Function>
+        ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
+        {
+            Query<> Instance = CreateQuery<>("OnQueryArchetypes", DSL::In(EcsPrefab));
+            Instance.Run(Callback);
+        }
+
+        /// \brief Iterates over all entities with a given tag.
+        ///
+        /// \param Callback The function invoked once per matching entity.
+        template<typename Tag, typename Function>
+        ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
+        {
+            Query<> Instance = CreateQuery<DSL::In<Tag>>("OnQueryTag");
+            Instance.Run(Callback);
+        }
+
         /// \brief Loads all archetypes from a stream.
         ///
         /// \param Reader The stream containing serialized archetypes.
