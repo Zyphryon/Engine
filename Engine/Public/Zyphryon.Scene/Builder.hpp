@@ -22,7 +22,7 @@ namespace Scene::DSL
 {
     /// \brief Resolves a query term to its underlying component type.
     template<class Term>
-    using Component = UnPtr<UnRef<Term>>;
+    using Component = UnRef<Term>;
 
     /// \brief Represents a pair relationship between two types.
     ///
@@ -58,7 +58,7 @@ namespace Scene::DSL
             {
                 if constexpr (IsPointer<Term>)
                 {
-                    return Builder.template with<Component<Term>>().optional();
+                    return Builder.template with<UnPtr<Component<Term>>>().optional();
                 }
                 else
                 {
