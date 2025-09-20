@@ -190,7 +190,7 @@ namespace Scene::DSL::_
     template<typename Term>
     struct MapTypeFromTerm<Term, std::void_t<typename Term::Second>>
     {
-        using Type = Component<typename Term::Second>;
+        using Type = Component<Switch<IsMutable<Term>, typename Term::Second, const typename Term::Second>>;
     };
 
     /// \brief Convenience alias for the resolved component type of a DSL term.
