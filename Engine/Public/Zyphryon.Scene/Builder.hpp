@@ -160,14 +160,14 @@ namespace Scene::DSL
         template<typename Constructor>
         ZYPHRYON_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
         {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle())._not();
+            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).oper(flecs::Not);
             return Builder;
         }
 
         template<typename Constructor>
         ZYPHRYON_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
         {
-            (With<Types>::Apply(Builder)._not(), ...);
+            (With<Types>::Apply(Builder).oper(flecs::Not), ...);
             return Builder;
         }
     };
@@ -245,6 +245,13 @@ namespace Scene::DSL::_
     struct ExtractTypesFromExpression<Out<Types...>>
     {
         using Type = ExtractAndFilterTypes<Types...>::Type;
+    };
+
+    /// \brief Extracts component types from an \c InCascade expression.
+    template<typename... Types>
+    struct ExtractTypesFromExpression<Not<Types...>>
+    {
+        using Type = Tuple<>;
     };
 
     /// \brief Combines the extracted component types from multiple DSL expressions into a tuple.
