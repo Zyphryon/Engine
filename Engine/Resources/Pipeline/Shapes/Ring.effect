@@ -1,0 +1,34 @@
+[Properties.Blend]  # Premultiplied Alpha Blending (ideal for SDF)
+
+SrcColor        = "One"
+DstColor        = "OneMinusSrcAlpha"
+SrcAlpha        = "One"
+DstAlpha        = "OneMinusSrcAlpha"
+
+[Properties.Depth]  # Enable Depth Write / Depth Testing
+
+Mask            = 1
+Condition       = "LessEqual"
+
+[Properties.Layout]
+
+Attributes      = [
+	["POSITION",  "Float32x3",   0,  0, 1],
+	["COLOR",     "UIntNorm8x4", 0, 12, 1],
+	["CUSTOM0",   "Float32x2",   0, 16, 1],
+	["CUSTOM1",   "Float32x2",   0, 24, 1],
+]
+
+Primitive       = "TriangleStrip"
+
+[Program.Vertex]
+
+Entry           = "vertex"
+Filename        = "Primitive.shader"
+Defines         = ["SHAPE_RING", "USE_SDF"]
+
+[Program.Fragment]
+
+Entry           = "fragment"
+Filename        = "Primitive.shader"
+Defines         = ["SHAPE_RING", "USE_SDF", "USE_AA"]
