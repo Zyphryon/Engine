@@ -65,7 +65,7 @@ namespace Graphic
         Command.Quad.SetCorner(2, { Origin.GetMaximumX(),  Origin.GetMaximumY() });
         Command.Quad.SetCorner(3, { Origin.GetMinimumX(),  Origin.GetMaximumY() });
         Command.Depth = Depth;
-        Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMaximumY(), Uv.GetMaximumX(), Uv.GetMinimumY() );
+        Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMinimumY(), Uv.GetMaximumX(), Uv.GetMaximumY());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -80,7 +80,7 @@ namespace Graphic
         Command.Tint     = Tint;
         Command.Quad     = Quad::Transform(Origin, Transform);
         Command.Depth    = Depth;
-        Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMaximumY(), Uv.GetMaximumX(), Uv.GetMinimumY() );
+        Command.Uv       = Rect(Uv.GetMinimumX(), Uv.GetMinimumY() , Uv.GetMaximumX(), Uv.GetMaximumY());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
