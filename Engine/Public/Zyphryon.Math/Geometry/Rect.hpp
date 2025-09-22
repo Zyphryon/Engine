@@ -896,26 +896,25 @@ inline namespace Math
             // Top band (above intersection)
             if (Intersect.GetMinimumY() > First.GetMinimumY())
             {
-                Callback(AnyRect(First.GetMinimumX(), First.GetMinimumY(), First.GetMaximumX(), Intersect.GetMinimumY()));
+                Action(AnyRect(First.GetMinimumX(), First.GetMinimumY(), First.GetMaximumX(), Intersect.GetMinimumY()));
             }
 
             // Bottom band (below intersection)
             if (Intersect.GetMaximumY() < First.GetMaximumY())
             {
-                Callback(AnyRect(First.GetMinimumX(), Intersect.GetMaximumY(), First.GetMaximumX(), First.GetMaximumY()));
-
+                Action(AnyRect(First.GetMinimumX(), Intersect.GetMaximumY(), First.GetMaximumX(), First.GetMaximumY()));
             }
 
             // Left band (left of intersection)
             if (Intersect.GetMinimumX() > First.GetMinimumX())
             {
-                Callback(AnyRect(First.GetMinimumX(), Intersect.GetMinimumY(), Intersect.GetMinimumX(), Intersect.GetMaximumY()));
+                Action(AnyRect(First.GetMinimumX(), Intersect.GetMinimumY(), Intersect.GetMinimumX(), Intersect.GetMaximumY()));
             }
 
             // Right band (right of intersection)
             if (Intersect.GetMaximumX() < First.GetMaximumX())
             {
-                Callback(AnyRect(Intersect.GetMaximumX(), Intersect.GetMinimumY(), First.GetMaximumX(), Intersect.GetMaximumY()));
+                Action(AnyRect(Intersect.GetMaximumX(), Intersect.GetMinimumY(), First.GetMaximumX(), Intersect.GetMaximumY()));
             }
         }
 
