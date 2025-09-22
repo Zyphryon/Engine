@@ -892,6 +892,10 @@ inline namespace Math
             }
             
             const AnyRect Intersect = AnyRect::Intersection(First, Second);
+            if (Intersect.IsAlmostZero())
+            {
+                return;
+            }
 
             // Top band (above intersection)
             if (Intersect.GetMinimumY() > First.GetMinimumY())
