@@ -255,6 +255,16 @@ inline namespace Math
             return AnyRect(mMinimumX - Amount, mMinimumY - Amount, mMaximumX + Amount, mMaximumY + Amount);
         }
 
+        /// \brief Expands the rectangle by the given amounts in the X and Y directions.
+        ///
+        /// \param AmountX The amount to expand in the X direction.
+        /// \param AmountY The amount to expand in the Y direction.
+        /// \return The expanded rectangle.
+        ZYPHRYON_INLINE constexpr AnyRect Expand(Type AmountX, Type AmountY) const
+        {
+            return AnyRect(mMinimumX - AmountX, mMinimumY - AmountY, mMaximumX + AmountX, mMaximumY + AmountY);
+        }
+
         /// \brief Contracts the rectangle by the given amount in all directions.
         ///
         /// \param Amount The amount to contract by.
