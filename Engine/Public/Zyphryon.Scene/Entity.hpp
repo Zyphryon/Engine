@@ -130,6 +130,32 @@ namespace Scene
             mHandle.destruct();
         }
 
+        /// \brief Enables the entity, making it active in the world.
+        ///
+        /// \return A reference to the updated entity.
+        ZYPHRYON_INLINE ConstRef<Entity> Awake() const
+        {
+            mHandle.enable();
+            return (* this);
+        }
+
+        /// \brief Disables the entity, making it inactive in the world.
+        ///
+        /// \return A reference to the updated entity.
+        ZYPHRYON_INLINE ConstRef<Entity> Sleep() const
+        {
+            mHandle.disable();
+            return (* this);
+        }
+
+        /// \brief Checks if the entity is currently enabled (awake).
+        ///
+        /// \return `true` if the entity is enabled, `false` otherwise.
+        ZYPHRYON_INLINE Bool IsAwake() const
+        {
+            return mHandle.enabled();
+        }
+
         /// \brief Adds a tag component to this entity.
         ///
         /// \tparam Tag The tag type to add.
@@ -813,6 +839,36 @@ namespace Scene
             return Entity(mHandle.second());
         }
 
+        /// \brief Dispatches an event from this entity.
+        ///
+        /// \param Payload     The event payload to dispatch.
+        /// \param Immediately If `true`, the event is dispatched immediately; if `false`,
+        /// \return A reference to this entity.
+        template<typename Event>
+        ZYPHRYON_INLINE ConstRef<Entity> Dispatch(ConstRef<Event> Payload, Bool Immediately = false) const
+        {
+            if (Immediately)
+            {
+                mHandle.emit(Payload);
+            }
+            else
+            {
+                mHandle.enqueue(Payload);
+            }
+            return (* this);
+        }
+
+        /// \brief Registers a callback to subscribe events of the specified type on this entity.
+        ///
+        /// \param Handler The function to call when the event occurs.
+        /// \return A reference to this entity.
+        template<typename Event, typename Callback>
+        ZYPHRYON_INLINE ConstRef<Entity> Subscribe(AnyRef<Callback> Handler) const
+        {
+            mHandle.observe<Event>(Handler);
+            return (* this);
+        }
+
         /// \brief Checks if this entity is equal to another entity.
         ///
         /// \param Other The entity to compare to.
@@ -834,6 +890,15 @@ namespace Scene
         ZYPHRYON_INLINE UInt64 Hash() const
         {
             return GetID();
+        }
+
+        /// \brief Clones this entity, optionally performing a shallow or deep copy.
+        ///
+        /// \param Shallow If `true`, performs a shallow copy (components are shared).
+        /// \return A new entity that is a clone of this one.
+        ZYPHRYON_INLINE Entity Clone(Bool Shallow = false) const
+        {
+            return Entity(mHandle.clone(!Shallow));
         }
 
     public:
