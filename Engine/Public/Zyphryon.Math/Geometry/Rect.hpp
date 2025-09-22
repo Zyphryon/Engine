@@ -890,10 +890,13 @@ inline namespace Math
             {
                 return;
             }
-            
+
             const AnyRect Intersect = AnyRect::Intersection(First, Second);
+
+            // No intersection, so just return the first rect as-is.
             if (Intersect.IsAlmostZero())
             {
+                Action(First);
                 return;
             }
 
