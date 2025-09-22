@@ -877,6 +877,48 @@ inline namespace Math
                            Vector4::HorizontalMax(ProjectionX), Vector4::HorizontalMax(ProjectionY));
         }
 
+        /// \brief Iterates over the difference bands between two rectangles, invoking a callback for each band.
+        ///
+        /// \param First  The first rectangle.
+        /// \param Second The second rectangle.
+        /// \param Action The callback function to invoke for each difference band.
+        template<typename Function>
+        ZYPHRYON_INLINE static void ForEachRectDiff(ConstRef<AnyRect> First, ConstRef<AnyRect> Second, AnyRef<Function> Action)
+            requires (IsInteger<Type>)
+        {
+            if (First == Second)
+            {
+                return;
+            }
+            
+            const AnyRect Intersect = AnyRect::Intersection(First, Second);
+
+            // Top band (above intersection)
+            if (Intersect.GetMinimumY() > First.GetMinimumY())
+            {
+                Callback(AnyRect(First.GetMinimumX(), First.GetMinimumY(), First.GetMaximumX(), Intersect.GetMinimumY()));
+            }
+
+            // Bottom band (below intersection)
+            if (Intersect.GetMaximumY() < First.GetMaximumY())
+            {
+                Callback(AnyRect(First.GetMinimumX(), Intersect.GetMaximumY(), First.GetMaximumX(), First.GetMaximumY()));
+
+            }
+
+            // Left band (left of intersection)
+            if (Intersect.GetMinimumX() > First.GetMinimumX())
+            {
+                Callback(AnyRect(First.GetMinimumX(), Intersect.GetMinimumY(), Intersect.GetMinimumX(), Intersect.GetMaximumY()));
+            }
+
+            // Right band (right of intersection)
+            if (Intersect.GetMaximumX() < First.GetMaximumX())
+            {
+                Callback(AnyRect(Intersect.GetMaximumX(), Intersect.GetMinimumY(), First.GetMaximumX(), Intersect.GetMaximumY()));
+            }
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
