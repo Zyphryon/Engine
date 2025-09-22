@@ -865,7 +865,7 @@ namespace Scene
         template<typename Event, typename Callback>
         ZYPHRYON_INLINE ConstRef<Entity> Subscribe(AnyRef<Callback> Handler) const
         {
-            mHandle.observe<Event>(Handler);
+            mHandle.observe<Event>(Move(Handler));
             return (* this);
         }
 
