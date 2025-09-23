@@ -192,6 +192,25 @@ namespace Scene
             return Component<Target>(mWorld.component<Target>(ID.data()));
         }
 
+        /// \brief Subscribes to a specific event.
+        ///
+        /// \tparam Event The event type to subscribe to (e.g. OnAdd).
+        /// \param Name   The name of the observer.
+        /// \param Each   The callback to invoke for each matching entity and event data.
+        /// \return The entity representing the observer.
+        template<typename Event, typename FEach>
+        ZYPHRYON_INLINE Entity Subscribe(ConstStr8 Name, AnyRef<FEach> Each)
+        {
+            flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
+            Builder.event<Event>().with(flecs::Any);
+
+            flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
+            {
+                Each(Entity(Iterator.entity(Element)), *Iterator.param<Event>());
+            });
+            return Entity(Observer);
+        }
+
         /// \brief Creates a new phase entity for organizing system execution order.
         ///
         /// \tparam Name      The name of the phase.
@@ -208,7 +227,7 @@ namespace Scene
         /// \return The newly created timer object.
         ZYPHRYON_INLINE Timer CreateTimer()
         {
-            Timer::Handle Handle = mWorld.timer();
+            const Timer::Handle Handle = mWorld.timer();
             return Timer(Handle);
         }
 
@@ -219,7 +238,7 @@ namespace Scene
         /// \param Each    The callback to invoke for each matching entity.
         /// \param Runtime Optional runtime expressions to refine the query.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
-        ZYPHRYON_INLINE void CreateObserver(ConstStr8 Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
+        ZYPHRYON_INLINE Entity CreateObserver(ConstStr8 Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
@@ -227,7 +246,7 @@ namespace Scene
             Builder.event(Event.GetHandle());
 
             using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
-            Builder.run(Query::template Runner<FEach>(Move(Each)));
+            return Entity(Builder.run(Query::template Runner<FEach>(Move(Each))));
         }
 
         /// \brief Creates a query with optional compile-time and runtime expressions.
@@ -331,7 +350,7 @@ namespace Scene
         template<typename Function>
         ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
         {
-            CreateQuery("QueryArchetypes", Cache::Default, DSL::In(EcsPrefab)).Run(Callback);
+            mArchetypesQueryAll.Run(Callback);
         }
 
         /// \brief Iterates over all entities with a given tag.
@@ -440,5 +459,6 @@ namespace Scene
 
         flecs::world                mWorld;
         Handle<kMaxCountArchetypes> mArchetypes;
+        Query<>                     mArchetypesQueryAll;
     };
 }

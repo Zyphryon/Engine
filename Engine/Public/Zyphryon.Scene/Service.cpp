@@ -336,6 +336,9 @@ namespace Scene
             mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
         }, DSL::In(flecs::Prefab));
 
+        // Create a query that matches all archetypes (prefabs).
+        mArchetypesQueryAll = CreateQuery("_Archetypes::Query", Cache::Default, DSL::In(EcsPrefab));
+
         // Register Factory component (serialization).
         GetComponent<Factory>("Factory").AddTrait(Trait::Final);
 

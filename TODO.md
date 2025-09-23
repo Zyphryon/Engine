@@ -37,3 +37,5 @@
 **Dependencies**: Own implementation for asset loading (PNG, DXT, MP3, WAV, TOML, GLTF)
 
 **Dependencies**: Remove FAudio with own implementation of 3D using SDL_Mixer
+
+**Core**: Implement Job System using Fibers.
