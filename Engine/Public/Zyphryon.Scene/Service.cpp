@@ -322,13 +322,13 @@ namespace Scene
 
     void Service::RegisterDefaultComponentsAndSystems()
     {
-#ifdef   ZYPHRYON_PROFILE_MODE
+#ifdef   FLECS_REST_SERVICE
         /// Import built-in ECS statistics module.
         mWorld.import<flecs::stats>();
 
         /// Enable REST service for remote ECS inspection.
         mWorld.emplace<flecs::Rest>();
-#endif // ZYPHRYON_PROFILE_MODE
+#endif // FLECS_REST_SERVICE
 
         // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
         CreateObserver("_Archetypes::OnRemove", flecs::OnRemove, [this](Entity Actor)
