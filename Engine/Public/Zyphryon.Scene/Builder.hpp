@@ -98,11 +98,11 @@ namespace Scene::DSL
 
     /// \brief Marks a cascading input dependency for a query.
     template<typename Type>
-    struct InCascade
+    struct Cascade
     {
         Entity Expression; ///< The entity expression for the cascade.
 
-        ZYPHRYON_INLINE constexpr explicit InCascade(Entity Expression)
+        ZYPHRYON_INLINE constexpr explicit Cascade(Entity Expression)
             : Expression { Expression }
         {
         }
@@ -214,6 +214,62 @@ namespace Scene::DSL
             return Builder.interval(Time);
         }
     };
+
+    /// \brief Combines two query terms with a logical OR operation.
+    template<typename First, typename Second>
+    struct Or
+    {
+        Entity Left;
+        Entity Right;
+
+        ZYPHRYON_INLINE constexpr explicit Or(Entity Left, Entity Right)
+            : Left  { Left },
+              Right { Right }
+        {
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        {
+            With<Entity>::ApplyRuntime(With<Entity>::ApplyRuntime(Builder, Left.GetHandle()).or_(), Right.GetHandle());
+            return Builder;
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        {
+            With<Second>::Apply(With<First>::Apply(Builder).or_());
+            return Builder;
+        }
+    };
+
+    /// \brief Combines two query terms with a logical AND operation.
+    template<typename First, typename Second>
+    struct And
+    {
+        Entity Left;
+        Entity Right;
+
+        ZYPHRYON_INLINE constexpr explicit And(Entity Left, Entity Right)
+            : Left  { Left },
+              Right { Right }
+        {
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        {
+            With<Entity>::ApplyRuntime(With<Entity>::ApplyRuntime(Builder, Left.GetHandle()).and_(), Right.GetHandle());
+            return Builder;
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        {
+            With<Second>::Apply(With<First>::Apply(Builder).and_());
+            return Builder;
+        }
+    };
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -286,9 +342,9 @@ namespace Scene::DSL::_
         using Type = typename ExtractAndFilterTypes<Types...>::Type;
     };
 
-    /// \brief Extracts component types from an \c InCascade expression.
+    /// \brief Extracts component types from an \c Cascade expression.
     template<typename Types>
-    struct ExtractTypesFromExpression<InCascade<Types>>
+    struct ExtractTypesFromExpression<Cascade<Types>>
     {
         using Type = typename ExtractAndFilterTypes<Types>::Type;
     };
@@ -319,6 +375,20 @@ namespace Scene::DSL::_
     struct ExtractTypesFromExpression<Interval<Time>>
     {
         using Type = Tuple<>;
+    };
+
+    /// \brief Extracts component types from an \c Or expression.
+    template<typename... Types>
+    struct ExtractTypesFromExpression<Or<Types...>>
+    {
+        using Type = typename ExtractAndFilterTypes<Types...>::Type;
+    };
+
+    /// \brief Extracts component types from an \c And expression.
+    template<typename... Types>
+    struct ExtractTypesFromExpression<And<Types...>>
+    {
+        using Type = typename ExtractAndFilterTypes<Types...>::Type;
     };
 
     /// \brief Combines the extracted component types from multiple DSL expressions into a tuple.
