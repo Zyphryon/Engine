@@ -52,15 +52,25 @@ namespace Scene::DSL
         template<typename Constructor>
         ZYPHRYON_INLINE static constexpr decltype(auto) Apply(Ref<Constructor> Builder)
         {
-            if constexpr (requires { typename Term::First; typename Term::Second; })
+
+            if constexpr (IsPointer<Term>)
             {
-                return Builder.template with<typename Term::First, typename Term::Second>();
+                using Unwrapped = UnPtr<Component<Term>>;
+
+                if constexpr (requires { typename Unwrapped::First; typename Unwrapped::Second; })
+                {
+                    return Builder.template with<typename Unwrapped::First, typename Unwrapped::Second>().optional();
+                }
+                else
+                {
+                    return Builder.template with<Unwrapped>().optional();
+                }
             }
             else
             {
-                if constexpr (IsPointer<Term>)
+                if constexpr (requires { typename Term::First; typename Term::Second; })
                 {
-                    return Builder.template with<UnPtr<Component<Term>>>().optional();
+                    return Builder.template with<typename Term::First, typename Term::Second>().optional();
                 }
                 else
                 {
