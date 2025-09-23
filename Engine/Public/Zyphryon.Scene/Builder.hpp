@@ -70,7 +70,7 @@ namespace Scene::DSL
             {
                 if constexpr (requires { typename Term::First; typename Term::Second; })
                 {
-                    return Builder.template with<typename Term::First, typename Term::Second>().optional();
+                    return Builder.template with<typename Term::First, typename Term::Second>();
                 }
                 else
                 {
