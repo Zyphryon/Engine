@@ -804,15 +804,16 @@ inline namespace Math
         ///
         /// \param Rectangle The source rectangle with real-valued coordinates.
         /// \return A rectangle with integer-aligned edges that fully contains the input.
-        ZYPHRYON_INLINE constexpr static AnyRect Enclose(ConstRef<AnyRect> Rectangle)
-            requires(IsReal<Type>)
+        template<typename Target>
+        ZYPHRYON_INLINE constexpr static AnyRect<Target> Enclose(ConstRef<AnyRect> Rectangle)
+            requires(IsReal<Type> && IsInteger<Target>)
         {
-            const Type MinimumX = Base::Floor(Rectangle.mMinimumX);
-            const Type MinimumY = Base::Floor(Rectangle.mMinimumY);
-            const Type MaximumX = Base::Ceil(Rectangle.mMaximumX);
-            const Type MaximumY = Base::Ceil(Rectangle.mMaximumY);
+            const Target MinimumX = static_cast<Target>(Base::Floor(Rectangle.mMinimumX));
+            const Target MinimumY = static_cast<Target>(Base::Floor(Rectangle.mMinimumY));
+            const Target MaximumX = static_cast<Target>(Base::Ceil(Rectangle.mMaximumX));
+            const Target MaximumY = static_cast<Target>(Base::Ceil(Rectangle.mMaximumY));
 
-            return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
+            return AnyRect<Target>(MinimumX, MinimumY, MaximumX, MaximumY);
         }
 
         /// \brief Anchors a rectangle relative to a pivot point.
