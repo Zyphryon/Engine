@@ -21,6 +21,10 @@
 
 namespace Scene
 {
+    /// \brief Forward declaration of a component reference wrapper.
+    template<typename Type>
+    class Pin;
+
     /// \brief Represents an entity within the ECS (Entity-Component System).
     ///
     /// An entity is a lightweight handle or identifier that serves as a container for components and tags.
@@ -438,7 +442,7 @@ namespace Scene
         ///
         /// \return A pointer to the component data, or nullptr if not present.
         template<typename Component>
-        ZYPHRYON_INLINE Ptr<Component> Get() const
+        ZYPHRYON_INLINE Ptr<Component> TryGet() const
         {
             if constexpr (IsMutable<Component>)
             {
@@ -450,30 +454,12 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a component on this entity.
-        ///
-        /// \tparam Component The component type to retrieve.
-        ///
-        /// \return A reference to the component data.
-        template<typename Component>
-        ZYPHRYON_INLINE Ref<Component> GetRef() const
-        {
-            if constexpr (IsMutable<Component>)
-            {
-                return mHandle.get_mut<Component>();
-            }
-            else
-            {
-                return mHandle.get<Component>();
-            }
-        }
-
         /// \brief Retrieves a pointer to a component represented by an entity.
         ///
         /// \param Component The entity representing the component.
         ///
         /// \return A pointer to the component data, or nullptr if not present.
-        ZYPHRYON_INLINE Ptr<void> Get(Entity Component) const
+        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
         {
             return mHandle.try_get_mut(Component.GetID());
         }
@@ -485,7 +471,7 @@ namespace Scene
         ///
         /// \return A pointer to the component data, or nullptr if not present.
         template<typename Tag>
-        ZYPHRYON_INLINE Ptr<void> GetPair(Entity Target) const
+        ZYPHRYON_INLINE Ptr<void> TryGetPair(Entity Target) const
         {
             return mHandle.try_get_mut<Tag>(Target.GetID());
         }
@@ -496,7 +482,7 @@ namespace Scene
         /// \param Target The entity used as the pair's second element.
         ///
         /// \return A pointer to the component data, or nullptr if not present.
-        ZYPHRYON_INLINE Ptr<void> GetPair(Entity Tag, Entity Target) const
+        ZYPHRYON_INLINE Ptr<void> TryGetPair(Entity Tag, Entity Target) const
         {
             return mHandle.try_get_mut(Tag.GetID(), Target.GetID());
         }
@@ -508,7 +494,7 @@ namespace Scene
         ///
         /// \return A pointer to the component data, or nullptr if not present.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Ptr<Target> GetPair() const
+        ZYPHRYON_INLINE Ptr<Target> TryGetPair() const
         {
             if constexpr (IsMutable<Target>)
             {
@@ -520,6 +506,24 @@ namespace Scene
             }
         }
 
+        /// \brief Retrieves a reference to a component on this entity.
+        ///
+        /// \tparam Component The component type to retrieve.
+        ///
+        /// \return A reference to the component data.
+        template<typename Component>
+        ZYPHRYON_INLINE Ref<Component> Get() const
+        {
+            if constexpr (IsMutable<Component>)
+            {
+                return mHandle.get_mut<Component>();
+            }
+            else
+            {
+                return mHandle.get<Component>();
+            }
+        }
+
         /// \brief Retrieves a reference to a pair, where both elements are types.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
@@ -527,7 +531,7 @@ namespace Scene
         ///
         /// \return A reference to the component data.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Ref<Target> GetPairRef() const
+        ZYPHRYON_INLINE Ref<Target> GetPair() const
         {
             if constexpr (IsMutable<Target>)
             {
@@ -537,6 +541,27 @@ namespace Scene
             {
                 return mHandle.get<Tag, Target>();
             }
+        }
+
+        /// \brief Retrieves a reference wrapper to a component on this entity.
+        ///
+        /// \tparam Component The component type to retrieve.
+        /// \return A reference wrapper to the component data.
+        template<typename Component>
+        ZYPHRYON_INLINE Pin<Component> GetRef() const
+        {
+            return Pin<Component>(mHandle.get_ref<Component>());
+        }
+
+        /// \brief Retrieves a reference wrapper to a pair, where both elements are types.
+        ///
+        /// \tparam Tag    The tag type used as the pair's first element.
+        /// \tparam Target The component type used as the pair's second element.
+        /// \return A reference wrapper to the component data.
+        template<typename Tag, typename Target>
+        ZYPHRYON_INLINE Pin<Target> GetRef() const
+        {
+            return Pin<Target>(mHandle.get_ref<Tag, Target>());
         }
 
         /// \brief Marks a component as modified on this entity.

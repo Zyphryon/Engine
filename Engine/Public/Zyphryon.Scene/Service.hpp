@@ -14,6 +14,7 @@
 
 #include "Component.hpp"
 #include "Query.hpp"
+#include "Pin.hpp"
 #include "System.hpp"
 #include "Tag.hpp"
 #include "Timer.hpp"

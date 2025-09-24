@@ -230,7 +230,7 @@ namespace Scene
             /// Apply payload if present; otherwise attach component without data.
             if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
             {
-                if (const ConstPtr<Factory> Serializer = Second.Get<const Factory>())
+                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
                 {
                     if (First.IsValid())
                     {
@@ -292,7 +292,7 @@ namespace Scene
                 Second = Component;
             }
 
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.Get<const Factory>() : nullptr;
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.TryGet<const Factory>() : nullptr;
 
             if (Serializer && (!First.IsValid() || First.Has<Factory>()))
             {
@@ -305,7 +305,7 @@ namespace Scene
                 /// Serialize the component data into a temporary bundle.
                 // TODO: Prevent heap Allocation.
                 Base::Writer Bundle;
-                Serializer->Write(Bundle, Actor.Get(Component));
+                Serializer->Write(Bundle, Actor.TryGet(Component));
 
                 /// Write the serialized component bundle to the output stream.
                 Writer.WriteBlock(Bundle.GetData());
