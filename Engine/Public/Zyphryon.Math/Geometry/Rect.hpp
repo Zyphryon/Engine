@@ -195,7 +195,7 @@ inline namespace Math
         /// \return The position of the rectangle.
         ZYPHRYON_INLINE constexpr AnyVector2<Type> GetPosition() const
         {
-            return Vector2(mMinimumX, mMinimumY);
+            return AnyVector2(mMinimumX, mMinimumY);
         }
 
         /// \brief Gets the size of the rectangle.
@@ -203,7 +203,7 @@ inline namespace Math
         /// \return The size of the rectangle.
         ZYPHRYON_INLINE constexpr AnyVector2<Type> GetSize() const
         {
-            return Vector2(GetWidth(), GetHeight());
+            return AnyVector2(GetWidth(), GetHeight());
         }
 
         /// \brief Calculates the center point of the rectangle.
@@ -241,9 +241,11 @@ inline namespace Math
         ///
         /// \param Point The query point in 2D space.
         /// \return The point clamped to the rectangle's boundaries.
-        ZYPHRYON_INLINE constexpr Vector2 GetNearest(ConstRef<Vector2> Point) const
+        ZYPHRYON_INLINE constexpr AnyVector2<Type> GetNearest(ConstRef<AnyVector2<Type>> Point) const
         {
-            return Vector2(Clamp(Point.GetX(), mMinimumX, mMaximumX), Clamp(Point.GetY(), mMinimumY, mMaximumY));
+            return AnyVector2<Type>(
+                Clamp(Point.GetX(), mMinimumX, mMaximumX),
+                Clamp(Point.GetY(), mMinimumY, mMaximumY));
         }
 
         /// \brief Expands the rectangle by the given amount in all directions.
