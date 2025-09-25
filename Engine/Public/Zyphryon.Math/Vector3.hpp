@@ -765,6 +765,20 @@ inline namespace Math
             return AnyVector3(Base::Max(P0.mX, P1.mX), Base::Max(P0.mY, P1.mY), Base::Max(P0.mZ, P1.mZ));
         }
 
+        /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
+        ///
+        /// \param Vector The source vector to clamp.
+        /// \param Min    The vector specifying the minimum bounds.
+        /// \param Max    The vector specifying the maximum bounds.
+        /// \return A vector with each component clamped between the min and max values.
+        ZYPHRYON_INLINE constexpr static AnyVector3 Clamp(ConstRef<AnyVector3> Vector, ConstRef<AnyVector3> Min, ConstRef<AnyVector3> Max)
+        {
+            return AnyVector3(
+                Base::Clamp(Vector.mX, Min.mX, Max.mX),
+                Base::Clamp(Vector.mY, Min.mY, Max.mY),
+                Base::Clamp(Vector.mZ, Min.mZ, Max.mZ));
+        }
+
         /// \brief Returns a vector with each component floored to the nearest integer.
         ///
         /// \param Vector The source vector with real-valued components.
