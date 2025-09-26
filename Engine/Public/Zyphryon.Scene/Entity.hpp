@@ -917,6 +917,15 @@ namespace Scene
             return GetID();
         }
 
+        /// \brief Clone this entity into a specified target entity, optionally performing a shallow or deep copy.
+        ///
+        /// \param Target  The target entity to clone into.
+        /// \param Shallow If `true`, performs a shallow copy (components are shared).
+        ZYPHRYON_INLINE void Clone(Entity Target, Bool Shallow = false) const
+        {
+            mHandle.clone(!Shallow, Target.GetHandle());
+        }
+
         /// \brief Clones this entity, optionally performing a shallow or deep copy.
         ///
         /// \param Shallow If `true`, performs a shallow copy (components are shared).
