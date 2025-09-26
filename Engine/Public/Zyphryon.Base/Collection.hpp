@@ -120,7 +120,7 @@ inline namespace Base
     /// \tparam Value The type of elements stored in the vector.
     /// \tparam Capacity The number of inline elements to store before falling back to heap allocation.
     template<typename Value, UInt32 Capacity = 0>
-    using Vector = Switch<(Capacity > 0), beman::inplace_vector<Value, Capacity>, std::vector<Value>>;
+    using Vector = Switch<(Capacity > 0), beman::inplace_vector::inplace_vector<Value, Capacity>, std::vector<Value>>;
 
     /// \brief Hash functor for UTF-8 text types with heterogeneous lookup support.
     struct TextTableHash
