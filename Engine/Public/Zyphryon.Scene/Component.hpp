@@ -143,7 +143,7 @@ namespace Scene
                     mHandle.add(flecs::CanToggle);
                     break;
                 case Trait::Sparse:
-                    mHandle.add(flecs::Sparse);
+                    mHandle.add(flecs::DontFragment);
                     break;
                 case Trait::Associative:
                     mHandle.add(flecs::PairIsTag);
