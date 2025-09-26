@@ -150,7 +150,7 @@ namespace Scene
         /// \return The newly created archetype entity object.
         ZYPHRYON_INLINE Entity CreateArchetype()
         {
-            const Entity Actor = Allocate<false>();
+            const Entity Actor = Allocate<true>();
             Actor.Add(EcsPrefab);
             return Actor;
         }
@@ -161,9 +161,10 @@ namespace Scene
         /// \return The newly created archetype entity object.
         ZYPHRYON_INLINE Entity CloneArchetype(Entity Source)
         {
-            const Entity Actor = Allocate<false>();
-            Source.Clone(Actor);
+            LOG_ASSERT(Source.IsArchetype(), "Source entity is not an archetype");
 
+            const Entity Actor = Allocate<true>();
+            Source.Clone(Actor);
             return Actor;
         }
 
