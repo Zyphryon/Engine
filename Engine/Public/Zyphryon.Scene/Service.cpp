@@ -59,7 +59,8 @@ namespace Scene
         for (UInt32 Element = 1, Limit = mArchetypes.GetSize(); Element <= Limit; ++Element)
         {
             /// Allocate prefab entity with the serialized identifier.
-            Entity Archetype = Allocate<true>(kMinRangeArchetypes + Reader.ReadInt<UInt32>());
+            const Entity Archetype = Allocate<true>(kMinRangeArchetypes + Reader.ReadInt<UInt32>());
+            Archetype.Add(EcsPrefab);
 
             /// Read and set archetype name.
             if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
@@ -119,7 +120,7 @@ namespace Scene
 
     Entity Service::LoadEntity(Ref<Reader> Reader)
     {
-        Entity Actor = Allocate<false>();
+        const Entity Actor = CreateEntity();
 
         /// Read and assign entity name if present.
         if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
