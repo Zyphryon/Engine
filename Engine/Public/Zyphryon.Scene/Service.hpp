@@ -140,7 +140,9 @@ namespace Scene
         /// \return The newly created entity object.
         ZYPHRYON_INLINE Entity CreateEntity()
         {
-            return Allocate<false>();
+            const Entity Actor = Allocate<false>();
+            Actor.Add(EcsFinal);
+            return Actor;
         }
 
         /// \brief Creates a new archetype entity.
@@ -148,7 +150,21 @@ namespace Scene
         /// \return The newly created archetype entity object.
         ZYPHRYON_INLINE Entity CreateArchetype()
         {
-            return Allocate<true>();
+            const Entity Actor = Allocate<false>();
+            Actor.Add(EcsPrefab);
+            return Actor;
+        }
+
+        /// \brief Clones an existing archetype entity.
+        ///
+        /// \param Source The archetype entity to clone from.
+        /// \return The newly created archetype entity object.
+        ZYPHRYON_INLINE Entity CloneArchetype(Entity Source)
+        {
+            const Entity Actor = Allocate<false>();
+            Source.Clone(Actor);
+
+            return Actor;
         }
 
         /// \brief Retrieves an entity by its unique identifier.
@@ -440,15 +456,6 @@ namespace Scene
             else
             {
                 Actor = mWorld.make_alive(Actor);
-            }
-
-            if constexpr(Archetype)
-            {
-                Actor.add(flecs::Prefab);
-            }
-            else
-            {
-                Actor.add(flecs::Final);
             }
             return Actor;
         }
