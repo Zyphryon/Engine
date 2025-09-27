@@ -78,6 +78,38 @@ inline namespace Base
         }
     };
 
+    /// \brief Generic hash functor for arbitrary types with heterogeneous lookup support.
+    struct DefaultAnyTableHash
+    {
+        /// \brief Enables heterogeneous lookup with transparent hashing.
+        using is_transparent = void;
+
+        /// \brief Marks this hash as avalanching for compatibility with `ankerl::unordered_dense`.
+        using is_avalanching = void;
+
+        /// \brief Computes a hash using `wyhash` when the type does not provide a `Hash()` member.
+        ///
+        /// \param Value The object to hash.
+        /// \return Hash value of the object.
+        template<typename T>
+        [[nodiscard]] size_t operator()(ConstRef<T>  Value) const
+            requires (!requires { Value.Hash(); })
+        {
+            return HashCombine(Value);
+        }
+
+        /// \brief Computes a hash using the object’s custom `Hash()` member.
+        ///
+        /// \param Value The object to hash.
+        /// \return Hash value of the object as returned by `Hash()`.
+        template<typename T>
+        [[nodiscard]] size_t operator()(ConstRef<T> Value) const
+            requires requires { { Value.Hash() } -> std::convertible_to<size_t>; }
+        {
+            return static_cast<size_t>(Value.Hash());
+        }
+    };
+
     /// \brief A high-performance unordered set container.
     ///
     /// \tparam Key       The type of elements to store in the set.
