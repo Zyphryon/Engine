@@ -31,6 +31,9 @@ namespace Scene
         /// \brief Underlying handle to the ECS query object.
         using Handle = flecs::query<>;
 
+        /// \brief Pattern type representing the query's component requirements.
+        using Pattern = DSL::In<Types...>;
+
     public:
 
         /// \brief Constructs an empty query with no associated handle.
