@@ -49,37 +49,8 @@ inline namespace Base
 
     /// \brief Generic hash functor for arbitrary types.
     ///
-    /// Prefers using a type’s custom `Hash()` member if available, otherwise falls back to `wyhash`
-    /// for compatibility with `ankerl::unordered_dense`.
-    template<typename T>
+    /// Prefers to use a type’s custom `Hash()` member if available.
     struct DefaultTableHash
-    {
-        /// \brief Marks this hash as avalanching for compatibility with `ankerl::unordered_dense`.
-        using is_avalanching = void;
-
-        /// \brief Computes a hash using `wyhash` when the type does not provide a `Hash()` member.
-        ///
-        /// \param Value The object to hash.
-        /// \return Hash value of the object.
-        [[nodiscard]] size_t operator()(ConstRef<T>  Value) const
-            requires (!requires { Value.Hash(); })
-        {
-            return HashCombine(Value);
-        }
-
-        /// \brief Computes a hash using the object’s custom `Hash()` member.
-        ///
-        /// \param Value The object to hash.
-        /// \return Hash value of the object as returned by `Hash()`.
-        [[nodiscard]] size_t operator()(ConstRef<T> Value) const
-            requires requires { { Value.Hash() } -> std::convertible_to<size_t>; }
-        {
-            return static_cast<size_t>(Value.Hash());
-        }
-    };
-
-    /// \brief Generic hash functor for arbitrary types with heterogeneous lookup support.
-    struct DefaultAnyTableHash
     {
         /// \brief Enables heterogeneous lookup with transparent hashing.
         using is_transparent = void;
@@ -116,7 +87,7 @@ inline namespace Base
     /// \tparam Hash      The hash function used for keys. Defaults to `ankerl::unordered_dense::hash<Key>`.
     /// \tparam Predicate The equality comparison function for keys. Defaults to `std::equal_to<>`.
     template<typename Key,
-             typename Hash = DefaultTableHash<Key>,
+             typename Hash = DefaultTableHash,
              typename Predicate = std::equal_to<>>
     using Set    = ankerl::unordered_dense::set<Key, Hash, Predicate>;
 
@@ -128,7 +99,7 @@ inline namespace Base
     /// \tparam Predicate The equality comparison function for keys. Defaults to `std::equal_to<>`.
     template<typename Key,
              typename Value,
-             typename Hash = DefaultTableHash<Key>,
+             typename Hash = DefaultTableHash,
              typename Predicate = std::equal_to<>>
     using Table  = ankerl::unordered_dense::map<Key, Value, Hash, Predicate>;
 
