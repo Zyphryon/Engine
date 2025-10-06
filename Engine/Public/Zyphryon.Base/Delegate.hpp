@@ -389,6 +389,14 @@ inline namespace Base
     {
     public:
 
+        /// \brief Returns whether the multicast delegate has no bound delegates.
+        ///
+        /// \return `true` if there are no bound delegates, otherwise `false`.
+        ZYPHRYON_INLINE Bool IsEmpty() const
+        {
+            return mDelegates.empty();
+        }
+
         /// \brief Adds a free function or static member function to the multicast list.
         ///
         /// \tparam Function The function pointer to add.
