@@ -127,7 +127,6 @@ namespace Example
             mRenderer->Flush();
         }
         Graphics->Commit(Graphic::kDisplay);
-        Graphics->Finish(false);
 
 
         auto Input = GetService<Input::Service>();

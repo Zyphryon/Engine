@@ -15,6 +15,7 @@
 #include "Zyphryon.Base/Bit.hpp"
 #include "Zyphryon.Base/Collection.hpp"
 #include "Zyphryon.Base/Concurrency.hpp"
+#include "Zyphryon.Base/Delegate.hpp"
 #include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Base/Log.hpp"
 #include "Zyphryon.Base/Profiler.hpp"

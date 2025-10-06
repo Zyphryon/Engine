@@ -105,18 +105,12 @@ inline namespace Base
 
     /// \brief Alias for a fixed-size heterogeneous collection of values.
     template<typename... Type>
-    using Tuple     = std::tuple<Type...>;
+    using Tuple     = std::tuple<Type...>;  // TODO: Remove
 
     /// \brief Alias for a unique ownership pointer.
     /// 
     /// \tparam Type    The type of the object to own.
     /// \tparam Deleter The type of the deleter used to destroy the object.
     template<typename Type, typename Deleter = std::default_delete<Type>>
-    using Unique    = std::unique_ptr<Type, Deleter>;
-
-    /// \brief Alias for a general-purpose callable object.
-    /// 
-    /// \tparam Type The function signature (e.g., `void()` or `int(float, int)`).
-    template<typename Type>
-    using Function  = std::function<Type>;
+    using Unique    = std::unique_ptr<Type, Deleter>;  // TODO: Remove
 }

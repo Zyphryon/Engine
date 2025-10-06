@@ -50,7 +50,7 @@ namespace Content
     {
         for (Ref<Thread> Worker : mLoaderThreads)
         {
-            Worker = Thread(Capture(& Service::OnLoaderThread, this));
+            Worker = Thread(Capture<& Service::OnLoaderThread>(this));
         }
 
         RegisterDefaultResources();
@@ -61,7 +61,7 @@ namespace Content
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE;
+        ZYPHRYON_PROFILE_SCOPE("Content::Tick");
 
         Lock<> Guard(mParserLatch);
 
@@ -90,7 +90,7 @@ namespace Content
 
     void Service::OnTeardown()
     {
-        ZYPHRYON_PROFILE;
+        ZYPHRYON_PROFILE_SCOPE("Content::Teardown");
 
         for (Ref<Thread> Worker : mLoaderThreads)
         {
@@ -216,7 +216,7 @@ namespace Content
 
         while (!Token.stop_requested())
         {
-            ZYPHRYON_PROFILE;
+            ZYPHRYON_PROFILE_SCOPE("Content::I/O");
 
             // Wait for new work or stop signal
             Scope Scope;

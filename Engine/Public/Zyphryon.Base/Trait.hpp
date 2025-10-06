@@ -72,15 +72,15 @@ inline namespace Base
     template<class Type>
     concept IsPointer  = std::is_pointer_v<Type>;
 
-    /// \brief Checks if \a Derived is derived from \a Base.
+    /// \brief Checks if \a Type is a derived class of \a Base.
     template<class Base, class Derived>
     concept IsDerived  = std::is_base_of_v<Base, Derived>;
 
-    /// \brief Checks if \a Type is constant.
+    /// \brief Checks if \a Type is mutable (not const).
     template<class Type>
     concept IsMutable  = !std::is_const_v<Type>;
 
-    /// \brief Checks if \a Type is an unsigned integer.
+    /// \brief Checks if \a Type is unsigned integer.
     template<class Type>
     concept IsUnsigned = std::is_unsigned_v<Type>;
 }

@@ -182,48 +182,19 @@ inline namespace Base
         return ConstStr8(Buffer.data(), std::distance(Buffer.begin(), Result));
     }
 
-    /// \brief Binds the first N arguments of a callable and returns a new invocable.
-    /// 
-    /// creates a callable object with the specified parameters bound to the front
-    /// of the original function's argument list. When the resulting invocable is called, it will
-    /// prepend the captured arguments to any additional arguments provided at invocation time.
-    /// 
-    /// \tparam Type      The type of the callable (function, lambda, member function pointer, etc.).
-    /// \tparam Arguments The types of the arguments to bind to the front.
-    /// \param Function   The callable object to bind to.
-    /// \param Parameters The arguments to capture and bind to the front of the callable.
-    /// \return A new callable object with the bound arguments.
-    template<typename Type, typename... Arguments>
-    constexpr auto Capture(AnyRef<Type> Function, AnyRef<Arguments>... Parameters)
+    /// \brief Creates a lambda that captures the provided object and member function.
+    ///
+    /// \tparam Method The member function pointer to capture.
+    /// \tparam Type The object type.
+    /// \param Object The object instance to capture.
+    /// \return A lambda bound to the member function and object.
+    template<auto Method, typename Type>
+    constexpr auto Capture(Ptr<Type> Object)
     {
-        return std::bind_front(Forward<Type>(Function), Forward<Arguments>(Parameters)...);
-    }
-
-    /// \brief Iterates over each index in the sequence and applies the specified action.
-    ///
-    /// This function applies the given action to every index in the provided index sequence.
-    /// It's equivalent to a compile-time for-loop over the indices.
-    ///
-    /// \param Sequence The index sequence to iterate over.
-    /// \param Action   The action to apply to each index.
-    template <typename Callback, UInt... Values>
-    constexpr void ForEachIndex(std::index_sequence<Values...> Sequence, AnyRef<Callback> Action)
-    {
-        (Action.template operator()<Values>(), ...);
-    }
-
-    /// \brief Iterates over each index in the sequence and applies the action to indices that satisfy the predicate.
-    ///
-    /// This function filters the indices based on the predicate and applies the action only to those
-    /// that satisfy the condition. The action is applied to at most one index (due to short-circuiting).
-    ///
-    /// \param Sequence  The index sequence to iterate over.
-    /// \param Predicate The filter condition.
-    /// \param Action    The action to apply to matching indices.
-    template <typename Filter, typename Callback, UInt... Values>
-    constexpr void ForEachIndex(std::index_sequence<Values...> Sequence, AnyRef<Filter> Predicate, AnyRef<Callback> Action)
-    {
-        ((Predicate.template operator()<Values>() ? (Action.template operator()<Values>(), true) : false) || ...);
+        return [Object]<typename... T0>(AnyRef<T0>... Args)
+        {
+            return (Object->*Method)(Forward<T0>(Args)...);
+        };
     }
 
     /// \brief Constructs an object of type `Type` in-place at the specified memory location.
@@ -293,16 +264,7 @@ inline namespace Base
     template<UInt Alignment>
     constexpr auto Align(UInt Offset)
     {
-        constexpr Bool IsPow2 = (Alignment && ((Alignment & (Alignment - 1)) == 0));
-
-        if constexpr (IsPow2)
-        {
-            return (Offset + (Alignment - 1)) & ~(Alignment - 1);
-        }
-        else
-        {
-            return ((Offset + Alignment - 1) / Alignment) * Alignment;
-        }
+        return ((Offset + Alignment - 1) / Alignment) * Alignment;
     }
 
     /// \brief Aligns an integer offset to the specified alignment.

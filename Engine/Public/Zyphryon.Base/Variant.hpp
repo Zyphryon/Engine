@@ -141,24 +141,44 @@ inline namespace Base
         ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
         {
             // Serialize the current type index to identify which alternative is active.
-            UInt Type = mHolder.index();
+            UInt32 Type = mHolder.index();
             Archive.SerializeUInt(Type);
 
-            // Iterate through all possible type indices to find and process the matching one.
-            const auto OnFilter = [Type]<UInt Target>()
-            {
-                return (Target == Type);
-            };
-            const auto OnAction = [&]<UInt Target>()
+            // Serialize the actual data based on the active type index.
+            RunByIndex(Type, [&]<UInt32 Index>()
             {
                 if constexpr (Serializer::IsReader)
                 {
-                    mHolder.template emplace<Target>();
+                    mHolder.template emplace<Index>();
                 }
-                Archive.SerializeObject(std::get<Target>(mHolder));
-            };
+                Archive.SerializeObject(std::get<Index>(mHolder));
+            });
+        }
 
-            ForEachIndex(std::make_index_sequence<std::variant_size_v<decltype(mHolder)>> { }, OnFilter, OnAction);
+    private:
+
+        /// \brief Helper to run a callback based on the current type index.
+        ///
+        /// \param Index    The current type index.
+        /// \param Action   The callback to invoke.
+        template <typename Callback>
+        constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action)
+        {
+            RunByIndex(Index, Action, std::make_index_sequence<std::variant_size_v<decltype(mHolder)>> { });
+        }
+
+        /// \brief Helper to run a callback based on the current type index.
+        ///
+        /// \param Index    The current type index.
+        /// \param Action   The callback to invoke.
+        template <typename Callback, UInt... Values>
+        constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action, std::index_sequence<Values...>)
+        {
+            const auto Filter = [Index]<UInt Type>()
+            {
+                return (Type == Index);
+            };
+            ((Filter.template operator()<Values>() ? (Action.template operator()<Values>(), true) : false) || ...);
         }
 
     private:

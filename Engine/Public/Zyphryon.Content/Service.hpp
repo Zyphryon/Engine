@@ -201,7 +201,7 @@ namespace Content
         template<typename Type>
         ZYPHRYON_INLINE void Prune(Bool Force)
         {
-            Type::GetCache().Prune(Force, Capture(& Service::OnAssetDelete, this));
+            Type::GetCache().Prune(Force, Capture<& Service::OnAssetDelete>(this));
         }
 
     private:

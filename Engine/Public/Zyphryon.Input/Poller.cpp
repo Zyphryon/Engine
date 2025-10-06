@@ -333,8 +333,8 @@ namespace Input
                 break;
             case SDL_EVENT_MOUSE_MOTION:
                 Result.Type                = Event::Type::MouseMove;
-                Result.MouseAxis.X         = Event.motion.x;
-                Result.MouseAxis.Y         = Event.motion.y;
+                Result.MouseAxis.AbsX      = Event.motion.x;
+                Result.MouseAxis.AbsY      = Event.motion.y;
                 Result.MouseAxis.DeltaX    = Event.motion.xrel;
                 Result.MouseAxis.DeltaY    = Event.motion.yrel;
                 break;

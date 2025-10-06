@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Trait.hpp"
-#include <smmintrin.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -25,22 +24,15 @@ inline namespace Base
     template<typename Type>
     inline constexpr Type kPI      = Type(3.141592653589793238462643383279502884e+00);
 
-    /// \brief The smallest difference detectable between two values of type Type.
-    template<typename Type>
-    inline constexpr Type kEpsilon =
-        IsEqual<Type, Real32> ? Type(1e-6f) :
-        IsEqual<Type, Real64> ? Type(1e-14) :
-        Type(0);
-
     /// \brief Relative epsilon for floating-point comparisons.
     template<typename Type>
-    inline constexpr Type kRelativeEpsilon =
+    inline constexpr Type kEpsilon =
         IsEqual<Type, Real32> ? Type(1e-5f) :
         IsEqual<Type, Real64> ? Type(1e-12) :
         Type(0);
 
     /// \brief Converts degrees to radians.
-    /// 
+    ///
     /// \param Degrees Angle in degrees.
     /// \return Angle in radians.
     template<typename Type>
@@ -50,7 +42,7 @@ inline namespace Base
     }
 
     /// \brief Converts radians to degrees.
-    /// 
+    ///
     /// \param Radians Angle in radians.
     /// \return Angle in degrees.
     template<typename Type>
@@ -59,20 +51,20 @@ inline namespace Base
         return Radians * (Type(180) / kPI<Type>);
     }
 
-    /// \brief Returns the absolute value of a number.
-    /// 
-    /// \param Value Input number.
-    /// \return The absolute (non-negative) value of the number.
+    /// \brief Returns the absolute (non-negative) value of a number.
+    ///
+    /// \param Value The input number.
+    /// \return The absolute value of the input.
     template<typename Type>
     constexpr Type Abs(Type Value)
     {
-        return Value < Type(0) ? -Value : Value;
+        return std::abs(Value);
     }
 
-    /// \brief Returns the sign of a numeric value as -1, 0, or +1.
-    /// 
-    /// \param Value Input number.
-    /// \return The sign of the value.
+    /// \brief Returns the sign of a number: -1 for negative, 0 for zero, and +1 for positive.
+    ///
+    /// \param Value The input number.
+    /// \return -1, 0, or +1 depending on the sign of the input.
     template<typename Type>
     constexpr Type Sign(Type Value)
     {
@@ -80,8 +72,8 @@ inline namespace Base
     }
 
     /// \brief Computes the cosine of an angle in radians.
-    /// 
-    /// \param Angle Angle in radians.
+    ///
+    /// \param Angle The angle in radians.
     /// \return Cosine of the angle.
     template<typename Type>
     constexpr Type Cos(Type Angle)
@@ -97,24 +89,24 @@ inline namespace Base
     }
 
     /// \brief Computes the inverse cosine (arccos) of a value.
-    /// 
-    /// \param Angle Cosine value in the range [-1, 1].
+    ///
+    /// \param Value The cosine value in the range [-1, 1].
     /// \return Angle in radians.
     template<typename Type>
-    constexpr Type InvCos(Type Angle)
+    constexpr Type InvCos(Type Value)
     {
         if constexpr (IsEqual<Real64, Type>)
         {
-            return std::acos(Angle);
+            return std::acos(Value);
         }
         else
         {
-            return std::acosf(Angle);
+            return std::acosf(Value);
         }
     }
 
     /// \brief Computes the sine of an angle in radians.
-    /// 
+    ///
     /// \param Angle Angle in radians.
     /// \return Sine of the angle.
     template<typename Type>
@@ -131,24 +123,24 @@ inline namespace Base
     }
 
     /// \brief Computes the inverse sine (arcsin) of a value.
-    /// 
-    /// \param Angle Sine value in the range [-1, 1].
+    ///
+    /// \param Value The sine value in the range [-1, 1].
     /// \return Angle in radians.
     template<typename Type>
-    constexpr Type InvSin(Type Angle)
+    constexpr Type InvSin(Type Value)
     {
         if constexpr (IsEqual<Real64, Type>)
         {
-            return std::asin(Angle);
+            return std::asin(Value);
         }
         else
         {
-            return std::asinf(Angle);
+            return std::asinf(Value);
         }
     }
 
     /// \brief Computes the tangent of an angle in radians.
-    /// 
+    ///
     /// \param Angle Angle in radians.
     /// \return Tangent of the angle.
     template<typename Type>
@@ -165,42 +157,42 @@ inline namespace Base
     }
 
     /// \brief Computes the inverse tangent (arctangent) of a value.
-    /// 
-    /// \param Angle Tangent value.
+    ///
+    /// \param Value The tangent value in the range [-1, 1].
     /// \return Angle in radians.
     template<typename Type>
-    constexpr Type InvTan(Type Angle)
+    constexpr Type InvTan(Type Value)
     {
         if constexpr (IsEqual<Real64, Type>)
         {
-            return std::atan(Angle);
+            return std::atan(Value);
         }
         else
         {
-            return std::atanf(Angle);
+            return std::atanf(Value);
         }
     }
 
-    /// \brief Computes the inverse tangent (atan2) given Y and X.
-    /// 
-    /// \param X X-coordinate.
-    /// \param Y Y-coordinate.
-    /// \return Angle in radians between the X-axis and the point (X, Y).
+    /// \brief Computes the four-quadrant inverse tangent of Y and X.
+    ///
+    /// \param X The X-coordinate.
+    /// \param Y The Y-coordinate.
+    /// \return The angle in radians between the positive X-axis and the point (X, Y).
     template<typename Type>
-    constexpr Type InvTan(Type X, Type Y)
+    constexpr Type InvTan(Type Y, Type X)
     {
         if constexpr (IsEqual<Real64, Type>)
         {
-            return std::atan2(X, Y);
+            return std::atan2(Y, X);
         }
         else
         {
-            return std::atan2f(X, Y);
+            return std::atan2f(Y, X);
         }
     }
 
     /// \brief Computes the square root of a number.
-    /// 
+    ///
     /// \param Number The value to compute the square root of.
     /// \return The square root of the number.
     template<typename Type>
@@ -216,21 +208,28 @@ inline namespace Base
         }
     }
 
-    /// \brief Computes the inv square root of a number.
+    /// \brief Computes the inverse square root of a number.
     ///
-    /// \param Number The value to compute the square root of.
-    /// \return The inv square root of the number.
+    /// \param Number The value to compute the inverse square root of.
+    /// \return The inverse square root of the number.
     template<typename Type>
     constexpr Type InvSqrt(Type Number)
     {
-        return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(Number)));
+        if constexpr (IsEqual<Real64, Type>)
+        {
+            return Type(1) / std::sqrt(Number);
+        }
+        else
+        {
+            return Type(1) / std::sqrtf(Number);
+        }
     }
 
-    /// \brief Raises a base to the given exponent.
-    /// 
+    /// \brief Computes the power of a base raised to an exponent.
+    ///
     /// \param Base     The base value.
-    /// \param Exponent The exponent.
-    /// \return Result of Base raised to the power of Exponent.
+    /// \param Exponent The exponent value.
+    /// \return The result of base raised to the power of exponent.
     template<typename Type>
     constexpr Type Pow(Type Base, Type Exponent)
     {
@@ -245,7 +244,7 @@ inline namespace Base
     }
 
     /// \brief Computes the largest integer less than or equal to the given value.
-    /// 
+    ///
     /// \param Value The value to floor.
     /// \return The largest integer less than or equal to Value.
     template<typename Type>
@@ -262,7 +261,7 @@ inline namespace Base
     }
 
     /// \brief Computes the smallest integer greater than or equal to the given value.
-    /// 
+    ///
     /// \param Value The value to ceil.
     /// \return The smallest integer greater than or equal to Value.
     template<typename Type>
@@ -278,39 +277,39 @@ inline namespace Base
         }
     }
 
-    /// \brief Computes the logarithm of a real value with a given base.
+    /// \brief Computes the logarithm of a number with a specified base.
     ///
-    /// \param Value The value whose logarithm is to be computed.
-    /// \param Base  The base of the logarithm.
-    /// \return The logarithm of \p Value in the given \p Base.
-    template<typename Type>
-    constexpr Type Log(Type Value, Type Base = Type(2))
-        requires (IsReal<Type>)
+    /// \param Number The number to compute the logarithm for.
+    /// \param Base   The logarithmic base (default is 2).
+    /// \return The logarithm of number to the specified base.
+    template<typename Type, typename Other>
+    constexpr Type Log(Type Number, Other Base = Other(2))
+        requires (IsReal<Type> && IsInteger<Other>)
     {
-        return std::log(Value) / std::log(Base);
+        return std::log(Number) / std::log(static_cast<Type>(Base));
     }
 
-    /// \brief Computes the integer logarithm of a value with a given base.
+    /// \brief Computes the integer logarithm of a number with a given base.
     ///
-    /// \param Value The value whose logarithm is to be computed.
-    /// \param Base  The base of the logarithm.
-    /// \return The floor of the logarithm of \p Value in the given \p Base.
-    template<typename Type>
-    constexpr Type Log(Type Value, Type Base = Type(2))
-        requires (IsInteger<Type>)
+    /// \param Number The number to compute the logarithm for.
+    /// \param Base   The logarithmic base (default is 2).
+    /// \return The integer logarithm of number to the specified base.
+    template<typename Type, typename Other>
+    constexpr Type Log(Type Number, Other Base = Other(2))
+        requires (IsInteger<Type> && IsInteger<Other>)
     {
         Type Result = Type(0);
 
-        while (Value >= Base)
+        while (Number >= Base)
         {
-            Value /= Base;
+            Number /= Base;
             ++Result;
         }
         return Result;
     }
 
     /// \brief Linearly interpolates between two scalar.
-    /// 
+    ///
     /// \param Start      The starting scalar.
     /// \param End        The ending scalar.
     /// \param Percentage The interpolation percentage (range between 0 and 1).
@@ -322,13 +321,13 @@ inline namespace Base
     }
 
     /// \brief Finds the smallest value among all provided arguments.
-    /// 
+    ///
     /// \param First  First value to compare.
     /// \param Second Second value to compare.
     /// \param Third  Additional values to compare (variadic).
     /// \return The smallest value among all inputs.
-    template <typename Type, typename... Tail>
-    constexpr auto Min(Type First, Type Second, Tail... Third)
+    template <typename T0, typename T1, typename... Tail>
+    constexpr auto Min(T0 First, T1 Second, Tail... Third)
     {
         if constexpr (sizeof...(Tail) == 0)
         {
@@ -341,13 +340,13 @@ inline namespace Base
     }
 
     /// \brief Finds the largest  value among all provided arguments.
-    /// 
+    ///
     /// \param First  First value to compare.
     /// \param Second Second value to compare.
     /// \param Third  Additional values to compare (variadic).
     /// \return The largest value among all inputs.
-    template <typename Type, typename... Tail>
-    constexpr auto Max(Type First, Type Second, Tail... Third)
+    template <typename T0, typename T1, typename... Tail>
+    constexpr auto Max(T0 First, T1 Second, Tail... Third)
     {
         if constexpr (sizeof...(Tail) == 0)
         {
@@ -360,19 +359,40 @@ inline namespace Base
     }
 
     /// \brief Restricts a value to be within a specified range.
-    /// 
+    ///
     /// \param Value   Input value to clamp.
     /// \param Minimum Lower bound of range.
     /// \param Maximum Upper bound of range.
     /// \return The restricted value within lower and upper bounds.
-    template<typename Type>
-    constexpr Type Clamp(Type Value, Type Minimum, Type Maximum)
+    template<typename T0, typename T1, typename T2>
+    constexpr auto Clamp(T0 Value, T1 Minimum, T2 Maximum)
     {
         return Min(Max(Value, Minimum), Maximum);
     }
 
-    /// \brief Checks if a number is approximately zero, within the bounds of machine epsilon.
-    /// 
+    /// \brief Compares two values for approximate equality within a specified tolerance.
+    ///
+    /// \param First     Left-hand value.
+    /// \param Second    Right-hand value.
+    /// \param Tolerance Optional tolerance for comparison (default is machine epsilon).
+    /// \return `true` if the values are considered almost equal; otherwise `false`.
+    template<typename Type>
+    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Tolerance = kEpsilon<Type>)
+    {
+        if constexpr (IsReal<Type>)
+        {
+            const Type Difference = Abs(First - Second);
+            const Type Scale      = Max(Abs(First), Abs(Second), Type(1));
+            return Difference <= Tolerance * Scale;
+        }
+        else
+        {
+            return (First == Second);
+        }
+    }
+
+    /// \brief Checks if a value is approximately zero.
+    ///
     /// \param First Input value.
     /// \return `true` if the value is near zero, `false` otherwise.
     template<typename Type>
@@ -384,30 +404,7 @@ inline namespace Base
         }
         else
         {
-            return (First == 0);
-        }
-    }
-
-    /// \brief Near-equality test with relative and absolute tolerances.
-    /// 
-    /// \param First    Left-hand value.
-    /// \param Second   Right-hand value.
-    /// \param Relative Relative tolerance (defaults to `kRelativeEpsilon<Type>`; must be ≥ 0).
-    /// \param Absolute Absolute tolerance (defaults to `kEpsilon<Type>`; must be ≥ 0).
-    /// \return `true` if the values are considered almost equal; otherwise `false`.
-    template<typename Type>
-    constexpr Bool IsAlmostEqual(Type First, Type Second, Type Relative = kRelativeEpsilon<Type>, Type Absolute = kEpsilon<Type>)
-    {
-        if constexpr (IsReal<Type>)
-        {
-            const Type Difference = Abs(First - Second);
-            const Type Scale      = Max(Abs(First), Abs(Second), Type(1));
-
-            return Difference <= (Absolute > Relative * Scale ? Absolute : Relative * Scale);
-        }
-        else
-        {
-            return (First == Second);
+            return IsAlmostEqual(First, Type(0));
         }
     }
 }

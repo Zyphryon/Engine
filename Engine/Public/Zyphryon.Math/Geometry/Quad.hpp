@@ -165,7 +165,7 @@ inline namespace Math
         /// \return `true` if the quads intersect, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<Quad> Other) const
         {
-            return GetBoundaries().Intersects(Other.GetBoundaries());
+            return GetBoundaries().Intersects(Other.GetBoundaries());   // TODO: More precise intersection test
         }
 
         /// \brief Checks if this quadrilateral is equal to another quadrilateral.

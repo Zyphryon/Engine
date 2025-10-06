@@ -222,9 +222,9 @@ namespace Scene
             flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
             Builder.event<Event>().with(flecs::Any);
 
-            flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
+            const flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
             {
-                Each(Entity(Iterator.entity(Element)), *Iterator.param<Event>());
+                Each(Entity(Iterator.entity(Element)), * Iterator.param<Event>());
             });
             return Entity(Observer);
         }

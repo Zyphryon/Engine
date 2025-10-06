@@ -37,7 +37,7 @@ namespace Input
                 mThisButtons.set(Enum::Cast(Event.MouseAction.Button));
                 break;
             case Event::Type::MouseMove:
-                mThisMousePosition.Set(Event.MouseAxis.X, Event.MouseAxis.Y);
+                mThisMousePosition.Set(Event.MouseAxis.AbsX, Event.MouseAxis.AbsY);
                 break;
             case Event::Type::MouseScroll:
                 mThisMouseScroll.Set(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);

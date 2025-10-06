@@ -40,7 +40,7 @@ namespace Scene
 
     void Service::OnTick(ConstRef<Time> Time)
     {
-        ZYPHRYON_PROFILE;
+        ZYPHRYON_PROFILE_SCOPE("Scene::Tick");
 
         /// Update the world time component.
         mWorld.set<Base::Time>(Time);
@@ -304,8 +304,7 @@ namespace Scene
                 Writer.WriteText(Second.GetName());
 
                 /// Serialize the component data into a temporary bundle.
-                // TODO: Prevent heap Allocation.
-                Base::Writer Bundle;
+                Base::Writer Bundle; // TODO: Prevent heap Allocation.
                 Serializer->Write(Bundle, Actor.TryGet(Component));
 
                 /// Write the serialized component bundle to the output stream.

@@ -36,7 +36,7 @@ namespace Input
         case Event::Type::MouseDown:
             return OnMouseDown(Event.MouseAction.Button);
         case Event::Type::MouseMove:
-            return OnMouseMove(Event.MouseAxis.X, Event.MouseAxis.Y, Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
+            return OnMouseMove(Event.MouseAxis.AbsX, Event.MouseAxis.AbsY, Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
         case Event::Type::MouseScroll:
             return OnMouseScroll(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
         case Event::Type::WindowFocus:

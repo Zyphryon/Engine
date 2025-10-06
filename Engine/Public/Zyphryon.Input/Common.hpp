@@ -24,7 +24,7 @@ namespace Input
     enum
     {
         /// \brief Maximum number of input listeners supported at once.
-        kMaxListeners = 16
+        kMaxListeners = 8
     };
 
     /// \brief Enumerates possible key or button actions.
@@ -198,10 +198,10 @@ namespace Input
             /// \brief Data for \ref Type::MouseMove.
             struct
             {
-                Real32 X;      ///< Current X position.
-                Real32 Y;      ///< Current Y position.
-                Real32 DeltaX; ///< Change in X since last event.
-                Real32 DeltaY; ///< Change in Y since last event.
+                Real32 AbsX;   ///< Actual X position.
+                Real32 AbsY;   ///< Actual Y position.
+                Real32 DeltaX; ///< Delta X since last event.
+                Real32 DeltaY; ///< Delta Y since last event.
             } MouseAxis;
 
             /// \brief Data for \ref Type::MouseUp and \ref Type::MouseDown.

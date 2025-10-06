@@ -34,6 +34,10 @@ inline namespace Base
     #define ZYPHRYON_ALIGN(Alignment)
 #endif
 
+/// \def ZYPHRYON_ALIGN_CPU
+/// \brief Alignment value suitable for CPU data structures.
+#define ZYPHRYON_ALIGN_CPU ZYPHRYON_ALIGN(sizeof(void *))
+
 /// \def ZYPHRYON_DEPRECATED
 /// \brief Marks a function or type as deprecated.
 #if defined(_MSC_VER)

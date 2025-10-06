@@ -53,7 +53,7 @@ namespace Scene
         /// \return The size of the component in bytes.
         ZYPHRYON_INLINE UInt32 GetSize() const
         {
-            return Get<flecs::Component>()->size;
+            return Get<flecs::Component>().size;
         }
 
         /// \brief Retrieves the alignment requirement of the component type.
@@ -61,7 +61,7 @@ namespace Scene
         /// \return The alignment of the component in bytes.
         ZYPHRYON_INLINE UInt32 GetAlignment() const
         {
-            return Get<flecs::Component>()->alignment;
+            return Get<flecs::Component>().alignment;
         }
 
         /// \brief Adds one or more behavioral traits to this component.

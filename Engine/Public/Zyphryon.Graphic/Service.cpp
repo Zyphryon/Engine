@@ -28,7 +28,7 @@ namespace Graphic
     Service::Service(Ref<Host> Host)
         : AbstractService(Host)
     {
-        mWorker = Thread(Capture(&Service::OnCommandThread, this));
+        mWorker = Thread(Capture<& Service::OnCommandThread>(this));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -36,11 +36,21 @@ namespace Graphic
 
     void Service::OnTeardown()
     {
-        ZYPHRYON_PROFILE;
+        ZYPHRYON_PROFILE_SCOPE("Graphic::Teardown");
 
         mWorker.request_stop();
-        Finish(true);
+        FlushCommands(true);
         mWorker.join();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::OnTick(ConstRef<Time> Time)
+    {
+        ZYPHRYON_PROFILE_SCOPE("Graphic::Tick");
+
+        FlushCommands(false);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -48,7 +58,7 @@ namespace Graphic
 
     Bool Service::Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples)
     {
-        ZYPHRYON_PROFILE;
+        ZYPHRYON_PROFILE_SCOPE("Graphic::Initialize");
 
         Bool Successful = true;
 
@@ -68,8 +78,8 @@ namespace Graphic
             if (mDriver)
             {
                 WriteCommand<CommandList::Initialize>(GetProducerFrame(), Swapchain, Width, Height, Samples);
-                Finish(false); // Handles the immediate encoding and begins the process of transferring data to the GPU.
-                Finish(false); // Ensures that all data has been completely processed and synchronized.
+                FlushCommands(false); // Handles the immediate encoding and begins the process of transferring data to the GPU.
+                FlushCommands(false); // Ensures that all data has been completely processed and synchronized.
             }
 
             Successful = mDriver != nullptr;
@@ -288,16 +298,6 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Finish(Bool Abort)
-    {
-        ZYPHRYON_PROFILE;
-
-        FlushCommands(Abort);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Service::FlushCommands(Bool Abort)
     {
         if (Abort)
@@ -326,7 +326,7 @@ namespace Graphic
 
         while (!Token.stop_requested())
         {
-            ZYPHRYON_PROFILE;
+            ZYPHRYON_PROFILE_SCOPE("Graphic::Consume");
 
             // Put the thread to sleep until the flag indicates there is more work to process.
             mBusy.wait(false, std::memory_order_acquire);

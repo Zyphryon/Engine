@@ -44,6 +44,11 @@ namespace Graphic
         /// \brief Shuts down the service and releases its active resources.
         void OnTeardown() override;
 
+        /// \brief Updates the service state for the current frame.
+        ///
+        /// \param Time The time step data for the current frame.
+        void OnTick(ConstRef<Time> Time) override;
+
         /// \brief Initializes the rendering backend.
         ///
         /// \param Backend   Rendering backend to initialize.
@@ -236,11 +241,6 @@ namespace Graphic
         ///
         /// \param ID Render pass identifier to commit.
         void Commit(Object ID);
-
-        /// \brief Finalizes the frame and submits its command buffer for execution.
-        ///
-        /// \param Abort If `true`, cancels command execution and discards all recorded commands.
-        void Finish(Bool Abort);
 
     private:
 

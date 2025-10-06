@@ -63,7 +63,7 @@ inline namespace Base
         /// \param Value The object to hash.
         /// \return Hash value of the object.
         template<typename T>
-        [[nodiscard]] size_t operator()(ConstRef<T>  Value) const
+        [[nodiscard]] size_t operator()(ConstRef<T> Value) const
             requires (!requires { Value.Hash(); })
         {
             return HashCombine(Value);
@@ -78,6 +78,17 @@ inline namespace Base
             requires requires { { Value.Hash() } -> std::convertible_to<size_t>; }
         {
             return static_cast<size_t>(Value.Hash());
+        }
+
+        /// \brief Computes a hash using the object’s custom `Hash()` member.
+        ///
+        /// \param Value The object to hash.
+        /// \return Hash value of the object as returned by `Hash()`.
+        template<typename T>
+        [[nodiscard]] size_t operator()(ConstPtr<T> Value) const
+            requires requires { { Value->Hash() } -> std::convertible_to<size_t>; }
+        {
+            return static_cast<size_t>(Value->Hash());
         }
     };
 

@@ -83,7 +83,7 @@ namespace Scene
         /// \brief Dereferences the pin to access the component.
         ///
         /// \return Reference to the component data.
-        ZYPHRYON_INLINE Base::Ref<Type> operator*()
+        ZYPHRYON_INLINE Ref<Type> operator*()
         {
             return (* mHandle.get());
         }

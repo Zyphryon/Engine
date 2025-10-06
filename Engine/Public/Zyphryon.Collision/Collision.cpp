@@ -31,8 +31,8 @@ namespace Collision
 
         if (Result && Manifold)
         {
-            const Real32 Distance = Sqrt(SqDistance);
-            const Vector2 Normal  = (IsAlmostZero(Distance) ? Vector2::UnitX() : Delta / Distance);
+            const Real32  Distance = Sqrt(SqDistance);
+            const Vector2 Normal   = (IsAlmostZero(Distance) ? Vector2::UnitX() : Delta / Distance);
 
             Manifold->SetPenetration(SumRadius - Distance);
             Manifold->SetNormal(Normal);
@@ -46,17 +46,17 @@ namespace Collision
 
     Bool Intersects(ConstRef<Circle> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold)
     {
-        const Vector2 Closest   = P1.GetNearest(P0.GetCenter());
-        const Vector2 Delta     = Closest - P0.GetCenter();
-        const Real32 SqDistance = Delta.GetLengthSquared();
-        const Real32 Radius     = P0.GetRadius();
+        const Vector2 Closest    = P1.GetNearest(P0.GetCenter());
+        const Vector2 Delta      = Closest - P0.GetCenter();
+        const Real32  SqDistance = Delta.GetLengthSquared();
+        const Real32  Radius     = P0.GetRadius();
 
         const Bool Result = (SqDistance <= Radius * Radius);
 
         if (Result && Manifold)
         {
-            const Real32 Distance = Sqrt(SqDistance);
-            const Vector2 Normal  = (Distance > kEpsilon<Real32> ? Delta / Distance : Vector2::UnitX());
+            const Real32  Distance = Sqrt(SqDistance);
+            const Vector2 Normal   = (Distance > kEpsilon<Real32> ? Delta / Distance : Vector2::UnitX());
 
             Manifold->SetPenetration(Radius - Distance);
             Manifold->SetNormal(Normal);
@@ -70,12 +70,12 @@ namespace Collision
 
     Bool Intersects(ConstRef<Circle> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold)
     {
-        const Vector2 AB = P1.GetEnd()    - P1.GetStart();
+        const Vector2 AB = P1.GetEnd() - P1.GetStart();
         const Vector2 AC = P0.GetCenter() - P1.GetStart();
 
-        const Vector2 Closest   = P1.GetStart() + AB * Clamp(Vector2::Dot(AB, AC) / AB.GetLengthSquared(), 0.0f, 1.0f);
-        const Vector2 Delta     = Closest - P0.GetCenter();
-        const Real32 SqDistance = Delta.GetLengthSquared();
+        const Vector2 Closest    = P1.GetStart() + AB * Clamp(Vector2::Dot(AB, AC) / AB.GetLengthSquared(), 0.0f, 1.0f);
+        const Vector2 Delta      = Closest - P0.GetCenter();
+        const Real32  SqDistance = Delta.GetLengthSquared();
 
         const Bool Result = (SqDistance <= P0.GetRadius() * P0.GetRadius());
 
@@ -198,8 +198,8 @@ namespace Collision
         else
         {
             const Real32 InvDelta = 1.0 / Delta.GetX();
-            Real32 Near           = (P0.GetMinimumX()  - P1.GetStart().GetX()) * InvDelta;
-            Real32 Far            = (P0.GetMaximumX() - P1.GetStart().GetX()) * InvDelta;
+            Real32       Near     = (P0.GetMinimumX() - P1.GetStart().GetX()) * InvDelta;
+            Real32       Far      = (P0.GetMaximumX() - P1.GetStart().GetX()) * InvDelta;
 
             if (Near > Far)
             {
@@ -207,7 +207,7 @@ namespace Collision
             }
 
             T0 = Max(Near, T0);
-            T1 = Min(Far,  T1);
+            T1 = Min(Far, T1);
         }
 
         if (Abs(Delta.GetY()) < kEpsilon<Real32>)
@@ -220,8 +220,8 @@ namespace Collision
         else
         {
             const Real32 InvDelta = 1.0 / Delta.GetY();
-            Real32 Near           = (P0.GetMinimumY()    - P1.GetStart().GetY()) * InvDelta;
-            Real32 Far            = (P0.GetMaximumY() - P1.GetStart().GetY()) * InvDelta;
+            Real32       Near     = (P0.GetMinimumY() - P1.GetStart().GetY()) * InvDelta;
+            Real32       Far      = (P0.GetMaximumY() - P1.GetStart().GetY()) * InvDelta;
 
             if (Near > Far)
             {
@@ -229,7 +229,7 @@ namespace Collision
             }
 
             T0 = Max(Near, T0);
-            T1 = Min(Far,  T1);
+            T1 = Min(Far, T1);
         }
 
         const Bool Result = (T0 <= T1);
@@ -237,7 +237,7 @@ namespace Collision
         if (Result && Manifold)
         {
             const Vector2 Contact = P1.GetStart() + Delta * T0;
-            Vector2 Normal;
+            Vector2       Normal;
 
             const Real32 DistLeft   = Abs(Contact.GetX() - P0.GetMinimumX());
             const Real32 DistRight  = Abs(Contact.GetX() - P0.GetMaximumX());
@@ -251,7 +251,7 @@ namespace Collision
             }
             else if (Abs(MinDist - DistRight) < kEpsilon<Real32>)
             {
-                Normal = Vector2(1.0f, 0.0f);
+                Normal = Vector2::UnitX();
             }
             else if (Abs(MinDist - DistTop) < kEpsilon<Real32>)
             {
@@ -259,7 +259,7 @@ namespace Collision
             }
             else if (Abs(MinDist - DistBottom) < kEpsilon<Real32>)
             {
-                Normal = Vector2(0.0f, 1.0f);
+                Normal = Vector2::UnitY();
             }
             else
             {
@@ -316,8 +316,8 @@ namespace Collision
         }
 
         const Vector2 Difference = P1.GetStart() - P0.GetStart();
-        const Real32 Alpha0      = Vector2::Cross(Difference, Dir1) / Cross;
-        const Real32 Alpha1      = Vector2::Cross(Difference, Dir0) / Cross;
+        const Real32  Alpha0     = Vector2::Cross(Difference, Dir1) / Cross;
+        const Real32  Alpha1     = Vector2::Cross(Difference, Dir0) / Cross;
 
         const Bool Result = (Alpha0 >= 0.0f && Alpha0 <= 1.0f && Alpha1 >= 0.0f && Alpha1 <= 1.0f);
 
