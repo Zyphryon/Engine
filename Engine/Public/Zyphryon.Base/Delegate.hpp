@@ -81,6 +81,7 @@ inline namespace Base
         /// \param Object The lambda or callable object to bind.
         template<typename Callable>
         ZYPHRYON_INLINE constexpr Delegate(AnyRef<Callable> Object)
+            requires (!std::is_same_v<std::decay_t<Callable>, Delegate>)
         {
             using Type = std::decay_t<Callable>;
 
@@ -97,6 +98,20 @@ inline namespace Base
 
                 mExecute = &InvokeDynamicLambda<Type>;
                 mRelease = &ReleaseHeap<Type>;
+            }
+        }
+
+        /// \brief Copy constructor, duplicates another delegate.
+        ///
+        /// \param Other The other delegate to copy from.
+        ZYPHRYON_INLINE constexpr Delegate(ConstRef<Delegate> Other)
+            : mStorage { },
+              mExecute { Other.mExecute },
+              mRelease { Other.mRelease }
+        {
+            if (mExecute != &InvokeEmpty)
+            {
+                std::memcpy(mStorage, Other.mStorage, sizeof(mStorage));
             }
         }
 
@@ -397,6 +412,22 @@ inline namespace Base
             return mDelegates.empty();
         }
 
+        /// \brief Adds a delegate to the multicast list.
+        ///
+        /// \param Delegate The delegate to add.
+        ZYPHRYON_INLINE void Add(ConstRef<Delegate<Return(Arguments...)>> Delegate)
+        {
+            mDelegates.push_back(Delegate);
+        }
+
+        /// \brief Adds a delegate to the multicast list.
+        ///
+        /// \param Delegate The delegate to add.
+        ZYPHRYON_INLINE void Add(AnyRef<Delegate<Return(Arguments...)>> Delegate)
+        {
+            mDelegates.push_back(Move(Delegate));
+        }
+
         /// \brief Adds a free function or static member function to the multicast list.
         ///
         /// \tparam Function The function pointer to add.
@@ -431,6 +462,17 @@ inline namespace Base
         ZYPHRYON_INLINE void AddLambda(AnyRef<Callable> Lambda)
         {
             mDelegates.emplace_back(Forward<Callable>(Lambda));
+        }
+
+        /// \brief Removes a delegate from the multicast list.
+        ///
+        /// \param Delegate The delegate to remove.
+        ZYPHRYON_INLINE void Remove(ConstRef<Delegate<Return(Arguments...)>> Delegate)
+        {
+            if (const auto Iterator = std::ranges::find(mDelegates, Delegate); Iterator != mDelegates.end())
+            {
+                mDelegates.erase(Iterator);
+            }
         }
 
         /// \brief Removes a free function or static member function from the multicast list.
