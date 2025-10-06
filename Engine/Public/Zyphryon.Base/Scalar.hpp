@@ -282,7 +282,7 @@ inline namespace Base
     /// \param Number The number to compute the logarithm for.
     /// \param Base   The logarithmic base (default is 2).
     /// \return The logarithm of number to the specified base.
-    template<typename Type, typename Other>
+    template<typename Type, typename Other = UInt32>
     constexpr Type Log(Type Number, Other Base = Other(2))
         requires (IsReal<Type> && IsInteger<Other>)
     {
@@ -294,7 +294,7 @@ inline namespace Base
     /// \param Number The number to compute the logarithm for.
     /// \param Base   The logarithmic base (default is 2).
     /// \return The integer logarithm of number to the specified base.
-    template<typename Type, typename Other>
+    template<typename Type, typename Other = Type>
     constexpr Type Log(Type Number, Other Base = Other(2))
         requires (IsInteger<Type> && IsInteger<Other>)
     {
