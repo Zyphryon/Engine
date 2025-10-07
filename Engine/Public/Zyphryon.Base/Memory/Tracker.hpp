@@ -234,7 +234,8 @@ inline namespace Base
         /// \param Other The tracker to cast.
         /// \return A tracker of the desired base type.
         template<typename Base>
-        ZYPHRYON_INLINE static Tracker Cast(ConstRef<Tracker<Base>> Other) requires IsDerived<Base, Type>
+        ZYPHRYON_INLINE static Tracker Cast(ConstRef<Tracker<Base>> Other)
+            requires IsDerived<Base, Type>
         {
             return Tracker(reinterpret_cast<Ptr<Type>>(Other.mInstance));
         }

@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Trait.hpp"
-#include <array>
 #include <format>
 #include <rapidhash.h>
 
@@ -174,12 +173,12 @@ inline namespace Base
     template<typename... Arguments>
     ConstStr8 Format(ConstStr8 Format, AnyRef<Arguments>... Parameters)
     {
-        thread_local std::array<Char, 4096> Buffer;
+        thread_local Char Buffer[4096];
 
-        const auto Result = std::vformat_to(Buffer.begin(), Format, std::make_format_args(Parameters...));
+        const auto Result = std::vformat_to(Buffer, Format, std::make_format_args(Parameters...));
         (* Result) = '\0';
 
-        return ConstStr8(Buffer.data(), std::distance(Buffer.begin(), Result));
+        return ConstStr8(Buffer, std::distance(Buffer, Result));
     }
 
     /// \brief Creates a lambda that captures the provided object and member function.

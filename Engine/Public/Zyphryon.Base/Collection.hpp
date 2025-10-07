@@ -16,7 +16,6 @@
 #include <beman/inplace_vector/inplace_vector.hpp>
 #include <bitset>
 #include <unordered_dense.h>
-#include <queue>
 #include <vector>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -113,17 +112,6 @@ inline namespace Base
              typename Hash = DefaultTableHash,
              typename Predicate = std::equal_to<>>
     using Table  = ankerl::unordered_dense::map<Key, Value, Hash, Predicate>;
-
-    /// \brief FIFO (first-in, first-out) queue container.
-    /// 
-    /// This type alias wraps `std::queue` to represent a sequential container
-    /// that allows insertion at the back and removal from the front.
-    /// It is primarily used for task scheduling, event queues, and any
-    /// structure requiring ordered processing.
-    /// 
-    /// \tparam Value The type of elements stored in the queue.
-    template<typename Value>
-    using Queue  = std::queue<Value>;
 
     /// \brief A dynamic array with optional inline storage based on capacity.
     /// 
