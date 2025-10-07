@@ -30,10 +30,11 @@ namespace Input
 
     public:
 
-        /// \brief Updates the internal key state by processing a list of input events.
-        ///
-        /// \param Events A span containing the input events to process.
-        void Poll(ConstSpan<Event> Events);
+        /// \brief Begins a new frame, updating the keyboard state.
+        void Begin();
+
+        /// \brief Processes a single input event to update the keyboard state.
+        void Process(ConstRef<Event> Event);
 
         /// \brief Clears all stored key states for both the current and previous frames.
         void Reset();

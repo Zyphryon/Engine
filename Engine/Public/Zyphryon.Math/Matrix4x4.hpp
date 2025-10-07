@@ -497,16 +497,16 @@ inline namespace Math
         /// \return The transposed 4x4 matrix.
         ZYPHRYON_INLINE static Matrix4x4 Transpose(ConstRef<Matrix4x4> Matrix)
         {
-            const __m128 Temp0 = _mm_unpacklo_ps(Matrix.mColumns[0].mRegister, Matrix.mColumns[1].mRegister);
-            const __m128 Temp1 = _mm_unpackhi_ps(Matrix.mColumns[0].mRegister, Matrix.mColumns[1].mRegister);
-            const __m128 Temp2 = _mm_unpacklo_ps(Matrix.mColumns[2].mRegister, Matrix.mColumns[3].mRegister);
-            const __m128 Temp3 = _mm_unpackhi_ps(Matrix.mColumns[2].mRegister, Matrix.mColumns[3].mRegister);
+            const Vector4 Temp0 = Vector4::InterleaveLow(Matrix.mColumns[0], Matrix.mColumns[1]);
+            const Vector4 Temp1 = Vector4::InterleaveHigh(Matrix.mColumns[0], Matrix.mColumns[1]);
+            const Vector4 Temp2 = Vector4::InterleaveLow(Matrix.mColumns[2], Matrix.mColumns[3]);
+            const Vector4 Temp3 = Vector4::InterleaveHigh(Matrix.mColumns[2], Matrix.mColumns[3]);
 
             return Matrix4x4(
-                Vector4(_mm_movelh_ps(Temp0, Temp2)),
-                Vector4(_mm_movehl_ps(Temp2, Temp0)),
-                Vector4(_mm_movelh_ps(Temp1, Temp3)),
-                Vector4(_mm_movehl_ps(Temp3, Temp1)));
+                Vector4::Shuffle0101(Temp0, Temp2),
+                Vector4::Shuffle2323(Temp2, Temp0),
+                Vector4::Shuffle0101(Temp1, Temp3),
+                Vector4::Shuffle2323(Temp3, Temp1));
         }
 
         /// \brief Computes the inverse of a 4×4 matrix.

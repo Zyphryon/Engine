@@ -35,7 +35,7 @@ namespace Engine
     /// \brief Entry point and main coordinator of the application runtime.
     ///
     /// The Kernel initializes core systems, runs the main loop, and handles shutdown.
-    class Kernel : public Service::Host, public Input::Listener
+    class Kernel : public Service::Host
     {
     public:
 
@@ -123,14 +123,14 @@ namespace Engine
 
     protected:
 
-        /// \copydoc Listener::OnWindowExit
-        Bool OnWindowExit() override;
+        /// \brief Called when the window close event is received.
+        Bool OnWindowExit();
 
-        /// \copydoc Listener::OnWindowResize
-        Bool OnWindowResize(UInt32 Width, UInt32 Height) override;
+        /// \brief Called when the window is resized.
+        Bool OnWindowResize(UInt32 Width, UInt32 Height);
 
-        /// \copydoc Listener::OnWindowFocus
-        Bool OnWindowFocus(Bool Focused) override;
+        /// \brief Called when the window gains or loses focus.
+        Bool OnWindowFocus(Bool Focused);
 
     private:
 

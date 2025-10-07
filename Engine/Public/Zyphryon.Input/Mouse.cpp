@@ -21,30 +21,33 @@ namespace Input
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::Poll(ConstSpan<Event> Events)
+    void Mouse::Begin()
     {
         mThisMouseScroll.Set(0, 0);
         mLastButtons = mThisButtons;
+    }
 
-        for (ConstRef<Event> Event : Events)
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Mouse::Process(ConstRef<Event> Event)
+    {
+        switch (Event.Kind)
         {
-            switch (Event.Type)
-            {
-            case Event::Type::MouseUp:
-                mThisButtons.reset(Enum::Cast(Event.MouseAction.Button));
-                break;
-            case Event::Type::MouseDown:
-                mThisButtons.set(Enum::Cast(Event.MouseAction.Button));
-                break;
-            case Event::Type::MouseMove:
-                mThisMousePosition.Set(Event.MouseAxis.AbsX, Event.MouseAxis.AbsY);
-                break;
-            case Event::Type::MouseScroll:
-                mThisMouseScroll.Set(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
-                break;
-            default:
-                break;
-            }
+        case Event::Type::MouseUp:
+            mThisButtons.reset(Enum::Cast(Event.MouseAction.Button));
+            break;
+        case Event::Type::MouseDown:
+            mThisButtons.set(Enum::Cast(Event.MouseAction.Button));
+            break;
+        case Event::Type::MouseMove:
+            mThisMousePosition.Set(Event.MouseAxis.X, Event.MouseAxis.Y);
+            break;
+        case Event::Type::MouseScroll:
+            mThisMouseScroll.Set(Event.MouseScroll.DeltaX, Event.MouseScroll.DeltaY);
+            break;
+        default:
+            break;
         }
     }
 

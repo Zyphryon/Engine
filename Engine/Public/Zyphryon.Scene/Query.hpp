@@ -29,7 +29,7 @@ namespace Scene
     public:
 
         /// \brief Underlying handle to the ECS query object.
-        using Handle = flecs::query<>;
+        using Handle  = flecs::query<>;
 
         /// \brief Pattern type representing the query's component requirements.
         using Pattern = DSL::In<Types...>;

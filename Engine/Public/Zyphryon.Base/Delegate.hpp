@@ -535,12 +535,27 @@ inline namespace Base
         /// \brief Invokes all bound delegates with the provided arguments.
         ///
         /// \param Parameters The arguments to forward to all bound delegates.
-        ZYPHRYON_INLINE void Broadcast(AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE void Broadcast(Arguments... Parameters) const
         {
-            for (ConstRef<Delegate<Return(Arguments...)>> CurrentDelegate : mDelegates)
+            for (ConstRef<Delegate<Return(Arguments...)>> Delegate : mDelegates)
             {
-                CurrentDelegate(Forward<Arguments>(Parameters)...);
+                Delegate(Forward<Arguments>(Parameters)...);
             }
+        }
+
+        /// \brief Invokes bound delegates in order until one returns a truthy value.
+        ///
+        /// \param Parameters The arguments to forward to the bound delegates.
+        ZYPHRYON_INLINE auto Propagate(Arguments... Parameters) const
+        {
+            for (ConstRef<Delegate<Return(Arguments...)>> Delegate : mDelegates)
+            {
+                if (const Return Result = Delegate(Forward<Arguments>(Parameters)...); Result)
+                {
+                    return Result;
+                }
+            }
+            return Return { };
         }
 
     private:

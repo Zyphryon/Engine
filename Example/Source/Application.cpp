@@ -138,6 +138,7 @@ namespace Example
         {
             mTimer.Resume();
         }
+
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -164,7 +165,7 @@ int main([[maybe_unused]] int Argc, [[maybe_unused]] Ptr<Char> Argv[])
     Properties.SetVideoDriver("D3D11");
 
     // Initialize 'Zyphryon Engine' and enter main loop
-    Tracker<Example::Application> Application = Tracker<Example::Application>::Create();
+    Unique<Example::Application> Application = NewUniquePtr<Example::Application>();
     Application->Initialize(Service::Host::Mode::Client, Properties);
     Application->Run();
 

@@ -120,7 +120,7 @@ inline namespace Math
                                 mCorners[2].GetY() * mCorners[3].GetX() +
                                 mCorners[3].GetY() * mCorners[0].GetX();
 
-            return Base::Abs((Sum1 - Sum2) * 0.5f);
+            return Abs((Sum1 - Sum2) * 0.5f);
         }
 
         /// \brief Gets the perimeter of the quadrilateral.
@@ -543,10 +543,15 @@ inline namespace Math
                                          CornerY * Vector4::SplatY(Matrix.GetColumn(1)) +
                                                    Vector4::SplatY(Matrix.GetColumn(3)));
 
-            return Quad(Vector2(ProjectionX.GetX(), ProjectionY.GetX()),
-                        Vector2(ProjectionX.GetY(), ProjectionY.GetY()),
-                        Vector2(ProjectionX.GetZ(), ProjectionY.GetZ()),
-                        Vector2(ProjectionX.GetW(), ProjectionY.GetW()));
+            ZYPHRYON_ALIGN(16) Real32 VectorX[4];
+            ZYPHRYON_ALIGN(16) Real32 VectorY[4];
+            ProjectionX.Store(VectorX);
+            ProjectionY.Store(VectorY);
+
+            return Quad(Vector2(VectorX[0], VectorY[0]),
+                        Vector2(VectorX[1], VectorY[1]),
+                        Vector2(VectorX[2], VectorY[2]),
+                        Vector2(VectorX[3], VectorY[3]));
         }
 
     private:

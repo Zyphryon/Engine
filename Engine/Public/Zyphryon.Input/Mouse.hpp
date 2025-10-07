@@ -31,10 +31,11 @@ namespace Input
 
     public:
 
-        /// \brief Updates the internal mouse state based on incoming input events.
-        ///
-        /// \param Events A span of input events to process.
-        void Poll(ConstSpan<Event> Events);
+        /// \brief Begins a new frame, updating the mouse state.
+        void Begin();
+
+        /// \brief Processes a single input event to update the mouse state.
+        void Process(ConstRef<Event> Event);
 
         /// \brief Clears all stored mouse state.
         void Reset();

@@ -298,64 +298,69 @@ namespace Input
 
         for (ConstRef<SDL_Event> Event : ConstSpan<SDL_Event>(Stack.data(), Count))
         {
-            Ref<Input::Event> Result = mBuffer[Element++];
+            Ref<Input::Event> Result = mBuffer[Element];
             Result.Time = static_cast<Real64>(Event.common.timestamp) / SDL_NS_PER_SECOND;
 
             switch (Event.type)
             {
             case SDL_EVENT_WINDOW_RESIZED:
-                Result.Type = Event::Type::WindowResize;
+                Result.Kind                = Event::Type::WindowResize;
                 Result.WindowResize.Width  = Event.window.data1;
                 Result.WindowResize.Height = Event.window.data2;
                 break;
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                Result.Type                = Event::Type::WindowFocus;
+                Result.Kind                = Event::Type::WindowFocus;
                 Result.WindowFocus.State   = true;
                 break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
-                Result.Type                = Event::Type::WindowFocus;
+                Result.Kind                = Event::Type::WindowFocus;
                 Result.WindowFocus.State   = false;
                 break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                Result.Type                = Event::Type::WindowExit;
+                Result.Kind                = Event::Type::WindowExit;
                 break;
             case SDL_EVENT_KEY_DOWN:
-                Result.Type                = Event.key.repeat ? Event::Type::Unknown : Event::Type::KeyDown;
+                if (Event.key.repeat)
+                {
+                    continue;
+                }
+                Result.Kind                = Event::Type::KeyDown;
                 Result.KeyAction.Key       = GetKey(Event.key.key);
                 break;
             case SDL_EVENT_KEY_UP:
-                Result.Type                = Event::Type::KeyUp;
+                Result.Kind                = Event::Type::KeyUp;
                 Result.KeyAction.Key       = GetKey(Event.key.key);
                 break;
             case SDL_EVENT_TEXT_INPUT:
-                Result.Type                = Event::Type::KeyType;
+                Result.Kind                = Event::Type::KeyType;
                 Result.KeyType.Codepoint   = Event.text.text[0]; // TODO: Support IME (Screen Keyboard)
                 break;
             case SDL_EVENT_MOUSE_MOTION:
-                Result.Type                = Event::Type::MouseMove;
-                Result.MouseAxis.AbsX      = Event.motion.x;
-                Result.MouseAxis.AbsY      = Event.motion.y;
+                Result.Kind                = Event::Type::MouseMove;
+                Result.MouseAxis.X         = Event.motion.x;
+                Result.MouseAxis.Y         = Event.motion.y;
                 Result.MouseAxis.DeltaX    = Event.motion.xrel;
                 Result.MouseAxis.DeltaY    = Event.motion.yrel;
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                Result.Type                = Event::Type::MouseDown;
+                Result.Kind                = Event::Type::MouseDown;
                 Result.MouseAction.Button  = GetButton(Event.button.button);
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                Result.Type                = Event::Type::MouseUp;
+                Result.Kind                = Event::Type::MouseUp;
                 Result.MouseAction.Button  = GetButton(Event.button.button);
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
-                Result.Type                = Event::Type::MouseScroll;
-                Result.MouseAxis.DeltaX    = Event.wheel.x;
-                Result.MouseAxis.DeltaY    = Event.wheel.y;
+                Result.Kind                = Event::Type::MouseScroll;
+                Result.MouseScroll.DeltaX  = Event.wheel.x;
+                Result.MouseScroll.DeltaY  = Event.wheel.y;
                 break;
             default:
-                Result.Type                = Event::Type::Unknown;
-                break;
+                continue;
             }
+
+            ++Element;
         }
-        return ConstSpan<Event>(mBuffer.data(), Count);
+        return ConstSpan<Event>(mBuffer.data(), Element);
     }
 }

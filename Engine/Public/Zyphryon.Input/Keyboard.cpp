@@ -21,25 +21,28 @@ namespace Input
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Keyboard::Poll(ConstSpan<Event> Events)
+    void Keyboard::Begin()
     {
         mLastKeys = mThisKeys;
+    }
 
-        for (ConstRef<Event> Event : Events)
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Keyboard::Process(ConstRef<Event> Event)
+    {
+        switch (Event.Kind)
         {
-            switch (Event.Type)
-            {
-            case Event::Type::KeyType:
-                break;
-            case Event::Type::KeyDown:
-                mThisKeys.set(Enum::Cast(Event.KeyAction.Key));
-                break;
-            case Event::Type::KeyUp:
-                mThisKeys.reset(Enum::Cast(Event.KeyAction.Key));
-                break;
-            default:
-                break;
-            }
+        case Event::Type::KeyType:
+            break;
+        case Event::Type::KeyDown:
+            mThisKeys.set(Enum::Cast(Event.KeyAction.Key));
+            break;
+        case Event::Type::KeyUp:
+            mThisKeys.reset(Enum::Cast(Event.KeyAction.Key));
+            break;
+        default:
+            break;
         }
     }
 

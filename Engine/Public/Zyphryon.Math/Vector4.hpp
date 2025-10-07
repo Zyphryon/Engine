@@ -25,8 +25,6 @@ inline namespace Math
     /// \brief Represents a 4D vector utilizing SIMD optimizations.
     class ZYPHRYON_ALIGN(16) Vector4 final
     {
-        friend class Matrix4x4;
-
     public:
 
         /// \brief Initializes the vector to (0.0f, 0.0f, 0.0f, 0.0f).
@@ -649,6 +647,26 @@ inline namespace Math
         ZYPHRYON_INLINE static Vector4 Shuffle2323(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
         {
             return Vector4(_mm_movehl_ps(Vec2.mRegister, Vec1.mRegister));
+        }
+
+        /// \brief Interleaves the low components of two vectors (x0, x1, y0, y1).
+        ///
+        /// \param Vec1 The first input vector (a0, a1, a2, a3).
+        /// \param Vec2 The second input vector (b0, b1, b2, b3).
+        /// \return A new vector with the pattern (a0, b0, a1, b1).
+        ZYPHRYON_INLINE static Vector4 InterleaveLow(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        {
+            return Vector4(_mm_unpacklo_ps(Vec1.mRegister, Vec2.mRegister));
+        }
+
+        /// \brief Interleaves the high components of two vectors (z0, z1, w0, w1).
+        ///
+        /// \param Vec1 The first input vector (a0, a1, a2, a3).
+        /// \param Vec2 The second input vector (b0, b1, b2, b3).
+        /// \return A new vector with the pattern (a2, b2, a3, b3).
+        ZYPHRYON_INLINE static Vector4 InterleaveHigh(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        {
+            return Vector4(_mm_unpackhi_ps(Vec1.mRegister, Vec2.mRegister));
         }
 
         /// \brief Replicates a single component of a vector across all four lanes.

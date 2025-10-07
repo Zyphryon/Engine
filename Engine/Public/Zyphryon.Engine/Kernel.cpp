@@ -141,7 +141,9 @@ namespace Engine
         // Initializes input service.
         LOG_INFO("Kernel: Creating input service");
         ConstTracker<Input::Service> Input = AddService<Input::Service>();
-        Input->Attach(Tracker<Input::Listener>(this));
+        Input->OnWindowExit.AddMethod<& Kernel::OnWindowExit>(this);
+        Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
+        Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
 
         // Initializes device service.
         LOG_INFO("Kernel: Creating device ({}, {})", Properties.GetWindowWidth(), Properties.GetWindowHeight());

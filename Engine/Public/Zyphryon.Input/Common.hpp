@@ -20,13 +20,6 @@
 
 namespace Input
 {
-    /// \brief Constants used across the input module.
-    enum
-    {
-        /// \brief Maximum number of input listeners supported at once.
-        kMaxListeners = 8
-    };
-
     /// \brief Enumerates possible key or button actions.
     enum class Action : UInt8
     {
@@ -161,7 +154,6 @@ namespace Input
         /// \brief Enumerates the type of input event.
         enum class Type : UInt8
         {
-            Unknown,      ///< Unknown or unsupported event.
             KeyType,      ///< Character input event (text typing).
             KeyUp,        ///< Key release event.
             KeyDown,      ///< Key press event.
@@ -178,7 +170,7 @@ namespace Input
         Real64 Time;
 
         /// \brief The event type.
-        Type   Type;
+        Type   Kind;
 
         /// \brief Event-specific data.
         union
@@ -198,8 +190,8 @@ namespace Input
             /// \brief Data for \ref Type::MouseMove.
             struct
             {
-                Real32 AbsX;   ///< Actual X position.
-                Real32 AbsY;   ///< Actual Y position.
+                Real32 X;      ///< Actual X position.
+                Real32 Y;      ///< Actual Y position.
                 Real32 DeltaX; ///< Delta X since last event.
                 Real32 DeltaY; ///< Delta Y since last event.
             } MouseAxis;
@@ -209,6 +201,13 @@ namespace Input
             {
                 Button Button; ///< Mouse button identifier.
             } MouseAction;
+
+            /// \brief Data for \ref Type::MouseScroll.
+            struct
+            {
+                Real32 DeltaX; ///< Delta X since last event.
+                Real32 DeltaY; ///< Delta Y since last event.
+            } MouseScroll;
 
             /// \brief Data for \ref Type::WindowFocus.
             struct

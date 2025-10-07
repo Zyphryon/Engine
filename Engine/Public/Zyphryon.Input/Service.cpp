@@ -33,37 +33,38 @@ namespace Input
     {
         ZYPHRYON_PROFILE_SCOPE("Input::Tick");
 
+        // Updates the state of each input device for the new frame.
+        mMouse.Begin();
+        mKeyboard.Begin();
+
         // Polls all platform input events that occurred since the last frame.
         const ConstSpan<Event> Stack = mPoller.Poll();
-        mMouse.Poll(Stack);
-        mKeyboard.Poll(Stack);
 
-        // Dispatches each event to registered listeners in order.
+        // First pass: Update devices for each event.
         for (ConstRef<Event> Event : Stack)
         {
-            for (ConstTracker<Listener> Listener : mListeners)
+            switch (Event.Kind)
             {
-                if (Listener->OnEvent(Event))
-                {
-                    break;
-                }
+            case Event::Type::KeyType:
+            case Event::Type::KeyUp:
+            case Event::Type::KeyDown:
+                mKeyboard.Process(Event);
+                break;
+            case Event::Type::MouseMove:
+            case Event::Type::MouseScroll:
+            case Event::Type::MouseUp:
+            case Event::Type::MouseDown:
+                mMouse.Process(Event);
+                break;
+            default:
+                break;
             }
         }
-    }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::Attach(ConstTracker<Listener> Listener)
-    {
-        mListeners.push_back(Listener);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::Detach(ConstTracker<Listener> Listener)
-    {
-        mListeners.erase(std::ranges::find(mListeners, Listener));
+        // Second pass: Invoke delegates for each event.
+        for (ConstRef<Event> Event : Stack)
+        {
+            Handle(Event);
+        }
     }
 }
