@@ -289,7 +289,7 @@ inline namespace Base
         /// \brief Calls the bound function with the provided arguments.
         ///
         /// \param Parameters The arguments to forward to the bound function.
-        ZYPHRYON_INLINE Return operator()(AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE Return operator()(Arguments... Parameters) const
         {
             return mExecute(mStorage, Forward<Arguments>(Parameters)...);
         }
@@ -317,13 +317,13 @@ inline namespace Base
         }
 
         /// \brief Type alias for the internal trampoline function signature.
-        using Execute = Return(*)(ConstPtr<void>, AnyRef<Arguments>...);
+        using Execute = Return(*)(ConstPtr<void>, Arguments...);
 
         /// \brief Type alias for the internal release function signature.
         using Release = void(*)(Ptr<void>);
 
         /// \brief Empty trampoline function for uninitialized delegates.
-        ZYPHRYON_INLINE static auto InvokeEmpty(ConstPtr<void>, AnyRef<Arguments>...)
+        ZYPHRYON_INLINE static auto InvokeEmpty(ConstPtr<void>, Arguments...)
         {
             if constexpr (!std::is_void_v<Return>)
             {
@@ -333,34 +333,34 @@ inline namespace Base
 
         /// \brief Invokes a free function or static member function.
         template<auto Function>
-        ZYPHRYON_INLINE static auto InvokeDirect(ConstPtr<void>, AnyRef<Arguments>... Parameters)
+        ZYPHRYON_INLINE static auto InvokeDirect(ConstPtr<void>, Arguments... Parameters)
         {
-            return std::invoke(Function, std::forward<Arguments>(Parameters)...);
+            return std::invoke(Function, Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Invokes a function pointer stored in the internal buffer.
-        ZYPHRYON_INLINE static auto InvokeFunction(ConstPtr<void> Buffer, AnyRef<Arguments>... Parameters)
+        ZYPHRYON_INLINE static auto InvokeFunction(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return (* static_cast<ConstPtr<Return(*)(Arguments...)>>(Buffer))(Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Invokes a member function on the stored object instance.
         template<auto Function, typename T>
-        ZYPHRYON_INLINE static auto InvokeMethod(ConstPtr<void> Buffer, AnyRef<Arguments>... Parameters)
+        ZYPHRYON_INLINE static auto InvokeMethod(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return std::invoke(Function, ** static_cast<Ptr<T> const *>(Buffer), Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Invokes a lambda or callable object stored in the internal buffer.
         template<typename Callable>
-        ZYPHRYON_INLINE static auto InvokeLambda(ConstPtr<void> Buffer, AnyRef<Arguments>... Parameters)
+        ZYPHRYON_INLINE static auto InvokeLambda(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return std::invoke(* std::launder(static_cast<ConstPtr<Callable>>(Buffer)), Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Invokes a heap-allocated lambda or callable object.
         template<typename Callable>
-        ZYPHRYON_INLINE static auto InvokeDynamicLambda(ConstPtr<void> Buffer, AnyRef<Arguments>... Parameters)
+        ZYPHRYON_INLINE static auto InvokeDynamicLambda(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return std::invoke(** static_cast<Ptr<Callable> const *>(Buffer), Forward<Arguments>(Parameters)...);
         }
