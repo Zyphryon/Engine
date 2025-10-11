@@ -247,7 +247,7 @@ namespace Graphic
         Array<D3D11Buffer, kMaxBuffers>     mBuffers;
         Array<D3D11Pass, kMaxPasses>        mPasses;
         Array<D3D11Pipeline, kMaxPipelines> mPipelines;
-        Array<D3D11Sampler, kMaxSamplers>   mSamplers;
+        Table<UInt64, D3D11Sampler>         mSamplers;
         Array<D3D11Texture, kMaxTextures>   mTextures;
     };
 }

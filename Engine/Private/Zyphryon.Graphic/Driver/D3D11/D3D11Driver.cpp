@@ -1354,10 +1354,7 @@ namespace Graphic
 
     Ref<D3D11Driver::D3D11Sampler> D3D11Driver::GetOrCreateSampler(ConstRef<Sampler> Descriptor)
     {
-        Ref<D3D11Sampler> Sampler = mSamplers[
-            static_cast<UInt32>(Descriptor.WrapModeU)       |
-            static_cast<UInt32>(Descriptor.WrapModeV)  << 3 |
-            static_cast<UInt32>(Descriptor.Filter)     << 6];
+        Ref<D3D11Sampler> Sampler = mSamplers[Descriptor.Hash()];
 
         if (Sampler.Resource == nullptr)
         {

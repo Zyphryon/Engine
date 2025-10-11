@@ -88,7 +88,14 @@ namespace Audio
     struct Schema final
     {
         /// \brief Constructs a schema with default values.
-        ZYPHRYON_INLINE constexpr Schema() = default;
+        ZYPHRYON_INLINE constexpr Schema()
+            : Duration  { 0 },
+              Frequency { 44100 },
+              Format    { Format::PCM },
+              Layout    { 1 },
+              Stride    { 2 }
+        {
+        }
 
         /// \brief Constructs a schema with the given properties.
         ///

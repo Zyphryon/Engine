@@ -59,9 +59,6 @@ namespace Graphic
         /// Maximum number of pipeline objects supported.
         kMaxPipelines   = 0x00C0,
 
-        /// Maximum number of samplers objects supported.
-        kMaxSamplers    = 0x00FF,
-
         /// Maximum number of multisample supported.
         kMaxSamples     = 0x0008,
 
@@ -700,6 +697,14 @@ namespace Graphic
 
         /// Filtering method used when sampling the texture.
         TextureFilter Filter    = TextureFilter::LinearMipLinear;
+
+        /// \brief Computes a hash value for the sampler configuration.
+        ///
+        /// \return A 64-bit hash representing the sampler state.
+        ZYPHRYON_INLINE UInt64 Hash() const
+        {
+            return HashCombine(WrapModeU, WrapModeV, Filter);
+        }
     };
 
     /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
