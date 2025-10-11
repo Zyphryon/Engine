@@ -51,7 +51,7 @@ namespace Content
     {
         Graphic::TextureEdge   EdgeU  = Graphic::TextureEdge::Repeat;
         Graphic::TextureEdge   EdgeV  = Graphic::TextureEdge::Repeat;
-        Graphic::TextureFilter Filter = Graphic::TextureFilter::MinMagMipPoint;
+        Graphic::TextureFilter Filter = Graphic::TextureFilter::Point;
 
         switch (GLTFSampler.wrapS)
         {
@@ -79,18 +79,22 @@ namespace Content
         switch (GLTFSampler.minFilter)
         {
         case TINYGLTF_TEXTURE_FILTER_NEAREST:
+            Filter = Graphic::TextureFilter::Point;
+            break;
         case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
-            Filter = Graphic::TextureFilter::MinMagMipPoint;
+            Filter = Graphic::TextureFilter::PointMipPoint;
             break;
         case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
-            Filter = Graphic::TextureFilter::MinMagMipLinear;
+            Filter = Graphic::TextureFilter::PointMipLinear;
             break;
         case TINYGLTF_TEXTURE_FILTER_LINEAR:
+            Filter = Graphic::TextureFilter::Linear;
+            break;
         case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
-            Filter = Graphic::TextureFilter::MinMagLinearMipPoint;
+            Filter = Graphic::TextureFilter::LinearMipPoint;
             break;
         case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-            Filter = Graphic::TextureFilter::MinMagMipLinear;
+            Filter = Graphic::TextureFilter::LinearMipLinear;
             break;
         default:
             break;

@@ -201,18 +201,16 @@ namespace Graphic
     auto As(TextureFilter Value)
     {
         constexpr static Array kMapping = {
-            D3D11_FILTER_MIN_MAG_MIP_POINT,                 // TextureFilter::MinMagMipPoint
-            D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR,          // TextureFilter::MinMagPointMipLinear
-            D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT,    // TextureFilter::MinPointMagLinearMipPoint
-            D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR,          // TextureFilter::MinPointMagMipLinear
-            D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT,          // TextureFilter::MinLinearMagMipPoint
-            D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR,   // TextureFilter::MinLinearMagPointMipLinear
-            D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT,          // TextureFilter::MinMagLinearMipPoint
-            D3D11_FILTER_MIN_MAG_MIP_LINEAR,                // TextureFilter::MinMagMipLinear
-            D3D11_FILTER_ANISOTROPIC,                       // TextureFilter::Anisotropic2x
-            D3D11_FILTER_ANISOTROPIC,                       // TextureFilter::Anisotropic4x
-            D3D11_FILTER_ANISOTROPIC,                       // TextureFilter::Anisotropic8x
-            D3D11_FILTER_ANISOTROPIC,                       // TextureFilter::Anisotropic16x
+            D3D11_FILTER_MIN_MAG_MIP_POINT,          // TextureFilter::Point
+            D3D11_FILTER_MIN_MAG_MIP_POINT,          // TextureFilter::PointMipPoint
+            D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR,   // TextureFilter::PointMipLinear
+            D3D11_FILTER_MIN_MAG_MIP_LINEAR,         // TextureFilter::Linear
+            D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT,   // TextureFilter::LinearMipPoint
+            D3D11_FILTER_MIN_MAG_MIP_LINEAR,         // TextureFilter::LinearMipLinear
+            D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic2x
+            D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic4x
+            D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic8x
+            D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic16x
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -232,7 +230,13 @@ namespace Graphic
             { DXGI_FORMAT_BC3_UNORM,            DXGI_FORMAT_BC3_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC3UIntNorm
             { DXGI_FORMAT_BC3_UNORM_SRGB,       DXGI_FORMAT_BC3_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC3UIntNorm_sRGB
             { DXGI_FORMAT_BC4_UNORM,            DXGI_FORMAT_BC4_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC4UIntNorm
+            { DXGI_FORMAT_BC4_SNORM,            DXGI_FORMAT_BC4_SNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC4SIntNorm
             { DXGI_FORMAT_BC5_UNORM,            DXGI_FORMAT_BC5_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC5UIntNorm
+            { DXGI_FORMAT_BC5_SNORM,            DXGI_FORMAT_BC5_SNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC5SIntNorm
+            { DXGI_FORMAT_BC6H_SF16,            DXGI_FORMAT_BC6H_SF16,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC6UFloat
+            { DXGI_FORMAT_BC6H_UF16,            DXGI_FORMAT_BC6H_UF16,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC6SFloat
+            { DXGI_FORMAT_BC7_UNORM,            DXGI_FORMAT_BC7_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC7UIntNorm
+            { DXGI_FORMAT_BC7_UNORM_SRGB,       DXGI_FORMAT_BC7_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC7UIntNorm_sRGB
             { DXGI_FORMAT_R8_SINT,              DXGI_FORMAT_R8_SINT,                    DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8SInt
             { DXGI_FORMAT_R8_SNORM,             DXGI_FORMAT_R8_SNORM,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8SIntNorm
             { DXGI_FORMAT_R8_UINT,              DXGI_FORMAT_R8_UINT,                    DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8UInt
@@ -265,8 +269,6 @@ namespace Graphic
             { DXGI_FORMAT_R8G8B8A8_UINT,        DXGI_FORMAT_R8G8B8A8_UINT,              DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UInt
             { DXGI_FORMAT_R8G8B8A8_UNORM,       DXGI_FORMAT_R8G8B8A8_UNORM,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UIntNorm
             { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,        DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UIntNorm_sRGB
-            { DXGI_FORMAT_B8G8R8A8_UNORM,       DXGI_FORMAT_B8G8R8A8_UNORM,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BGRA8UIntNorm
-            { DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,  DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,        DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BGRA8UIntNorm_sRGB
             { DXGI_FORMAT_R16G16B16A16_SINT,    DXGI_FORMAT_R16G16B16A16_SINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16SInt
             { DXGI_FORMAT_R16G16B16A16_SNORM,   DXGI_FORMAT_R16G16B16A16_SNORM,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16SIntNorm
             { DXGI_FORMAT_R16G16B16A16_UINT,    DXGI_FORMAT_R16G16B16A16_UINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16UInt
@@ -275,12 +277,28 @@ namespace Graphic
             { DXGI_FORMAT_R32G32B32A32_SINT,    DXGI_FORMAT_R32G32B32A32_SINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32SInt
             { DXGI_FORMAT_R32G32B32A32_UINT,    DXGI_FORMAT_R32G32B32A32_UINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32UInt
             { DXGI_FORMAT_R32G32B32A32_FLOAT,   DXGI_FORMAT_R32G32B32A32_FLOAT,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32Float
-            { DXGI_FORMAT_R16_TYPELESS,         DXGI_FORMAT_R16_UNORM,                  DXGI_FORMAT_D16_UNORM            }, // TextureFormat::D16
-            { DXGI_FORMAT_R32_TYPELESS,         DXGI_FORMAT_R32_FLOAT,                  DXGI_FORMAT_D32_FLOAT            }, // TextureFormat::D32
+            { DXGI_FORMAT_R10G10B10A2_UINT,     DXGI_FORMAT_R10G10B10A2_UINT,           DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB10A2UInt
+            { DXGI_FORMAT_R10G10B10A2_UNORM,    DXGI_FORMAT_R10G10B10A2_UNORM,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB10A2UIntNorm
+            { DXGI_FORMAT_R16_TYPELESS,         DXGI_FORMAT_R16_FLOAT,                  DXGI_FORMAT_R16_FLOAT            }, // TextureFormat::D16Float
+            { DXGI_FORMAT_R16_TYPELESS,         DXGI_FORMAT_R16_UNORM,                  DXGI_FORMAT_D16_UNORM            }, // TextureFormat::D16UIntNorm
+            { DXGI_FORMAT_R32_TYPELESS,         DXGI_FORMAT_R32_FLOAT,                  DXGI_FORMAT_D32_FLOAT            }, // TextureFormat::D32Float
             { DXGI_FORMAT_R24G8_TYPELESS,       DXGI_FORMAT_R24_UNORM_X8_TYPELESS,      DXGI_FORMAT_D24_UNORM_S8_UINT    }, // TextureFormat::D24S8UIntNorm
             { DXGI_FORMAT_R32G8X24_TYPELESS,    DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS,   DXGI_FORMAT_D32_FLOAT_S8X24_UINT }, // TextureFormat::D32S8UIntNorm
         };
         return Fetch<Data>(kMapping[Enum::Cast(Value)]);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    auto As(Usage Value)
+    {
+        constexpr static Array kMapping = {
+            D3D11_BIND_VERTEX_BUFFER,          // Usage::Vertex
+            D3D11_BIND_INDEX_BUFFER,           // Usage::Index
+            D3D11_BIND_CONSTANT_BUFFER,        // Usage::Uniform
+        };
+        return kMapping[Enum::Cast(Value)];
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -307,19 +325,16 @@ namespace Graphic
             DXGI_FORMAT_R16G16B16A16_SNORM,     // VertexFormat::SIntNorm16x4
             DXGI_FORMAT_R16G16B16A16_UINT,      // VertexFormat::UInt16x4
             DXGI_FORMAT_R16G16B16A16_UNORM,     // VertexFormat::UIntNorm16x4
-        };
-        return kMapping[Enum::Cast(Value)];
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    auto As(Usage Value)
-    {
-        constexpr static Array kMapping = {
-            D3D11_BIND_VERTEX_BUFFER,          // Usage::Vertex
-            D3D11_BIND_INDEX_BUFFER,           // Usage::Index
-            D3D11_BIND_CONSTANT_BUFFER,        // Usage::Uniform
+            DXGI_FORMAT_R32_SINT,               // VertexFormat::SInt32x1
+            DXGI_FORMAT_R32_UINT,               // VertexFormat::UInt32x1
+            DXGI_FORMAT_R32G32_SINT,            // VertexFormat::SInt32x2
+            DXGI_FORMAT_R32G32_UINT,            // VertexFormat::UInt32x2
+            DXGI_FORMAT_R32G32B32_SINT,         // VertexFormat::SInt32x3
+            DXGI_FORMAT_R32G32B32_UINT,         // VertexFormat::UInt32x3
+            DXGI_FORMAT_R32G32B32A32_SINT,      // VertexFormat::SInt32x4
+            DXGI_FORMAT_R32G32B32A32_UINT,      // VertexFormat::UInt32x4
+            DXGI_FORMAT_R10G10B10A2_UINT,       // VertexFormat::UInt10_10_10_2
+            DXGI_FORMAT_R10G10B10A2_UNORM,      // VertexFormat::UIntNorm10_10_10_2
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -359,7 +374,7 @@ namespace Graphic
 
     auto Fill(ConstPtr<UInt8> Data, UInt8 Layer, UInt16 Width, UInt16 Height, TextureFormat Layout)
     {
-        constexpr static UInt8 kMapping[] = {
+        constexpr static UInt8 kBitsPerPixel[] = {
             4,      // TextureFormat::BC1UIntNorm
             4,      // TextureFormat::BC1UIntNorm_sRGB
             8,      // TextureFormat::BC2UIntNorm
@@ -367,7 +382,11 @@ namespace Graphic
             8,      // TextureFormat::BC3UIntNorm
             8,      // TextureFormat::BC3UIntNorm_sRGB
             4,      // TextureFormat::BC4UIntNorm
+            4,      // TextureFormat::BC4SIntNorm
             8,      // TextureFormat::BC5UIntNorm
+            8,      // TextureFormat::BC5SIntNorm
+            8,      // TextureFormat::BC6UFloat
+            8,      // TextureFormat::BC6SFloat
             8,      // TextureFormat::BC7UIntNorm
             8,      // TextureFormat::BC7UIntNorm_sRGB
             8,      // TextureFormat::R8SInt
@@ -412,27 +431,34 @@ namespace Graphic
             128,    // TextureFormat::RGBA32SInt
             128,    // TextureFormat::RGBA32UInt
             128,    // TextureFormat::RGBA32Float
+            16,     // TextureFormat::RGB10A2UIntNorm
+            16,     // TextureFormat::RGB10A2UInt
             16,     // TextureFormat::D16Float
+            16,     // TextureFormat::D16UIntNorm
             32,     // TextureFormat::D32Float
             32,     // TextureFormat::D24S8UIntNorm
             64,     // TextureFormat::D32S8UIntNorm
         };
 
-        const UInt32 Depth = kMapping[Enum::Cast(Layout)];
+
+        static D3D11_SUBRESOURCE_DATA Content[kMaxMipmap];
 
         if (Data)
         {
-            static D3D11_SUBRESOURCE_DATA Content[kMaxMipmap];
+            const UInt32 BitsPerPixel = kBitsPerPixel[Enum::Cast(Layout)];
+            const UInt32 BlockSize    = Enum::Cast(Layout) > Enum::Cast(TextureFormat::BC7UIntNorm_sRGB) ? 1 : 4;
 
             for (UInt32 Level = 0; Level < Layer; ++Level)
             {
-                Content[Level].pSysMem          = Data;
-                Content[Level].SysMemPitch      = Width * (Depth / 8);
-                Content[Level].SysMemSlicePitch = 0;
+                UInt32 Pitch = (Width + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
 
-                Data  += Width * Depth * Height;
-                Width  = Max(1, Width  >> 1);
-                Height = Max(1, Height >> 1);
+                Content[Level].pSysMem          = Data;
+                Content[Level].SysMemPitch      = Pitch;
+                Content[Level].SysMemSlicePitch = Pitch * ((Height + BlockSize - 1) / BlockSize);
+
+                Data  += Pitch * ((Height + BlockSize - 1) / BlockSize);
+                Width  = Max(1U, Width  >> 1);
+                Height = Max(1U, Height >> 1);
             }
             return Content;
         }
@@ -1330,15 +1356,22 @@ namespace Graphic
     {
         Ref<D3D11Sampler> Sampler = mSamplers[
             static_cast<UInt32>(Descriptor.WrapModeU)       |
-            static_cast<UInt32>(Descriptor.WrapModeV)  << 2 |
-            static_cast<UInt32>(Descriptor.Filter)     << 4];
+            static_cast<UInt32>(Descriptor.WrapModeV)  << 3 |
+            static_cast<UInt32>(Descriptor.Filter)     << 6];
 
         if (Sampler.Resource == nullptr)
         {
-            UINT Anisotropic;
+            UINT   Anisotropic  = 1;
+            Real32 MinLOD       = -FLT_MAX;
+            Real32 MaxLOD       = +FLT_MAX;
 
             switch (Descriptor.Filter)
             {
+                case TextureFilter::Point:
+                case TextureFilter::Linear:
+                    MinLOD = 0.0f;
+                    MaxLOD = 0.0f;
+                    break;
                 case TextureFilter::Anisotropic2x:
                     Anisotropic = 2;
                     break;
@@ -1352,7 +1385,6 @@ namespace Graphic
                     Anisotropic = 16;
                     break;
                 default:
-                    Anisotropic = 0;
                     break;
             }
 
@@ -1365,8 +1397,8 @@ namespace Graphic
                 Anisotropic,
                 D3D11_COMPARISON_NEVER,
                 nullptr,
-                -FLT_MAX,
-                +FLT_MAX);
+                MinLOD,
+                MaxLOD);
 
             CheckIfFail(mDevice->CreateSamplerState(&SamplerDescriptor, Sampler.Resource.GetAddressOf()));
         }

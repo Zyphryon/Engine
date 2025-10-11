@@ -244,17 +244,16 @@ namespace Graphic
     enum class TextureFilter : UInt8
     {
         MinMagMipPoint,              ///< Point sampling for minification, magnification, and mipmapping.
-        MinMagPointMipLinear,        ///< Point sampling for min/mag, linear interpolation between mip levels.
-        MinPointMagLinearMipPoint,   ///< Point sampling for minification, linear for magnification, point for mipmaps.
-        MinPointMagMipLinear,        ///< Point sampling for minification, linear for magnification, linear mip interpolation.
-        MinLinearMagMipPoint,        ///< Linear minification, point magnification, point mipmaps.
-        MinLinearMagPointMipLinear,  ///< Linear minification, point magnification, linear mip interpolation.
-        MinMagLinearMipPoint,        ///< Linear minification and magnification, point mipmaps.
-        MinMagMipLinear,             ///< Linear minification, magnification, and mipmapping.
-        Anisotropic2x,               ///< Anisotropic filtering with max 2x samples.
-        Anisotropic4x,               ///< Anisotropic filtering with max 4x samples.
-        Anisotropic8x,               ///< Anisotropic filtering with max 8x samples.
-        Anisotropic16x               ///< Anisotropic filtering with max 16x samples.
+        Point,           ///< Nearest-neighbor filtering.
+        PointMipPoint,   ///< Nearest-neighbor filtering with point mipmaps.
+        PointMipLinear,  ///< Nearest-neighbor filtering with linear mipmaps.
+        Linear,          ///< Bilinear filtering.
+        LinearMipPoint,  ///< Bilinear filtering with point mipmaps.
+        LinearMipLinear, ///< Bilinear filtering with linear mipmaps.
+        Anisotropic2x,   ///< Anisotropic filtering with max 2x samples.
+        Anisotropic4x,   ///< Anisotropic filtering with max 4x samples.
+        Anisotropic8x,   ///< Anisotropic filtering with max 8x samples.
+        Anisotropic16x   ///< Anisotropic filtering with max 16x samples.
     };
 
     /// \brief Describes the format of texture data.
@@ -267,7 +266,13 @@ namespace Graphic
         BC3UIntNorm,           ///< Block-compressed RGBA (DXT5), unsigned normalized.
         BC3UIntNorm_sRGB,      ///< Block-compressed RGBA (DXT5), sRGB gamma-corrected.
         BC4UIntNorm,           ///< Block-compressed single-channel (red), unsigned normalized.
+        BC4SIntNorm,           ///< Block-compressed single-channel (red), signed normalized
         BC5UIntNorm,           ///< Block-compressed two-channel (red-green), unsigned normalized.
+        BC5SIntNorm,           ///< Block-compressed two-channel (red-green), signed normalized
+        BC6UFloat,             ///< Block-compressed HDR RGB, unsigned float
+        BC6SFloat,             ///< Block-compressed HDR RGB, signed float
+        BC7UIntNorm,           ///< High-quality block-compressed RGBA
+        BC7UIntNorm_sRGB,      ///< High-quality block-compressed RGBA, sRGB
         R8SInt,                ///< 8-bit signed integer.
         R8SIntNorm,            ///< 8-bit signed normalized.
         R8UInt,                ///< 8-bit unsigned integer.
@@ -300,8 +305,6 @@ namespace Graphic
         RGBA8UInt,             ///< 4×8-bit unsigned integers.
         RGBA8UIntNorm,         ///< 4×8-bit unsigned normalized.
         RGBA8UIntNorm_sRGB,    ///< 4×8-bit unsigned normalized with sRGB correction.
-        BGRA8UIntNorm,         ///< 4×8-bit unsigned normalized in BGRA order.
-        BGRA8UIntNorm_sRGB,    ///< 4×8-bit unsigned normalized in BGRA with sRGB.
         RGBA16SInt,            ///< 4×16-bit signed integers.
         RGBA16SIntNorm,        ///< 4×16-bit signed normalized.
         RGBA16UInt,            ///< 4×16-bit unsigned integers.
@@ -310,7 +313,10 @@ namespace Graphic
         RGBA32SInt,            ///< 4×32-bit signed integers.
         RGBA32UInt,            ///< 4×32-bit unsigned integers.
         RGBA32Float,           ///< 4×32-bit floating-point.
+        RGB10A2UInt,           ///< 10-bit RGB + 2-bit alpha, unsigned integer
+        RGB10A2UIntNorm,       ///< 10-bit RGB + 2-bit alpha, unsigned normalized
         D16Float,              ///< 16-bit floating-point depth.
+        D16UIntNorm,           ///< 16-bit unsigned normalized depth.
         D32Float,              ///< 32-bit floating-point depth.
         D24S8UIntNorm,         ///< 24-bit floating-point depth + 8-bit stencil.
         D32S8UIntNorm,         ///< 32-bit floating-point depth + 8-bit stencil.
@@ -353,24 +359,34 @@ namespace Graphic
     /// \brief Specifies the format of a vertex attribute.
     enum class VertexFormat : UInt8
     {
-        Float16x2,       ///< Two 16-bit floating-point.
-        Float16x4,       ///< Four 16-bit floating-point.
-        Float32x1,       ///< One 32-bit floating-point.
-        Float32x2,       ///< Two 32-bit floating-point.
-        Float32x3,       ///< Three 32-bit floating-point.
-        Float32x4,       ///< Four 32-bit floating-point.
-        SInt8x4,         ///< Four 8-bit signed integers.
-        SIntNorm8x4,     ///< Four normalized 8-bit signed integers.
-        UInt8x4,         ///< Four 8-bit unsigned integers.
-        UIntNorm8x4,     ///< Four normalized 8-bit unsigned integers.
-        SInt16x2,        ///< Two 16-bit signed integers.
-        SIntNorm16x2,    ///< Two normalized 16-bit signed integers.
-        UInt16x2,        ///< Two 16-bit unsigned integers.
-        UIntNorm16x2,    ///< Two normalized 16-bit unsigned integers.
-        SInt16x4,        ///< Four 16-bit signed integers.
-        SIntNorm16x4,    ///< Four normalized 16-bit signed integers.
-        UInt16x4,        ///< Four 16-bit unsigned integers.
-        UIntNorm16x4,    ///< Four normalized 16-bit unsigned integers.
+        Float16x2,          ///< Two 16-bit floating-point.
+        Float16x4,          ///< Four 16-bit floating-point.
+        Float32x1,          ///< One 32-bit floating-point.
+        Float32x2,          ///< Two 32-bit floating-point.
+        Float32x3,          ///< Three 32-bit floating-point.
+        Float32x4,          ///< Four 32-bit floating-point.
+        SInt8x4,            ///< Four 8-bit signed integers.
+        SIntNorm8x4,        ///< Four normalized 8-bit signed integers.
+        UInt8x4,            ///< Four 8-bit unsigned integers.
+        UIntNorm8x4,        ///< Four normalized 8-bit unsigned integers.
+        SInt16x2,           ///< Two 16-bit signed integers.
+        SIntNorm16x2,       ///< Two normalized 16-bit signed integers.
+        UInt16x2,           ///< Two 16-bit unsigned integers.
+        UIntNorm16x2,       ///< Two normalized 16-bit unsigned integers.
+        SInt16x4,           ///< Four 16-bit signed integers.
+        SIntNorm16x4,       ///< Four normalized 16-bit signed integers.
+        UInt16x4,           ///< Four 16-bit unsigned integers.
+        UIntNorm16x4,       ///< Four normalized 16-bit unsigned integers.
+        SInt32x1,           ///< One 32-bit signed integer.
+        UInt32x1,           ///< One 32-bit unsigned integer.
+        SInt32x2,           ///< Two 32-bi  t signed integers.
+        UInt32x2,           ///< Two 32-bit unsigned integers.
+        SInt32x3,           ///< Three 32-bit signed integers.
+        UInt32x3,           ///< Three 32-bit unsigned integers.
+        SInt32x4,           ///< Four 32-bit signed integers.
+        UInt32x4,           ///< Four 32-bit unsigned integers.
+        UInt10_10_10_2,     ///< Three 10-bit unsigned integers + 2-bit unsigned integer.
+        UIntNorm10_10_10_2, ///< Three 10-bit unsigned normalized integers + 2-bit unsigned integer.
     };
 
     /// \brief Identifies the semantic meaning of a vertex attribute.
@@ -489,9 +505,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Attribute(VertexSemantic Semantic, VertexFormat Format, UInt16 Offset)
             : Semantic { Semantic },
               Format   { Format },
-              Offset   { Offset },
-              Stream   { 0 },
-              Divisor  { 0 }
+              Offset   { Offset }
         {
         }
 
@@ -635,7 +649,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Draw() = default;
 
         /// \brief Constructs a primitive with specified parameters.
-        /// 
+        ///
         /// \param Count     The number of vertices or indices to draw.
         /// \param Base      The base vertex index for indexed draws, or first vertex index for non-indexed draws.
         /// \param Offset    The offset into the index buffer or vertex buffer.
@@ -668,7 +682,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Sampler() = default;
 
         /// \brief Initializes a sampler with specified wrap modes and filter.
-        /// 
+        ///
         /// \param WrapModeU Texture wrap behavior for the U (horizontal) coordinate.
         /// \param WrapModeV Texture wrap behavior for the V (vertical) coordinate.
         /// \param Filter    Filtering method used when sampling the texture.
@@ -686,7 +700,7 @@ namespace Graphic
         TextureEdge   WrapModeV = TextureEdge::Clamp;
 
         /// Filtering method used when sampling the texture.
-        TextureFilter Filter    = TextureFilter::MinMagMipPoint;
+        TextureFilter Filter    = TextureFilter::LinearMipLinear;
     };
 
     /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
@@ -696,7 +710,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Scissor() = default;
 
         /// \brief Initializes a scissor region with specified position and size.
-        /// 
+        ///
         /// \param X      X screen coordinate of the region’s origin, in pixels.
         /// \param Y      Y screen coordinate of the region’s origin, in pixels.
         /// \param Width  Width of the scissor region, in pixels.
@@ -729,7 +743,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Stream() = default;
 
         /// \brief Initializes a stream with a buffer, stride, and offset.
-        /// 
+        ///
         /// \param Buffer Handle to the GPU buffer object.
         /// \param Stride Size in bytes of each element in the buffer.
         /// \param Offset Byte offset from the start of the buffer to the first element.
@@ -757,7 +771,7 @@ namespace Graphic
         ZYPHRYON_INLINE constexpr Viewport() = default;
 
         /// \brief Constructs a viewport with position and size, using a default depth range of [0, 1].
-        /// 
+        ///
         /// \param X      X coordinate of the top-left corner, in pixels.
         /// \param Y      Y coordinate of the top-left corner, in pixels.
         /// \param Width  Width of the viewport, in pixels.
@@ -771,7 +785,7 @@ namespace Graphic
         }
 
         /// \brief Constructs a viewport with position, size, and depth range.
-        /// 
+        ///
         /// \param X        X coordinate of the top-left corner, in pixels.
         /// \param Y        Y coordinate of the top-left corner, in pixels.
         /// \param Width    Width of the viewport, in pixels.

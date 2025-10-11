@@ -155,7 +155,7 @@ namespace Content
         constexpr Graphic::Sampler kDefaultSample(
             Graphic::TextureEdge::Clamp,
             Graphic::TextureEdge::Clamp,
-            Graphic::TextureFilter::MinMagLinearMipPoint);
+            Graphic::TextureFilter::Linear);
 
         Tracker<Graphic::Material> Material = Tracker<Graphic::Material>::Create(
             Content::Uri::Merge(Scope.GetResource()->GetKey(), "Material"));

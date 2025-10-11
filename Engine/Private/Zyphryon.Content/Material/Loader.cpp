@@ -47,7 +47,7 @@ namespace Content
                     Graphic::Sampler Description;
                     Description.WrapModeU = Enum::Cast(Sampler.GetString("WrapModeU"), Graphic::TextureEdge::Clamp);
                     Description.WrapModeV = Enum::Cast(Sampler.GetString("WrapModeV"), Graphic::TextureEdge::Clamp);
-                    Description.Filter    = Enum::Cast(Sampler.GetString("Filter"), Graphic::TextureFilter::MinMagMipPoint);
+                    Description.Filter    = Enum::Cast(Sampler.GetString("Filter"), Graphic::TextureFilter::Point);
 
                     Asset->SetSampler(Semantic, Description);
                 }
