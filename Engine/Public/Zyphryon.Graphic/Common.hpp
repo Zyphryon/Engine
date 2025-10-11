@@ -243,7 +243,6 @@ namespace Graphic
     /// \brief Specifies the sampling method used when accessing textures.
     enum class TextureFilter : UInt8
     {
-        MinMagMipPoint,              ///< Point sampling for minification, magnification, and mipmapping.
         Point,           ///< Nearest-neighbor filtering.
         PointMipPoint,   ///< Nearest-neighbor filtering with point mipmaps.
         PointMipLinear,  ///< Nearest-neighbor filtering with linear mipmaps.
