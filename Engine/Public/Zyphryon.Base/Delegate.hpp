@@ -302,6 +302,49 @@ inline namespace Base
             return (mExecute != & InvokeEmpty);
         }
 
+    public:
+
+        /// \brief Creates a delegate bound to a free function or static member function.
+        ///
+        /// \tparam Function The function pointer to bind.
+        /// \return A delegate bound to the specified function.
+        template<auto Function>
+        ZYPHRYON_INLINE static constexpr Delegate Create()
+        {
+            return Delegate(std::integral_constant<decltype(Function), Function>{});
+        }
+
+        /// \brief Creates a delegate bound to a function pointer.
+        ///
+        /// \param Function The function pointer to bind.
+        /// \return A delegate bound to the specified function.
+        ZYPHRYON_INLINE static constexpr Delegate Create(Return (*Function)(Arguments...))
+        {
+            return Delegate(Function);
+        }
+
+        /// \brief Creates a delegate bound to a member function and object instance.
+        ///
+        /// \tparam Method The member function pointer to bind.
+        /// \param Object  The object instance to bind the method to.
+        /// \return A delegate bound to the specified method and object.
+        template<auto Method, typename Type>
+        ZYPHRYON_INLINE static constexpr Delegate Create(Ptr<Type> Object)
+        {
+            return Delegate(std::integral_constant<decltype(Method), Method>{}, Object);
+        }
+
+        /// \brief Creates a delegate bound to a lambda or callable object.
+        ///
+        /// \param Object The lambda or callable object to bind.
+        /// \return A delegate bound to the specified callable.
+        template<typename Callable>
+        ZYPHRYON_INLINE static constexpr Delegate Create(AnyRef<Callable> Object)
+            requires (!std::is_same_v<std::decay_t<Callable>, Delegate>)
+        {
+            return Delegate(Forward<Callable>(Object));
+        }
+
     private:
 
         /// \brief Resets the delegate to an empty state, releasing any resources.
