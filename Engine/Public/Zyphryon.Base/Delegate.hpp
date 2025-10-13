@@ -20,18 +20,28 @@
 
 inline namespace Base
 {
+    /// \brief Predefined inline storage sizes for delegates.
+    enum class DelegateInlineSize : UInt
+    {
+        Smallest  = 1,    ///< Enough for function pointers and small lambdas.
+        Small     = 2,    ///< Enough for function pointers and small lambdas.
+        Default   = 4,    ///< Reasonable default size for most use cases.
+        Large     = 8,    ///< Enough for larger lambdas and small functor objects.
+        Largest   = 16    ///< Maximum size for inline storage, enough for most functor objects.
+    };
+
     /// \brief A type-safe, high-performance delegate.
-    template<typename Signature>
+    template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Default>
     class ZYPHRYON_ALIGN_CPU Delegate;
 
     /// \brief A type-safe, high-performance delegate.
-    template<typename Return, typename... Arguments>
-    class ZYPHRYON_ALIGN_CPU Delegate<Return(Arguments...)> final
+    template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
+    class ZYPHRYON_ALIGN_CPU Delegate<Return(Arguments...), InlineSize> final
     {
     public:
 
         /// \brief Capacity of the internal storage buffer, in bytes.
-        static constexpr UInt kCapacity  = 4 * sizeof(UInt);
+        static constexpr UInt kCapacity  = static_cast<UInt>(InlineSize) * sizeof(UInt);
 
         /// \brief Default constructor, creates an empty delegate.
         ZYPHRYON_INLINE constexpr Delegate()
@@ -438,13 +448,18 @@ inline namespace Base
     };
 
     /// \brief A type-safe, high-performance multicast delegate.
-    template<typename Signature>
+    template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Default>
     class ZYPHRYON_ALIGN_CPU MulticastDelegate;
 
     /// \brief A type-safe, high-performance multicast delegate.
-    template<typename Return, typename... Arguments>
-    class MulticastDelegate<Return(Arguments...)> final // TODO: Automatic cleanup
+    template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
+    class MulticastDelegate<Return(Arguments...), InlineSize> final // TODO: Automatic cleanup
     {
+    public:
+
+        /// \brief Delegate type used by the multicast delegate.
+        using Type = Delegate<Return(Arguments...), InlineSize>;
+
     public:
 
         /// \brief Returns whether the multicast delegate has no bound delegates.
@@ -458,7 +473,7 @@ inline namespace Base
         /// \brief Adds a delegate to the multicast list.
         ///
         /// \param Delegate The delegate to add.
-        ZYPHRYON_INLINE void Add(ConstRef<Delegate<Return(Arguments...)>> Delegate)
+        ZYPHRYON_INLINE void Add(ConstRef<Type> Delegate)
         {
             mDelegates.push_back(Delegate);
         }
@@ -466,7 +481,7 @@ inline namespace Base
         /// \brief Adds a delegate to the multicast list.
         ///
         /// \param Delegate The delegate to add.
-        ZYPHRYON_INLINE void Add(AnyRef<Delegate<Return(Arguments...)>> Delegate)
+        ZYPHRYON_INLINE void Add(AnyRef<Type> Delegate)
         {
             mDelegates.push_back(Move(Delegate));
         }
@@ -510,7 +525,7 @@ inline namespace Base
         /// \brief Removes a delegate from the multicast list.
         ///
         /// \param Delegate The delegate to remove.
-        ZYPHRYON_INLINE void Remove(ConstRef<Delegate<Return(Arguments...)>> Delegate)
+        ZYPHRYON_INLINE void Remove(ConstRef<Type> Delegate)
         {
             if (const auto Iterator = std::ranges::find(mDelegates, Delegate); Iterator != mDelegates.end())
             {
@@ -524,7 +539,7 @@ inline namespace Base
         template<auto Function>
         ZYPHRYON_INLINE void RemoveFunction()
         {
-            constexpr auto Find = [](ConstRef<Delegate<Return(Arguments...)>> Delegate)
+            constexpr auto Find = [](ConstRef<Type> Delegate)
             {
                 return Delegate.template IsBoundTo<Function>();
             };
@@ -540,7 +555,7 @@ inline namespace Base
         /// \param Function The function pointer to remove.
         ZYPHRYON_INLINE void RemoveFunction(Return (* Function)(Arguments...))
         {
-            const auto Find = [Function](ConstRef<Delegate<Return(Arguments...)>> Delegate)
+            const auto Find = [Function](ConstRef<Type> Delegate)
             {
                 return Delegate.IsBoundTo(Function);
             };
@@ -558,7 +573,7 @@ inline namespace Base
         template<auto Method, typename Type>
         ZYPHRYON_INLINE void RemoveMethod(Ptr<Type> Object)
         {
-            const auto Find = [Object](ConstRef<Delegate<Return(Arguments...)>> Delegate)
+            const auto Find = [Object](ConstRef<Type> Delegate)
             {
                 return Delegate.template IsBoundTo<Method>(Object);
             };
@@ -580,7 +595,7 @@ inline namespace Base
         /// \param Parameters The arguments to forward to all bound delegates.
         ZYPHRYON_INLINE void Broadcast(Arguments... Parameters) const
         {
-            for (ConstRef<Delegate<Return(Arguments...)>> Delegate : mDelegates)
+            for (ConstRef<Type> Delegate : mDelegates)
             {
                 Delegate(Forward<Arguments>(Parameters)...);
             }
@@ -591,7 +606,7 @@ inline namespace Base
         /// \param Parameters The arguments to forward to the bound delegates.
         ZYPHRYON_INLINE auto Propagate(Arguments... Parameters) const
         {
-            for (ConstRef<Delegate<Return(Arguments...)>> Delegate : mDelegates)
+            for (ConstRef<Type> Delegate : mDelegates)
             {
                 if (const Return Result = Delegate(Forward<Arguments>(Parameters)...); Result)
                 {
@@ -606,6 +621,6 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector<Delegate<Return(Arguments...)>> mDelegates;
+        Vector<Type> mDelegates;
     };
 }
