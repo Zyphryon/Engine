@@ -41,6 +41,19 @@ inline namespace Base
             return Handle;
         }
 
+        /// \brief Acquires an existing handle without allocating a new one, constructing the object in-place.
+        ///
+        /// \param Handle     A valid non-zero handle previously allocated.
+        /// \param Parameters Arguments forwarded to the constructor.
+        template<typename... Arguments>
+        ZYPHRYON_INLINE void Acquire(UInt32 Handle, AnyRef<Arguments>... Parameters)
+        {
+            mAllocator.Acquire(Handle);
+
+            /// Construct a new object directly in the storage slot for this handle.
+            InPlaceConstruct<Type>(mPool[Handle - 1], Forward<Arguments>(Parameters)...);
+        }
+
         /// \brief Releases a previously allocated handle back to the pool.
         ///
         /// \param Handle A valid non-zero handle to free.

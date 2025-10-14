@@ -75,6 +75,30 @@ inline namespace Base
             mPool.clear();
         }
 
+        /// \brief Marks a handle as acquired, preventing it from being reissued.
+        ///
+        /// \param Handle The handle to acquire (must be valid or zero).
+        ZYPHRYON_INLINE void Acquire(UInt32 Handle)
+        {
+            LOG_ASSERT(Handle != 0 && Handle <= Capacity, "Attempted to acquire invalid handle");
+
+            if (Handle > mHead)
+            {
+                for (UInt32 Invalid = mHead + 1; Invalid < Handle; ++Invalid)
+                {
+                    mPool.push_back(Invalid);
+                }
+                mHead = Handle;
+            }
+            else
+            {
+                if (const auto Iterator = std::ranges::find(mPool, Handle); Iterator != mPool.end())
+                {
+                    mPool.erase(Iterator);
+                }
+            }
+        }
+
         /// \brief Checks whether the allocator has reached its capacity.
         /// 
         /// \return `true` if the allocator is full, `false` otherwise.
