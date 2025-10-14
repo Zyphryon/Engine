@@ -28,6 +28,7 @@
 #include "Zyphryon.Base/Domain/Provider.hpp"
 
 #include "Zyphryon.Base/Memory/Blob.hpp"
+#include "Zyphryon.Base/Memory/Catalog.hpp"
 #include "Zyphryon.Base/Memory/Handle.hpp"
 #include "Zyphryon.Base/Memory/Pool.hpp"
 

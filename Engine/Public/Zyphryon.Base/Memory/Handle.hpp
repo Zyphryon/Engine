@@ -84,7 +84,7 @@ inline namespace Base
 
             if (Handle > mHead)
             {
-                for (UInt32 Invalid = mHead + 1; Invalid < Handle; ++Invalid)
+                for (UInt32 Invalid = Handle; Invalid > mHead; --Invalid)
                 {
                     mPool.push_back(Invalid);
                 }
@@ -146,7 +146,7 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector<UInt32> mPool;
+        Vector<UInt32> mPool;   // TODO: Use a more efficient structure (Ranges?)
         UInt32         mHead;
     };
 }
