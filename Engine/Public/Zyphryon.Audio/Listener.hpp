@@ -21,7 +21,7 @@
 namespace Audio
 {
     /// \brief Represents the listener in a 3D spatial audio environment.
-    class Listener final : public Trackable
+    class Listener final : public Trackable<Listener>
     {
     public:
 

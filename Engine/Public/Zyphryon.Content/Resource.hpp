@@ -21,7 +21,7 @@
 namespace Content
 {
     /// \brief Base class for a loadable resource identified by a unique URI.
-    class Resource : public Trackable
+    class Resource : public Trackable<Resource>
     {
     public:
 
@@ -53,6 +53,9 @@ namespace Content
               mPolicy   { Policy::Managed }
         {
         }
+
+        /// \brief Destructor for proper cleanup in derived classes.
+        virtual ~Resource() = default;
 
         /// \brief Gets the unique key (URI) identifying this resource.
         ///

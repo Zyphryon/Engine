@@ -26,7 +26,7 @@ inline namespace Base
     /// A `Service` is a self-contained, reusable unit of functionality that is registered
     /// into a central `System` context. It supports per-frame updates, lifecycle management,
     /// and communication with other services through the shared context.
-    class Service : public Trackable
+    class Service : public Trackable<Service>
     {
     public:
 
@@ -44,6 +44,9 @@ inline namespace Base
               mGuid { Guid }
         {
         }
+
+        /// \brief Destructor for proper cleanup in derived classes.
+        virtual ~Service() = default;
 
         /// \brief Gets the unique identifier of this service.
         /// 

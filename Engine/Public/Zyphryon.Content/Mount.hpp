@@ -24,7 +24,7 @@ namespace Content
     ///
     /// A mount abstracts an underlying storage system (e.g., filesystem directory, archive file, or remote source)
     /// and exposes uniform file access methods for the content system.
-    class Mount : public Trackable
+    class Mount : public Trackable<Mount>
     {
     public:
 
@@ -52,6 +52,9 @@ namespace Content
         };
 
     public:
+
+        /// \brief Destructor for proper cleanup in derived classes.
+        virtual ~Mount() = default;
 
         /// \brief Enumerates all file system entries (files and folders) at the specified path.
         ///

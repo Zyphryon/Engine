@@ -21,7 +21,7 @@
 namespace Audio
 {
     /// \brief Represents a 3D sound emitter used in spatial audio.
-    class Emitter final : public Trackable
+    class Emitter final : public Trackable<Emitter>
     {
     public:
 

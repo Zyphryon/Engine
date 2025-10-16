@@ -24,6 +24,7 @@ inline namespace Base
     /// 
     /// `Trackable` is meant to be inherited by objects that need to be shared across systems
     /// while keeping their lifetime automatically managed.
+    template<typename Impl>
     class Trackable
     {
     public:
@@ -33,9 +34,6 @@ inline namespace Base
             : mReferences { 0 }
         {
         }
-
-        /// \brief Destructor.
-        virtual ~Trackable() = default;
 
         /// \brief Increments the reference count.
         ZYPHRYON_INLINE void Acquire() const
@@ -48,7 +46,7 @@ inline namespace Base
         {
             if (mReferences.fetch_sub(1, std::memory_order_acq_rel) == 1)
             {
-                delete this;
+                delete static_cast<ConstPtr<Impl>>(this);
             }
         }
 

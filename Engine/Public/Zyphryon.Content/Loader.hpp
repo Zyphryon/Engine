@@ -26,9 +26,12 @@ namespace Content
     /// \brief Interface for decoding binary content into resource objects.
     ///
     /// A loader interprets a binary \ref Blob and initializes a matching \ref Resource instance with its decoded data.
-    class Loader : public Trackable
+    class Loader : public Trackable<Loader>
     {
     public:
+
+        /// \brief Destructor for proper cleanup in derived classes.
+        virtual ~Loader() = default;
 
         /// \brief Gets the list of file extensions this loader can decode.
         ///
