@@ -81,7 +81,7 @@ namespace Engine
     void Kernel::Poll()
     {
         // Updates the current time by calculating the absolute time.
-        mTime.SetAbsolute(static_cast<Real64>(SDL_GetTicksNS()) * (1.0 / SDL_NS_PER_SECOND));
+        mTime.SetAbsolute(Time::Elapsed());
 
         // Tick application.
         OnTick(mTime);
@@ -98,7 +98,7 @@ namespace Engine
     void Kernel::Run()
     {
         // Updates the simulation time by calculating the absolute time.
-        mTime.SetAbsolute(static_cast<Real64>(SDL_GetTicksNS()) * (1.0 / SDL_NS_PER_SECOND));
+        mTime.SetAbsolute(Time::Elapsed());
 
 #ifdef    __EMSCRIPTEN__
 

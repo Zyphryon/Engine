@@ -57,6 +57,16 @@ inline namespace Base
             return mDelta;
         }
 
+    public:
+
+        /// \brief Retrieves the current time in seconds since application start.
+        ///
+        /// \return The current time in seconds.
+        static Real64 Elapsed()
+        {
+            return static_cast<Real64>(SDL_GetTicksNS()) * (1.0 / SDL_NS_PER_SECOND);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
