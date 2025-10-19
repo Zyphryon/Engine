@@ -40,6 +40,16 @@ inline namespace Base
         /// \return `true` if the section has no keys, `false` otherwise.
         Bool IsEmpty() const;
 
+        /// \brief Sets whether the section should be treated as inline.
+        ///
+        /// \param Inline If `true`, marks the section as inline.
+        void SetInline(Bool Inline);
+
+        /// \brief Returns whether the section is marked as inline.
+        ///
+        /// \return `true` if the section is inline, `false` otherwise.
+        Bool IsInline() const;
+
         /// \brief Returns the number of key-value pairs in the section.
         /// 
         /// \return The number of entries in the section.
