@@ -22,14 +22,22 @@ inline namespace Base
 {
     /// \brief The mathematical constant PI (π), templated for any real type.
     template<typename Type>
-    inline constexpr Type kPI      = Type(3.141592653589793238462643383279502884e+00);
+    inline constexpr Type kPI       = Type(3.141592653589793238462643383279502884e+00);
 
     /// \brief Relative epsilon for floating-point comparisons.
     template<typename Type>
-    inline constexpr Type kEpsilon =
+    inline constexpr Type kEpsilon  =
         IsEqual<Type, Real32> ? Type(1e-5f) :
         IsEqual<Type, Real64> ? Type(1e-12) :
         Type(0);
+
+    /// \brief Represents positive infinity for floating-point types.
+    template<typename Type>
+    inline constexpr Type kInfinity =
+        IsEqual<Type, Real32> ? std::numeric_limits<Real32>::infinity() :
+        IsEqual<Type, Real64> ? std::numeric_limits<Real64>::infinity() :
+        Type(0);
+
 
     /// \brief Converts degrees to radians.
     ///
