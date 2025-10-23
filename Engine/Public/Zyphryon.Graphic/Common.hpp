@@ -540,17 +540,23 @@ namespace Graphic
     /// \brief Describes the graphics capabilities of the current system and backend.
     struct Capabilities final
     {
-        /// The current graphics backend in use.
-        Backend  Backend  = Backend::None;
-
-        /// The current graphics API version.
-        Language Language = Language::V1;
-
-        /// The current multisampling level.
-        Samples  Samples  = Samples::X1;
-
         /// The list of available graphics adapters.
         Vector<Adapter> Adapters;
+
+        /// The current graphics backend in use.
+        Backend  Backend             = Backend::None;
+
+        /// The current graphics API version.
+        Language Language            = Language::V1;
+
+        /// The current multisampling level.
+        Samples  Samples             = Samples::X1;
+
+        /// The maximum texture size supported by the GPU.
+        UInt16   MaxTextureDimension = 0;
+
+        /// The maximum number of texture mipmap levels supported by the GPU.
+        UInt16   MaxTextureMipmaps   = 0;
     };
 
     /// \brief Describes the fixed-function GPU state used by a rendering pipeline.

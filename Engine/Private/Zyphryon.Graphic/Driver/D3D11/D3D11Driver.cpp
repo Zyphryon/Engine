@@ -12,6 +12,8 @@
 
 #include "D3D11Driver.hpp"
 
+#include "../../../../../.idea/cmake-release-build/_deps/external_sdl-src/src/video/directx/d3d12.h"
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1198,24 +1200,36 @@ namespace Graphic
         {
             case D3D_FEATURE_LEVEL_12_1:
             case D3D_FEATURE_LEVEL_12_0:
-                mCapabilities.Language = Language::V6;
+                mCapabilities.Language            = Language::V6;
+                mCapabilities.MaxTextureDimension = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = D3D12_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_11_1:
             case D3D_FEATURE_LEVEL_11_0:
-                mCapabilities.Language = Language::V5;
+                mCapabilities.Language            = Language::V5;
+                mCapabilities.MaxTextureDimension = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = D3D11_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_10_1:
             case D3D_FEATURE_LEVEL_10_0:
-                mCapabilities.Language = Language::V4;
+                mCapabilities.Language            = Language::V4;
+                mCapabilities.MaxTextureDimension = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = D3D10_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_9_3:
-                mCapabilities.Language = Language::V3;
+                mCapabilities.Language            = Language::V3;
+                mCapabilities.MaxTextureDimension = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             case D3D_FEATURE_LEVEL_9_2:
-                mCapabilities.Language = Language::V2;
+                mCapabilities.Language            = Language::V2;
+                mCapabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             case D3D_FEATURE_LEVEL_9_1:
-                mCapabilities.Language = Language::V1;
+                mCapabilities.Language            = Language::V1;
+                mCapabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             default:
                 break;
