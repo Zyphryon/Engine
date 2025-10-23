@@ -26,8 +26,8 @@ inline namespace Bit
     /// \param Offset The bit offset to start extraction.
     /// \param Mask   The bitmask indicating which bits to extract.
     /// \return The extracted bits after applying the offset and mask.
-    template<typename Type, typename Value>
-    constexpr auto GetBit(Type Field, Value Offset, Value Mask)
+    template<typename Type>
+    constexpr auto GetBit(Type Field, auto Offset, auto Mask)
     {
         return (Field >> Offset) & Mask;
     }
@@ -39,8 +39,8 @@ inline namespace Bit
     /// \param Mask   The bitmask indicating which bits to set.
     /// \param Data   The data to set in the specified bits.
     /// \return A new value with the specified bits set.
-    template<typename Type, typename Value>
-    constexpr auto SetBit(Type Field, Value Offset, Value Mask, Value Data)
+    template<typename Type>
+    constexpr auto SetBit(Type Field, auto Offset, auto Mask, auto Data)
     {
         return (Field & ~(Mask << Offset)) | ((Data & Mask) << Offset);
     }
