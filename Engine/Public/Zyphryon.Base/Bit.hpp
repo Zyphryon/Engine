@@ -20,6 +20,31 @@
 
 inline namespace Bit
 {
+    /// \brief Extracts specific bits from a field based on an offset and mask.
+    ///
+    /// \param Field  The field from which to extract bits.
+    /// \param Offset The bit offset to start extraction.
+    /// \param Mask   The bitmask indicating which bits to extract.
+    /// \return The extracted bits after applying the offset and mask.
+    template<typename Type, typename Value>
+    constexpr auto GetBit(Type Field, Value Offset, Value Mask)
+    {
+        return (Field >> Offset) & Mask;
+    }
+
+    /// \brief Sets specific bits in a field at a given offset using a mask and data.
+    ///
+    /// \param Field  The original field value to modify.
+    /// \param Offset The bit offset where the data should be set.
+    /// \param Mask   The bitmask indicating which bits to set.
+    /// \param Data   The data to set in the specified bits.
+    /// \return A new value with the specified bits set.
+    template<typename Type, typename Value>
+    constexpr auto SetBit(Type Field, Value Offset, Value Mask, Value Data)
+    {
+        return (Field & ~(Mask << Offset)) | ((Data & Mask) << Offset);
+    }
+
     /// \brief Checks whether all bits in the given mask are set in the field.
     /// 
     /// \param Field The field to check.
