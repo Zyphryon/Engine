@@ -137,7 +137,7 @@ inline namespace Base
     constexpr UInt64 HashType()
     {
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
-        return HashText(__PRETTY_FUNCTION__);
+        return HashTextType(__PRETTY_FUNCTION__);
 #else
         return HashTextType(__FUNCSIG__);
 #endif
