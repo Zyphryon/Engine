@@ -292,7 +292,7 @@ namespace Scene
         ///
         /// \return A reference to the updated entity.
         template<typename Component, typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Entity> Emplace(Entity Tag, AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(Entity Tag, AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace_second<Component>(Tag.GetID(), Forward<Arguments>(Parameters)...);
             return (* this);
