@@ -63,6 +63,9 @@ inline namespace Base
     /// \brief 64-bit unsigned integer (0 to 18,446,744,073,709,551,615).
     using UInt64    = std::uint64_t;
 
+    /// \brief Single-precision floating point number (typically 16-bit).
+    using Real16    = uint16_t;
+
     /// \brief Single-precision floating point number (typically 32-bit).
     using Real32    = float;
 

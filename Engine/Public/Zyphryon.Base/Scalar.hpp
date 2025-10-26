@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Trait.hpp"
+#include <immintrin.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -414,5 +415,77 @@ inline namespace Base
         {
             return IsAlmostEqual(First, Type(0));
         }
+    }
+
+    /// \brief Converts a 32-bit floating-point value to a 16-bit half-precision representation.
+    ///
+    /// \param Value The 32-bit floating-point value to convert.
+    /// \return The corresponding 16-bit half-precision representation.
+    constexpr Real16 FloatToHalf(Real32 Value)
+    {
+#ifdef   __F16C__
+        return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
+#else
+        const UInt32 Bits     = std::bit_cast<UInt32>(Value);
+        const UInt32 Sign     = (Bits >> 16) & 0x8000;
+        const SInt32 Exponent = ((Bits >> 23) & 0xFF) - 112;
+        const UInt32 Mantissa = Bits & 0x007FFFFF;
+
+        if (Exponent < 0)
+        {
+            return static_cast<UInt16>(Sign);
+        }
+        if (Exponent > 30)
+        {
+            return static_cast<UInt16>(Sign | 0x7C00);
+        }
+        return static_cast<UInt16>(Sign | (Exponent << 10) | (Mantissa >> 13));
+#endif //__F16C__
+    }
+
+    /// \brief Converts a 16-bit half-precision floating-point value to a 32-bit representation.
+    ///
+    /// \param Value The 16-bit half-precision floating-point value to convert.
+    /// \return The corresponding 32-bit floating-point representation.
+    constexpr Real32 HalfToFloat(Real16 Value)
+    {
+#ifdef   __F16C__
+        return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(Value)));
+#else
+        const UInt32 Sign     = (Value >> 15) & 0x00000001;
+        const UInt32 Exponent = (Value >> 10) & 0x0000001F;
+        const UInt32 Mantissa = Value & 0x000003FF;
+
+        UInt32 Result;
+        if (Exponent == 0)
+        {
+            if (Mantissa == 0)
+            {
+                Result = Sign << 31;
+            }
+            else
+            {
+                SInt32 E = -1;
+                UInt32 M = Mantissa;
+                while ((M & 0x00000400) == 0)
+                {
+                    M <<= 1;
+                    --E;
+                }
+                M      &= 0x000003FF;
+                E      += 1;
+                Result = (Sign << 31) | ((E + 127) << 23) | (M << 13);
+            }
+        }
+        else if (Exponent == 31)
+        {
+            Result = (Sign << 31) | 0x7F800000 | (Mantissa << 13);
+        }
+        else
+        {
+            Result = (Sign << 31) | ((Exponent + 112) << 23) | (Mantissa << 13);
+        }
+        return std::bit_cast<Real32>(Result);
+#endif //__F16C__
     }
 }
