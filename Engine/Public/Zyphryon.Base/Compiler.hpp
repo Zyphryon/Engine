@@ -80,3 +80,11 @@ inline namespace Base
     #define ZYPHRYON_LITTLE_ENDIAN 0
 #endif
 }
+
+/// \def ZYPHRYON_CPU_BIT
+/// \brief Defines the operating system architecture bitness (32 or 64).
+#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__) || defined(__aarch64__)
+    #define ZYPHRYON_CPU_BIT 64
+#else
+    #define ZYPHRYON_CPU_BIT 32
+#endif
