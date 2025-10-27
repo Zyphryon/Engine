@@ -133,6 +133,29 @@ inline namespace Base
         /// \return The string value stored at the key.
         ConstStr8 GetString(ConstStr8 Key, ConstStr8 Default = "") const;
 
+        /// \brief Sets an enumeration value under the specified key.
+        ///
+        /// \param Key   The key name.
+        /// \param Value The enumeration value to store.
+        template<typename Type>
+        void SetEnum(ConstStr8 Key, Type Value)
+            requires IsEnum<Type>
+        {
+            SetString(Key, Enum::GetName(Value));
+        }
+
+        /// \brief Retrieves an enumeration value from the section.
+        ///
+        /// \param Key     The key name.
+        /// \param Default Value to return if the key is not found.
+        /// \return The enumeration value stored at the key.
+        template<typename Type>
+        Type GetEnum(ConstStr8 Key, Type Default) const
+            requires IsEnum<Type>
+        {
+            return Enum::Cast(GetString(Key), Default);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

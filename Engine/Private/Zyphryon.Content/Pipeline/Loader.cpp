@@ -79,19 +79,19 @@ namespace Content
 
         // Parse 'blend' section
         const TOMLSection Blend = Properties.GetSection("Blend");
-        Description.BlendMask           = Enum::Cast(Blend.GetString("Mask"), Graphic::BlendMask::RGBA);
-        Description.BlendSrcColor       = Enum::Cast(Blend.GetString("SrcColor"), Graphic::BlendFactor::One);
-        Description.BlendDstColor       = Enum::Cast(Blend.GetString("DstColor"), Graphic::BlendFactor::Zero);
-        Description.BlendEquationColor  = Enum::Cast(Blend.GetString("EquationColor"), Graphic::BlendFunction::Add);
-        Description.BlendSrcAlpha       = Enum::Cast(Blend.GetString("SrcAlpha"), Graphic::BlendFactor::One);
-        Description.BlendDstAlpha       = Enum::Cast(Blend.GetString("DstAlpha"), Graphic::BlendFactor::Zero);
-        Description.BlendEquationAlpha  = Enum::Cast(Blend.GetString("EquationAlpha"), Graphic::BlendFunction::Add);
+        Description.BlendMask           = Blend.GetEnum("Mask", Graphic::BlendMask::RGBA);
+        Description.BlendSrcColor       = Blend.GetEnum("SrcColor", Graphic::BlendFactor::One);
+        Description.BlendDstColor       = Blend.GetEnum("DstColor", Graphic::BlendFactor::Zero);
+        Description.BlendEquationColor  = Blend.GetEnum("EquationColor", Graphic::BlendFunction::Add);
+        Description.BlendSrcAlpha       = Blend.GetEnum("SrcAlpha", Graphic::BlendFactor::One);
+        Description.BlendDstAlpha       = Blend.GetEnum("DstAlpha", Graphic::BlendFactor::Zero);
+        Description.BlendEquationAlpha  = Blend.GetEnum("EquationAlpha", Graphic::BlendFunction::Add);
 
         // Parse 'depth' section
         const TOMLSection Depth = Properties.GetSection("Depth");
         Description.DepthClip      = Depth.GetBool("Clip", true);
         Description.DepthMask      = Depth.GetBool("Mask", true);
-        Description.DepthTest      = Enum::Cast(Depth.GetString("Condition"), Graphic::TestCondition::LessEqual);
+        Description.DepthTest      = Depth.GetEnum("Condition", Graphic::TestCondition::LessEqual);
         Description.DepthBias      = Depth.GetReal("Bias", 0.0);
         Description.DepthBiasClamp = Depth.GetReal("BiasClamp", 0.0);
         Description.DepthBiasSlope = Depth.GetReal("BiasSlope", 0.0);
@@ -100,19 +100,19 @@ namespace Content
         const TOMLSection Stencil = Properties.GetSection("Stencil");
         Description.StencilReadMask       = Stencil.GetInteger("ReadMask", 0);
         Description.StencilWriteMask      = Stencil.GetInteger("WriteMask", 0);
-        Description.StencilBackTest       = Enum::Cast(Stencil.GetString("BackTest"), Graphic::TestCondition::Always);
-        Description.StencilBackFail       = Enum::Cast(Stencil.GetString("BackFail"), Graphic::TestAction::Keep);
-        Description.StencilBackDepthFail  = Enum::Cast(Stencil.GetString("BackDepthFail"), Graphic::TestAction::Keep);
-        Description.StencilBackDepthPass  = Enum::Cast(Stencil.GetString("BackDepthPass"), Graphic::TestAction::Keep);
-        Description.StencilFrontTest      = Enum::Cast(Stencil.GetString("FrontTest"), Graphic::TestCondition::Always);
-        Description.StencilFrontFail      = Enum::Cast(Stencil.GetString("FrontFail"), Graphic::TestAction::Keep);
-        Description.StencilFrontDepthFail = Enum::Cast(Stencil.GetString("FrontDepthFail"), Graphic::TestAction::Keep);
-        Description.StencilFrontDepthPass = Enum::Cast(Stencil.GetString("FrontDepthPass"), Graphic::TestAction::Keep);
+        Description.StencilBackTest       = Stencil.GetEnum("BackTest", Graphic::TestCondition::Always);
+        Description.StencilBackFail       = Stencil.GetEnum("BackFail", Graphic::TestAction::Keep);
+        Description.StencilBackDepthFail  = Stencil.GetEnum("BackDepthFail", Graphic::TestAction::Keep);
+        Description.StencilBackDepthPass  = Stencil.GetEnum("BackDepthPass", Graphic::TestAction::Keep);
+        Description.StencilFrontTest      = Stencil.GetEnum("FrontTest", Graphic::TestCondition::Always);
+        Description.StencilFrontFail      = Stencil.GetEnum("FrontFail", Graphic::TestAction::Keep);
+        Description.StencilFrontDepthFail = Stencil.GetEnum("FrontDepthFail", Graphic::TestAction::Keep);
+        Description.StencilFrontDepthPass = Stencil.GetEnum("FrontDepthPass", Graphic::TestAction::Keep);
 
         // Parse 'rasterizer' section
         const TOMLSection Rasterizer = Properties.GetSection("Rasterizer");
-        Description.Fill = Enum::Cast(Rasterizer.GetString("Fill"), Graphic::Fill::Solid);
-        Description.Cull = Enum::Cast(Rasterizer.GetString("Cull"), Graphic::Cull::Back);
+        Description.Fill = Rasterizer.GetEnum("Fill", Graphic::Fill::Solid);
+        Description.Cull = Rasterizer.GetEnum("Cull", Graphic::Cull::Back);
 
         // Parse 'layout' section
         const TOMLSection Layout     = Properties.GetSection("Layout");
@@ -123,14 +123,14 @@ namespace Content
             const TOMLArray Values = Attributes.GetArray(Index);
 
             Ref<Graphic::Attribute> Attribute = Description.InputAttributes.emplace_back();
-            Attribute.Semantic = Enum::Cast(Values.GetString(0), Graphic::VertexSemantic::None);
-            Attribute.Format   = Enum::Cast(Values.GetString(1), Graphic::VertexFormat::Float32x4);
+            Attribute.Semantic = Values.GetEnum(0, Graphic::VertexSemantic::None);
+            Attribute.Format   = Values.GetEnum(1, Graphic::VertexFormat::Float32x4);
             Attribute.Stream   = Values.GetInteger(2);
             Attribute.Offset   = Values.GetInteger(3);
             Attribute.Divisor  = Values.GetInteger(4);
         }
 
-        Description.InputPrimitive = Enum::Cast(Layout.GetString("Primitive"), Graphic::Primitive::TriangleList);
+        Description.InputPrimitive = Layout.GetEnum("Primitive", Graphic::Primitive::TriangleList);
 
         // Parse 'textures' section
         const TOMLSection Textures = Program.GetSection("Textures");

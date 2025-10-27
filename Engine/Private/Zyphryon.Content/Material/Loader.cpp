@@ -31,7 +31,7 @@ namespace Content
 
         // Parse 'properties' section
         const Tracker<Graphic::Material> Asset = Tracker<Graphic::Material>::Cast(Scope.GetResource());
-        Asset->SetKind(Enum::Cast(Root.GetString("Kind"), Graphic::Material::Kind::Opaque));
+        Asset->SetKind(Root.GetEnum("Kind", Graphic::Material::Kind::Opaque));
 
         // Parse 'textures' section
         for (const Graphic::TextureSemantic Semantic : Enum::GetValues<Graphic::TextureSemantic>())
@@ -45,9 +45,9 @@ namespace Content
                 if (const TOMLSection Sampler = Samplers.GetSection(Texture.GetString("Sampler")); !Sampler.IsNull())
                 {
                     Graphic::Sampler Description;
-                    Description.WrapModeU = Enum::Cast(Sampler.GetString("WrapModeU"), Graphic::TextureEdge::Clamp);
-                    Description.WrapModeV = Enum::Cast(Sampler.GetString("WrapModeV"), Graphic::TextureEdge::Clamp);
-                    Description.Filter    = Enum::Cast(Sampler.GetString("Filter"), Graphic::TextureFilter::Point);
+                    Description.WrapModeU = Sampler.GetEnum("WrapModeU", Graphic::TextureEdge::Clamp);
+                    Description.WrapModeV = Sampler.GetEnum("WrapModeV", Graphic::TextureEdge::Clamp);
+                    Description.Filter    = Sampler.GetEnum("Filter", Graphic::TextureFilter::Point);
 
                     Asset->SetSampler(Semantic, Description);
                 }

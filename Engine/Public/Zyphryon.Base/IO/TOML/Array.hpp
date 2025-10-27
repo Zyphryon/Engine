@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Primitive.hpp"
+#include "Zyphryon.Base/Enum.hpp"
 #include <toml.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -114,6 +115,27 @@ inline namespace Base
         /// \param Index The zero-based index.
         /// \return The string at the specified index.
         ConstStr8 GetString(UInt32 Index) const;
+
+        /// \brief Appends an enumeration value to the array.
+        ///
+        /// \param Value The enumeration value to add.
+        template<typename Type>
+        void AddEnum(Type Value)
+            requires IsEnum<Type>
+        {
+            AddString(Enum::GetName(Value));
+        }
+
+        /// \brief Retrieves an enumeration value from the array.
+        ///
+        /// \param Index   The zero-based index.
+        /// \param Default Value to return if conversion fails.
+        template<typename Type>
+        Type GetEnum(UInt32 Index, Type Default) const
+            requires IsEnum<Type>
+        {
+            return Enum::Cast(GetString(Index), Default);
+        }
 
     private:
 
