@@ -924,8 +924,10 @@ namespace Graphic
 
     void D3D11Driver::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
     {
-        const D3D11_BOX Offset = CD3D11_BOX(X, Y, 0, X + Width, Y + Height, 1);
-        mDeviceImmediate->UpdateSubresource(mTextures[ID].Resource.Get(), Level, &Offset, Data.data(), Pitch, 0);
+        const D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
+        const D3D11_BOX Offset       = CD3D11_BOX(X, Y, 0, X + Width, Y + Height, 1);
+        
+        mDeviceImmediate->UpdateSubresource1(mTextures[ID].Resource.Get(), Level, &Offset, Data.data(), Pitch, 0, Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
