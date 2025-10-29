@@ -12,133 +12,86 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Collection.hpp"
+#include <Zyphryon.Base/Base.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+namespace Gameplay
 {
-    /// \brief A lightweight, bounded handle allocator with support for recycling.
-    ///
-    /// \tparam Capacity Maximum number of active handles.
-    template<UInt32 Capacity>
+    /// \brief Represents a strongly-typed handle for resource identification.
+    template<typename Type>
     class Handle final
     {
     public:
 
-        /// \brief Constructs a new handle allocator with empty state.
-        ZYPHRYON_INLINE explicit Handle()
-            : mHead { 0 }
+        /// \brief Represents an invalid handle value.
+        static constexpr Type kInvalid = static_cast<Type>(0);
+
+    public:
+
+        /// \brief Constructs an invalid handle.
+        ZYPHRYON_INLINE constexpr Handle()
+            : mID { kInvalid }
         {
         }
 
-        /// \brief Allocates a new unique handle.
+        /// \brief Constructs a handle with the specified ID.
         ///
-        /// \return A unique non-zero handle.
-        ZYPHRYON_INLINE UInt32 Allocate()
+        /// \param ID The identifier value for the handle.
+        template<typename Other>
+        ZYPHRYON_INLINE constexpr Handle(Other ID)
+            : mID { static_cast<Type>(ID) }
         {
-            if (mPool.empty())
-            {
-                LOG_ASSERT(mHead < Capacity, "Attempted to allocate beyond maximum capacity");
-
-                return ++mHead;
-            }
-
-            const UInt32 Handle = mPool.back();
-            mPool.pop_back();
-            return Handle;
         }
 
-        /// \brief Releases a handle back to the allocator for reuse.
+        /// \brief Checks whether the handle is valid (not equal to `kInvalid`).
         ///
-        /// \param Handle The handle to release (must be valid).
-        ZYPHRYON_INLINE void Free(UInt32 Handle)
+        /// \return `true` if the handle is valid, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool IsValid() const
         {
-            LOG_ASSERT(Handle && Handle <= mHead, "Attempted to free invalid handle");
-
-            if (Handle == mHead)
-            {
-                --mHead;
-            }
-            else
-            {
-                mPool.emplace_back(Handle); // TODO: Check double free in debug version?
-            }
+            return mID != kInvalid;
         }
 
-        /// \brief Clears all state and resets the allocator to empty.
-        ZYPHRYON_INLINE void Clear()
-        {
-            mHead = 0;
-            mPool.clear();
-        }
-
-        /// \brief Marks a handle as acquired, preventing it from being reissued.
+        /// \brief Retrieves the underlying ID of the handle.
         ///
-        /// \param Handle The handle to acquire (must be valid or zero).
-        ZYPHRYON_INLINE void Acquire(UInt32 Handle)
+        /// \return The identifier value of the handle.
+        ZYPHRYON_INLINE constexpr Type GetID() const
         {
-            LOG_ASSERT(Handle != 0 && Handle <= Capacity, "Attempted to acquire invalid handle");
-
-            if (Handle > mHead)
-            {
-                for (UInt32 Invalid = Handle; Invalid > mHead; --Invalid)
-                {
-                    mPool.push_back(Invalid);
-                }
-                mHead = Handle;
-            }
-            else
-            {
-                if (const auto Iterator = std::ranges::find(mPool, Handle); Iterator != mPool.end())
-                {
-                    mPool.erase(Iterator);
-                }
-            }
+            return mID;
         }
 
-        /// \brief Checks whether the allocator has reached its capacity.
-        /// 
-        /// \return `true` if the allocator is full, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsFull() const
+        /// \brief Resets the handle to an invalid state.
+        ZYPHRYON_INLINE constexpr void Reset()
         {
-            return mPool.empty() && mHead == Capacity;
+            mID = kInvalid;
         }
 
-        /// \brief Checks whether the allocator has no active handles.
-        /// 
-        /// \return `true` if the allocator is empty, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsEmpty() const
-        {
-            return mPool.empty() && mHead == 0;
-        }
-
-        /// \brief Returns the highest sequential handle ever issued.
-        /// 
-        /// \return The maximum issued handle value.
-        ZYPHRYON_INLINE UInt32 GetHead() const
-        {
-            return mHead;
-        }
-
-        /// \brief Returns the number of currently active handles.
-        /// 
-        /// \return The total count of handles in use.
-        ZYPHRYON_INLINE UInt32 GetSize() const
-        {
-            return mHead - mPool.size();
-        }
-
-        /// \brief Serializes the state of the object to or from the specified archive.
+        /// \brief Equality operator to compare two handles.
         ///
-        /// \param Archive The archive to serialize the object with.
-        template<typename Serializer>
-        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        /// \param Other The other handle to compare against.
+        /// \return `true` if the handles are equal, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool operator==(Handle Other) const
         {
-            Archive.SerializeVector(mPool);
-            Archive.SerializeInt(mHead);
+            return mID == Other.mID;
+        }
+
+        /// \brief Inequality operator to compare two handles.
+        ///
+        /// \param Other The other handle to compare against.
+        /// \return `true` if the handles are not equal, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool operator!=(Handle Other) const
+        {
+            return mID != Other.mID;
+        }
+
+        /// \brief Computes a hash value for the handle.
+        ///
+        /// \return The hash value derived from the handle's ID.
+        ZYPHRYON_INLINE constexpr UInt64 Hash() const
+        {
+            return mID;
         }
 
     private:
@@ -146,7 +99,6 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector<UInt32> mPool;   // TODO: Use a more efficient structure (Ranges?)
-        UInt32         mHead;
+        Type mID;
     };
 }

@@ -136,7 +136,7 @@ namespace Audio
         struct FAudioInstanceManager final
         {
             /// The allocator of audio instances.
-            Handle<kMaxInstances>                      Allocator;
+            Handles<kMaxInstances>                     Allocator;
 
             /// The pool of free audio instances.
             Vector<FAudioInstance, kMaxInstances>      Pool;

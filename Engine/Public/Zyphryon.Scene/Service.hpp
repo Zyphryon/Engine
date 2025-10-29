@@ -466,8 +466,8 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        flecs::world                mWorld;
-        Handle<kMaxCountArchetypes> mArchetypes;
-        Query<>                     mArchetypesQueryAll;
+        flecs::world                 mWorld;
+        Handles<kMaxCountArchetypes> mArchetypes;
+        Query<>                      mArchetypesQueryAll;
     };
 }

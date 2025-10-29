@@ -452,10 +452,10 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Handle<kMaxBuffers>                mBuffers;
-        Handle<kMaxMaterials>              mMaterials;
-        Handle<kMaxPasses>                 mPasses;
-        Handle<kMaxPipelines>              mPipelines;
-        Handle<kMaxTextures>               mTextures;
+        Handles<kMaxBuffers>               mBuffers;
+        Handles<kMaxMaterials>             mMaterials;
+        Handles<kMaxPasses>                mPasses;
+        Handles<kMaxPipelines>             mPipelines;
+        Handles<kMaxTextures>              mTextures;
     };
 }
