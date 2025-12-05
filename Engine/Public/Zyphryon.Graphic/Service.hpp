@@ -361,7 +361,7 @@ namespace Graphic
             Frame.Stream.WriteEnum(Command::kType);
 
             /// Write the command arguments.
-            Frame.Stream.template WriteStruct<Command>(Forward<Arguments>(Parameters)...);
+            Frame.Stream.WriteStruct<Command>(Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Reconstructs and executes a GPU command from a command stream.
@@ -372,7 +372,7 @@ namespace Graphic
         template<auto Method, typename Command>
         ZYPHRYON_INLINE void ExecuteCommand(Ref<Reader> Stream)
         {
-            const ConstPtr<Command> Instance = Stream.template ReadStruct<Command>();
+            const ConstPtr<Command> Instance = Stream.ReadStruct<Command>();
             Instance->template Execute<Method>(* mDriver);
             InPlaceDelete(* Instance);
         }

@@ -46,9 +46,9 @@ namespace Content
         }
 
         // Font Data
-        Graphic::Font::Metrics              FontMetrics;
-        Table<UInt32, Graphic::Font::Glyph> FontGlyphs;
-        Table<UInt64, Real32>               FontKerning;
+        Graphic::Font::Metrics FontMetrics;
+        Graphic::Font::Glyphs  FontGlyphs;
+        Graphic::Font::Kerning FontKerning;
 
         // Read header
         ArteryFontHeader FontHeader;

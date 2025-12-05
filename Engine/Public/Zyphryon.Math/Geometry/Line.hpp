@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -324,23 +323,14 @@ inline namespace Math
         /// \param Line  The line circle.
         /// \param Pivot The pivot alignment mode.
         /// \return A line anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Line Anchor(ConstRef<Line> Line, Pivot Pivot)
+        ZYPHRYON_INLINE constexpr static Line Anchor(ConstRef<Line> Line, ConstRef<Pivot> Pivot)
         {
-            constexpr Vector2 kMultiplier[] = {
-                Vector2( 0.0f, 0.0f),  // LeftTop
-                Vector2( 0.0f, 0.0f),  // LeftMiddle
-                Vector2( 0.0f, 0.0f),  // LeftBottom
-                Vector2(-0.5f, 0.0f),  // CenterTop
-                Vector2(-0.5f, 0.0f),  // CenterMiddle
-                Vector2(-0.5f, 0.0f),  // CenterBottom
-                Vector2(-1.0f, 0.0f),  // RightTop
-                Vector2(-1.0f, 0.0f),  // RightMiddle
-                Vector2(-1.0f, 0.0f),  // RightBottom
-            };
+            const Vector2 MinPoint    = Vector2::Min(Line.GetStart(), Line.GetEnd());
+            const Vector2 MaxPoint    = Vector2::Max(Line.GetStart(), Line.GetEnd());
+            const Vector2 Size        = MaxPoint - MinPoint;
+            const Vector2 Translation = MinPoint + Vector2(Pivot.GetX() * Size.GetX(), Pivot.GetY() * Size.GetY());
 
-            const Vector2 Size   = Vector2::Max(Line.GetStart(), Line.GetEnd()) - Vector2::Min(Line.GetStart(), Line.GetEnd());
-            const Vector2 Offset = kMultiplier[Enum::Cast(Pivot)] * Size;
-            return Math::Line(Line.GetStart() + Offset, Line.GetEnd() + Offset);
+            return Math::Line(Line.GetStart() - Translation, Line.GetEnd() - Translation);
         }
 
         /// \brief Linearly interpolates between two lines.

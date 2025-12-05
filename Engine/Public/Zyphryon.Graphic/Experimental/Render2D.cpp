@@ -151,7 +151,7 @@ namespace Graphic
         const UInt32 ID = Font->GetMaterial()->GetID();
 
         // TODO: Automatically wrapping
-        const Rect Origin = Font->Layout(Text, Size, Anchor);
+        const Rect Origin = Font->Layout(Text, Size, Anchor, Vector2());
         const Real32 Depth = Transform.GetTranslation().GetZ();
 
         Real32 CurrentX = Origin.GetX();

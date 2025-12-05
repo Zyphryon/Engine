@@ -45,12 +45,8 @@ namespace Example
                     Random::Default().NextInteger<UInt16>(0, 1000))));
         }
 
-        // (Until Fix) -> wait for the renderer to load
+
         mRenderer = NewUniquePtr<Graphic::Render2D>(* this);
-        while (!mRenderer->IsReady())
-        {
-            GetService<Content::Service>()->OnTick({});
-        }
 
         mCamera.SetOrthographic(0.0f, GetDevice().GetWidth(), 0.0f, GetDevice().GetHeight(), -1.0f, 1.0f);
         mCamera.Compute();
@@ -85,6 +81,8 @@ namespace Example
             }, Scene::DSL::Interval<1>(mTimer));
 
 
+        GetService<Content::Service>()->Wait();
+        
         return true;
     }
 

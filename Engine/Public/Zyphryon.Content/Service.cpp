@@ -63,26 +63,37 @@ namespace Content
     {
         ZYPHRYON_PROFILE_SCOPE("Content::Tick");
 
-        Lock<> Guard(mParserLatch);
+        // Count of completed parsers in this tick.
+        UInt32 Completed = 0;
 
-        // Iterates through all pending scopes in the loader list.
-        for (UInt32 Element = 0; Element < mParserList.size();)
         {
-            // If the scope's dependencies are all resolved, finalize the associated resource.
-            if (Ref<Scope> Scope = mParserList[Element]; Scope.Poll())
-            {
-                // Proceed to load the asset.
-                OnAssetCreate(* Scope.GetResource());
+            Lock<> Guard(mParserLatch);
 
-                // Remove the completed scope from the list via swap-remove for efficiency.
-                mParserList[Element] = Move(mParserList[mParserList.size() - 1]);
-                mParserList.pop_back();
-            }
-            else
+            // Iterates through all pending scopes in the loader list.
+            for (UInt32 Element = 0; Element < mParserList.size();)
             {
-                ++Element;
+                // If the scope's dependencies are all resolved, finalize the associated resource.
+                if (Ref<Scope> Scope = mParserList[Element]; Scope.Poll())
+                {
+                    // Proceed to load the asset.
+                    OnAssetCreate(* Scope.GetResource());
+
+                    // Remove the completed scope from the list via swap-remove for efficiency.
+                    mParserList[Element] = Move(mParserList[mParserList.size() - 1]);
+                    mParserList.pop_back();
+
+                    // Increment the count of completed parsers.
+                    ++Completed;
+                }
+                else
+                {
+                    ++Element;
+                }
             }
         }
+
+        // Update the count of pending parsers.
+        mParserPending.fetch_sub(Completed, std::memory_order_release);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -208,6 +219,22 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::Wait(UInt32 Sleep)
+    {
+        ZYPHRYON_PROFILE_SCOPE("Content::Wait");
+
+        while (mParserPending.load(std::memory_order_acquire) > 0)
+        {
+            OnTick(Time());
+
+            // Sleep to avoid busy-waiting.
+            SDL_Delay(Sleep);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::OnLoaderThread(ConstRef<std::stop_token> Token)
     {
         ZYPHRYON_THREAD_NAME("I/O Thread");
@@ -249,7 +276,11 @@ namespace Content
             }
             else
             {
+                // Mark the resource as failed.
                 Scope.GetResource()->SetStatus(Resource::Status::Failed);
+
+                // Decrement the count of pending parser jobs.
+                mParserPending.fetch_sub(1, std::memory_order_release);
             }
         }
 
@@ -306,6 +337,9 @@ namespace Content
                 Lock<> Guard(mLoaderLatch);
                 mLoaderList.emplace_back(Asset);
             }
+
+            // Increment the count of pending parser jobs.
+            mParserPending.fetch_add(1, std::memory_order_release);
 
             // Wake up one loader thread to process the resource
             mLoaderCondition.notify_one();

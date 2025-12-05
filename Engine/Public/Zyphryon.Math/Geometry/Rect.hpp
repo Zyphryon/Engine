@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -821,21 +820,13 @@ inline namespace Math
         /// \param Rectangle The source rectangle.
         /// \param Pivot     The pivot alignment mode.
         /// \return A rectangle anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static AnyRect Anchor(ConstRef<AnyRect> Rectangle, Pivot Pivot)
+        ZYPHRYON_INLINE constexpr static AnyRect Anchor(ConstRef<AnyRect> Rectangle, ConstRef<Pivot> Pivot)
             requires (IsReal<Type>)
         {
-            constexpr AnyRect kMultiplier[] = {
-                AnyRect( Type(0.0), -Type(1.0), Type(1.0), Type(0.0)),  // LeftTop
-                AnyRect( Type(0.0), -Type(0.5), Type(1.0), Type(0.5)),  // LeftMiddle
-                AnyRect( Type(0.0),  Type(0.0), Type(1.0), Type(1.0)),  // LeftBottom
-                AnyRect(-Type(0.5), -Type(1.0), Type(0.5), Type(0.0)),  // CenterTop
-                AnyRect(-Type(0.5), -Type(0.5), Type(0.5), Type(0.5)),  // CenterMiddle
-                AnyRect(-Type(0.5),  Type(0.0), Type(0.5), Type(1.0)),  // CenterBottom
-                AnyRect(-Type(1.0), -Type(1.0), Type(0.0), Type(0.0)),  // RightTop
-                AnyRect(-Type(1.0), -Type(0.5), Type(0.0), Type(0.5)),  // RightMiddle
-                AnyRect(-Type(1.0),  Type(0.0), Type(0.0), Type(1.0)),  // RightBottom
-            };
-            return kMultiplier[Enum::Cast(Pivot)] * Rectangle.GetSize() + Rectangle.GetPosition();
+            const Type OffsetX = Rectangle.GetMinimumX() - Pivot.GetX() * Rectangle.GetWidth();
+            const Type OffsetY = Rectangle.GetMinimumY() - Pivot.GetY() * Rectangle.GetHeight();
+
+            return AnyRect(OffsetX, OffsetY, Rectangle.GetWidth(), Rectangle.GetHeight());
         }
 
         /// \brief Linearly interpolates between two rectangles.

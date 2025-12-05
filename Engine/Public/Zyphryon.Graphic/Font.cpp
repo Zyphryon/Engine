@@ -29,10 +29,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Font::Load(AnyRef<Metrics> Metrics, AnyRef<Table<UInt32, Glyph>> Registry, AnyRef<Table<UInt64, Real32>> Kerning, ConstTracker<Material> Material)
+    void Font::Load(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, ConstTracker<Material> Material)
     {
         mMetrics  = Move(Metrics);
-        mRegistry = Move(Registry);
+        mGlyphs   = Move(Glyphs);
         mKerning  = Move(Kerning);
         mMaterial = Material;
     }
@@ -40,35 +40,41 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector2 Font::Measure(ConstStr8 Word, Real32 Size, Real32 Spacing) const
+    Vector2 Font::Measure(ConstStr8 Word, Real32 Size, ConstRef<Vector2> Spacing) const
     {
+        const Real32 LineHeight = (mMetrics.Ascender - mMetrics.Descender) + Spacing.GetY();
+
         Real32 CurrentX = 0.0f;
         Real32 MaximumX = 0.0f;
-        Real32 MaximumY = (mMetrics.Ascender - mMetrics.Descender);
+        Real32 MaximumY = 0.0f;
 
-        for (UInt Previous = 0, Symbol = 0; Symbol < Word.size(); ++Symbol)
+        for (UInt32 Previous = 0, Symbol = 0; Symbol < Word.size(); ++Symbol)
         {
-            const UInt32 Codepoint = Word[Symbol];
-
-            switch (Codepoint)
+            switch (const UInt32 Codepoint = Word[Symbol])
             {
                 case '\r':
                     CurrentX = 0.0f;
+                    Previous = 0;
                     break;
                 case '\n':
-                    MaximumY += (mMetrics.Ascender - mMetrics.Descender);
+                    MaximumY -= LineHeight;
+                    Previous  = 0;
                     break;
                 default:
                 {
                     if (const ConstPtr<Glyph> Glyph = GetGlyph(Codepoint); Glyph)
                     {
-                        CurrentX += (GetKerning(Previous, Codepoint) + Glyph->Advance + Spacing);
-                        MaximumX = Max(MaximumX, CurrentX);
+                        if (Previous != 0)
+                        {
+                            CurrentX += GetKerning(Previous, Codepoint) + Spacing.GetX();
+                        }
+                        CurrentX += Glyph->Advance;
+                        MaximumX  = Max(MaximumX, CurrentX);
+                        Previous  = Codepoint;
                     }
                     break;
                 }
             }
-            Previous = Codepoint;
         }
         return Vector2(MaximumX, MaximumY) * Size;
     }
@@ -76,47 +82,11 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Rect Font::Layout(ConstStr8 Word, Real32 Size, Pivot Alignment, Real32 Spacing) const
+    Rect Font::Layout(ConstStr8 Word, Real32 Size, ConstRef<Pivot> Pivot, ConstRef<Vector2> Spacing) const
     {
-        const Vector2 Measurement = Measure(Word, Size, Spacing);
+        const Vector2 Boundaries = Measure(Word, Size, Spacing);
 
-        Real32 OffsetX = 0.0f;
-        Real32 OffsetY = 0.0f;
-
-        switch (Alignment)
-        {
-            case Pivot::LeftTop:
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
-                break;
-            case Pivot::LeftMiddle:
-                OffsetY -= mMetrics.Ascender * 0.5f * Size;
-                break;
-            case Pivot::LeftBottom:
-                break;
-            case Pivot::CenterTop:
-                OffsetX -= Measurement.GetX() * 0.5f;
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
-                break;
-            case Pivot::CenterMiddle:
-                OffsetX -= Measurement.GetX() * 0.5f;
-                OffsetY -= mMetrics.Ascender * 0.5f * Size;
-                break;
-            case Pivot::CenterBottom:
-                OffsetX -= Measurement.GetX() * 0.5f;
-                break;
-            case Pivot::RightTop:
-                OffsetX -= Measurement.GetX();
-                OffsetY -= (mMetrics.Ascender - mMetrics.Descender) * Size;
-                break;
-            case Pivot::RightMiddle:
-                OffsetX -= Measurement.GetX();
-                OffsetY -= mMetrics.Ascender * 0.5f * Size;
-                break;
-            case Pivot::RightBottom:
-                OffsetX -= Measurement.GetX();
-                break;
-        }
-        return Rect(OffsetX, OffsetY, OffsetX + Measurement.GetX(), OffsetY + Measurement.GetY());
+        return Rect::Anchor(Rect(Vector2(), Boundaries), Pivot);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

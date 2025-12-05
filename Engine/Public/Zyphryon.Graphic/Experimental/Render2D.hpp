@@ -60,26 +60,18 @@ namespace Graphic
         // -=(Undocumented)=-
         struct ZYPHRYON_ALIGN(16) FontStyleSDF
         {
+            Color  uOuterColor           = Color(0, 0, 0, 1);
             Real32 uRounded              = 0;
             Real32 uInvThreshold         = 1.0f - 0.5f;
             Real32 uOutlineBias          = 1.0f/4.0f;
             Real32 uOutlineWidthAbsolute = 1.0f/3.0f;
             Real32 uOutlineWidthRelative = 1.0f/20.0f;
             Real32 uOutlineBlur          = 0.0f;
-            Real32 Reserver[2];
-            Color  uOuterColor           = Color(0, 0, 0, 1);
 
             // Hash function
             UInt64 Hash() const
             {
-                return HashCombine(
-                    uRounded,
-                    uInvThreshold,
-                    uOutlineBias,
-                    uOutlineWidthAbsolute,
-                    uOutlineWidthRelative,
-                    uOutlineBlur,
-                    uOuterColor);
+                return HashCombine(this);
             }
         };
 
@@ -163,19 +155,6 @@ namespace Graphic
 
         // -=(Undocumented)=-
         void Flush();
-
-        // -=(Undocumented)=-
-        ZYPHRYON_INLINE Bool IsReady() const
-        {
-            for (ConstTracker<Graphic::Pipeline> Pipeline : mPipelines)
-            {
-                if (!Pipeline->HasCompleted())
-                {
-                    return false;
-                }
-            }
-            return mShapeRenderer.IsReady();
-        }
 
     public:
 
@@ -345,7 +324,7 @@ namespace Graphic
         Array<Command, kMaxDrawPerBatch>              mCommands;
         Vector<Ptr<Command>, kMaxDrawPerBatch>        mCommandTracker;
         Table<UInt64, UInt32>                         mFontStylesToUniform;
-        Vector<FontStyleSDF, 128>                     mFontStyles;
+        Vector<FontStyleSDF, 64>                      mFontStyles;
         UInt32                                        mFontStylesSelected = 0;
         Stream                                        mFontStream;
         ShapeRenderer                                 mShapeRenderer;

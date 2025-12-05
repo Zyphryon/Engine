@@ -86,19 +86,6 @@ namespace Graphic
         // -=(Undocumented)=-
         void Flush();
 
-        // -=(Undocumented)=-
-        ZYPHRYON_INLINE Bool IsReady() const
-        {
-            for (ConstTracker<Graphic::Pipeline> Pipeline : mPipelines)
-            {
-                if (!Pipeline->HasCompleted())
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
     private:
 
         // -=(Undocumented)=-

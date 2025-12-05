@@ -462,6 +462,14 @@ inline namespace Math
             return AnyColor(Limit(), Limit(), 0, Limit());
         }
 
+        /// \brief Returns an opaque cyan color.
+        ///
+        /// \return A color with maximum green and blue, zero red, and full alpha.
+        ZYPHRYON_INLINE static constexpr AnyColor Cyan()
+        {
+            return AnyColor(0, Limit(), Limit(), Limit());
+        }
+
         /// \brief Returns the component-wise minimum of two colors.
         ///
         /// \param First  The first color.

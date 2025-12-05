@@ -147,6 +147,11 @@ namespace Content
         /// \return `true` if the operation succeeded, `false` otherwise.
         Bool Delete(ConstRef<Uri> Key);
 
+        /// \brief Blocks the calling thread until all pending load operations are complete.
+        ///
+        /// \param Sleep If non-zero, the thread sleeps for the specified number of milliseconds between checks.
+        void Wait(UInt32 Sleep = 100);
+
         /// \brief Requests an asynchronous load of a resource.
         ///
         /// \param Key    The URI of the resource.
@@ -265,5 +270,6 @@ namespace Content
         Condition                  mLoaderCondition;
         Mutex                      mParserLatch;
         Vector<Scope>              mParserList;
+        Atomic<UInt32>             mParserPending;
     };
 }

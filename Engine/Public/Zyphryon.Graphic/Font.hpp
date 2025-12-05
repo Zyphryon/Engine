@@ -66,6 +66,12 @@ namespace Graphic
             Real32 UnderlineThickness = 0.0f;
         };
 
+        /// \brief Table mapping codepoints to glyphs.
+        using Glyphs  = Table<UInt32, Glyph>;
+
+        /// \brief Table mapping character pairs to kerning adjustments.
+        using Kerning = Table<UInt64, Real32>;
+
     public:
 
         /// \brief Constructs a font resource with the given content key.
@@ -76,10 +82,10 @@ namespace Graphic
         /// \brief Loads the font data.
         ///
         /// \param Metrics  Information about the font’s sizing, spacing, and alignment.
-        /// \param Registry Table of glyphs indexed by UTF-32 codepoints.
+        /// \param Glyphs   Table of glyphs indexed by UTF-32 codepoints.
         /// \param Kerning  Table of kerning adjustments indexed by character pairs.
         /// \param Material The material resource used for rendering the font.
-        void Load(AnyRef<Metrics> Metrics, AnyRef<Table<UInt32, Glyph>> Registry, AnyRef<Table<UInt64, Real32>> Kerning, ConstTracker<Material> Material);
+        void Load(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, ConstTracker<Material> Material);
 
         /// \brief Gets the metrics that describe the overall properties of the font.
         ///
@@ -96,7 +102,7 @@ namespace Graphic
         /// \return Pointer to the glyph if found, nullptr if neither the requested glyph nor fallback glyph exists.
         ZYPHRYON_INLINE ConstPtr<Glyph> GetGlyph(UInt32 Codepoint, UInt32 Fallback = '?') const
         {
-            if (const auto Iterator = mRegistry.find(Codepoint); Iterator != mRegistry.end())
+            if (const auto Iterator = mGlyphs.find(Codepoint); Iterator != mGlyphs.end())
             {
                 return &Iterator->second;
             }
@@ -133,16 +139,16 @@ namespace Graphic
         /// \param Size    The size at which the font is evaluated.
         /// \param Spacing Additional spacing applied between characters.
         /// \return The dimensions of the text in pixels.
-        Vector2 Measure(ConstStr8 Word, Real32 Size, Real32 Spacing = 0.0f) const;
+        Vector2 Measure(ConstStr8 Word, Real32 Size, ConstRef<Vector2> Spacing) const;
 
         /// \brief Calculates the bounding rectangle for a text string at the specified font size.
         ///
-        /// \param Word      The text string encoded in UTF-8.
-        /// \param Size      The size at which the font is evaluated.
-        /// \param Alignment The pivot point used to align the rectangle.
-        /// \param Spacing   Additional spacing applied between characters, in pixels.
+        /// \param Word    The text string encoded in UTF-8.
+        /// \param Size    The size at which the font is evaluated.
+        /// \param Pivot   The pivot point used to align the rectangle.
+        /// \param Spacing Additional spacing applied between characters, in pixels.
         /// \return The bounding rectangle of the text in pixels, positioned according to the alignment.
-        Rect Layout(ConstStr8 Word, Real32 Size, Pivot Alignment, Real32 Spacing = 0.0f) const;
+        Rect Layout(ConstStr8 Word, Real32 Size, ConstRef<Pivot> Pivot, ConstRef<Vector2> Spacing) const;
 
     private:
 
@@ -157,9 +163,9 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Metrics               mMetrics;
-        Table<UInt32, Glyph>  mRegistry;
-        Table<UInt64, Real32> mKerning;
-        Tracker<Material>     mMaterial;
+        Metrics           mMetrics;
+        Glyphs            mGlyphs;
+        Kerning           mKerning;
+        Tracker<Material> mMaterial;
     };
 }

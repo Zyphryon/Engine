@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Enum.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -383,20 +382,16 @@ inline namespace Math
         /// \param Circle The source circle.
         /// \param Pivot  The pivot alignment mode.
         /// \return A circle anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Circle Anchor(ConstRef<Circle> Circle, Pivot Pivot)
+        ZYPHRYON_INLINE constexpr static Circle Anchor(ConstRef<Circle> Circle, ConstRef<Pivot> Pivot)
         {
-            constexpr Vector2 kMultiplier[] = {
-                Vector2( 0.0f, -1.0f),  // LeftTop
-                Vector2( 0.0f, -0.5f),  // LeftMiddle
-                Vector2( 0.0f,  0.0f),  // LeftBottom
-                Vector2(-0.5f, -1.0f),  // CenterTop
-                Vector2(-0.5f, -0.5f),  // CenterMiddle
-                Vector2(-0.5f,  0.0f),  // CenterBottom
-                Vector2(-1.0f, -1.0f),  // RightTop
-                Vector2(-1.0f, -0.5f),  // RightMiddle
-                Vector2(-1.0f,  0.0f),  // RightBottom
-            };
-            return Math::Circle(Circle.GetCenter() + kMultiplier[Enum::Cast(Pivot)] * (Circle.mRadius * 2), Circle.mRadius);
+            const Real32 Radius   = Circle.GetRadius();
+            const Real32 Diameter = Radius * 2;
+
+            const Vector2 Translation = -Circle.GetCenter() - Vector2(
+                (Pivot.GetX() * Diameter) - Radius,
+                (Pivot.GetY() * Diameter) - Radius
+            );
+            return Math::Circle(Circle.GetCenter() + Translation, Radius);
         }
 
         /// \brief Linearly interpolates between two circles.
