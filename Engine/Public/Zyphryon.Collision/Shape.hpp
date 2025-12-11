@@ -115,13 +115,13 @@ namespace Collision
         /// \brief Creates an anchored shape based on the source shape and pivot point.
         ///
         /// \param Source The source shape to anchor.
-        /// \param Pivot  The pivot point to use for anchoring.
+        /// \param Origin The pivot point for anchoring.
         /// \return A new shape anchored at the specified pivot point.
-        ZYPHRYON_INLINE constexpr static Shape Anchor(ConstRef<Shape> Source, Pivot Pivot)
+        ZYPHRYON_INLINE constexpr static Shape Anchor(ConstRef<Shape> Source, Pivot Origin)
         {
-            return (Source.mGeometry).Visit([Pivot]<typename Type>(ConstRef<Type> Data)
+            return (Source.mGeometry).Visit([Origin]<typename Type>(ConstRef<Type> Data)
             {
-                return Shape(Type::Anchor(Data, Pivot));
+                return Shape(Type::Anchor(Data, Origin));
             });
         }
 

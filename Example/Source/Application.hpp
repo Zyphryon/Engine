@@ -32,7 +32,7 @@ namespace Example
         Bool OnInitialize() override;
 
         /// \copydoc Kernel::OnTick
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \copydoc Kernel::OnTeardown
         void OnTeardown() override;

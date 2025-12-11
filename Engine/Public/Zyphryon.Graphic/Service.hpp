@@ -25,6 +25,7 @@ namespace Graphic
     {
     public:
 
+
         /// \brief Default capacity (in bytes) for transient vertex buffers.
         static constexpr UInt32 kDefaultTransientVertexCapacity  = 8 * 1024 * 1024;
 
@@ -47,7 +48,7 @@ namespace Graphic
         /// \brief Updates the service state for the current frame.
         ///
         /// \param Time The time step data for the current frame.
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \brief Initializes the rendering backend.
         ///
@@ -57,21 +58,21 @@ namespace Graphic
         /// \param Height    Initial surface height in pixels.
         /// \param Samples   Initial multisampling level.
         /// \return `true` if the initialization was successful, `false` otherwise.
-        Bool Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples);
+        Bool Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples);
 
         /// \brief Resizes the rendering surface and recreates swapchain.
         ///
         /// \param Width   New surface width in pixels.
         /// \param Height  New surface height in pixels.
         /// \param Samples New multisampling level.
-        void Reset(UInt16 Width, UInt16 Height, Samples Samples);
+        void Reset(UInt16 Width, UInt16 Height, Multisample Samples);
 
-        /// \brief Gets graphics hardware capabilities.
+        /// \brief Gets the capabilities of the current graphics device.
         ///
-        /// \return Immutable capabilities structure.
-        ZYPHRYON_INLINE ConstRef<Capabilities> GetCapabilities() const
+        /// \return Reference to the device capabilities structure.
+        ZYPHRYON_INLINE ConstRef<Device> GetDevice() const
         {
-            return mDriver->GetCapabilities();
+            return mDriver->GetDevice();
         }
 
         /// \brief Allocates transient per-frame buffer memory.
@@ -189,7 +190,7 @@ namespace Graphic
         /// \param Samples Multisampling level.
         /// \param Data    Optional initialization data.
         /// \return Handle of the new object (0 indicates failure).
-        Object CreateTexture(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Samples Samples, AnyRef<Blob> Data);
+        Object CreateTexture(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
 
         /// \brief Updates a texture subregion.
         ///
@@ -330,8 +331,8 @@ namespace Graphic
         {
 #define DEFINE(Name, ...) using Name = Command<CommandType::Name, __VA_ARGS__>;
 
-            DEFINE(Initialize,     Ptr<SDL_Window>, UInt16, UInt16, Samples)
-            DEFINE(Reset,          UInt16, UInt16, Samples)
+            DEFINE(Initialize,     Ptr<SDL_Window>, UInt16, UInt16, Multisample)
+            DEFINE(Reset,          UInt16, UInt16, Multisample)
             DEFINE(CreateBuffer,   Object, Access, Usage, UInt32, Blob)
             DEFINE(UpdateBuffer,   Object, UInt32, Bool, Blob)
             DEFINE(DeleteBuffer,   Object)
@@ -340,7 +341,7 @@ namespace Graphic
             DEFINE(DeletePass,     Object)
             DEFINE(CreatePipeline, Object, Blob, Blob, Descriptor)
             DEFINE(DeletePipeline, Object)
-            DEFINE(CreateTexture,  Object, Access, TextureFormat, TextureLayout, UInt16, UInt16, UInt8, Samples, Blob)
+            DEFINE(CreateTexture,  Object, Access, TextureFormat, TextureLayout, UInt16, UInt16, UInt8, Multisample, Blob)
             DEFINE(UpdateTexture,  Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, Blob)
             DEFINE(DeleteTexture,  Object)
             DEFINE(CopyTexture,    Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16)

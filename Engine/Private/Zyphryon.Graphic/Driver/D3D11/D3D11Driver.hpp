@@ -29,13 +29,13 @@ namespace Graphic
     public:
 
         /// \copydoc Driver::Initialize
-        Bool Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples) override;
+        Bool Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples) override;
 
         /// \copydoc Driver::Reset
-        void Reset(UInt16 Width, UInt16 Height, Samples Samples) override;
+        void Reset(UInt16 Width, UInt16 Height, Multisample Samples) override;
 
-        /// \copydoc Driver::GetCapabilities
-        ConstRef<Capabilities> GetCapabilities() const override;
+        /// \copydoc Driver::GetDevice
+        ConstRef<Device> GetDevice() const override;
 
         /// \copydoc Driver::CreateBuffer
         void CreateBuffer(Object ID, Access Access, Usage Usage, UInt32 Length, ConstSpan<Byte> Data) override;
@@ -74,7 +74,7 @@ namespace Graphic
         void DeletePipeline(Object ID) override;
 
         /// \copydoc Driver::CreateTexture
-        void CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Samples Samples, ConstSpan<Byte> Data) override;
+        void CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data) override;
 
         /// \copydoc Driver::UpdateTexture
         void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data) override;
@@ -234,7 +234,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Capabilities                        mCapabilities;
+        Device                              mCapabilities;
         D3D11Properties                     mProperties;
         ComPtr<ID3D11Device1>               mDevice;
         ComPtr<ID3D11DeviceContext1>        mDeviceImmediate;

@@ -149,7 +149,7 @@ namespace Input
     };
 
     /// \brief Represents a single input event and its data.
-    struct Event final
+    struct Event final // TODO: Shrink it so it can be pass by value
     {
         /// \brief Enumerates the type of input event.
         enum class Type : UInt8

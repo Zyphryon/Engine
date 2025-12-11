@@ -59,7 +59,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnTick(ConstRef<Time> Time)
+    void Service::OnTick(Time Time)
     {
         ZYPHRYON_PROFILE_SCOPE("Content::Tick");
 
@@ -396,8 +396,8 @@ namespace Content
 #endif // ZYPHRYON_LOADER_GLTF
 
 #ifdef    ZYPHRYON_LOADER_EFFECT
-            Graphic::Capabilities Capabilities = GetService<Graphic::Service>()->GetCapabilities();
-            AddLoader(Tracker<PipelineLoader>::Create(Capabilities.Backend, Capabilities.Language));
+            Graphic::Device Device = GetService<Graphic::Service>()->GetDevice();
+            AddLoader(Tracker<PipelineLoader>::Create(Device.Backend, Device.Language));
 #endif // ZYPHRYON_LOADER_EFFECT
         }
 

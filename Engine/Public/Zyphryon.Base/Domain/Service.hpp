@@ -61,7 +61,7 @@ inline namespace Base
         /// \note Override this to implement per-frame logic.
         /// 
         /// \param Time The current time step or frame delta.
-        virtual void OnTick(ConstRef<Time> Time)
+        virtual void OnTick(Time Time)
         {
         }
 

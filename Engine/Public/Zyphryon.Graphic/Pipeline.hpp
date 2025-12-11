@@ -28,18 +28,18 @@ namespace Graphic
 
     public:
 
-        /// \brief Represents a mapping between a semantic and a register index.
+        /// \brief Represents a binding between a semantic and a register index.
         template<typename Format>
-        struct Mapping final
+        struct Binding final
         {
             /// \brief Default constructor for a mapping.
-            ZYPHRYON_INLINE constexpr Mapping() = default;
+            ZYPHRYON_INLINE constexpr Binding() = default;
 
             /// \brief Constructs a mapping with specified semantic and register.
             ///
             /// \param Semantic Semantic meaning of the binding.
             /// \param Register Register index where this binding is located.
-            ZYPHRYON_INLINE constexpr Mapping(Format Semantic, UInt32 Register)
+            ZYPHRYON_INLINE constexpr Binding(Format Semantic, UInt32 Register)
                 : Semantic { Semantic },
                   Register { Register }
             {
@@ -52,9 +52,9 @@ namespace Graphic
             UInt32 Register = 0;
         };
 
-        /// \brief Fixed-capacity list of mappings used for semantic-to-register bindings.
+        /// \brief Fixed-capacity list of bindings used for semantic-to-register bindings.
         template<typename Format, UInt Limit>
-        using MappingList = Vector<Mapping<Format>, Limit>;
+        using BindingList = Vector<Binding<Format>, Limit>;
 
     public:
 
@@ -68,7 +68,7 @@ namespace Graphic
         /// \param Stages     Compiled bytecode for each shader stage (vertex, fragment, etc.).
         /// \param Textures   Texture semantic-to-slot bindings.
         /// \param Properties Pipeline-specific render state and metadata.
-        void Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<MappingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties);
+        void Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<BindingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties);
 
         /// \brief Returns the GPU object ID associated with this pipeline.
         ///
@@ -81,7 +81,7 @@ namespace Graphic
         /// \brief Returns the list of texture slot bindings.
         ///
         /// \return Span over the texture semantic-to-slot mappings.
-        ZYPHRYON_INLINE ConstSpan<Mapping<TextureSemantic>> GetTextures() const
+        ZYPHRYON_INLINE ConstSpan<Binding<TextureSemantic>> GetTextures() const
         {
             return mTextures;
         }
@@ -109,7 +109,7 @@ namespace Graphic
 
         Object                                  mID;
         Array<Blob, kMaxStages>                 mStages;
-        MappingList<TextureSemantic, kMaxSlots> mTextures;
+        BindingList<TextureSemantic, kMaxSlots> mTextures;
         Descriptor                              mProperties;
     };
 }

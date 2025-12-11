@@ -40,7 +40,7 @@ namespace Audio
         ConstRef<Capabilities> GetCapabilities() const override;
 
         /// \copydoc Driver::Advance
-        void Advance(ConstRef<Time> Time) override;
+        void Advance() override;
 
         /// \copydoc Driver::Suspend
         void Suspend() override;

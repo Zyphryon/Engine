@@ -169,17 +169,17 @@ namespace Graphic
         /// \param Material Material providing resources for those semantics.
         ZYPHRYON_INLINE void Bind(ConstRef<Pipeline> Pipeline, ConstRef<Material> Material)
         {
-            for (ConstRef<Pipeline::Mapping<TextureSemantic>> Mapping : Pipeline.GetTextures())
+            for (ConstRef<Pipeline::Binding<TextureSemantic>> Binding : Pipeline.GetTextures())
             {
-                if (ConstTracker<Texture> Texture = Material.GetTexture(Mapping.Semantic))
+                if (ConstTracker<Texture> Texture = Material.GetTexture(Binding.Semantic))
                 {
-                    SetTexture(Mapping.Register, Texture->GetID());
+                    SetTexture(Binding.Register, Texture->GetID());
                 }
                 else
                 {
-                    SetTexture(Mapping.Register, 0);
+                    SetTexture(Binding.Register, 0);
                 }
-                SetSampler(Mapping.Register, Material.GetSampler(Mapping.Semantic));
+                SetSampler(Binding.Register, Material.GetSampler(Binding.Semantic));
             }
         }
 
@@ -191,15 +191,18 @@ namespace Graphic
         /// \param Instances Number of instances to draw (defaults to 1).
         ZYPHRYON_INLINE void Draw(UInt32 Count, UInt32 Base, UInt32 Offset, UInt32 Instances = 1)
         {
-            Ref<Graphic::Draw> Command = mInFlightCommand.Command;
+            Ref<Invocation> Command = mInFlightCommand.Invocation;
             Command.Count     = Count;
             Command.Base      = Base;
             Command.Offset    = Offset;
             Command.Instances = Instances;
 
-            // Add the current in-flight command to the list of submissions to be processed.
-            // After queuing, reset structure to prepare for the next command.
             mInFlightSubmission.push_back(mInFlightCommand);
+        }
+        
+        /// \brief Resets the current in-flight command without clearing recorded submissions.
+        ZYPHRYON_INLINE void Reset()
+        {
             mInFlightCommand = Submission();
         }
 

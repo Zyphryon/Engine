@@ -63,7 +63,7 @@ namespace Graphic
         kMaxSamples     = 0x0008,
 
         /// Maximum number of texture slots supported per pipeline.
-        kMaxSlots       = 0x000C,
+        kMaxSlots       = 0x0008,
 
         /// Maximum number of shader stages supported per pipeline.
         kMaxStages      = 0x0002,
@@ -187,7 +187,7 @@ namespace Graphic
     };
 
     /// \brief Specifies the number of samples for multisampling.
-    enum class Samples : UInt8
+    enum class Multisample : UInt8
     {
         X1,  ///< Single sample (no multisampling).
         X2,  ///< 2x multisampling.
@@ -329,7 +329,7 @@ namespace Graphic
     /// \brief Describes logical texture semantic used in materials and pipelines.
     enum class TextureSemantic : UInt8
     {
-        Diffuse,      ///< Base color or albedo map.
+        Albedo,       ///< Base color or albedo map.
         Normal,       ///< Tangent-space normal map.
         Roughness,    ///< Surface roughness map.
         Metallic,     ///< Metalness map.
@@ -447,80 +447,22 @@ namespace Graphic
     /// \brief Represents a texture attachment in a render pass.
     struct Attachment final
     {
-        /// \brief Default constructor for an attachment.
-        ZYPHRYON_INLINE constexpr Attachment() = default;
-
-        /// \brief Constructs a single-texture attachment for non-MSAA rendering.
-        ///
-        /// \param Texture The render target texture (must be non-multisample).
-        /// \param Level   The mipmap level to render into (default = 0 for base level).
-        ZYPHRYON_INLINE constexpr explicit Attachment(Object Texture, UInt8 Level = 0)
-            : Target      { Texture },
-              TargetLevel { Level }
-        {
-        }
-
-        /// \brief Constructs an attachment with a multisample source texture and a resolve target.
-        ///
-        /// \param Source      The multisample render target texture (must have sample count > 1).
-        /// \param SourceLevel The mipmap level of the source texture to render into.
-        /// \param Target      The non-multisample texture that will receive the resolved output.
-        /// \param TargetLevel The mipmap level of the target texture for the resolve operation.
-        ZYPHRYON_INLINE constexpr Attachment(Object Source, UInt8 SourceLevel, Object Target, UInt8 TargetLevel)
-            : Source      { Source },
-              SourceLevel { SourceLevel },
-              Target      { Target },
-              TargetLevel { TargetLevel }
-        {
-        }
-
         /// Multisample source texture for MSAA rendering (0 when MSAA is disabled).
-        Object Source      = 0;
+        Object SourceTexture = 0;
 
         /// Mipmap level of the Source texture to render into.
-        UInt8  SourceLevel = 0;
+        UInt8  SourceLevel   = 0;
 
         /// Final output texture that receives rendering results.
-        Object Target      = 0;
+        Object TargetTexture = 0;
 
         /// Mipmap level of the Target texture to render into.
-        UInt8  TargetLevel = 0;
+        UInt8  TargetLevel   = 0;
     };
 
     /// \brief Defines a vertex attribute within a vertex buffer layout.
     struct Attribute final
     {
-        /// \brief Default-initialized attribute with no semantic and default format.
-        ZYPHRYON_INLINE constexpr Attribute() = default;
-
-        /// \brief Initializes a vertex attribute with specified properties.
-        ///
-        /// \param Semantic  Semantic meaning of the attribute.
-        /// \param Format    Data format of the attribute.
-        /// \param Offset    Byte offset from the start of the vertex to this attribute.
-        ZYPHRYON_INLINE constexpr Attribute(VertexSemantic Semantic, VertexFormat Format, UInt16 Offset)
-            : Semantic { Semantic },
-              Format   { Format },
-              Offset   { Offset }
-        {
-        }
-
-        /// \brief Initializes a vertex attribute with specified properties.
-        ///
-        /// \param Semantic Semantic meaning of the attribute.
-        /// \param Format   Data format of the attribute.
-        /// \param Offset   Byte offset from the start of the vertex to this attribute.
-        /// \param Stream   Index of the vertex buffer stream that provides this attribute.
-        /// \param Divisor  Rate at which the attribute advances during instanced rendering.
-        ZYPHRYON_INLINE constexpr Attribute(VertexSemantic Semantic, VertexFormat Format, UInt16 Offset, UInt16 Stream, UInt16 Divisor)
-            : Semantic { Semantic },
-              Format   { Format },
-              Offset   { Offset },
-              Stream   { Stream },
-              Divisor  { Divisor }
-        {
-        }
-
         /// Semantic meaning of the attribute.
         VertexSemantic Semantic = VertexSemantic::None;
 
@@ -540,23 +482,30 @@ namespace Graphic
     /// \brief Describes the graphics capabilities of the current system and backend.
     struct Capabilities final
     {
+        /// The maximum texture size supported by the GPU.
+        UInt16 MaxTextureSize;
+
+        /// The maximum number of texture mipmap levels supported by the GPU.
+        UInt16 MaxTextureMipmaps;
+    };
+
+    /// \brief Describes the current graphics device and its capabilities.
+    struct Device final
+    {
         /// The list of available graphics adapters.
         Vector<Adapter> Adapters;
 
         /// The current graphics backend in use.
-        Backend  Backend             = Backend::None;
+        Backend         Backend             = Backend::None;
 
         /// The current graphics API version.
-        Language Language            = Language::V1;
+        Language        Language            = Language::V1;
 
         /// The current multisampling level.
-        Samples  Samples             = Samples::X1;
+        Multisample     Samples             = Multisample::X1;
 
-        /// The maximum texture size supported by the GPU.
-        UInt16   MaxTextureDimension = 0;
-
-        /// The maximum number of texture mipmap levels supported by the GPU.
-        UInt16   MaxTextureMipmaps   = 0;
+        /// The graphics capabilities of the system.
+        Capabilities    Capabilities;
     };
 
     /// \brief Describes the fixed-function GPU state used by a rendering pipeline.
@@ -645,25 +594,8 @@ namespace Graphic
     };
 
     /// \brief Encapsulates parameters for a draw call, supporting both indexed and non-indexed rendering.
-    struct Draw final
+    struct Invocation final
     {
-        /// \brief Default constructor creates an empty draw command.
-        ZYPHRYON_INLINE constexpr Draw() = default;
-
-        /// \brief Constructs a primitive with specified parameters.
-        ///
-        /// \param Count     The number of vertices or indices to draw.
-        /// \param Base      The base vertex index for indexed draws, or first vertex index for non-indexed draws.
-        /// \param Offset    The offset into the index buffer or vertex buffer.
-        /// \param Instances Optional number of instances to draw (for instanced rendering).
-        ZYPHRYON_INLINE constexpr Draw(UInt32 Count, SInt32 Base, UInt32 Offset, UInt32 Instances = 1)
-            : Count     { Count },
-              Base      { Base },
-              Offset    { Offset },
-              Instances { Instances }
-        {
-        }
-
         /// Number of vertices or indices to draw.
         UInt32 Count     = 0;
 
@@ -680,21 +612,6 @@ namespace Graphic
     /// \brief Describes how a texture is sampled in a shader.
     struct Sampler final
     {
-        /// \brief Default-initialized sampler with clamp wrap mode and nearest filtering.
-        ZYPHRYON_INLINE constexpr Sampler() = default;
-
-        /// \brief Initializes a sampler with specified wrap modes and filter.
-        ///
-        /// \param WrapModeU Texture wrap behavior for the U (horizontal) coordinate.
-        /// \param WrapModeV Texture wrap behavior for the V (vertical) coordinate.
-        /// \param Filter    Filtering method used when sampling the texture.
-        ZYPHRYON_INLINE constexpr Sampler(TextureEdge WrapModeU, TextureEdge WrapModeV, TextureFilter Filter)
-            : WrapModeU { WrapModeU },
-              WrapModeV { WrapModeV },
-              Filter    { Filter }
-        {
-        }
-
         /// Texture wrap behavior for the U (horizontal) coordinate.
         TextureEdge   WrapModeU = TextureEdge::Clamp;
 
@@ -703,36 +620,11 @@ namespace Graphic
 
         /// Filtering method used when sampling the texture.
         TextureFilter Filter    = TextureFilter::LinearMipLinear;
-
-        /// \brief Computes a hash value for the sampler configuration.
-        ///
-        /// \return A 64-bit hash representing the sampler state.
-        ZYPHRYON_INLINE UInt64 Hash() const
-        {
-            return HashCombine(WrapModeU, WrapModeV, Filter);
-        }
     };
 
     /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
     struct Scissor final
     {
-        /// \brief Default-initialized scissor region covering the entire render target.
-        ZYPHRYON_INLINE constexpr Scissor() = default;
-
-        /// \brief Initializes a scissor region with specified position and size.
-        ///
-        /// \param X      X screen coordinate of the region’s origin, in pixels.
-        /// \param Y      Y screen coordinate of the region’s origin, in pixels.
-        /// \param Width  Width of the scissor region, in pixels.
-        /// \param Height Height of the scissor region, in pixels.
-        ZYPHRYON_INLINE constexpr Scissor(UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height)
-            : X      { X },
-              Y      { Y },
-              Width  { Width },
-              Height { Height }
-        {
-        }
-
         /// X screen coordinate of the region’s origin, in pixels.
         UInt16 X      = 0;
 
@@ -749,21 +641,6 @@ namespace Graphic
     /// \brief Describes a buffer stream used for vertex, index, or uniform input.
     struct Stream final
     {
-        /// \brief Default-initialized stream with no buffer and zero stride/offset.
-        ZYPHRYON_INLINE constexpr Stream() = default;
-
-        /// \brief Initializes a stream with a buffer, stride, and offset.
-        ///
-        /// \param Buffer Handle to the GPU buffer object.
-        /// \param Stride Size in bytes of each element in the buffer.
-        /// \param Offset Byte offset from the start of the buffer to the first element.
-        ZYPHRYON_INLINE constexpr Stream(Object Buffer, UInt16 Stride, UInt32 Offset)
-            : Buffer { Buffer },
-              Stride { Stride },
-              Offset { Offset }
-        {
-        }
-
         /// Handle to the bound GPU buffer.
         Object Buffer = 0;
 
@@ -774,68 +651,9 @@ namespace Graphic
         UInt32 Offset = 0;
     };
 
-    /// \brief Defines a rectangular viewport for transforming normalized device coordinates.
-    struct Viewport final
-    {
-        /// \brief Constructs a viewport with default zero values.
-        ZYPHRYON_INLINE constexpr Viewport() = default;
-
-        /// \brief Constructs a viewport with position and size, using a default depth range of [0, 1].
-        ///
-        /// \param X      X coordinate of the top-left corner, in pixels.
-        /// \param Y      Y coordinate of the top-left corner, in pixels.
-        /// \param Width  Width of the viewport, in pixels.
-        /// \param Height Height of the viewport, in pixels.
-        ZYPHRYON_INLINE constexpr Viewport(Real32 X, Real32 Y, Real32 Width, Real32 Height)
-            : X      { X },
-              Y      { Y },
-              Width  { Width },
-              Height { Height }
-        {
-        }
-
-        /// \brief Constructs a viewport with position, size, and depth range.
-        ///
-        /// \param X        X coordinate of the top-left corner, in pixels.
-        /// \param Y        Y coordinate of the top-left corner, in pixels.
-        /// \param Width    Width of the viewport, in pixels.
-        /// \param Height   Height of the viewport, in pixels.
-        /// \param MinDepth Minimum depth value mapped from normalized depth.
-        /// \param MaxDepth Maximum depth value mapped from normalized depth.
-        ZYPHRYON_INLINE Viewport(Real32 X, Real32 Y, Real32 Width, Real32 Height, Real32 MinDepth, Real32 MaxDepth)
-            : X        { X },
-              Y        { Y },
-              Width    { Width },
-              Height   { Height },
-              MinDepth { MinDepth },
-              MaxDepth { MaxDepth }
-        {
-        }
-
-        /// X coordinate of the top-left corner in screen space.
-        Real32 X        = 0.0f;
-
-        /// Y coordinate of the top-left corner in screen space.
-        Real32 Y        = 0.0f;
-
-        /// Width of the viewport in pixels.
-        Real32 Width    = 0.0f;
-
-        /// Height of the viewport in pixels.
-        Real32 Height   = 0.0f;
-
-        /// Minimum depth value for depth range mapping.
-        Real32 MinDepth = 0.0f;
-
-        /// Maximum depth value for depth range mapping.
-        Real32 MaxDepth = 1.0f;
-    };
-
     /// \brief Defines a submission command to be executed by the GPU.
     struct Submission final
     {
-        /// TODO: Update Flags / Hash
-
         /// Scissor rectangle that defines the renderable area.
         Scissor                      Scissor;
 
@@ -861,6 +679,28 @@ namespace Graphic
         Stream                       Indices;
 
         /// Draw command that defines the primitives to render.
-        Draw                         Command;
+        Invocation                   Invocation;
+    };
+
+    /// \brief Defines a rectangular viewport for transforming normalized device coordinates.
+    struct Viewport final
+    {
+        /// X coordinate of the top-left corner in screen space.
+        Real32 X        = 0.0f;
+
+        /// Y coordinate of the top-left corner in screen space.
+        Real32 Y        = 0.0f;
+
+        /// Width of the viewport in pixels.
+        Real32 Width    = 0.0f;
+
+        /// Height of the viewport in pixels.
+        Real32 Height   = 0.0f;
+
+        /// Minimum depth value for depth range mapping.
+        Real32 MinDepth = 0.0f;
+
+        /// Maximum depth value for depth range mapping.
+        Real32 MaxDepth = 1.0f;
     };
 }

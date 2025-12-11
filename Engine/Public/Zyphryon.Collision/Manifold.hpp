@@ -50,7 +50,7 @@ namespace Collision
         /// \brief Sets the collision normal from a 2D vector.
         ///
         /// \param Normal The 2D normal vector of the collision.
-        ZYPHRYON_INLINE void SetNormal(ConstRef<AnyVector2<Type>> Normal)
+        ZYPHRYON_INLINE void SetNormal(AnyVector2<Type> Normal)
         {
             SetNormal(AnyVector3(Normal.GetX(), Normal.GetY(), Type(0)));
         }
@@ -58,7 +58,7 @@ namespace Collision
         /// \brief Sets the collision normal from a 3D vector.
         ///
         /// \param Normal The 3D normal vector of the collision.
-        ZYPHRYON_INLINE void SetNormal(ConstRef<AnyVector3<Type>> Normal)
+        ZYPHRYON_INLINE void SetNormal(AnyVector3<Type> Normal)
         {
             mNormal = Normal;
         }
@@ -66,7 +66,7 @@ namespace Collision
         /// \brief Gets the collision normal.
         ///
         /// \return The 3D normal vector of the collision.
-        ZYPHRYON_INLINE ConstRef<AnyVector3<Type>> GetNormal() const
+        ZYPHRYON_INLINE AnyVector3<Type> GetNormal() const
         {
             return mNormal;
         }
@@ -90,7 +90,7 @@ namespace Collision
         /// \brief Adds a 2D contact point to the manifold.
         ///
         /// \param Point The 2D contact point to add.
-        ZYPHRYON_INLINE void AddPoint(ConstRef<AnyVector2<Type>> Point)
+        ZYPHRYON_INLINE void AddPoint(AnyVector2<Type> Point)
         {
             AddPoint(AnyVector3<Type>(Point.GetX(), Point.GetY(), Type(0)));
         }
@@ -98,7 +98,7 @@ namespace Collision
         /// \brief Adds a 3D contact point to the manifold.
         ///
         /// \param Point The 3D contact point to add.
-        ZYPHRYON_INLINE void AddPoint(ConstRef<AnyVector3<Type>> Point)
+        ZYPHRYON_INLINE void AddPoint(AnyVector3<Type> Point)
         {
             mPoints.Allocate(Point);
         }

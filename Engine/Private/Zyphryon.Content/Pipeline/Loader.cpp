@@ -135,12 +135,12 @@ namespace Content
         // Parse 'textures' section
         const TOMLSection Textures = Program.GetSection("Textures");
 
-        Graphic::Pipeline::MappingList<Graphic::TextureSemantic, Graphic::kMaxSlots> TextureMappingList;
+        Graphic::Pipeline::BindingList<Graphic::TextureSemantic, Graphic::kMaxSlots> TextureBindingList;
         for (const Graphic::TextureSemantic Semantic : Enum::GetValues<Graphic::TextureSemantic>())
         {
             if (const UInt32 Slot = Textures.GetInteger(Enum::GetName(Semantic), ~0); Slot != ~0)
             {
-                TextureMappingList.emplace_back(Semantic, Slot);
+                TextureBindingList.emplace_back(Semantic, Slot);
             }
         }
 
@@ -152,7 +152,7 @@ namespace Content
         if (Stages[0] && Stages[1])
         {
             const Tracker<Graphic::Pipeline> Asset = Tracker<Graphic::Pipeline>::Cast(Scope.GetResource());
-            Asset->Load(Move(Stages), Move(TextureMappingList), Move(Description));
+            Asset->Load(Move(Stages), Move(TextureBindingList), Move(Description));
             return true;
         }
         return false;

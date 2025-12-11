@@ -37,7 +37,7 @@ inline namespace Math
         ///
         /// \param Center The center point of the circle.
         /// \param Radius The radius of the circle.
-        ZYPHRYON_INLINE constexpr Circle(ConstRef<Vector2> Center, Real32 Radius)
+        ZYPHRYON_INLINE constexpr Circle(Vector2 Center, Real32 Radius)
             : mCenter { Center },
               mRadius { Radius }
         {
@@ -84,7 +84,7 @@ inline namespace Math
         ///
         /// \param Center The new center point.
         /// \param Radius The new radius.
-        ZYPHRYON_INLINE constexpr void Set(ConstRef<Vector2> Center, Real32 Radius)
+        ZYPHRYON_INLINE constexpr void Set(Vector2 Center, Real32 Radius)
         {
             mCenter = Center;
             mRadius = Radius;
@@ -93,7 +93,7 @@ inline namespace Math
         /// \brief Sets the center of the circle.
         ///
         /// \param Center The new center point.
-        ZYPHRYON_INLINE constexpr void SetCenter(ConstRef<Vector2> Center)
+        ZYPHRYON_INLINE constexpr void SetCenter(Vector2 Center)
         {
             mCenter = Center;
         }
@@ -101,7 +101,7 @@ inline namespace Math
         /// \brief Gets the center of the circle.
         ///
         /// \return The center point of the circle.
-        ZYPHRYON_INLINE constexpr ConstRef<Vector2> GetCenter() const
+        ZYPHRYON_INLINE constexpr Vector2 GetCenter() const
         {
             return mCenter;
         }
@@ -151,7 +151,7 @@ inline namespace Math
         ///
         /// \param Point The point to calculate distance to.
         /// \return The distance from the circle's boundary to the point (negative if inside the circle).
-        ZYPHRYON_INLINE constexpr Real32 GetDistance(ConstRef<Vector2> Point) const
+        ZYPHRYON_INLINE constexpr Real32 GetDistance(Vector2 Point) const
         {
             return mCenter.GetDistance(Point) - mRadius;
         }
@@ -160,7 +160,7 @@ inline namespace Math
         ///
         /// \param Other The other circle to calculate distance to.
         /// \return The signed distance between boundaries (negative if circles overlap).
-        ZYPHRYON_INLINE constexpr Real32 GetDistance(ConstRef<Circle> Other) const
+        ZYPHRYON_INLINE constexpr Real32 GetDistance(Circle Other) const
         {
             return mCenter.GetDistance(Other.mCenter) - (mRadius + Other.mRadius);
         }
@@ -187,7 +187,7 @@ inline namespace Math
         ///
         /// \param Other The other circle to check.
         /// \return `true` if this circle contains the other, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<Circle> Other) const
+        ZYPHRYON_INLINE constexpr Bool Contains(Circle Other) const
         {
             if (mRadius >= Other.mRadius)
             {
@@ -202,7 +202,7 @@ inline namespace Math
         ///
         /// \param Point The point to check.
         /// \return `true` if the point is inside the circle, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<Vector2> Point) const
+        ZYPHRYON_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             return mCenter.GetDistanceSquared(Point) <= (mRadius * mRadius);
         }
@@ -211,7 +211,7 @@ inline namespace Math
         ///
         /// \param Other The other circle to check.
         /// \return `true` if the circles intersect, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<Circle> Other) const
+        ZYPHRYON_INLINE constexpr Bool Intersects(Circle Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
             return DistanceSquared <= (mRadius + Other.mRadius);
@@ -221,7 +221,7 @@ inline namespace Math
         ///
         /// \param Other The circle to compare to.
         /// \return `true` if center and radius are approximately equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<Circle> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator==(Circle Other) const
         {
             return mCenter == Other.mCenter && IsAlmostEqual(mRadius, Other.mRadius);
         }
@@ -230,7 +230,7 @@ inline namespace Math
         ///
         /// \param Other The circle to compare to.
         /// \return `true` if the circles are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Circle> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator!=(Circle Other) const
         {
             return !(* this == Other);
         }
@@ -239,7 +239,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A new circle with translated center.
-        ZYPHRYON_INLINE constexpr Circle operator+(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Circle operator+(Vector2 Vector) const
         {
             return Circle(mCenter + Vector, mRadius);
         }
@@ -248,7 +248,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A new circle with translated center.
-        ZYPHRYON_INLINE constexpr Circle operator-(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Circle operator-(Vector2 Vector) const
         {
             return Circle(mCenter - Vector, mRadius);
         }
@@ -277,7 +277,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A reference to the updated circle.
-        ZYPHRYON_INLINE constexpr Ref<Circle> operator+=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Circle> operator+=(Vector2 Vector)
         {
             mCenter += Vector;
             return (* this);
@@ -287,7 +287,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A reference to the updated circle.
-        ZYPHRYON_INLINE constexpr Ref<Circle> operator-=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Circle> operator-=(Vector2 Vector)
         {
             mCenter -= Vector;
             return (* this);
@@ -347,7 +347,7 @@ inline namespace Math
         ///
         /// \param Circle The circle to canonicalize.
         /// \return A circle with non-negative radius.
-        ZYPHRYON_INLINE constexpr static Circle Canonicalize(ConstRef<Circle> Circle)
+        ZYPHRYON_INLINE constexpr static Circle Canonicalize(Circle Circle)
         {
             return Math::Circle(Circle.mCenter, Abs(Circle.mRadius));
         }
@@ -357,7 +357,7 @@ inline namespace Math
         /// \param First  The first circle.
         /// \param Second The second circle.
         /// \return The bounding circle that contains both circles.
-        ZYPHRYON_INLINE constexpr static Circle Merge(ConstRef<Circle> First, ConstRef<Circle> Second)
+        ZYPHRYON_INLINE constexpr static Circle Merge(Circle First, Circle Second)
         {
             const Vector2 Direction = Second.mCenter - First.mCenter;
             const Real32 Distance   = Direction.GetLength();
@@ -380,16 +380,16 @@ inline namespace Math
         /// \brief Anchors a circle relative to a pivot point.
         ///
         /// \param Circle The source circle.
-        /// \param Pivot  The pivot alignment mode.
+        /// \param Origin The pivot point for anchoring.
         /// \return A circle anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Circle Anchor(ConstRef<Circle> Circle, ConstRef<Pivot> Pivot)
+        ZYPHRYON_INLINE constexpr static Circle Anchor(Circle Circle, Pivot Origin)
         {
             const Real32 Radius   = Circle.GetRadius();
             const Real32 Diameter = Radius * 2;
 
             const Vector2 Translation = -Circle.GetCenter() - Vector2(
-                (Pivot.GetX() * Diameter) - Radius,
-                (Pivot.GetY() * Diameter) - Radius
+                (Origin.GetX() * Diameter) - Radius,
+                (Origin.GetY() * Diameter) - Radius
             );
             return Math::Circle(Circle.GetCenter() + Translation, Radius);
         }
@@ -400,7 +400,7 @@ inline namespace Math
         /// \param End        The ending circle.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A rectangle interpolated between the start and end circle.
-        ZYPHRYON_INLINE constexpr static Circle Lerp(ConstRef<Circle> Start, ConstRef<Circle> End, Real32 Percentage)
+        ZYPHRYON_INLINE constexpr static Circle Lerp(Circle Start, Circle End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
@@ -413,12 +413,13 @@ inline namespace Math
         /// \param Circle The input circle in local space.
         /// \param Matrix The transformation matrix to apply.
         /// \return A transformed circle in world space.
-        ZYPHRYON_INLINE static Circle Transform(ConstRef<Circle> Circle, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Circle Transform(Circle Circle, ConstRef<Matrix4x4> Matrix)
         {
             const Vector2 Center = Matrix4x4::Project<true>(Matrix, Circle.GetCenter());
 
             const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
             const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
+
             if (IsAlmostEqual(ScaleX, ScaleY))
             {
                 return Math::Circle(Center, Circle.GetRadius() * ScaleX);

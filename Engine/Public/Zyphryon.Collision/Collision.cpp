@@ -21,7 +21,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Circle P0, Circle P1, Ptr<Manifold> Manifold)
     {
         const Vector2 Delta      = P1.GetCenter() - P0.GetCenter();
         const Real32  SqDistance = Delta.GetLengthSquared();
@@ -44,7 +44,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Circle P0, Rect P1, Ptr<Manifold> Manifold)
     {
         const Vector2 Closest    = P1.GetNearest(P0.GetCenter());
         const Vector2 Delta      = Closest - P0.GetCenter();
@@ -68,7 +68,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Circle P0, Line P1, Ptr<Manifold> Manifold)
     {
         const Vector2 AB = P1.GetEnd() - P1.GetStart();
         const Vector2 AC = P0.GetCenter() - P1.GetStart();
@@ -101,7 +101,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Rect P0, Rect P1, Ptr<Manifold> Manifold)
     {
         const Rect Intersection = Rect::Intersection(P0, P1);
 
@@ -167,7 +167,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Rect P0, Circle P1, Ptr<Manifold> Manifold)
     {
         const Bool Result = Intersects(P1, P0, Manifold);
 
@@ -181,7 +181,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Rect P0, Line P1, Ptr<Manifold> Manifold)
     {
         const Vector2 Delta = P1.GetEnd() - P1.GetStart();
 
@@ -276,7 +276,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Line P0, Rect P1, Ptr<Manifold> Manifold)
     {
         const Bool Result = Intersects(P1, P0, Manifold);
 
@@ -290,7 +290,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Line P0, Circle P1, Ptr<Manifold> Manifold)
     {
         const Bool Result = Intersects(P1, P0, Manifold);
 
@@ -304,7 +304,7 @@ namespace Collision
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Line P0, Line P1, Ptr<Manifold> Manifold)
     {
         const Vector2 Dir0 = P0.GetEnd() - P0.GetStart();
         const Vector2 Dir1 = P1.GetEnd() - P1.GetStart();

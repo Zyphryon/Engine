@@ -57,7 +57,7 @@ inline namespace Math
         ///
         /// \param Other The source vector to convert from.
         template<typename Base>
-        ZYPHRYON_INLINE constexpr explicit AnyVector2(ConstRef<AnyVector2<Base>> Other)
+        ZYPHRYON_INLINE constexpr explicit AnyVector2(AnyVector2<Base> Other)
             : mX { static_cast<Type>(Other.GetX()) },
               mY { static_cast<Type>(Other.GetY()) }
         {
@@ -103,7 +103,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components are less, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLess(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLess(AnyVector2 Vector) const
         {
             return mX < Vector.mX && mY < Vector.mY;
         }
@@ -112,7 +112,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components are less or equal, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLessOrEqual(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseLessOrEqual(AnyVector2 Vector) const
         {
             return mX <= Vector.mX && mY <= Vector.mY;
         }
@@ -121,7 +121,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components are greater, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreater(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreater(AnyVector2 Vector) const
         {
             return mX > Vector.mX && mY > Vector.mY;
         }
@@ -130,7 +130,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components are greater or equal, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreaterOrEqual(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool IsComponentWiseGreaterOrEqual(AnyVector2 Vector) const
         {
             return mX >= Vector.mX && mY >= Vector.mY;
         }
@@ -202,7 +202,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to calculate the distance to.
         /// \return The distance between the two vectors.
-        ZYPHRYON_INLINE constexpr Type GetDistance(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Type GetDistance(AnyVector2 Vector) const
             requires (IsReal<Type>)
         {
             const AnyVector2 Difference = (* this) - Vector;
@@ -213,7 +213,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to calculate the distance to.
         /// \return The distance between the two vectors.
-        ZYPHRYON_INLINE constexpr Type GetDistanceManhattan(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Type GetDistanceManhattan(AnyVector2 Vector) const
         {
             const AnyVector2 Difference = (* this) - Vector;
             return Abs(Difference.GetX()) + Abs(Difference.GetY());
@@ -223,7 +223,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to calculate the distance to.
         /// \return The distance between the two vectors.
-        ZYPHRYON_INLINE constexpr Type GetDistanceChebyshev(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Type GetDistanceChebyshev(AnyVector2 Vector) const
         {
             const AnyVector2 Difference = (* this) - Vector;
             return Max(Abs(Difference.GetX()), Abs(Difference.GetY()));
@@ -233,7 +233,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to calculate the squared distance to.
         /// \return The squared distance between the two vectors.
-        ZYPHRYON_INLINE constexpr Type GetDistanceSquared(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Type GetDistanceSquared(AnyVector2 Vector) const
         {
             return ((* this) - Vector).GetLengthSquared();
         }
@@ -251,7 +251,7 @@ inline namespace Math
         ///
         /// \param Other The other vector to compare with.
         /// \return Angle in radians between the two vectors (range [0, π]).
-        ZYPHRYON_INLINE constexpr Type GetAngle(ConstRef<AnyVector2> Other) const
+        ZYPHRYON_INLINE constexpr Type GetAngle(AnyVector2 Other) const
             requires (IsReal<Type>)
         {
             const Type Length = GetLength() * Other.GetLength();
@@ -290,7 +290,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A new vector that is the difference of the two vectors.
-        ZYPHRYON_INLINE constexpr AnyVector2 operator-(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr AnyVector2 operator-(AnyVector2 Vector) const
         {
             return AnyVector2(mX - Vector.mX, mY - Vector.mY);
         }
@@ -308,7 +308,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to multiply by.
         /// \return A new vector that is the product of the two vectors.
-        ZYPHRYON_INLINE constexpr AnyVector2 operator*(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr AnyVector2 operator*(AnyVector2 Vector) const
         {
             return AnyVector2(mX * Vector.mX, mY * Vector.mY);
         }
@@ -326,7 +326,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to divide by.
         /// \return A new vector that is the quotient of the two vectors.
-        ZYPHRYON_INLINE constexpr AnyVector2 operator/(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr AnyVector2 operator/(AnyVector2 Vector) const
         {
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
@@ -393,7 +393,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator+=(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator+=(AnyVector2 Vector)
         {
             mX += Vector.mX;
             mY += Vector.mY;
@@ -415,7 +415,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator-=(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator-=(AnyVector2 Vector)
         {
             mX -= Vector.mX;
             mY -= Vector.mY;
@@ -437,7 +437,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to multiply.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator*=(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator*=(AnyVector2 Vector)
         {
             mX *= Vector.mX;
             mY *= Vector.mY;
@@ -459,7 +459,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to divide by.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator/=(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<AnyVector2> operator/=(AnyVector2 Vector)
         {
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
@@ -516,7 +516,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare to.
         /// \return `true` if all components are approximately equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool operator==(AnyVector2 Vector) const
         {
             return IsAlmostEqual(Vector.mX, Vector.mY);
         }
@@ -525,7 +525,7 @@ inline namespace Math
         ///
         /// \param Other The vector to compare to.
         /// \return `true` if the vectors are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyVector2> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator!=(AnyVector2 Other) const
         {
             return !(* this == Other);
         }
@@ -534,7 +534,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if this vector is lexicographically less than the other vector, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool operator<(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool operator<(AnyVector2 Vector) const
         {
             return (mX < Vector.mX) || (mX == Vector.mX && mY < Vector.mY);
         }
@@ -543,7 +543,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if this vector is lexicographically less than or equal to the other vector, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool operator<=(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool operator<=(AnyVector2 Vector) const
         {
             return (mX < Vector.mX) || (mX == Vector.mX && mY <= Vector.mY);
         }
@@ -552,7 +552,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if this vector is lexicographically greater than the other vector, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool operator>(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool operator>(AnyVector2 Vector) const
         {
             return (mX > Vector.mX) || (mX == Vector.mX && mY > Vector.mY);
         }
@@ -561,7 +561,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if this vector is lexicographically greater than or equal to the other vector, otherwise `false`.
-        ZYPHRYON_INLINE constexpr Bool operator>=(ConstRef<AnyVector2> Vector) const
+        ZYPHRYON_INLINE constexpr Bool operator>=(AnyVector2 Vector) const
         {
             return (mX > Vector.mX) || (mX == Vector.mX && mY >= Vector.mY);
         }
@@ -623,7 +623,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return `true` if the vectors are parallel, `false` otherwise.
-        ZYPHRYON_INLINE constexpr static Bool IsParallel(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1)
+        ZYPHRYON_INLINE constexpr static Bool IsParallel(AnyVector2 P0, AnyVector2 P1)
         {
             return Cross(P0, P1).IsAlmostZero();
         }
@@ -632,7 +632,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compute the perpendicular of.
         /// \return A vector perpendicular to the input vector.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Perpendicular(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Perpendicular(AnyVector2 Vector)
         {
             return AnyVector2(-Vector.GetY(), Vector.GetX());
         }
@@ -642,7 +642,7 @@ inline namespace Math
         /// \param Source The vector to be projected.
         /// \param Target The vector onto which the source is projected.
         /// \return The projection of source onto target.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Project(ConstRef<AnyVector2> Source, ConstRef<AnyVector2> Target)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Project(AnyVector2 Source, AnyVector2 Target)
             requires (IsReal<Type>)
         {
             const Type Denominator = Dot(Target, Target);
@@ -655,7 +655,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to normalize.
         /// \return A normalized vector, or the original if its length is too small.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Normalize(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Normalize(AnyVector2 Vector)
             requires (IsReal<Type>)
         {
             const Type Length = Vector.GetLength();
@@ -669,7 +669,7 @@ inline namespace Math
         /// \param Incident The incoming vector to reflect.
         /// \param Normal   The surface normal to reflect across (should be normalized).
         /// \return The reflected vector.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Reflect(ConstRef<AnyVector2> Incident, ConstRef<AnyVector2> Normal)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Reflect(AnyVector2 Incident, AnyVector2 Normal)
             requires (IsReal<Type>)
         {
             LOG_ASSERT(Normal.IsNormalized(), "Normal must be normalized");
@@ -682,7 +682,7 @@ inline namespace Math
         /// \param Vector The vector to rotate.
         /// \param Angles The angle in radians to rotate by (counter-clockwise).
         /// \return A new rotated vector.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Rotate(ConstRef<AnyVector2> Vector, Type Angles)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Rotate(AnyVector2 Vector, Type Angles)
             requires (IsReal<Type>)
         {
             const Type C = Cos(Angles);
@@ -695,7 +695,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The dot product of the two vectors.
-        ZYPHRYON_INLINE constexpr static Type Dot(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1)
+        ZYPHRYON_INLINE constexpr static Type Dot(AnyVector2 P0, AnyVector2 P1)
         {
             return (P0.GetX() * P1.GetX()) + (P0.GetY() * P1.GetY());
         }
@@ -705,7 +705,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The scalar cross product of the two vectors.
-        ZYPHRYON_INLINE constexpr static Type Cross(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1)
+        ZYPHRYON_INLINE constexpr static Type Cross(AnyVector2 P0, AnyVector2 P1)
         {
             return P0.GetX() * P1.GetY() - P0.GetY() * P1.GetX();
         }
@@ -718,7 +718,7 @@ inline namespace Math
         /// \param P1 The second vector.
         /// \param P2 The third vector.
         /// \return The scalar triple product value.
-        ZYPHRYON_INLINE constexpr static Type Cross(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1, ConstRef<AnyVector2> P2)
+        ZYPHRYON_INLINE constexpr static Type Cross(AnyVector2 P0, AnyVector2 P1, AnyVector2 P2)
         {
             return (P0.GetX() - P2.GetX()) * (P1.GetY() - P2.GetY()) - (P0.GetY() - P2.GetY()) * (P1.GetX() - P2.GetX());
         }
@@ -728,7 +728,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise minimum values.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Min(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Min(AnyVector2 P0, AnyVector2 P1)
         {
             return AnyVector2(Base::Min(P0.mX, P1.mX), Base::Min(P0.mY, P1.mY));
         }
@@ -738,7 +738,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Max(ConstRef<AnyVector2> P0, ConstRef<AnyVector2> P1)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Max(AnyVector2 P0, AnyVector2 P1)
         {
             return AnyVector2(Base::Max(P0.mX, P1.mX), Base::Max(P0.mY, P1.mY));
         }
@@ -749,7 +749,7 @@ inline namespace Math
         /// \param Min    The vector specifying the minimum bounds.
         /// \param Max    The vector specifying the maximum bounds.
         /// \return A vector with each component clamped between the min and max values.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Clamp(ConstRef<AnyVector2> Vector, ConstRef<AnyVector2> Min, ConstRef<AnyVector2> Max)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Clamp(AnyVector2 Vector, AnyVector2 Min, AnyVector2 Max)
         {
             return AnyVector2(Base::Clamp(Vector.mX, Min.mX, Max.mX), Base::Clamp(Vector.mY, Min.mY, Max.mY));
         }
@@ -758,7 +758,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded down.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Floor(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Floor(AnyVector2 Vector)
             requires(IsReal<Type>)
         {
             return AnyVector2(Base::Floor(Vector.mX), Base::Floor(Vector.mY));
@@ -768,7 +768,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded up.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Ceil(ConstRef<AnyVector2> Vector)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Ceil(AnyVector2 Vector)
             requires(IsReal<Type>)
         {
             return AnyVector2(Base::Ceil(Vector.mX), Base::Ceil(Vector.mY));
@@ -780,7 +780,7 @@ inline namespace Math
         /// \param End        The ending vector.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A vector interpolated between the start and end vectors.
-        ZYPHRYON_INLINE constexpr static AnyVector2 Lerp(ConstRef<AnyVector2> Start, ConstRef<AnyVector2> End, Type Percentage)
+        ZYPHRYON_INLINE constexpr static AnyVector2 Lerp(AnyVector2 Start, AnyVector2 End, Type Percentage)
             requires (IsReal<Type>)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");

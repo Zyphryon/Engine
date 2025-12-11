@@ -113,7 +113,7 @@ inline namespace Math
         ///
         /// \param Color The color to add.
         /// \return A new color that is the sum of this color and the input color.
-        ZYPHRYON_INLINE constexpr AnyColor operator+(ConstRef<AnyColor> Color) const
+        ZYPHRYON_INLINE constexpr AnyColor operator+(AnyColor Color) const
         {
             return AnyColor(mComponents[0] + Color.mComponents[0],
                             mComponents[1] + Color.mComponents[1],
@@ -137,7 +137,7 @@ inline namespace Math
         ///
         /// \param Color The color to subtract.
         /// \return A new color that is the difference of the two colors.
-        ZYPHRYON_INLINE constexpr AnyColor operator-(ConstRef<AnyColor> Color) const
+        ZYPHRYON_INLINE constexpr AnyColor operator-(AnyColor Color) const
         {
             return AnyColor(mComponents[0] - Color.mComponents[0],
                             mComponents[1] - Color.mComponents[1],
@@ -161,7 +161,7 @@ inline namespace Math
         ///
         /// \param Color The color to multiply by.
         /// \return A new color that is the product of the two colors.
-        ZYPHRYON_INLINE constexpr AnyColor operator*(ConstRef<AnyColor> Color) const
+        ZYPHRYON_INLINE constexpr AnyColor operator*(AnyColor Color) const
         {
             return AnyColor(mComponents[0] * Color.mComponents[0],
                             mComponents[1] * Color.mComponents[1],
@@ -185,7 +185,7 @@ inline namespace Math
         ///
         /// \param Color The color to divide by.
         /// \return A new color that is the quotient of the two colors.
-        ZYPHRYON_INLINE constexpr AnyColor operator/(ConstRef<AnyColor> Color) const
+        ZYPHRYON_INLINE constexpr AnyColor operator/(AnyColor Color) const
         {
             LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
             LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
@@ -216,7 +216,7 @@ inline namespace Math
         ///
         /// \param Color The color to add.
         /// \return A reference to the updated color.
-        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator+=(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator+=(AnyColor Color)
         {
             mComponents[0] += Color.mComponents[0];
             mComponents[1] += Color.mComponents[1];
@@ -242,7 +242,7 @@ inline namespace Math
         ///
         /// \param Color The color to subtract.
         /// \return A reference to the updated color.
-        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator-=(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator-=(AnyColor Color)
         {
             mComponents[0] -= Color.mComponents[0];
             mComponents[1] -= Color.mComponents[1];
@@ -268,7 +268,7 @@ inline namespace Math
         ///
         /// \param Color The color to multiply.
         /// \return A reference to the updated color.
-        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator*=(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator*=(AnyColor Color)
         {
             mComponents[0] *= Color.mComponents[0];
             mComponents[1] *= Color.mComponents[1];
@@ -294,7 +294,7 @@ inline namespace Math
         ///
         /// \param Color The color to divide by.
         /// \return A reference to the updated color.
-        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator/=(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr Ref<AnyColor> operator/=(AnyColor Color)
         {
             LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
             LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
@@ -327,7 +327,7 @@ inline namespace Math
         ///
         /// \param Color The color to compare to.
         /// \return `true` if all channels are equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<AnyColor> Color) const
+        ZYPHRYON_INLINE constexpr Bool operator==(AnyColor Color) const
         {
             return mComponents[0] == Color.mComponents[0] &&
                    mComponents[1] == Color.mComponents[1] &&
@@ -339,7 +339,7 @@ inline namespace Math
         ///
         /// \param Other The color to compare to.
         /// \return `true` if any channel differs, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<AnyColor> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator!=(AnyColor Other) const
         {
             return !(* this == Other);
         }
@@ -435,7 +435,7 @@ inline namespace Math
         /// \return A color with maximum red, zero green and blue, and full alpha.
         ZYPHRYON_INLINE static constexpr AnyColor Red()
         {
-            return AnyColor(Limit(), 0, 0, Limit());
+            return AnyColor(Limit(), Type(0), Type(0), Limit());
         }
 
         /// \brief Returns an opaque green color.
@@ -443,7 +443,7 @@ inline namespace Math
         /// \return A color with maximum green, zero red and blue, and full alpha.
         ZYPHRYON_INLINE static constexpr AnyColor Green()
         {
-            return AnyColor(0, Limit(), 0, Limit());
+            return AnyColor(Type(0), Limit(), Type(0), Limit());
         }
 
         /// \brief Returns an opaque blue color.
@@ -451,7 +451,7 @@ inline namespace Math
         /// \return A color with maximum blue, zero red and green, and full alpha.
         ZYPHRYON_INLINE static constexpr AnyColor Blue()
         {
-            return AnyColor(0, 0, Limit(), Limit());
+            return AnyColor(Type(0), Type(0), Limit(), Limit());
         }
 
         /// \brief Returns an opaque yellow color.
@@ -459,7 +459,7 @@ inline namespace Math
         /// \return A color with maximum red and green, zero blue, and full alpha.
         ZYPHRYON_INLINE static constexpr AnyColor Yellow()
         {
-            return AnyColor(Limit(), Limit(), 0, Limit());
+            return AnyColor(Limit(), Limit(), Type(0), Limit());
         }
 
         /// \brief Returns an opaque cyan color.
@@ -467,7 +467,15 @@ inline namespace Math
         /// \return A color with maximum green and blue, zero red, and full alpha.
         ZYPHRYON_INLINE static constexpr AnyColor Cyan()
         {
-            return AnyColor(0, Limit(), Limit(), Limit());
+            return AnyColor(Type(0), Limit(), Limit(), Limit());
+        }
+
+        /// \brief Returns an opaque pink color.
+        ///
+        /// \return A color with maximum red and blue, zero green, and full alpha.
+        ZYPHRYON_INLINE static constexpr AnyColor Pink()
+        {
+            return AnyColor(Limit(), Type(0), Limit(), Limit());
         }
 
         /// \brief Returns the component-wise minimum of two colors.
@@ -475,7 +483,7 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyColor Min(ConstRef<AnyColor> First, ConstRef<AnyColor> Second)
+        ZYPHRYON_INLINE constexpr static AnyColor Min(AnyColor First, AnyColor Second)
         {
             return AnyColor(Base::Min(First.GetRed(),   Second.GetRed()),
                             Base::Min(First.GetGreen(), Second.GetGreen()),
@@ -488,7 +496,7 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyColor Max(ConstRef<AnyColor> First, ConstRef<AnyColor> Second)
+        ZYPHRYON_INLINE constexpr static AnyColor Max(AnyColor First, AnyColor Second)
         {
             return AnyColor(Base::Max(First.GetRed(),   Second.GetRed()),
                             Base::Max(First.GetGreen(), Second.GetGreen()),
@@ -502,7 +510,7 @@ inline namespace Math
         /// \param Minimum Minimum allowed channel value.
         /// \param Maximum Maximum allowed channel value.
         /// \return A color with the component values clamped.
-        ZYPHRYON_INLINE constexpr static AnyColor Clamp(ConstRef<AnyColor> Color, Type Minimum, Type Maximum)
+        ZYPHRYON_INLINE constexpr static AnyColor Clamp(AnyColor Color, Type Minimum, Type Maximum)
         {
             return AnyColor(Base::Clamp(Color.GetRed(),   Minimum, Maximum),
                             Base::Clamp(Color.GetGreen(), Minimum, Maximum),
@@ -514,7 +522,7 @@ inline namespace Math
         ///
         /// \param Color The input color.
         /// \return A color with all channels saturated to the legal range.
-        ZYPHRYON_INLINE constexpr static AnyColor Saturate(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr static AnyColor Saturate(AnyColor Color)
         {
             return Clamp(Color, Type(0), Limit());
         }
@@ -524,7 +532,7 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with modulated RGB and the alpha of \p First.
-        ZYPHRYON_INLINE constexpr static AnyColor Modulate(ConstRef<AnyColor> First, ConstRef<AnyColor> Second)
+        ZYPHRYON_INLINE constexpr static AnyColor Modulate(AnyColor First, AnyColor Second)
         {
             return AnyColor(First.GetRed()   * Second.GetRed(),
                             First.GetGreen() * Second.GetGreen(),
@@ -536,7 +544,7 @@ inline namespace Math
         ///
         /// \param Color The input color.
         /// \return A color where each RGB channel is inverted. Alpha is preserved.
-        ZYPHRYON_INLINE constexpr static AnyColor Invert(ConstRef<AnyColor> Color)
+        ZYPHRYON_INLINE constexpr static AnyColor Invert(AnyColor Color)
         {
             return AnyColor(Limit() - Color.GetRed(), Limit() - Color.GetGreen(), Limit() - Color.GetBlue(), Color.GetAlpha());
         }
@@ -547,7 +555,7 @@ inline namespace Math
         /// \param End         The ending color.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A color interpolated between the start and end colors.
-        ZYPHRYON_INLINE constexpr static AnyColor Lerp(ConstRef<AnyColor> Start, ConstRef<AnyColor> End, Real32 Percentage)
+        ZYPHRYON_INLINE constexpr static AnyColor Lerp(AnyColor Start, AnyColor End, Real32 Percentage)
         {
             const Type Red   = Base::Lerp(Start.GetRed(),   End.GetRed(),   Percentage);
             const Type Green = Base::Lerp(Start.GetGreen(), End.GetGreen(), Percentage);

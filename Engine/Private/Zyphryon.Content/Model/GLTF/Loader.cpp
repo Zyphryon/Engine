@@ -193,8 +193,8 @@ namespace Content
             {
                 ConstRef<tinygltf::Texture> GLTFTexture = GLTFModel.textures[Index];
 
-                Material->SetTexture(Graphic::TextureSemantic::Diffuse, LoadTexture(GLTFModel, GLTFTexture));
-                Material->SetSampler(Graphic::TextureSemantic::Diffuse, LoadSampler(GLTFModel.samplers[GLTFTexture.sampler]));
+                Material->SetTexture(Graphic::TextureSemantic::Albedo, LoadTexture(GLTFModel, GLTFTexture));
+                Material->SetSampler(Graphic::TextureSemantic::Albedo, LoadSampler(GLTFModel.samplers[GLTFTexture.sampler]));
             }
             if (SInt32 Index = GLTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index; Index >= 0)
             {

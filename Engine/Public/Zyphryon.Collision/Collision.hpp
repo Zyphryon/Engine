@@ -29,7 +29,7 @@ namespace Collision
     /// \param P1        The second circle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the circles intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Circle P0, Circle P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a circle and an axis-aligned rectangle.
     ///
@@ -37,7 +37,7 @@ namespace Collision
     /// \param P1        The rectangle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the circle and rectangle intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Circle P0, Rect P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a circle and a line segment.
     ///
@@ -45,7 +45,7 @@ namespace Collision
     /// \param P1        The line segment.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the circle and line intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Circle> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Circle P0, Line P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between two axis-aligned rectangles.
     ///
@@ -53,7 +53,7 @@ namespace Collision
     /// \param P1        The second rectangle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the rectangles intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Rect P0, Rect P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a rectangle and a circle.
     ///
@@ -61,7 +61,7 @@ namespace Collision
     /// \param P1        The circle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the rectangle and circle intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Rect P0, Circle P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a rectangle and a line segment.
     ///
@@ -69,7 +69,7 @@ namespace Collision
     /// \param P1        The line segment.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the rectangle and line intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Rect> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Rect P0, Line P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a line segment and a rectangle.
     ///
@@ -77,7 +77,7 @@ namespace Collision
     /// \param P1        The rectangle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the line and rectangle intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Rect> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Line P0, Rect P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between a line segment and a circle.
     ///
@@ -85,7 +85,7 @@ namespace Collision
     /// \param P1        The circle.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the line and circle intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Circle> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Line P0, Circle P1, Ptr<Manifold> Manifold);
 
     /// \brief Tests intersection between two line segments.
     ///
@@ -93,5 +93,5 @@ namespace Collision
     /// \param P1        The second line segment.
     /// \param Manifold  Optional manifold pointer to receive contact data if an intersection occurs.
     /// \return `true` if the line segments intersect, `false` otherwise.
-    Bool Intersects(ConstRef<Line> P0, ConstRef<Line> P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Line P0, Line P1, Ptr<Manifold> Manifold);
 }

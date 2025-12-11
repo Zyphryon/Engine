@@ -26,6 +26,25 @@ inline namespace Base
     /// \return A UTF-8 encoded string containing the converted text.
     Str8 ConvertUTF16ToUTF8(std::wstring_view Value);
 
+    /// \brief Iterates over each UTF-8 codepoint in the given text, invoking a callback for each.
+    ///
+    /// \param Text     The UTF-8 encoded text to iterate over.
+    /// \param Callback The callback function to invoke for each codepoint.
+    template<typename Function>
+    void IterateUTF8(ConstStr8 Text, AnyRef<Function> Callback)
+    {
+        ConstPtr<Char> Data      = Text.data();
+        UInt           Size      = Text.size();
+        UInt32         Codepoint = SDL_StepUTF8(& Data, & Size);
+
+        while (Codepoint != 0)
+        {
+            Callback(Codepoint);
+
+            Codepoint = SDL_StepUTF8(& Data, & Size);
+        }
+    }
+
     /// \brief Represents a compile-time UTF-8 string literal for use as a non-type template parameter.
     ///
     /// Enables passing string literals as template arguments for metaprogramming, tagging, or compile-time hashing.

@@ -31,7 +31,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Pipeline::Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<MappingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties)
+    void Pipeline::Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<BindingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties)
     {
         mStages     = Move(Stages);
         mTextures   = Move(Textures);

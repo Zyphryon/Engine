@@ -94,6 +94,20 @@ inline namespace Base
             mOffset = 0u;
         }
 
+        /// \brief Reserve a byte range from the buffer.
+        ///
+        /// \param Length Size of the region in bytes.
+        /// \return Pointer to the start of the reserved region.
+        template<typename Type>
+        ZYPHRYON_INLINE Ptr<Type> ReserveFast(UInt32 Length)
+        {
+            Ensure(Length);
+
+            mOffset += Length;
+
+            return reinterpret_cast<Ptr<Type>>(&mBuffer[mOffset - Length]);
+        }
+
         /// \brief Reserve a byte range from the buffer with alignment.
         ///
         /// \param Length Size of the region in bytes.

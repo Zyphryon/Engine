@@ -49,15 +49,10 @@ inline namespace Math
         ///
         /// \param Imaginary The vector part of the quaternion (x, y, z components).
         /// \param Real      The scalar (real) part of the quaternion (w component).
-        ZYPHRYON_INLINE Quaternion(ConstRef<Vector3> Imaginary, Real32 Real)
+        ZYPHRYON_INLINE Quaternion(Vector3 Imaginary, Real32 Real)
             : mData { Imaginary.GetX(), Imaginary.GetY(), Imaginary.GetZ(), Real }
         {
         }
-
-        /// \brief Copy constructor.
-        /// 
-        /// \param Other The quaternion to copy.
-        ZYPHRYON_INLINE Quaternion(ConstRef<Quaternion> Other) = default;
 
         /// \brief Checks if the quaternion is the zero quaternion.
         /// 
@@ -205,7 +200,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to add.
         /// \return A new quaternion that is the sum of this quaternion and the input quaternion.
-        ZYPHRYON_INLINE Quaternion operator+(ConstRef<Quaternion> Other) const
+        ZYPHRYON_INLINE Quaternion operator+(Quaternion Other) const
         {
             return Quaternion(mData + Other.mData);
         }
@@ -222,7 +217,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to subtract.
         /// \return A new quaternion that is the difference of the two vectors.
-        ZYPHRYON_INLINE Quaternion operator-(ConstRef<Quaternion> Other) const
+        ZYPHRYON_INLINE Quaternion operator-(Quaternion Other) const
         {
             return Quaternion(mData - Other.mData);
         }
@@ -231,7 +226,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to multiply.
         /// \return A new quaternion with the new rotation.
-        ZYPHRYON_INLINE Quaternion operator*(ConstRef<Quaternion> Other) const
+        ZYPHRYON_INLINE Quaternion operator*(Quaternion Other) const
         {
             LOG_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
 
@@ -259,7 +254,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to add.
         /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator+=(ConstRef<Quaternion> Other)
+        ZYPHRYON_INLINE Ref<Quaternion> operator+=(Quaternion Other)
         {
             mData += Other.mData;
             return (* this);
@@ -269,7 +264,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to subtract.
         /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator-=(ConstRef<Quaternion> Other)
+        ZYPHRYON_INLINE Ref<Quaternion> operator-=(Quaternion Other)
         {
             mData -= Other.mData;
             return (* this);
@@ -279,7 +274,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to multiply.
         /// \return A reference to the updated quaternion.
-        ZYPHRYON_INLINE Ref<Quaternion> operator*=(ConstRef<Quaternion> Other)
+        ZYPHRYON_INLINE Ref<Quaternion> operator*=(Quaternion Other)
         {
             const Vector4 V1 = Vector4::Blend<0b1000>(mData, Vector4::Zero());
             const Vector4 V2 = Vector4::Blend<0b1000>(Other.mData, Vector4::Zero());
@@ -307,7 +302,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to compare to.
         /// \return `true` if all vectors are approximately equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator==(ConstRef<Quaternion> Other) const
+        ZYPHRYON_INLINE Bool operator==(Quaternion Other) const
         {
             return mData == Other.mData || mData == (-Other.mData);
         }
@@ -316,7 +311,7 @@ inline namespace Math
         /// 
         /// \param Other The quaternion to compare to.
         /// \return `true` if the vectors are not equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Quaternion> Other) const
+        ZYPHRYON_INLINE Bool operator!=(Quaternion Other) const
         {
             return !(* this == Other);
         }
@@ -344,7 +339,7 @@ inline namespace Math
         /// 
         /// \param Quaternion The quaternion to normalize.
         /// \return A normalized quaternion.
-        ZYPHRYON_INLINE static Quaternion Normalize(ConstRef<Quaternion> Quaternion)
+        ZYPHRYON_INLINE static Quaternion Normalize(Quaternion Quaternion)
         {
             return ::Quaternion(Vector4::Normalize(Quaternion.mData));
         }
@@ -353,7 +348,7 @@ inline namespace Math
         /// 
         /// \param Quaternion The quaternion to conjugate.
         /// \return A conjugated quaternion.
-        ZYPHRYON_INLINE static Quaternion Conjugate(ConstRef<Quaternion> Quaternion)
+        ZYPHRYON_INLINE static Quaternion Conjugate(Quaternion Quaternion)
         {
             return Math::Quaternion(Quaternion.mData * Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
         }
@@ -362,7 +357,7 @@ inline namespace Math
         /// 
         /// \param Quaternion The quaternion to invert. Must be normalized if representing a rotation.
         /// \return A inverse quaternion.
-        ZYPHRYON_INLINE static Quaternion Inverse(ConstRef<Quaternion> Quaternion)
+        ZYPHRYON_INLINE static Quaternion Inverse(Quaternion Quaternion)
         {
             const Real32 LengthSquared = Quaternion.GetLengthSquared();
             LOG_ASSERT(LengthSquared > kEpsilon<Real32>, "Cannot invert a zero-length quaternion");
@@ -375,7 +370,7 @@ inline namespace Math
         /// \param P0 The first quaternion.
         /// \param P1 The second quaternion.
         /// \return The dot product of the two quaternions.
-        ZYPHRYON_INLINE static Real32 Dot(ConstRef<Quaternion> P0, ConstRef<Quaternion> P1)
+        ZYPHRYON_INLINE static Real32 Dot(Quaternion P0, Quaternion P1)
         {
             return Vector4::Dot(P0.mData, P1.mData);
         }
@@ -385,7 +380,7 @@ inline namespace Math
         /// \param Rotation The quaternion that defines the rotation. Must be normalized.
         /// \param Vector   The vector to rotate (treated as a direction, w = 0).
         /// \return The rotated vector.
-        ZYPHRYON_INLINE static Vector3 Rotate(ConstRef<Quaternion> Rotation, ConstRef<Vector3> Vector)
+        ZYPHRYON_INLINE static Vector3 Rotate(Quaternion Rotation, Vector3 Vector)
         {
             LOG_ASSERT(Rotation.IsNormalized(), "Quaternion must be normalized before rotating");
 
@@ -402,7 +397,7 @@ inline namespace Math
         /// \param Angle The angle of rotation (in radians).
         /// \param Axis  The axis to rotate around (normalized).
         /// \return A quaternion representing the rotation.
-        ZYPHRYON_INLINE static Quaternion FromAngles(Real32 Angle, ConstRef<Vector3> Axis)
+        ZYPHRYON_INLINE static Quaternion FromAngles(Real32 Angle, Vector3 Axis)
         {
             LOG_ASSERT(Axis.IsNormalized(), "Axis must be normalized before constructing a quaternion");
 
@@ -414,7 +409,7 @@ inline namespace Math
         /// 
         /// \param Angles A vector where X = pitch, Y = yaw, Z = roll (in radians).
         /// \return A quaternion representing the combined rotation.
-        ZYPHRYON_INLINE static Quaternion FromEulerAngles(ConstRef<Vector3> Angles)
+        ZYPHRYON_INLINE static Quaternion FromEulerAngles(Vector3 Angles)
         {
             const Real32 HalfPitch = Angles.GetX() * 0.5f;
             const Real32 HalfYaw   = Angles.GetY() * 0.5f;
@@ -439,7 +434,7 @@ inline namespace Math
         /// @param Up        The desired up (normalized) vector.
         /// 
         /// @return A quaternion representing the rotation from the given direction and up vectors.
-        ZYPHRYON_INLINE static Quaternion FromDirection(ConstRef<Vector3> Direction, ConstRef<Vector3> Up)
+        ZYPHRYON_INLINE static Quaternion FromDirection(Vector3 Direction, Vector3 Up)
         {
             LOG_ASSERT(Direction.IsNormalized(), "Direction must be normalized");
             LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");
@@ -498,7 +493,7 @@ inline namespace Math
         /// \param End        The ending quaternion.
         /// \param Percentage A value between 0 and 1 representing interpolation amount.
         /// \return A quaternion interpolated between Start and End.
-        ZYPHRYON_INLINE static Quaternion Lerp(ConstRef<Quaternion> Start, ConstRef<Quaternion> End, Real32 Percentage)
+        ZYPHRYON_INLINE static Quaternion Lerp(Quaternion Start, Quaternion End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
@@ -512,7 +507,7 @@ inline namespace Math
         /// \param End        The ending quaternion.
         /// \param Percentage A value between 0 and 1 representing interpolation amount.
         /// \return A normalized quaternion interpolated between Start and End.
-        ZYPHRYON_INLINE static Quaternion NLerp(ConstRef<Quaternion> Start, ConstRef<Quaternion> End, Real32 Percentage)
+        ZYPHRYON_INLINE static Quaternion NLerp(Quaternion Start, Quaternion End, Real32 Percentage)
         {
             return Normalize(Lerp(Start, End, Percentage));
         }
@@ -523,7 +518,7 @@ inline namespace Math
         /// \param End        The ending quaternion.
         /// \param Percentage A value between 0 and 1 representing interpolation amount.
         /// \return A normalized quaternion interpolated between Start and End.
-        ZYPHRYON_INLINE static Quaternion Slerp(ConstRef<Quaternion> Start, ConstRef<Quaternion> End, Real32 Percentage)
+        ZYPHRYON_INLINE static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 

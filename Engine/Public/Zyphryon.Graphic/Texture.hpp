@@ -43,7 +43,7 @@ namespace Graphic
         /// \param Level   Mipmap level to load.
         /// \param Samples Samples per pixel (multisampling).
         /// \param Data    Raw texture data.
-        void Load(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Level, Samples Samples, AnyRef<Blob> Data);
+        void Load(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data);
 
         /// \brief Loads a standard source texture (non-render target).
         ///
@@ -54,7 +54,7 @@ namespace Graphic
         /// \param Data   Raw texture data.
         ZYPHRYON_INLINE void Load(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Level, AnyRef<Blob> Data)
         {
-            Load(Access::Device, Format, TextureLayout::Source, Width, Height, Level, Samples::X1, Move(Data));
+            Load(Access::Device, Format, TextureLayout::Source, Width, Height, Level, Multisample::X1, Move(Data));
         }
 
         /// \brief Returns the GPU object ID associated with this texture.
@@ -116,7 +116,7 @@ namespace Graphic
         /// \brief Returns the multisample count used for multisampling.
         ///
         /// \return The multisample count.
-        ZYPHRYON_INLINE Samples GetSamples() const
+        ZYPHRYON_INLINE Multisample GetSamples() const
         {
             return mSamples;
         }
@@ -141,7 +141,7 @@ namespace Graphic
         UInt16        mWidth;
         UInt16        mHeight;
         UInt8         mLevel;
-        Samples       mSamples;
+        Multisample   mSamples;
         Blob          mData;
     };
 }

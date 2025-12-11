@@ -40,7 +40,7 @@ namespace Scene
         /// This updates systems, processes deferred commands, and executes scheduled tasks.
         ///
         /// \param Time The time step data for the current frame.
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \brief Compacts memory by removing unused entities and components.
         ///

@@ -46,7 +46,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnTick(ConstRef<Time> Time)
+    void Service::OnTick(Time Time)
     {
         ZYPHRYON_PROFILE_SCOPE("Graphic::Tick");
 
@@ -56,7 +56,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Service::Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples)
+    Bool Service::Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples)
     {
         ZYPHRYON_PROFILE_SCOPE("Graphic::Initialize");
 
@@ -86,11 +86,11 @@ namespace Graphic
 
             if (Successful)
             {
-                ConstRef<Capabilities> Capabilities = mDriver->GetCapabilities();
-                LOG_INFO("Graphics: using {}", Enum::GetName(Capabilities.Backend));
-                LOG_INFO("Graphics: Detected shader model {}", Enum::Cast(Capabilities.Language) + 1);
+                ConstRef<Device> Device = mDriver->GetDevice();
+                LOG_INFO("Graphics: using {}", Enum::GetName(Device.Backend));
+                LOG_INFO("Graphics: Detected shader model {}", Enum::Cast(Device.Language) + 1);
 
-                for (ConstRef<Adapter> Adapter : Capabilities.Adapters)
+                for (ConstRef<Adapter> Adapter : Device.Adapters)
                 {
                     LOG_INFO("Graphics: Found GPU '{}'", Adapter.Description);
                     LOG_INFO("Graphics:     Memory {} (video), {} (system), {} (shared)",
@@ -106,7 +106,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Reset(UInt16 Width, UInt16 Height, Samples Samples)
+    void Service::Reset(UInt16 Width, UInt16 Height, Multisample Samples)
     {
         WriteCommand<CommandList::Reset>(GetProducerFrame(), Width, Height, Samples);
     }
@@ -228,7 +228,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateTexture(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Samples Samples, AnyRef<Blob> Data)
+    Object Service::CreateTexture(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
     {
         const Object ID = mTextures.Allocate();
 
@@ -363,7 +363,7 @@ namespace Graphic
                 const Ptr<SDL_Window> Window  = Fetch<0>(Data->Parameters);
                 const UInt16          Width   = Fetch<1>(Data->Parameters);
                 const UInt16          Height  = Fetch<2>(Data->Parameters);
-                const Samples         Samples = Fetch<3>(Data->Parameters);
+                const Multisample     Samples = Fetch<3>(Data->Parameters);
 
                 if (const Bool Succeed = mDriver->Initialize(Window, Width, Height, Samples); Succeed)
                 {
@@ -473,6 +473,7 @@ namespace Graphic
             Arena.GpuBuffer = mBuffers.Allocate();
             Arena.CpuLength = Length;
             Arena.CpuBuffer.Ensure(Length);
+
             mDriver->CreateBuffer(Arena.GpuBuffer, Access::Dual, Usage, Length, ConstSpan<Byte>());
         };
 
@@ -499,8 +500,10 @@ namespace Graphic
                     mDriver->ResizeBuffer(Arena.GpuBuffer, Arena.CpuLength);
                 }
 
+                // Upload the new data to the GPU buffer.
                 mDriver->UpdateBuffer(Arena.GpuBuffer, 0, false, Data);
 
+                // Clear the CPU buffer for the next frame.
                 Arena.CpuBuffer.Clear();
             }
         }

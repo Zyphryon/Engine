@@ -174,7 +174,7 @@ namespace Graphic
         /// \param Eye   Camera position.
         /// \param Focus Target position the camera looks at.
         /// \param Up    Upward direction for orientation.
-        ZYPHRYON_INLINE void SetLook(ConstRef<Vector3> Eye, ConstRef<Vector3> Focus, ConstRef<Vector3> Up)
+        ZYPHRYON_INLINE void SetLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
             const Matrix4x4 Matrix = Matrix4x4::Inverse<true>(Matrix4x4::CreateLook(Eye, Focus, Up));
 
@@ -188,7 +188,7 @@ namespace Graphic
         /// \brief Sets the camera translation.
         ///
         /// \param Translation Camera's 3D coordinate.
-        ZYPHRYON_INLINE void SetTranslation(ConstRef<Vector3> Translation)
+        ZYPHRYON_INLINE void SetTranslation(Vector3 Translation)
         {
             mTransform.SetTranslation(Translation);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -197,7 +197,7 @@ namespace Graphic
         /// \brief Sets the camera translation.
         ///
         /// \param Translation Camera's 2D coordinate.
-        ZYPHRYON_INLINE void SetTranslation(ConstRef<Vector2> Translation)
+        ZYPHRYON_INLINE void SetTranslation(Vector2 Translation)
         {
             mTransform.SetTranslation(Translation);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -227,7 +227,7 @@ namespace Graphic
         /// \brief Returns the current translation.
         ///
         /// \return The camera's 3D position.
-        ZYPHRYON_INLINE ConstRef<Vector3> GetTranslation() const
+        ZYPHRYON_INLINE Vector3 GetTranslation() const
         {
             return mTransform.GetTranslation();
         }
@@ -235,7 +235,7 @@ namespace Graphic
         /// \brief Sets the camera scale.
         ///
         /// \param Scale Camera's 3D scale factor.
-        ZYPHRYON_INLINE void SetScale(ConstRef<Vector3> Scale)
+        ZYPHRYON_INLINE void SetScale(Vector3 Scale)
         {
             mTransform.SetScale(Scale);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -244,7 +244,7 @@ namespace Graphic
         /// \brief Sets the camera scale.
         ///
         /// \param Scale Camera's 2D scale factor.
-        ZYPHRYON_INLINE void SetScale(ConstRef<Vector2> Scale)
+        ZYPHRYON_INLINE void SetScale(Vector2 Scale)
         {
             mTransform.SetScale(Scale);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -274,7 +274,7 @@ namespace Graphic
         /// \brief Returns the current scale factor.
         ///
         /// \return The camera's 3D scale.
-        ZYPHRYON_INLINE ConstRef<Vector3> GetScale() const
+        ZYPHRYON_INLINE Vector3 GetScale() const
         {
             return mTransform.GetScale();
         }
@@ -283,7 +283,7 @@ namespace Graphic
         ///
         /// \param Angle Rotation angle in radians.
         /// \param Axis  Rotation axis.
-        ZYPHRYON_INLINE void SetRotation(Real32 Angle, ConstRef<Vector3> Axis)
+        ZYPHRYON_INLINE void SetRotation(Real32 Angle, Vector3 Axis)
         {
             mTransform.SetRotation(Quaternion::FromAngles(Angle, Axis));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -293,7 +293,7 @@ namespace Graphic
         ///
         /// \param Angle Rotation angle in radians.
         /// \param Axis  2D axis (X, Y).
-        ZYPHRYON_INLINE void SetRotation(Real32 Angle, ConstRef<Vector2> Axis)
+        ZYPHRYON_INLINE void SetRotation(Real32 Angle, Vector2 Axis)
         {
             mTransform.SetRotation(Quaternion::FromAngles(Angle, Vector3(Axis.GetX(), Axis.GetY(), 0)));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -302,7 +302,7 @@ namespace Graphic
         /// \brief Sets the camera rotation using Euler angles.
         ///
         /// \param Angles Euler angles in radians (pitch, yaw, roll).
-        ZYPHRYON_INLINE void SetRotation(ConstRef<Vector3> Angles)
+        ZYPHRYON_INLINE void SetRotation(Vector3 Angles)
         {
             mTransform.SetRotation(Quaternion::FromEulerAngles(Angles));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -323,7 +323,7 @@ namespace Graphic
         ///
         /// \param Direction Forward direction.
         /// \param Up        Upward vector.
-        ZYPHRYON_INLINE void SetRotation(ConstRef<Vector3> Direction, ConstRef<Vector3> Up)
+        ZYPHRYON_INLINE void SetRotation(Vector3 Direction, Vector3 Up)
         {
             mTransform.SetRotation(Quaternion::FromDirection(Direction, Up));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -334,7 +334,7 @@ namespace Graphic
         /// \param Eye   Camera position.
         /// \param Focus Look-at target.
         /// \param Up    Upward vector.
-        ZYPHRYON_INLINE void SetRotation(ConstRef<Vector3> Eye, ConstRef<Vector3> Focus, ConstRef<Vector3> Up)
+        ZYPHRYON_INLINE void SetRotation(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
             mTransform.SetRotation(Quaternion::FromDirection(Focus - Eye, Up));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -343,7 +343,7 @@ namespace Graphic
         /// \brief Sets the camera rotation from a quaternion rotation.
         ///
         /// \param Rotation A unit quaternion representing the desired orientation.
-        ZYPHRYON_INLINE void SetRotation(ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE void SetRotation(Quaternion Rotation)
         {
             mTransform.SetRotation(Rotation);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -352,7 +352,7 @@ namespace Graphic
         /// \brief Returns the current rotation.
         ///
         /// \return The camera's orientation.
-        ZYPHRYON_INLINE ConstRef<Quaternion> GetRotation() const
+        ZYPHRYON_INLINE Quaternion GetRotation() const
         {
             return mTransform.GetRotation();
         }
@@ -360,7 +360,7 @@ namespace Graphic
         /// \brief Applies a relative translation to the camera.
         ///
         /// \param Translation 3D vector to translate.
-        ZYPHRYON_INLINE void Translate(ConstRef<Vector3> Translation)
+        ZYPHRYON_INLINE void Translate(Vector3 Translation)
         {
             mTransform.Translate(Translation);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -369,7 +369,7 @@ namespace Graphic
         /// \brief Applies a relative translation to the camera.
         ///
         /// \param Translation 2D vector to translate.
-        ZYPHRYON_INLINE void Translate(ConstRef<Vector2> Translation)
+        ZYPHRYON_INLINE void Translate(Vector2 Translation)
         {
             mTransform.Translate(Translation);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -399,7 +399,7 @@ namespace Graphic
         /// \brief Applies a relative scaling to the camera.
         ///
         /// \param Scale 3D scale factor.
-        ZYPHRYON_INLINE void Scale(ConstRef<Vector3> Scale)
+        ZYPHRYON_INLINE void Scale(Vector3 Scale)
         {
             mTransform.Scale(Scale);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -408,7 +408,7 @@ namespace Graphic
         /// \brief Applies a relative scaling to the camera.
         ///
         /// \param Scale 2D scale factor.
-        ZYPHRYON_INLINE void Scale(ConstRef<Vector2> Scale)
+        ZYPHRYON_INLINE void Scale(Vector2 Scale)
         {
             mTransform.Scale(Scale);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -439,7 +439,7 @@ namespace Graphic
         ///
         /// \param Angle Rotation angle.
         /// \param Axis  3D axis of rotation.
-        ZYPHRYON_INLINE void Rotate(Real32 Angle, ConstRef<Vector3> Axis)
+        ZYPHRYON_INLINE void Rotate(Real32 Angle, Vector3 Axis)
         {
             mTransform.Rotate(Angle, Axis);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -449,7 +449,7 @@ namespace Graphic
         ///
         /// \param Angle Rotation angle.
         /// \param Axis  2D axis.
-        ZYPHRYON_INLINE void Rotate(Real32 Angle, ConstRef<Vector2> Axis)
+        ZYPHRYON_INLINE void Rotate(Real32 Angle, Vector2 Axis)
         {
             mTransform.Rotate(Angle, Vector3(Axis.GetX(), Axis.GetY(), 0));
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -458,7 +458,7 @@ namespace Graphic
         /// \brief Applies relative Euler angle rotation.
         ///
         /// \param Angles Pitch, Yaw, Roll angles.
-        ZYPHRYON_INLINE void Rotate(ConstRef<Vector3> Angles)
+        ZYPHRYON_INLINE void Rotate(Vector3 Angles)
         {
             mTransform.Rotate(Angles);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -478,7 +478,7 @@ namespace Graphic
         /// \brief Applies relative Euler angle rotation.
         ///
         /// \param Angles 2D rotation angles (X, Y).
-        ZYPHRYON_INLINE void Rotate(ConstRef<Vector2> Angles)
+        ZYPHRYON_INLINE void Rotate(Vector2 Angles)
         {
             mTransform.Rotate(Angles);
             mDirty = SetBit(mDirty, kDirtyBitTransformation);
@@ -489,8 +489,8 @@ namespace Graphic
         /// \param Position The 3D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        template<Coordinates Origin = Coordinates::Southwest>
-        Vector3 GetWorldCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const
+        template<Coordinates Origin = Coordinates::Northwest>
+        Vector3 GetWorldCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -507,8 +507,8 @@ namespace Graphic
         /// \param Position The 2D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
-        template<Coordinates Origin = Coordinates::Southwest>
-        Vector2 GetWorldCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
+        template<Coordinates Origin = Coordinates::Northwest>
+        Vector2 GetWorldCoordinates(Vector2 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -525,7 +525,7 @@ namespace Graphic
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates and Z is in depth range.
         template<Coordinates Origin = Coordinates::Southwest>
-        Vector3 GetScreenCoordinates(ConstRef<Vector3> Position, ConstRef<Viewport> Viewport) const
+        Vector3 GetScreenCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -545,7 +545,7 @@ namespace Graphic
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates.
         template<Coordinates Origin = Coordinates::Southwest>
-        Vector2 GetScreenCoordinates(ConstRef<Vector2> Position, ConstRef<Viewport> Viewport) const
+        Vector2 GetScreenCoordinates(Vector2 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");

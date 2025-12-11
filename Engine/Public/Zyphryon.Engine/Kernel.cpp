@@ -42,11 +42,12 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::Initialize(Mode Mode, ConstRef<Properties> Properties)
+    void Kernel::Initialize(Mode Mode, AnyRef<Properties> Properties)
     {
         ZYPHRYON_THREAD_NAME("Main Thread");
 
-        mProperties = Properties;
+        // Store the initialization properties.
+        mProperties = Move(Properties);
 
         // Initialize the system mode.
         SetMode(Mode);
@@ -54,17 +55,17 @@ namespace Engine
         // Initializes client services.
         if (IsClientMode())
         {
-            InitializeClientServices(Properties);
+            InitializeClientServices();
         }
 
         // Initializes server services.
         if (IsServerMode())
         {
-            InitializeServerServices(Properties);
+            InitializeServerServices();
         }
 
         // Initializes common services.
-        InitializeCommonServices(Properties);
+        InitializeCommonServices();
 
         // Initializes the host and then enable the platform device.
         mActive = OnInitialize();
@@ -136,7 +137,7 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::InitializeClientServices(ConstRef<Properties> Properties)
+    void Kernel::InitializeClientServices()
     {
         // Initializes input service.
         LOG_INFO("Kernel: Creating input service");
@@ -146,14 +147,14 @@ namespace Engine
         Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
 
         // Initializes device service.
-        LOG_INFO("Kernel: Creating device ({}, {})", Properties.GetWindowWidth(), Properties.GetWindowHeight());
+        LOG_INFO("Kernel: Creating device ({}, {})", mProperties.GetWindowWidth(), mProperties.GetWindowHeight());
         InPlaceConstruct<Device>(mDevice,
-            Properties.GetWindowHandle(),
-            Properties.GetWindowTitle(),
-            Properties.GetWindowWidth(),
-            Properties.GetWindowHeight(),
-            Properties.IsWindowFullscreen(),
-            Properties.IsWindowBorderless());
+            mProperties.GetWindowHandle(),
+            mProperties.GetWindowTitle(),
+            mProperties.GetWindowWidth(),
+            mProperties.GetWindowHeight(),
+            mProperties.IsWindowFullscreen(),
+            mProperties.IsWindowBorderless());
 
         if (mDevice.GetHandle() == nullptr)
         {
@@ -161,8 +162,8 @@ namespace Engine
         }
 
         // Initializes graphic service.
-        const Graphic::Backend Backend = Enum::Cast(Properties.GetVideoDriver(), Graphic::Backend::None);
-        const Graphic::Samples Samples = Enum::Cast(Format("X{}", Properties.GetWindowSamples()), Graphic::Samples::X1);
+        const Graphic::Backend Backend = Enum::Cast(mProperties.GetVideoDriver(), Graphic::Backend::None);
+        const Graphic::Multisample Samples = Enum::Cast(Format("X{}", mProperties.GetWindowSamples()), Graphic::Multisample::X1);
 
         LOG_INFO("Kernel: Creating graphics service");
         ConstTracker<Graphic::Service> Graphics = AddService<Graphic::Service>();
@@ -175,7 +176,7 @@ namespace Engine
         // Initializes audio service.
         LOG_INFO("Kernel: Creating audio service");
         ConstTracker<Audio::Service> AudioService = AddService<Audio::Service>();
-        if (! AudioService->Initialize(Audio::Backend::FAudio, Properties.GetAudioDevice()))
+        if (! AudioService->Initialize(Audio::Backend::FAudio, mProperties.GetAudioDevice()))
         {
             LOG_WARNING("Kernel: Failed to create audio service.");
         }
@@ -184,7 +185,7 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::InitializeServerServices(ConstRef<Properties> Properties)
+    void Kernel::InitializeServerServices()
     {
         // TODO: Implement server-specific services initialization.
     }
@@ -192,7 +193,7 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::InitializeCommonServices(ConstRef<Properties> Properties)
+    void Kernel::InitializeCommonServices()
     {
         // Initializes resources service.
         LOG_INFO("Kernel: Creating content service");
@@ -219,7 +220,7 @@ namespace Engine
     {
         if (ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>())
         {
-            Graphics->Reset(Width, Height, Graphics->GetCapabilities().Samples);
+            Graphics->Reset(Width, Height, Graphics->GetDevice().Samples);
         }
         return false;
     }

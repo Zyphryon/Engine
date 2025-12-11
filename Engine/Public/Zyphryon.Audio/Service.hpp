@@ -33,7 +33,7 @@ namespace Audio
         /// \brief Advances the audio driver once per frame.
         ///
         /// \param Time The time step data for the current frame.
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \brief Initializes the audio driver with a backend and output device.
         ///

@@ -37,7 +37,7 @@ namespace Audio
         /// \param Position    Initial emitter position (world units).
         /// \param Velocity    Initial emitter velocity (world units per second).
         /// \param Orientation Initial emitter orientation.
-        ZYPHRYON_INLINE Emitter(ConstRef<Vector3> Position, ConstRef<Vector3> Velocity, ConstRef<Quaternion> Orientation)
+        ZYPHRYON_INLINE Emitter(Vector3 Position, Vector3 Velocity, Quaternion Orientation)
             : mVersion     { 1 },
               mPosition    { Position },
               mVelocity    { Velocity },
@@ -59,7 +59,7 @@ namespace Audio
         /// \brief Sets the position of the emitter in 3D space.
         ///
         /// \param Position New emitter position.
-        ZYPHRYON_INLINE void SetPosition(ConstRef<Vector3> Position)
+        ZYPHRYON_INLINE void SetPosition(Vector3 Position)
         {
             if (mPosition != Position)
             {
@@ -71,7 +71,7 @@ namespace Audio
         /// \brief Gets the emitter position.
         ///
         /// \return Constant reference to the position vector.
-        ZYPHRYON_INLINE ConstRef<Vector3> GetPosition() const
+        ZYPHRYON_INLINE Vector3 GetPosition() const
         {
             return mPosition;
         }
@@ -79,7 +79,7 @@ namespace Audio
         /// \brief Sets the emitter velocity.
         ///
         /// \param Velocity New velocity vector.
-        ZYPHRYON_INLINE void SetVelocity(ConstRef<Vector3> Velocity)
+        ZYPHRYON_INLINE void SetVelocity(Vector3 Velocity)
         {
             if (mVelocity != Velocity)
             {
@@ -91,7 +91,7 @@ namespace Audio
         /// \brief Gets the emitter velocity.
         ///
         /// \return Constant reference to the velocity vector.
-        ZYPHRYON_INLINE ConstRef<Vector3> GetVelocity() const
+        ZYPHRYON_INLINE Vector3 GetVelocity() const
         {
             return mVelocity;
         }
@@ -99,7 +99,7 @@ namespace Audio
         /// \brief Sets the emitter orientation.
         ///
         /// \param Orientation New orientation quaternion.
-        ZYPHRYON_INLINE void SetOrientation(ConstRef<Quaternion> Orientation)
+        ZYPHRYON_INLINE void SetOrientation(Quaternion Orientation)
         {
             LOG_ASSERT(Orientation.IsNormalized(), "Orientation must be a unit quaternion");
 
@@ -113,7 +113,7 @@ namespace Audio
         /// \brief Gets the emitter orientation.
         ///
         /// \return Constant reference to the orientation quaternion.
-        ZYPHRYON_INLINE ConstRef<Quaternion> GetOrientation() const
+        ZYPHRYON_INLINE Quaternion GetOrientation() const
         {
             return mOrientation;
         }

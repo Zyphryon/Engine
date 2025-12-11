@@ -161,8 +161,8 @@ namespace Content
             Content::Uri::Merge(Scope.GetResource()->GetKey(), "Material"));
         Material->SetPolicy(Content::Resource::Policy::Exclusive);
         Material->SetKind(Graphic::Material::Kind::Alpha);
-        Material->SetTexture(Graphic::TextureSemantic::Diffuse, Atlas);
-        Material->SetSampler(Graphic::TextureSemantic::Diffuse, kDefaultSample);
+        Material->SetTexture(Graphic::TextureSemantic::Albedo, Atlas);
+        Material->SetSampler(Graphic::TextureSemantic::Albedo, kDefaultSample);
         Material->SetParameter(0, Vector2(FontMetrics.Distance / FontAtlasWidth, FontMetrics.Distance / FontAtlasHeight));
 
         // Normalize Glyphs coordinates.

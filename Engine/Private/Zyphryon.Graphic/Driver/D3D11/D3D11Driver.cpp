@@ -134,7 +134,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Samples Value)
+    auto As(Multisample Value)
     {
         constexpr static Array kMapping = {
             1,        // Samples::X1
@@ -468,7 +468,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool D3D11Driver::Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples)
+    Bool D3D11Driver::Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples)
     {
         decltype(& D3D11CreateDevice)  D3D11CreateDevicePtr = nullptr;
         decltype(& CreateDXGIFactory1) CreateDXGIFactoryPtr = nullptr;
@@ -583,7 +583,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Reset(UInt16 Width, UInt16 Height, Samples Samples)
+    void D3D11Driver::Reset(UInt16 Width, UInt16 Height, Multisample Samples)
     {
         if (mDeviceImmediate)
         {
@@ -607,7 +607,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ConstRef<Capabilities> D3D11Driver::GetCapabilities() const
+    ConstRef<Device> D3D11Driver::GetDevice() const
     {
         return mCapabilities;
     }
@@ -726,22 +726,22 @@ namespace Graphic
         for (ConstRef<Attachment> Color : Colors)
         {
             Ref<D3D11Attachment> Attachment = Pass.Colors.emplace_back();
-            Attachment.Source       = Color.Source ? mTextures[Color.Source].Resource : nullptr;
+            Attachment.Source       = Color.SourceTexture ? mTextures[Color.SourceTexture].Resource : nullptr;
             Attachment.SourceLevel  = Color.SourceLevel;
-            Attachment.Target       = mTextures[Color.Target].Resource;
+            Attachment.Target       = mTextures[Color.TargetTexture].Resource;
             Attachment.TargetLevel  = Color.TargetLevel;
-            Attachment.TargetFormat = As<1>(mTextures[Color.Target].Format);
+            Attachment.TargetFormat = As<1>(mTextures[Color.TargetTexture].Format);
 
-            if (Color.Source)
+            if (Color.SourceTexture)
             {
-                const DXGI_FORMAT Format = As<1>(mTextures[Color.Source].Format);
+                const DXGI_FORMAT Format = As<1>(mTextures[Color.SourceTexture].Format);
                 const CD3D11_RENDER_TARGET_VIEW_DESC Description(D3D11_RTV_DIMENSION_TEXTURE2DMS, Format, Color.SourceLevel);
                 CheckIfFail(mDevice->CreateRenderTargetView(
                     Attachment.Source.Get(), & Description, Attachment.Accessor.GetAddressOf()));
             }
             else
             {
-                const DXGI_FORMAT Format = As<1>(mTextures[Color.Target].Format);
+                const DXGI_FORMAT Format = As<1>(mTextures[Color.TargetTexture].Format);
                 const CD3D11_RENDER_TARGET_VIEW_DESC Description(D3D11_RTV_DIMENSION_TEXTURE2D, Format, Color.TargetLevel);
                 CheckIfFail(mDevice->CreateRenderTargetView(
                     Attachment.Target.Get(), & Description, Attachment.Accessor.GetAddressOf()));
@@ -749,11 +749,11 @@ namespace Graphic
         }
 
         // Create and assign its depth-stencil view (DSV) if an auxiliary attachment is provided.
-        if (Auxiliary.Target > 0)
+        if (Auxiliary.TargetTexture > 0)
         {
-            const Ptr<ID3D11Texture2D> Attachment = mTextures[Auxiliary.Target].Resource.Get();
+            const Ptr<ID3D11Texture2D> Attachment = mTextures[Auxiliary.TargetTexture].Resource.Get();
 
-            const DXGI_FORMAT Format = As<2>(mTextures[Auxiliary.Target].Format);
+            const DXGI_FORMAT Format = As<2>(mTextures[Auxiliary.TargetTexture].Format);
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
                 D3D11_DSV_DIMENSION_TEXTURE2D, Format, Auxiliary.TargetLevel);
             CheckIfFail(mDevice->CreateDepthStencilView(Attachment, & Description, Pass.Auxiliary.GetAddressOf()));
@@ -879,7 +879,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Samples Samples, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
     {
         CD3D11_TEXTURE2D_DESC Description(As<0>(Format), Width, Height, 1, Mipmaps);
         Description.Usage      = As(Access);
@@ -912,7 +912,7 @@ namespace Graphic
         if (Layout != TextureLayout::Target)
         {
             const D3D11_SRV_DIMENSION Type
-                = Samples != Samples::X1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
+                = Samples != Multisample::X1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
 
             const CD3D11_SHADER_RESOURCE_VIEW_DESC Descriptor(Type, As<1>(Format), 0, Mipmaps);
             CheckIfFail(mDevice->CreateShaderResourceView(Object.Resource.Get(), &Descriptor, Object.Accessor.GetAddressOf()));
@@ -1086,10 +1086,10 @@ namespace Graphic
             ApplyUniformResources(OldestSubmission, NewestSubmission);
 
             // Issue draw command
-            const UInt32 Count     = NewestSubmission.Command.Count;
-            const UInt32 Offset    = NewestSubmission.Command.Offset;
-            const SInt32 Base      = NewestSubmission.Command.Base;
-            const UInt32 Instances = NewestSubmission.Command.Instances;
+            const UInt32 Count     = NewestSubmission.Invocation.Count;
+            const UInt32 Offset    = NewestSubmission.Invocation.Offset;
+            const SInt32 Base      = NewestSubmission.Invocation.Base;
+            const UInt32 Instances = NewestSubmission.Invocation.Instances;
 
             if (NewestSubmission.Indices.Buffer)
             {
@@ -1200,36 +1200,36 @@ namespace Graphic
         {
             case D3D_FEATURE_LEVEL_12_1:
             case D3D_FEATURE_LEVEL_12_0:
-                mCapabilities.Language            = Language::V6;
-                mCapabilities.MaxTextureDimension = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = D3D12_REQ_MIP_LEVELS;
+                mCapabilities.Language                       = Language::V6;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = D3D12_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_11_1:
             case D3D_FEATURE_LEVEL_11_0:
-                mCapabilities.Language            = Language::V5;
-                mCapabilities.MaxTextureDimension = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = D3D11_REQ_MIP_LEVELS;
+                mCapabilities.Language                       = Language::V5;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = D3D11_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_10_1:
             case D3D_FEATURE_LEVEL_10_0:
-                mCapabilities.Language            = Language::V4;
-                mCapabilities.MaxTextureDimension = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = D3D10_REQ_MIP_LEVELS;
+                mCapabilities.Language                       = Language::V4;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = D3D10_REQ_MIP_LEVELS;
                 break;
             case D3D_FEATURE_LEVEL_9_3:
-                mCapabilities.Language            = Language::V3;
-                mCapabilities.MaxTextureDimension = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                       = Language::V3;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             case D3D_FEATURE_LEVEL_9_2:
-                mCapabilities.Language            = Language::V2;
-                mCapabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                       = Language::V2;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             case D3D_FEATURE_LEVEL_9_1:
-                mCapabilities.Language            = Language::V1;
-                mCapabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.MaxTextureMipmaps   = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                       = Language::V1;
+                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
                 break;
             default:
                 break;
@@ -1368,7 +1368,7 @@ namespace Graphic
 
     Ref<D3D11Driver::D3D11Sampler> D3D11Driver::GetOrCreateSampler(ConstRef<Sampler> Descriptor)
     {
-        Ref<D3D11Sampler> Sampler = mSamplers[Descriptor.Hash()];
+        Ref<D3D11Sampler> Sampler = mSamplers[HashCombine(Descriptor)];
 
         if (Sampler.Resource == nullptr)
         {

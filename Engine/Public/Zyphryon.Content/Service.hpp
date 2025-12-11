@@ -39,7 +39,7 @@ namespace Content
         /// \brief Called once per frame to finalize any resources that completed loading.
         /// 
         /// \param Time The time step for the current frame.
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \brief Shuts down the service and releases its active resources.
         void OnTeardown() override;

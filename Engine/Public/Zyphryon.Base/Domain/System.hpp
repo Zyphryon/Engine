@@ -74,7 +74,7 @@ inline namespace Base
         /// \brief Updates all registered services.
         /// 
         /// \param Time The current simulation time.
-        ZYPHRYON_INLINE void Tick(ConstRef<Time> Time)
+        ZYPHRYON_INLINE void Tick(Time Time)
         {
             for (ConstTracker<Unit> Service : mRegistry)
             {

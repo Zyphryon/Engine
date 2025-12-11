@@ -70,7 +70,7 @@ namespace Input
         /// polling devices via \ref Poller and updating mouse and keyboard states.
         ///
         /// \param Time The time step data for the current frame.
-        void OnTick(ConstRef<Time> Time) override;
+        void OnTick(Time Time) override;
 
         /// \brief Checks if a key was pressed in the current frame.
         ///

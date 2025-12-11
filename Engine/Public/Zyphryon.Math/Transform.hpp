@@ -38,7 +38,7 @@ inline namespace Math
         /// \param Translation Position vector.
         /// \param Scale Scale vector.
         /// \param Rotation Rotation quaternion.
-        ZYPHRYON_INLINE Transform(ConstRef<Vector3> Translation, ConstRef<Vector3> Scale, ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Transform(Vector3 Translation, Vector3 Scale, Quaternion Rotation)
         {
             SetTranslation(Translation);
             SetScale(Scale);
@@ -50,7 +50,7 @@ inline namespace Math
         /// \param Translation Position vector (2D).
         /// \param Scale Scale vector (2D).
         /// \param Rotation Rotation quaternion.
-        ZYPHRYON_INLINE Transform(ConstRef<Vector2> Translation, ConstRef<Vector2> Scale, ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Transform(Vector2 Translation, Vector2 Scale, Quaternion Rotation)
         {
             SetTranslation(Translation);
             SetScale(Scale);
@@ -61,7 +61,7 @@ inline namespace Math
         ///
         /// \param Translation Position vector.
         /// \param Rotation Rotation quaternion.
-        ZYPHRYON_INLINE Transform(ConstRef<Vector3> Translation, ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Transform(Vector3 Translation, Quaternion Rotation)
             : Transform()
         {
             SetTranslation(Translation);
@@ -72,7 +72,7 @@ inline namespace Math
         ///
         /// \param Translation Position vector (2D).
         /// \param Rotation Rotation quaternion.
-        ZYPHRYON_INLINE Transform(ConstRef<Vector2> Translation, ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Transform(Vector2 Translation, Quaternion Rotation)
             : Transform()
         {
             SetTranslation(Translation);
@@ -82,7 +82,7 @@ inline namespace Math
         /// \brief Transform from translation only, default scale and rotation.
         ///
         /// \param Translation Position vector.
-        ZYPHRYON_INLINE explicit Transform(ConstRef<Vector3> Translation)
+        ZYPHRYON_INLINE explicit Transform(Vector3 Translation)
             : Transform()
         {
             SetTranslation(Translation);
@@ -91,7 +91,7 @@ inline namespace Math
         /// \brief Transform from 2D translation only, default scale and rotation.
         ///
         /// \param Translation Position vector (2D).
-        ZYPHRYON_INLINE explicit Transform(ConstRef<Vector2> Translation)
+        ZYPHRYON_INLINE explicit Transform(Vector2 Translation)
             : Transform()
         {
             SetTranslation(Translation);
@@ -109,7 +109,7 @@ inline namespace Math
         /// 
         /// \param Translation The translation vector to set (2D).
         /// \return A reference to this transform, modified by the new translation.
-        ZYPHRYON_INLINE Ref<Transform> SetTranslation(ConstRef<Vector2> Translation)
+        ZYPHRYON_INLINE Ref<Transform> SetTranslation(Vector2 Translation)
         {
             mTranslation = Vector3(Translation.GetX(), Translation.GetY(), 0.0f);
             return (* this);
@@ -119,7 +119,7 @@ inline namespace Math
         /// 
         /// \param Translation The translation vector to set (3D).
         /// \return A reference to this transform, modified by the new translation.
-        ZYPHRYON_INLINE Ref<Transform> SetTranslation(ConstRef<Vector3> Translation)
+        ZYPHRYON_INLINE Ref<Transform> SetTranslation(Vector3 Translation)
         {
             mTranslation = Translation;
             return (* this);
@@ -128,7 +128,7 @@ inline namespace Math
         /// \brief Gets the current translation of the transform.
         /// 
         /// \return A reference to the translation vector (4D).
-        ZYPHRYON_INLINE ConstRef<Vector3> GetTranslation() const
+        ZYPHRYON_INLINE Vector3 GetTranslation() const
         {
             return mTranslation;
         }
@@ -137,7 +137,7 @@ inline namespace Math
         /// 
         /// \param Scale The scale vector to set (2D).
         /// \return A reference to this transform, modified by the new scale.
-        ZYPHRYON_INLINE Ref<Transform> SetScale(ConstRef<Vector2> Scale)
+        ZYPHRYON_INLINE Ref<Transform> SetScale(Vector2 Scale)
         {
             return SetScale(Vector3(Scale.GetX(), Scale.GetY(), 1.0f));
         }
@@ -146,7 +146,7 @@ inline namespace Math
         /// 
         /// \param Scale The scale vector to set (3D).
         /// \return A reference to this transform, modified by the new scale.
-        ZYPHRYON_INLINE Ref<Transform> SetScale(ConstRef<Vector3> Scale)
+        ZYPHRYON_INLINE Ref<Transform> SetScale(Vector3 Scale)
         {
             mScale = Scale;
             return (* this);
@@ -155,7 +155,7 @@ inline namespace Math
         /// \brief Gets the current scale of the transform.
         /// 
         /// \return A reference to the scale vector.
-        ZYPHRYON_INLINE ConstRef<Vector3> GetScale() const
+        ZYPHRYON_INLINE Vector3 GetScale() const
         {
             return mScale;
         }
@@ -164,7 +164,7 @@ inline namespace Math
         /// 
         /// \param Rotation The quaternion representing the rotation.
         /// \return A reference to this transform, modified by the new rotation.
-        ZYPHRYON_INLINE Ref<Transform> SetRotation(ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Ref<Transform> SetRotation(Quaternion Rotation)
         {
             mRotation = Rotation;
             return (* this);
@@ -173,7 +173,7 @@ inline namespace Math
         /// \brief Gets the current rotation of the transform.
         /// 
         /// \return A reference to the quaternion representing the rotation.
-        ZYPHRYON_INLINE ConstRef<Quaternion> GetRotation() const
+        ZYPHRYON_INLINE Quaternion GetRotation() const
         {
             return mRotation;
         }
@@ -182,7 +182,7 @@ inline namespace Math
         /// 
         /// \param Translation The translation vector to apply (2D).
         /// \return A reference to this transform, modified by the translation.
-        ZYPHRYON_INLINE Ref<Transform> Translate(ConstRef<Vector2> Translation)
+        ZYPHRYON_INLINE Ref<Transform> Translate(Vector2 Translation)
         {
             return Translate(Vector3(Translation.GetX(), Translation.GetY(), 0));
         }
@@ -191,7 +191,7 @@ inline namespace Math
         /// 
         /// \param Translation The translation vector to apply (3D).
         /// \return A reference to this transform, modified by the translation.
-        ZYPHRYON_INLINE Ref<Transform> Translate(ConstRef<Vector3> Translation)
+        ZYPHRYON_INLINE Ref<Transform> Translate(Vector3 Translation)
         {
             mTranslation += Translation;
             return (* this);
@@ -213,7 +213,7 @@ inline namespace Math
         /// 
         /// \param Vector The 2D vector to scale the transform by.
         /// \return A reference to this transform, modified by the scale.
-        ZYPHRYON_INLINE Ref<Transform> Scale(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE Ref<Transform> Scale(Vector2 Vector)
         {
             return Scale(Vector3(Vector.GetX(), Vector.GetY(), 1.0f));
         }
@@ -222,7 +222,7 @@ inline namespace Math
         /// 
         /// \param Vector The 3D vector to scale the transform by.
         /// \return A reference to this transform, modified by the scale.
-        ZYPHRYON_INLINE Ref<Transform> Scale(ConstRef<Vector3> Vector)
+        ZYPHRYON_INLINE Ref<Transform> Scale(Vector3 Vector)
         {
             LOG_ASSERT(Vector.GetX() != 0.0f, "Scale X must not be zero");
             LOG_ASSERT(Vector.GetY() != 0.0f, "Scale Y must not be zero");
@@ -236,7 +236,7 @@ inline namespace Math
         ///
         /// \param Rotation The quaternion representing the rotation to apply.
         /// \return A reference to this transform, modified by the rotation.
-        ZYPHRYON_INLINE Ref<Transform> Rotate(ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE Ref<Transform> Rotate(Quaternion Rotation)
         {
             mRotation = Rotation * mRotation;
             return (* this);
@@ -246,16 +246,16 @@ inline namespace Math
         /// 
         /// \param Angles The 2D vector containing pitch and yaw (X = pitch, Y = yaw).
         /// \return A reference to this transform, modified by the rotation.
-        ZYPHRYON_INLINE Ref<Transform> Rotate(ConstRef<Vector2> Angles)
+        ZYPHRYON_INLINE Ref<Transform> Rotate(Vector2 Angles)
         {
-            return Rotate(Quaternion::FromEulerAngles(Vector3(Angles.GetX(), Angles.GetY(), 0.0f)));
+            return Rotate(Quaternion::FromEulerAngles(Vector3(Angles, 0.0f)));
         }
 
         /// \brief Rotates the transform in world space by using Euler angles.
         /// 
         /// \param Angles The 3D vector containing Euler angles for rotation.
         /// \return A reference to this transform, modified by the rotation.
-        ZYPHRYON_INLINE Ref<Transform> Rotate(ConstRef<Vector3> Angles)
+        ZYPHRYON_INLINE Ref<Transform> Rotate(Vector3 Angles)
         {
             return Rotate(Quaternion::FromEulerAngles(Angles));
         }
@@ -266,7 +266,7 @@ inline namespace Math
         /// \param Axis  The axis around which to rotate (representing the direction of the axis).
         /// 
         /// \return A reference to this transform, modified by the rotation.
-        ZYPHRYON_INLINE Ref<Transform> Rotate(Real32 Angle, ConstRef<Vector3> Axis)
+        ZYPHRYON_INLINE Ref<Transform> Rotate(Real32 Angle, Vector3 Axis)
         {
             return Rotate(Quaternion::FromAngles(Angle, Axis));
         }

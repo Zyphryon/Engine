@@ -89,7 +89,7 @@ namespace Example
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Application::OnTick(ConstRef<Time> Time)
+    void Application::OnTick(Time Time)
     {
         ZYPHRYON_PROFILE;
 
@@ -164,7 +164,7 @@ int main([[maybe_unused]] int Argc, [[maybe_unused]] Ptr<Char> Argv[])
 
     // Initialize 'Zyphryon Engine' and enter main loop
     Unique<Example::Application> Application = NewUniquePtr<Example::Application>();
-    Application->Initialize(Service::Host::Mode::Client, Properties);
+    Application->Initialize(Service::Host::Mode::Client, Move(Properties));
     Application->Run();
 
     return 0;

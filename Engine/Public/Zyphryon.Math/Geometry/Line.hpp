@@ -37,7 +37,7 @@ inline namespace Math
         ///
         /// \param Start The start point of the line.
         /// \param End   The end point of the line.
-        ZYPHRYON_INLINE constexpr Line(ConstRef<Vector2> Start, ConstRef<Vector2> End)
+        ZYPHRYON_INLINE constexpr Line(Vector2 Start, Vector2 End)
             : mStart { Start },
               mEnd   { End }
         {
@@ -71,7 +71,7 @@ inline namespace Math
         ///
         /// \param Start The new start point.
         /// \param End   The new end point.
-        ZYPHRYON_INLINE constexpr void Set(ConstRef<Vector2> Start, ConstRef<Vector2> End)
+        ZYPHRYON_INLINE constexpr void Set(Vector2 Start, Vector2 End)
         {
             mStart = Start;
             mEnd   = End;
@@ -80,7 +80,7 @@ inline namespace Math
         /// \brief Sets the start point of the line.
         ///
         /// \param Start The new start point.
-        ZYPHRYON_INLINE constexpr void SetStart(ConstRef<Vector2> Start)
+        ZYPHRYON_INLINE constexpr void SetStart(Vector2 Start)
         {
             mStart = Start;
         }
@@ -88,7 +88,7 @@ inline namespace Math
         /// \brief Gets the start point of the line.
         ///
         /// \return The start point of the line.
-        ZYPHRYON_INLINE constexpr ConstRef<Vector2> GetStart() const
+        ZYPHRYON_INLINE constexpr Vector2 GetStart() const
         {
             return mStart;
         }
@@ -96,7 +96,7 @@ inline namespace Math
         /// \brief Sets the end point of the line.
         ///
         /// \param End The new end point.
-        ZYPHRYON_INLINE constexpr void SetEnd(ConstRef<Vector2> End)
+        ZYPHRYON_INLINE constexpr void SetEnd(Vector2 End)
         {
             mEnd = End;
         }
@@ -104,7 +104,7 @@ inline namespace Math
         /// \brief Gets the end point of the line.
         ///
         /// \return The end point of the line.
-        ZYPHRYON_INLINE constexpr ConstRef<Vector2> GetEnd() const
+        ZYPHRYON_INLINE constexpr Vector2 GetEnd() const
         {
             return mEnd;
         }
@@ -176,7 +176,7 @@ inline namespace Math
         ///
         /// \param Point The point to check for containment.
         /// \return `true` if the point lies on the line segment, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<Vector2> Point) const
+        ZYPHRYON_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             const Vector2 Direction = mEnd - mStart;
             const Vector2 Offset    = Point - mStart;
@@ -194,7 +194,7 @@ inline namespace Math
         ///
         /// \param Other The other line segment to check for intersection.
         /// \return `true` if the line segments intersect, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<Line> Other) const
+        ZYPHRYON_INLINE constexpr Bool Intersects(Line Other) const
         {
             const Real32 O1 = Vector2::Cross(mStart, mEnd, Other.mStart);
             const Real32 O2 = Vector2::Cross(mStart, mEnd, Other.mEnd);
@@ -216,7 +216,7 @@ inline namespace Math
         ///
         /// \param Other The line to compare to.
         /// \return `true` if both points are approximately equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<Line> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator==(Line Other) const
         {
             return (mStart == Other.mStart && mEnd == Other.mEnd) ||
                    (mStart == Other.mEnd   && mEnd == Other.mStart);
@@ -226,7 +226,7 @@ inline namespace Math
         ///
         /// \param Other The line to compare to.
         /// \return `true` if the lines are not equal, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Line> Other) const
+        ZYPHRYON_INLINE constexpr Bool operator!=(Line Other) const
         {
             return !(* this == Other);
         }
@@ -235,7 +235,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A new line with translated points.
-        ZYPHRYON_INLINE constexpr Line operator+(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Line operator+(Vector2 Vector) const
         {
             return Line(mStart + Vector, mEnd + Vector);
         }
@@ -244,7 +244,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A new line with translated points.
-        ZYPHRYON_INLINE constexpr Line operator-(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Line operator-(Vector2 Vector) const
         {
             return Line(mStart - Vector, mEnd - Vector);
         }
@@ -253,7 +253,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A reference to the updated line.
-        ZYPHRYON_INLINE constexpr Ref<Line> operator+=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Line> operator+=(Vector2 Vector)
         {
             mStart += Vector;
             mEnd   += Vector;
@@ -264,7 +264,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A reference to the updated line.
-        ZYPHRYON_INLINE constexpr Ref<Line> operator-=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Line> operator-=(Vector2 Vector)
         {
             mStart -= Vector;
             mEnd   -= Vector;
@@ -295,7 +295,7 @@ inline namespace Math
         ///
         /// \param Direction The direction vector for the unit line (will be normalized).
         /// \return A unit line segment in the specified direction starting from origin.
-        ZYPHRYON_INLINE constexpr static Line Unit(ConstRef<Vector2> Direction)
+        ZYPHRYON_INLINE constexpr static Line Unit(Vector2 Direction)
         {
             LOG_ASSERT(!Direction.IsAlmostZero(), "Direction must be non-zero");
 
@@ -320,15 +320,15 @@ inline namespace Math
 
         /// \brief Anchors a line relative to a pivot point.
         ///
-        /// \param Line  The line circle.
-        /// \param Pivot The pivot alignment mode.
+        /// \param Line   The line circle.
+        /// \param Origin The pivot point for anchoring.
         /// \return A line anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Line Anchor(ConstRef<Line> Line, ConstRef<Pivot> Pivot)
+        ZYPHRYON_INLINE constexpr static Line Anchor(Line Line, Pivot Origin)
         {
             const Vector2 MinPoint    = Vector2::Min(Line.GetStart(), Line.GetEnd());
             const Vector2 MaxPoint    = Vector2::Max(Line.GetStart(), Line.GetEnd());
             const Vector2 Size        = MaxPoint - MinPoint;
-            const Vector2 Translation = MinPoint + Vector2(Pivot.GetX() * Size.GetX(), Pivot.GetY() * Size.GetY());
+            const Vector2 Translation = MinPoint + Vector2(Origin.GetX() * Size.GetX(), Origin.GetY() * Size.GetY());
 
             return Math::Line(Line.GetStart() - Translation, Line.GetEnd() - Translation);
         }
@@ -339,7 +339,7 @@ inline namespace Math
         /// \param End        The ending line.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A line interpolated between the start and end lines.
-        ZYPHRYON_INLINE constexpr static Line Lerp(ConstRef<Line> Start, ConstRef<Line> End, Real32 Percentage)
+        ZYPHRYON_INLINE constexpr static Line Lerp(Line Start, Line End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
@@ -352,7 +352,7 @@ inline namespace Math
         /// \param Line   The input line in local space.
         /// \param Matrix The transformation matrix to apply.
         /// \return A transformed line in world space.
-        ZYPHRYON_INLINE static Line Transform(ConstRef<Line> Line, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Line Transform(Line Line, ConstRef<Matrix4x4> Matrix)
         {
             return Math::Line(Matrix4x4::Project<true>(Matrix, Line.GetStart()),
                               Matrix4x4::Project<true>(Matrix, Line.GetEnd()));

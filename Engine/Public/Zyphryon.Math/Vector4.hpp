@@ -52,11 +52,6 @@ inline namespace Math
         {
         }
 
-        /// \brief Copy constructor.
-        /// 
-        /// \param Other The vector to copy.
-        ZYPHRYON_INLINE Vector4(Ref<const Vector4> Other) = default;
-
         /// \brief Checks if the vector is the zero vector.
         /// 
         /// \return `true` if all components are approximately zero, `false` otherwise.
@@ -84,7 +79,7 @@ inline namespace Math
         /// \return `true` if the vector is normalized, `false` otherwise.
         ZYPHRYON_INLINE Bool IsNormalized() const
         {
-            const __m128 Diff    = _mm_sub_ss(_mm_dp_ps(mRegister, mRegister, 0xF1), _mm_set_ss(1.0f));
+            const __m128 Diff    = _mm_sub_ss(_mm_dp_ps(mRegister, mRegister, 0xFF), _mm_set_ss(1.0f));
             const __m128 AbsDiff = _mm_andnot_ps(_mm_set1_ps(-0.0f), Diff);
             return _mm_comilt_ss(AbsDiff, _mm_set_ss(kEpsilon<Real32>));
         }
@@ -180,7 +175,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to calculate the distance to.
         /// \return The distance between the two vectors.
-        ZYPHRYON_INLINE Real32 GetDistance(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Real32 GetDistance(Vector4 Vector) const
         {
             return (* this - Vector).GetLength();
         }
@@ -189,7 +184,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to calculate the squared distance to.
         /// \return The squared distance between the two vectors.
-        ZYPHRYON_INLINE Real32 GetDistanceSquared(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Real32 GetDistanceSquared(Vector4 Vector) const
         {
             return (* this - Vector).GetLengthSquared();
         }
@@ -198,7 +193,7 @@ inline namespace Math
         /// 
         /// \param Other The other vector to compare with.
         /// \return Angle in radians between the two vectors (range [0, π]).
-        ZYPHRYON_INLINE Real32 GetAngle(ConstRef<Vector4> Other) const
+        ZYPHRYON_INLINE Real32 GetAngle(Vector4 Other) const
         {
             const Real32 Length = GetLength() * Other.GetLength();
             LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
@@ -227,7 +222,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to add.
         /// \return A new vector that is the sum of this vector and the input vector.
-        ZYPHRYON_INLINE Vector4 operator+(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Vector4 operator+(Vector4 Vector) const
         {
             return Vector4(_mm_add_ps(mRegister, Vector.mRegister));
         }
@@ -253,7 +248,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to subtract.
         /// \return A new vector that is the difference of the two vectors.
-        ZYPHRYON_INLINE Vector4 operator-(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Vector4 operator-(Vector4 Vector) const
         {
             return Vector4(_mm_sub_ps(mRegister, Vector.mRegister));
         }
@@ -271,7 +266,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to multiply by.
         /// \return A new vector that is the product of the two vectors.
-        ZYPHRYON_INLINE Vector4 operator*(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Vector4 operator*(Vector4 Vector) const
         {
             return Vector4(_mm_mul_ps(mRegister, Vector.mRegister));
         }
@@ -289,7 +284,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to divide by.
         /// \return A new vector that is the quotient of the two vectors.
-        ZYPHRYON_INLINE Vector4 operator/(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Vector4 operator/(Vector4 Vector) const
         {
             LOG_ASSERT(!Vector.IsAlmostZero(), "Division by zero");
 
@@ -329,7 +324,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to add.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE Ref<Vector4> operator+=(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE Ref<Vector4> operator+=(Vector4 Vector)
         {
             mRegister = _mm_add_ps(mRegister, Vector.mRegister);
             return (* this);
@@ -349,7 +344,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to subtract.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE Ref<Vector4> operator-=(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE Ref<Vector4> operator-=(Vector4 Vector)
         {
             mRegister = _mm_sub_ps(mRegister, Vector.mRegister);
             return (* this);
@@ -369,7 +364,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to multiply.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE Ref<Vector4> operator*=(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE Ref<Vector4> operator*=(Vector4 Vector)
         {
             mRegister = _mm_mul_ps(mRegister, Vector.mRegister);
             return (* this);
@@ -389,7 +384,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to divide by.
         /// \return A reference to the updated vector.
-        ZYPHRYON_INLINE Ref<Vector4> operator/=(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE Ref<Vector4> operator/=(Vector4 Vector)
         {
             LOG_ASSERT(!Vector.IsAlmostZero(), "Division by zero");
 
@@ -413,7 +408,7 @@ inline namespace Math
         /// 
         /// \param Vector The vector to compare to.
         /// \return `true` if all vectors are approximately equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator==(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Bool operator==(Vector4 Vector) const
         {
             const __m128 Diff     = _mm_sub_ps(mRegister, Vector.mRegister);
             const __m128 Register = _mm_cmplt_ps(_mm_andnot_ps(_mm_set1_ps(-0.0f), Diff), _mm_set1_ps(kEpsilon<Real32>));
@@ -424,7 +419,7 @@ inline namespace Math
         /// 
         /// \param Other The vector to compare to.
         /// \return `true` if the vectors are not equal, `false` otherwise.
-        ZYPHRYON_INLINE Bool operator!=(ConstRef<Vector4> Other) const
+        ZYPHRYON_INLINE Bool operator!=(Vector4 Other) const
         {
             return !(* this == Other);
         }
@@ -433,7 +428,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components of this vector are less than the other vector’s components, otherwise `false`.
-        ZYPHRYON_INLINE Bool operator<(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Bool operator<(Vector4 Vector) const
         {
             return _mm_movemask_ps(_mm_cmplt_ps(mRegister, Vector.mRegister)) == 0xF;
         }
@@ -442,7 +437,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components of this vector are greater than the other vector’s components, otherwise `false`.
-        ZYPHRYON_INLINE Bool operator>(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Bool operator>(Vector4 Vector) const
         {
             return _mm_movemask_ps(_mm_cmpgt_ps(mRegister, Vector.mRegister)) == 0xF;
         }
@@ -451,7 +446,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components of this vector are less than or equal to the other vector’s components, otherwise `false`.
-        ZYPHRYON_INLINE Bool operator<=(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Bool operator<=(Vector4 Vector) const
         {
             return _mm_movemask_ps(_mm_cmple_ps(mRegister, Vector.mRegister)) == 0xF;
         }
@@ -460,7 +455,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to compare against.
         /// \return `true` if all components of this vector are greater than or equal to the other vector’s components, otherwise `false`.
-        ZYPHRYON_INLINE Bool operator>=(ConstRef<Vector4> Vector) const
+        ZYPHRYON_INLINE Bool operator>=(Vector4 Vector) const
         {
             return _mm_movemask_ps(_mm_cmpge_ps(mRegister, Vector.mRegister)) == 0xF;
         }
@@ -555,7 +550,7 @@ inline namespace Math
         /// 
         /// \param Vector The input 4D vector to sum.
         /// \return The sum of all components in the vector.
-        ZYPHRYON_INLINE static Real32 Sum(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Real32 Sum(Vector4 Vector)
         {
             const __m128 Lane = _mm_hadd_ps(Vector.mRegister, Vector.mRegister);
             return _mm_cvtss_f32(_mm_hadd_ps(Lane, Lane));
@@ -567,7 +562,7 @@ inline namespace Math
         ///
         /// \param Vector The input 4D vector to compute.
         /// \return Approximate component-wise reciprocal.
-        ZYPHRYON_INLINE static Vector4 Reciprocal(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Reciprocal(Vector4 Vector)
         {
             return Vector4(_mm_rcp_ps(Vector.mRegister));
         }
@@ -576,7 +571,7 @@ inline namespace Math
         /// 
         /// \param Vector The input 4D vector to compute the difference.
         /// \return The difference of all components in the vector.
-        ZYPHRYON_INLINE static Real32 Subtract(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Real32 Subtract(Vector4 Vector)
         {
             const __m128 Lane = _mm_hsub_ps(Vector.mRegister, Vector.mRegister);
             return _mm_cvtss_f32(_mm_hsub_ps(Lane, Lane));
@@ -591,7 +586,7 @@ inline namespace Math
         /// \param Vector The input vector to be swizzled.
         /// \return A new vector with reordered components based on the specified indices.
         template<UInt8 Z, UInt8 Y, UInt8 X, UInt8 W>
-        ZYPHRYON_INLINE static Vector4 Swizzle(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Swizzle(Vector4 Vector)
         {
             return Vector4(_mm_shuffle_ps(Vector.mRegister, Vector.mRegister, _MM_SHUFFLE(Z, Y, X, W)));
         }
@@ -606,7 +601,7 @@ inline namespace Math
         /// \param Second The second input vector.
         /// \return A new vector with reordered components based on the specified indices.
         template<UInt8 Z, UInt8 Y, UInt8 X, UInt8 W>
-        ZYPHRYON_INLINE static Vector4 Swizzle(ConstRef<Vector4> First, ConstRef<Vector4> Second)
+        ZYPHRYON_INLINE static Vector4 Swizzle(Vector4 First, Vector4 Second)
         {
             return Vector4(_mm_shuffle_ps(First.mRegister, Second.mRegister, _MM_SHUFFLE(Z, Y, X, W)));
         }
@@ -615,7 +610,7 @@ inline namespace Math
         ///
         /// \param Vector The input vector (x, y, z, w).
         /// \return A new vector with the pattern (x, x, z, z).
-        ZYPHRYON_INLINE static Vector4 Swizzle0022(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Swizzle0022(Vector4 Vector)
         {
             return Vector4(_mm_moveldup_ps(Vector.mRegister));
         }
@@ -624,7 +619,7 @@ inline namespace Math
         ///
         /// \param Vector The input vector (x, y, z, w).
         /// \return A new vector with the pattern (y, y, w, w).
-        ZYPHRYON_INLINE static Vector4 Swizzle1133(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Swizzle1133(Vector4 Vector)
         {
             return Vector4(_mm_movehdup_ps(Vector.mRegister));
         }
@@ -634,7 +629,7 @@ inline namespace Math
         /// \param Vec1 The first input vector (a0, a1, a2, a3).
         /// \param Vec2 The second input vector (b0, b1, b2, b3).
         /// \return A new vector with the pattern (a0, a1, b0, b1).
-        ZYPHRYON_INLINE static Vector4 Shuffle0101(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        ZYPHRYON_INLINE static Vector4 Shuffle0101(Vector4 Vec1, Vector4 Vec2)
         {
             return Vector4(_mm_movelh_ps(Vec1.mRegister, Vec2.mRegister));
         }
@@ -644,7 +639,7 @@ inline namespace Math
         /// \param Vec1 The first input vector (a0, a1, a2, a3).
         /// \param Vec2 The second input vector (b0, b1, b2, b3).
         /// \return A new vector (a2, a3, b2, b3).
-        ZYPHRYON_INLINE static Vector4 Shuffle2323(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        ZYPHRYON_INLINE static Vector4 Shuffle2323(Vector4 Vec1, Vector4 Vec2)
         {
             return Vector4(_mm_movehl_ps(Vec2.mRegister, Vec1.mRegister));
         }
@@ -654,7 +649,7 @@ inline namespace Math
         /// \param Vec1 The first input vector (a0, a1, a2, a3).
         /// \param Vec2 The second input vector (b0, b1, b2, b3).
         /// \return A new vector with the pattern (a0, b0, a1, b1).
-        ZYPHRYON_INLINE static Vector4 InterleaveLow(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        ZYPHRYON_INLINE static Vector4 InterleaveLow(Vector4 Vec1, Vector4 Vec2)
         {
             return Vector4(_mm_unpacklo_ps(Vec1.mRegister, Vec2.mRegister));
         }
@@ -664,7 +659,7 @@ inline namespace Math
         /// \param Vec1 The first input vector (a0, a1, a2, a3).
         /// \param Vec2 The second input vector (b0, b1, b2, b3).
         /// \return A new vector with the pattern (a2, b2, a3, b3).
-        ZYPHRYON_INLINE static Vector4 InterleaveHigh(ConstRef<Vector4> Vec1, ConstRef<Vector4> Vec2)
+        ZYPHRYON_INLINE static Vector4 InterleaveHigh(Vector4 Vec1, Vector4 Vec2)
         {
             return Vector4(_mm_unpackhi_ps(Vec1.mRegister, Vec2.mRegister));
         }
@@ -675,7 +670,7 @@ inline namespace Math
         /// \param Vector The input vector.
         /// \return A new vector with all components set to the specified lane of the input.
         template<UInt8 Lane>
-        ZYPHRYON_INLINE static Vector4 Splat(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Splat(Vector4 Vector)
         {
             return Swizzle<Lane, Lane, Lane, Lane>(Vector);
         }
@@ -684,7 +679,7 @@ inline namespace Math
         /// 
         /// \param Vector The input vector from which to extract the X component.
         /// \return A new vector where all components are equal to the X component of the input vector.
-        ZYPHRYON_INLINE static Vector4 SplatX(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 SplatX(Vector4 Vector)
         {
             return Splat<0>(Vector);
         }
@@ -693,7 +688,7 @@ inline namespace Math
         /// 
         /// \param Vector The input vector from which to extract the Y component.
         /// \return A new vector where all components are equal to the Y component of the input vector.
-        ZYPHRYON_INLINE static Vector4 SplatY(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 SplatY(Vector4 Vector)
         {
             return Splat<1>(Vector);
         }
@@ -702,7 +697,7 @@ inline namespace Math
         /// 
         /// \param Vector The input vector from which to extract the Z component.
         /// \return A new vector where all components are equal to the Z component of the input vector.
-        ZYPHRYON_INLINE static Vector4 SplatZ(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 SplatZ(Vector4 Vector)
         {
             return Splat<2>(Vector);
         }
@@ -711,7 +706,7 @@ inline namespace Math
         /// 
         /// \param Vector The input vector from which to extract the W component.
         /// \return A new vector where all components are equal to the W component of the input vector.
-        ZYPHRYON_INLINE static Vector4 SplatW(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 SplatW(Vector4 Vector)
         {
             return Splat<3>(Vector);
         }
@@ -720,7 +715,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to normalize.
         /// \return A normalized vector with approximate length 1.0.
-        ZYPHRYON_INLINE static Vector4 Normalize(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Normalize(Vector4 Vector)
         {
             const __m128 Dot = _mm_dp_ps(Vector.mRegister, Vector.mRegister, 0xFF);
             LOG_ASSERT(!Base::IsAlmostZero(_mm_cvtss_f32(Dot)), "Cannot normalize zero-length vector");
@@ -733,7 +728,7 @@ inline namespace Math
         /// \param Source The vector to be projected.
         /// \param Target The vector onto which the source is projected.
         /// \return The projection of source onto target.
-        ZYPHRYON_INLINE static Vector4 Project(ConstRef<Vector4> Source, ConstRef<Vector4> Target)
+        ZYPHRYON_INLINE static Vector4 Project(Vector4 Source, Vector4 Target)
         {
             const Real32 Denominator = Dot3(Target, Target);
             LOG_ASSERT(!Base::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
@@ -746,7 +741,7 @@ inline namespace Math
         /// \param Incident The incoming vector to reflect.
         /// \param Normal   The surface normal to reflect across (should be normalized).
         /// \return The reflected vector.
-        ZYPHRYON_INLINE static Vector4 Reflect(ConstRef<Vector4> Incident, ConstRef<Vector4> Normal)
+        ZYPHRYON_INLINE static Vector4 Reflect(Vector4 Incident, Vector4 Normal)
         {
             LOG_ASSERT(Normal.IsNormalized(), "Normal must be normalized before reflection");
 
@@ -758,7 +753,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The result of the add/sub operation.
-        ZYPHRYON_INLINE static Vector4 Mix(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Vector4 Mix(Vector4 P0, Vector4 P1)
         {
             return Vector4(_mm_addsub_ps(P0.mRegister, P1.mRegister));
         }
@@ -770,7 +765,7 @@ inline namespace Math
         /// \param P1 The second vector.
         /// \return The blended vector.
         template <UInt8 Mask>
-        ZYPHRYON_INLINE static Vector4 Blend(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Vector4 Blend(Vector4 P0, Vector4 P1)
         {
             return Vector4(_mm_blend_ps(P0.mRegister, P1.mRegister, Mask));
         }
@@ -781,7 +776,7 @@ inline namespace Math
         /// \param P1   The second vector.
         /// \param Mask The mask vector.
         /// \return The blended vector.
-        ZYPHRYON_INLINE static Vector4 Blend(ConstRef<Vector4> P0, ConstRef<Vector4> P1, ConstRef<Vector4> Mask)
+        ZYPHRYON_INLINE static Vector4 Blend(Vector4 P0, Vector4 P1, Vector4 Mask)
         {
             return Vector4(_mm_blendv_ps(P0.mRegister, P1.mRegister, Mask.mRegister));
         }
@@ -792,7 +787,7 @@ inline namespace Math
         /// \param P1 The second vector.
         /// \return The dot product of the two vectors.
         template<UInt8 Mask = 0xFF>
-        ZYPHRYON_INLINE static Real32 Dot(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Real32 Dot(Vector4 P0, Vector4 P1)
         {
             return _mm_cvtss_f32(_mm_dp_ps(P0.mRegister, P1.mRegister, Mask));
         }
@@ -802,7 +797,7 @@ inline namespace Math
         /// \param P0 First operand (XYZ used).
         /// \param P1 Second operand (XYZ used).
         /// \return P0.x * P1.x + P0.y * P1.y + P0.z * P1.z
-        ZYPHRYON_INLINE static Real32 Dot3(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Real32 Dot3(Vector4 P0, Vector4 P1)
         {
             return Dot<0x71>(P0 ,P1);
         }
@@ -812,7 +807,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The cross product of the two vectors, with W = 0.
-        ZYPHRYON_INLINE static Vector4 Cross(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Vector4 Cross(Vector4 P0, Vector4 P1)
         {
             const Vector4 A = Swizzle<3, 0, 2, 1>(P0);     // (y, z, x, w)
             const Vector4 B = Swizzle<3, 1, 0, 2>(P1);     // (z, x, y, w)
@@ -825,7 +820,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise minimum values.
-        ZYPHRYON_INLINE static Vector4 Min(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Vector4 Min(Vector4 P0, Vector4 P1)
         {
             return Vector4(_mm_min_ps(P0.mRegister, P1.mRegister));
         }
@@ -834,7 +829,7 @@ inline namespace Math
         ///
         /// \param Vector The vector.
         /// \return The smallest component of the vector.
-        ZYPHRYON_INLINE static Real32 HorizontalMin(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Real32 HorizontalMin(Vector4 Vector)
         {
             const __m128 T1 = _mm_min_ps(Vector.mRegister, _mm_movehl_ps(Vector.mRegister, Vector.mRegister));
             const __m128 T2 = _mm_min_ps(T1, _mm_shuffle_ps(T1, T1, 0x55));
@@ -846,7 +841,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise maximum values.
-        ZYPHRYON_INLINE static Vector4 Max(ConstRef<Vector4> P0, ConstRef<Vector4> P1)
+        ZYPHRYON_INLINE static Vector4 Max(Vector4 P0, Vector4 P1)
         {
             return Vector4(_mm_max_ps(P0.mRegister, P1.mRegister));
         }
@@ -855,7 +850,7 @@ inline namespace Math
         ///
         /// \param Vector The vector.
         /// \return The largest component of the vector.
-        ZYPHRYON_INLINE static Real32 HorizontalMax(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Real32 HorizontalMax(Vector4 Vector)
         {
             const __m128 T1 = _mm_max_ps(Vector.mRegister, _mm_movehl_ps(Vector.mRegister, Vector.mRegister));
             const __m128 T2 = _mm_max_ps(T1, _mm_shuffle_ps(T1, T1, 0x55));
@@ -866,7 +861,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded down.
-        ZYPHRYON_INLINE static Vector4 Floor(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Floor(Vector4 Vector)
         {
             return Vector4(_mm_floor_ps(Vector.mRegister));
         }
@@ -875,7 +870,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded up.
-        ZYPHRYON_INLINE static Vector4 Ceil(ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Ceil(Vector4 Vector)
         {
             return Vector4(_mm_ceil_ps(Vector.mRegister));
         }
@@ -886,7 +881,7 @@ inline namespace Math
         /// \param End        The ending vector.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A vector interpolated between the start and end vectors.
-        ZYPHRYON_INLINE static Vector4 Lerp(ConstRef<Vector4> Start, ConstRef<Vector4> End, Real32 Percentage)
+        ZYPHRYON_INLINE static Vector4 Lerp(Vector4 Start, Vector4 End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 

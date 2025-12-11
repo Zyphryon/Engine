@@ -86,11 +86,6 @@ inline namespace Math
         {
         }
 
-        /// \brief Copy constructor.
-        ///
-        /// \param Other The matrix to copy.
-        ZYPHRYON_INLINE Matrix4x4(ConstRef<Matrix4x4> Other) = default;
-
         /// \brief Checks if matrix is identity.
         ///
         /// \return `true` if matrix is identity, `false` otherwise.
@@ -135,7 +130,7 @@ inline namespace Math
         ///
         /// \param Column Zero-based index of the column to access.
         /// \return Reference to the column vector at the specified index.
-        ZYPHRYON_INLINE ConstRef<Vector4> GetColumn(UInt32 Column) const
+        ZYPHRYON_INLINE Vector4 GetColumn(UInt32 Column) const
         {
             return mColumns[Column];
         }
@@ -411,7 +406,7 @@ inline namespace Math
         /// \param Vector The 2D vector to be projected.
         /// \return A 2D vector resulting from the projection.
         template<Bool Affine>
-        ZYPHRYON_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, Vector2 Vector)
         {
             const Vector4 Result =
                 Matrix.mColumns[0] * Vector4(Vector.GetX()) +
@@ -440,7 +435,7 @@ inline namespace Math
         /// \param Vector The 3D vector to be projected.
         /// \return A 3D vector resulting from the projection.
         template<Bool Affine>
-        ZYPHRYON_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector3> Vector)
+        ZYPHRYON_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, Vector3 Vector)
         {
             const Vector4 Result =
                 Matrix.mColumns[0] * Vector4(Vector.GetX()) +
@@ -470,7 +465,7 @@ inline namespace Math
         /// \param Vector The 4D vector to be projected.
         /// \return A 4D vector resulting from the projection.
         template<Bool Affine>
-        ZYPHRYON_INLINE static Vector4 Project(ConstRef<Matrix4x4> Matrix, ConstRef<Vector4> Vector)
+        ZYPHRYON_INLINE static Vector4 Project(ConstRef<Matrix4x4> Matrix, Vector4 Vector)
         {
             const Vector4 Result =
                 Matrix.mColumns[0] * Vector4::SplatX(Vector) +
@@ -552,10 +547,10 @@ inline namespace Math
             }
             else
             {
-                ConstRef<Vector4> Col0 = Matrix.mColumns[0];
-                ConstRef<Vector4> Col1 = Matrix.mColumns[1];
-                ConstRef<Vector4> Col2 = Matrix.mColumns[2];
-                ConstRef<Vector4> Col3 = Matrix.mColumns[3];
+                Vector4 Col0 = Matrix.mColumns[0];
+                Vector4 Col1 = Matrix.mColumns[1];
+                Vector4 Col2 = Matrix.mColumns[2];
+                Vector4 Col3 = Matrix.mColumns[3];
 
                 // Calculate cofactors
                 Vector4 Fac0, Fac1, Fac2, Fac3, Fac4, Fac5;
@@ -723,7 +718,7 @@ inline namespace Math
         /// \param Focus The target position the camera is looking at.
         /// \param Up    The up direction for the camera.
         /// \return A look-at transformation matrix.
-        static Matrix4x4 CreateLook(ConstRef<Vector3> Eye, ConstRef<Vector3> Focus, ConstRef<Vector3> Up)
+        static Matrix4x4 CreateLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
             LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");
             LOG_ASSERT(!Vector3::IsParallel(Up, Eye - Focus), "Up vector is parallel to forward direction");
@@ -743,7 +738,7 @@ inline namespace Math
         ///
         /// \param Vector The 2D translation vector.
         /// \return A translation matrix based on the input vector.
-        ZYPHRYON_INLINE static Matrix4x4 FromTranslation(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE static Matrix4x4 FromTranslation(Vector2 Vector)
         {
             const Real32 X = Vector.GetX();
             const Real32 Y = Vector.GetY();
@@ -758,7 +753,7 @@ inline namespace Math
         ///
         /// \param Vector The 3D translation vector.
         /// \return A translation matrix based on the input vector.
-        ZYPHRYON_INLINE static Matrix4x4 FromTranslation(ConstRef<Vector3> Vector)
+        ZYPHRYON_INLINE static Matrix4x4 FromTranslation(Vector3 Vector)
         {
             const Real32 X = Vector.GetX();
             const Real32 Y = Vector.GetY();
@@ -774,7 +769,7 @@ inline namespace Math
         ///
         /// \param Vector The 2D scaling vector.
         /// \return A scaling matrix based on the input vector.
-        ZYPHRYON_INLINE static Matrix4x4 FromScale(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE static Matrix4x4 FromScale(Vector2 Vector)
         {
             const Real32 X = Vector.GetX();
             const Real32 Y = Vector.GetY();
@@ -789,7 +784,7 @@ inline namespace Math
         ///
         /// \param Vector The 3D scaling vector.
         /// \return A scaling matrix based on the input vector.
-        ZYPHRYON_INLINE static Matrix4x4 FromScale(ConstRef<Vector3> Vector)
+        ZYPHRYON_INLINE static Matrix4x4 FromScale(Vector3 Vector)
         {
             const Real32 X = Vector.GetX();
             const Real32 Y = Vector.GetY();
@@ -805,7 +800,7 @@ inline namespace Math
         ///
         /// \param Rotation The rotation quaternion.
         /// \return A rotation matrix based on the input quaternion.
-        static Matrix4x4 FromRotation(ConstRef<Quaternion> Rotation)
+        static Matrix4x4 FromRotation(Quaternion Rotation)
         {
             ZYPHRYON_ALIGN(16) Real32 Vector[4];
             Rotation.Store(Vector);
@@ -833,7 +828,7 @@ inline namespace Math
         /// \param Scale       The scale factors (x, y, z).
         /// \param Rotation    The rotation quaternion.
         /// \return Combined transformation matrix.
-        ZYPHRYON_INLINE static Matrix4x4 FromTransform(ConstRef<Vector3> Translation, ConstRef<Vector3> Scale, ConstRef<Quaternion> Rotation)
+        ZYPHRYON_INLINE static Matrix4x4 FromTransform(Vector3 Translation, Vector3 Scale, Quaternion Rotation)
         {
             Matrix4x4 Result = FromRotation(Rotation);
 

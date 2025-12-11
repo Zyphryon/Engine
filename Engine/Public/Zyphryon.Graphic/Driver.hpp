@@ -37,19 +37,19 @@ namespace Graphic
         /// \param Height    Initial surface height in pixels.
         /// \param Samples   Initial multisampling level.
         /// \return `true` if the initialization was successful, `false` otherwise.
-        virtual Bool Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Samples Samples) = 0;
+        virtual Bool Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples) = 0;
 
         /// \brief Resizes the rendering surface and recreates swapchain.
         ///
         /// \param Width   New surface width in pixels.
         /// \param Height  New surface height in pixels.
         /// \param Samples New multisampling level.
-        virtual void Reset(UInt16 Width, UInt16 Height, Samples Samples) = 0;
+        virtual void Reset(UInt16 Width, UInt16 Height, Multisample Samples) = 0;
 
-        /// \brief Gets graphics hardware capabilities.
-        /// 
-        /// \return Immutable capabilities structure.
-        virtual ConstRef<Capabilities> GetCapabilities() const = 0;
+        /// \brief Gets the capabilities of the current graphics device.
+        ///
+        /// \return Reference to the device capabilities structure.
+        virtual ConstRef<Device> GetDevice() const = 0;
 
         /// \brief Creates a buffer with the specified usage and access pattern.
         /// 
@@ -147,7 +147,7 @@ namespace Graphic
         /// \param Mipmaps Number of mipmap levels.
         /// \param Samples Multisampling level.
         /// \param Data    Optional initialization data.
-        virtual void CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Samples Samples, ConstSpan<Byte> Data) = 0;
+        virtual void CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data) = 0;
 
         /// \brief Updates a texture subregion.
         ///

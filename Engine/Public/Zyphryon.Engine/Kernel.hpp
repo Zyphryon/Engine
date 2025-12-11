@@ -51,7 +51,7 @@ namespace Engine
         ///
         /// \param Mode       Runtime mode (e.g., client, server).
         /// \param Properties Application configuration values.
-        void Initialize(Mode Mode, ConstRef<Properties> Properties);
+        void Initialize(Mode Mode, AnyRef<Properties> Properties);
 
         /// \brief Polls the main execution loop once.
         void Poll();
@@ -94,7 +94,7 @@ namespace Engine
         /// Override this method to update game logic or simulation systems.
         ///
         /// \param Tick Time information for the current frame.
-        virtual void OnTick(ConstRef<Time> Tick)
+        virtual void OnTick(Time Tick)
         {
         }
 
@@ -103,23 +103,17 @@ namespace Engine
         /// \brief Initializes client-specific services.
         ///
         /// Called when the kernel is running in client mode.
-        ///
-        /// \param Properties Application configuration values.
-        void InitializeClientServices(ConstRef<Properties> Properties);
+        void InitializeClientServices();
 
         /// \brief Initializes server-specific services.
         ///
         /// Called when the kernel is running in server mode.
-        ///
-        /// \param Properties Application configuration values.
-        void InitializeServerServices(ConstRef<Properties> Properties);
+        void InitializeServerServices();
 
         /// \brief Initializes services common to all runtime modes.
         ///
         /// Called when the kernel is running in any mode.
-        ///
-        /// \param Properties Application configuration values.
-        void InitializeCommonServices(ConstRef<Properties> Properties);
+        void InitializeCommonServices();
 
     protected:
 

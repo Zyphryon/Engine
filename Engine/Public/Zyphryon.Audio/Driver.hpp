@@ -43,9 +43,7 @@ namespace Audio
         virtual ConstRef<Capabilities> GetCapabilities() const = 0;
 
         /// \brief Advances the audio engine by one update cycle.
-        ///
-        /// \param Time The elapsed time since the last update cycle.
-        virtual void Advance(ConstRef<Time> Time) = 0;
+        virtual void Advance() = 0;
 
         /// \brief Suspends audio output.
         virtual void Suspend() = 0;

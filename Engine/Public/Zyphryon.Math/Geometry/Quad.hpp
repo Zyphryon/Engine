@@ -34,8 +34,7 @@ inline namespace Math
         /// \param C1 The second corner point.
         /// \param C2 The third corner point.
         /// \param C3 The fourth corner point.
-        ZYPHRYON_INLINE constexpr Quad(ConstRef<Vector2> C0, ConstRef<Vector2> C1,
-                                       ConstRef<Vector2> C2, ConstRef<Vector2> C3)
+        ZYPHRYON_INLINE constexpr Quad(Vector2 C0, Vector2 C1, Vector2 C2, Vector2 C3)
             : mCorners { C0, C1, C2, C3 }
         {
         }
@@ -57,7 +56,7 @@ inline namespace Math
         /// \param C1 The second corner point.
         /// \param C2 The third corner point.
         /// \param C3 The fourth corner point.
-        ZYPHRYON_INLINE constexpr void Set(ConstRef<Vector2> C0, ConstRef<Vector2> C1, ConstRef<Vector2> C2, ConstRef<Vector2> C3)
+        ZYPHRYON_INLINE constexpr void Set(Vector2 C0, Vector2 C1, Vector2 C2, Vector2 C3)
         {
             mCorners[0] = C0;
             mCorners[1] = C1;
@@ -69,7 +68,7 @@ inline namespace Math
         ///
         /// \param Corner The index of the corner to set (0-3).
         /// \param Point  The new coordinate value for the specified corner.
-        ZYPHRYON_INLINE constexpr void SetCorner(UInt32 Corner, ConstRef<Vector2> Point)
+        ZYPHRYON_INLINE constexpr void SetCorner(UInt32 Corner, Vector2 Point)
         {
             LOG_ASSERT(Corner < 4, "Corner index must be in range [0, 3]");
             mCorners[Corner] = Point;
@@ -79,7 +78,7 @@ inline namespace Math
         ///
         /// \param Corner The index of the corner to retrieve (0-3).
         /// \return A constant reference to the Vector2 coordinate of the specified corner.
-        ZYPHRYON_INLINE constexpr ConstRef<Vector2> GetCorner(UInt32 Corner) const
+        ZYPHRYON_INLINE constexpr Vector2 GetCorner(UInt32 Corner) const
         {
             LOG_ASSERT(Corner < 4, "Corner index must be in range [0, 3]");
             return mCorners[Corner];
@@ -148,7 +147,7 @@ inline namespace Math
         ///
         /// \param Point The point to check.
         /// \return `true` if the point is inside the quadrilateral, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Contains(ConstRef<Vector2> Point) const
+        ZYPHRYON_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             const Real32 C0 = Vector2::Cross(mCorners[1] - mCorners[0], Point - mCorners[0]);
             const Real32 C1 = Vector2::Cross(mCorners[2] - mCorners[1], Point - mCorners[1]);
@@ -217,7 +216,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A new quadrilateral with the vector added to all coordinates.
-        ZYPHRYON_INLINE constexpr Quad operator+(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Quad operator+(Vector2 Vector) const
         {
             return Quad(mCorners[0] + Vector,
                         mCorners[1] + Vector, 
@@ -253,7 +252,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A new quadrilateral with the vector subtracted from all coordinates.
-        ZYPHRYON_INLINE constexpr Quad operator-(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Quad operator-(Vector2 Vector) const
         {
             return Quad(mCorners[0] - Vector,
                         mCorners[1] - Vector, 
@@ -277,7 +276,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to multiply by.
         /// \return A new quadrilateral with the vector multiplied by all coordinates.
-        ZYPHRYON_INLINE constexpr Quad operator*(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Quad operator*(Vector2 Vector) const
         {
             return Quad(mCorners[0] * Vector,
                         mCorners[1] * Vector, 
@@ -302,7 +301,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to divide by.
         /// \return A new quadrilateral with the vector divided by all coordinates.
-        ZYPHRYON_INLINE constexpr Quad operator/(ConstRef<Vector2> Vector) const
+        ZYPHRYON_INLINE constexpr Quad operator/(Vector2 Vector) const
         {
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
@@ -342,7 +341,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to add.
         /// \return A reference to the updated quadrilateral.
-        ZYPHRYON_INLINE constexpr Ref<Quad> operator+=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Quad> operator+=(Vector2 Vector)
         {
             mCorners[0] += Vector;
             mCorners[1] += Vector;
@@ -381,7 +380,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to subtract.
         /// \return A reference to the updated quadrilateral.
-        ZYPHRYON_INLINE constexpr Ref<Quad> operator-=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Quad> operator-=(Vector2 Vector)
         {
             mCorners[0] -= Vector;
             mCorners[1] -= Vector;
@@ -407,7 +406,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to multiply.
         /// \return A reference to the updated quadrilateral.
-        ZYPHRYON_INLINE constexpr Ref<Quad> operator*=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Quad> operator*=(Vector2 Vector)
         {
             mCorners[0] *= Vector;
             mCorners[1] *= Vector;
@@ -434,7 +433,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to divide by.
         /// \return A reference to the updated quadrilateral.
-        ZYPHRYON_INLINE constexpr Ref<Quad> operator/=(ConstRef<Vector2> Vector)
+        ZYPHRYON_INLINE constexpr Ref<Quad> operator/=(Vector2 Vector)
         {
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
             LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
@@ -528,7 +527,7 @@ inline namespace Math
         /// \param Rectangle The input rectangle.
         /// \param Matrix    The transformation matrix.
         /// \return The projected quadrilateral.
-        ZYPHRYON_INLINE static Quad Transform(ConstRef<AnyRect<Real32>> Rectangle, ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE static Quad Transform(AnyRect<Real32> Rectangle, ConstRef<Matrix4x4> Matrix)
         {
             const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
                                   Rectangle.GetMaximumX(), Rectangle.GetMinimumX());
