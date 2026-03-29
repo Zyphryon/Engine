@@ -127,7 +127,7 @@ namespace Audio
             ZYPHRYON_INLINE Object Allocate()
             {
                 Guard Lock(Mutex);
-                return Pool.AllocateWithID();
+                return Pool.AllocateWithHandle();
             }
 
             /// \brief Fetches a voice from the pool using its handle.
