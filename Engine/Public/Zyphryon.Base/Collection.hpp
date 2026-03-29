@@ -61,23 +61,30 @@ inline namespace Base
     };
 
     /// \brief Default hasher for generic object types.
-    template<typename Type>
     struct DefaultObjectHasher
     {
+        using is_transparent = void; ///< Indicates that the hash function supports heterogeneous lookup.
         using is_avalanching = void; ///< Indicates that the hash function provides good avalanche properties.
 
+        template<typename Type>
         ZYPHRYON_INLINE UInt64 operator()(ConstRef<Type> Value) const noexcept
         {
             return Hash(Value);
         }
+
+        template<typename Type>
+        ZYPHRYON_INLINE UInt64 operator()(ConstPtr<Type> Value) const noexcept
+        {
+            return Hash(* Value);
+        }
     };
 
     /// \brief A high-performance hash map using ankerl::unordered_dense.
-    template<typename Key, typename Hash = DefaultObjectHasher<Key>, typename Predicate = std::equal_to<>>
+    template<typename Key, typename Hash = DefaultObjectHasher, typename Predicate = std::equal_to<>>
     using Set    = ankerl::unordered_dense::set<Key, Hash, Predicate>;
 
     /// \brief A high-performance hash table using ankerl::unordered_dense.
-    template<typename Key, typename Value, typename Hash = DefaultObjectHasher<Key>, typename Predicate = std::equal_to<>>
+    template<typename Key, typename Value, typename Hash = DefaultObjectHasher, typename Predicate = std::equal_to<>>
     using Table  = Switch<IsEqual<Key, Str8>,
         ankerl::unordered_dense::map<Key, Value, DefaultStringHasher, Predicate>,
         ankerl::unordered_dense::map<Key, Value, Hash, Predicate>>;
@@ -91,5 +98,5 @@ inline namespace Base
     /// \tparam Value The type of elements stored in the vector.
     /// \tparam Capacity The number of inline elements to store before falling back to heap allocation.
     template<typename Value, UInt32 Capacity = 0>
-    using Vector    = Switch<(Capacity > 0), beman::inplace_vector::inplace_vector<Value, Capacity>, std::vector<Value>>;
+    using Vector = Switch<(Capacity > 0), beman::inplace_vector::inplace_vector<Value, Capacity>, std::vector<Value>>;
 }

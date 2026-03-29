@@ -93,7 +93,7 @@ inline namespace Base
             {
                 if (mAllocator.IsAllocated(Handle))
                 {
-                    InPlaceDelete<Type>(GetPtr(Handle));
+                    InPlaceDelete<Type>(* GetPtr(Handle));
                 }
             }
             mAllocator.Clear();

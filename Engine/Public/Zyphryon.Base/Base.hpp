@@ -28,6 +28,7 @@
 #include "Utility.hpp"
 
 #include "Container/Blob.hpp"
+#include "Container/Catalog.hpp"
 #include "Container/Pool.hpp"
 #include "Container/Slot.hpp"
 #include "Container/Symbol.hpp"
