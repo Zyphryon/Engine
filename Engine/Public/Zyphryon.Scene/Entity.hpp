@@ -885,8 +885,9 @@ namespace Scene
 
         /// \brief Computes a hash value for the object.
         ///
+        /// \param Seed An optional seed value to combine with the hash.
         /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt64 Hash() const
+        ZYPHRYON_INLINE UInt64 Hash(UInt64 Seed = 0) const
         {
             return GetID();
         }
