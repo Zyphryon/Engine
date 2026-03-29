@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -11,10 +11,19 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Kernel.hpp"
+#include "Zyphryon.Content/Service.hpp"
+#include "Zyphryon.Graphic/Service.hpp"
+#include "Zyphryon.Audio/Service.hpp"
+#include "Zyphryon.Input/Service.hpp"
+#include "Zyphryon.Scene/Service.hpp"
 
-#ifdef    __EMSCRIPTEN__
-    #include <emscripten.h>
-#endif // __EMSCRIPTEN__
+#include "Zyphryon.Content/Mount/Embedded.hpp"
+#include "Zyphryon.Content/Loader/Sound/MP3/Loader.hpp"     // TODO: Plugin Based
+#include "Zyphryon.Content/Loader/Sound/WAV/Loader.hpp"     // TODO: Plugin Based
+#include "Zyphryon.Content/Loader/Texture/STB/Loader.hpp"   // TODO: Plugin Based
+#include "Zyphryon.Content/Loader/Material/Loader.hpp"
+#include "Zyphryon.Content/Loader/Pipeline/Loader.hpp"
+#include "Zyphryon.Content/Loader/Font/Artery/Loader.hpp"   // TODO: Plugin Based
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -44,7 +53,7 @@ namespace Engine
 
     void Kernel::Initialize(Mode Mode, AnyRef<Properties> Properties)
     {
-        ZYPHRYON_THREAD_NAME("Main Thread");
+        ZYPHRYON_PROFILE_THREAD("Main Thread");
 
         // Store the initialization properties.
         mProperties = Move(Properties);
@@ -52,10 +61,14 @@ namespace Engine
         // Initialize the system mode.
         SetMode(Mode);
 
+        // Initializes common services.
+        InitializeCommonServices();
+
         // Initializes client services.
         if (IsClientMode())
         {
             InitializeClientServices();
+            InitializeClientLoaders();
         }
 
         // Initializes server services.
@@ -63,9 +76,6 @@ namespace Engine
         {
             InitializeServerServices();
         }
-
-        // Initializes common services.
-        InitializeCommonServices();
 
         // Initializes the host and then enable the platform device.
         mActive = OnInitialize();
@@ -82,7 +92,7 @@ namespace Engine
     void Kernel::Poll()
     {
         // Updates the current time by calculating the absolute time.
-        mTime.SetAbsolute(Time::Elapsed());
+        mTime.SetAbsolute(Time::GetUptimeInSeconds());
 
         // Tick application.
         OnTick(mTime);
@@ -99,25 +109,13 @@ namespace Engine
     void Kernel::Run()
     {
         // Updates the simulation time by calculating the absolute time.
-        mTime.SetAbsolute(Time::Elapsed());
+        mTime.SetAbsolute(Time::GetUptimeInNanoseconds());
 
-#ifdef    __EMSCRIPTEN__
-
-        const auto OnPoll = [](Ptr<void> Instance)
-        {
-            static_cast<Ptr<Kernel>>(Instance)->Poll();
-        };
-
-        emscripten_set_main_loop_arg(OnPoll, this, 0, true);
-
-#else
-
+        // Main application loop.
         while (mActive)
         {
             Poll();
         }
-
-#endif // __EMSCRIPTEN__
 
         // Performs application-level teardown.
         OnTeardown();
@@ -148,7 +146,7 @@ namespace Engine
 
         // Initializes device service.
         LOG_INFO("Kernel: Creating device ({}, {})", mProperties.GetWindowWidth(), mProperties.GetWindowHeight());
-        InPlaceConstruct<Device>(mDevice,
+        InPlaceConstruct<Device>(& mDevice,
             mProperties.GetWindowHandle(),
             mProperties.GetWindowTitle(),
             mProperties.GetWindowWidth(),
@@ -162,11 +160,11 @@ namespace Engine
         }
 
         // Initializes graphic service.
-        const Graphic::Backend Backend = Enum::Cast(mProperties.GetVideoDriver(), Graphic::Backend::None);
-        const Graphic::Multisample Samples = Enum::Cast(Format("X{}", mProperties.GetWindowSamples()), Graphic::Multisample::X1);
-
         LOG_INFO("Kernel: Creating graphics service");
         ConstTracker<Graphic::Service> Graphics = AddService<Graphic::Service>();
+
+        const Graphic::Backend     Backend = Enum::Cast(mProperties.GetVideoDriver(), Graphic::Backend::None);
+        const Graphic::Multisample Samples = Enum::Cast(Format("X{}", mProperties.GetWindowSamples()), Graphic::Multisample::X1);
 
         if (!Graphics->Initialize(Backend, mDevice.GetHandle(), mDevice.GetWidth(), mDevice.GetHeight(), Samples))
         {
@@ -176,10 +174,31 @@ namespace Engine
         // Initializes audio service.
         LOG_INFO("Kernel: Creating audio service");
         ConstTracker<Audio::Service> AudioService = AddService<Audio::Service>();
-        if (! AudioService->Initialize(Audio::Backend::FAudio, mProperties.GetAudioDevice()))
+        if (! AudioService->Initialize(Audio::Backend::Miniaudio, mProperties.GetAudioDevice()))
         {
             LOG_WARNING("Kernel: Failed to create audio service.");
+
+            // Fallback to no audio.
+            AudioService->Initialize(Audio::Backend::None, mProperties.GetAudioDevice());
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Kernel::InitializeClientLoaders()
+    {
+        ConstTracker<Content::Service> Content = GetService<Content::Service>();
+        LOG_INFO("Kernel: Registering content loaders");
+
+        Content->AddLoader(Tracker<Content::MP3Loader>::Create());
+        Content->AddLoader(Tracker<Content::WAVLoader>::Create());
+        Content->AddLoader(Tracker<Content::STBLoader>::Create());
+        Content->AddLoader(Tracker<Content::MaterialLoader>::Create());
+        Content->AddLoader(Tracker<Content::ArteryFontLoader>::Create());
+
+        Graphic::Device Device = GetService<Graphic::Service>()->GetDevice();
+        Content->AddLoader(Tracker<Content::PipelineLoader>::Create(Device.Backend, Device.Language));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -197,7 +216,8 @@ namespace Engine
     {
         // Initializes resources service.
         LOG_INFO("Kernel: Creating content service");
-        AddService<Content::Service>();
+        ConstTracker<Content::Service> Content = AddService<Content::Service>();
+        Content->AddMount("Engine", Tracker<Content::Embedded>::Create());
 
         // Initializes scene service.
         LOG_INFO("Kernel: Creating scene service");

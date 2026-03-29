@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #pragma once
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Base/Base.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -149,12 +143,12 @@ namespace Input
     };
 
     /// \brief Represents a single input event and its data.
-    struct Event final // TODO: Shrink it so it can be pass by value
+    struct Event final
     {
         /// \brief Enumerates the type of input event.
         enum class Type : UInt8
         {
-            KeyType,      ///< Character input event (text typing).
+            KeyType,      ///< Key type event (text input).
             KeyUp,        ///< Key release event.
             KeyDown,      ///< Key press event.
             MouseMove,    ///< Mouse movement event.
@@ -175,16 +169,16 @@ namespace Input
         /// \brief Event-specific data.
         union
         {
-            /// \brief Data for \ref Type::KeyType (character input).
+            /// \brief Data for \ref Type::KeyType.
             struct
             {
-                UInt32 Codepoint; ///< Unicode codepoint of the typed character.
+                ConstStr8 Text;
             } KeyType;
 
             /// \brief Data for \ref Type::KeyUp and \ref Type::KeyDown.
             struct
             {
-                Key Key; ///< Physical key code.
+                Key  Key; ///< Physical key code.
             } KeyAction;
 
             /// \brief Data for \ref Type::MouseMove.

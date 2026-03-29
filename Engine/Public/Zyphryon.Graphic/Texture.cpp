@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -25,7 +25,8 @@ namespace Graphic
     Texture::Texture(AnyRef<Content::Uri> Key)
         : AbstractResource(Move(Key)),
           mID      { 0 },
-          mAccess  { Access::Device },
+          mAccess  { Access::Stream },
+          mType    { TextureType::Texture2D },
           mFormat  { TextureFormat::RGBA8UInt },
           mLayout  { TextureLayout::Source },
           mWidth   { 0 },
@@ -57,7 +58,8 @@ namespace Graphic
     {
         SetMemory(mData.GetSize());
 
-        mID = Host.GetService<Service>()->CreateTexture(mAccess, mFormat, mLayout, mWidth, mHeight, mLevel, mSamples, Move(mData));
+        mID = Host.GetService<Service>()->CreateTexture(
+            mAccess, mType, mFormat, mLayout, mWidth, mHeight, mLevel, mSamples, Move(mData));
 
         return mID > 0;
     }

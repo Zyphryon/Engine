@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -31,11 +31,11 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Pipeline::Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<BindingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties)
+    void Pipeline::Load(AnyRef<Shaders> Shaders, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures)
     {
-        mStages     = Move(Stages);
-        mTextures   = Move(Textures);
-        mProperties = Move(Properties);
+        mShaders  = Move(Shaders);
+        mStates   = Move(States);
+        mTextures = Move(Textures);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -43,12 +43,7 @@ namespace Graphic
 
     Bool Pipeline::OnCreate(Ref<Service::Host> Host)
     {
-        for (ConstRef<Blob> Stage : mStages)
-        {
-            SetMemory(GetMemory() + Stage.GetSize());
-        }
-
-        mID = Host.GetService<Service>()->CreatePipeline(Move(mStages[0]), Move(mStages[1]), mProperties);
+        mID = Host.GetService<Service>()->CreatePipeline(Move(mShaders), mStates);
 
         return mID > 0;
     }

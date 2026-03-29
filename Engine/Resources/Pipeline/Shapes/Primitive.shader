@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -18,10 +18,10 @@ cbuffer cb_Global : register(b0)
 struct vs_Input
 {
     uint   VertexID : SV_VertexID;
+
     float3 Center   : POSITION;
-    float4 Color    : COLOR;
-    float2 Data0    : CUSTOM0;
-    float2 Data1    : CUSTOM1;
+    float4 Color    : COLOR0;
+    float4 Data     : CUSTOM0;
 };
 
 struct ps_Input
@@ -61,28 +61,28 @@ ps_Input vertex(vs_Input Input)
 #if   defined(SHAPE_CIRCLE) || defined(SHAPE_RING)
 
     #ifdef SHAPE_RING
-        Result.Thickness = Input.Data0.y * 0.5;
+        Result.Thickness = Input.Data.y * 0.5;
 
         Local *= 1.0 + Result.Thickness;
     #endif
 
-    Offset = Local * float2(Input.Data0.xx);
+    Offset = Local * float2(Input.Data.xx);
 
 #elif defined(SHAPE_RECT) || defined(SHAPE_ROUNDED_RECT)
 
-    Offset = Local * Input.Data0;
+    Offset = Local * Input.Data.xy;
 
     #ifdef SHAPE_ROUNDED_RECT
-        Result.Thickness = Input.Data1.x;
+        Result.Thickness = Input.Data.z;
     #endif
 
 #elif defined(SHAPE_LINE)
 
-    Result.Thickness = Input.Data1.y * 0.5;
+    Result.Thickness = Input.Data.w * 0.5;
 
-    Offset = Input.Data0 * (Local.x * Input.Data1.x) + float2(-Input.Data0.y, Input.Data0.x) * (Local.y * Result.Thickness);
+    Offset = Input.Data.xy * (Local.x * Input.Data.z) + float2(-Input.Data.w, Input.Data.z) * (Local.y * Result.Thickness);
 
-    Local *= 1.0 + Result.Thickness;
+    Local *= 1.0 + Result.Thickness;   // TODO: Fix Thickness
 
 #endif
 
@@ -100,7 +100,7 @@ ps_Input vertex(vs_Input Input)
 
 float sdCircle(float2 Point, float Radius)
 {
-    return sqrt(dot(Point, Point)) - Radius;
+    return length(Point) - Radius;
 }
 
 float sdRing(float2 Point, float Radius, float Thickness)
@@ -132,16 +132,16 @@ float4 fragment(ps_Input Input) : SV_Target
     #elif defined(SHAPE_RING)
         Distance = sdRing(Input.Local, 1.0, Input.Thickness);
     #elif defined(SHAPE_LINE)
-        Distance = sdLine(Input.Local, normalizedThickness);
+        Distance = sdLine(Input.Local, Input.Thickness);
     #elif defined(SHAPE_ROUNDED_RECT)
         Distance = sdRoundedRect(Input.Local, Input.Thickness);
     #endif
 
     #if defined(USE_AA)
         float Antialias = fwidth(Distance);
-        Result.a *= 1.0 - smoothstep(-Antialias, Antialias, Distance);
+        Result.a *= smoothstep(Antialias, -Antialias, Distance);
     #else
-        Result.a *= step(Distance, 0.5);
+        Result.a *= step(Distance, 0.0);
     #endif
 
     #if defined(SHAPE_CIRCLE) || defined(SHAPE_RING) || defined(SHAPE_ROUNDED_RECT)
@@ -151,5 +151,6 @@ float4 fragment(ps_Input Input) : SV_Target
 #endif
 
     Result.rgb *= Result.a;
+
     return Result;
 }

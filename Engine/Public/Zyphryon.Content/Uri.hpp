@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #pragma once
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Base/Utility.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -50,6 +44,14 @@ namespace Content
         ZYPHRYON_INLINE constexpr Uri(ConstPtr<Char> Url)
             : mUrl { Url }
         {
+        }
+
+        /// \brief Checks whether the URI is non-empty.
+        ///
+        /// \return `true` if the URI is non-empty, otherwise `false`.
+        ZYPHRYON_INLINE constexpr Bool IsValid() const
+        {
+            return !mUrl.empty();
         }
 
         /// \brief Checks whether the URI includes a schema.
@@ -147,6 +149,24 @@ namespace Content
             return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1, mUrl.length()) : "");
         }
 
+        /// \brief Computes a hash value for the object.
+        ///
+        /// \param Seed An optional seed value to combine with the hash.
+        /// \return A hash value uniquely representing the current state of the object.
+        ZYPHRYON_INLINE UInt64 Hash(UInt64 Seed = 0) const
+        {
+            return Base::Hash(mUrl, Seed);
+        }
+
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeText(mUrl);
+        }
+
     public:
 
         /// \brief Combines a base URI with a subresource name.
@@ -154,17 +174,17 @@ namespace Content
         /// \param Parent      The base URI.
         /// \param Subresource The subresource name to append.
         /// \return A new URI with the subresource appended.
-        ZYPHRYON_INLINE constexpr static Uri Merge(ConstRef<Uri> Parent, ConstStr8 Subresource)
+        ZYPHRYON_INLINE static constexpr Uri Merge(ConstRef<Uri> Parent, ConstStr8 Subresource)
         {
             return Uri(Format("{}#{}", Parent.GetUrlWithoutExtension(), Subresource));
         }
 
-        /// \brief Expands a context-relative URI into an absolute URI..
+        /// \brief Expands a context-relative URI into an absolute URI.
         ///
         /// \param Relative The URI that may be context-relative.
         /// \param Parent   The base URI providing context.
         /// \return The expanded absolute URI.
-        ZYPHRYON_INLINE constexpr static Uri Expand(ConstRef<Uri> Relative, ConstRef<Uri> Parent)
+        ZYPHRYON_INLINE static constexpr Uri Expand(ConstRef<Uri> Relative, ConstRef<Uri> Parent)
         {
             if (!Relative.HasSchema())
             {
@@ -178,6 +198,6 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        const Str8 mUrl;
+        Str8 mUrl;
     };
 }

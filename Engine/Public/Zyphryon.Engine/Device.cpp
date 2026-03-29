@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -49,7 +49,7 @@ namespace Engine
 
         if (Handle)
         {
-            SDL_SetNumberProperty(Config, SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, static_cast<SInt64>(Handle));
+            SDL_SetNumberProperty(Config, SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, Handle);
         }
 
 #endif  // SDL_PLATFORM_WIN32
@@ -84,11 +84,8 @@ namespace Engine
         if (Fullscreen)
         {
             SDL_DisplayMode SuitableDisplayMode;
-            if (!Borderless)
-            {
-                const SDL_DisplayID DisplayID = SDL_GetDisplayForWindow(mHandle);
-                SDL_GetClosestFullscreenDisplayMode(DisplayID, GetWidth(), GetHeight(), 0, true, &SuitableDisplayMode);
-            }
+            SDL_GetClosestFullscreenDisplayMode(
+                SDL_GetDisplayForWindow(mHandle), GetWidth(), GetHeight(), 0, true, &SuitableDisplayMode);
             SDL_SetWindowFullscreenMode(mHandle, Borderless ? nullptr : &SuitableDisplayMode);
         }
         else

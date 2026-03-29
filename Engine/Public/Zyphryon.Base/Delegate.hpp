@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Collection.hpp"
+#include "Utility.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,27 +22,30 @@
 inline namespace Base
 {
     /// \brief Predefined inline storage sizes for delegates.
-    enum class DelegateInlineSize : UInt
+    enum class DelegateInlineSize
     {
-        Smallest  = 1,    ///< Enough for function pointers and small lambdas.
+        None      = 0,    ///< No inline storage
+        Smallest  = 1,    ///< Enough for function pointers and stateless lambdas.
         Small     = 2,    ///< Enough for function pointers and small lambdas.
         Default   = 4,    ///< Reasonable default size for most use cases.
         Large     = 8,    ///< Enough for larger lambdas and small functor objects.
         Largest   = 16    ///< Maximum size for inline storage, enough for most functor objects.
     };
 
-    /// \brief A type-safe, high-performance delegate.
+    /// \brief A type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Default>
     class ZYPHRYON_ALIGN_CPU Delegate;
 
-    /// \brief A type-safe, high-performance delegate.
+    /// \brief A type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
     class ZYPHRYON_ALIGN_CPU Delegate<Return(Arguments...), InlineSize> final
     {
     public:
 
         /// \brief Capacity of the internal storage buffer, in bytes.
-        static constexpr UInt kCapacity  = static_cast<UInt>(InlineSize) * sizeof(UInt);
+        static constexpr UInt32 kCapacity  = static_cast<UInt32>(InlineSize) * sizeof(void *);
+
+    public:
 
         /// \brief Default constructor, creates an empty delegate.
         ZYPHRYON_INLINE constexpr Delegate()
@@ -97,7 +101,7 @@ inline namespace Base
 
             if constexpr (sizeof(Type) <= kCapacity && std::is_trivially_copyable_v<Type>)
             {
-                InPlaceCreate<Callable>(mStorage, Forward<Callable>(Object));
+                InPlaceConstruct<Callable>(mStorage, Forward<Callable>(Object));
 
                 mExecute = &InvokeLambda<Type>;
                 mRelease = &ReleaseStack<Type>;
@@ -128,7 +132,7 @@ inline namespace Base
         /// \brief Move constructor, transfers ownership from another delegate.
         ///
         /// \param Other The other delegate to move from.
-        ZYPHRYON_INLINE constexpr Delegate(AnyRef<Delegate> Other)
+        ZYPHRYON_INLINE constexpr Delegate(AnyRef<Delegate> Other) noexcept
             : mStorage { },
               mExecute { Exchange(Other.mExecute, &InvokeEmpty)  },
               mRelease { Exchange(Other.mRelease, &ReleaseEmpty) }
@@ -189,7 +193,7 @@ inline namespace Base
 
             if constexpr (sizeof(Type) <= kCapacity && std::is_trivially_copyable_v<Type>)
             {
-                InPlaceCreate<Callable>(mStorage, Forward<Callable>(Object));
+                InPlaceConstruct<Callable>(mStorage, Forward<Callable>(Object));
                 mExecute = &InvokeLambda<Type>;
                 mRelease = &ReleaseStack<Type>;
             }
@@ -260,7 +264,7 @@ inline namespace Base
         ///
         /// \param Other The other delegate to move from.
         /// \return Reference to this delegate.
-        ZYPHRYON_INLINE Ref<Delegate> operator=(AnyRef<Delegate> Other)
+        ZYPHRYON_INLINE Ref<Delegate> operator=(AnyRef<Delegate> Other) noexcept
         {
             if (this != &Other)
             {
@@ -302,14 +306,6 @@ inline namespace Base
         ZYPHRYON_INLINE Return operator()(Arguments... Parameters) const
         {
             return mExecute(mStorage, Forward<Arguments>(Parameters)...);
-        }
-
-        /// \brief Returns if the delegate is bound to anything.
-        ///
-        /// \return `true` if the delegate is bound, otherwise `false`.
-        ZYPHRYON_INLINE operator Bool() const
-        {
-            return (mExecute != & InvokeEmpty);
         }
 
     public:
@@ -447,13 +443,187 @@ inline namespace Base
         Release mRelease;
     };
 
-    /// \brief A type-safe, high-performance multicast delegate.
+    /// \brief A type-safe delegate that can bind to free functions and static member functions only.
+    template<typename Return, typename... Arguments>
+    class ZYPHRYON_ALIGN_CPU Delegate<Return(Arguments...), DelegateInlineSize::None> final
+    {
+    public:
+
+        /// \brief Default constructor, creates an empty delegate.
+        ZYPHRYON_INLINE constexpr Delegate()
+            : mExecute { &InvokeEmpty }
+        {
+        }
+
+        /// \brief Construct a delegate from a free function or static member function.
+        ///
+        /// \tparam Function The function pointer to bind.
+        template<auto Function>
+        ZYPHRYON_INLINE constexpr Delegate(std::integral_constant<decltype(Function), Function>)
+            : mExecute { &InvokeDirect<Function> }
+        {
+        }
+
+        /// \brief Copy constructor, duplicates another delegate.
+        ///
+        /// \param Other The other delegate to copy from.
+        ZYPHRYON_INLINE constexpr Delegate(ConstRef<Delegate> Other)
+            : mExecute { Other.mExecute }
+        {
+        }
+
+        /// \brief Move constructor, transfers ownership from another delegate.
+        ///
+        /// \param Other The other delegate to move from.
+        ZYPHRYON_INLINE constexpr Delegate(AnyRef<Delegate> Other) noexcept
+            : mExecute { Exchange(Other.mExecute, &InvokeEmpty)  }
+        {
+        }
+
+        /// \brief Destructor, releases any resources held by the delegate.
+        ZYPHRYON_INLINE ~Delegate()
+        {
+            Reset();
+        }
+
+        /// \brief Binds a free function or static member function to the delegate.
+        ///
+        /// \tparam Function The function pointer to bind.
+        template<auto Function>
+        ZYPHRYON_INLINE void Bind()
+        {
+            Reset();
+            mExecute = &InvokeDirect<Function>;
+        }
+
+        /// \brief Returns whether the delegate is empty.
+        ///
+        /// \return `true` if the delegate is empty, otherwise `false`.
+        ZYPHRYON_INLINE Bool IsEmpty() const
+        {
+            return (mExecute == &InvokeEmpty);
+        }
+
+        /// \brief Returns whether the delegate is bound to the specified free function or static member function.
+        ///
+        /// \tparam Function The function pointer to check.
+        /// \return `true` if the delegate is bound to the specified function, otherwise `false`.
+        template<auto Function>
+        ZYPHRYON_INLINE Bool IsBoundTo() const
+        {
+            return (mExecute == &InvokeDirect<Function>);
+        }
+
+        /// \brief Copy assignment operator.
+        ///
+        /// \param Other The other delegate to copy from.
+        /// \return Reference to this delegate.
+        ZYPHRYON_INLINE Ref<Delegate> operator=(ConstRef<Delegate> Other)
+        {
+            if (this != &Other)
+            {
+                Reset();
+
+                mExecute = Other.mExecute;
+            }
+            return (* this);
+        }
+
+        /// \brief Move assignment operator, transfers ownership from another delegate.
+        ///
+        /// \param Other The other delegate to move from.
+        /// \return Reference to this delegate.
+        ZYPHRYON_INLINE Ref<Delegate> operator=(AnyRef<Delegate> Other) noexcept
+        {
+            if (this != &Other)
+            {
+                Reset();
+
+                mExecute = Exchange(Other.mExecute, &InvokeEmpty);
+            }
+            return (* this);
+        }
+
+        /// \brief Compares this delegate to another for equality.
+        ///
+        /// \param Other The other delegate to compare against.
+        /// \return `true` if both delegates are bound to the same function and object,
+        ZYPHRYON_INLINE Bool operator==(ConstRef<Delegate> Other) const
+        {
+            return (mExecute == Other.mExecute);
+        }
+
+        /// \brief Compares this delegate to another for inequality.
+        ///
+        /// \param Other The other delegate to compare against.
+        /// \return `true` if the delegates are not equal, otherwise `false`.
+        ZYPHRYON_INLINE Bool operator!=(ConstRef<Delegate> Other) const
+        {
+            return !(*this == Other);
+        }
+
+        /// \brief Calls the bound function with the provided arguments.
+        ///
+        /// \param Parameters The arguments to forward to the bound function.
+        ZYPHRYON_INLINE Return operator()(Arguments... Parameters) const
+        {
+            return mExecute(Forward<Arguments>(Parameters)...);
+        }
+
+    public:
+
+        /// \brief Creates a delegate bound to a free function or static member function.
+        ///
+        /// \tparam Function The function pointer to bind.
+        /// \return A delegate bound to the specified function.
+        template<auto Function>
+        ZYPHRYON_INLINE static constexpr Delegate Create()
+        {
+            return Delegate(std::integral_constant<decltype(Function), Function>{});
+        }
+
+    private:
+
+        /// \brief Resets the delegate to an empty state, releasing any resources.
+        ZYPHRYON_INLINE void Reset()
+        {
+            mExecute = &InvokeEmpty;
+        }
+
+        /// \brief Type alias for the internal trampoline function signature.
+        using Execute = Return(*)(Arguments...);
+
+        /// \brief Empty trampoline function for uninitialized delegates.
+        ZYPHRYON_INLINE static auto InvokeEmpty(Arguments...)
+        {
+            if constexpr (!std::is_void_v<Return>)
+            {
+                return Return { };
+            }
+        }
+
+        /// \brief Invokes a free function or static member function.
+        template<auto Function>
+        ZYPHRYON_INLINE static auto InvokeDirect(Arguments... Parameters)
+        {
+            return std::invoke(Function, Forward<Arguments>(Parameters)...);
+        }
+
+    private:
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Execute mExecute;
+    };
+
+    /// \brief A multicast delegate that can hold and invoke multiple delegates.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Default>
     class ZYPHRYON_ALIGN_CPU MulticastDelegate;
 
-    /// \brief A type-safe, high-performance multicast delegate.
+    /// \brief A multicast delegate that can hold and invoke multiple delegates.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
-    class MulticastDelegate<Return(Arguments...), InlineSize> final // TODO: Automatic cleanup
+    class MulticastDelegate<Return(Arguments...), InlineSize> final
     {
     public:
 

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Vector3.hpp"
 #include "Vector4.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -156,10 +155,10 @@ inline namespace Math
             return Rotate(* this, Vector3::UnitZ());
         }
 
-        /// \brief Returns the back (Z–) direction vector rotated by this quaternion.
+        /// \brief Returns the backward (Z–) direction vector rotated by this quaternion.
         /// 
-        /// \return The back direction in world space as a Vector3.
-        ZYPHRYON_INLINE Vector3 GetBack() const
+        /// \return The backward direction in world space as a Vector3.
+        ZYPHRYON_INLINE Vector3 GetBackward() const
         {
             return -GetForward();
         }
@@ -316,14 +315,6 @@ inline namespace Math
             return !(* this == Other);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         /// 
         /// \param Archive The archive to serialize the object with.
@@ -394,98 +385,30 @@ inline namespace Math
 
         /// \brief Creates a quaternion from an angle and an axis of rotation.
         /// 
-        /// \param Angle The angle of rotation (in radians).
-        /// \param Axis  The axis to rotate around (normalized).
+        /// \param Rotation The rotation angle (in radians).
+        /// \param Axis     The axis to rotate around (normalized).
         /// \return A quaternion representing the rotation.
-        ZYPHRYON_INLINE static Quaternion FromAngles(Real32 Angle, Vector3 Axis)
+        ZYPHRYON_INLINE static Quaternion FromAngles(Angle Rotation, Vector3 Axis)
         {
             LOG_ASSERT(Axis.IsNormalized(), "Axis must be normalized before constructing a quaternion");
 
-            const Real32 HalfAngle = 0.5f * Angle;
-            return Quaternion(Axis * Sin(HalfAngle), Cos(HalfAngle));
+            const Angle HalfAngle = Rotation * 0.5f;
+            return Quaternion(Axis * Angle::Sine(HalfAngle), Angle::Cosine(HalfAngle));
         }
 
         /// \brief Creates a quaternion from Euler angles.
         /// 
         /// \param Angles A vector where X = pitch, Y = yaw, Z = roll (in radians).
         /// \return A quaternion representing the combined rotation.
-        ZYPHRYON_INLINE static Quaternion FromEulerAngles(Vector3 Angles)
-        {
-            const Real32 HalfPitch = Angles.GetX() * 0.5f;
-            const Real32 HalfYaw   = Angles.GetY() * 0.5f;
-            const Real32 HalfRoll  = Angles.GetZ() * 0.5f;
+        static Quaternion FromEulerAngles(Vector3 Angles);
 
-            const Real32 CX = Cos(HalfPitch);
-            const Real32 SX = Sin(HalfPitch);
-            const Real32 CY = Cos(HalfYaw);
-            const Real32 SY = Sin(HalfYaw);
-            const Real32 CZ = Cos(HalfRoll);
-            const Real32 SZ = Sin(HalfRoll);
-
-            return Quaternion(SX * CY * CZ + CX * SY * SZ,
-                              CX * SY * CZ - SX * CY * SZ,
-                              CX * CY * SZ + SX * SY * CZ,
-                              CX * CY * CZ - SX * SY * SZ);
-        }
-
-        /// @brief Generates a quaternion from the given direction and up vectors.
+        /// \brief Generates a quaternion from the given direction and up vectors.
         /// 
-        /// @param Direction The desired forward (normalized) direction vector.
-        /// @param Up        The desired up (normalized) vector.
+        /// \param Direction The desired forward (normalized) direction vector.
+        /// \param Up        The desired up (normalized) vector.
         /// 
-        /// @return A quaternion representing the rotation from the given direction and up vectors.
-        ZYPHRYON_INLINE static Quaternion FromDirection(Vector3 Direction, Vector3 Up)
-        {
-            LOG_ASSERT(Direction.IsNormalized(), "Direction must be normalized");
-            LOG_ASSERT(Up.IsNormalized(), "Up must be normalized");
-            LOG_ASSERT(!Vector3::IsParallel(Direction, Up), "Direction and Up cannot be parallel");
-
-            const Vector3 vRight = Vector3::Normalize(Vector3::Cross(Up, Direction));
-            const Vector3 vCross = Vector3::Cross(Direction, vRight);
-
-            const Real32 M00 = vRight.GetX(), M01 = vCross.GetX(), M02 = Direction.GetX();
-            const Real32 M10 = vRight.GetY(), M11 = vCross.GetY(), M12 = Direction.GetY();
-            const Real32 M20 = vRight.GetZ(), M21 = vCross.GetZ(), M22 = Direction.GetZ();
-
-            const Real32 Trace = M00 + M11 + M22;
-            if (Trace > 0.0f)
-            {
-                const Real32 S  = 0.5f / Sqrt(Trace + 1.0f);
-                const Real32 QW = 0.25f / S;
-                const Real32 QX = (M21 - M12) * S;
-                const Real32 QY = (M02 - M20) * S;
-                const Real32 QZ = (M10 - M01) * S;
-
-                return Quaternion(QX, QY, QZ, QW);
-            }
-            if (M00 > M11 && M00 > M22)
-            {
-                const Real32 S  = 2.0f * Sqrt(1.0f + M00 - M11 - M22);
-                const Real32 QW = (M21 - M12) / S;
-                const Real32 QX = 0.25f * S;
-                const Real32 QY = (M01 + M10) / S;
-                const Real32 QZ = (M02 + M20) / S;
-
-                return Quaternion(QX, QY, QZ, QW);
-            }
-            if (M11 > M22)
-            {
-                const Real32 S  = 2.0f * Sqrt(1.0f + M11 - M00 - M22);
-                const Real32 QW = (M02 - M20) / S;
-                const Real32 QX = (M01 + M10) / S;
-                const Real32 QY = 0.25f * S;
-                const Real32 QZ = (M12 + M21) / S;
-
-                return Quaternion(QX, QY, QZ, QW);
-            }
-
-            const Real32 S  = 2.0f * Sqrt(1.0f + M22 - M00 - M11);
-            const Real32 QW = (M10 - M01) / S;
-            const Real32 QX = (M02 + M20) / S;
-            const Real32 QY = (M12 + M21) / S;
-            const Real32 QZ = 0.25f * S;
-            return Quaternion(QX, QY, QZ, QW);
-        }
+        /// \return A quaternion representing the rotation from the given direction and up vectors.
+        static Quaternion FromDirection(Vector3 Direction, Vector3 Up);
 
         /// \brief Performs a linear interpolation between two quaternions.
         /// 
@@ -518,20 +441,7 @@ inline namespace Math
         /// \param End        The ending quaternion.
         /// \param Percentage A value between 0 and 1 representing interpolation amount.
         /// \return A normalized quaternion interpolated between Start and End.
-        ZYPHRYON_INLINE static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage)
-        {
-            LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
-
-            if (const Real32 Dot = Clamp(Quaternion::Dot(Start, End), -1.0f, +1.0f); Dot > 0.9995f)
-            {
-                return NLerp(Start, End, Percentage);
-            }
-            else
-            {
-                const Real32 Theta = InvCos(Dot) * Percentage;
-                return (Start * Cos(Theta)) + (Normalize(End - Start * Dot) * Sin(Theta));
-            }
-        }
+        static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage);
 
     private:
 

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -22,7 +22,7 @@
 
 namespace Log::_
 {
-    Ptr<quill::Logger> sLogger = nullptr;
+    Ptr<quill::Logger> sInstance = nullptr;
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -36,20 +36,20 @@ namespace Log
 
     void Initialize(ConstStr8 Filename)
     {
-        // Start Quill's asynchronous backend thread for processing log messages.
+        // Start quill's asynchronous backend thread for processing log messages.
         quill::Backend::start();
 
         // Create or retrieve the "Main" logger with console and file sinks, using a custom formatter.
-        quill::FileSinkConfig FileConfig;
-        FileConfig.set_open_mode('w');
+        quill::FileSinkConfig Configuration;
+        Configuration.set_open_mode('w');
 
-        _::sLogger = quill::Frontend::create_or_get_logger(
+        _::sInstance = quill::Frontend::create_or_get_logger(
             "Main",
             {
 #ifdef    _DEBUG
                 quill::Frontend::create_or_get_sink<quill::ConsoleSink>("Console"),
 #endif // _DEBUG
-                quill::Frontend::create_or_get_sink<quill::FileSink>(Filename.data(), FileConfig)
+                quill::Frontend::create_or_get_sink<quill::FileSink>(Filename.data(), Configuration)
             },
 
 #ifdef    _DEBUG
@@ -61,9 +61,9 @@ namespace Log
 
         // Set log level based on build configuration: Debug for development, Info for release.
 #ifdef    _DEBUG
-        _::sLogger->set_log_level(quill::LogLevel::Debug);
+        _::sInstance->set_log_level(quill::LogLevel::Debug);
 #else
-        _::sLogger->set_log_level(quill::LogLevel::Info);
+        _::sInstance->set_log_level(quill::LogLevel::Info);
 #endif // _DEBUG
     }
 

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -22,7 +22,6 @@ namespace Content
 {
     /// \brief Represents the context for a resource load operation.
     ///
-    /// Manages the resource being loaded and its dependent resources.
     /// A scope is considered "ready" when all dependencies have completed loading.
     class Scope final
     {

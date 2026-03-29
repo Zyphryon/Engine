@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -167,6 +167,19 @@ inline namespace Math
             return (* this);
         }
 
+        /// \brief Sets the x and y components from a 2D vector, and z to a specified value.
+        ///
+        /// \param XY The 2D vector to use for x and y components.
+        /// \param Z  The z-component to use (default is zero).
+        template<typename Base>
+        ZYPHRYON_INLINE constexpr Ref<AnyVector3> Set(AnyVector2<Base> XY, Type Z = Type(0))
+        {
+            mX = static_cast<Type>(XY.GetX());
+            mY = static_cast<Type>(XY.GetY());
+            mZ = Z;
+            return (* this);
+        }
+
         /// \brief Sets the x-component of the vector.
         ///
         /// \param X The new x-component.
@@ -274,13 +287,13 @@ inline namespace Math
         ///
         /// \param Other The other vector to compare with.
         /// \return Angle in radians between the two vectors (range [0, π]).
-        ZYPHRYON_INLINE constexpr Type GetAngle(AnyVector3 Other) const
+        ZYPHRYON_INLINE constexpr Angle GetAngle(AnyVector3 Other) const
             requires(IsReal<Type>)
         {
             const Type Length = GetLength() * Other.GetLength();
             LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
-            return InvCos(Dot(* this, Other) / Length);
+            return Angle::FromCosine(Dot(* this, Other) / Length);
         }
 
         /// \brief Adds another vector to this vector.
@@ -374,7 +387,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
         ZYPHRYON_INLINE constexpr AnyVector3 operator<<(Type Scalar) const
-            requires(IsInteger<Type>)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -386,7 +399,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
         ZYPHRYON_INLINE constexpr AnyVector3 operator>>(Type Scalar) const
-            requires(IsInteger<Type>)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -522,7 +535,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator<<=(Type Scalar)
-            requires(IsInteger<Type>)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -538,7 +551,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator>>=(Type Scalar)
-            requires(IsInteger<Type>)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -611,14 +624,6 @@ inline namespace Math
                    (mX == Vector.mX && mY == Vector.mY && mZ >= Vector.mZ);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE constexpr UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -635,7 +640,7 @@ inline namespace Math
         /// \brief Returns the zero vector (Type(0), Type(0), Type(0)).
         ///
         /// \return The zero vector.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Zero()
+        ZYPHRYON_INLINE static constexpr AnyVector3 Zero()
         {
             return AnyVector3();
         }
@@ -643,7 +648,7 @@ inline namespace Math
         /// \brief Returns the one vector (1, 1, 1).
         ///
         /// \return The one vector.
-        ZYPHRYON_INLINE constexpr static AnyVector3 One()
+        ZYPHRYON_INLINE static constexpr AnyVector3 One()
         {
             return AnyVector3(Type(1), Type(1), Type(1));
         }
@@ -651,7 +656,7 @@ inline namespace Math
         /// \brief Returns the unit vector along the X-axis (1, 0, 0).
         ///
         /// \return The unit vector along the X-axis.
-        ZYPHRYON_INLINE constexpr static AnyVector3 UnitX()
+        ZYPHRYON_INLINE static constexpr AnyVector3 UnitX()
         {
             return AnyVector3(Type(1), Type(0), Type(0));
         }
@@ -659,7 +664,7 @@ inline namespace Math
         /// \brief Returns the unit vector along the Y-axis (0, 1, 0).
         ///
         /// \return The unit vector along the Y-axis.
-        ZYPHRYON_INLINE constexpr static AnyVector3 UnitY()
+        ZYPHRYON_INLINE static constexpr AnyVector3 UnitY()
         {
             return AnyVector3(Type(0), Type(1), Type(0));
         }
@@ -667,7 +672,7 @@ inline namespace Math
         /// \brief Returns the unit vector along the Z-axis (0, 0, 1).
         ///
         /// \return The unit vector along the Z-axis.
-        ZYPHRYON_INLINE constexpr static AnyVector3 UnitZ()
+        ZYPHRYON_INLINE static constexpr AnyVector3 UnitZ()
         {
             return AnyVector3(Type(0), Type(0), Type(1));
         }
@@ -676,7 +681,7 @@ inline namespace Math
         ///
         /// \param Vector The vector to normalize.
         /// \return A normalized vector, or the original if its length is too small.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Normalize(AnyVector3 Vector)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Normalize(AnyVector3 Vector)
             requires(IsReal<Type>)
         {
             const Type Length = Vector.GetLength();
@@ -690,7 +695,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return `true` if the vectors are parallel, `false` otherwise.
-        ZYPHRYON_INLINE constexpr static Bool IsParallel(AnyVector3 P0, AnyVector3 P1)
+        ZYPHRYON_INLINE static constexpr Bool IsParallel(AnyVector3 P0, AnyVector3 P1)
         {
             return Cross(P0, P1).IsAlmostZero();
         }
@@ -700,7 +705,7 @@ inline namespace Math
         /// \param Source The vector to be projected.
         /// \param Target The vector onto which the source is projected.
         /// \return The projection of source onto target.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Project(AnyVector3 Source, AnyVector3 Target)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Project(AnyVector3 Source, AnyVector3 Target)
             requires(IsReal<Type>)
         {
             const Type Denominator = Dot(Target, Target);
@@ -714,7 +719,7 @@ inline namespace Math
         /// \param Incident The incoming vector to reflect.
         /// \param Normal   The surface normal to reflect across (should be normalized).
         /// \return The reflected vector.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Reflect(AnyVector3 Incident, AnyVector3 Normal)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Reflect(AnyVector3 Incident, AnyVector3 Normal)
         {
             LOG_ASSERT(Normal.IsNormalized(), "Normal vector must be normalized");
 
@@ -726,7 +731,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The dot product of the two vectors.
-        ZYPHRYON_INLINE constexpr static Type Dot(AnyVector3 P0, AnyVector3 P1)
+        ZYPHRYON_INLINE static constexpr Type Dot(AnyVector3 P0, AnyVector3 P1)
         {
             return (P0.GetX() * P1.GetX()) + (P0.GetY() * P1.GetY()) + (P0.GetZ() * P1.GetZ());
         }
@@ -736,7 +741,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return The cross product of the two vectors.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Cross(AnyVector3 P0, AnyVector3 P1)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Cross(AnyVector3 P0, AnyVector3 P1)
         {
             const Type X = P0.GetY() * P1.GetZ() - P0.GetZ() * P1.GetY();
             const Type Y = P0.GetZ() * P1.GetX() - P0.GetX() * P1.GetZ();
@@ -750,7 +755,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise minimum values.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Min(AnyVector3 P0, AnyVector3 P1)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Min(AnyVector3 P0, AnyVector3 P1)
         {
             return AnyVector3(Base::Min(P0.mX, P1.mX), Base::Min(P0.mY, P1.mY), Base::Min(P0.mZ, P1.mZ));
         }
@@ -760,7 +765,7 @@ inline namespace Math
         /// \param P0 The first vector.
         /// \param P1 The second vector.
         /// \return A vector with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Max(AnyVector3 P0, AnyVector3 P1)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Max(AnyVector3 P0, AnyVector3 P1)
         {
             return AnyVector3(Base::Max(P0.mX, P1.mX), Base::Max(P0.mY, P1.mY), Base::Max(P0.mZ, P1.mZ));
         }
@@ -771,7 +776,7 @@ inline namespace Math
         /// \param Min    The vector specifying the minimum bounds.
         /// \param Max    The vector specifying the maximum bounds.
         /// \return A vector with each component clamped between the min and max values.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Clamp(AnyVector3 Vector, AnyVector3 Min, AnyVector3 Max)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Clamp(AnyVector3 Vector, AnyVector3 Min, AnyVector3 Max)
         {
             return AnyVector3(
                 Base::Clamp(Vector.mX, Min.mX, Max.mX),
@@ -783,7 +788,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded down.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Floor(AnyVector3 Vector)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Floor(AnyVector3 Vector)
             requires(IsReal<Type>)
         {
             return AnyVector3(Base::Floor(Vector.mX), Base::Floor(Vector.mY), Base::Floor(Vector.mZ));
@@ -793,7 +798,7 @@ inline namespace Math
         ///
         /// \param Vector The source vector with real-valued components.
         /// \return A vector with all components rounded up.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Ceil(AnyVector3 Vector)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Ceil(AnyVector3 Vector)
             requires(IsReal<Type>)
         {
             return AnyVector3(Base::Ceil(Vector.mX), Base::Ceil(Vector.mY), Base::Ceil(Vector.mZ));
@@ -805,7 +810,7 @@ inline namespace Math
         /// \param End        The ending vector.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A vector interpolated between the start and end vectors.
-        ZYPHRYON_INLINE constexpr static AnyVector3 Lerp(AnyVector3 Start, AnyVector3 End, Type Percentage)
+        ZYPHRYON_INLINE static constexpr AnyVector3 Lerp(AnyVector3 Start, AnyVector3 End, Type Percentage)
             requires(IsReal<Type>)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");

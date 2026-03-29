@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Collection.hpp"
+#include "Zyphryon.Base/Hash.hpp"
 #include "Zyphryon.Base/Time.hpp"
 #include "Zyphryon.Base/Memory/Tracker.hpp"
 
@@ -22,13 +23,13 @@
 
 inline namespace Base
 {
-    /// \brief A container and lifecycle manager for service units.
+    /// \brief A generic system class template for defining subsystems within the engine.
     template<typename Unit>
     class System
     {
     public:
 
-        /// \brief Specifies the execution mode of the system.
+        /// \brief Defines the operational mode of the system.
         enum class Mode : UInt8
         {
             Client, ///< Active only in client mode.
@@ -38,55 +39,51 @@ inline namespace Base
 
     public:
 
-        /// \brief Default constructor initializing the system in both client and server modes.
+        /// \brief Default constructor that initializes the system in both client and server modes.
         ZYPHRYON_INLINE System()
             : mMode { Mode::Both }
         {
         }
 
-        /// \brief Virtual destructor to ensure proper cleanup through derived types.
-        virtual ~System() = default;
-
-        /// \brief Sets the execution mode of the system.
-        /// 
-        /// \param Mode The new execution mode to set.
+        /// \brief Sets the operational mode of the system.
+        ///
+        /// \param Mode The mode to set for the system.
         ZYPHRYON_INLINE void SetMode(Mode Mode)
         {
             mMode = Mode;
         }
 
-        /// \brief Checks if the system should operate in client mode.
-        /// 
-        /// \return `true` if the system is not running in server-only mode, `false` otherwise.
+        /// \brief Checks if the system is in client mode.
+        ///
+        /// \return `true` if the system is in client mode, `false` otherwise.
         ZYPHRYON_INLINE Bool IsClientMode() const
         {
             return mMode != Mode::Server;
         }
 
-        /// \brief Checks if the system should operate in server mode.
-        /// 
-        /// \return `true` if the system is not running in client-only mode, `false` otherwise.
+        /// \brief Checks if the system is in server mode.
+        ///
+        /// \return `true` if the system is in server mode, `false` otherwise.
         ZYPHRYON_INLINE Bool IsServerMode() const
         {
             return mMode != Mode::Client;
         }
 
-        /// \brief Updates all registered services.
-        /// 
-        /// \param Time The current simulation time.
-        ZYPHRYON_INLINE void Tick(Time Time)
+        /// \brief Advances the system by the specified time delta.
+        ///
+        /// \param Time The time elapsed since last update.
+        ZYPHRYON_INLINE void Tick(Time Time) const
         {
             for (ConstTracker<Unit> Service : mRegistry)
             {
-                Service->OnTick(Time);
+                Service->OnTick(Time);  // TODO: Multicast Delegate?
             }
         }
 
-        /// \brief Adds a new service instance of the specified type.
-        /// 
-        /// \tparam Type The concrete service type to create.
-        /// \param Parameters The forwarded constructor arguments.
-        /// \return A tracker managing the newly created service.
+        /// \brief Adds a service of the specified type to the system.
+        ///
+        /// \param Parameters The constructor arguments for the service.
+        /// \return A retainer to the newly added service.
         template<typename Type, typename ... Arguments>
         Tracker<Type> AddService(AnyRef<Arguments>... Parameters)
         {
@@ -95,16 +92,15 @@ inline namespace Base
             return Instance;
         }
 
-        /// \brief Retrieves a previously added service of the specified type.
-        /// 
-        /// \tparam Type The service type to search for.
-        /// \return A tracker to the service instance if found, or `nullptr` otherwise.
+        /// \brief Retrieves a service of the specified type from the system.
+        ///
+        /// \return A retainer to the requested service, or `nullptr` if not found.
         template<typename Type>
         Tracker<Type> GetService()
         {
             for (ConstTracker<Unit> Service : mRegistry)
             {
-                if (Service->GetGuid() == HashType<Type>())
+                if (Service->GetID() == HashFNV1<Type>())
                 {
                     return Tracker<Type>::Cast(Service);
                 }
@@ -112,17 +108,14 @@ inline namespace Base
             return nullptr;
         }
 
-        /// \brief Removes the service of the specified type, if present.
-        /// 
-        /// \tparam Type The service type to remove.
+        /// \brief Removes a service of the specified type from the system.
         template<typename Type>
         void RemoveService()
         {
-            constexpr auto FindByID = [](ConstTracker<Unit> Service)
+            std::erase_if(mRegistry, [](ConstTracker<Unit> Service)
             {
-                return Service->GetGuid() == HashType<Type>();
-            };
-            mRegistry.erase(std::remove_if(mRegistry.begin(), mRegistry.end(), FindByID), mRegistry.end());
+                return Service->GetID() == HashFNV1<Type>();
+            });
         }
 
     protected:

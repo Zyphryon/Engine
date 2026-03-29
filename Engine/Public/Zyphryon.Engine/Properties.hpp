@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #pragma once
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Base/Primitive.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -36,7 +30,7 @@ namespace Engine
             mWindowHandle = Handle;
         }
 
-        /// \brief Returns the native window handle.
+        /// \brief Gets the native window handle.
         ///
         /// \return Native platform-specific window handle.
         ZYPHRYON_INLINE UInt GetWindowHandle() const
@@ -52,7 +46,7 @@ namespace Engine
             mWindowTitle = Title;
         }
 
-        /// \brief Returns the current window title.
+        /// \brief Gets the current window title.
         ///
         /// \return Window title as UTF-8 text.
         ZYPHRYON_INLINE ConstStr8 GetWindowTitle() const
@@ -68,7 +62,7 @@ namespace Engine
             mWindowWidth = Width;
         }
 
-        /// \brief Returns the window width.
+        /// \brief Gets the window width.
         ///
         /// \return Width of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetWindowWidth() const
@@ -84,7 +78,7 @@ namespace Engine
             mWindowHeight = Height;
         }
 
-        /// \brief Returns the window height.
+        /// \brief Gets the window height.
         ///
         /// \return Height of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetWindowHeight() const
@@ -148,7 +142,7 @@ namespace Engine
             mAudioDevice = Device;
         }
 
-        /// \brief Returns the selected audio device.
+        /// \brief Gets the selected audio device.
         ///
         /// \return Identifier or name of the audio device.
         ZYPHRYON_INLINE ConstStr8 GetAudioDevice() const
@@ -164,7 +158,7 @@ namespace Engine
             mAudioPauseOnFocusLost = Activate;
         }
 
-        /// \brief Returns whether audio is paused when the window loses focus.
+        /// \brief Gets whether audio is paused when the window loses focus.
         ///
         /// \return `true` if audio pauses on focus lost, `false` otherwise.
         ZYPHRYON_INLINE Bool GetAudioPauseOnFocusLost() const
@@ -180,7 +174,7 @@ namespace Engine
             mVideoDriver = Driver;
         }
 
-        /// \brief Returns the active graphics driver.
+        /// \brief Gets the active graphics driver.
         ///
         /// \return Driver name (e.g., "Direct3D11", "OpenGL").
         ZYPHRYON_INLINE ConstStr8 GetVideoDriver() const
@@ -196,7 +190,7 @@ namespace Engine
             mVideoDevice = Device;
         }
 
-        /// \brief Returns the selected video device.
+        /// \brief Gets the selected video device.
         ///
         /// \return Identifier of the video device.
         ZYPHRYON_INLINE ConstStr8 GetVideoDevice() const

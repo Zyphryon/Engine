@@ -10,13 +10,16 @@ DstAlpha        = "OneMinusSrcAlpha"
 Mask            = 1
 Condition       = "LessEqual"
 
+[Properties.Rasterizer]
+
+Cull	    	= "None"		# Disable Backface Culling
+
 [Properties.Layout]
 
 Attributes      = [
 	["POSITION",  "Float32x3",   0,  0, 1],
-	["COLOR",     "UIntNorm8x4", 0, 12, 1],
-	["CUSTOM0",   "Float32x2",   0, 16, 1],
-	["CUSTOM1",   "Float32x2",   0, 24, 1],
+	["COLOR0",    "UIntNorm8x4", 0, 12, 1],
+	["CUSTOM0",   "Float32x4",   0, 16, 1],
 ]
 
 Primitive       = "TriangleStrip"

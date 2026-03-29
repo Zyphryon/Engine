@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Primitive.hpp"
+#include "Text.hpp"
 #include <enchantum/enchantum.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -21,56 +21,93 @@
 
 namespace Enum
 {
-    /// \brief Gets the string name of an enum value.
-    /// 
-    /// \param Value The enum value.
-    /// \return The string representation of the enum value.
+
+/// \def ZYPHRYON_DEFINE_BITWISE_ENUM
+/// \brief Defines bitwise operators for the specified enum type.
+#define ZYPHRYON_DEFINE_BITWISE_ENUM(Enum)                                             \
+    constexpr Enum operator&(Enum A, Enum B) noexcept                                  \
+    {                                                                                  \
+      using T = std::underlying_type_t<Enum>;                                          \
+      return static_cast<Enum>(static_cast<T>(A) & static_cast<T>(B));                 \
+    }                                                                                  \
+    constexpr Enum operator|(Enum A, Enum B) noexcept                                  \
+    {                                                                                  \
+      using T = std::underlying_type_t<Enum>;                                          \
+      return static_cast<Enum>(static_cast<T>(A) | static_cast<T>(B));                 \
+    }                                                                                  \
+    constexpr Enum operator^(Enum A, Enum B) noexcept                                  \
+    {                                                                                  \
+      using T = std::underlying_type_t<Enum>;                                          \
+      return static_cast<Enum>(static_cast<T>(A) ^ static_cast<T>(B));                 \
+    }                                                                                  \
+    constexpr Ref<Enum> operator&=(Ref<Enum> A, Enum B) noexcept { return A = A & B; } \
+    constexpr Ref<Enum> operator|=(Ref<Enum> A, Enum B) noexcept { return A = A | B; } \
+    constexpr Ref<Enum> operator^=(Ref<Enum> A, Enum B) noexcept { return A = A ^ B; } \
+    constexpr Enum      operator~(Enum A) noexcept                                     \
+    {                                                                                  \
+      return static_cast<Enum>(~static_cast<std::underlying_type_t<Enum>>(A));         \
+    }
+
+    /// \brief Retrieves the name of the specified enum value as a string.
+    ///
+    /// \param Value The enum value whose name is to be retrieved.
+    /// \return The name of the enum value as a string.
     template<typename Type>
-    constexpr ConstStr8 GetName(Type Value)
+    static constexpr ConstStr8 Name(Type Value)
     {
         return enchantum::to_string(Value);
     }
 
-    /// \brief Gets a list of all values of the enum type.
-    /// 
-    /// \return A constexpr array of all enum values.
-    template<typename Enum>
-    constexpr auto GetValues()
+    /// \brief Retrieves all enum values of the specified enum type.
+    ///
+    /// \return A span containing all enum values.
+    template<typename Type>
+    static constexpr auto Values()
     {
-        return enchantum::values<Enum>;
+        return enchantum::values<Type>;
     }
 
-    /// \brief Gets the underlying integer value of an enum.
-    /// 
-    /// \param Value The enum value.
-    /// \return The integral representation of the enum.
-    template<typename Enum>
-    constexpr auto Cast(Enum Value)
+    /// \brief Casts a string to the corresponding enum value, using a case-insensitive comparison.
+    ///
+    /// \param Name    The name of the enum value as a string.
+    /// \param Default The default value to return if not found.
+    /// \return The corresponding enum value, or the default if not found.
+    template<typename Type>
+    static constexpr Type Cast(ConstStr8 Name, Type Default)
     {
-        return static_cast<__underlying_type(Enum)>(Value);
-    }
-
-    /// \brief Attempts to convert a string to an enum value.
-    /// 
-    /// \param Name    The string representation of the enum.
-    /// \param Default The fallback enum value if no match is found.
-    /// \return The matched enum value or the provided default.
-
-    template<typename Enum>
-    constexpr Enum Cast(ConstStr8 Name, Enum Default)
-    {
-        return enchantum::cast<Enum>(Name, [](Char X, Char Y)
+        return enchantum::cast<Type>(Name, [](unsigned char X, unsigned char Y)
         {
             return std::tolower(X) == std::tolower(Y);
         }).value_or(Default);
     }
 
-    /// \brief Gets the number of enumerators defined in the enum.
-    /// 
-    /// \return The number of enum values.
-    template<typename Enum>
-    constexpr UInt32 Count()
+    /// \brief Casts an enum value to its underlying integral type.
+    ///
+    /// \param Value The enum value to cast.
+    /// \return The enum value cast to its underlying integral type.
+    template<typename Type>
+    static constexpr auto Cast(Type Value)
     {
-        return enchantum::count<Enum>;
+        return static_cast<std::underlying_type_t<Type>>(Value);
+    }
+
+    /// \brief Retrieves the total number of enumerators in the specified enum type.
+    ///
+    /// \return The count of enumerators in the enum.
+    template<typename Type>
+    static constexpr auto Count()
+    {
+        return enchantum::count<Type>;
+    }
+
+    /// \brief Checks if the specified flags are included in the given enum value.
+    ///
+    /// \param Value The enum value to check.
+    /// \param Flag  The flags to check for inclusion.
+    /// \return `true` if all flags are included in the value, `false` otherwise.
+    template<typename Type>
+    static constexpr Bool Includes(Type Value, Type Flag)
+    {
+        return (Value & Flag) == Flag;
     }
 }

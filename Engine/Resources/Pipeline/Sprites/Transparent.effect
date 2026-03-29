@@ -1,0 +1,41 @@
+[Properties.Blend]  # Straight Alpha-Blending
+
+    SrcColor        = "SrcAlpha"
+    DstColor        = "OneMinusSrcAlpha"
+    SrcAlpha        = "SrcAlpha"
+    DstAlpha        = "OneMinusSrcAlpha"
+
+[Properties.Depth]  # Enable Depth Write / Depth Testing
+
+    Mask            = 0
+    Condition       = "LessEqual"
+
+[Properties.Rasterizer]
+
+Cull	            = "None"
+
+[Properties.Layout]
+
+    Attributes      = [
+        ["CUSTOM0",   "Float32x4",   0,  0, 1],
+        ["CUSTOM1",   "Float32x4",   0, 16, 1],
+        ["TEXCOORD0", "Float32x4",   0, 32, 1],
+        ["CUSTOM2",   "Float32x2",   0, 48, 1],
+        ["COLOR0",    "UIntNorm8x4", 0, 56, 1],
+    ]
+
+    Primitive       = "TriangleStrip"
+
+[Program.Textures]
+
+    Albedo         = 0
+
+[Program.Vertex]
+
+    Entry           = "vertex"
+    Filename        = "Sprite.shader"
+
+[Program.Fragment]
+
+    Entry           = "fragment"
+    Filename        = "Sprite.shader"

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <Tracy/Tracy.hpp>
+#ifdef    ZYPHRYON_PROFILE_MODE
+    #include <Tracy/Tracy.hpp>
+#endif // ZYPHRYON_PROFILE_MODE
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -22,12 +24,12 @@ inline namespace Base
 {
 /// \def ZYPHRYON_PROFILE_CALLSTACK_DEPTH
 /// \brief Maximum number of stack frames recorded in profiling.
-#define ZYPHRYON_PROFILE_CALLSTACK_DEPTH          15
+#define ZYPHRYON_PROFILE_CALLSTACK_DEPTH 15
 
 /// \def ZYPHRYON_PROFILE
 /// \brief Marks a profiling zone in the profiler.
 #ifdef    ZYPHRYON_PROFILE_MODE
-    #define ZYPHRYON_PROFILE ZoneScopedS(ZYPHRYON_PROFILE_CALLSTACK_DEPTH)
+    #define ZYPHRYON_PROFILE             ZoneScopedS(ZYPHRYON_PROFILE_CALLSTACK_DEPTH)
 #else
     #define ZYPHRYON_PROFILE
 #endif // ZYPHRYON_PROFILE_MODE
@@ -43,17 +45,16 @@ inline namespace Base
 /// \def ZYPHRYON_PROFILE_FRAME(x)
 /// \brief Marks the beginning of a new frame in the profiler.
 #ifdef    ZYPHRYON_PROFILE_MODE
-    #define ZYPHRYON_PROFILE_FRAME FrameMark
+    #define ZYPHRYON_PROFILE_FRAME       FrameMark
 #else
     #define ZYPHRYON_PROFILE_FRAME
 #endif // ZYPHRYON_PROFILE_MODE
 
-/// \def ZYPHRYON_THREAD_NAME(x)
-/// \brief
+/// \def ZYPHRYON_PROFILE_THREAD(x)
+/// \brief Sets the name of the current thread in the profiler.
 #ifdef    ZYPHRYON_PROFILE_MODE
-    #define ZYPHRYON_THREAD_NAME(Name) tracy::SetThreadName(Name)
+    #define ZYPHRYON_PROFILE_THREAD(Name) tracy::SetThreadName(Name)
 #else
-    #define ZYPHRYON_THREAD_NAME(Name)
+    #define ZYPHRYON_PROFILE_THREAD(Name)
 #endif // ZYPHRYON_PROFILE_MODE
-
 }

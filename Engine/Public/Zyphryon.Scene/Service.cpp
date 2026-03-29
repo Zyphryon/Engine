@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -54,12 +54,15 @@ namespace Scene
 
     void Service::LoadArchetypes(Ref<Reader> Reader)
     {
-        mArchetypes.OnSerialize(Archive(Reader));
+        const UInt32 Size = Reader.ReadInt32();
 
-        for (UInt32 Element = 1, Limit = mArchetypes.GetSize(); Element <= Limit; ++Element)
+        for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
+            const UInt32 ID = Reader.ReadInt<UInt32>();
+            mArchetypes.Acquire(ID);
+
             /// Allocate prefab entity with the serialized identifier.
-            const Entity Archetype = Allocate<true>(kMinRangeArchetypes + Reader.ReadInt<UInt32>());
+            const Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
             Archetype.Add(EcsPrefab);
 
             /// Read and set archetype name.
@@ -90,7 +93,7 @@ namespace Scene
 
     void Service::SaveArchetypes(Ref<Writer> Writer)
     {
-        mArchetypes.OnSerialize(Archive(Writer));
+        Writer.WriteInt32(mArchetypes.GetSize());
 
         for (UInt32 Element = 1, Limit = mArchetypes.GetHead(); Element <= Limit; ++Element)
         {
@@ -170,7 +173,7 @@ namespace Scene
 
     void Service::SaveEntity(Ref<Writer> Writer, Entity Actor)
     {
-        if (Actor.Has<EcsTransient>())
+        if (Actor.Has<Transient>())
         {
             return;
         }
@@ -192,7 +195,7 @@ namespace Scene
 
     void Service::SaveEntityHierarchy(Ref<Writer> Writer, Entity Actor)
     {
-        if (Actor.Has<EcsTransient>())
+        if (Actor.Has<Transient>())
         {
             return;
         }
@@ -226,7 +229,7 @@ namespace Scene
             const Entity Second = mWorld.component(Name.c_str());
 
             /// Read serialized component payload.
-            const ConstSpan<Byte> Bundle = Reader.ReadBlock<Byte>();
+            const ConstSpan<Byte> Bundle = Reader.ReadBlock<UInt16, Byte>();
 
             /// Apply payload if present; otherwise attach component without data.
             if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
@@ -303,12 +306,11 @@ namespace Scene
                 /// Write the name of the relation target or component.
                 Writer.WriteText(Second.GetName());
 
-                /// Serialize the component data into a temporary bundle.
-                Base::Writer Bundle; // TODO: Prevent heap Allocation.
-                Serializer->Write(Bundle, Actor.TryGet(Component));
-
                 /// Write the serialized component bundle to the output stream.
-                Writer.WriteBlock(Bundle.GetData());
+                Writer.WriteBlock<UInt16>([&](Ref<Base::Writer> Output)
+                {
+                    Serializer->Write(Output, Actor.TryGet(Component));
+                });
             }
         };
         Actor.Iterate(OnIterateEntityComponents);
@@ -346,6 +348,6 @@ namespace Scene
         GetComponent<Time>("Time").AddTrait(Trait::Final, Trait::Singleton);
 
         // Register Transient component (marks entities as non serializable).
-        GetComponent<EcsTransient>("Transient").AddTrait(Trait::Associative);
+        GetComponent<Transient>("Transient").AddTrait(Trait::Associative);
     }
 }

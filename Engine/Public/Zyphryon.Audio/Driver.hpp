@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Emitter.hpp"
-#include "Sound.hpp"
-#include "Listener.hpp"
+#include "Pose.hpp"
+#include "Track.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,98 +27,120 @@ namespace Audio
     {
     public:
 
-        /// \brief Virtual destructor to ensure derived drivers can be destroyed polymorphically.
+        /// \brief Ensures derived class can be destroyed polymorphically.
         virtual ~Driver() = default;
 
-        /// \brief Initializes the audio driver.
+        /// \brief Initializes the audio driver with the specified device.
         ///
-        /// \param Device   Identifier of the audio device to use.
-        /// \param Submixes Number of submix channels to support.
-        /// \return `true` if the driver initialized successfully, `false` otherwise.
-        virtual Bool Initialize(ConstStr8 Device, UInt8 Submixes) = 0;
+        /// \param Device The identifier of the audio device to use.
+        /// \return `true` if initialization was successful, otherwise `false`.
+        virtual Bool Initialize(ConstStr8 Device) = 0;
 
-        /// \brief Retrieves the hardware or driver capabilities.
+        /// \brief Retrieves the capabilities of the audio driver.
         ///
-        /// \return A reference to the capabilities structure describing supported features.
+        /// \return The driver's capabilities.
         virtual ConstRef<Capabilities> GetCapabilities() const = 0;
 
-        /// \brief Advances the audio engine by one update cycle.
-        virtual void Advance() = 0;
+        /// \brief Advances the audio driver's internal state and processes audio.
+        virtual void Tick() = 0;
 
-        /// \brief Suspends audio output.
+        /// \brief Suspends audio processing.
         virtual void Suspend() = 0;
 
-        /// \brief Resumes audio output after being suspended.
+        /// \brief Restores audio processing after being suspended.
         virtual void Restore() = 0;
 
-        /// \brief Sets the active listener used for spatial audio.
+        /// \brief Sets the master volume for all audio output.
         ///
-        /// \param Listener The active audio listener in world space.
-        virtual void SetListener(Ref<Listener> Listener) = 0;
-
-        /// \brief Sets the master volume.
-        ///
-        /// \param Volume Volume multiplier (`1.0` = default, `0.0` = mute).
+        /// \param Volume The master volume level (0.0 = silent, 1.0 = full volume).
         virtual void SetMasterVolume(Real32 Volume) = 0;
 
-        /// \brief Sets the volume of a specific submix channel.
+        /// \brief Gets the current master volume level.
         ///
-        /// \param Submix Index of the submix channel.
-        /// \param Volume Volume multiplier (`1.0` = default, `0.0` = mute).
-        virtual void SetSubmixVolume(UInt8 Submix, Real32 Volume) = 0;
-
-        /// \brief Retrieves the current master volume.
-        ///
-        /// \return The current master volume multiplier.
+        /// \return The master volume level (0.0 = silent, 1.0 = full volume).
         virtual Real32 GetMasterVolume() = 0;
 
-        /// \brief Retrieves the volume of a specific submix channel.
+        /// \brief Sets the volume for a specific audio category.
         ///
-        /// \param Submix Index of the submix channel.
-        /// \return The current submix volume multiplier.
-        virtual Real32 GetSubmixVolume(UInt8 Submix) = 0;
+        /// \param Category The audio category to adjust.
+        /// \param Volume   The volume level for the category (0.0 = silent, 1.0 = full volume).
+        virtual void SetSubmixVolume(Category Category, Real32 Volume) = 0;
 
-        /// \brief Begins playback of a sound instance.
+        /// \brief Gets the current volume level for a specific audio category.
         ///
-        /// \param Submix  Index of the submix channel to route the audio through.
-        /// \param Sound   Handle to the sound asset to play.
-        /// \param Emitter Initial spatial and audio parameters for playback.
-        /// \param Repeat  `true` to loop the sound, `false` to play once.
-        /// \return An opaque handle representing the playback instance.
-        virtual Object Prepare(UInt8 Submix, ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter, Bool Repeat) = 0;
+        /// \param Category The audio category to query.
+        /// \return The volume level for the category (0.0 = silent, 1.0 = full volume).
+        virtual Real32 GetSubmixVolume(Category Category) = 0;
 
-        /// \brief Sets the playback volume for a sound instance.
+        /// \brief Sets the listener's pose in 3D space.
         ///
-        /// \param Instance Handle to the active sound instance.
-        /// \param Gain     Linear volume multiplier (`1.0` = default, `0.0` = mute).
-        virtual void SetGain(Object Instance, Real32 Gain) = 0;
+        /// \param Pose The new pose of the listener.
+        virtual void SetListenerPose(ConstRef<Pose> Pose) = 0;
 
-        /// \brief Sets the playback pitch for a sound instance.
+        /// \brief Sets the listener's directional cone parameters.
         ///
-        /// \param Instance Handle to the active sound instance.
-        /// \param Ratio    Playback rate multiplier.
-        virtual void SetPitch(Object Instance, Real32 Ratio) = 0;
+        /// \param InnerAngle The inner angle of the cone in degrees.
+        /// \param OuterAngle The outer angle of the cone in degrees.
+        /// \param OuterGain  The gain applied outside the outer cone (0.0 = silent, 1.0 = full volume).
+        virtual void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain) = 0;
 
-        /// \brief Resumes playback of a paused sound instance.
+        /// \brief Plays an audio track with specified parameters.
         ///
-        /// \param Instance Handle to the active sound instance.
-        virtual void Resume(Object Instance) = 0;
+        /// \param Category The audio category for the playback.
+        /// \param Track    The audio track to play.
+        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Pitch    The playback pitch (1.0 = normal pitch).
+        /// \return A handle to the playback instance.
+        virtual Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch) = 0;
 
-        /// \brief Pauses playback of an active sound instance.
+        /// \brief Plays a spatial audio track with specified parameters.
         ///
-        /// \param Instance Handle to the active sound instance.
-        virtual void Pause(Object Instance) = 0;
+        /// \param Category The audio category for the playback.
+        /// \param Track    The audio track to play.
+        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Pitch    The playback pitch (1.0 = normal pitch).
+        /// \param Emitter  The audio emitter defining spatial properties.
+        /// \param Pose     The pose of the audio source in 3D space.
+        /// \return A handle to the playback instance.
+        virtual Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch, ConstTracker<Emitter> Emitter, ConstRef<Pose> Pose) = 0;
 
-        /// \brief Stops playback of a sound instance.
+        /// \brief Sets whether a specific audio playback instance should loop.
         ///
-        /// \param Instance    Handle to the active sound instance.
-        /// \param Immediately `true` to stop abruptly, `false` to allow fade-out.
-        virtual void Stop(Object Instance, Bool Immediately) = 0;
+        /// \param Handle  The handle of the playback instance.
+        /// \param Looping `true` to enable looping, `false` to disable.
+        virtual void SetPlaybackLooping(Object Handle, Bool Looping) = 0;
 
-        /// \brief Stops all sound instances associated with a given emitter.
+        /// \brief Sets the pitch for a specific audio playback instance.
         ///
-        /// \param Emitter     Emitter associated with one or more active sound instances.
-        /// \param Immediately `true` to stop abruptly, `false` to allow fade-out.
-        virtual void Stop(ConstTracker<Emitter> Emitter, Bool Immediately) = 0;
+        /// \param Handle The handle of the playback instance
+        /// \param Pitch  The new pitch value (1.0 = normal pitch).
+        virtual void SetPlaybackPitch(Object Handle, Real32 Pitch) = 0;
+
+        /// \brief Sets the volume for a specific audio playback instance.
+        ///
+        /// \param Handle The handle of the playback instance
+        /// \param Volume The new volume value (0.0 = silent, 1.0 = full volume).
+        virtual void SetPlaybackVolume(Object Handle, Real32 Volume) = 0;
+
+        /// \brief Sets the pose for a specific audio playback instance.
+        ///
+        /// \param Handle The handle of the playback instance.
+        /// \param Pose   The new pose of the playback instance.
+        virtual void SetPlaybackPose(Object Handle, ConstRef<Pose> Pose) = 0;
+
+        /// \brief Stops a specific audio playback instance.
+        ///
+        /// \param Handle The handle of the playback instance to stop.
+        virtual void Stop(Object Handle) = 0;
+
+        /// \brief Pauses a specific audio playback instance.
+        ///
+        /// \param Handle The handle of the playback instance to pause.
+        virtual void Pause(Object Handle) = 0;
+
+        /// \brief Resumes a specific audio playback instance.
+        ///
+        /// \param Handle The handle of the playback instance to resume.
+        virtual void Resume(Object Handle) = 0;
     };
 }

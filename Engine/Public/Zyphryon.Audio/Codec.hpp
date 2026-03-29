@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -20,7 +20,7 @@
 
 namespace Audio
 {
-    /// \brief Interface for decoding audio streams from raw data.
+    /// \brief Defines the interface for audio data transcoders.
     class Codec
     {
     public:
@@ -28,11 +28,11 @@ namespace Audio
         /// \brief Ensures derived class can be destroyed polymorphically.
         virtual ~Codec() = default;
 
-        /// \brief Creates a decoder for the given encoded audio data.
+        /// \brief Decodes the provided audio data into a decoder instance.
         ///
-        /// \param Data   Encoded audio stream data (compressed or uncompressed).
-        /// \param Schema Description of the audio format and layout.
-        /// \return Unique pointer to the created decoder instance.
-        virtual Unique<Decoder> Decode(ConstRef<Blob> Data, ConstRef<Schema> Schema) = 0;
+        /// \param Data  The encoded audio data blob.
+        /// \param Track The track metadata associated with the audio data.
+        /// \return A unique pointer to the created decoder.
+        virtual Tracker<Decoder> Decode(ConstRef<Blob> Data, ConstRef<class Track> Track) = 0;
     };
 }

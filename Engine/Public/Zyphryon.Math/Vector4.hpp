@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Vector2.hpp"
 #include "Vector3.hpp"
 #include <smmintrin.h>
 
@@ -89,7 +88,7 @@ inline namespace Math
         /// \return `true` if the vector is finite, `false` otherwise.
         ZYPHRYON_INLINE Bool IsFinite() const
         {
-            const __m128 Infinite = _mm_set1_ps(std::numeric_limits<Real32>::infinity());
+            const __m128 Infinite = _mm_set1_ps(kInfinity<Real32>);
             const __m128 Mask     = _mm_cmpge_ps(_mm_andnot_ps(_mm_set1_ps(-0.0f), mRegister), Infinite);
             return _mm_movemask_ps(Mask) == 0;
         }
@@ -104,6 +103,46 @@ inline namespace Math
         ZYPHRYON_INLINE Ref<Vector4> Set(Real32 X, Real32 Y, Real32 Z, Real32 W = 0.0f)
         {
             mRegister = _mm_set_ps(W, Z, Y, X);
+            return (* this);
+        }
+
+        /// \brief Sets the x-component of the vector.
+        ///
+        /// \param Value The new value of the x-component.
+        /// \return A reference to this vector after the update.
+        ZYPHRYON_INLINE Ref<Vector4> SetX(Real32 Value)
+        {
+            mRegister = _mm_insert_ps(mRegister, _mm_set_ss(Value), 0x00);
+            return (* this);
+        }
+
+        /// \brief Sets the y-component of the vector.
+        ///
+        /// \param Value The new value of the y-component.
+        /// \return A reference to this vector after the update.
+        ZYPHRYON_INLINE Ref<Vector4> SetY(Real32 Value)
+        {
+            mRegister = _mm_insert_ps(mRegister, _mm_set_ss(Value), 0x10);
+            return (* this);
+        }
+
+        /// \brief Sets the z-component of the vector.
+        ///
+        /// \param Value The new value of the z-component.
+        /// \return A reference to this vector after the update.
+        ZYPHRYON_INLINE Ref<Vector4> SetZ(Real32 Value)
+        {
+            mRegister = _mm_insert_ps(mRegister, _mm_set_ss(Value), 0x20);
+            return (* this);
+        }
+
+        /// \brief Sets the w-component of the vector.
+        ///
+        /// \param Value The new value of the w-component.
+        /// \return A reference to this vector after the update.
+        ZYPHRYON_INLINE Ref<Vector4> SetW(Real32 Value)
+        {
+            mRegister = _mm_insert_ps(mRegister, _mm_set_ss(Value), 0x30);
             return (* this);
         }
 
@@ -193,12 +232,12 @@ inline namespace Math
         /// 
         /// \param Other The other vector to compare with.
         /// \return Angle in radians between the two vectors (range [0, π]).
-        ZYPHRYON_INLINE Real32 GetAngle(Vector4 Other) const
+        ZYPHRYON_INLINE Angle GetAngle(Vector4 Other) const
         {
             const Real32 Length = GetLength() * Other.GetLength();
             LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
-            return InvCos(Dot3(* this, Other) / Length);
+            return Angle::FromCosine(Dot3(* this, Other) / Length);
         }
 
         /// \brief Stores the vector components into a float array.
@@ -208,6 +247,8 @@ inline namespace Math
         template<Bool Align = true>
         ZYPHRYON_INLINE void Store(Ptr<Real32> Output) const
         {
+            LOG_ASSERT(Output, "Output pointer cannot be null");
+
             if constexpr (Align)
             {
                 _mm_store_ps(Output, mRegister);
@@ -458,14 +499,6 @@ inline namespace Math
         ZYPHRYON_INLINE Bool operator>=(Vector4 Vector) const
         {
             return _mm_movemask_ps(_mm_cmpge_ps(mRegister, Vector.mRegister)) == 0xF;
-        }
-
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE UInt64 Hash() const
-        {
-            return HashCombine(this);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.
@@ -809,9 +842,9 @@ inline namespace Math
         /// \return The cross product of the two vectors, with W = 0.
         ZYPHRYON_INLINE static Vector4 Cross(Vector4 P0, Vector4 P1)
         {
-            const Vector4 A = Swizzle<3, 0, 2, 1>(P0);     // (y, z, x, w)
-            const Vector4 B = Swizzle<3, 1, 0, 2>(P1);     // (z, x, y, w)
-            const Vector4 C = Swizzle<3, 0, 2, 1>(A * P1); // (A.y * P1.y, A.z * P1.z, A.x * P1.x, A.w * P1.w)
+            const Vector4 A = Swizzle<3, 0, 2, 1>(P0);
+            const Vector4 B = Swizzle<3, 1, 0, 2>(P1);
+            const Vector4 C = Swizzle<3, 0, 2, 1>(A * P1);
             return (A * B) - C;
         }
 

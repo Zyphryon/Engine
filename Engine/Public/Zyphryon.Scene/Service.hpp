@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Component.hpp"
-#include "Query.hpp"
 #include "Pin.hpp"
+#include "Query.hpp"
 #include "System.hpp"
 #include "Tag.hpp"
 #include "Timer.hpp"
@@ -35,11 +35,7 @@ namespace Scene
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
-        /// \brief Advances the scene once per frame.
-        ///
-        /// This updates systems, processes deferred commands, and executes scheduled tasks.
-        ///
-        /// \param Time The time step data for the current frame.
+        /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
 
         /// \brief Compacts memory by removing unused entities and components.
@@ -95,13 +91,13 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE Ref<Component> Access()
         {
-            if constexpr (IsMutable<Component>)
+            if constexpr (IsImmutable<Component>)
             {
-                return mWorld.get_mut<Component>();
+                return mWorld.get<Component>();
             }
             else
             {
-                return mWorld.get<Component>();
+                return mWorld.get_mut<Component>();
             }
         }
 
@@ -205,7 +201,7 @@ namespace Scene
         /// \param ID      The unique name of the component type. If empty, the type's default name is used.
         /// \return The component object representing the type.
         template<typename Target>
-        ZYPHRYON_INLINE Component<Target> GetComponent(ConstStr8 ID = flecs::_::symbol_name<Target>()) const
+        ZYPHRYON_INLINE Component<Target> GetComponent(ConstStr8 ID = flecs::_::type_name<Target>()) const
         {
             return Component<Target>(mWorld.component<Target>(ID.data()));
         }
@@ -234,7 +230,7 @@ namespace Scene
         /// \tparam Name      The name of the phase.
         /// \param Dependency An existing phase entity that this new phase will depend on.
         /// \return The newly created phase entity.
-        template<ConstExprStr8 Name>
+        template<Symbol Name>
         ZYPHRYON_INLINE Entity CreatePhase(Entity Dependency)
         {
             return GetComponent<Tag<Name>>().AddTrait(Trait::Phase).DependsOn(Dependency);
@@ -466,8 +462,8 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        flecs::world                 mWorld;
-        Handles<kMaxCountArchetypes> mArchetypes;
-        Query<>                      mArchetypesQueryAll;
+        flecs::world              mWorld;
+        Slot<kMaxCountArchetypes> mArchetypes;
+        Query<>                   mArchetypesQueryAll;
     };
 }

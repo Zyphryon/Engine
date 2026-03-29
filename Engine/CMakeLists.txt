@@ -1,5 +1,5 @@
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 ##
 ## This work is licensed under the terms of the MIT license.
 ##
@@ -37,37 +37,7 @@ ENDIF (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 LIST(APPEND PROJECT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/Public ${CMAKE_CURRENT_SOURCE_DIR}/Private)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Configuration
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_MP3")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_WAV")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_STB")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_MATERIAL")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_GLTF")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_EFFECT")
-LIST(APPEND PROJECT_DEFINES "ZYPHRYON_LOADER_ARTERY")
-
-IF    (ZYPHRYON_PROFILE_MODE)
-    LIST(APPEND PROJECT_DEFINES "ZYPHRYON_PROFILE_MODE")
-ENDIF (ZYPHRYON_PROFILE_MODE)
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (CMRC)
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-FILE(GLOB_RECURSE PROJECT_RESOURCE "Resources/*")
-
-FetchContent_Declare(External_CMRC
-        GIT_REPOSITORY https://github.com/vector-of-bool/cmrc)
-FetchContent_MakeAvailable(External_CMRC)
-
-INCLUDE(${external_cmrc_SOURCE_DIR}/CMakeRC.cmake)
-CMRC_ADD_RESOURCE_LIBRARY(Engine-Resources
-        ALIAS Engine::RC NAMESPACE Resources WHENCE "${CMAKE_CURRENT_SOURCE_DIR}/Resources" ${PROJECT_RESOURCE})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (SDL)
+## Dependency (SDL3) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 SET(SDL_SHARED             OFF CACHE BOOL "" FORCE)
@@ -92,51 +62,77 @@ FetchContent_MakeAvailable(External_SDL)
 LIST(APPEND PROJECT_DEPENDENCIES "SDL3-static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (FAudio)-> TODO: Remove (Use SDL Audio?)
+## Dependency (Flecs) (MIT)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-SET(XNASONG            OFF                                CACHE BOOL   "" FORCE)
-SET(BUILD_SHARED_LIBS  OFF                                CACHE BOOL   "" FORCE)
-SET(SDL3_INCLUDE_DIRS  ${external_sdl_SOURCE_DIR}/include CACHE STRING "" FORCE)
-SET(SDL3_LIBRARIES     "SDL3-static"                      CACHE STRING "" FORCE)
+OPTION(FLECS_REST_SERVICE "Enable Flecs rest service" OFF)
 
-FetchContent_Declare(External_FAudio
-        GIT_REPOSITORY https://github.com/FNA-XNA/FAudio
-        EXCLUDE_FROM_ALL)
-FetchContent_MakeAvailable(External_FAudio)
+SET(FLECS_STATIC  ON  CACHE BOOL "" FORCE)
+SET(FLECS_SHARED  OFF CACHE BOOL "" FORCE)
 
-INSTALL(TARGETS SDL3-static  EXPORT FAudio-targets-static)
-INSTALL(TARGETS SDL3_Headers EXPORT FAudio-targets-static)
+LIST(APPEND PROJECT_DEFINES
+        "FLECS_CUSTOM_BUILD"
+        "FLECS_CPP_NO_AUTO_REGISTRATION"
+        "FLECS_CPP_NO_ENUM_REFLECTION"
+        "FLECS_CPP"
+        "FLECS_DOC"
+        "FLECS_OS_API_IMPL"
+        "FLECS_PIPELINE"
+        "FLECS_SYSTEM"
+        "FLECS_TIMER")
 
-LIST(APPEND PROJECT_DEPENDENCIES "FAudio-static")
+IF    (ZYPHRYON_PROFILE_MODE)
+    LIST(APPEND PROJECT_DEFINES "FLECS_LOG")
+ENDIF (ZYPHRYON_PROFILE_MODE)
 
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (in-drop replacement for unordered_map and unordered_set) -> TODO: Remove
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+IF    (FLECS_REST_SERVICE)
+    LIST(APPEND PROJECT_DEFINES "FLECS_METRICS" "FLECS_HTTP" "FLECS_REST" "FLECS_STATS")
+ENDIF (FLECS_REST_SERVICE)
 
-FetchContent_Declare(External_Ankerl
-        GIT_REPOSITORY https://github.com/martinus/unordered_dense
-        GIT_TAG main)
-FetchContent_MakeAvailable(External_Ankerl)
+FetchContent_Declare(External_Flecs
+        GIT_REPOSITORY https://github.com/SanderMertens/flecs)
+FetchContent_MakeAvailable(External_Flecs)
 
-ADD_LIBRARY(Ankerl INTERFACE)
-TARGET_INCLUDE_DIRECTORIES(Ankerl INTERFACE ${external_ankerl_SOURCE_DIR}/include/ankerl)
-
-LIST(APPEND PROJECT_DEPENDENCIES "Ankerl")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (in-drop replacement for array) -> TODO: Remove
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-FetchContent_Declare(External_Inplace_Vector
-        GIT_REPOSITORY https://github.com/bemanproject/inplace_vector
-        GIT_TAG main)
-FetchContent_MakeAvailable(External_Inplace_Vector)
-
-LIST(APPEND PROJECT_DEPENDENCIES "beman::inplace_vector")
+LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Enumeration Reflection)
+## Dependency (Tracy) (BSD-3-Clause)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+IF    (ZYPHRYON_PROFILE_MODE)
+
+    SET(TRACY_ENABLE     ON  CACHE BOOL "" FORCE)
+    SET(TRACY_ON_DEMAND  OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(External_Tracy
+            GIT_REPOSITORY https://github.com/wolfpld/tracy
+            GIT_TAG 05cceee0df3b8d7c6fa87e9638af311dbabc63cb)
+    FetchContent_MakeAvailable(External_Tracy)
+
+    LIST(APPEND PROJECT_DEFINES      "ZYPHRYON_PROFILE_MODE")
+    LIST(APPEND PROJECT_DEPENDENCIES "TracyClient")
+
+ENDIF ()
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Miniaudio) (PUBLIC DOMAIN)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+SET(MINIAUDIO_NO_DECODING         ON CACHE BOOL   "" FORCE)
+SET(MINIAUDIO_NO_ENCODING         ON CACHE BOOL   "" FORCE)
+SET(MINIAUDIO_NO_WAV              ON CACHE BOOL   "" FORCE)
+SET(MINIAUDIO_NO_FLAC             ON CACHE BOOL   "" FORCE)
+SET(MINIAUDIO_NO_MP3              ON CACHE BOOL   "" FORCE)
+SET(MINIAUDIO_NO_RESOURCE_MANAGER ON CACHE BOOL   "" FORCE)
+
+FetchContent_Declare(External_Miniaudio
+        GIT_REPOSITORY https://github.com/mackron/miniaudio)
+FetchContent_MakeAvailable(External_Miniaudio)
+
+LIST(APPEND PROJECT_DEPENDENCIES "miniaudio")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Enchantum) (MIT) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 FetchContent_Declare(External_Enchantum
@@ -147,7 +143,22 @@ FetchContent_MakeAvailable(External_Enchantum)
 LIST(APPEND PROJECT_DEPENDENCIES "enchantum")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Logger)
+## Dependency (TOML) (MIT)    -> TODO: Remove and implement own JSON parser
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+ADD_COMPILE_DEFINITIONS(TOML_EXCEPTIONS=0)
+
+FetchContent_Declare(External_TOML
+        GIT_REPOSITORY https://github.com/marzer/tomlplusplus)
+FetchContent_MakeAvailable(External_TOML)
+
+ADD_LIBRARY(Toml INTERFACE)
+TARGET_INCLUDE_DIRECTORIES(Toml INTERFACE ${external_toml_SOURCE_DIR})
+
+LIST(APPEND PROJECT_DEPENDENCIES "Toml")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Quill) (MIT) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 SET(QUILL_NO_THREAD_NAME_SUPPORT      ON CACHE BOOL "" FORCE)
@@ -165,73 +176,35 @@ FetchContent_MakeAvailable(External_Quill)
 LIST(APPEND PROJECT_DEPENDENCIES "quill")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Flecs ECS)
+## Dependency (inplace_vector) (MIT) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(FLECS_REST_SERVICE "Enable Flecs rest service" OFF)
+FetchContent_Declare(External_CXX26InPlaceVector
+        GIT_REPOSITORY https://github.com/bemanproject/inplace_vector
+        GIT_TAG main)
+FetchContent_MakeAvailable(External_CXX26InPlaceVector)
 
-SET(FLECS_STATIC  ON  CACHE BOOL "" FORCE)
-SET(FLECS_SHARED  OFF CACHE BOOL "" FORCE)
-
-LIST(APPEND PROJECT_DEFINES
-    "FLECS_CUSTOM_BUILD"
-    "FLECS_CPP_NO_AUTO_REGISTRATION"
-    "FLECS_CPP_NO_ENUM_REFLECTION"
-    "FLECS_CPP"
-    "FLECS_DOC"
-    "FLECS_OS_API_IMPL"
-    "FLECS_PIPELINE"
-    "FLECS_SYSTEM"
-    "FLECS_TIMER")
-
-IF    (ZYPHRYON_PROFILE_MODE)
-    LIST(APPEND PROJECT_DEFINES "FLECS_LOG")
-ENDIF (ZYPHRYON_PROFILE_MODE)
-
-IF    (FLECS_REST_SERVICE)
-    LIST(APPEND PROJECT_DEFINES "FLECS_METRICS" "FLECS_HTTP" "FLECS_REST" "FLECS_STATS")
-ENDIF (FLECS_REST_SERVICE)
-
-FetchContent_Declare(External_Flecs
-        GIT_REPOSITORY https://github.com/SanderMertens/flecs)
-FetchContent_MakeAvailable(External_Flecs)
-
-LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
+LIST(APPEND PROJECT_DEPENDENCIES "beman::inplace_vector")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (TOML)
+## Dependency (in-drop replacement for unordered_map and unordered_set) (MIT) -> TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_COMPILE_DEFINITIONS(TOML_EXCEPTIONS=0)
+FetchContent_Declare(External_Ankerl
+        GIT_REPOSITORY https://github.com/martinus/unordered_dense
+        GIT_TAG main)
+FetchContent_MakeAvailable(External_Ankerl)
 
-FetchContent_Declare(External_TOML
-        GIT_REPOSITORY https://github.com/marzer/tomlplusplus)
-FetchContent_MakeAvailable(External_TOML)
+ADD_LIBRARY(Ankerl INTERFACE)
+TARGET_INCLUDE_DIRECTORIES(Ankerl INTERFACE ${external_ankerl_SOURCE_DIR}/include/ankerl)
 
-ADD_LIBRARY(Toml INTERFACE)
-TARGET_INCLUDE_DIRECTORIES(Toml INTERFACE ${external_toml_SOURCE_DIR})
-
-LIST(APPEND PROJECT_DEPENDENCIES "Toml")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Rapid-Hash) -> TODO: Remove
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-FetchContent_Declare(External_RapidHash
-        GIT_REPOSITORY https://github.com/Nicoshev/rapidhash)
-FetchContent_MakeAvailable(External_RapidHash)
-
-ADD_LIBRARY(RapidHash INTERFACE)
-TARGET_INCLUDE_DIRECTORIES(RapidHash INTERFACE ${external_rapidhash_SOURCE_DIR})
-
-LIST(APPEND PROJECT_DEPENDENCIES "RapidHash")
+LIST(APPEND PROJECT_DEPENDENCIES "Ankerl")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (BMP / PNG) -> TODO: Remove
+## Dependency (BMP / PNG / JPG / TGA) (PUBLIC_DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 LIST(APPEND PROJECT_DEFINES "STBI_NO_PSD")
-LIST(APPEND PROJECT_DEFINES "STBI_NO_TGA")
 LIST(APPEND PROJECT_DEFINES "STBI_NO_GIF")
 LIST(APPEND PROJECT_DEFINES "STBI_NO_HDR")
 LIST(APPEND PROJECT_DEFINES "STBI_NO_PIC")
@@ -249,7 +222,7 @@ TARGET_INCLUDE_DIRECTORIES(STB INTERFACE ${external_stb_SOURCE_DIR})
 LIST(APPEND PROJECT_DEPENDENCIES "STB")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (WAV / MP3) -> TODO: Remove
+## Dependency (WAV / MP3) (PUBLIC_DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 LIST(APPEND PROJECT_DEFINES "DR_MP3_FLOAT_OUTPUT")
@@ -266,39 +239,16 @@ TARGET_INCLUDE_DIRECTORIES(DrLibs INTERFACE ${external_drlibs_SOURCE_DIR})
 LIST(APPEND PROJECT_DEPENDENCIES "DrLibs")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (GLTF) -> TODO: Remove
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-ADD_COMPILE_DEFINITIONS(TINYGLTF_NO_STB_IMAGE_WRITE)
-
-FetchContent_Declare(External_GLTF
-        GIT_REPOSITORY https://github.com/syoyo/tinygltf
-        GIT_TAG release)
-FetchContent_MakeAvailable(External_GLTF)
-
-ADD_LIBRARY(GLTF INTERFACE)
-TARGET_INCLUDE_DIRECTORIES(GLTF INTERFACE ${external_gltf_SOURCE_DIR})
-
-LIST(APPEND PROJECT_DEPENDENCIES "GLTF")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Tracy)
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-SET(TRACY_ENABLE     ON  CACHE BOOL "" FORCE)
-SET(TRACY_ON_DEMAND  OFF CACHE BOOL "" FORCE)
-
-FetchContent_Declare(External_Tracy
-        GIT_REPOSITORY https://github.com/wolfpld/tracy)
-FetchContent_MakeAvailable(External_Tracy)
-
-LIST(APPEND PROJECT_DEPENDENCIES "TracyClient")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Library
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ADD_LIBRARY(${PROJECT_NAME} STATIC ${PROJECT_SOURCE})
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Embed Resources
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+CMAKE_EMBED_RESOURCES(${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources" "Zyphryon::RC" "ZyphryonRC")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Definitions
@@ -310,7 +260,7 @@ TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${PROJECT_DEFINES})
 ## Libraries
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES} PRIVATE Engine::RC)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES})
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Includes
@@ -332,25 +282,30 @@ TARGET_COMPILE_FEATURES(${PROJECT_NAME} PUBLIC cxx_std_23)
 
 IF    (WIN32)
 
-    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0601)
-    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0601 _CRT_SECURE_NO_WARNINGS)
 
 ENDIF (WIN32)
 
-IF(CMAKE_BUILD_TYPE STREQUAL "Release") # Release-specific options
-    IF    (MSVC)
-        TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE /O2 /fp:fast /Oy /Ob2 /Gw /GL /arch:AVX2)
+IF     (MSVC)
 
-        TARGET_LINK_OPTIONS(${PROJECT_NAME} PRIVATE /LTCG)
-    ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE -O3 -ffast-math -funroll-loops -fomit-frame-pointer -march=native)
+    TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>: /O2 /fp:fast /Oy /Ob2 /Gw /GL /arch:SSE4.2>
+            $<$<NOT:$<CONFIG:Release>>: /Od /RTC1>
+    )
 
-        TARGET_LINK_OPTIONS(${PROJECT_NAME} PRIVATE -flto)
-    ENDIF (MSVC)
-ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Debug") # Debug-specific options
-    IF    (MSVC)
-        TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE /Od /RTC1)
-    ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE -g3 -O0)
-    ENDIF (MSVC)
-ENDIF()
+    TARGET_LINK_OPTIONS(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>: /LTCG>
+    )
+
+ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
+    TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>: -O3 -ffast-math -funroll-loops -fomit-frame-pointer -msse4.2>
+            $<$<NOT:$<CONFIG:Release>>: -O0 -g3>
+    )
+
+    TARGET_LINK_OPTIONS(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>: -flto>
+    )
+
+ENDIF  ()

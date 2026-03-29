@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,9 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Trait.hpp"
 #include <atomic>
-#include <condition_variable>
 #include <mutex>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -23,30 +21,25 @@
 
 inline namespace Base
 {
-    /// \brief Defines a platform-independent atomic type for lock-free synchronization.
+    /// \brief An atomic type that provides thread-safe operations on the specified \a Type.
     template<typename Type>
-    using Atomic    = std::atomic<Type>;
+    using Atomic = std::atomic<Type>;
 
-    /// \brief Lock-free test-and-set flag for tiny critical sections.
-    using Flag      = std::atomic_flag;
+    /// \brief A condition variable type for thread synchronization.
+    using Gate   = std::condition_variable;
 
-    /// \brief Alias for a standard condition variable used for thread synchronization.
-    using Condition = std::condition_variable;
+    /// \brief A lock type that provides exclusive ownership of a mutex for the duration of its lifetime.
+    using Guard  = std::lock_guard<std::mutex>;
 
-    /// \brief Defines standard mutual exclusion primitive.
-    using Mutex     = std::mutex;
+    /// \brief A lock type that provides flexible ownership of a mutex, allowing for deferred locking and unlocking.
+    using Lock   = std::unique_lock<std::mutex>;
 
-    /// \brief Lock guard for a \c Mutex, with optional RAII-style behavior.
-    /// 
-    /// This alias selects the locking strategy based on the \c Unique flag:
-    /// - If \c Unique is `false` (default), uses `std::lock_guard<Mutex>`, which provides simple RAII-style locking.
-    /// - If \c Unique is `true`, uses `std::unique_lock<Mutex>`, which allows deferred locking, manual unlock/relock,
-    /// and is not strictly RAII-based.
-    /// 
-    /// \tparam Unique Whether to use a unique lock (`true`) or a scoped lock (`false`).
-    template<Bool Unique = false>
-    using Lock      = Switch<Unique, std::unique_lock<Mutex>, std::lock_guard<Mutex>>;
+    /// \brief A mutex type for synchronizing access to shared resources.
+    using Mutex  = std::mutex;
 
-    /// \brief Alias for a standard joinable thread with automatic cleanup.
-    using Thread    = std::jthread;
+    /// \brief A lightweight synchronization primitive that can be used for simple locking mechanisms.
+    using Signal = std::atomic_flag;
+
+    /// \brief A thread type that represents a joinable thread of execution.
+    using Thread = std::jthread;
 }

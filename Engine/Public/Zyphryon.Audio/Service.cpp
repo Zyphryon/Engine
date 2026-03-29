@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -11,7 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
-#include <Zyphryon.Audio/Driver/FAudioDriver.hpp>
+#include "Zyphryon.Audio/Driver/Miniaudio/MADriver.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -34,7 +34,7 @@ namespace Audio
     {
         ZYPHRYON_PROFILE_SCOPE("Audio::Tick");
 
-        mDriver->Advance();
+        mDriver->Tick();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,14 +50,14 @@ namespace Audio
         {
             switch (Backend)
             {
-                case Backend::FAudio:
-                    mDriver = NewUniquePtr<FAudioDriver>();
-                    break;
-                default:
-                    break;
+            case Backend::Miniaudio:
+                mDriver = Unique<MADriver>::Create();
+                break;
+            default:
+                break;
             }
 
-            Successful = mDriver && mDriver->Initialize(Device, kMaxSubmixes);
+            Successful = mDriver && mDriver->Initialize(Device);
 
             if (!Successful)
             {
@@ -67,11 +67,11 @@ namespace Audio
             {
                 ConstRef<Capabilities> Capabilities = mDriver->GetCapabilities();
 
-                for (ConstRef<Adapter> Adapter : Capabilities.Adapters)
+                for (ConstStr8 Adapter : Capabilities.Devices)
                 {
-                    LOG_INFO("Audio: Found Device '{}'", Adapter.Name);
+                    LOG_INFO("Audio: Found Device '{}'", Adapter);
                 }
-                LOG_INFO("Audio: Using '{}'", Capabilities.Device);
+                LOG_INFO("Audio: Using '{}'", Capabilities.Output);
             }
         }
         return Successful;
@@ -80,71 +80,162 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::PlayMusic(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter, Bool Repeat)
+    ConstRef<Capabilities> Service::GetCapabilities() const
     {
-        if (mMusic)
-        {
-            mDriver->Stop(mMusic, true);
-        }
-
-        mMusic = mDriver->Prepare(Enum::Cast(Category::Music), Sound, Emitter, Repeat);
-        mDriver->Resume(mMusic);
+        return mDriver->GetCapabilities();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::StopMusic()
+    void Service::Suspend()
     {
-        if (mMusic)
-        {
-            mDriver->Stop(mMusic, true);
-
-            mMusic = 0;
-        }
+        mDriver->Suspend();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::PlayEffect(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter, Bool Repeat)
+    void Service::Restore()
     {
-        const Object Instance = mDriver->Prepare(Enum::Cast(Category::Effect), Sound, Emitter, Repeat);
-        mDriver->Resume(Instance);
-
-        return Instance;
+        mDriver->Restore();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::PlayVoice(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter)
+    void Service::SetMasterVolume(Real32 Volume)
     {
-        const Object Instance = mDriver->Prepare(Enum::Cast(Category::Voice), Sound, Emitter, false);
-        mDriver->Resume(Instance);
+        LOG_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        return Instance;
+        return mDriver->SetMasterVolume(Volume);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::PlayAmbient(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter, Bool Repeat)
+    Real32 Service::GetMasterVolume()
     {
-        const Object Instance = mDriver->Prepare(Enum::Cast(Category::Ambient), Sound, Emitter, Repeat);
-        mDriver->Resume(Instance);
-
-        return Instance;
+        return mDriver->GetMasterVolume();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::PlayInterface(ConstTracker<Sound> Sound)
+    void Service::SetSubmixVolume(Category Category, Real32 Volume)
     {
-        const Object Instance = mDriver->Prepare(Enum::Cast(Category::Interface), Sound, nullptr, false);
-        mDriver->Resume(Instance);
+        LOG_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        return Instance;
+        return mDriver->SetSubmixVolume(Category, Volume);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Real32 Service::GetSubmixVolume(Category Category)
+    {
+        return mDriver->GetSubmixVolume(Category);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetListenerPose(ConstRef<Pose> Pose)
+    {
+        mDriver->SetListenerPose(Pose);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
+    {
+        LOG_ASSERT(InnerAngle.IsValid(), "Inner angle must be normalized (0 <= angle < 2π)");
+        LOG_ASSERT(OuterAngle.IsValid(), "Outer angle must be normalized (0 <= angle < 2π)");
+        LOG_ASSERT(InnerAngle <= OuterAngle, "Inner angle cannot exceed outer angle");
+        LOG_ASSERT(IsBetween(OuterGain, 0.0f, 1.0f), "Outer gain must be [0,1]");
+
+        mDriver->SetListenerCone(InnerAngle, OuterAngle, OuterGain);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Service::Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch)
+    {
+        LOG_ASSERT(Track && Track->HasCompleted(), "Track must be valid and loaded.");
+        LOG_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
+        LOG_ASSERT(Pitch > 0.0f, "Pitch must be greater than 0.0");
+
+        return mDriver->Play(Category, Track, Volume, Pitch);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Service::Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch, ConstTracker<Emitter> Emitter, ConstRef<Pose> Pose)
+    {
+        LOG_ASSERT(Track && Track->HasCompleted(), "Track must be valid and loaded.");
+        LOG_ASSERT(Emitter, "Emitter cannot be null.");
+        LOG_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
+        LOG_ASSERT(Pitch > 0.0f, "Pitch must be greater than 0.0");
+
+        return mDriver->Play(Category, Track, Volume, Pitch, Emitter, Pose);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetPlaybackLooping(Object Handle, Bool Looping)
+    {
+        mDriver->SetPlaybackLooping(Handle, Looping);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetPlaybackPitch(Object Handle, Real32 Volume)
+    {
+        mDriver->SetPlaybackPitch(Handle, Volume);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetPlaybackVolume(Object Handle, Real32 Volume)
+    {
+        mDriver->SetPlaybackVolume(Handle, Volume);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SetPlaybackPose(Object Handle, ConstRef<Pose> Pose)
+    {
+        mDriver->SetPlaybackPose(Handle, Pose);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Stop(Object Handle)
+    {
+        mDriver->Stop(Handle);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Pause(Object Handle)
+    {
+        mDriver->Pause(Handle);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Resume(Object Handle)
+    {
+        mDriver->Resume(Handle);
     }
 }

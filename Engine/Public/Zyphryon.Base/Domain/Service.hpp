@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "System.hpp"
-#include "Zyphryon.Base/Memory/Trackable.hpp"
+#include "Zyphryon.Base/Memory/Tracker.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,99 +21,95 @@
 
 inline namespace Base
 {
-    /// \brief Provides a base interface for engine or application-level services.
-    /// 
-    /// A `Service` is a self-contained, reusable unit of functionality that is registered
-    /// into a central `System` context. It supports per-frame updates, lifecycle management,
-    /// and communication with other services through the shared context.
+    /// \brief A generic service class template for defining services within a system.
+    ///
+    /// Services are modular components that provide specific functionality within a system
+    /// and can be added, retrieved, and managed by the host system.
     class Service : public Trackable<Service>
     {
     public:
 
-        /// \brief Alias for the system context that manages all services.
+        /// \brief Defines the host system type for this service.
         using Host = System<Service>;
 
     public:
 
-        /// \brief Constructs a service with a reference to its managing system and a unique identifier.
-        /// 
-        /// \param Host The parent system managing this service.
-        /// \param Guid The unique identifier of this service (typically a type hash).
-        ZYPHRYON_INLINE Service(Ref<Host> Host, UInt64 Guid)
+        /// \brief Constructs a new service with the specified host and id.
+        ///
+        /// \param Host The host system that owns this service.
+        /// \param ID   The unique identifier for this service.
+        ZYPHRYON_INLINE Service(Ref<Host> Host, UInt64 ID)
             : mHost { Host },
-              mGuid { Guid }
+              mID   { ID }
         {
         }
 
-        /// \brief Destructor for proper cleanup in derived classes.
+        /// \brief Virtual destructor for proper cleanup in derived classes.
         virtual ~Service() = default;
 
-        /// \brief Gets the unique identifier of this service.
-        /// 
-        /// \return The hash-based identifier of the service.
-        ZYPHRYON_INLINE UInt64 GetGuid() const
+        /// \brief Retrieves the unique identifier of the service.
+        ///
+        /// \return The service ID.
+        ZYPHRYON_INLINE UInt64 GetID() const
         {
-            return mGuid;
+            return mID;
         }
 
-        /// \brief Called once per frame or simulation tick by the system.
-        /// 
-        /// \note Override this to implement per-frame logic.
-        /// 
-        /// \param Time The current time step or frame delta.
+        /// \brief Called every tick to update the service.
+        ///
+        /// Override this method to implement custom update logic.
+        ///
+        /// \param Time The time delta since the last tick.
         virtual void OnTick(Time Time)
         {
         }
 
-        /// \brief Called when the service is removed or the system is shutting down.
-        /// 
-        /// \note Override this to release resources or unregister events.
+        /// \brief Called when the service is being destroyed.
+        ///
+        /// Override this method to implement custom teardown logic.
         virtual void OnTeardown()
         {
-
         }
 
     protected:
 
-        /// \brief Gets the system context managing this service.
-        /// 
-        /// \return A reference to the system context.
-        ZYPHRYON_INLINE Ref<Host> GetHost()
+        /// \brief Retrieves the host system of the service.
+        ///
+        /// \return The host system.
+        ZYPHRYON_INLINE Ref<Host> GetHost() const
         {
             return mHost;
         }
 
-        /// \brief Checks whether the system is running in client mode.
-        /// 
+        /// \brief Checks if the system is in client mode.
+        ///
         /// \return `true` if the system is in client mode, `false` otherwise.
         ZYPHRYON_INLINE Bool IsClientMode() const
         {
             return mHost.IsClientMode();
         }
 
-        /// \brief Checks whether the system is running in server mode.
-        /// 
+        /// \brief Checks if the system is in server mode.
+        ///
         /// \return `true` if the system is in server mode, `false` otherwise.
         ZYPHRYON_INLINE Bool IsServerMode() const
         {
             return mHost.IsServerMode();
         }
 
-        /// \brief Adds a new service to the same system context.
-        /// 
-        /// \tparam Type The concrete service type to create.
-        /// \param Parameters The forwarded constructor arguments.
-        /// \return A tracker to the newly created service.
+        /// \brief Adds a service of the specified type to the system.
+        ///
+        /// \param Parameters The constructor arguments for the service.
+        /// \return A retainer to the newly added service.
         template<typename Type, typename ... Arguments>
         ZYPHRYON_INLINE Tracker<Type> AddService(AnyRef<Arguments>... Parameters)
         {
             return mHost.AddService<Type>(Parameters...);
         }
 
-        /// \brief Retrieves an existing service from the same system context.
-        /// 
-        /// \tparam Type The service type to search for.
-        /// \return A tracker to the service, or `nullptr` if not found.
+        /// \brief Retrieves a service of the specified type from the system.
+        ///
+        /// \return A retainer to the requested service, or `nullptr` if not found.
         template<typename Type>
         ZYPHRYON_INLINE Tracker<Type> GetService()
         {
@@ -126,20 +122,20 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ref<Host> mHost;
-        UInt64    mGuid;
+        UInt64    mID;
     };
 
-    /// \brief A helper base class that assigns a hash-based ID to a typed subsystem.
+    /// \brief A templated abstract service class for defining services of a specific type.
     template<typename Type>
     class AbstractService : public Service
     {
     public:
 
-        /// \brief Constructs a typed service with its system context.
-        /// 
-        /// \param Host The parent system managing this service.
+        /// \brief Constructs a new abstract service with the specified host.
+        ///
+        /// \param Host The host system that owns this service.
         ZYPHRYON_INLINE explicit AbstractService(Ref<Host> Host)
-            : Service { Host, HashType<Type>() }
+            : Service { Host, HashFNV1<Type>() }
         {
         }
     };

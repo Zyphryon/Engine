@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #pragma once
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Base/Base.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -51,6 +45,22 @@ namespace Scene
         kMaxCountEntities   = kMaxRangeEntities - kMinRangeEntities,
     };
 
+    /// \brief Defines caching strategies for system queries.
+    enum class Cache : UInt8
+    {
+        Default,    ///< Determined by query creation context.
+        Auto,       ///< Automatically manages caching based on query terms.
+        None,       ///< Disables caching; query is evaluated every execution.
+    };
+
+    /// \brief Defines execution modes for system scheduling.
+    enum class Execution : UInt8
+    {
+        Default,    ///< Normal scheduled execution (deferred to the pipeline).
+        Immediate,  ///< Executes immediately when triggered.
+        Concurrent, ///< Executes concurrently in worker threads.
+    };
+
     /// \brief Enumerates behavioral traits that define component capabilities.
     enum class Trait : UInt8
     {
@@ -63,21 +73,5 @@ namespace Scene
         Final,        ///< Component cannot be extended or overridden.
         Symmetric,    ///< Component has symmetric behavior in relationships.
         Phase,        ///< Component is a phase.
-    };
-
-    /// \brief Defines execution modes for system scheduling.
-    enum class Execution : UInt8
-    {
-        Default,    ///< Normal scheduled execution (deferred to the pipeline).
-        Immediate,  ///< Executes immediately when triggered.
-        Concurrent, ///< Executes concurrently in worker threads.
-    };
-
-    /// \brief Defines caching strategies for system queries.
-    enum class Cache : UInt8
-    {
-        Default,    ///< Determined by query creation context.
-        Auto,       ///< Automatically manages caching based on query terms.
-        None,       ///< Disables caching; query is evaluated every execution.
     };
 }

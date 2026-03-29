@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -211,7 +211,7 @@ inline namespace Math
         ///
         /// \param Other The other circle to check.
         /// \return `true` if the circles intersect, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Intersects(Circle Other) const
+        ZYPHRYON_INLINE constexpr Bool Test(Circle Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
             return DistanceSquared <= (mRadius + Other.mRadius);
@@ -315,14 +315,6 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE constexpr UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -338,7 +330,7 @@ inline namespace Math
         /// \brief Returns the unit circle centered at origin with radius 1.0.
         ///
         /// \return A unit circle.
-        ZYPHRYON_INLINE constexpr static Circle Unit()
+        ZYPHRYON_INLINE static constexpr Circle Unit()
         {
             return Circle(Vector2::Zero(), 1.0f);
         }
@@ -347,7 +339,7 @@ inline namespace Math
         ///
         /// \param Circle The circle to canonicalize.
         /// \return A circle with non-negative radius.
-        ZYPHRYON_INLINE constexpr static Circle Canonicalize(Circle Circle)
+        ZYPHRYON_INLINE static constexpr Circle Canonicalize(Circle Circle)
         {
             return Math::Circle(Circle.mCenter, Abs(Circle.mRadius));
         }
@@ -357,7 +349,7 @@ inline namespace Math
         /// \param First  The first circle.
         /// \param Second The second circle.
         /// \return The bounding circle that contains both circles.
-        ZYPHRYON_INLINE constexpr static Circle Merge(Circle First, Circle Second)
+        ZYPHRYON_INLINE static constexpr Circle Merge(Circle First, Circle Second)
         {
             const Vector2 Direction = Second.mCenter - First.mCenter;
             const Real32 Distance   = Direction.GetLength();
@@ -382,7 +374,7 @@ inline namespace Math
         /// \param Circle The source circle.
         /// \param Origin The pivot point for anchoring.
         /// \return A circle anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Circle Anchor(Circle Circle, Pivot Origin)
+        ZYPHRYON_INLINE static constexpr Circle Anchor(Circle Circle, Pivot Origin)
         {
             const Real32 Radius   = Circle.GetRadius();
             const Real32 Diameter = Radius * 2;
@@ -400,7 +392,7 @@ inline namespace Math
         /// \param End        The ending circle.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A rectangle interpolated between the start and end circle.
-        ZYPHRYON_INLINE constexpr static Circle Lerp(Circle Start, Circle End, Real32 Percentage)
+        ZYPHRYON_INLINE static constexpr Circle Lerp(Circle Start, Circle End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 

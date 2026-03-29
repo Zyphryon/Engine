@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -40,7 +40,7 @@ namespace Input
         // Polls all platform input events that occurred since the last frame.
         const ConstSpan<Event> Stack = mPoller.Poll();
 
-        // First pass: Update devices for each event.
+        // Processes low-level input events for each device.
         for (ConstRef<Event> Event : Stack)
         {
             switch (Event.Kind)
@@ -61,10 +61,10 @@ namespace Input
             }
         }
 
-        // Second pass: Invoke delegates for each event.
+        // Processes high-level input events for each device.
         for (ConstRef<Event> Event : Stack)
         {
-            Handle(Event);
+            Invoke(Event);
         }
     }
 }

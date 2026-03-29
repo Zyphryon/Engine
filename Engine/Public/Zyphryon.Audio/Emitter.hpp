@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Quaternion.hpp"
+#include "Common.hpp"
+#include "Zyphryon.Math/Angle.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,132 +21,140 @@
 
 namespace Audio
 {
-    /// \brief Represents a 3D sound emitter used in spatial audio.
+    /// \brief Define emission properties for 3D audio sources.
     class Emitter final : public Trackable<Emitter>
     {
     public:
 
-        /// \brief Constructs a new emitter at the origin with zero radius.
+        /// \brief Constructs a default emitter with standard parameters.
         ZYPHRYON_INLINE Emitter()
-            : mVersion { 1 },
-              mRadius  { 0.0f }
+            : mAttenuation   { Attenuation::Inverse },
+              mInnerRadius   { 1.0f },
+              mInnerAngle    { Angle::FromDegrees(360.0f) },
+              mOuterRadius   { 100.0f },
+              mOuterAngle    { Angle::FromDegrees(360.0f) },
+              mOuterGain     { 0.0f },
+              mDopplerFactor { 1.0f }
         {
         }
 
-        /// \brief Constructs a new emitter with specified transform state.
+        /// \brief Sets the attenuation model for the emitter.
         ///
-        /// \param Position    Initial emitter position (world units).
-        /// \param Velocity    Initial emitter velocity (world units per second).
-        /// \param Orientation Initial emitter orientation.
-        ZYPHRYON_INLINE Emitter(Vector3 Position, Vector3 Velocity, Quaternion Orientation)
-            : mVersion     { 1 },
-              mPosition    { Position },
-              mVelocity    { Velocity },
-              mOrientation { Orientation },
-              mRadius      { 0.0f }
+        /// \param Attenuation The attenuation model to use.
+        ZYPHRYON_INLINE void SetAttenuation(Attenuation Attenuation)
         {
+            mAttenuation = Attenuation;
         }
 
-        /// \brief Gets the current change version of the emitter.
+        /// \brief Gets the attenuation model of the emitter.
         ///
-        /// Incremented whenever position, velocity, orientation, or radius changes.
-        ///
-        /// \return Monotonic version counter.
-        ZYPHRYON_INLINE UInt32 GetVersion() const
+        /// \return The attenuation model.
+        ZYPHRYON_INLINE Attenuation GetAttenuation() const
         {
-            return mVersion;
+            return mAttenuation;
         }
 
-        /// \brief Sets the position of the emitter in 3D space.
+        /// \brief Sets the inner and outer radius for distance attenuation.
         ///
-        /// \param Position New emitter position.
-        ZYPHRYON_INLINE void SetPosition(Vector3 Position)
+        /// \param InnerRadius The inner radius where the sound is at full volume.
+        /// \param OuterRadius The outer radius where the sound is fully attenuated.
+        ZYPHRYON_INLINE void SetRadius(Real32 InnerRadius, Real32 OuterRadius)
         {
-            if (mPosition != Position)
-            {
-                mPosition = Position;
-                Touch();
-            }
+            LOG_ASSERT(InnerRadius >= 0.0f, "Inner radius must be non-negative");
+            LOG_ASSERT(OuterRadius >= InnerRadius, "Outer radius must be greater than or equal to inner radius");
+
+            mInnerRadius = InnerRadius;
+            mOuterRadius = OuterRadius;
         }
 
-        /// \brief Gets the emitter position.
+        /// \brief Gets the inner radius of the emitter.
         ///
-        /// \return Constant reference to the position vector.
-        ZYPHRYON_INLINE Vector3 GetPosition() const
+        /// \return The inner radius.
+        ZYPHRYON_INLINE Real32 GetInnerRadius() const
         {
-            return mPosition;
+            return mInnerRadius;
         }
 
-        /// \brief Sets the emitter velocity.
+        /// \brief Gets the outer radius of the emitter.
         ///
-        /// \param Velocity New velocity vector.
-        ZYPHRYON_INLINE void SetVelocity(Vector3 Velocity)
+        /// \return The outer radius.
+        ZYPHRYON_INLINE Real32 GetOuterRadius() const
         {
-            if (mVelocity != Velocity)
-            {
-                mVelocity = Velocity;
-                Touch();
-            }
+            return mOuterRadius;
         }
 
-        /// \brief Gets the emitter velocity.
+        /// \brief Sets the cone parameters for directional sound attenuation.
         ///
-        /// \return Constant reference to the velocity vector.
-        ZYPHRYON_INLINE Vector3 GetVelocity() const
+        /// \param InnerAngle The inner cone angle.
+        /// \param OuterAngle The outer cone angle.
+        /// \param OuterGain  The gain applied outside the outer cone (range [0, 1]).
+        ZYPHRYON_INLINE void SetCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
         {
-            return mVelocity;
+            LOG_ASSERT(InnerAngle.IsValid(), "Inner angle must be normalized (0 <= angle < 2π)");
+            LOG_ASSERT(OuterAngle.IsValid(), "Outer angle must be normalized (0 <= angle < 2π)");
+            LOG_ASSERT(InnerAngle <= OuterAngle, "Inner angle cannot exceed outer angle");
+            LOG_ASSERT(IsBetween(OuterGain, 0.0f, 1.0f), "Outer gain must be [0,1]");
+
+            mInnerAngle = InnerAngle;
+            mOuterAngle = OuterAngle;
+            mOuterGain  = OuterGain;
         }
 
-        /// \brief Sets the emitter orientation.
+        /// \brief Gets the inner cone angle of the emitter.
         ///
-        /// \param Orientation New orientation quaternion.
-        ZYPHRYON_INLINE void SetOrientation(Quaternion Orientation)
+        /// \return The inner cone angle.
+        ZYPHRYON_INLINE Angle GetInnerAngle() const
         {
-            LOG_ASSERT(Orientation.IsNormalized(), "Orientation must be a unit quaternion");
-
-            if (mOrientation != Orientation)
-            {
-                mOrientation = Orientation;
-                Touch();
-            }
+            return mInnerAngle;
         }
 
-        /// \brief Gets the emitter orientation.
+        /// \brief Gets the outer cone angle of the emitter.
         ///
-        /// \return Constant reference to the orientation quaternion.
-        ZYPHRYON_INLINE Quaternion GetOrientation() const
+        /// \return The outer cone angle.
+        ZYPHRYON_INLINE Angle GetOuterAngle() const
         {
-            return mOrientation;
+            return mOuterAngle;
         }
 
-        /// \brief Sets the attenuation radius of the emitter.
+        /// \brief Gets the outer cone gain of the emitter.
         ///
-        /// \param Radius New radius value (world units).
-        ZYPHRYON_INLINE void SetRadius(Real32 Radius)
+        /// \return The outer cone gain.
+        ZYPHRYON_INLINE Real32 GetOuterGain() const
         {
-            LOG_ASSERT(Radius >= 0.0f, "Emitter radius must be non-negative");
-
-            if (!IsAlmostEqual(mRadius, Radius))
-            {
-                mRadius = Radius;
-                Touch();
-            }
+            return mOuterGain;
         }
 
-        /// \brief Gets the attenuation radius of the emitter.
+        /// \brief Sets the Doppler effect factor for the emitter.
         ///
-        /// \return Current radius value.
-        ZYPHRYON_INLINE Real32 GetRadius() const
+        /// \param Factor The Doppler factor (non-negative).
+        ZYPHRYON_INLINE void SetDopplerFactor(Real32 Factor)
         {
-            return mRadius;
+            LOG_ASSERT(Factor >= 0.0f, "Doppler factor must be non-negative");
+
+            mDopplerFactor = Factor;
         }
 
-    private:
-
-        /// \brief Increments the version to mark a state change.
-        ZYPHRYON_INLINE void Touch()
+        /// \brief Gets the Doppler effect factor of the emitter.
+        ///
+        /// \return The Doppler factor.
+        ZYPHRYON_INLINE Real32 GetDopplerFactor() const
         {
-            ++mVersion;
+            return mDopplerFactor;
+        }
+
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeObject(mAttenuation);
+            Archive.SerializeObject(mInnerRadius);
+            Archive.SerializeObject(mInnerAngle);
+            Archive.SerializeObject(mOuterRadius);
+            Archive.SerializeObject(mOuterAngle);
+            Archive.SerializeObject(mOuterGain);
+            Archive.SerializeObject(mDopplerFactor);
         }
 
     private:
@@ -153,10 +162,12 @@ namespace Audio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt32     mVersion;
-        Vector3    mPosition;
-        Vector3    mVelocity;
-        Quaternion mOrientation;
-        Real32     mRadius;
+        Attenuation mAttenuation;
+        Real32      mInnerRadius;
+        Angle       mInnerAngle;
+        Real32      mOuterRadius;
+        Angle       mOuterAngle;
+        Real32      mOuterGain;
+        Real32      mDopplerFactor;
     };
 }

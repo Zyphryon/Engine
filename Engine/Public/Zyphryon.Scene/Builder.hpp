@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -24,7 +24,7 @@ namespace Scene::DSL
     ///
     /// \tparam Term The query term to resolve.
     template<class Term>
-    using Component = UnRef<Term>;
+    using Component = StripRef<Term>;
 
     /// \brief Represents a pair relationship between two types.
     ///
@@ -35,8 +35,8 @@ namespace Scene::DSL
     template<typename T0, typename T1>
     struct Pair
     {
-        using First  = T0; ///< The first type in the pair.
-        using Second = T1; ///< The second type in the pair.
+        using First  = T0;
+        using Second = T1;
     };
 
     /// \brief Encapsulates a query term requiring the presence of one or more components.
@@ -52,10 +52,9 @@ namespace Scene::DSL
         template<typename Constructor>
         ZYPHRYON_INLINE static constexpr decltype(auto) Apply(Ref<Constructor> Builder)
         {
-
             if constexpr (IsPointer<Term>)
             {
-                using Unwrapped = UnPtr<Component<Term>>;
+                using Unwrapped = StripPtr<Component<Term>>;
 
                 if constexpr (requires { typename Unwrapped::First; typename Unwrapped::Second; })
                 {
@@ -288,6 +287,17 @@ namespace Scene::DSL
 
 namespace Scene::DSL::_
 {
+    /// \brief Represents a list of types.
+    template<typename... Types>
+    struct TypeList
+    {
+        template<typename... Others>
+        constexpr auto operator+(TypeList<Others...>) const
+        {
+            return TypeList<Types..., Others...>{};
+        }
+    };
+
     /// \brief Maps a DSL term to its resolved component type.
     template<typename Term, typename = void>
     struct MapTypeFromTerm
@@ -299,14 +309,15 @@ namespace Scene::DSL::_
     template<typename Term>
     struct MapTypeFromTerm<Term, std::void_t<typename Term::Second>>
     {
-        using Type = Component<Switch<IsMutable<Term>, typename Term::Second, const typename Term::Second>>;
+        using Type = Component<Switch<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>;
     };
 
     /// \brief Maps a pair term to the component type of its second element.
     template<typename Term>
     struct MapTypeFromTerm<Ptr<Term>, std::void_t<typename Term::Second>>
     {
-        using Type = std::add_pointer_t<Component<Switch<IsMutable<Term>, typename Term::Second, const typename Term::Second>>>;
+        using Type = std::add_pointer_t<
+            Component<Switch<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>>;
     };
 
     /// \brief Convenience alias for the resolved component type of a DSL term.
@@ -319,24 +330,10 @@ namespace Scene::DSL::_
     template<typename... Terms>
     struct ExtractAndFilterTypes
     {
-        using ExtractedTypes = Tuple<MapType<Terms>...>;
+        template<typename T>
+        using Keep = Switch<std::is_empty_v<StripAll<T>>, TypeList<>, TypeList<T>>;
 
-        template<class T>
-        using Underlying = std::remove_cv_t<std::remove_pointer_t<std::remove_reference_t<T>>>;
-
-        template<typename Tuple, typename = void>
-        struct FilterEmpty;
-
-        template<typename... Types>
-        struct FilterEmpty<Tuple<Types...>, std::void_t<std::enable_if_t<true>>>
-        {
-            using Type = decltype([]<typename... T0>(Tuple<T0...>)
-            {
-                return std::tuple_cat(Switch<std::is_empty_v<Underlying<T0>>, Tuple<>, Tuple<T0>>{}...);
-            }(Tuple<Types...>{}));
-        };
-
-        using Type = typename FilterEmpty<ExtractedTypes>::Type;
+        using Type = decltype((TypeList<>{} + ... + Keep<MapType<Terms>>{ }));
     };
 
     /// \brief Extracts component types from a DSL expression.
@@ -370,21 +367,21 @@ namespace Scene::DSL::_
     template<typename... Types>
     struct ExtractTypesFromExpression<Not<Types...>>
     {
-        using Type = Tuple<>;
+        using Type = TypeList<>;
     };
 
     /// \brief Extracts component types from an \c OrderBy expression.
     template<typename Types, auto Comparison>
     struct ExtractTypesFromExpression<OrderBy<Types, Comparison>>
     {
-        using Type = Tuple<>;
+        using Type = TypeList<>;
     };
 
     /// \brief Extracts component types from an \c Interval expression.
     template<auto Time>
     struct ExtractTypesFromExpression<Interval<Time>>
     {
-        using Type = Tuple<>;
+        using Type = TypeList<>;
     };
 
     /// \brief Extracts component types from an \c Or expression.
@@ -401,27 +398,27 @@ namespace Scene::DSL::_
         using Type = typename ExtractAndFilterTypes<Types...>::Type;
     };
 
-    /// \brief Combines the extracted component types from multiple DSL expressions into a tuple.
+    /// \brief Combines the extracted component types from multiple DSL expressions into a list.
     ///
     /// \tparam Expressions The list of expressions to analyze.
     template<typename... Expressions>
     struct ExtractTypes
     {
-        using Type = decltype(std::tuple_cat(std::declval<typename ExtractTypesFromExpression<Expressions>::Type>()...));
+        using Type = decltype((TypeList<>{} + ... + typename ExtractTypesFromExpression<Expressions>::Type{}));
     };
 
-    /// \brief Transforms a tuple of types into a new template instantiation.
-    template <typename Tuple, template <typename...> class Target>
+    /// \brief Transforms a list of types into a new template instantiation.
+    template <typename Types, template <typename...> class Target>
     struct Extract;
 
-    /// \brief Specialization of Extract for tuples of types.
+    /// \brief Specialization of Extract for lists of types.
     template <typename... Types, template <typename...> class Target>
-    struct Extract<Tuple<Types...>, Target>
+    struct Extract<TypeList<Types...>, Target>
     {
         using Type = Target<Types...>;
     };
 
-    /// \brief Convenience alias for transforming a tuple of types into a new template instantiation.
+    /// \brief Convenience alias for transforming a list of types into a new template instantiation.
     ///
     /// \param Builder     The builder object to apply expressions to.
     /// \param Expressions The list of runtime expressions to apply.

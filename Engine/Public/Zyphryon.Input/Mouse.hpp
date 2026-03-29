@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Common.hpp"
-#include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -31,6 +30,15 @@ namespace Input
 
     public:
 
+        /// \brief Constructs a new mouse input device with default state.
+        ZYPHRYON_INLINE Mouse()
+            : mThisX       { 0 },
+              mThisY       { 0 },
+              mThisScrollX { 0 },
+              mThisScrollY { 0 }
+        {
+        }
+
         /// \brief Begins a new frame, updating the mouse state.
         void Begin();
 
@@ -40,20 +48,36 @@ namespace Input
         /// \brief Clears all stored mouse state.
         void Reset();
 
-        /// \brief Gets the current mouse position.
+        /// \brief Gets the current X position of the mouse cursor.
         ///
-        /// \return The current mouse position as a 2D vector.
-        ZYPHRYON_INLINE Vector2 GetPosition() const
+        /// \return The X coordinate of the mouse cursor.
+        ZYPHRYON_INLINE Real32 GetX() const
         {
-            return mThisMousePosition;
+            return mThisX;
         }
 
-        /// \brief Gets the current mouse scroll delta.
+        /// \brief Gets the current Y position of the mouse cursor.
         ///
-        /// \return The current scroll delta as a 2D vector.
-        ZYPHRYON_INLINE Vector2 GetScroll() const
+        /// \return The Y coordinate of the mouse cursor.
+        ZYPHRYON_INLINE Real32 GetY() const
         {
-            return mThisMouseScroll;
+            return mThisY;
+        }
+
+        /// \brief Gets the current scroll offset along the X axis.
+        ///
+        /// \return The scroll offset in the X direction.
+        ZYPHRYON_INLINE Real32 GetScrollX() const
+        {
+            return mThisScrollX;
+        }
+
+        /// \brief Gets the current scroll offset along the Y axis.
+        ///
+        /// \return The scroll offset in the Y direction.
+        ZYPHRYON_INLINE Real32 GetScrollY() const
+        {
+            return mThisScrollY;
         }
 
         /// \brief Checks if a mouse button was pressed during the current frame.
@@ -88,8 +112,10 @@ namespace Input
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector2             mThisMousePosition;
-        Vector2             mThisMouseScroll;
+        Real32              mThisX;
+        Real32              mThisY;
+        Real32              mThisScrollX;
+        Real32              mThisScrollY;
         Bitset<kMaxButtons> mLastButtons;
         Bitset<kMaxButtons> mThisButtons;
     };

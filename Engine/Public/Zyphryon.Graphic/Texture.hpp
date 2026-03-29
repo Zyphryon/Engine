@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -28,9 +28,9 @@ namespace Graphic
 
     public:
 
-        /// \brief Constructs a texture resource with a given content key.
+        /// \brief Constructs a texture resource with the given content key.
         ///
-        /// \param Key Unique URI identifying this texture asset.
+        /// \param Key The unique content key identifying this texture.
         explicit Texture(AnyRef<Content::Uri> Key);
 
         /// \brief Loads texture data into the resource.
@@ -54,7 +54,7 @@ namespace Graphic
         /// \param Data   Raw texture data.
         ZYPHRYON_INLINE void Load(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Level, AnyRef<Blob> Data)
         {
-            Load(Access::Device, Format, TextureLayout::Source, Width, Height, Level, Multisample::X1, Move(Data));
+            Load(Access::Stream, Format, TextureLayout::Source, Width, Height, Level, Multisample::X1, Move(Data));
         }
 
         /// \brief Returns the GPU object ID associated with this texture.
@@ -71,6 +71,14 @@ namespace Graphic
         ZYPHRYON_INLINE Access GetAccess() const
         {
             return mAccess;
+        }
+
+        /// \brief Returns the type of the texture.
+        ///
+        /// \return The texture type.
+        ZYPHRYON_INLINE TextureType GetType() const
+        {
+            return mType;
         }
 
         /// \brief Returns the pixel format of the texture.
@@ -123,10 +131,10 @@ namespace Graphic
 
     private:
 
-        /// \copydoc Resource::OnCreate
+        /// \copydoc Resource::OnCreate(Ref<Service::Host>)
         Bool OnCreate(Ref<Service::Host> Host) override;
 
-        /// \copydoc Resource::OnDelete
+        /// \copydoc Resource::OnDelete(Ref<Service::Host>)
         void OnDelete(Ref<Service::Host> Host) override;
 
     private:
@@ -136,6 +144,7 @@ namespace Graphic
 
         Object        mID;
         Access        mAccess;
+        TextureType   mType;
         TextureFormat mFormat;
         TextureLayout mLayout;
         UInt16        mWidth;

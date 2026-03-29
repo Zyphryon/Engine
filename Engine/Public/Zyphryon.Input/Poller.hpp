@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -26,7 +26,10 @@ namespace Input
     public:
 
         /// \brief The maximum number of translated input events stored in a single frame.
-        constexpr static UInt32 kMaxEventsPerFrame = 32;
+        static constexpr UInt kMaxEventsPerFrame = 32;
+
+        /// \brief The maximum size of text input captured in a single frame.
+        static constexpr UInt kMaxTextInputSize  = 256;
 
     public:
 
@@ -43,6 +46,7 @@ namespace Input
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Event, kMaxEventsPerFrame> mBuffer;
+        Array<Event, kMaxEventsPerFrame> mEventQueue;
+        Str8                             mEventText;
     };
 }

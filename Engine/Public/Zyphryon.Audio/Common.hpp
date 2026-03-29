@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #pragma once
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Base/Base.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -23,27 +17,26 @@ namespace Audio
     /// \brief Constants used across the audio module.
     enum
     {
-        /// \brief Number of audio frames processed per streaming block.
-        kBlock        = 4096,
-
-        /// \brief Maximum number of concurrent audio buffers.
-        kMaxBuffers   = 3,
-
         /// \brief Maximum number of active audio instances.
         kMaxInstances = 256,
-
-        /// \brief Maximum number of submixes allowed.
-        kMaxSubmixes  = 16,
     };
 
-    /// \brief Specifies the backend used for audio playback and mixing.
+    /// \brief Enumeration of distance attenuation models.
+    enum class Attenuation : UInt8
+    {
+        Linear,         ///< Linear distance attenuation model.
+        Inverse,        ///< Inverse distance attenuation model.
+        Exponential,    ///< Exponential distance attenuation model.
+    };
+
+    /// \brief Enumeration of available audio backends.
     enum class Backend : UInt8
     {
-        None,   ///< No backend is initialized.
-        FAudio, ///< Uses the FAudio backend for audio processing.
+        None,      ///< No backend is initialized.
+        Miniaudio, ///< Uses the default library for audio processing.
     };
 
-    /// \brief Represents a high-level logical audio category for routing and volume control.
+    /// \brief Enumeration of audio track categories.
     enum class Category : UInt8
     {
         Music,      ///< Background music tracks.
@@ -53,79 +46,29 @@ namespace Audio
         Interface,  ///< User interface sounds such as clicks or notifications.
     };
 
-    /// \brief Specifies the audio data format.
-    enum class Format : UInt8
+    /// \brief Enumeration of audio channel topologies.
+    enum class Topology : UInt8
     {
-        ADPCM, ///< Adaptive Differential Pulse-Code Modulation.
-        PCM,   ///< Standard uncompressed Pulse-Code Modulation.
-        IEEE,  ///< IEEE 754 floating-point audio format.
-    };
-
-    /// \brief Identifier for an audio object (e.g., a source or buffer).
-    using Object = UInt16;
-
-    /// \brief Describes an audio adapter.
-    struct Adapter final
-    {
-        /// \brief Human-readable name of the audio adapter.
-        Str8 Name;
+        Mono        = 1,    ///< Single audio channel.
+        Stereo      = 2,    ///< Two audio channels (left and right).
+        Surround4_0 = 4,    ///< Four audio channels (4.0 surround sound).
+        Surround5_1 = 6,    ///< Five audio channels with one subwoofer (5.1 surround sound).
+        Surround7_1 = 8,    ///< Seven audio channels with one subwoofer (7.1 surround sound).
     };
 
     /// \brief Describes the capabilities and state of the audio backend.
     struct Capabilities final
     {
-        /// \brief Active audio backend in use.
-        Backend         Backend;
+        /// The audio backend currently in use.
+        Backend      Backend  = Backend::None;
 
-        /// \brief Name of the currently selected audio device.
-        Str8            Device;
+        /// The audio device currently selected.
+        Str8         Output;
 
-        /// \brief List of available audio adapters.
-        Vector<Adapter> Adapters;
+        /// List of available audio output devices.
+        Vector<Str8> Devices;
     };
 
-    /// \brief Describes the schema of an audio stream.
-    struct Schema final
-    {
-        /// \brief Constructs a schema with default values.
-        ZYPHRYON_INLINE constexpr Schema()
-            : Duration  { 0 },
-              Frequency { 44100 },
-              Format    { Format::PCM },
-              Layout    { 1 },
-              Stride    { 2 }
-        {
-        }
-
-        /// \brief Constructs a schema with the given properties.
-        ///
-        /// \param Duration  Total number of sample frames in the stream.
-        /// \param Frequency Sample rate in Hertz (samples per second).
-        /// \param Format    Audio sample format (e.g., PCM, float).
-        /// \param Layout    Physical channel layout (e.g., mono, stereo).
-        /// \param Stride    Number of bytes per sample for a single channel.
-        ZYPHRYON_INLINE constexpr Schema(UInt64 Duration, UInt32 Frequency, Format Format, UInt8 Layout, UInt8 Stride)
-            : Duration  { Duration  },
-              Frequency { Frequency },
-              Format    { Format },
-              Layout    { Layout },
-              Stride    { Stride }
-        {
-        }
-
-        /// \brief Total number of sample frames in the stream.
-        UInt64 Duration;
-
-        /// \brief Sampling rate in Hertz (samples per second).
-        UInt32 Frequency;
-
-        /// \brief Audio sample format.
-        Format Format;
-
-        /// \brief Physical channel layout (e.g., mono, stereo).
-        UInt8  Layout;
-
-        /// \brief Number of bytes per sample for a single channel.
-        UInt8  Stride;
-    };
+    /// \brief Type alias for audio playback identifiers.
+    using Object = UInt32;
 }

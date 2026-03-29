@@ -1,5 +1,5 @@
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -11,30 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
-#include "Mount/EmbeddedMount.hpp"
-
-#ifdef    ZYPHRYON_LOADER_MP3
-    #include "Zyphryon.Content/Sound/MP3/Loader.hpp"
-#endif // ZYPHRYON_LOADER_MP3
-#ifdef    ZYPHRYON_LOADER_WAV
-    #include "Zyphryon.Content/Sound/WAV/Loader.hpp"
-#endif // ZYPHRYON_LOADER_WAV
-#ifdef    ZYPHRYON_LOADER_STB
-    #include "Zyphryon.Content/Texture/STB/Loader.hpp"
-#endif // ZYPHRYON_LOADER_STB
-#ifdef    ZYPHRYON_LOADER_MATERIAL
-    #include "Zyphryon.Content/Material/Loader.hpp"
-#endif // ZYPHRYON_LOADER_MATERIAL
-#ifdef    ZYPHRYON_LOADER_GLTF
-    #include "Zyphryon.Content/Model/GLTF/Loader.hpp"
-#endif // ZYPHRYON_LOADER_GLTF
-#ifdef    ZYPHRYON_LOADER_EFFECT
-    #include "Zyphryon.Graphic/Service.hpp"
-    #include "Zyphryon.Content/Pipeline/Loader.hpp"
-#endif // ZYPHRYON_LOADER_EFFECT
-#ifdef    ZYPHRYON_LOADER_ARTERY
-    #include "Zyphryon.Content/Font/Artery/Loader.hpp"
-#endif // ZYPHRYON_LOADER_ARTERY
+#include "Mount/Embedded.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -52,8 +29,6 @@ namespace Content
         {
             Worker = Thread(Capture<& Service::OnLoaderThread>(this));
         }
-
-        RegisterDefaultResources();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -63,32 +38,29 @@ namespace Content
     {
         ZYPHRYON_PROFILE_SCOPE("Content::Tick");
 
-        // Count of completed parsers in this tick.
+        Guard Guard(mParserMutex);
+
+        // Iterates through all pending scopes in the loader list.
         UInt32 Completed = 0;
 
+        for (UInt32 Element = 0; Element < mParserList.size();)
         {
-            Lock<> Guard(mParserLatch);
-
-            // Iterates through all pending scopes in the loader list.
-            for (UInt32 Element = 0; Element < mParserList.size();)
+            // If the scope's dependencies are all resolved, finalize the associated resource.
+            if (Ref<Scope> Scope = mParserList[Element]; Scope.Poll())
             {
-                // If the scope's dependencies are all resolved, finalize the associated resource.
-                if (Ref<Scope> Scope = mParserList[Element]; Scope.Poll())
-                {
-                    // Proceed to load the asset.
-                    OnAssetCreate(* Scope.GetResource());
+                // Proceed to load the asset.
+                OnAssetCreate(* Scope.GetResource());
 
-                    // Remove the completed scope from the list via swap-remove for efficiency.
-                    mParserList[Element] = Move(mParserList[mParserList.size() - 1]);
-                    mParserList.pop_back();
+                // Remove the completed scope from the list via swap-remove for efficiency.
+                mParserList[Element] = Move(mParserList[mParserList.size() - 1]);
+                mParserList.pop_back();
 
-                    // Increment the count of completed parsers.
-                    ++Completed;
-                }
-                else
-                {
-                    ++Element;
-                }
+                // Increment the count of completed parsers.
+                ++Completed;
+            }
+            else
+            {
+                ++Element;
             }
         }
 
@@ -108,10 +80,7 @@ namespace Content
             Worker.request_stop();
         }
 
-        {
-            Lock<true> Guard(mLoaderLatch);
-            mLoaderCondition.notify_all();
-        }
+        mLoaderGate.notify_all();
 
         for (Ref<Thread> Worker : mLoaderThreads)
         {
@@ -126,7 +95,7 @@ namespace Content
     {
         for (const ConstStr8 Extension : Loader->GetExtensions())
         {
-            mLoaders.try_emplace(Extension, Loader);
+            mLoaders.try_emplace(Hash(Extension), Loader);
         }
     }
 
@@ -135,7 +104,7 @@ namespace Content
 
     void Service::RemoveLoader(ConstStr8 Extension)
     {
-        mLoaders.erase(Extension);
+        mLoaders.erase(Hash(Extension));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -143,7 +112,7 @@ namespace Content
 
     void Service::AddMount(ConstStr8 Schema, ConstTracker<Mount> Mount)
     {
-        mMounts.try_emplace(Schema, Mount);
+        mMounts.try_emplace(Hash(Schema), Mount);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -151,7 +120,7 @@ namespace Content
 
     void Service::RemoveMount(ConstStr8 Schema)
     {
-        mMounts.erase(Schema);
+        mMounts.erase(Hash(Schema));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -159,7 +128,7 @@ namespace Content
 
     Vector<Mount::Item> Service::Enumerate(ConstRef<Uri> Key) const
     {
-        if (const auto Iterator = mMounts.find(Key.GetSchema()); Iterator != mMounts.end())
+        if (const auto Iterator = mMounts.find(Hash(Key.GetSchema())); Iterator != mMounts.end())
         {
             return Iterator->second->Enumerate(Key.GetPath());
         }
@@ -171,7 +140,7 @@ namespace Content
 
     Blob Service::Find(ConstRef<Uri> Key)
     {
-        if (const auto Iterator = mMounts.find(Key.GetSchema()); Iterator != mMounts.end())
+        if (const auto Iterator = mMounts.find(Hash(Key.GetSchema())); Iterator != mMounts.end())
         {
             return Iterator->second->Read(Key.GetPath());
         }
@@ -195,7 +164,7 @@ namespace Content
 
     Bool Service::Save(ConstRef<Uri> Key, ConstSpan<Byte> Data)
     {
-        if (const auto Iterator = mMounts.find(Key.GetSchema()); Iterator != mMounts.end())
+        if (const auto Iterator = mMounts.find(Hash(Key.GetSchema())); Iterator != mMounts.end())
         {
             Iterator->second->Write(Key.GetPath(), Data);
             return true;
@@ -208,7 +177,7 @@ namespace Content
 
     Bool Service::Delete(ConstRef<Uri> Key)
     {
-        if (const auto Iterator = mMounts.find(Key.GetSchema()); Iterator != mMounts.end())
+        if (const auto Iterator = mMounts.find(Hash(Key.GetSchema())); Iterator != mMounts.end())
         {
             Iterator->second->Delete(Key.GetPath());
             return true;
@@ -237,7 +206,7 @@ namespace Content
 
     void Service::OnLoaderThread(ConstRef<std::stop_token> Token)
     {
-        ZYPHRYON_THREAD_NAME("I/O Thread");
+        ZYPHRYON_PROFILE_THREAD("I/O Thread");
 
         LOG_INFO("Content: I/O Thread initialized.");
 
@@ -249,9 +218,9 @@ namespace Content
             Scope Scope;
 
             {
-                Lock<true> Guard(mLoaderLatch);
+                Lock Lock(mLoaderMutex);
 
-                mLoaderCondition.wait(Guard, [&]
+                mLoaderGate.wait(Lock, [&]
                 {
                     return !mLoaderList.empty() || Token.stop_requested();
                 });
@@ -270,7 +239,7 @@ namespace Content
             {
                 // Push parsed scope into parser list
                 {
-                    Lock<> Guard(mParserLatch);
+                    Guard Guard(mParserMutex);
                     mParserList.push_back(Move(Scope));
                 }
             }
@@ -294,7 +263,7 @@ namespace Content
     {
         ConstRef<Uri> Key = Scope.GetResource()->GetKey();
 
-        if (const auto Iterator = mLoaders.find(Key.GetExtension()); Iterator != mLoaders.end())
+        if (const auto Iterator = mLoaders.find(Hash(Key.GetExtension())); Iterator != mLoaders.end())
         {
             ConstTracker<Loader> Loader = Iterator->second;
 
@@ -334,7 +303,7 @@ namespace Content
         {
             // Queues the resource.
             {
-                Lock<> Guard(mLoaderLatch);
+                Guard Guard(mLoaderMutex);
                 mLoaderList.emplace_back(Asset);
             }
 
@@ -342,7 +311,7 @@ namespace Content
             mParserPending.fetch_add(1, std::memory_order_release);
 
             // Wake up one loader thread to process the resource
-            mLoaderCondition.notify_one();
+            mLoaderGate.notify_one();
         }
     }
 
@@ -364,45 +333,5 @@ namespace Content
         LOG_DEBUG("Content: Unloading '{}'", Asset.GetKey().GetUrl());
 
         Asset.Delete(GetHost());
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::RegisterDefaultResources()
-    {
-        AddMount("Engine", Tracker<EmbeddedMount>::Create());
-
-        if (IsClientMode())
-        {
-#ifdef    ZYPHRYON_LOADER_MP3
-            AddLoader(Tracker<MP3Loader>::Create());
-#endif // ZYPHRYON_LOADER_MP3
-
-#ifdef    ZYPHRYON_LOADER_WAV
-            AddLoader(Tracker<WAVLoader>::Create());
-#endif // ZYPHRYON_LOADER_WAV
-
-#ifdef    ZYPHRYON_LOADER_STB
-            AddLoader(Tracker<STBLoader>::Create());
-#endif // ZYPHRYON_LOADER_STB
-
-#ifdef    ZYPHRYON_LOADER_MATERIAL
-            AddLoader(Tracker<MaterialLoader>::Create());
-#endif // ZYPHRYON_LOADER_MATERIAL
-
-#ifdef    ZYPHRYON_LOADER_GLTF
-            AddLoader(Tracker<GLTFLoader>::Create());
-#endif // ZYPHRYON_LOADER_GLTF
-
-#ifdef    ZYPHRYON_LOADER_EFFECT
-            Graphic::Device Device = GetService<Graphic::Service>()->GetDevice();
-            AddLoader(Tracker<PipelineLoader>::Create(Device.Backend, Device.Language));
-#endif // ZYPHRYON_LOADER_EFFECT
-        }
-
-#ifdef    ZYPHRYON_LOADER_ARTERY
-        AddLoader(Tracker<ArteryFontLoader>::Create());
-#endif // ZYPHRYON_LOADER_ARTERY
     }
 }

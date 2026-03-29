@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Scalar.hpp"
+#include "Angle.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -54,7 +54,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return The unmodified time value.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type Linear(Type Time)
+    ZYPHRYON_INLINE static constexpr Type Linear(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -66,7 +66,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following quadratic acceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InQuad(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InQuad(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -78,7 +78,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following quadratic deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutQuad(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutQuad(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -90,7 +90,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with quadratic acceleration/deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutQuad(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutQuad(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -102,7 +102,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following cubic acceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InCubic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InCubic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -114,7 +114,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following cubic deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutCubic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutCubic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -127,7 +127,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with cubic acceleration/deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutCubic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutCubic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -139,7 +139,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Smoothed eased value.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type Smoothstep(Type Time)
+    ZYPHRYON_INLINE static constexpr Type Smoothstep(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -151,11 +151,11 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following sinusoidal acceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InSine(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InSine(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return 1 - Cos(Time * kPI<Type> / 2);
+        return 1 - Angle::Cosine(Time * kPI<Type> / 2);
     }
 
     /// \brief Sinusoidal easing function (decelerating to zero velocity).
@@ -163,11 +163,11 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following sinusoidal deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutSine(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutSine(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return Sin(Time * kPI<Type> / 2);
+        return Angle::Sine(Time * kPI<Type> / 2);
     }
 
     /// \brief Sinusoidal easing function (acceleration until halfway, then deceleration).
@@ -175,11 +175,11 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with sinusoidal acceleration/deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutSine(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutSine(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return -(Sin(kPI<Type> * Time) - 1) / 2;
+        return -(Angle::Sine(kPI<Type> * Time) - 1) / 2;
     }
 
     /// \brief Exponential easing function (accelerating from zero velocity).
@@ -187,7 +187,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following exponential acceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InExpo(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InExpo(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -199,7 +199,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following exponential deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutExpo(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutExpo(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -211,7 +211,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following circular acceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InCirc(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InCirc(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -223,7 +223,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value following circular deceleration.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutCirc(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutCirc(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -236,11 +236,11 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with elastic spring effect (acceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InElastic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InElastic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return Time == 0 ? 0 : Time == 1 ? 1 : -Pow(Type(2), 10 * Time - 10) * Sin((Time * 10 - 10.75) * (2 * kPI<Type> / 3));
+        return Time == 0 ? 0 : Time == 1 ? 1 : -Pow(Type(2), 10 * Time - 10) * Angle::Sine((Time * 10 - 10.75) * (2 * kPI<Type> / 3));
     }
 
     /// \brief Elastic easing function (decelerating to zero velocity with overshoot).
@@ -248,12 +248,12 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with elastic spring effect (deceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutElastic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutElastic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
         constexpr Type C4 = (2 * kPI<Type>) / 3;
-        return Time == 0 ? 0 : Time == 1 ? 1 : Pow(Type(2), -10 * Time) * Sin((Time * 10 - 0.75) * C4) + 1;
+        return Time == 0 ? 0 : Time == 1 ? 1 : Pow(Type(2), -10 * Time) * Angle::Sine((Time * 10 - 0.75) * C4) + 1;
     }
 
     /// \brief Elastic easing function (acceleration and deceleration with overshoot).
@@ -261,14 +261,14 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with elastic spring effect (both directions).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutElastic(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutElastic(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
         constexpr Type C5 = (2 * kPI<Type>) / 4.5;
         return Time == 0 ? 0 : Time == 1 ? 1 : Time < 0.5
-            ? -(Pow(Type(2), 20 * Time - 10) * Sin((20 * Time - 11.125) * C5)) / 2
-            : (Pow(Type(2), -20 * Time + 10) * Sin((20 * Time - 11.125) * C5 )) / 2 + 1;
+            ? -(Pow(Type(2), 20 * Time - 10) * Angle::Sine((20 * Time - 11.125) * C5)) / 2
+            : (Pow(Type(2), -20 * Time + 10) * Angle::Sine((20 * Time - 11.125) * C5 )) / 2 + 1;
     }
 
     /// \brief Bounce easing function (decelerating with bounce effect).
@@ -276,7 +276,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with bounce effect (deceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutBounce(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutBounce(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -307,7 +307,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with bounce effect (acceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InBounce(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InBounce(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -319,7 +319,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with bounce effect (both directions).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutBounce(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutBounce(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -331,7 +331,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with overshoot (acceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InBack(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InBack(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -345,7 +345,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with overshoot (deceleration).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type OutBack(Type Time)
+    ZYPHRYON_INLINE static constexpr Type OutBack(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -359,7 +359,7 @@ inline namespace Math
     /// \param Time Normalized time value [0, 1].
     /// \return Eased value with overshoot (both directions).
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type InOutBack(Type Time)
+    ZYPHRYON_INLINE static constexpr Type InOutBack(Type Time)
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
@@ -375,7 +375,7 @@ inline namespace Math
     /// \param Time     Normalized time value [0, 1].
     /// \return The eased value according to the specified function.
     template<typename Type>
-    ZYPHRYON_INLINE constexpr static Type Ease(Easing Function, Type Time)
+    ZYPHRYON_INLINE static constexpr Type Ease(Easing Function, Type Time)
     {
         switch (Function)
         {

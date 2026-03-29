@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -43,7 +43,7 @@ namespace Graphic
         ZYPHRYON_INLINE void Clear()
         {
             mInFlightSubmission.clear();
-            mInFlightCommand = Submission();
+            mInFlightCommand = DrawPacket();
         }
 
         /// \brief Sets the indices stream to use for this submission.
@@ -136,31 +136,25 @@ namespace Graphic
             SetPipeline(Pipeline.GetID());
         }
 
-        /// \brief Sets a sampler at the specified register.
+        /// \brief Sets a texture at the specified register.
         /// 
-        /// \param Register Slot index in the shader.
-        /// \param Sampler  Sampler object to bind.
-        ZYPHRYON_INLINE void SetSampler(UInt32 Register, ConstRef<Sampler> Sampler)
+        /// \param Register The slot index in the shader.
+        /// \param Texture  The texture handle to bind.
+        /// \param Sampler  The sampler handle to bind.
+        ZYPHRYON_INLINE void SetTexture(UInt32 Register, Object Texture, Sampler Sampler)
         {
-            mInFlightCommand.Samplers[Register] = Sampler;
+            mInFlightCommand.Textures.emplace_back(Entry(Register, Texture));
+            mInFlightCommand.Samplers.emplace_back(Entry(Register, Sampler));
         }
 
         /// \brief Sets a texture at the specified register.
         /// 
-        /// \param Register Slot index in the shader.
-        /// \param Texture  GPU texture handle to bind.
-        ZYPHRYON_INLINE void SetTexture(UInt32 Register, Object Texture)
+        /// \param Register The slot index in the shader.
+        /// \param Texture  The texture object wrapper.
+        /// \param Sampler  The sampler handle to bind.
+        ZYPHRYON_INLINE void SetTexture(UInt32 Register, ConstRef<Texture> Texture, Sampler Sampler)
         {
-            mInFlightCommand.Textures[Register] = Texture;
-        }
-
-        /// \brief Sets a texture at the specified register.
-        /// 
-        /// \param Register Slot index in the shader.
-        /// \param Texture  Texture object wrapper.
-        ZYPHRYON_INLINE void SetTexture(UInt32 Register, ConstRef<Texture> Texture)
-        {
-            SetTexture(Register, Texture.GetID());
+            SetTexture(Register, Texture.GetID(), Sampler);
         }
 
         /// \brief Binds textures and samplers from the material using pipeline-defined semantic mappings.
@@ -169,47 +163,49 @@ namespace Graphic
         /// \param Material Material providing resources for those semantics.
         ZYPHRYON_INLINE void Bind(ConstRef<Pipeline> Pipeline, ConstRef<Material> Material)
         {
-            for (ConstRef<Pipeline::Binding<TextureSemantic>> Binding : Pipeline.GetTextures())
+            for (ConstRef<Entry<TextureSemantic>> Binding : Pipeline.GetTextures())
             {
-                if (ConstTracker<Texture> Texture = Material.GetTexture(Binding.Semantic))
+                if (ConstTracker<Texture> Texture = Material.GetTexture(Binding.Resource))
                 {
-                    SetTexture(Binding.Register, Texture->GetID());
+                    SetTexture(Binding.Register, Texture->GetID(), Material.GetSampler(Binding.Resource));
                 }
-                else
-                {
-                    SetTexture(Binding.Register, 0);
-                }
-                SetSampler(Binding.Register, Material.GetSampler(Binding.Semantic));
             }
         }
 
         /// \brief Finalizes the current draw command and adds it to the submission list.
-        /// 
+        ///
         /// \param Count     Number of indices or vertices to draw.
         /// \param Base      Base vertex index (or first vertex for non-indexed).
         /// \param Offset    Offset into index buffer or vertex buffer.
         /// \param Instances Number of instances to draw (defaults to 1).
         ZYPHRYON_INLINE void Draw(UInt32 Count, UInt32 Base, UInt32 Offset, UInt32 Instances = 1)
         {
-            Ref<Invocation> Command = mInFlightCommand.Invocation;
-            Command.Count     = Count;
-            Command.Base      = Base;
-            Command.Offset    = Offset;
-            Command.Instances = Instances;
+            Ref<DrawCommand> Parameters = mInFlightCommand.Command;
+            Parameters.Count     = Count;
+            Parameters.Base      = Base;
+            Parameters.Offset    = Offset;
+            Parameters.Instances = Instances;
 
             mInFlightSubmission.push_back(mInFlightCommand);
         }
-        
+
         /// \brief Resets the current in-flight command without clearing recorded submissions.
         ZYPHRYON_INLINE void Reset()
         {
-            mInFlightCommand = Submission();
+            mInFlightCommand = DrawPacket();
+        }
+
+        /// \brief Resets texture and sampler bindings for the current in-flight command.
+        ZYPHRYON_INLINE void ResetBindings()
+        {
+            mInFlightCommand.Textures.clear();
+            mInFlightCommand.Samplers.clear();
         }
 
         /// \brief Returns the list of all recorded submissions.
         /// 
         /// \return Span to the list of finalized submissions.
-        ZYPHRYON_INLINE ConstSpan<Submission> GetSubmissions() const
+        ZYPHRYON_INLINE ConstSpan<DrawPacket> GetSubmissions() const
         {
             return mInFlightSubmission;
         }
@@ -219,7 +215,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector<Submission> mInFlightSubmission;
-        Submission         mInFlightCommand;
+        Vector<DrawPacket> mInFlightSubmission;
+        DrawPacket         mInFlightCommand;
     };
 }

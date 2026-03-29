@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -21,36 +21,26 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Camera::Camera()
-        : mDirty { false }
-    {
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Bool Camera::Compute()
     {
-        const Bool Dirty = (mDirty > 0);
-
-        if (Dirty)
+        // Atomically retrieve and clear the dirty mask, if no bits were set, no recomputation is needed.
+        const UInt32 Mask = Exchange(mMask, 0u);
+        if (Mask == 0)
         {
-            // Recompute the view matrix if the transform was modified.
-            if (HasBit(mDirty, kDirtyBitTransformation))
-            {
-                mView = Matrix4x4::Inverse<true>(mTransform.Compute());
-            }
-
-            // Build a new view-projection matrix from projection and view.
-            mViewProjection        = mProjection * mView;
-
-            // Derive the inverse view-projection for unprojection operations.
-            mViewProjectionInverse = Matrix4x4::Inverse<false>(mViewProjection);
-
-            // Clear all dirty bits to mark matrices as up-to-date.
-            mDirty = 0;
+            return false;
         }
-        return Dirty;
-    }
 
+        // Recompute the view matrix only if the camera's transform has changed.
+        if (HasBit(Mask, kBitMaskTransformation))
+        {
+            mView = Matrix4x4::InverseAffine(mTransform.Compute());
+        }
+
+        // Recompute the combined view-projection matrix.
+        mViewProjection = mProjection * mView;
+
+        // Precompute the inverse of the view-projection matrix.
+        mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);
+        return true;
+    }
 }

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Primitive.hpp"
+#include <SDL3/SDL_timer.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,10 +33,20 @@ inline namespace Base
         {
         }
 
+        /// \brief Constructs a new time instance with specified absolute and delta values.
+        ///
+        /// \param Absolute The absolute time, in seconds.
+        /// \param Delta    The delta time, in seconds.
+        ZYPHRYON_INLINE Time(Real64 Absolute, Real64 Delta)
+            : mAbsolute { Absolute },
+              mDelta    { Delta }
+        {
+        }
+
         /// \brief Updates the absolute time and computes the delta since last update.
         /// 
         /// \param Absolute The new absolute time, in seconds.
-        ZYPHRYON_INLINE void SetAbsolute(Real32 Absolute)
+        ZYPHRYON_INLINE void SetAbsolute(Real64 Absolute)
         {
             mDelta    = Absolute - mAbsolute;
             mAbsolute = Absolute;
@@ -59,12 +70,20 @@ inline namespace Base
 
     public:
 
-        /// \brief Retrieves the current time in seconds since application start.
+        /// \brief Retrieves the system uptime in nanoseconds.
         ///
-        /// \return The current time in seconds.
-        static Real64 Elapsed()
+        /// \return The uptime in nanoseconds.
+        ZYPHRYON_INLINE static UInt64 GetUptimeInNanoseconds()
         {
-            return static_cast<Real64>(SDL_GetTicksNS()) * (1.0 / SDL_NS_PER_SECOND);
+            return SDL_GetTicksNS();
+        }
+
+        /// \brief Retrieves the system uptime in seconds.
+        ///
+        /// \return The uptime in seconds.
+        ZYPHRYON_INLINE static Real64 GetUptimeInSeconds()
+        {
+            return static_cast<Real64>(GetUptimeInNanoseconds()) * (1.0 / SDL_NS_PER_SECOND);
         }
 
     private:

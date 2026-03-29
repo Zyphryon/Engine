@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -33,8 +33,8 @@ namespace Input
         /// \brief Event triggered when a key is released.
         MulticastDelegate<Bool(Key)>                            OnKeyUp;
 
-        /// \brief Event triggered when a character is typed (text input).
-        MulticastDelegate<Bool(UInt32)>                         OnKeyType;
+        /// \brief Event triggered when a text input is received.
+        MulticastDelegate<Bool(ConstStr8)>                      OnKeyType;
 
         /// \brief Event triggered when a mouse button is pressed down.
         MulticastDelegate<Bool(Button)>                         OnMouseDown;
@@ -64,13 +64,45 @@ namespace Input
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
-        /// \brief Updates all input devices and dispatches events to registered listeners.
-        ///
-        /// This method is called once per frame by the engine and is responsible for
-        /// polling devices via \ref Poller and updating mouse and keyboard states.
-        ///
-        /// \param Time The time step data for the current frame.
+        /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
+
+        /// \brief Dispatches events to the appropriate delegates.
+        ///
+        /// \param Event The event to handle.
+        /// \return `true` if the event was handled and should not propagate further, otherwise
+        ZYPHRYON_INLINE Bool Invoke(ConstRef<Event> Event) const
+        {
+            switch (Event.Kind)
+            {
+            case Event::Type::KeyType:
+                return OnKeyType.Propagate(Event.KeyType.Text);
+            case Event::Type::KeyUp:
+                return OnKeyUp.Propagate(Event.KeyAction.Key);
+            case Event::Type::KeyDown:
+                return OnKeyDown.Propagate(Event.KeyAction.Key);
+            case Event::Type::MouseUp:
+                return OnMouseUp.Propagate(Event.MouseAction.Button);
+            case Event::Type::MouseDown:
+                return OnMouseDown.Propagate(Event.MouseAction.Button);
+            case Event::Type::MouseMove:
+                return OnMouseMove.Propagate(
+                    Event.MouseAxis.X,
+                    Event.MouseAxis.Y,
+                    Event.MouseAxis.DeltaX,
+                    Event.MouseAxis.DeltaY);
+            case Event::Type::MouseScroll:
+                return OnMouseScroll.Propagate(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
+            case Event::Type::WindowFocus:
+                return OnWindowFocus.Propagate(Event.WindowFocus.State);
+            case Event::Type::WindowResize:
+                return OnWindowResize.Propagate(Event.WindowResize.Width, Event.WindowResize.Height);
+            case Event::Type::WindowExit:
+                return OnWindowExit.Propagate();
+            default:
+                return false;
+            }
+        }
 
         /// \brief Checks if a key was pressed in the current frame.
         ///
@@ -99,20 +131,36 @@ namespace Input
             return mKeyboard.IsKeyReleased(Key);
         }
 
-        /// \brief Gets the current mouse position.
+        /// \brief Gets the current X position of the mouse cursor.
         ///
-        /// \return The mouse position in window or screen coordinates.
-        ZYPHRYON_INLINE Vector2 GetMousePosition() const
+        /// \return The X coordinate of the mouse cursor.
+        ZYPHRYON_INLINE Real32 GetMouseX() const
         {
-            return mMouse.GetPosition();
+            return mMouse.GetX();
         }
 
-        /// \brief Gets the mouse scroll delta since the last frame.
+        /// \brief Gets the current Y position of the mouse cursor.
         ///
-        /// \return The mouse scroll delta vector.
-        ZYPHRYON_INLINE Vector2 GetMouseScroll() const
+        /// \return The Y coordinate of the mouse cursor.
+        ZYPHRYON_INLINE Real32 GetMouseY() const
         {
-            return mMouse.GetScroll();
+            return mMouse.GetY();
+        }
+
+        /// \brief Gets the current scroll offset along the X axis.
+        ///
+        /// \return The scroll offset in the X direction.
+        ZYPHRYON_INLINE Real32 GetMouseScrollX() const
+        {
+            return mMouse.GetScrollX();
+        }
+
+        /// \brief Gets the current scroll offset along the Y axis.
+        ///
+        /// \return The scroll offset in the Y direction.
+        ZYPHRYON_INLINE Real32 GetMouseScrollY() const
+        {
+            return mMouse.GetScrollY();
         }
 
         /// \brief Checks if a mouse button was pressed in the current frame.
@@ -140,41 +188,6 @@ namespace Input
         ZYPHRYON_INLINE Bool IsMouseButtonReleased(Button Button) const
         {
             return mMouse.IsButtonReleased(Button);
-        }
-
-    private:
-
-        /// \brief Internal event handler that dispatches events to the appropriate delegates.
-        ///
-        /// \param Event The event to handle.
-        /// \return `true` if the event was handled and should not propagate further, otherwise
-        ZYPHRYON_INLINE Bool Handle(ConstRef<Event> Event)
-        {
-            switch (Event.Kind)
-            {
-            case Event::Type::KeyType:
-                return OnKeyType.Propagate(Event.KeyType.Codepoint);
-            case Event::Type::KeyUp:
-                return OnKeyUp.Propagate(Event.KeyAction.Key);
-            case Event::Type::KeyDown:
-                return OnKeyDown.Propagate(Event.KeyAction.Key);
-            case Event::Type::MouseUp:
-                return OnMouseUp.Propagate(Event.MouseAction.Button);
-            case Event::Type::MouseDown:
-                return OnMouseDown.Propagate(Event.MouseAction.Button);
-            case Event::Type::MouseMove:
-                return OnMouseMove.Propagate(Event.MouseAxis.X, Event.MouseAxis.Y, Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
-            case Event::Type::MouseScroll:
-                return OnMouseScroll.Propagate(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
-            case Event::Type::WindowFocus:
-                return OnWindowFocus.Propagate(Event.WindowFocus.State);
-            case Event::Type::WindowResize:
-                return OnWindowResize.Propagate(Event.WindowResize.Width, Event.WindowResize.Height);
-            case Event::Type::WindowExit:
-                return OnWindowExit.Propagate();
-            default:
-                return false;
-            }
         }
 
     private:

@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -21,14 +21,9 @@
 
 namespace Scene
 {
-    /// \brief Forward declaration of a component reference wrapper.
-    template<typename Type>
-    class Pin;
-
     /// \brief Represents an entity within the ECS (Entity-Component System).
     ///
     /// An entity is a lightweight handle or identifier that serves as a container for components and tags.
-    /// Entities are used to compose game objects, define relationships, and participate in system logic.
     class Entity
     {
     public:
@@ -215,7 +210,7 @@ namespace Scene
         /// \param Component The entity used as the pair's second element.
         ///
         /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Add(Entity Tag, Entity Component)
+        ZYPHRYON_INLINE ConstRef<Entity> Add(Entity Tag, Entity Component) const
         {
             mHandle.add(Tag.GetID(), Component.GetID());
             return (* this);
@@ -444,13 +439,13 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE Ptr<Component> TryGet() const
         {
-            if constexpr (IsMutable<Component>)
+            if constexpr (IsImmutable<Component>)
             {
-                return mHandle.try_get_mut<Component>();
+                return mHandle.try_get<Component>();
             }
             else
             {
-                return mHandle.try_get<Component>();
+                return mHandle.try_get_mut<Component>();
             }
         }
 
@@ -496,13 +491,13 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Ptr<Target> TryGetPair() const
         {
-            if constexpr (IsMutable<Target>)
+            if constexpr (IsImmutable<Target>)
             {
-                return mHandle.try_get_mut<Tag, Target>();
+                return mHandle.try_get<Tag, Target>();
             }
             else
             {
-                return mHandle.try_get<Tag, Target>();
+                return mHandle.try_get_mut<Tag, Target>();
             }
         }
 
@@ -514,13 +509,13 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE Ref<Component> Get() const
         {
-            if constexpr (IsMutable<Component>)
+            if constexpr (IsImmutable<Component>)
             {
-                return mHandle.get_mut<Component>();
+                return mHandle.get<Component>();
             }
             else
             {
-                return mHandle.get<Component>();
+                return mHandle.get_mut<Component>();
             }
         }
 
@@ -533,35 +528,14 @@ namespace Scene
         template<typename Tag, typename Target>
         ZYPHRYON_INLINE Ref<Target> GetPair() const
         {
-            if constexpr (IsMutable<Target>)
-            {
-                return mHandle.get_mut<Tag, Target>();
-            }
-            else
+            if constexpr (IsImmutable<Target>)
             {
                 return mHandle.get<Tag, Target>();
             }
-        }
-
-        /// \brief Retrieves a reference wrapper to a component on this entity.
-        ///
-        /// \tparam Component The component type to retrieve.
-        /// \return A reference wrapper to the component data.
-        template<typename Component>
-        ZYPHRYON_INLINE Pin<Component> GetRef() const
-        {
-            return Pin<Component>(mHandle.get_ref<Component>());
-        }
-
-        /// \brief Retrieves a reference wrapper to a pair, where both elements are types.
-        ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        /// \return A reference wrapper to the component data.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Pin<Target> GetRef() const
-        {
-            return Pin<Target>(mHandle.get_ref<Tag, Target>());
+            else
+            {
+                return mHandle.get_mut<Tag, Target>();
+            }
         }
 
         /// \brief Marks a component as modified on this entity.

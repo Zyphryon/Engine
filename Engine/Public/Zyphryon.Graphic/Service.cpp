@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -67,17 +67,17 @@ namespace Graphic
             switch (Backend)
             {
 #ifdef    ZYPHRYON_PLATFORM_WINDOWS
-                case Backend::D3D11:
-                    mDriver = NewUniquePtr<D3D11Driver>();
-                    break;
+            case Backend::D3D11:
+                mDriver = Unique<D3D11Driver>::Create();
+                break;
 #endif // ZYPHRYON_PLATFORM_WINDOWS
-                default:
-                    break;
+            default:
+                break;
             }
 
             if (mDriver)
             {
-                WriteCommand<CommandList::Initialize>(GetProducerFrame(), Swapchain, Width, Height, Samples);
+                WriteCommand<CommandTypes::Initialize>(GetProducerFrame(), Swapchain, Width, Height, Samples);
                 FlushCommands(false); // Handles the immediate encoding and begins the process of transferring data to the GPU.
                 FlushCommands(false); // Ensures that all data has been completely processed and synchronized.
             }
@@ -87,16 +87,13 @@ namespace Graphic
             if (Successful)
             {
                 ConstRef<Device> Device = mDriver->GetDevice();
-                LOG_INFO("Graphics: using {}", Enum::GetName(Device.Backend));
+                LOG_INFO("Graphics: using {}", Enum::Name(Device.Backend));
                 LOG_INFO("Graphics: Detected shader model {}", Enum::Cast(Device.Language) + 1);
 
                 for (ConstRef<Adapter> Adapter : Device.Adapters)
                 {
                     LOG_INFO("Graphics: Found GPU '{}'", Adapter.Description);
-                    LOG_INFO("Graphics:     Memory {} (video), {} (system), {} (shared)",
-                             Adapter.DedicatedMemoryInMBs,
-                             Adapter.SystemMemoryInMBs,
-                             Adapter.SharedMemoryInMBs);
+                    LOG_INFO("Graphics:     Memory {} (video)", Adapter.Memory);
                 }
             }
         }
@@ -108,15 +105,7 @@ namespace Graphic
 
     void Service::Reset(UInt16 Width, UInt16 Height, Multisample Samples)
     {
-        WriteCommand<CommandList::Reset>(GetProducerFrame(), Width, Height, Samples);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Object Service::CreateBuffer(Access Access, Usage Usage, AnyRef<Blob> Data)
-    {
-        return CreateBuffer(Access, Usage, Data.GetSize(), Move(Data));
+        WriteCommand<CommandTypes::Reset>(GetProducerFrame(), Width, Height, Samples);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -128,7 +117,7 @@ namespace Graphic
 
         if (ID)
         {
-            WriteCommand<CommandList::CreateBuffer>(GetProducerFrame(), ID, Access, Usage, Length, Move(Data));
+            WriteCommand<CommandTypes::CreateBuffer>(GetProducerFrame(), ID, Access, Usage, Length, Move(Data));
         }
         return ID;
     }
@@ -138,7 +127,9 @@ namespace Graphic
 
     void Service::UpdateBuffer(Object ID, UInt32 Offset, Bool Invalidate, AnyRef<Blob> Data)
     {
-        WriteCommand<CommandList::UpdateBuffer>(GetProducerFrame(), ID, Offset, Invalidate, Move(Data));
+        LOG_ASSERT(mBuffers.IsAllocated(ID), "Buffer ID is not valid");
+
+        WriteCommand<CommandTypes::UpdateBuffer>(GetProducerFrame(), ID, Offset, Invalidate, Move(Data));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -146,43 +137,32 @@ namespace Graphic
 
     void Service::DeleteBuffer(Object ID)
     {
+        LOG_ASSERT(mBuffers.IsAllocated(ID), "Buffer ID is not valid");
+
         mBuffers.Free(ID);
 
-        WriteCommand<CommandList::DeleteBuffer>(GetProducerFrame(), ID);
+        WriteCommand<CommandTypes::DeleteBuffer>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::CopyBuffer(Object DstBuffer, UInt32 DstOffset, Object SrcBuffer, UInt32 SrcOffset, UInt32 Size)
+    void Service::ResizeBuffer(Object ID, UInt32 Size)
     {
-        WriteCommand<CommandList::CopyBuffer>(GetProducerFrame(), DstBuffer, DstOffset, SrcBuffer, SrcOffset, Size);
+        LOG_ASSERT(mBuffers.IsAllocated(ID), "Buffer ID is not valid");
+
+        WriteCommand<CommandTypes::ResizeBuffer>(GetProducerFrame(), ID, Size);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreatePass(ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary)
+    void Service::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, Bool Invalidate, UInt32 Size)
     {
-        const Object ID = mPasses.Allocate();
+        LOG_ASSERT(mBuffers.IsAllocated(SrcBuffer), "Source buffer is not valid");
+        LOG_ASSERT(mBuffers.IsAllocated(SrcOffset), "Destination buffer is not valid");
 
-        if (ID)
-        {
-            Vector<Attachment, kMaxAttachments> Attachments(Colors.begin(), Colors.end());
-
-            WriteCommand<CommandList::CreatePass>(GetProducerFrame(), ID, Move(Attachments), Move(Auxiliary));
-        }
-        return ID;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::DeletePass(Object ID)
-    {
-        mPasses.Free(ID);
-
-        WriteCommand<CommandList::DeletePass>(GetProducerFrame(), ID);
+        WriteCommand<CommandTypes::CopyBuffer>(GetProducerFrame(), SrcBuffer, SrcOffset, DstBuffer, DstOffset, Invalidate, Size);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -198,19 +178,49 @@ namespace Graphic
 
     void Service::DeleteMaterial(Object ID)
     {
+        LOG_ASSERT(mMaterials.IsAllocated(ID), "Material ID is not valid");
+
         mMaterials.Free(ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreatePipeline(AnyRef<Blob> Vertex, AnyRef<Blob> Fragment, ConstRef<Descriptor> Descriptor)
+    Object Service::CreatePass(ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary)
+    {
+        const Object ID = mPasses.Allocate();
+
+        if (ID)
+        {
+            Vector<Attachment, kMaxAttachments> Attachments(Colors.begin(), Colors.end());
+
+            WriteCommand<CommandTypes::CreatePass>(GetProducerFrame(), ID, Move(Attachments), Move(Auxiliary));
+        }
+        return ID;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::DeletePass(Object ID)
+    {
+        LOG_ASSERT(mPasses.IsAllocated(ID), "Pass ID is not valid");
+
+        mPasses.Free(ID);
+
+        WriteCommand<CommandTypes::DeletePass>(GetProducerFrame(), ID);
+    }
+    
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Service::CreatePipeline(AnyRef<Shaders> Shaders, ConstRef<States> States)
     {
         const Object ID = mPipelines.Allocate();
 
         if (ID)
         {
-            WriteCommand<CommandList::CreatePipeline>(GetProducerFrame(), ID, Move(Vertex), Move(Fragment), Descriptor);
+            WriteCommand<CommandTypes::CreatePipeline>(GetProducerFrame(), ID, Move(Shaders), States);
         }
         return ID;
     }
@@ -220,21 +230,24 @@ namespace Graphic
 
     void Service::DeletePipeline(Object ID)
     {
+        LOG_ASSERT(mPipelines.IsAllocated(ID), "Pipeline ID is not valid");
+
         mPipelines.Free(ID);
 
-        WriteCommand<CommandList::DeletePipeline>(GetProducerFrame(), ID);
+        WriteCommand<CommandTypes::DeletePipeline>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateTexture(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
+    Object Service::CreateTexture(Access Access, TextureType Type, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
     {
         const Object ID = mTextures.Allocate();
 
         if (ID)
         {
-            WriteCommand<CommandList::CreateTexture>(GetProducerFrame(), ID, Access, Format, Layout, Width, Height, Mipmaps, Samples, Move(Data));
+            WriteCommand<CommandTypes::CreateTexture>(
+                GetProducerFrame(), ID, Access, Type, Format, Layout, Width, Height, Mipmaps, Samples, Move(Data));
         }
         return ID;
     }
@@ -244,7 +257,9 @@ namespace Graphic
 
     void Service::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data)
     {
-        WriteCommand<CommandList::UpdateTexture>(GetProducerFrame(), ID, Level, X, Y, Width, Height, Pitch, Move(Data));
+        LOG_ASSERT(mTextures.IsAllocated(ID), "Texture ID is not valid");
+
+        WriteCommand<CommandTypes::UpdateTexture>(GetProducerFrame(), ID, Level, X, Y, Width, Height, Pitch, Move(Data));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -252,47 +267,52 @@ namespace Graphic
 
     void Service::DeleteTexture(Object ID)
     {
+        LOG_ASSERT(mTextures.IsAllocated(ID), "Texture ID is not valid");
+
         mTextures.Free(ID);
 
-        WriteCommand<CommandList::DeleteTexture>(GetProducerFrame(), ID);
+        WriteCommand<CommandTypes::DeleteTexture>(GetProducerFrame(), ID);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::CopyTexture(Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, UInt16 Width, UInt16 Height)
+    void Service::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height)
     {
-        WriteCommand<CommandList::CopyTexture>(GetProducerFrame(),
-            DstTexture, DstLevel, DstX, DstY,
-            SrcTexture, SrcLevel, SrcX, SrcY, Width, Height);
+        LOG_ASSERT(mTextures.IsAllocated(SrcTexture), "Source texture is not valid");
+        LOG_ASSERT(mTextures.IsAllocated(DstTexture), "Destination texture is not valid");
+
+        WriteCommand<CommandTypes::CopyTexture>(GetProducerFrame(),
+            SrcTexture, SrcLevel, SrcX, SrcY,
+            DstTexture, DstLevel, DstX, DstY, Invalidate, Width, Height);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Prepare(Object ID, ConstRef<Viewport> Viewport, Clear Target, ConstRef<Color> Tint, Real32 Depth, UInt8 Stencil)
+    void Service::Prepare(Object Pass, ConstRef<Viewport> Viewport, Clear Target, Color Tint, Real32 Depth, UInt8 Stencil)
     {
-        WriteCommand<CommandList::Prepare>(GetProducerFrame(), ID, Viewport, Target, Tint, Depth, Stencil);
+        WriteCommand<CommandTypes::Prepare>(GetProducerFrame(), Pass, Viewport, Target, Tint, Depth, Stencil);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Submit(ConstSpan<Submission> Submissions)
+    void Service::Submit(ConstSpan<DrawPacket> Submissions)
     {
-        LOG_ASSERT(!Submissions.empty(), "Requires at least one draw submission");
+        LOG_ASSERT(!Submissions.empty(), "Requires at least one draw command");
 
-        Ref<Writer> Writer = GetProducerFrame().Stream;
+        Ref<Writer> Writer = GetProducerFrame();
         Writer.WriteEnum(CommandType::Submit);
-        Writer.WriteBlock(Submissions);
+        Writer.WriteBlock<UInt16, DrawPacket>(Submissions);
     }
-
+    
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Commit(Object ID)
+    void Service::Commit(Object Pass)
     {
-        WriteCommand<CommandList::Commit>(GetProducerFrame(), ID);
+        WriteCommand<CommandTypes::Commit>(GetProducerFrame(), Pass);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -302,19 +322,19 @@ namespace Graphic
     {
         if (Abort)
         {
-            GetProducerFrame().Stream.Clear();
+            GetProducerFrame().Clear();
         }
 
         // Wait until the GPU thread signals that the current frame has finished processing.
-        mBusy.wait(true, std::memory_order_acquire);
+        mSignal.wait(true, std::memory_order_acquire);
 
         // Rotate the frame queue so that the next frame becomes writable for the CPU while the previous one
         // moves into the GPU submission pipeline.
         Swap(mProducer, mConsumer);
 
         // Mark the service as busy again and notify the GPU thread that a new frame is ready for processing.
-        mBusy.test_and_set(std::memory_order_release);
-        mBusy.notify_one();
+        mSignal.test_and_set(std::memory_order_release);
+        mSignal.notify_one();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -322,30 +342,31 @@ namespace Graphic
 
     void Service::OnCommandThread(ConstRef<std::stop_token> Token)
     {
-        ZYPHRYON_THREAD_NAME("GPU Thread");
+        ZYPHRYON_PROFILE_THREAD("GPU Thread");
 
         while (!Token.stop_requested())
         {
             ZYPHRYON_PROFILE_SCOPE("Graphic::Consume");
 
             // Put the thread to sleep until the flag indicates there is more work to process.
-            mBusy.wait(false, std::memory_order_acquire);
+            mSignal.wait(false, std::memory_order_acquire);
 
-            // Finalize the most recently recorded frame by uploading its transient resources to the GPU.
-            Ref<InFlightFrame> Frame = mFrames[mConsumer];
-            UpdateFrame(Frame);
+            // Update the in-flight arenas with the latest data from the CPU.
+            UpdateInFlightArenas();
 
             // Continuously process the data as long as there is available data in the decoder.
-            Reader Decoder(Frame.Stream.GetData());
+            Ref<Writer> Frame = GetConsumerFrame();
+
+            Reader Decoder(Frame.GetData());
             while (Decoder.GetAvailable() > 0)
             {
-                OnCommandExecute(Decoder.ReadEnum<CommandType>(), Decoder);
+                OnCommandExecute(static_cast<CommandType>(Decoder.ReadUInt8()), Decoder);
             }
-            Frame.Stream.Clear();
+            Frame.Clear();
 
             // Clear the busy flag to signal that the GPU has completed its current tasks.
-            mBusy.clear(std::memory_order_release);
-            mBusy.notify_one();
+            mSignal.clear(std::memory_order_release);
+            mSignal.notify_one();
         }
     }
 
@@ -358,106 +379,99 @@ namespace Graphic
         {
             case CommandType::Initialize:
             {
-                const auto Data = Frame.ReadStruct<CommandList::Initialize>();
-
-                const Ptr<SDL_Window> Window  = Fetch<0>(Data->Parameters);
-                const UInt16          Width   = Fetch<1>(Data->Parameters);
-                const UInt16          Height  = Fetch<2>(Data->Parameters);
-                const Multisample     Samples = Fetch<3>(Data->Parameters);
-
-                if (const Bool Succeed = mDriver->Initialize(Window, Width, Height, Samples); Succeed)
+                if (const Bool Succeed = DispatchCommand<&Driver::Initialize, CommandTypes::Initialize>(Frame); Succeed)
                 {
-                    for (Ref<InFlightFrame> InFlightFrame : mFrames)
-                    {
-                        CreateFrame(InFlightFrame);
-                    }
+                    CreateInFlightArenas();
                 }
                 else
                 {
                     mDriver = nullptr;
                 }
-
-                InPlaceDelete(* Data);
                 break;
             }
             case CommandType::Reset:
             {
-                ExecuteCommand<&Driver::Reset, CommandList::Reset>(Frame);
+                DispatchCommand<&Driver::Reset, CommandTypes::Reset>(Frame);
                 break;
             }
             case CommandType::CreateBuffer:
             {
-                ExecuteCommand<&Driver::CreateBuffer, CommandList::CreateBuffer>(Frame);
+                DispatchCommand<&Driver::CreateBuffer, CommandTypes::CreateBuffer>(Frame);
                 break;
             }
             case CommandType::UpdateBuffer:
             {
-                ExecuteCommand<&Driver::UpdateBuffer, CommandList::UpdateBuffer>(Frame);
+                DispatchCommand<&Driver::UpdateBuffer, CommandTypes::UpdateBuffer>(Frame);
                 break;
             }
             case CommandType::DeleteBuffer:
             {
-                ExecuteCommand<&Driver::DeleteBuffer, CommandList::DeleteBuffer>(Frame);
+                DispatchCommand<&Driver::DeleteBuffer, CommandTypes::DeleteBuffer>(Frame);
+                break;
+            }
+            case CommandType::ResizeBuffer:
+            {
+                DispatchCommand<&Driver::ResizeBuffer, CommandTypes::ResizeBuffer>(Frame);
                 break;
             }
             case CommandType::CopyBuffer:
             {
-                ExecuteCommand<&Driver::CopyBuffer, CommandList::CopyBuffer>(Frame);
+                DispatchCommand<&Driver::CopyBuffer, CommandTypes::CopyBuffer>(Frame);
                 break;
             }
             case CommandType::CreatePass:
             {
-                ExecuteCommand<&Driver::CreatePass, CommandList::CreatePass>(Frame);
+                DispatchCommand<&Driver::CreatePass, CommandTypes::CreatePass>(Frame);
                 break;
             }
             case CommandType::DeletePass:
             {
-                ExecuteCommand<&Driver::DeletePass, CommandList::DeletePass>(Frame);
+                DispatchCommand<&Driver::DeletePass, CommandTypes::DeletePass>(Frame);
                 break;
             }
             case CommandType::CreatePipeline:
             {
-                ExecuteCommand<&Driver::CreatePipeline, CommandList::CreatePipeline>(Frame);
+                DispatchCommand<&Driver::CreatePipeline, CommandTypes::CreatePipeline>(Frame);
                 break;
             }
             case CommandType::DeletePipeline:
             {
-                ExecuteCommand<&Driver::DeletePipeline, CommandList::DeletePipeline>(Frame);
+                DispatchCommand<&Driver::DeletePipeline, CommandTypes::DeletePipeline>(Frame);
                 break;
             }
             case CommandType::CreateTexture:
             {
-                ExecuteCommand<&Driver::CreateTexture, CommandList::CreateTexture>(Frame);
+                DispatchCommand<&Driver::CreateTexture, CommandTypes::CreateTexture>(Frame);
                 break;
             }
             case CommandType::UpdateTexture:
             {
-                ExecuteCommand<&Driver::UpdateTexture, CommandList::UpdateTexture>(Frame);
+                DispatchCommand<&Driver::UpdateTexture, CommandTypes::UpdateTexture>(Frame);
                 break;
             }
             case CommandType::DeleteTexture:
             {
-                ExecuteCommand<&Driver::DeleteTexture, CommandList::DeleteTexture>(Frame);
+                DispatchCommand<&Driver::DeleteTexture, CommandTypes::DeleteTexture>(Frame);
                 break;
             }
             case CommandType::CopyTexture:
             {
-                ExecuteCommand<&Driver::CopyTexture, CommandList::CopyTexture>(Frame);
+                DispatchCommand<&Driver::CopyTexture, CommandTypes::CopyTexture>(Frame);
                 break;
             }
             case CommandType::Prepare:
             {
-                ExecuteCommand<&Driver::Prepare, CommandList::Prepare>(Frame);
+                DispatchCommand<&Driver::Prepare, CommandTypes::Prepare>(Frame);
                 break;
             }
             case CommandType::Submit:
             {
-                mDriver->Submit(Frame.ReadBlock<Submission>());
+                mDriver->Submit(Frame.ReadBlock<UInt16, DrawPacket>());
                 break;
             }
             case CommandType::Commit:
             {
-                ExecuteCommand<&Driver::Commit, CommandList::Commit>(Frame);
+                DispatchCommand<&Driver::Commit, CommandTypes::Commit>(Frame);
                 break;
             }
         }
@@ -466,45 +480,54 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::CreateFrame(Ref<InFlightFrame> Frame)
+    void Service::CreateInFlightArenas()
     {
-        static auto CreateInFlightBuffer = [&](Ref<InFlightArena> Arena, Usage Usage, UInt32 Length)
+        static auto CreateBuffer = [&](Usage Usage, UInt32 Capacity)
         {
-            Arena.GpuBuffer = mBuffers.Allocate();
-            Arena.CpuLength = Length;
-            Arena.CpuBuffer.Ensure(Length);
+            Ref<InFlightArena> Arena = mArenas[Enum::Cast(Usage)];
+            Arena.Handle   = mBuffers.Allocate();
+            Arena.Capacity = Capacity;
 
-            mDriver->CreateBuffer(Arena.GpuBuffer, Access::Dual, Usage, Length, ConstSpan<Byte>());
+            mDriver->CreateBuffer(Arena.Handle, Access::Dynamic, Usage, Capacity, ConstSpan<Byte>());
+
+            for (Ref<Writer> Buffer : Arena.Buffers)
+            {
+                Buffer.Ensure(Capacity);
+            }
         };
 
-        CreateInFlightBuffer(Frame.Heap[Enum::Cast(Usage::Vertex)],  Usage::Vertex,  kDefaultTransientVertexCapacity);
-        CreateInFlightBuffer(Frame.Heap[Enum::Cast(Usage::Index)],   Usage::Index,   kDefaultTransientIndexCapacity);
-        CreateInFlightBuffer(Frame.Heap[Enum::Cast(Usage::Uniform)], Usage::Uniform, kDefaultTransientUniformCapacity);
+        CreateBuffer(Usage::Vertex,  kDefaultTransientVertexCapacity);
+        CreateBuffer(Usage::Index,   kDefaultTransientIndexCapacity);
+        CreateBuffer(Usage::Uniform, kDefaultTransientUniformCapacity);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::UpdateFrame(Ref<InFlightFrame> Frame)
+    void Service::UpdateInFlightArenas()
     {
-        for (Ref<InFlightArena> Arena : Frame.Heap)
+        for (Ref<InFlightArena> Arena : mArenas)
         {
-            if (ConstSpan<Byte> Data = Arena.CpuBuffer.GetData(); !Data.empty())
-            {
-                // If new data was appended, grow the GPU buffer and upload the additional contents
-                // from the CPU scratch region.
-                if (Data.size_bytes() > Arena.CpuLength)
-                {
-                    Arena.CpuLength = Data.size_bytes();
+            Ref<Writer> Buffer = Arena.Buffers[mConsumer];
 
-                    mDriver->ResizeBuffer(Arena.GpuBuffer, Arena.CpuLength);
+            if (ConstSpan<Byte> Data = Buffer.GetData(); !Data.empty())
+            {
+                // Resize the GPU buffer if the new data exceeds its current capacity.
+                if (Data.size_bytes() > Arena.Capacity)
+                {
+                    Arena.Capacity = Data.size_bytes();
+
+                    mDriver->ResizeBuffer(Arena.Handle, Arena.Capacity);  // TODO: Resize With Initial Data
                 }
 
-                // Upload the new data to the GPU buffer.
-                mDriver->UpdateBuffer(Arena.GpuBuffer, 0, false, Data);
+                const Ptr<void> Address = mDriver->MapBuffer(Arena.Handle, 0, Data.size_bytes(), true);
+                {
+                    std::memcpy(Address, Data.data(), Data.size_bytes());
+                }
+                mDriver->UnmapBuffer(Arena.Handle);
 
-                // Clear the CPU buffer for the next frame.
-                Arena.CpuBuffer.Clear();
+                // Clear the buffer for the next frame.
+                Buffer.Clear();
             }
         }
     }

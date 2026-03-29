@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -194,7 +194,7 @@ inline namespace Math
         ///
         /// \param Other The other line segment to check for intersection.
         /// \return `true` if the line segments intersect, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Intersects(Line Other) const
+        ZYPHRYON_INLINE constexpr Bool Test(Line Other) const
         {
             const Real32 O1 = Vector2::Cross(mStart, mEnd, Other.mStart);
             const Real32 O2 = Vector2::Cross(mStart, mEnd, Other.mEnd);
@@ -271,14 +271,6 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE constexpr UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -295,7 +287,7 @@ inline namespace Math
         ///
         /// \param Direction The direction vector for the unit line (will be normalized).
         /// \return A unit line segment in the specified direction starting from origin.
-        ZYPHRYON_INLINE constexpr static Line Unit(Vector2 Direction)
+        ZYPHRYON_INLINE static constexpr Line Unit(Vector2 Direction)
         {
             LOG_ASSERT(!Direction.IsAlmostZero(), "Direction must be non-zero");
 
@@ -305,7 +297,7 @@ inline namespace Math
         /// \brief Returns a unit line segment along the X-axis from (0, 0) to (1, 0).
         ///
         /// \return A unit line segment along the X-axis.
-        ZYPHRYON_INLINE constexpr static Line UnitX()
+        ZYPHRYON_INLINE static constexpr Line UnitX()
         {
             return Line(Vector2::Zero(), Vector2::UnitX());
         }
@@ -313,7 +305,7 @@ inline namespace Math
         /// \brief Returns a unit line segment along the Y-axis from (0, 0) to (0, 1).
         ///
         /// \return A unit line segment along the Y-axis.
-        ZYPHRYON_INLINE constexpr static Line UnitY()
+        ZYPHRYON_INLINE static constexpr Line UnitY()
         {
             return Line(Vector2::Zero(), Vector2::UnitY());
         }
@@ -323,7 +315,7 @@ inline namespace Math
         /// \param Line   The line circle.
         /// \param Origin The pivot point for anchoring.
         /// \return A line anchored according to the pivot.
-        ZYPHRYON_INLINE constexpr static Line Anchor(Line Line, Pivot Origin)
+        ZYPHRYON_INLINE static constexpr Line Anchor(Line Line, Pivot Origin)
         {
             const Vector2 MinPoint    = Vector2::Min(Line.GetStart(), Line.GetEnd());
             const Vector2 MaxPoint    = Vector2::Max(Line.GetStart(), Line.GetEnd());
@@ -339,7 +331,7 @@ inline namespace Math
         /// \param End        The ending line.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A line interpolated between the start and end lines.
-        ZYPHRYON_INLINE constexpr static Line Lerp(Line Start, Line End, Real32 Percentage)
+        ZYPHRYON_INLINE static constexpr Line Lerp(Line Start, Line End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 

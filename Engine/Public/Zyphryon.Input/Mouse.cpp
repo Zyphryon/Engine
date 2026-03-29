@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -23,7 +23,8 @@ namespace Input
 
     void Mouse::Begin()
     {
-        mThisMouseScroll.Set(0, 0);
+        mThisScrollX = 0.0f;
+        mThisScrollY = 0.0f;
         mLastButtons = mThisButtons;
     }
 
@@ -41,10 +42,12 @@ namespace Input
             mThisButtons.set(Enum::Cast(Event.MouseAction.Button));
             break;
         case Event::Type::MouseMove:
-            mThisMousePosition.Set(Event.MouseAxis.X, Event.MouseAxis.Y);
+            mThisX = Event.MouseAxis.X;
+            mThisY = Event.MouseAxis.Y;
             break;
         case Event::Type::MouseScroll:
-            mThisMouseScroll.Set(Event.MouseScroll.DeltaX, Event.MouseScroll.DeltaY);
+            mThisScrollX = Event.MouseScroll.DeltaX;
+            mThisScrollY = Event.MouseScroll.DeltaY;
             break;
         default:
             break;
@@ -56,8 +59,10 @@ namespace Input
 
     void Mouse::Reset()
     {
-        mThisMousePosition.Set(0, 0);
-        mThisMouseScroll.Set(0, 0);
+        mThisX       = 0.0f;
+        mThisY       = 0.0f;
+        mThisScrollX = 0.0f;
+        mThisScrollY = 0.0f;
         mLastButtons.reset();
         mThisButtons.reset();
     }

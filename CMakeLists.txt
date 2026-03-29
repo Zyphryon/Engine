@@ -1,5 +1,5 @@
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 ##
 ## This work is licensed under the terms of the MIT license.
 ##
@@ -19,6 +19,7 @@ PROJECT(Zyphryon VERSION 1.0.0 LANGUAGES CXX)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 INCLUDE(FetchContent)
+INCLUDE(CMakeModules/CMakeEmbedResources.cmake)
 
 SET(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 

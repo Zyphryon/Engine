@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,6 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Trackable.hpp"
+#include "Zyphryon.Base/Concept.hpp"
 #include "Zyphryon.Base/Utility.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -20,11 +22,7 @@
 
 inline namespace Base
 {
-    /// \brief Intrusive smart pointer for managing the lifetime of `Trackable` objects.
-    /// 
-    /// `Tracker<T>` is a smart pointer that retains a reference to a `Trackable` object.
-    /// It increments the reference count on construction and decrements it on destruction.
-    /// This provides shared ownership semantics without allocating an external control block.
+    /// \brief A tracker that manages the lifetime of an instance through reference counting.
     template<class Type>
     class Tracker final
     {
@@ -32,79 +30,70 @@ inline namespace Base
 
     public:
 
-        /// \brief Constructs a null tracker.
+        /// \brief Default constructor that initializes the tracker with a null pointer.
         ZYPHRYON_INLINE constexpr Tracker()
             : mInstance { nullptr }
         {
         }
 
-        /// \brief Constructs a null tracker from nullptr.
+        /// \brief Constructs a tracker with a null pointer.
         ZYPHRYON_INLINE constexpr Tracker(std::nullptr_t)
             : mInstance { nullptr }
         {
         }
 
-        /// \brief Constructs a tracker from a raw pointer.
-        /// 
-        /// \param Instance The object to track. Its reference count is incremented.
-        ZYPHRYON_INLINE Tracker(Ptr<Type> Instance)
-            : mInstance { Instance }
+        /// \brief Constructs a tracker that takes ownership of the provided instance.
+        ///
+        /// \param Instance The instance to be managed by the tracker.
+        template<typename Derived>
+        ZYPHRYON_INLINE Tracker(Ptr<Derived> Instance)
+            requires IsDerived<Type, Derived>
+            : mInstance(static_cast<Ptr<Type>>(Instance))
         {
-            Acquire();
+            Retain();
         }
 
-        /// \brief Constructs a tracker from another compatible tracker.
-        /// 
-        /// \tparam Derived The tracked type, must be derived from `Type`.
+        /// \brief Copy constructor that creates a new tracker sharing ownership of the same instance.
+        ///
+        /// \param Other The other tracker to copy from.
+        ZYPHRYON_INLINE Tracker(ConstRef<Tracker> Other)
+            : mInstance(Other.mInstance)
+        {
+            Retain();
+        }
+
+        /// \brief Copy constructor that creates a new tracker sharing ownership of the same instance.
+        ///
         /// \param Other The other tracker to copy from.
         template<typename Derived>
         ZYPHRYON_INLINE Tracker(ConstRef<Tracker<Derived>> Other)
             requires IsDerived<Type, Derived>
             : mInstance(static_cast<Ptr<Type>>(Other.mInstance))
         {
-            Acquire();
+            Retain();
         }
 
-        /// \brief Copy constructor.
-        /// 
-        /// \param Other The tracker to copy from.
-        ZYPHRYON_INLINE Tracker(ConstRef<Tracker> Other)
-            : mInstance { Other.mInstance }
-        {
-            Acquire();
-        }
-
-        /// \brief Move constructor.
-        /// 
-        /// \param Other The tracker to move from.
-        ZYPHRYON_INLINE constexpr Tracker(AnyRef<Tracker> Other)
-            : mInstance { Other.mInstance }
-        {
-            Other.mInstance = nullptr;
-        }
-
-        /// \brief Move constructor from a compatible tracker.
-        /// 
-        /// \tparam Derived The source type, must be derived from `Type`.
-        /// \param Other The tracker to move from.
+        /// \brief Move constructor that transfers ownership from another tracker.
+        ///
+        /// \param Other The other tracker to move from.
         template<typename Derived>
-        ZYPHRYON_INLINE Tracker(AnyRef<Tracker<Derived>> Other)
+        ZYPHRYON_INLINE Tracker(AnyRef<Tracker<Derived>> Other) noexcept
             requires IsDerived<Type, Derived>
             : mInstance(static_cast<Ptr<Type>>(Other.mInstance))
         {
             Other.mInstance = nullptr;
         }
 
-        /// \brief Destructor. Decrements the reference count.
+        /// \brief Destructor that releases the managed instance.
         ZYPHRYON_INLINE ~Tracker()
         {
             Release();
         }
 
-        /// \brief Copy assignment operator.
-        /// 
-        /// \param Other The tracker to copy from.
-        /// \return Reference to this.
+        /// \brief Copy assignment operator that shares ownership of the same instance.
+        ///
+        /// \param Other The other tracker to copy from.
+        /// \return A reference to this tracker.
         ZYPHRYON_INLINE Ref<Tracker> operator=(ConstRef<Tracker> Other)
         {
             if (this != &Other)
@@ -116,16 +105,16 @@ inline namespace Base
                 mInstance = Other.mInstance;
 
                 // Increments the reference count on the newly assigned instance.
-                Acquire();
+                Retain();
             }
             return (* this);
         }
 
-        /// \brief Move assignment operator.
-        /// 
-        /// \param Other The tracker to move from.
-        /// \return Reference to this.
-        ZYPHRYON_INLINE Ref<Tracker> operator=(AnyRef<Tracker> Other)
+        /// \brief Move assignment operator that transfers ownership from another tracker.
+        ///
+        /// \param Other The other tracker to move from.
+        /// \return A reference to this tracker.
+        ZYPHRYON_INLINE Ref<Tracker> operator=(AnyRef<Tracker> Other) noexcept
         {
             if (this != &Other)
             {
@@ -138,76 +127,86 @@ inline namespace Base
             return (* this);
         }
 
-        /// \brief Dereferences the tracked object.
-        /// 
-        /// \return A reference to the tracked object.
+        /// \brief Dereference operator to access the managed instance.
+        ///
+        /// \return A reference to the managed instance.
         ZYPHRYON_INLINE constexpr Ref<Type> operator*() const
         {
             return * mInstance;
         }
 
-        /// \brief Accesses members of the tracked object.
-        /// 
-        /// \return The raw pointer to the object.
+        /// \brief Arrow operator to access members of the managed instance.
+        ///
+        /// \return A pointer to the managed instance.
         ZYPHRYON_INLINE constexpr Ptr<Type> operator->() const
         {
             return mInstance;
         }
 
-        /// \brief Checks if two trackers refer to the same object.
-        /// 
-        /// \param Other The other tracker.
-        /// \return `true` if both track the same instance, `false` otherwise.
+        /// \brief Equality operator to compare two trackers.
+        ///
+        /// \param Other The other tracker to compare with.
+        /// \return `true` if both trackers manage the same instance, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator==(ConstRef<Tracker> Other) const
         {
             return mInstance == Other.mInstance;
         }
 
-        /// \brief Checks if two trackers refer to different objects.
-        /// 
-        /// \param Other The other tracker.
-        /// \return `true` if they track different instances, `false` otherwise.
+        /// \brief Inequality operator to compare two trackers.
+        ///
+        /// \param Other The other tracker to compare with.
+        /// \return `true` if both trackers manage different instances, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator!=(ConstRef<Tracker> Other) const
         {
             return mInstance != Other.mInstance;
         }
 
-        /// \brief Checks if the tracker is null.
-        /// 
-        /// \return `true` if it does not track any object, `false` otherwise.
+        /// \brief Equality operator to compare the tracker with a null pointer.
+        ///
+        /// \return `true` if the tracker manages a null instance, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator==(std::nullptr_t) const
         {
             return mInstance == nullptr;
         }
 
-        /// \brief Checks if the tracker is not null.
-        /// 
-        /// \return `true` if it tracks a valid object, `false` otherwise.
+        /// \brief Inequality operator to compare the tracker with a null pointer.
+        ///
+        /// \return `true` if the tracker manages a non-null instance, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator!=(std::nullptr_t) const
         {
             return mInstance != nullptr;
         }
 
-        /// \brief Checks whether this tracker holds a valid object.
-        /// 
-        /// \return `true` if valid, `false` otherwise.
+        /// \brief Boolean conversion operator to check if the tracker manages a valid instance.
+        ///
+        /// \return `true` if the tracker manages a non-null instance, `false` otherwise.
         ZYPHRYON_INLINE constexpr operator Bool() const
         {
             return mInstance != nullptr;
         }
 
+        ZYPHRYON_INLINE constexpr operator Ptr<Type>()
+        {
+            return mInstance;
+        }
+
+        ZYPHRYON_INLINE constexpr operator ConstPtr<Type>() const
+        {
+            return mInstance;
+        }
+
     private:
 
-        /// \brief Increments the reference count of the tracked object.
-        ZYPHRYON_INLINE void Acquire()
+        /// \brief Increments the reference count of the managed instance.
+        ZYPHRYON_INLINE void Retain()
         {
             if (mInstance)
             {
-                mInstance->Acquire();
+                mInstance->Retain();
             }
         }
 
-        /// \brief Decrements the reference count and resets the pointer if necessary.
+        /// \brief Decrements the reference count of the managed instance and releases it if necessary.
         ZYPHRYON_INLINE void Release()
         {
             if (mInstance)
@@ -219,20 +218,20 @@ inline namespace Base
 
     public:
 
-        /// \brief Constructs a new object and returns a tracker managing it.
-        /// 
-        /// \param Parameters Arguments forwarded to the constructor of `Type`.
-        /// \return A tracker managing the new object.
+        /// \brief Creates a new tracker managing a newly constructed instance of the specified type.
+        ///
+        /// \param Parameters The constructor arguments to forward.
+        /// \return A tracker managing the newly created instance.
         template<typename... Arguments>
         ZYPHRYON_INLINE static Tracker Create(AnyRef<Arguments>... Parameters)
         {
             return Tracker(new Type(Forward<Arguments>(Parameters)...));
         }
 
-        /// \brief Casts a tracker of a derived type to a base tracker type.
-        /// 
-        /// \param Other The tracker to cast.
-        /// \return A tracker of the desired base type.
+        /// \brief Casts a tracker of a base type to a tracker of a derived type.
+        ///
+        /// \param Other The other tracker to cast.
+        /// \return A tracker managing the same instance, cast to the derived type.
         template<typename Base>
         ZYPHRYON_INLINE static Tracker Cast(ConstRef<Tracker<Base>> Other)
             requires IsDerived<Base, Type>
@@ -248,10 +247,7 @@ inline namespace Base
         Ptr<Type> mInstance;
     };
 
-    /// \brief Read-only reference to a `Tracker` smart pointer.
-    /// 
-    /// `ConstTracker<T>` allows read-only access to tracked objects without increasing
-    /// the reference count or taking ownership.
+    /// \brief A const tracker that manages an instance of the specified type.
     template<class Type>
     using ConstTracker = ConstRef<Tracker<Type>>;
 }

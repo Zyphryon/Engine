@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -42,7 +42,7 @@ namespace Scene
         /// \brief Constructs a query from an existing handle.
         ///
         /// \param Handle The handle of this query.
-        ZYPHRYON_INLINE Query(AnyRef<Handle> Handle)
+        ZYPHRYON_INLINE Query(AnyRef<Handle> Handle) noexcept
             : mHandle { Move(Handle) }
         {
         }
@@ -162,7 +162,7 @@ namespace Scene
         {
             while (Iterator.next())
             {
-                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<ecs_iter_t*>(Iterator.c_ptr()));
+                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
             }
         }
 
@@ -179,7 +179,7 @@ namespace Scene
 
             while (Iterator.next())
             {
-                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<ecs_iter_t*>(Iterator.c_ptr()));
+                flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
             }
 
             End();

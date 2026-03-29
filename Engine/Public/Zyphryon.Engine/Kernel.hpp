@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,18 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Audio/Service.hpp"
-
-#include "Zyphryon.Content/Service.hpp"
-
-#include "Zyphryon.Graphic/Service.hpp"
-
-#include "Zyphryon.Input/Service.hpp"
-
-#include "Zyphryon.Scene/Service.hpp"
-
 #include "Device.hpp"
-
 #include "Properties.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -43,7 +32,7 @@ namespace Engine
         Kernel();
 
         /// \brief Destructs the kernel and releases all associated resources.
-        ~Kernel() override;
+        virtual ~Kernel();
 
         /// \brief Initializes the kernel and core services.
         ///
@@ -105,6 +94,11 @@ namespace Engine
         /// Called when the kernel is running in client mode.
         void InitializeClientServices();
 
+        /// \brief Initializes client-specific resource loaders.
+        ///
+        /// Called when the kernel is running in client mode.
+        void InitializeClientLoaders();
+        
         /// \brief Initializes server-specific services.
         ///
         /// Called when the kernel is running in server mode.

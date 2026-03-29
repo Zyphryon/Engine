@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -21,7 +21,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto CheckIfFail(HRESULT Result)
+    static Bool CheckIfSucceed(HRESULT Result)
     {
         if (FAILED(Result))
         {
@@ -39,12 +39,12 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Access Value)
+    static constexpr auto As(Access Value) noexcept
     {
-        constexpr static Array kMapping = {
-            D3D11_USAGE_IMMUTABLE,           // Access::Device
-            D3D11_USAGE_STAGING,             // Access::Host
-            D3D11_USAGE_DEFAULT,             // Access::Dual
+        static constexpr Array kMapping = {
+            D3D11_USAGE_IMMUTABLE,           // Access::Immutable
+            D3D11_USAGE_DYNAMIC,             // Access::Dynamic
+            D3D11_USAGE_DEFAULT,             // Access::Stream
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -52,15 +52,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(BlendMask Value)
-    {
-        return static_cast<D3D11_COLOR_WRITE_ENABLE>(Value);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    auto As(BlendFactor Value)
+    static constexpr auto As(BlendFactor Value) noexcept
     {
         static constexpr Array kMapping = {
             D3D11_BLEND_ZERO,                       // BlendFactor::Zero
@@ -72,7 +64,11 @@ namespace Graphic
             D3D11_BLEND_DEST_COLOR,                 // BlendFactor::DstColor
             D3D11_BLEND_INV_DEST_COLOR,             // BlendFactor::OneMinusDstColor
             D3D11_BLEND_DEST_ALPHA,                 // BlendFactor::DstAlpha
-            D3D11_BLEND_INV_DEST_ALPHA              // BlendFactor::OneMinusDstAlpha
+            D3D11_BLEND_INV_DEST_ALPHA,             // BlendFactor::OneMinusDstAlpha
+            D3D11_BLEND_SRC1_COLOR,                 // BlendFactor::Src1Color
+            D3D11_BLEND_INV_SRC1_COLOR,             // BlendFactor::OneMinusSrc1Color
+            D3D11_BLEND_SRC1_ALPHA,                 // BlendFactor::Src1Alpha
+            D3D11_BLEND_INV_SRC1_ALPHA,             // BlendFactor::OneMinusSrc1Alpha
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -80,9 +76,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(BlendFunction Value)
+    static constexpr auto As(BlendFunction Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_BLEND_OP_ADD,                     // BlendFunction::Add
             D3D11_BLEND_OP_SUBTRACT,                // BlendFunction::Subtract
             D3D11_BLEND_OP_REV_SUBTRACT,            // BlendFunction::ReverseSubtract
@@ -95,9 +91,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Cull Value)
+    static constexpr auto As(Cull Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_CULL_NONE,                // Cull::None
             D3D11_CULL_BACK,                // Cull::Back
             D3D11_CULL_FRONT,               // Cull::Front
@@ -108,9 +104,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Fill Value)
+    static constexpr auto As(Fill Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_FILL_SOLID,               // Fill::Solid
             D3D11_FILL_WIREFRAME,           // Fill::Wireframe
         };
@@ -120,9 +116,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Primitive Value)
+    static constexpr auto As(Primitive Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
+            D3D11_PRIMITIVE_TOPOLOGY_POINTLIST,        // Primitive::PointList
             D3D11_PRIMITIVE_TOPOLOGY_LINELIST,         // Primitive::LineList
             D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP,        // Primitive::LineStrip
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,     // Primitive::TriangleList
@@ -134,14 +131,14 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Multisample Value)
+    static constexpr auto As(Multisample Value) noexcept
     {
-        constexpr static Array kMapping = {
-            1,        // Samples::X1
-            2,        // Samples::X2
-            4,        // Samples::X4
-            8,        // Samples::X8
-            16,       // Samples::X16
+        static constexpr Array kMapping = {
+            1,        // Multisample::X1
+            2,        // Multisample::X2
+            4,        // Multisample::X4
+            8,        // Multisample::X8
+            16,       // Multisample::X16
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -149,9 +146,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(TestAction Value)
+    static constexpr auto As(TestAction Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_STENCIL_OP_KEEP,                  // TestAction::Keep
             D3D11_STENCIL_OP_REPLACE,               // TestAction::Replace
             D3D11_STENCIL_OP_ZERO,                  // TestAction::Zero
@@ -167,9 +164,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(TestCondition Value)
+    static constexpr auto As(TestCondition Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_COMPARISON_ALWAYS,                // TestCondition::Always
             D3D11_COMPARISON_NEVER,                 // TestCondition::Never
             D3D11_COMPARISON_GREATER,               // TestCondition::Greater
@@ -185,12 +182,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(TextureEdge Value)
+    static constexpr auto As(TextureAddress Value) noexcept
     {
-        constexpr static Array kMapping = {
-            D3D11_TEXTURE_ADDRESS_CLAMP,            // TextureEdge::Clamp
-            D3D11_TEXTURE_ADDRESS_WRAP,             // TextureEdge::Repeat
-            D3D11_TEXTURE_ADDRESS_MIRROR            // TextureEdge::Mirror
+        static constexpr Array kMapping = {
+            D3D11_TEXTURE_ADDRESS_CLAMP,            // TextureAddress::Clamp
+            D3D11_TEXTURE_ADDRESS_BORDER,           // TextureAddress::Border
+            D3D11_TEXTURE_ADDRESS_WRAP,             // TextureAddress::Repeat
+            D3D11_TEXTURE_ADDRESS_MIRROR            // TextureAddress::Mirror
         };
         return kMapping[Enum::Cast(Value)];
     }
@@ -198,9 +196,23 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(TextureFilter Value)
+    static constexpr auto As(TextureBorder Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array<Array<const Real32, 4>, Enum::Count<TextureBorder>()> kMapping = {{
+            { { 0.0f, 0.0f, 0.0f, 0.0f } }, // TextureBorder::OpaqueBlack
+            { { 1.0f, 1.0f, 1.0f, 0.0f } }, // TextureBorder::OpaqueWhite
+            { { 0.0f, 0.0f, 0.0f, 1.0f } }, // TextureBorder::TransparentBlack
+            { { 1.0f, 1.0f, 1.0f, 1.0f } }, // TextureBorder::TransparentWhite
+        }};
+        return kMapping[Enum::Cast(Value)];
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static constexpr auto As(TextureFilter Value) noexcept
+    {
+        static constexpr Array kMapping = {
             D3D11_FILTER_MIN_MAG_MIP_POINT,          // TextureFilter::Point
             D3D11_FILTER_MIN_MAG_MIP_POINT,          // TextureFilter::PointMipPoint
             D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR,   // TextureFilter::PointMipLinear
@@ -218,82 +230,124 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    template<UInt Data>
-    auto As(TextureFormat Value)
+    static constexpr auto AsResourceFormat(TextureFormat Value) noexcept
     {
-        // FORMAT                                   // SRV                                 // DSV
-        constexpr static Tuple<DXGI_FORMAT, DXGI_FORMAT, DXGI_FORMAT> kMapping[] = {
-            { DXGI_FORMAT_BC1_UNORM,            DXGI_FORMAT_BC1_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC1UIntNorm
-            { DXGI_FORMAT_BC1_UNORM_SRGB,       DXGI_FORMAT_BC1_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC1UIntNorm_sRGB
-            { DXGI_FORMAT_BC2_UNORM,            DXGI_FORMAT_BC2_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC2UIntNorm
-            { DXGI_FORMAT_BC2_UNORM_SRGB,       DXGI_FORMAT_BC2_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC2UIntNorm_sRGB
-            { DXGI_FORMAT_BC3_UNORM,            DXGI_FORMAT_BC3_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC3UIntNorm
-            { DXGI_FORMAT_BC3_UNORM_SRGB,       DXGI_FORMAT_BC3_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC3UIntNorm_sRGB
-            { DXGI_FORMAT_BC4_UNORM,            DXGI_FORMAT_BC4_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC4UIntNorm
-            { DXGI_FORMAT_BC4_SNORM,            DXGI_FORMAT_BC4_SNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC4SIntNorm
-            { DXGI_FORMAT_BC5_UNORM,            DXGI_FORMAT_BC5_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC5UIntNorm
-            { DXGI_FORMAT_BC5_SNORM,            DXGI_FORMAT_BC5_SNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC5SIntNorm
-            { DXGI_FORMAT_BC6H_SF16,            DXGI_FORMAT_BC6H_SF16,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC6UFloat
-            { DXGI_FORMAT_BC6H_UF16,            DXGI_FORMAT_BC6H_UF16,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC6SFloat
-            { DXGI_FORMAT_BC7_UNORM,            DXGI_FORMAT_BC7_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC7UIntNorm
-            { DXGI_FORMAT_BC7_UNORM_SRGB,       DXGI_FORMAT_BC7_UNORM_SRGB,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::BC7UIntNorm_sRGB
-            { DXGI_FORMAT_R8_SINT,              DXGI_FORMAT_R8_SINT,                    DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8SInt
-            { DXGI_FORMAT_R8_SNORM,             DXGI_FORMAT_R8_SNORM,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8SIntNorm
-            { DXGI_FORMAT_R8_UINT,              DXGI_FORMAT_R8_UINT,                    DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8UInt
-            { DXGI_FORMAT_R8_UNORM,             DXGI_FORMAT_R8_UNORM,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R8UIntNorm
-            { DXGI_FORMAT_R16_SINT,             DXGI_FORMAT_R16_SINT,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R16SInt
-            { DXGI_FORMAT_R16_SNORM,            DXGI_FORMAT_R16_SNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R16SIntNorm
-            { DXGI_FORMAT_R16_UINT,             DXGI_FORMAT_R16_UINT,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R16UInt
-            { DXGI_FORMAT_R16_UNORM,            DXGI_FORMAT_R16_UNORM,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R16UIntNorm
-            { DXGI_FORMAT_R16_FLOAT,            DXGI_FORMAT_R16_FLOAT,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R16Float
-            { DXGI_FORMAT_R32_SINT,             DXGI_FORMAT_R32_SINT,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R32SInt
-            { DXGI_FORMAT_R32_UINT,             DXGI_FORMAT_R32_UINT,                   DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R32UInt
-            { DXGI_FORMAT_R32_FLOAT,            DXGI_FORMAT_R32_FLOAT,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::R32Float
-            { DXGI_FORMAT_R8G8_SINT,            DXGI_FORMAT_R8G8_SINT,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG8SInt
-            { DXGI_FORMAT_R8G8_SNORM,           DXGI_FORMAT_R8G8_SNORM,                 DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG8SIntNorm
-            { DXGI_FORMAT_R8G8_UINT,            DXGI_FORMAT_R8G8_UINT,                  DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG8UInt
-            { DXGI_FORMAT_R8G8_UNORM,           DXGI_FORMAT_R8G8_UNORM,                 DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG8UIntNorm
-            { DXGI_FORMAT_R16G16_SINT,          DXGI_FORMAT_R16G16_SINT,                DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG16SInt
-            { DXGI_FORMAT_R16G16_SNORM,         DXGI_FORMAT_R16G16_SNORM,               DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG16SIntNorm
-            { DXGI_FORMAT_R16G16_UINT,          DXGI_FORMAT_R16G16_UINT,                DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG16UInt
-            { DXGI_FORMAT_R16G16_UNORM,         DXGI_FORMAT_R16G16_UNORM,               DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG16UIntNorm
-            { DXGI_FORMAT_R16G16_FLOAT,         DXGI_FORMAT_R16G16_FLOAT,               DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG16Float
-            { DXGI_FORMAT_R32G32_SINT,          DXGI_FORMAT_R32G32_SINT,                DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG32SInt
-            { DXGI_FORMAT_R32G32_UINT,          DXGI_FORMAT_R32G32_UINT,                DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG32UInt
-            { DXGI_FORMAT_R32G32_FLOAT,         DXGI_FORMAT_R32G32_FLOAT,               DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RG32Float
-            { DXGI_FORMAT_R32G32B32_SINT,       DXGI_FORMAT_R32G32B32_SINT,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB32SInt
-            { DXGI_FORMAT_R32G32B32_UINT,       DXGI_FORMAT_R32G32B32_UINT,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB32UInt
-            { DXGI_FORMAT_R32G32B32_FLOAT,      DXGI_FORMAT_R32G32B32_FLOAT,            DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB32Float
-            { DXGI_FORMAT_R8G8B8A8_SINT,        DXGI_FORMAT_R8G8B8A8_SINT,              DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8SInt
-            { DXGI_FORMAT_R8G8B8A8_SNORM,       DXGI_FORMAT_R8G8B8A8_SNORM,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8SIntNorm
-            { DXGI_FORMAT_R8G8B8A8_UINT,        DXGI_FORMAT_R8G8B8A8_UINT,              DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UInt
-            { DXGI_FORMAT_R8G8B8A8_UNORM,       DXGI_FORMAT_R8G8B8A8_UNORM,             DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UIntNorm
-            { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,        DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA8UIntNorm_sRGB
-            { DXGI_FORMAT_R16G16B16A16_SINT,    DXGI_FORMAT_R16G16B16A16_SINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16SInt
-            { DXGI_FORMAT_R16G16B16A16_SNORM,   DXGI_FORMAT_R16G16B16A16_SNORM,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16SIntNorm
-            { DXGI_FORMAT_R16G16B16A16_UINT,    DXGI_FORMAT_R16G16B16A16_UINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16UInt
-            { DXGI_FORMAT_R16G16B16A16_UNORM,   DXGI_FORMAT_R16G16B16A16_UNORM,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16UIntNorm
-            { DXGI_FORMAT_R16G16B16A16_FLOAT,   DXGI_FORMAT_R16G16B16A16_FLOAT,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA16Float
-            { DXGI_FORMAT_R32G32B32A32_SINT,    DXGI_FORMAT_R32G32B32A32_SINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32SInt
-            { DXGI_FORMAT_R32G32B32A32_UINT,    DXGI_FORMAT_R32G32B32A32_UINT,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32UInt
-            { DXGI_FORMAT_R32G32B32A32_FLOAT,   DXGI_FORMAT_R32G32B32A32_FLOAT,         DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGBA32Float
-            { DXGI_FORMAT_R10G10B10A2_UINT,     DXGI_FORMAT_R10G10B10A2_UINT,           DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB10A2UInt
-            { DXGI_FORMAT_R10G10B10A2_UNORM,    DXGI_FORMAT_R10G10B10A2_UNORM,          DXGI_FORMAT_UNKNOWN              }, // TextureFormat::RGB10A2UIntNorm
-            { DXGI_FORMAT_R16_TYPELESS,         DXGI_FORMAT_R16_FLOAT,                  DXGI_FORMAT_R16_FLOAT            }, // TextureFormat::D16Float
-            { DXGI_FORMAT_R16_TYPELESS,         DXGI_FORMAT_R16_UNORM,                  DXGI_FORMAT_D16_UNORM            }, // TextureFormat::D16UIntNorm
-            { DXGI_FORMAT_R32_TYPELESS,         DXGI_FORMAT_R32_FLOAT,                  DXGI_FORMAT_D32_FLOAT            }, // TextureFormat::D32Float
-            { DXGI_FORMAT_R24G8_TYPELESS,       DXGI_FORMAT_R24_UNORM_X8_TYPELESS,      DXGI_FORMAT_D24_UNORM_S8_UINT    }, // TextureFormat::D24S8UIntNorm
-            { DXGI_FORMAT_R32G8X24_TYPELESS,    DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS,   DXGI_FORMAT_D32_FLOAT_S8X24_UINT }, // TextureFormat::D32S8UIntNorm
+        constexpr static Array kMapping = {
+            DXGI_FORMAT_BC1_UNORM,              // TextureFormat::BC1UIntNorm
+            DXGI_FORMAT_BC1_UNORM_SRGB,         // TextureFormat::BC1UIntNorm_sRGB
+            DXGI_FORMAT_BC2_UNORM,              // TextureFormat::BC2UIntNorm
+            DXGI_FORMAT_BC2_UNORM_SRGB,         // TextureFormat::BC2UIntNorm_sRGB
+            DXGI_FORMAT_BC3_UNORM,              // TextureFormat::BC3UIntNorm
+            DXGI_FORMAT_BC3_UNORM_SRGB,         // TextureFormat::BC3UIntNorm_sRGB
+            DXGI_FORMAT_BC4_UNORM,              // TextureFormat::BC4UIntNorm
+            DXGI_FORMAT_BC4_SNORM,              // TextureFormat::BC4SIntNorm
+            DXGI_FORMAT_BC5_UNORM,              // TextureFormat::BC5UIntNorm
+            DXGI_FORMAT_BC5_SNORM,              // TextureFormat::BC5SIntNorm
+            DXGI_FORMAT_BC6H_UF16,              // TextureFormat::BC6UFloat
+            DXGI_FORMAT_BC6H_SF16,              // TextureFormat::BC6SFloat
+            DXGI_FORMAT_BC7_UNORM,              // TextureFormat::BC7UIntNorm
+            DXGI_FORMAT_BC7_UNORM_SRGB,         // TextureFormat::BC7UIntNorm_sRGB
+            DXGI_FORMAT_R8_SINT,                // TextureFormat::R8SInt
+            DXGI_FORMAT_R8_SNORM,               // TextureFormat::R8SIntNorm
+            DXGI_FORMAT_R8_UINT,                // TextureFormat::R8UInt
+            DXGI_FORMAT_R8_UNORM,               // TextureFormat::R8UIntNorm
+            DXGI_FORMAT_R16_SINT,               // TextureFormat::R16SInt
+            DXGI_FORMAT_R16_SNORM,              // TextureFormat::R16SIntNorm
+            DXGI_FORMAT_R16_UINT,               // TextureFormat::R16UInt
+            DXGI_FORMAT_R16_UNORM,              // TextureFormat::R16UIntNorm
+            DXGI_FORMAT_R16_FLOAT,              // TextureFormat::R16Float
+            DXGI_FORMAT_R32_SINT,               // TextureFormat::R32SInt
+            DXGI_FORMAT_R32_UINT,               // TextureFormat::R32UInt
+            DXGI_FORMAT_R32_FLOAT,              // TextureFormat::R32Float
+            DXGI_FORMAT_R8G8_SINT,              // TextureFormat::RG8SInt
+            DXGI_FORMAT_R8G8_SNORM,             // TextureFormat::RG8SIntNorm
+            DXGI_FORMAT_R8G8_UINT,              // TextureFormat::RG8UInt
+            DXGI_FORMAT_R8G8_UNORM,             // TextureFormat::RG8UIntNorm
+            DXGI_FORMAT_R16G16_SINT,            // TextureFormat::RG16SInt
+            DXGI_FORMAT_R16G16_SNORM,           // TextureFormat::RG16SIntNorm
+            DXGI_FORMAT_R16G16_UINT,            // TextureFormat::RG16UInt
+            DXGI_FORMAT_R16G16_UNORM,           // TextureFormat::RG16UIntNorm
+            DXGI_FORMAT_R16G16_FLOAT,           // TextureFormat::RG16Float
+            DXGI_FORMAT_R32G32_SINT,            // TextureFormat::RG32SInt
+            DXGI_FORMAT_R32G32_UINT,            // TextureFormat::RG32UInt
+            DXGI_FORMAT_R32G32_FLOAT,           // TextureFormat::RG32Float
+            DXGI_FORMAT_R32G32B32_SINT,         // TextureFormat::RGB32SInt
+            DXGI_FORMAT_R32G32B32_UINT,         // TextureFormat::RGB32UInt
+            DXGI_FORMAT_R32G32B32_FLOAT,        // TextureFormat::RGB32Float
+            DXGI_FORMAT_R8G8B8A8_SINT,          // TextureFormat::RGBA8SInt
+            DXGI_FORMAT_R8G8B8A8_SNORM,         // TextureFormat::RGBA8SIntNorm
+            DXGI_FORMAT_R8G8B8A8_UINT,          // TextureFormat::RGBA8UInt
+            DXGI_FORMAT_R8G8B8A8_UNORM,         // TextureFormat::RGBA8UIntNorm
+            DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,    // TextureFormat::RGBA8UIntNorm_sRGB
+            DXGI_FORMAT_R16G16B16A16_SINT,      // TextureFormat::RGBA16SInt
+            DXGI_FORMAT_R16G16B16A16_SNORM,     // TextureFormat::RGBA16SIntNorm
+            DXGI_FORMAT_R16G16B16A16_UINT,      // TextureFormat::RGBA16UInt
+            DXGI_FORMAT_R16G16B16A16_UNORM,     // TextureFormat::RGBA16UIntNorm
+            DXGI_FORMAT_R16G16B16A16_FLOAT,     // TextureFormat::RGBA16Float
+            DXGI_FORMAT_R32G32B32A32_SINT,      // TextureFormat::RGBA32SInt
+            DXGI_FORMAT_R32G32B32A32_UINT,      // TextureFormat::RGBA32UInt
+            DXGI_FORMAT_R32G32B32A32_FLOAT,     // TextureFormat::RGBA32Float
+            DXGI_FORMAT_R10G10B10A2_UINT,       // TextureFormat::RGB10A2UInt
+            DXGI_FORMAT_R10G10B10A2_UNORM,      // TextureFormat::RGB10A2UIntNorm
+            DXGI_FORMAT_R16_TYPELESS,           // TextureFormat::D16Float
+            DXGI_FORMAT_R16_TYPELESS,           // TextureFormat::D16UIntNorm
+            DXGI_FORMAT_R32_TYPELESS,           // TextureFormat::D32Float
+            DXGI_FORMAT_R24G8_TYPELESS,         // TextureFormat::D24S8UIntNorm
+            DXGI_FORMAT_R32G8X24_TYPELESS,      // TextureFormat::D32S8UIntNorm
         };
-        return Fetch<Data>(kMapping[Enum::Cast(Value)]);
+        return kMapping[Enum::Cast(Value)];
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(Usage Value)
+    static constexpr auto AsColorResourceFormat(TextureFormat Value) noexcept
     {
-        constexpr static Array kMapping = {
+        switch (Value)
+        {
+        case TextureFormat::D16Float:
+            return DXGI_FORMAT_R16_FLOAT;
+        case TextureFormat::D16UIntNorm:
+            return DXGI_FORMAT_R16_UNORM;
+        case TextureFormat::D32Float:
+            return DXGI_FORMAT_R32_FLOAT;
+        case TextureFormat::D24S8UIntNorm:
+            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        case TextureFormat::D32S8UIntNorm:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        default:
+            return AsResourceFormat(Value);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static constexpr auto AsDepthResourceFormat(TextureFormat Value) noexcept
+    {
+        switch (Value)
+        {
+        case TextureFormat::D16Float:
+            return DXGI_FORMAT_R16_FLOAT;
+        case TextureFormat::D16UIntNorm:
+            return DXGI_FORMAT_R16_UNORM;
+        case TextureFormat::D32Float:
+            return DXGI_FORMAT_R32_FLOAT;
+        case TextureFormat::D24S8UIntNorm:
+            return DXGI_FORMAT_D24_UNORM_S8_UINT;
+        case TextureFormat::D32S8UIntNorm:
+            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+        default:
+            return DXGI_FORMAT_UNKNOWN;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static constexpr auto As(Usage Value) noexcept
+    {
+        static constexpr Array kMapping = {
             D3D11_BIND_VERTEX_BUFFER,          // Usage::Vertex
             D3D11_BIND_INDEX_BUFFER,           // Usage::Index
             D3D11_BIND_CONSTANT_BUFFER,        // Usage::Uniform
@@ -304,9 +358,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto As(VertexFormat Value)
+    static constexpr auto As(VertexFormat Value) noexcept
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             DXGI_FORMAT_R16G16_FLOAT,           // VertexFormat::Float16x2
             DXGI_FORMAT_R16G16B16A16_FLOAT,     // VertexFormat::Float16x4
             DXGI_FORMAT_R32_FLOAT,              // VertexFormat::Float32x1
@@ -342,37 +396,71 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    template<UInt Data>
-    auto As(VertexSemantic Value)
+    static constexpr auto AsVertexName(VertexSemantic Value) noexcept
     {
-        constexpr static Tuple<ConstPtr<Char>, UInt32> kMapping[] = {
-            { "POSITION",     0 },     // VertexSemantic::Position
-            { "NORMAL",       0 },     // VertexSemantic::Normal
-            { "TANGENT",      0 },     // VertexSemantic::Tangent
-            { "COLOR",        0 },     // VertexSemantic::Color
-            { "TEXCOORD",     0 },     // VertexSemantic::TexCoord0
-            { "TEXCOORD",     1 },     // VertexSemantic::TexCoord1
-            { "TEXCOORD",     2 },     // VertexSemantic::TexCoord2
-            { "TEXCOORD",     3 },     // VertexSemantic::TexCoord3
-            { "BLENDINDICES", 0 },     // VertexSemantic::BlendIndices
-            { "BLENDWEIGHT",  0 },     // VertexSemantic::BlendWeights
-            { "CUSTOM",       0 },     // VertexSemantic::Custom0
-            { "CUSTOM",       1 },     // VertexSemantic::Custom1
-            { "CUSTOM",       2 },     // VertexSemantic::Custom2
-            { "CUSTOM",       3 },     // VertexSemantic::Custom3
-            { "CUSTOM",       4 },     // VertexSemantic::Custom4
-            { "CUSTOM",       5 },     // VertexSemantic::Custom5
-            { "CUSTOM",       6 },     // VertexSemantic::Custom6
-            { "CUSTOM",       7 },     // VertexSemantic::Custom7
-            { "NONE",         0 },     // VertexSemantic::None
+        constexpr static Array kMapping = {
+            "POSITION",         // VertexSemantic::Position
+            "NORMAL",           // VertexSemantic::Normal
+            "TANGENT",          // VertexSemantic::Tangent
+            "BITANGENT",        // VertexSemantic::Bitangent
+            "COLOR",            // VertexSemantic::Color0
+            "COLOR",            // VertexSemantic::Color1
+            "COLOR",            // VertexSemantic::Color2
+            "COLOR",            // VertexSemantic::Color3
+            "BLENDINDICES",     // VertexSemantic::BlendIndices
+            "BLENDWEIGHTS",     // VertexSemantic::BlendWeights
+            "TEXCOORD",         // VertexSemantic::TexCoord0
+            "TEXCOORD",         // VertexSemantic::TexCoord1
+            "TEXCOORD",         // VertexSemantic::TexCoord2
+            "TEXCOORD",         // VertexSemantic::TexCoord3
+            "TEXCOORD",         // VertexSemantic::TexCoord4
+            "TEXCOORD",         // VertexSemantic::TexCoord5
+            "TEXCOORD",         // VertexSemantic::TexCoord6
+            "TEXCOORD",         // VertexSemantic::TexCoord7
+            "CUSTOM",           // VertexSemantic::Custom0
+            "CUSTOM",           // VertexSemantic::Custom1
+            "CUSTOM",           // VertexSemantic::Custom2
+            "CUSTOM",           // VertexSemantic::Custom3
         };
-        return Fetch<Data>(kMapping[Enum::Cast(Value)]);
+        return kMapping[Enum::Cast(Value)];
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    auto Fill(ConstPtr<UInt8> Data, UInt8 Layer, UInt16 Width, UInt16 Height, TextureFormat Layout)
+    static constexpr auto AsVertexIndex(VertexSemantic Value) noexcept
+    {
+        constexpr static Array kMapping = {
+            0,            // VertexSemantic::Position
+            0,            // VertexSemantic::Normal
+            0,            // VertexSemantic::Tangent
+            0,            // VertexSemantic::Bitangent
+            0,            // VertexSemantic::Color0
+            1,            // VertexSemantic::Color1
+            2,            // VertexSemantic::Color2
+            3,            // VertexSemantic::Color3
+            0,            // VertexSemantic::BlendIndices
+            0,            // VertexSemantic::BlendWeights
+            0,            // VertexSemantic::TexCoord0
+            1,            // VertexSemantic::TexCoord1
+            2,            // VertexSemantic::TexCoord2
+            3,            // VertexSemantic::TexCoord3
+            4,            // VertexSemantic::TexCoord4
+            5,            // VertexSemantic::TexCoord5
+            6,            // VertexSemantic::TexCoord6
+            7,            // VertexSemantic::TexCoord7
+            0,            // VertexSemantic::Custom0
+            1,            // VertexSemantic::Custom1
+            2,            // VertexSemantic::Custom2
+            3,            // VertexSemantic::Custom3
+        };
+        return kMapping[Enum::Cast(Value)];
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static auto Fill(ConstPtr<UInt8> Data, UInt8 Layer, UInt16 Width, UInt16 Height, TextureFormat Layout)
     {
         constexpr static UInt8 kBitsPerPixel[] = {
             4,      // TextureFormat::BC1UIntNorm
@@ -440,8 +528,7 @@ namespace Graphic
             64,     // TextureFormat::D32S8UIntNorm
         };
 
-
-        static D3D11_SUBRESOURCE_DATA Content[kMaxMipmap];
+        static D3D11_SUBRESOURCE_DATA Content[kMaxMipmaps];
 
         if (Data)
         {
@@ -450,7 +537,7 @@ namespace Graphic
 
             for (UInt32 Level = 0; Level < Layer; ++Level)
             {
-                UInt32 Pitch = (Width + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
+                const UInt32 Pitch = (Width + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
 
                 Content[Level].pSysMem          = Data;
                 Content[Level].SysMemPitch      = Pitch;
@@ -468,7 +555,16 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool D3D11Driver::Initialize(Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples)
+    D3D11Driver::D3D11Driver()
+        : mProperties   { },
+          mCapabilities { }
+    {
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool D3D11Driver::Initialize(Ptr<SDL_Window> Window, UInt16 Width, UInt16 Height, Multisample Samples)
     {
         decltype(& D3D11CreateDevice)  D3D11CreateDevicePtr = nullptr;
         decltype(& CreateDXGIFactory1) CreateDXGIFactoryPtr = nullptr;
@@ -491,7 +587,7 @@ namespace Graphic
             ComPtr<ID3D11Device>        Device;
             ComPtr<ID3D11DeviceContext> DeviceImmediate;
 
-            UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+            constexpr UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 
             constexpr D3D_FEATURE_LEVEL Direct3DFeatureLevels[] = {
                 D3D_FEATURE_LEVEL_11_1,
@@ -553,13 +649,13 @@ namespace Graphic
                 }
             }
 
-            Successful = CheckIfFail(Result);
+            Successful = CheckIfSucceed(Result);
 
             if (Successful)
             {
-                Successful = CheckIfFail(Device.As<ID3D11Device1>(& mDevice));
-                Successful = Successful && CheckIfFail(DeviceImmediate.As<ID3D11DeviceContext1>(& mDeviceImmediate));
-                Successful = Successful && CheckIfFail(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory)));
+                Successful = CheckIfSucceed(Device.As<ID3D11Device1>(& mDevice));
+                Successful = Successful && CheckIfSucceed(DeviceImmediate.As<ID3D11DeviceContext1>(& mDeviceImmediate));
+                Successful = Successful && CheckIfSucceed(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory)));
 
                 if (Successful)
                 {
@@ -567,17 +663,18 @@ namespace Graphic
                     LoadCapabilities();
                     LoadStates();
 
-                    if (Swapchain)
+                    if (Window)
                     {
-                        const Ptr<void> Display = SDL_GetPointerProperty(
-                            SDL_GetWindowProperties(Swapchain), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-                        CreateSwapchain(mPasses[0], reinterpret_cast<UInt>(Display), Width, Height, As(Samples));
+                        const Ptr<void> Handle = SDL_GetPointerProperty(
+                            SDL_GetWindowProperties(Window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+                        CreateSwapchain(mPasses[0], static_cast<HWND>(Handle), Width, Height, As(Samples));
                     }
                 }
             }
         }
 
         return Successful;
+
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -595,7 +692,7 @@ namespace Graphic
 
         /// Resizes the swap chain buffers with the new resolution and format.
         const UINT Flags = mProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-        CheckIfFail(mDisplay->ResizeBuffers(0, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, Flags));
+        CheckIfSucceed(mDisplay->ResizeBuffers(0, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, Flags));
 
         /// Recreates swap chain resources, including color and depth-stencil attachments.
         CreateSwapchainResources(mPasses[0], Width, Height, As(Samples));
@@ -615,15 +712,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateBuffer(Object ID, Access Access, Usage Usage, UInt32 Length, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateBuffer(Object ID, Access Access, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
     {
-        const D3D11_USAGE       Kind       = As(Access);
-        const D3D11_BIND_FLAG   Bind       = As(Usage);
         const D3D11_BUFFER_DESC Descriptor = CD3D11_BUFFER_DESC(
-            Bind == D3D11_BIND_CONSTANT_BUFFER ? Align<kBlockAlignment>(Length) : Length,
-            Kind != D3D11_USAGE_STAGING ? Bind : 0,
-            Kind,
-            Kind == D3D11_USAGE_STAGING ? D3D11_CPU_ACCESS_WRITE : 0);
+            Usage  == Usage::Uniform ? Align(Capacity, kUniformBlockAlignment) : Capacity,
+            As(Usage),
+            As(Access),
+            Access == Access::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0);
 
         D3D11_SUBRESOURCE_DATA Content {
             Data.data(),
@@ -631,8 +726,7 @@ namespace Graphic
         };
 
         const Ptr<D3D11_SUBRESOURCE_DATA> Memory = (Data.empty() ? nullptr : &Content);
-        CheckIfFail(mDevice->CreateBuffer(&Descriptor, Memory, mBuffers[ID].Resource.GetAddressOf()));
-        mBuffers[ID].Kind = Kind;
+        CheckIfSucceed(mDevice->CreateBuffer(&Descriptor, Memory, mBuffers[ID].Object.GetAddressOf()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -642,7 +736,7 @@ namespace Graphic
     {
         const D3D11_BOX Destination  = CD3D11_BOX(Offset, 0, 0, Offset + Data.size(), 1, 1);
         const D3D11_COPY_FLAGS Flags = (Invalidate ? D3D11_COPY_DISCARD : D3D11_COPY_NO_OVERWRITE);
-        mDeviceImmediate->UpdateSubresource1(mBuffers[ID].Resource.Get(), 0, &Destination, Data.data(), 0, 0, Flags);
+        mDeviceImmediate->UpdateSubresource1(mBuffers[ID].Object.Get(), 0, &Destination, Data.data(), 0, 0, Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -650,35 +744,35 @@ namespace Graphic
 
     void D3D11Driver::DeleteBuffer(Object ID)
     {
-        mBuffers[ID].~D3D11Buffer();
+        InPlaceDelete(mBuffers[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::ResizeBuffer(Object ID, UInt32 Size)
+    void D3D11Driver::ResizeBuffer(Object ID, UInt32 Capacity)
     {
         // Query the existing buffer description to preserve all current settings.
         D3D11_BUFFER_DESC Descriptor;
-        mBuffers[ID].Resource->GetDesc(&Descriptor);
+        mBuffers[ID].Object->GetDesc(&Descriptor);
 
         // Update the buffer size while leaving other properties unchanged.
-        Descriptor.ByteWidth = Size;
+        Descriptor.ByteWidth = Capacity;
 
         // Recreate the buffer with the updated description.
-        CheckIfFail(mDevice->CreateBuffer(&Descriptor, nullptr, mBuffers[ID].Resource.ReleaseAndGetAddressOf()));
+        CheckIfSucceed(mDevice->CreateBuffer(&Descriptor, nullptr, mBuffers[ID].Object.ReleaseAndGetAddressOf()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CopyBuffer(Object DstBuffer, UInt32 DstOffset, Object SrcBuffer, UInt32 SrcOffset, UInt32 Size)
+    void D3D11Driver::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, Bool Invalidate, UInt32 Size)
     {
         const D3D11_BOX Offset       = CD3D11_BOX(SrcOffset, 0, 0, SrcOffset + Size, 1, 1);
-        const D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
+        const D3D11_COPY_FLAGS Flags = Invalidate ? D3D11_COPY_DISCARD : D3D11_COPY_NO_OVERWRITE;
 
-        const Ptr<ID3D11Buffer> Target = mBuffers[DstBuffer].Resource.Get();
-        const Ptr<ID3D11Buffer> Source = mBuffers[SrcBuffer].Resource.Get();
+        const Ptr<ID3D11Buffer> Target = mBuffers[DstBuffer].Object.Get();
+        const Ptr<ID3D11Buffer> Source = mBuffers[SrcBuffer].Object.Get();
         mDeviceImmediate->CopySubresourceRegion1(Target, 0, DstOffset, 0, 0, Source, 0, &Offset, Flags);
     }
 
@@ -695,12 +789,10 @@ namespace Graphic
 
     Ptr<Byte> D3D11Driver::MapBuffer(Object ID, UInt32 Offset, UInt32 Size, Bool Invalidate)
     {
-        const D3D11_MAP          Mode = (mBuffers[ID].Kind != D3D11_USAGE_STAGING
-            ? (Invalidate ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE)
-            : D3D11_MAP_WRITE);
+        const D3D11_MAP          Mode = (Invalidate ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE);
         D3D11_MAPPED_SUBRESOURCE Memory;
 
-        if (CheckIfFail(mDeviceImmediate->Map(mBuffers[ID].Resource.Get(), 0, Mode, 0, &Memory)))
+        if (CheckIfSucceed(mDeviceImmediate->Map(mBuffers[ID].Object.Get(), 0, Mode, 0, &Memory)))
         {
             return static_cast<Ptr<Byte>>(Memory.pData) + Offset;
         }
@@ -712,7 +804,7 @@ namespace Graphic
 
     void D3D11Driver::UnmapBuffer(Object ID)
     {
-        mDeviceImmediate->Unmap(mBuffers[ID].Resource.Get(), 0);
+        mDeviceImmediate->Unmap(mBuffers[ID].Object.Get(), 0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -726,37 +818,37 @@ namespace Graphic
         for (ConstRef<Attachment> Color : Colors)
         {
             Ref<D3D11Attachment> Attachment = Pass.Colors.emplace_back();
-            Attachment.Source       = Color.SourceTexture ? mTextures[Color.SourceTexture].Resource : nullptr;
+            Attachment.Source       = Color.SourceTexture ? mTextures[Color.SourceTexture].Object : nullptr;
             Attachment.SourceLevel  = Color.SourceLevel;
-            Attachment.Target       = mTextures[Color.TargetTexture].Resource;
+            Attachment.Target       = mTextures[Color.TargetTexture].Object;
             Attachment.TargetLevel  = Color.TargetLevel;
-            Attachment.TargetFormat = As<1>(mTextures[Color.TargetTexture].Format);
+            Attachment.TargetFormat = AsColorResourceFormat(mTextures[Color.TargetTexture].Format);
 
             if (Color.SourceTexture)
             {
-                const DXGI_FORMAT Format = As<1>(mTextures[Color.SourceTexture].Format);
+                const DXGI_FORMAT Format = AsColorResourceFormat(mTextures[Color.SourceTexture].Format);
                 const CD3D11_RENDER_TARGET_VIEW_DESC Description(D3D11_RTV_DIMENSION_TEXTURE2DMS, Format, Color.SourceLevel);
-                CheckIfFail(mDevice->CreateRenderTargetView(
-                    Attachment.Source.Get(), & Description, Attachment.Accessor.GetAddressOf()));
+                CheckIfSucceed(mDevice->CreateRenderTargetView(
+                    Attachment.Source.Get(), & Description, Attachment.Resource.GetAddressOf()));
             }
             else
             {
-                const DXGI_FORMAT Format = As<1>(mTextures[Color.TargetTexture].Format);
+                const DXGI_FORMAT Format = AsColorResourceFormat(mTextures[Color.TargetTexture].Format);
                 const CD3D11_RENDER_TARGET_VIEW_DESC Description(D3D11_RTV_DIMENSION_TEXTURE2D, Format, Color.TargetLevel);
-                CheckIfFail(mDevice->CreateRenderTargetView(
-                    Attachment.Target.Get(), & Description, Attachment.Accessor.GetAddressOf()));
+                CheckIfSucceed(mDevice->CreateRenderTargetView(
+                    Attachment.Target.Get(), & Description, Attachment.Resource.GetAddressOf()));
             }
         }
 
         // Create and assign its depth-stencil view (DSV) if an auxiliary attachment is provided.
         if (Auxiliary.TargetTexture > 0)
         {
-            const Ptr<ID3D11Texture2D> Attachment = mTextures[Auxiliary.TargetTexture].Resource.Get();
+            const Ptr<ID3D11Texture2D> Attachment = mTextures[Auxiliary.TargetTexture].Object.Get();
 
-            const DXGI_FORMAT Format = As<2>(mTextures[Auxiliary.TargetTexture].Format);
+            const DXGI_FORMAT Format = AsDepthResourceFormat(mTextures[Auxiliary.TargetTexture].Format);
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
                 D3D11_DSV_DIMENSION_TEXTURE2D, Format, Auxiliary.TargetLevel);
-            CheckIfFail(mDevice->CreateDepthStencilView(Attachment, & Description, Pass.Auxiliary.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateDepthStencilView(Attachment, & Description, Pass.Auxiliary.GetAddressOf()));
         }
     }
 
@@ -765,95 +857,99 @@ namespace Graphic
 
     void D3D11Driver::DeletePass(Object ID)
     {
-        mPasses[ID].~D3D11Pass();
+        InPlaceDelete(mPasses[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreatePipeline(Object ID, ConstSpan<Byte> Vertex, ConstSpan<Byte> Fragment, ConstRef<Descriptor> Descriptor)
+    void D3D11Driver::CreatePipeline(Object ID, ConstRef<Shaders> Shaders, ConstRef<States> States)
     {
         Ref<D3D11Pipeline> Pipeline = mPipelines[ID];
 
-        CheckIfFail(mDevice->CreateVertexShader(Vertex.data(), Vertex.size(), nullptr, Pipeline.VS.GetAddressOf()));
-        CheckIfFail(mDevice->CreatePixelShader(Fragment.data(), Fragment.size(), nullptr, Pipeline.PS.GetAddressOf()));
+        ConstRef<Blob> VS = Shaders[Enum::Cast(Stage::Vertex)];
+        CheckIfSucceed(mDevice->CreateVertexShader(VS.GetData(), VS.GetSize(), nullptr, Pipeline.VS.GetAddressOf()));
+
+        ConstRef<Blob> PS = Shaders[Enum::Cast(Stage::Fragment)];
+        CheckIfSucceed(mDevice->CreatePixelShader(PS.GetData(), PS.GetSize(), nullptr, Pipeline.PS.GetAddressOf()));
 
         {
             D3D11_BLEND_DESC Description = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
 
             Description.RenderTarget[0].BlendEnable           = !(
-                   Descriptor.BlendSrcColor       == BlendFactor::One
-                && Descriptor.BlendSrcAlpha       == BlendFactor::One
-                && Descriptor.BlendDstColor       == BlendFactor::Zero
-                && Descriptor.BlendDstAlpha       == BlendFactor::Zero
-                && Descriptor.BlendEquationColor  == BlendFunction::Add
-                && Descriptor.BlendEquationAlpha  == BlendFunction::Add);
-            Description.RenderTarget[0].SrcBlend              = As(Descriptor.BlendSrcColor);
-            Description.RenderTarget[0].DestBlend             = As(Descriptor.BlendDstColor);
-            Description.RenderTarget[0].BlendOp               = As(Descriptor.BlendEquationColor);
-            Description.RenderTarget[0].SrcBlendAlpha         = As(Descriptor.BlendSrcAlpha);
-            Description.RenderTarget[0].DestBlendAlpha        = As(Descriptor.BlendDstAlpha);
-            Description.RenderTarget[0].BlendOpAlpha          = As(Descriptor.BlendEquationAlpha);
-            Description.RenderTarget[0].RenderTargetWriteMask = As(Descriptor.BlendMask);
+                   States.BlendSrcColor       == BlendFactor::One
+                && States.BlendSrcAlpha       == BlendFactor::One
+                && States.BlendDstColor       == BlendFactor::Zero
+                && States.BlendDstAlpha       == BlendFactor::Zero
+                && States.BlendEquationColor  == BlendFunction::Add
+                && States.BlendEquationAlpha  == BlendFunction::Add);
+            Description.RenderTarget[0].SrcBlend              = As(States.BlendSrcColor);
+            Description.RenderTarget[0].DestBlend             = As(States.BlendDstColor);
+            Description.RenderTarget[0].BlendOp               = As(States.BlendEquationColor);
+            Description.RenderTarget[0].SrcBlendAlpha         = As(States.BlendSrcAlpha);
+            Description.RenderTarget[0].DestBlendAlpha        = As(States.BlendDstAlpha);
+            Description.RenderTarget[0].BlendOpAlpha          = As(States.BlendEquationAlpha);
+            Description.RenderTarget[0].RenderTargetWriteMask = static_cast<D3D11_COLOR_WRITE_ENABLE>(States.Channel);
+            Description.AlphaToCoverageEnable                 = States.AlphaToCoverage;
 
-            CheckIfFail(mDevice->CreateBlendState(& Description, Pipeline.BS.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateBlendState(& Description, Pipeline.BS.GetAddressOf()));
         }
 
         {
             D3D11_DEPTH_STENCIL_DESC Description = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 
-            Description.DepthEnable    = Descriptor.DepthTest != TestCondition::Always || Descriptor.DepthMask;
-            Description.DepthFunc      = As(Descriptor.DepthTest);
-            Description.DepthWriteMask = static_cast<D3D11_DEPTH_WRITE_MASK>(Descriptor.DepthMask);
-            Description.StencilEnable  = Descriptor.StencilFrontTest      != TestCondition::Always
-                                      || Descriptor.StencilFrontFail      != TestAction::Keep
-                                      || Descriptor.StencilFrontDepthFail != TestAction::Keep
-                                      || Descriptor.StencilFrontDepthPass != TestAction::Keep
-                                      || Descriptor.StencilBackTest       != TestCondition::Always
-                                      || Descriptor.StencilBackFail       != TestAction::Keep
-                                      || Descriptor.StencilBackDepthFail  != TestAction::Keep
-                                      || Descriptor.StencilBackDepthPass  != TestAction::Keep;
-            Description.StencilReadMask              = Descriptor.StencilReadMask;
-            Description.StencilWriteMask             = Descriptor.StencilWriteMask;
-            Description.FrontFace.StencilFunc        = As(Descriptor.StencilFrontTest);
-            Description.FrontFace.StencilFailOp      = As(Descriptor.StencilFrontFail);
-            Description.FrontFace.StencilDepthFailOp = As(Descriptor.StencilFrontDepthFail);
-            Description.FrontFace.StencilPassOp      = As(Descriptor.StencilFrontDepthPass);
-            Description.BackFace.StencilFunc         = As(Descriptor.StencilBackTest);
-            Description.BackFace.StencilFailOp       = As(Descriptor.StencilBackFail);
-            Description.BackFace.StencilDepthFailOp  = As(Descriptor.StencilBackDepthFail);
-            Description.BackFace.StencilPassOp       = As(Descriptor.StencilBackDepthPass);
+            Description.DepthEnable    = States.DepthTest != TestCondition::Always || States.DepthMask;
+            Description.DepthFunc      = As(States.DepthTest);
+            Description.DepthWriteMask = static_cast<D3D11_DEPTH_WRITE_MASK>(States.DepthMask);
+            Description.StencilEnable  = States.StencilFrontTest      != TestCondition::Always
+                                      || States.StencilFrontFail      != TestAction::Keep
+                                      || States.StencilFrontDepthFail != TestAction::Keep
+                                      || States.StencilFrontDepthPass != TestAction::Keep
+                                      || States.StencilBackTest       != TestCondition::Always
+                                      || States.StencilBackFail       != TestAction::Keep
+                                      || States.StencilBackDepthFail  != TestAction::Keep
+                                      || States.StencilBackDepthPass  != TestAction::Keep;
+            Description.StencilReadMask              = States.StencilReadMask;
+            Description.StencilWriteMask             = States.StencilWriteMask;
+            Description.FrontFace.StencilFunc        = As(States.StencilFrontTest);
+            Description.FrontFace.StencilFailOp      = As(States.StencilFrontFail);
+            Description.FrontFace.StencilDepthFailOp = As(States.StencilFrontDepthFail);
+            Description.FrontFace.StencilPassOp      = As(States.StencilFrontDepthPass);
+            Description.BackFace.StencilFunc         = As(States.StencilBackTest);
+            Description.BackFace.StencilFailOp       = As(States.StencilBackFail);
+            Description.BackFace.StencilDepthFailOp  = As(States.StencilBackDepthFail);
+            Description.BackFace.StencilPassOp       = As(States.StencilBackDepthPass);
 
-            CheckIfFail(mDevice->CreateDepthStencilState(& Description, Pipeline.DS.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateDepthStencilState(& Description, Pipeline.DS.GetAddressOf()));
         }
 
         {
             D3D11_RASTERIZER_DESC Description = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 
             Description.FrontCounterClockwise = TRUE;
-            Description.DepthBias             = Descriptor.DepthBias;
-            Description.DepthBiasClamp        = Descriptor.DepthBiasClamp;
-            Description.SlopeScaledDepthBias  = Descriptor.DepthBiasSlope;
-            Description.DepthClipEnable       = Descriptor.DepthClip;
-            Description.CullMode              = As(Descriptor.Cull);
+            Description.DepthBias             = States.DepthBias;
+            Description.DepthBiasClamp        = States.DepthBiasClamp;
+            Description.SlopeScaledDepthBias  = States.DepthBiasSlope;
+            Description.DepthClipEnable       = States.DepthClip;
+            Description.CullMode              = As(States.Cull);
             Description.ScissorEnable         = TRUE;
             Description.MultisampleEnable     = TRUE;
             Description.AntialiasedLineEnable = TRUE;
-            Description.FillMode              = As(Descriptor.Fill);
+            Description.FillMode              = As(States.Fill);
 
-            CheckIfFail(mDevice->CreateRasterizerState(& Description, Pipeline.RS.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateRasterizerState(& Description, Pipeline.RS.GetAddressOf()));
         }
 
         {
             D3D11_INPUT_ELEMENT_DESC Description[kMaxAttributes];
             UInt                     Count = 0;
 
-            for (ConstRef<Attribute> Attribute : Descriptor.InputAttributes)
+            for (ConstRef<Attribute> Attribute : States.InputAttributes)
             {
                 Ref<D3D11_INPUT_ELEMENT_DESC> Element = Description[Count++];
 
-                Element.SemanticName         = As<0>(Attribute.Semantic);
-                Element.SemanticIndex        = As<1>(Attribute.Semantic);
+                Element.SemanticName         = AsVertexName(Attribute.Semantic);
+                Element.SemanticIndex        = AsVertexIndex(Attribute.Semantic);
                 Element.Format               = As(Attribute.Format);
                 Element.AlignedByteOffset    = Attribute.Offset;
                 Element.InputSlot            = Attribute.Stream;
@@ -861,11 +957,10 @@ namespace Graphic
                 Element.InstanceDataStepRate = Attribute.Divisor;
             }
 
-            CheckIfFail(mDevice->CreateInputLayout(
-                Description, Count, Vertex.data(), Vertex.size(), Pipeline.IL.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateInputLayout(Description, Count, VS.GetData(), VS.GetSize(), Pipeline.IL.GetAddressOf()));
         }
 
-        Pipeline.PT = As(Descriptor.InputPrimitive);
+        Pipeline.PT = As(States.InputPrimitive);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -873,15 +968,15 @@ namespace Graphic
 
     void D3D11Driver::DeletePipeline(Object ID)
     {
-        mPipelines[ID].~D3D11Pipeline();
+        InPlaceDelete(mPipelines[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateTexture(Object ID, Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateTexture(Object ID, Access Access, TextureType Type, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
     {
-        CD3D11_TEXTURE2D_DESC Description(As<0>(Format), Width, Height, 1, Mipmaps);
+        CD3D11_TEXTURE2D_DESC Description(AsResourceFormat(Format), Width, Height, 1, Mipmaps);
         Description.Usage      = As(Access);
         Description.BindFlags  = Layout != TextureLayout::Target ? D3D11_BIND_SHADER_RESOURCE : 0;
         Description.MiscFlags  = Mipmaps < 1 ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
@@ -891,31 +986,34 @@ namespace Graphic
         {
             switch (Format)
             {
-                case TextureFormat::D16Float:
-                case TextureFormat::D32Float:
-                case TextureFormat::D24S8UIntNorm:
-                case TextureFormat::D32S8UIntNorm:
-                    Description.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
-                    break;
-                default:
-                    Description.BindFlags |= D3D11_BIND_RENDER_TARGET;
-                    break;
+            case TextureFormat::D16Float:
+            case TextureFormat::D16UIntNorm:
+            case TextureFormat::D32Float:
+            case TextureFormat::D24S8UIntNorm:
+            case TextureFormat::D32S8UIntNorm:
+                Description.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+                break;
+            default:
+                Description.BindFlags |= D3D11_BIND_RENDER_TARGET;
+                break;
             }
         }
 
-        Ref<D3D11Texture> Object = mTextures[ID];
-        Object.Format = Format;
+        Ref<D3D11Texture> Texture = mTextures[ID];
+        Texture.Format = Format;
 
-        const ConstPtr<D3D11_SUBRESOURCE_DATA> Memory = Fill(Data.data(), Mipmaps, Width, Height, Format);
-        CheckIfFail(mDevice->CreateTexture2D(&Description, Memory, Object.Resource.GetAddressOf()));
+        const ConstPtr<D3D11_SUBRESOURCE_DATA> Memory = Fill(
+            Data.data(), Mipmaps, Width, Height, Format);
+        CheckIfSucceed(mDevice->CreateTexture2D(&Description, Memory, Texture.Object.GetAddressOf()));
 
         if (Layout != TextureLayout::Target)
         {
-            const D3D11_SRV_DIMENSION Type
-                = Samples != Multisample::X1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
+            const D3D11_SRV_DIMENSION Dimension = Samples != Multisample::X1
+                ? D3D11_SRV_DIMENSION_TEXTURE2DMS
+                : D3D11_SRV_DIMENSION_TEXTURE2D;
 
-            const CD3D11_SHADER_RESOURCE_VIEW_DESC Descriptor(Type, As<1>(Format), 0, Mipmaps);
-            CheckIfFail(mDevice->CreateShaderResourceView(Object.Resource.Get(), &Descriptor, Object.Accessor.GetAddressOf()));
+            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, AsColorResourceFormat(Format), 0, Mipmaps);
+            CheckIfSucceed(mDevice->CreateShaderResourceView(Texture.Object.Get(), &View, Texture.Resource.GetAddressOf()));
         }
     }
 
@@ -926,8 +1024,7 @@ namespace Graphic
     {
         const D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
         const D3D11_BOX Offset       = CD3D11_BOX(X, Y, 0, X + Width, Y + Height, 1);
-        
-        mDeviceImmediate->UpdateSubresource1(mTextures[ID].Resource.Get(), Level, &Offset, Data.data(), Pitch, 0, Flags);
+        mDeviceImmediate->UpdateSubresource1(mTextures[ID].Object.Get(), Level, &Offset, Data.data(), Pitch, 0, Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -935,19 +1032,20 @@ namespace Graphic
 
     void D3D11Driver::DeleteTexture(Object ID)
     {
-        mTextures[ID].~D3D11Texture();
+        InPlaceDelete(mTextures[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CopyTexture(Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, UInt16 Width, UInt16 Height)
+    void D3D11Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16  SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height)
     {
-        const D3D11_BOX Offset = CD3D11_BOX(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
+        const D3D11_BOX Offset       = CD3D11_BOX(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
+        const D3D11_COPY_FLAGS Flags = Invalidate ? D3D11_COPY_DISCARD : D3D11_COPY_NO_OVERWRITE;
 
-        const Ptr<ID3D11Texture2D> Target = mTextures[DstTexture].Resource.Get();
-        const Ptr<ID3D11Texture2D> Source = mTextures[SrcTexture].Resource.Get();
-        mDeviceImmediate->CopySubresourceRegion(Target, DstLevel, DstX, DstY, 0, Source, SrcLevel, &Offset);
+        const Ptr<ID3D11Texture2D> Target = mTextures[DstTexture].Object.Get();
+        const Ptr<ID3D11Texture2D> Source = mTextures[SrcTexture].Object.Get();
+        mDeviceImmediate->CopySubresourceRegion1(Target, DstLevel, DstX, DstY, 0, Source, SrcLevel, &Offset, Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -961,29 +1059,42 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Prepare(Object ID, ConstRef<Viewport> Viewport, Clear Target, ConstRef<Color> Tint, Real32 Depth, UInt8 Stencil)
+    void D3D11Driver::Prepare(Object Pass, ConstRef<Viewport> Viewport, Clear Target, Color Tint, Real32 Depth, UInt8 Stencil)
     {
+        // Clear color attachments as specified.
         Vector<Ptr<ID3D11RenderTargetView>, kMaxAttachments> Attachments;
 
-        for (ConstRef<D3D11Attachment> Attachment : mPasses[ID].Colors)
+        for (ConstRef<D3D11Attachment> Attachment : mPasses[Pass].Colors)
         {
-            Attachments.emplace_back(Attachment.Accessor.Get());
+            Attachments.emplace_back(Attachment.Resource.Get());
 
-            if (Target != Clear::Auxiliary)
+            if (Enum::Includes(Target, Clear::Color))
             {
                 mDeviceImmediate->ClearRenderTargetView(Attachments.back(), reinterpret_cast<ConstPtr<FLOAT>>(&Tint));
             }
         }
 
-        if (Target != Clear::Color)
+        // Clear depth/stencil attachment as specified.
+        UINT Mode = 0;
+        if (Enum::Includes(Target, Clear::Depth))
         {
-            constexpr UINT Mode = D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL;
-            mDeviceImmediate->ClearDepthStencilView(mPasses[ID].Auxiliary.Get(), Mode, Depth, Stencil);
+            Mode |= D3D11_CLEAR_DEPTH;
+        }
+        if (Enum::Includes(Target, Clear::Stencil))
+        {
+            Mode |= D3D11_CLEAR_STENCIL;
         }
 
-        const Ptr<ID3D11DepthStencilView> DSAttachment = (mPasses[ID].Auxiliary ? mPasses[ID].Auxiliary.Get() : nullptr);
+        if (Mode != 0)
+        {
+            mDeviceImmediate->ClearDepthStencilView(mPasses[Pass].Auxiliary.Get(), Mode, Depth, Stencil);
+        }
+
+        // Bind the render targets for the rendering pass.
+        const Ptr<ID3D11DepthStencilView> DSAttachment = (mPasses[Pass].Auxiliary ? mPasses[Pass].Auxiliary.Get() : nullptr);
         mDeviceImmediate->OMSetRenderTargets(Attachments.size(), Attachments.data(), DSAttachment);
 
+        // Set the viewport for rendering.
         const CD3D11_VIEWPORT Rect(
             Viewport.X,
             Viewport.Y,
@@ -997,12 +1108,12 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Submit(ConstSpan<Submission> Submissions)
+    void D3D11Driver::Submit(ConstSpan<DrawPacket> Submissions)
     {
         for (UInt32 Batch = 0; Batch < Submissions.size(); ++Batch)
         {
-            ConstRef<Submission> NewestSubmission = Submissions[Batch];
-            ConstRef<Submission> OldestSubmission = Batch > 0 ? Submissions[Batch - 1] : mDeviceStates;
+            ConstRef<DrawPacket> NewestSubmission = Submissions[Batch];
+            ConstRef<DrawPacket> OldestSubmission = Batch > 0 ? Submissions[Batch - 1] : mStates;
 
             // Apply vertices
             ApplyVertexResources(OldestSubmission, NewestSubmission);
@@ -1016,7 +1127,7 @@ namespace Graphic
                 const DXGI_FORMAT     Format =
                     NewestSubmission.Indices.Stride == 1 ? DXGI_FORMAT_R8_UINT  :
                     NewestSubmission.Indices.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-                mDeviceImmediate->IASetIndexBuffer(Buffer.Resource.Get(), Format, NewestSubmission.Indices.Offset);
+                mDeviceImmediate->IASetIndexBuffer(Buffer.Object.Get(), Format, NewestSubmission.Indices.Offset);
             }
 
             // Apply the scissor rect
@@ -1048,10 +1159,6 @@ namespace Graphic
                 if (Old.PS != New.PS)
                 {
                     mDeviceImmediate->PSSetShader(New.PS.Get(), nullptr, 0);
-                }
-                if (Old.GS != New.GS)
-                {
-                    mDeviceImmediate->GSSetShader(New.GS.Get(), nullptr, 0);
                 }
                 if (Old.BS != New.BS)
                 {
@@ -1086,10 +1193,10 @@ namespace Graphic
             ApplyUniformResources(OldestSubmission, NewestSubmission);
 
             // Issue draw command
-            const UInt32 Count     = NewestSubmission.Invocation.Count;
-            const UInt32 Offset    = NewestSubmission.Invocation.Offset;
-            const SInt32 Base      = NewestSubmission.Invocation.Base;
-            const UInt32 Instances = NewestSubmission.Invocation.Instances;
+            const UInt32 Count     = NewestSubmission.Command.Count;
+            const UInt32 Offset    = NewestSubmission.Command.Offset;
+            const SInt32 Base      = NewestSubmission.Command.Base;
+            const UInt32 Instances = NewestSubmission.Command.Instances;
 
             if (NewestSubmission.Indices.Buffer)
             {
@@ -1116,16 +1223,16 @@ namespace Graphic
         }
 
         // Apply cache
-        mDeviceStates = Submissions.back();
+        mStates = Submissions.back();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Commit(Object ID)
+    void D3D11Driver::Commit(Object Pass)
     {
         /// Resolve multisample color attachments into their corresponding single-sample targets.
-        for (ConstRef<D3D11Attachment> Attachment : mPasses[ID].Colors)
+        for (ConstRef<D3D11Attachment> Attachment : mPasses[Pass].Colors)
         {
             if (Attachment.Source)
             {
@@ -1136,11 +1243,10 @@ namespace Graphic
         }
 
         /// Present the swap chain if this is the primary rendering pass.
-        if (ID == kDisplay)
+        if (Pass == kDisplay)
         {
-            const UInt Interval = 0;
-            const UInt Flag     = mProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
-            CheckIfFail(mDisplay->Present(Interval, Flag));
+            const UInt Flag = mProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
+            CheckIfSucceed(mDisplay->Present(0, Flag));
         }
     }
 
@@ -1159,22 +1265,20 @@ namespace Graphic
                 {
                     Ref<Adapter> AdapterInfo = mCapabilities.Adapters.emplace_back();
 
-                    AdapterInfo.Description          = ConvertUTF16ToUTF8(DXGIDescription.Description);
-                    AdapterInfo.DedicatedMemoryInMBs = DXGIDescription.DedicatedVideoMemory >> 20;
-                    AdapterInfo.SharedMemoryInMBs    = DXGIDescription.SharedSystemMemory >> 20;
-                    AdapterInfo.SystemMemoryInMBs    = DXGIDescription.DedicatedSystemMemory >> 20;
+                    AdapterInfo.Description = ConvertUTF16ToUTF8(DXGIDescription.Description);
+                    AdapterInfo.Memory      = DXGIDescription.DedicatedVideoMemory >> 20;
                 }
             }
 
             if (ComPtr<IDXGIOutput> DXGIOutput; SUCCEEDED(DXGIAdapter->EnumOutputs(0, DXGIOutput.GetAddressOf())))
             {
-                UINT        Length = 0;
-                DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                UINT              Length = 0;
+                const DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
                 if (SUCCEEDED(DXGIOutput->GetDisplayModeList(Format, 0, &Length, nullptr)))
                 {
                     Vector<DXGI_MODE_DESC> Descriptions(Length);
-                    CheckIfFail(DXGIOutput->GetDisplayModeList(Format, 0, &Length, Descriptions.data()));
+                    CheckIfSucceed(DXGIOutput->GetDisplayModeList(Format, 0, &Length, Descriptions.data()));
 
                     for (Ref<DXGI_MODE_DESC> Description : Descriptions)
                     {
@@ -1200,36 +1304,36 @@ namespace Graphic
         {
             case D3D_FEATURE_LEVEL_12_1:
             case D3D_FEATURE_LEVEL_12_0:
-                mCapabilities.Language                       = Language::V6;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = D3D12_REQ_MIP_LEVELS;
+                mCapabilities.Language                         = Language::SM6;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
                 break;
             case D3D_FEATURE_LEVEL_11_1:
             case D3D_FEATURE_LEVEL_11_0:
-                mCapabilities.Language                       = Language::V5;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = D3D11_REQ_MIP_LEVELS;
+                mCapabilities.Language                         = Language::SM5;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
                 break;
             case D3D_FEATURE_LEVEL_10_1:
             case D3D_FEATURE_LEVEL_10_0:
-                mCapabilities.Language                       = Language::V4;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = D3D10_REQ_MIP_LEVELS;
+                mCapabilities.Language                         = Language::SM4;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
                 break;
             case D3D_FEATURE_LEVEL_9_3:
-                mCapabilities.Language                       = Language::V3;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                         = Language::SM3;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = 0;
                 break;
             case D3D_FEATURE_LEVEL_9_2:
-                mCapabilities.Language                       = Language::V2;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                         = Language::SM2;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = 0;
                 break;
             case D3D_FEATURE_LEVEL_9_1:
-                mCapabilities.Language                       = Language::V1;
-                mCapabilities.Capabilities.MaxTextureSize    = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-                mCapabilities.Capabilities.MaxTextureMipmaps = Base::Log(D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION) + 1;
+                mCapabilities.Language                         = Language::SM1;
+                mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureLayers    = 0;
                 break;
             default:
                 break;
@@ -1240,13 +1344,13 @@ namespace Graphic
         if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory5>(& DXGIFactory5)))
         {
             BOOL AllowAdaptive = FALSE;
-            CheckIfFail(DXGIFactory5->CheckFeatureSupport(
+            CheckIfSucceed(DXGIFactory5->CheckFeatureSupport(
                 DXGI_FEATURE_PRESENT_ALLOW_TEARING, & AllowAdaptive, sizeof(AllowAdaptive)));
             mProperties.Tearing = AllowAdaptive;
         }
 
         // Query supported multisample anti-aliasing (MSAA) levels for the device.
-        for (UInt32 Level = 1, Last = 1; Level <= kMaxSamples; ++Level)
+        for (UInt32 Level = 1, Last = 1; Level <= kMaxMultisamples; ++Level)
         {
             UInt32 Quality = 0;
 
@@ -1269,16 +1373,16 @@ namespace Graphic
 
     void D3D11Driver::LoadStates()
     {
-        mDeviceStates = Submission();
-        mDeviceStates.Scissor = Scissor(0, 0, 0, 0);
+        mStates = DrawPacket();
+        mStates.Scissor = Scissor(0, 0, 0, 0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateSwapchain(Ref<D3D11Pass> Pass, UInt Display, UInt16 Width, UInt16 Height, UInt8 Samples)
+    void D3D11Driver::CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, UInt16 Width, UInt16 Height, UInt8 Samples)
     {
-        const UINT Flags = (mProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
+        const UINT Flags  = (mProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
 
         DXGI_SWAP_CHAIN_DESC Description { };
         Description.BufferCount       = kMaxFrames;
@@ -1288,21 +1392,21 @@ namespace Graphic
         Description.BufferDesc.Width  = Width;
         Description.BufferDesc.Height = Height;
         Description.SampleDesc        = { 1, 0 };
-        Description.OutputWindow      = reinterpret_cast<HWND>(Display);
+        Description.OutputWindow      = Window;
         Description.Windowed          = true;
 
         ComPtr<IDXGIFactory4> DXGIFactory4;
         if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory4>(&DXGIFactory4)))
         {
-            Description.SwapEffect = mProperties.Tearing ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD;
+            Description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         }
         else
         {
             Description.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
         }
 
-        CheckIfFail(mDeviceFactory->CreateSwapChain(mDevice.Get(), &Description, mDisplay.GetAddressOf()));
-        CheckIfFail(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));
+        CheckIfSucceed(mDeviceFactory->CreateSwapChain(mDevice.Get(), &Description, mDisplay.GetAddressOf()));
+        CheckIfSucceed(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));
 
         CreateSwapchainResources(Pass, Width, Height, Samples);
     }
@@ -1310,7 +1414,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateSwapchainResources(Ref<D3D11Pass> Pass, UInt16 Width, UInt16 Height, UInt8 Samples)
+    void D3D11Driver::CreateSwapchainResources(Ref<D3D11Pass> Pass, UInt16 Width, UInt16 Height, UInt8 Samples) const
     {
         Ref<D3D11Attachment> Attachment = Pass.Colors.emplace_back();
         Attachment.SourceLevel  = 0;
@@ -1318,7 +1422,7 @@ namespace Graphic
         Attachment.TargetLevel  = 0;
 
         // Acquire the swapchain back-buffer and create a render target view for it.
-        CheckIfFail(mDisplay->GetBuffer(
+        CheckIfSucceed(mDisplay->GetBuffer(
             0, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(Attachment.Target.GetAddressOf())));
 
         // Create an MSAA render target if multisampling is enabled.
@@ -1334,17 +1438,18 @@ namespace Graphic
             ColorTextureDescription.Usage      = D3D11_USAGE_DEFAULT;
             ColorTextureDescription.BindFlags  = D3D11_BIND_RENDER_TARGET;
 
-            CheckIfFail(mDevice->CreateTexture2D(
+            CheckIfSucceed(mDevice->CreateTexture2D(
                 &ColorTextureDescription, nullptr, reinterpret_cast<ID3D11Texture2D **>(Attachment.Source.GetAddressOf())));
 
             const CD3D11_RENDER_TARGET_VIEW_DESC ColorViewDescription(
                 D3D11_RTV_DIMENSION_TEXTURE2DMS, DXGI_FORMAT_R8G8B8A8_UNORM);
-            CheckIfFail(mDevice->CreateRenderTargetView(
-                Attachment.Source.Get(), &ColorViewDescription, Attachment.Accessor.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateRenderTargetView(
+                Attachment.Source.Get(), &ColorViewDescription, Attachment.Resource.GetAddressOf()));
         }
         else
         {
-            CheckIfFail(mDevice->CreateRenderTargetView(Attachment.Target.Get(), nullptr, Attachment.Accessor.GetAddressOf()));
+            CheckIfSucceed(mDevice->CreateRenderTargetView(
+                Attachment.Target.Get(), nullptr, Attachment.Resource.GetAddressOf()));
         }
 
         // Create a depth-stencil buffer matching the swapchain dimensions and sample count.
@@ -1359,75 +1464,22 @@ namespace Graphic
         DepthTextureDescription.BindFlags  = D3D11_BIND_DEPTH_STENCIL;
 
         ComPtr<ID3D11Texture2D> Depth;
-        CheckIfFail(mDevice->CreateTexture2D(&DepthTextureDescription, nullptr, Depth.GetAddressOf()));
-        CheckIfFail(mDevice->CreateDepthStencilView(Depth.Get(), nullptr, Pass.Auxiliary.GetAddressOf()));
+        CheckIfSucceed(mDevice->CreateTexture2D(&DepthTextureDescription, nullptr, Depth.GetAddressOf()));
+        CheckIfSucceed(mDevice->CreateDepthStencilView(Depth.Get(), nullptr, Pass.Auxiliary.GetAddressOf()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ref<D3D11Driver::D3D11Sampler> D3D11Driver::GetOrCreateSampler(ConstRef<Sampler> Descriptor)
+    void D3D11Driver::ApplyVertexResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const
     {
-        Ref<D3D11Sampler> Sampler = mSamplers[HashCombine(Descriptor)];
-
-        if (Sampler.Resource == nullptr)
-        {
-            UINT   Anisotropic  = 1;
-            Real32 MinLOD       = -FLT_MAX;
-            Real32 MaxLOD       = +FLT_MAX;
-
-            switch (Descriptor.Filter)
-            {
-                case TextureFilter::Point:
-                case TextureFilter::Linear:
-                    MinLOD = 0.0f;
-                    MaxLOD = 0.0f;
-                    break;
-                case TextureFilter::Anisotropic2x:
-                    Anisotropic = 2;
-                    break;
-                case TextureFilter::Anisotropic4x:
-                    Anisotropic = 4;
-                    break;
-                case TextureFilter::Anisotropic8x:
-                    Anisotropic = 8;
-                    break;
-                case TextureFilter::Anisotropic16x:
-                    Anisotropic = 16;
-                    break;
-                default:
-                    break;
-            }
-
-            const CD3D11_SAMPLER_DESC SamplerDescriptor(
-                As(Descriptor.Filter),
-                As(Descriptor.WrapModeU),
-                As(Descriptor.WrapModeV),
-                D3D11_TEXTURE_ADDRESS_CLAMP,
-                0,
-                Anisotropic,
-                D3D11_COMPARISON_NEVER,
-                nullptr,
-                MinLOD,
-                MaxLOD);
-
-            CheckIfFail(mDevice->CreateSamplerState(&SamplerDescriptor, Sampler.Resource.GetAddressOf()));
-        }
-        return Sampler;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void D3D11Driver::ApplyVertexResources(ConstRef<Submission> Oldest, ConstRef<Submission> Newest)
-    {
-        Ptr<ID3D11Buffer> Array[kMaxFetches];
-        UINT ArrayOffset[kMaxFetches];
-        UINT ArrayStride[kMaxFetches];
-        UInt Min = kMaxFetches;
+        Ptr<ID3D11Buffer> Array[DrawPacket::kMaxVertexStreams];
+        UINT ArrayOffset[DrawPacket::kMaxVertexStreams];
+        UINT ArrayStride[DrawPacket::kMaxVertexStreams];
+        UInt Min = DrawPacket::kMaxVertexStreams;
         UInt Max = 0u;
 
-        for (UInt Element = 0; Element < kMaxFetches; ++Element)
+        for (UInt Element = 0; Element < DrawPacket::kMaxVertexStreams; ++Element)
         {
             ConstRef<Stream> Old = Oldest.Vertices[Element];
             ConstRef<Stream> New = Newest.Vertices[Element];
@@ -1438,12 +1490,12 @@ namespace Graphic
                 Max = Base::Max(Element + 1, Max);
             }
 
-            Array[Element]       = mBuffers[New.Buffer].Resource.Get();
+            Array[Element]       = mBuffers[New.Buffer].Object.Get();
             ArrayOffset[Element] = New.Offset;
             ArrayStride[Element] = New.Stride;
         }
 
-        if (Min != kMaxFetches && Max > 0)
+        if (Min < Max)
         {
             const UInt Count = Max - Min;
             mDeviceImmediate->IASetVertexBuffers(Min, Count, Array + Min, ArrayStride + Min, ArrayOffset + Min);
@@ -1453,70 +1505,101 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::ApplySamplerResources(ConstRef<Submission> Oldest, ConstRef<Submission> Newest)
+    void D3D11Driver::ApplySamplerResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest)
     {
-        Ptr<ID3D11SamplerState> Array[kMaxSlots];
-        UInt Min = kMaxSlots;
-        UInt Max = 0u;
+        Ptr<ID3D11SamplerState> OldSlots[kMaxResources] { nullptr };
+        Ptr<ID3D11SamplerState> NewSlots[kMaxResources] { nullptr };
 
-        for (UInt Element = 0; Element < kMaxSlots; ++Element)
+        UInt MinSlot = kMaxResources;
+        UInt MaxSlot = 0;
+
+        for (ConstRef<Entry<Sampler>> Sampler : Oldest.Samplers)
         {
-            ConstRef<D3D11Sampler> PrevSampler = GetOrCreateSampler(Oldest.Samplers[Element]);
-            ConstRef<D3D11Sampler> NextSampler = GetOrCreateSampler(Newest.Samplers[Element]);
-
-            if (PrevSampler.Resource != NextSampler.Resource)
-            {
-                Min = Base::Min(Element, Min);
-                Max = Base::Max(Element + 1, Max);
-            }
-            Array[Element] = NextSampler.Resource.Get();
+            OldSlots[Sampler.Register] = GetOrCreateSampler(Sampler.Resource).Object.Get();
         }
 
-        if (Min != kMaxSlots && Max > 0)
+        for (ConstRef<Entry<Sampler>> Sampler : Newest.Samplers)
+        {
+            NewSlots[Sampler.Register] = GetOrCreateSampler(Sampler.Resource).Object.Get();
+            MinSlot = Min(MinSlot, Sampler.Register);
+            MaxSlot = Max(MaxSlot, Sampler.Register + 1);
+        }
+
+        UInt Min = kMaxResources;
+        UInt Max = 0u;
+
+        for (UInt Slot = MinSlot; Slot < MaxSlot; ++Slot)
+        {
+            if (OldSlots[Slot] != NewSlots[Slot])
+            {
+                Min = Base::Min(Slot, Min);
+                Max = Base::Max(Slot + 1, Max);
+            }
+        }
+
+        if (Min < Max)
         {
             const UInt Count = Max - Min;
-            mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min); // TODO: Do we also need other stages?
+            mDeviceImmediate->VSSetSamplers(Min, Count, NewSlots + Min);
+            mDeviceImmediate->PSSetSamplers(Min, Count, NewSlots + Min);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::ApplyTextureResources(ConstRef<Submission> Oldest, ConstRef<Submission> Newest)
+    void D3D11Driver::ApplyTextureResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const
     {
-        Ptr<ID3D11ShaderResourceView> Array[kMaxSlots];
-        UInt Min = kMaxSlots;
-        UInt Max = 0u;
+        Ptr<ID3D11ShaderResourceView> OldSlots[kMaxResources] { nullptr };
+        Ptr<ID3D11ShaderResourceView> NewSlots[kMaxResources] { nullptr };
 
-        for (UInt Element = 0; Element < kMaxSlots && Newest.Textures[Element] != 0; ++Element)
+        UInt MinSlot = kMaxResources;
+        UInt MaxSlot = 0;
+
+        for (ConstRef<Entry<Object>> Texture : Oldest.Textures)
         {
-            if (Oldest.Textures[Element] != Newest.Textures[Element])
-            {
-                Min = Base::Min(Element, Min);
-                Max = Base::Max(Element + 1, Max);
-            }
-            Array[Element] = mTextures[Newest.Textures[Element]].Accessor.Get();
+            OldSlots[Texture.Register] = mTextures[Texture.Resource].Resource.Get();
         }
 
-        if (Min != kMaxSlots && Max > 0)
+        for (ConstRef<Entry<Object>> Texture : Newest.Textures)
+        {
+            NewSlots[Texture.Register] = mTextures[Texture.Resource].Resource.Get();
+            MinSlot = Min(MinSlot, Texture.Register);
+            MaxSlot = Max(MaxSlot, Texture.Register + 1);
+        }
+
+        UInt Min = kMaxResources;
+        UInt Max = 0u;
+
+        for (UInt Slot = MinSlot; Slot < MaxSlot; ++Slot)
+        {
+            if (OldSlots[Slot] != NewSlots[Slot])
+            {
+                Min = Base::Min(Slot, Min);
+                Max = Base::Max(Slot + 1, Max);
+            }
+        }
+
+        if (Min < Max)
         {
             const UInt Count = Max - Min;
-            mDeviceImmediate->PSSetShaderResources(Min, Count, Array + Min);    // TODO: Do we also need other stages?
+            mDeviceImmediate->VSSetShaderResources(Min, Count, NewSlots + Min);
+            mDeviceImmediate->PSSetShaderResources(Min, Count, NewSlots + Min);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::ApplyUniformResources(ConstRef<Submission> Oldest, ConstRef<Submission> Newest)
+    void D3D11Driver::ApplyUniformResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const
     {
-        Ptr<ID3D11Buffer> Array[kMaxUniforms];
-        UINT ArrayOffset[kMaxUniforms];
-        UINT ArrayLength[kMaxUniforms];
-        UInt Min = kMaxUniforms;
+        Ptr<ID3D11Buffer> Array[DrawPacket::kMaxUniformStreams];
+        UINT ArrayOffset[DrawPacket::kMaxUniformStreams];
+        UINT ArrayLength[DrawPacket::kMaxUniformStreams];
+        UInt Min = DrawPacket::kMaxUniformStreams;
         UInt Max = 0u;
 
-        for (UInt Element = 0; Element < kMaxUniforms; ++Element)
+        for (UInt Element = 0; Element < DrawPacket::kMaxUniformStreams; ++Element)
         {
             ConstRef<Stream> Old = Oldest.Uniforms[Element];
             ConstRef<Stream> New = Newest.Uniforms[Element];
@@ -1527,17 +1610,70 @@ namespace Graphic
                 Max = Base::Max(Element + 1, Max);
             }
 
-            Array[Element]       = mBuffers[New.Buffer].Resource.Get();
+            Array[Element]       = mBuffers[New.Buffer].Object.Get();
             ArrayOffset[Element] = New.Offset / 16;
             ArrayLength[Element] = New.Stride / 16;
         }
 
-        if (Min != kMaxUniforms && Max > 0)
+        if (Min < Max)
         {
             const UInt Count = Max - Min;
 
             mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
             mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<D3D11Driver::D3D11Sampler> D3D11Driver::GetOrCreateSampler(Sampler Descriptor)
+    {
+        Ref<D3D11Sampler> Sampler = mSamplers[Hash(Descriptor)];
+
+        if (Sampler.Object == nullptr)
+        {
+            UINT   Anisotropic = 1;
+            Real32 MinLOD      = -FLT_MAX;
+            Real32 MaxLOD      = +FLT_MAX;
+
+            switch (Descriptor.Filter)
+            {
+            case TextureFilter::Point:
+            case TextureFilter::Linear:
+                MinLOD = 0.0f;
+                MaxLOD = 0.0f;
+                break;
+            case TextureFilter::Anisotropic2x:
+                Anisotropic = 2;
+                break;
+            case TextureFilter::Anisotropic4x:
+                Anisotropic = 4;
+                break;
+            case TextureFilter::Anisotropic8x:
+                Anisotropic = 8;
+                break;
+            case TextureFilter::Anisotropic16x:
+                Anisotropic = 16;
+                break;
+            default:
+                break;
+            }
+
+            const CD3D11_SAMPLER_DESC SamplerDescriptor(
+                As(Descriptor.Filter),
+                As(Descriptor.AddressModeU),
+                As(Descriptor.AddressModeV),
+                As(Descriptor.AddressModeW),
+                0,
+                Anisotropic,
+                As(Descriptor.Comparison),
+                As(Descriptor.Border).data(),
+                MinLOD,
+                MaxLOD);
+
+            CheckIfSucceed(mDevice->CreateSamplerState(&SamplerDescriptor, Sampler.Object.GetAddressOf()));
+        }
+        return Sampler;
     }
 }

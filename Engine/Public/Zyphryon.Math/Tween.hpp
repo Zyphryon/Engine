@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -59,7 +59,7 @@ inline namespace Math
 
             mAccumulator = Min(mAccumulator + Delta, mTime);
 
-            if constexpr (IsInteger<Type> || IsReal<Type>)
+            if constexpr (IsIntegral<Type> || IsReal<Type>)
             {
                 return Lerp<Type>(mStart, mEnd, Ease(mEasing, mAccumulator / mTime));
             }

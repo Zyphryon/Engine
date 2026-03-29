@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -27,101 +27,77 @@ namespace Graphic
 
     public:
 
-        /// \brief Enumerates the available rendering modes for a material.
-        enum class Kind : UInt8
-        {
-            Opaque,         ///< No blending.
-            Alpha,          ///< Standard blending using alpha.
-            Additive,       ///< Additive color blend.
-            Multiply,       ///< Multiplicative color blend.
-            Subtract,       ///< Subtractive color blend.
-        };
-
-    public:
-
-        /// \brief Constructs a material resource with the given URI key.
-        /// 
-        /// \param Key URI path identifying this material resource.
+        /// \brief Constructs a material resource with the given content key.
+        ///
+        /// \param Key The unique content key identifying this material.
         explicit Material(AnyRef<Content::Uri> Key);
 
-        /// \brief Retrieves the material’s unique object ID.
-        /// 
-        /// \return Unique object identifier.
+        /// \brief Gets the unique object ID of the material.
+        ///
+        /// \return The material's object ID.
         ZYPHRYON_INLINE Object GetID() const
         {
             return mID;
         }
 
-        /// \brief Sets the material’s rendering kind.
-        /// 
-        /// \param Kind Blending mode to use for rendering.
-        ZYPHRYON_INLINE void SetKind(Kind Kind)
-        {
-            mKind = Kind;
-        }
-
-        /// \brief Gets the current rendering kind of the material.
-        /// 
-        /// \return The material’s blending mode.
-        ZYPHRYON_INLINE Kind GetKind() const
-        {
-            return mKind;
-        }
-
-        /// \brief Assigns a texture to the material for a given semantic slot.
-        /// 
-        /// \param Semantic Type of texture usage.
-        /// \param Texture  Handle to the texture to assign.
+        /// \brief Sets a texture for the specified semantic slot.
+        ///
+        /// \param Semantic The texture semantic slot to set
+        /// \param Texture  The texture to assign to the slot.
         ZYPHRYON_INLINE void SetTexture(TextureSemantic Semantic, ConstTracker<Texture> Texture)
         {
             mTextures[Enum::Cast(Semantic)] = Texture;
         }
 
-        /// \brief Retrieves a texture bound to the given semantic slot.
-        /// 
-        /// \param Semantic Type of texture usage.
-        /// \return Handle to the assigned texture.
+        /// \brief Gets the texture assigned to the specified semantic slot.
+        ///
+        /// \param Semantic The texture semantic slot to retrieve.
+        /// \return The texture assigned to the slot.
         ZYPHRYON_INLINE ConstTracker<Texture> GetTexture(TextureSemantic Semantic) const
         {
             return mTextures[Enum::Cast(Semantic)];
         }
 
-        /// \brief Assigns a sampler to the material for the given semantic slot.
-        /// 
-        /// \param Semantic Type of texture usage.
-        /// \param Sampler  Sampler state object.
-        ZYPHRYON_INLINE void SetSampler(TextureSemantic Semantic, ConstRef<Sampler> Sampler)
+        /// \brief Sets a sampler for the specified semantic slot.
+        ///
+        /// \param Semantic The texture semantic slot to set
+        /// \param Sampler  The sampler to assign to the slot.
+        ZYPHRYON_INLINE void SetSampler(TextureSemantic Semantic, Sampler Sampler)
         {
             mSamplers[Enum::Cast(Semantic)] = Sampler;
         }
 
-        /// \brief Retrieves the sampler associated with the given semantic.
-        /// 
-        /// \param Semantic Type of texture usage.
-        /// \return Reference to the sampler state.
-        ZYPHRYON_INLINE ConstRef<Sampler> GetSampler(TextureSemantic Semantic) const
+        /// \brief Gets the sampler assigned to the specified semantic slot.
+        ///
+        /// \param Semantic The texture semantic slot to retrieve.
+        /// \return The sampler assigned to the slot.
+        ZYPHRYON_INLINE Sampler GetSampler(TextureSemantic Semantic) const
         {
             return mSamplers[Enum::Cast(Semantic)];
         }
 
-        /// \brief Sets a shader parameter value at the given offset.
-        /// 
-        /// \param Offset    Byte offset into the parameter buffer.
-        /// \param Parameter Value to write.
+        /// \brief Sets a parameter value at the specified byte offset.
+        ///
+        /// \param Offset    The byte offset within the parameter buffer.
+        /// \param Parameter The parameter value to set.
         template<typename Type>
         ZYPHRYON_INLINE void SetParameter(UInt32 Offset, Type Parameter)
         {
-            if (constexpr UInt Size = sizeof(Type); Offset + Size >= mParameters.size())
+            static_assert(IsTrivial<Type>, "Material::SetParameter only supports trivially copyable types.");
+
+            constexpr UInt Size = sizeof(Type);
+
+            if (Offset + Size > mParameters.size())
             {
                 mParameters.resize(Offset + Size);
             }
 
-            * reinterpret_cast<Ptr<Type>>(mParameters.data() + Offset) = Parameter;
+            std::memcpy(mParameters.data() + Offset, std::addressof(Parameter), Size);
         }
 
-        /// \brief Returns the raw parameter buffer contents.
-        /// 
-        /// \return Span over the material parameter byte array.
+        /// \brief Gets a span of the material's parameter buffer.
+        ///
+        /// \return A constant span of the parameter buffer bytes.
         ZYPHRYON_INLINE ConstSpan<Byte> GetParameters() const
         {
             return mParameters;
@@ -129,10 +105,10 @@ namespace Graphic
 
     private:
 
-        /// \copydoc Resource::OnCreate
+        /// \copydoc Resource::OnCreate(Ref<Service::Host>)
         Bool OnCreate(Ref<Service::Host> Host) override;
 
-        /// \copydoc Resource::OnDelete
+        /// \copydoc Resource::OnDelete(Ref<Service::Host>)
         void OnDelete(Ref<Service::Host> Host) override;
 
     private:
@@ -140,10 +116,9 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object                             mID;
-        Kind                               mKind;
-        Array<Tracker<Texture>, kMaxSlots> mTextures;
-        Array<Sampler, kMaxSlots>          mSamplers;
-        Vector<Byte>                       mParameters; // TODO Proper support for alignment
+        Object                                 mID;
+        Array<Tracker<Texture>, kMaxResources> mTextures;
+        Array<Sampler, kMaxResources>          mSamplers;
+        Vector<Byte>                           mParameters;
     };
 }

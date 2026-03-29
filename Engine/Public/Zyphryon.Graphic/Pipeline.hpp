@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -28,78 +28,59 @@ namespace Graphic
 
     public:
 
-        /// \brief Represents a binding between a semantic and a register index.
-        template<typename Format>
-        struct Binding final
+        /// \brief Defines the binding tier for pipeline resources.
+        enum class Tier : UInt8
         {
-            /// \brief Default constructor for a mapping.
-            ZYPHRYON_INLINE constexpr Binding() = default;
-
-            /// \brief Constructs a mapping with specified semantic and register.
-            ///
-            /// \param Semantic Semantic meaning of the binding.
-            /// \param Register Register index where this binding is located.
-            ZYPHRYON_INLINE constexpr Binding(Format Semantic, UInt32 Register)
-                : Semantic { Semantic },
-                  Register { Register }
-            {
-            }
-
-            /// Semantic meaning of the binding.
-            Format Semantic = Format::None;
-
-            /// Register index where this binding is located.
-            UInt32 Register = 0;
+            Global = 0, ///< Bound at application or frame scope.
+            Effect = 1, ///< Bound per effect or render pass.
+            Style  = 2, ///< Bound per material or visual style.
+            Object = 3, ///< Bound per individual draw or object.
         };
-
-        /// \brief Fixed-capacity list of bindings used for semantic-to-register bindings.
-        template<typename Format, UInt Limit>
-        using BindingList = Vector<Binding<Format>, Limit>;
 
     public:
 
-        /// \brief Constructs the pipeline with a given resource identifier.
+        /// \brief Constructs a pipeline resource with the given content key.
         ///
-        /// \param Key The unique URI identifying this pipeline asset.
+        /// \param Key The unique content key identifying this pipeline.
         explicit Pipeline(AnyRef<Content::Uri> Key);
 
-        /// \brief Loads the pipeline configuration.
+        /// \brief Loads the pipeline with the specified program, textures, and properties.
         ///
-        /// \param Stages     Compiled bytecode for each shader stage (vertex, fragment, etc.).
-        /// \param Textures   Texture semantic-to-slot bindings.
-        /// \param Properties Pipeline-specific render state and metadata.
-        void Load(AnyRef<Array<Blob, kMaxStages>> Stages, AnyRef<BindingList<TextureSemantic, kMaxSlots>> Textures, AnyRef<Descriptor> Properties);
+        /// \param Shaders  The shader program bytecode for the pipeline.
+        /// \param States   The pipeline states descriptor.
+        /// \param Textures The list of texture bindings for the pipeline.
+        void Load(AnyRef<Shaders> Shaders, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures);
 
-        /// \brief Returns the GPU object ID associated with this pipeline.
+        /// \brief Gets the unique identifier of the pipeline.
         ///
-        /// \return The driver-level pipeline handle.
+        /// \return The unique identifier of the pipeline.
         ZYPHRYON_INLINE Object GetID() const
         {
             return mID;
         }
 
-        /// \brief Returns the list of texture slot bindings.
+        /// \brief Gets the list of texture bindings for the pipeline
         ///
-        /// \return Span over the texture semantic-to-slot mappings.
-        ZYPHRYON_INLINE ConstSpan<Binding<TextureSemantic>> GetTextures() const
+        /// \return A list of texture bindings.
+        ZYPHRYON_INLINE ConstSpan<Entry<TextureSemantic>> GetTextures() const
         {
             return mTextures;
         }
 
-        /// \brief Returns the pipeline descriptor properties.
+        /// \brief Gets the fixed states for the pipeline.
         ///
-        /// \return Descriptor associated with this pipeline.
-        ZYPHRYON_INLINE ConstRef<Descriptor> GetProperties() const
+        /// \return The fixed states.
+        ZYPHRYON_INLINE ConstRef<States> GetStates() const
         {
-            return mProperties;
+            return mStates;
         }
 
     private:
 
-        /// \copydoc Resource::OnCreate
+        /// \copydoc Resource::OnCreate(Ref<Service::Host>)
         Bool OnCreate(Ref<Service::Host> Host) override;
 
-        /// \copydoc Resource::OnDelete
+        /// \copydoc Resource::OnDelete(Ref<Service::Host>)
         void OnDelete(Ref<Service::Host> Host) override;
 
     private:
@@ -107,9 +88,9 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object                                  mID;
-        Array<Blob, kMaxStages>                 mStages;
-        BindingList<TextureSemantic, kMaxSlots> mTextures;
-        Descriptor                              mProperties;
+        Object                                    mID;
+        Shaders                                   mShaders;
+        States                                    mStates;
+        EntryList<TextureSemantic, kMaxResources> mTextures;      /// TODO: Reflection
     };
 }

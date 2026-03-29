@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,26 +12,33 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Bit.hpp"
-#include "Zyphryon.Base/Collection.hpp"
-#include "Zyphryon.Base/Concurrency.hpp"
-#include "Zyphryon.Base/Delegate.hpp"
-#include "Zyphryon.Base/Enum.hpp"
-#include "Zyphryon.Base/Log.hpp"
-#include "Zyphryon.Base/Profiler.hpp"
-#include "Zyphryon.Base/Random.hpp"
-#include "Zyphryon.Base/Scalar.hpp"
-#include "Zyphryon.Base/Text.hpp"
-#include "Zyphryon.Base/Utility.hpp"
-#include "Zyphryon.Base/Variant.hpp"
+#include "Bit.hpp"
+#include "Collection.hpp"
+#include "Compiler.hpp"
+#include "Concept.hpp"
+#include "Concurrency.hpp"
+#include "Delegate.hpp"
+#include "Enum.hpp"
+#include "Hash.hpp"
+#include "Log.hpp"
+#include "Primitive.hpp"
+#include "Profiler.hpp"
+#include "Text.hpp"
+#include "Time.hpp"
+#include "Utility.hpp"
 
-#include "Zyphryon.Base/Domain/Provider.hpp"
+#include "Container/Blob.hpp"
+#include "Container/Pool.hpp"
+#include "Container/Slot.hpp"
+#include "Container/Symbol.hpp"
 
-#include "Zyphryon.Base/Memory/Blob.hpp"
-#include "Zyphryon.Base/Memory/Catalog.hpp"
-#include "Zyphryon.Base/Memory/Handle.hpp"
-#include "Zyphryon.Base/Memory/Handles.hpp"
-#include "Zyphryon.Base/Memory/Pool.hpp"
+#include "Domain/Locator.hpp"
+#include "Domain/Service.hpp"
 
-#include "Zyphryon.Base/IO/Archive.hpp"
-#include "Zyphryon.Base/IO/TOML/Parser.hpp"
+#include "Marshal/Archive.hpp"
+#include "Marshal/Reader.hpp"
+#include "Marshal/Writer.hpp"
+#include "Marshal/TOML/Parser.hpp"
+
+#include "Memory/Tracker.hpp"
+#include "Memory/Unique.hpp"

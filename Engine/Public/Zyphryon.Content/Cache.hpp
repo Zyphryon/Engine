@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -74,9 +74,11 @@ namespace Content
         /// \return A tracker to the asset, or `nullptr` if not found and not created.
         Tracker<Type> GetOrCreate(AnyRef<Uri> Key, Bool CreateIfNeeded)
         {
-            Lock<> Guard(mLatch);
+            Guard Lock(mMutex);
 
-            if (const auto Iterator = mRegistry.find(Key.GetUrl()); Iterator != mRegistry.end())
+            const UInt64 ID = Hash(Key);
+
+            if (const auto Iterator = mRegistry.find(ID); Iterator != mRegistry.end())
             {
                 return Iterator->second;
             }
@@ -84,7 +86,7 @@ namespace Content
             if (CreateIfNeeded)
             {
                 Tracker<Type> Result = Tracker<Type>::Create(Move(Key));
-                mRegistry.try_emplace(Result->GetKey().GetUrl(), Result);
+                mRegistry.try_emplace(ID, Result);
                 return Result;
             }
             return nullptr;
@@ -98,9 +100,11 @@ namespace Content
         /// \return `true` if the asset was removed, otherwise `false`.
         Bool Remove(ConstRef<Uri> Key)
         {
-            Lock<> Guard(mLatch);
+            Guard Lock(mMutex);
 
-            if (const auto Iterator = mRegistry.find(Key.GetUrl()); Iterator != mRegistry.end())
+            const UInt64 ID = Hash(Key);
+
+            if (const auto Iterator = mRegistry.find(ID); Iterator != mRegistry.end())
             {
                 if (ConstTracker<Type> Asset = Iterator->second; Asset->HasFinished())
                 {
@@ -120,15 +124,15 @@ namespace Content
         template<typename Function>
         void Prune(Bool Force, AnyRef<Function> Dispatcher)
         {
-            Lock<> Guard(mLatch);
+            Guard Lock(mMutex);
 
             for (auto Iterator = mRegistry.begin(); Iterator != mRegistry.end();)
             {
                 ConstTracker<Type> Asset = Iterator->second;
 
-                if (Force || (!Asset->IsTracked() && Asset->HasFinished()))
+                if (Force || (!Asset->IsHeld() && Asset->HasFinished()))
                 {
-                    Dispatcher(*Asset);
+                    Dispatcher(* Asset);
                     Iterator = mRegistry.erase(Iterator);
                 }
                 else
@@ -143,9 +147,9 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        mutable Mutex            mLatch;
-        TextTable<Tracker<Type>> mRegistry;
-        UInt64                   mLimit;
-        UInt64                   mUsage;
+        Table<UInt64, Tracker<Type>> mRegistry;
+        Mutex                        mMutex;
+        UInt64                       mLimit;
+        UInt64                       mUsage;
     };
 }

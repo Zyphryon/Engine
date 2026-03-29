@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -277,8 +277,9 @@ namespace Input
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Poller::Poller()
-        : mBuffer { }
+        : mEventQueue { }
     {
+        mEventText.reserve(kMaxTextInputSize);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -286,6 +287,9 @@ namespace Input
 
     ConstSpan<Event> Poller::Poll()
     {
+        // Clear any previously stored text input.
+        mEventText.clear();
+
         // Request the OS to update the current input device state.
         SDL_PumpEvents();
 
@@ -298,7 +302,7 @@ namespace Input
 
         for (ConstRef<SDL_Event> Event : ConstSpan<SDL_Event>(Stack.data(), Count))
         {
-            Ref<Input::Event> Result = mBuffer[Element];
+            Ref<Input::Event> Result = mEventQueue[Element];
             Result.Time = static_cast<Real64>(Event.common.timestamp) / SDL_NS_PER_SECOND;
 
             switch (Event.type)
@@ -332,9 +336,15 @@ namespace Input
                 Result.KeyAction.Key       = GetKey(Event.key.key);
                 break;
             case SDL_EVENT_TEXT_INPUT:
+            {
+                const UInt Length          = std::strlen(Event.text.text);
+                const UInt Offset          = mEventText.size();
+                mEventText.append(Event.text.text, Length);
+
                 Result.Kind                = Event::Type::KeyType;
-                Result.KeyType.Codepoint   = Event.text.text[0]; // TODO: Support IME (Screen Keyboard)
+                Result.KeyType.Text        = ConstStr8(mEventText.data() + Offset, Length);
                 break;
+            }
             case SDL_EVENT_MOUSE_MOTION:
                 Result.Kind                = Event::Type::MouseMove;
                 Result.MouseAxis.X         = Event.motion.x;
@@ -361,6 +371,6 @@ namespace Input
 
             ++Element;
         }
-        return ConstSpan<Event>(mBuffer.data(), Element);
+        return ConstSpan<Event>(mEventQueue.data(), Element);
     }
 }

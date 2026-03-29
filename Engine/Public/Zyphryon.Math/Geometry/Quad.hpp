@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -36,6 +36,18 @@ inline namespace Math
         /// \param C3 The fourth corner point.
         ZYPHRYON_INLINE constexpr Quad(Vector2 C0, Vector2 C1, Vector2 C2, Vector2 C3)
             : mCorners { C0, C1, C2, C3 }
+        {
+        }
+
+        /// \brief Constructor initializing the quadrilateral as an axis-aligned rectangle.
+        ///
+        /// \param Position The top-left corner of the rectangle.
+        /// \param Size     The width and height of the rectangle.
+        ZYPHRYON_INLINE constexpr Quad(Vector2 Position, Vector2 Size)
+            : mCorners { Position,
+                         Position + Vector2(Size.GetX(), 0),
+                         Position + Size,
+                         Position + Vector2(0, Size.GetY()) }
         {
         }
 
@@ -162,9 +174,9 @@ inline namespace Math
         ///
         /// \param Other The other quadrilateral to check.
         /// \return `true` if the quads intersect, `false` otherwise.
-        ZYPHRYON_INLINE constexpr Bool Intersects(ConstRef<Quad> Other) const
+        ZYPHRYON_INLINE constexpr Bool Test(ConstRef<Quad> Other) const
         {
-            return GetBoundaries().Intersects(Other.GetBoundaries());   // TODO: More precise intersection test
+            return GetBoundaries().Test(Other.GetBoundaries());   // TODO: More precise intersection test (SAT)
         }
 
         /// \brief Checks if this quadrilateral is equal to another quadrilateral.
@@ -444,14 +456,6 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE constexpr UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -469,7 +473,7 @@ inline namespace Math
         /// \brief Returns an empty quadrilateral.
         ///
         /// \return An empty quadrilateral.
-        ZYPHRYON_INLINE constexpr static Quad Zero()
+        ZYPHRYON_INLINE static constexpr Quad Zero()
         {
             return Quad(Vector2(0, 0), Vector2(0, 0), Vector2(0, 0), Vector2(0, 0));
         }
@@ -477,7 +481,7 @@ inline namespace Math
         /// \brief Returns the unit quadrilateral with size 1.
         ///
         /// \return A unit quadrilateral.
-        ZYPHRYON_INLINE constexpr static Quad One()
+        ZYPHRYON_INLINE static constexpr Quad One()
         {
             return Quad(Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1));
         }
@@ -487,7 +491,7 @@ inline namespace Math
         /// \param First  The first quadrilateral.
         /// \param Second The second quadrilateral.
         /// \return A quadrilateral with the component-wise minimum values.
-        ZYPHRYON_INLINE constexpr static Quad Min(ConstRef<Quad> First, ConstRef<Quad> Second)
+        ZYPHRYON_INLINE static constexpr Quad Min(ConstRef<Quad> First, ConstRef<Quad> Second)
         {
             return Quad(Vector2::Min(First.mCorners[0], Second.mCorners[0]),
                         Vector2::Min(First.mCorners[1], Second.mCorners[1]),
@@ -500,7 +504,7 @@ inline namespace Math
         /// \param First  The first quadrilateral.
         /// \param Second The second quadrilateral.
         /// \return A quadrilateral with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static Quad Max(ConstRef<Quad> First, ConstRef<Quad> Second)
+        ZYPHRYON_INLINE static constexpr Quad Max(ConstRef<Quad> First, ConstRef<Quad> Second)
         {
             return Quad(Vector2::Max(First.mCorners[0], Second.mCorners[0]),
                         Vector2::Max(First.mCorners[1], Second.mCorners[1]),
@@ -514,7 +518,7 @@ inline namespace Math
         /// \param End        The ending quadrilateral.
         /// \param Percentage The interpolation percentage.
         /// \return A quadrilateral interpolated between the start and end quads.
-        ZYPHRYON_INLINE constexpr static Quad Lerp(ConstRef<Quad> Start, ConstRef<Quad> End, Real32 Percentage)
+        ZYPHRYON_INLINE static constexpr Quad Lerp(ConstRef<Quad> Start, ConstRef<Quad> End, Real32 Percentage)
         {
             return Quad(Vector2::Lerp(Start.mCorners[0], End.mCorners[0], Percentage),
                         Vector2::Lerp(Start.mCorners[1], End.mCorners[1], Percentage),

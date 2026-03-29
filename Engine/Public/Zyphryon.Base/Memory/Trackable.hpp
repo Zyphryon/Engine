@@ -1,5 +1,5 @@
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Concurrency.hpp"
+#include "Zyphryon.Base/Primitive.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,11 +21,8 @@
 
 inline namespace Base
 {
-    /// \brief Base class for objects that support intrusive reference counting.
-    /// 
-    /// `Trackable` is meant to be inherited by objects that need to be shared across systems
-    /// while keeping their lifetime automatically managed.
-    template<typename Impl>
+    /// \brief Defines a trackable object that manages its own lifetime through reference counting.
+    template<typename Type>
     class Trackable
     {
     public:
@@ -36,24 +34,24 @@ inline namespace Base
         }
 
         /// \brief Increments the reference count.
-        ZYPHRYON_INLINE void Acquire() const
+        ZYPHRYON_INLINE void Retain()
         {
             mReferences.fetch_add(1, std::memory_order_relaxed);
         }
 
-        /// \brief Decrements the reference count and deletes the object when it reaches zero.
-        ZYPHRYON_INLINE void Release() const
+        /// \brief Releases the reference count and deletes the object when it reaches zero.
+        ZYPHRYON_INLINE void Release()
         {
             if (mReferences.fetch_sub(1, std::memory_order_acq_rel) == 1)
             {
-                delete static_cast<ConstPtr<Impl>>(this);
+                delete static_cast<Ptr<Type>>(this);
             }
         }
 
-        /// \brief Checks whether the object is still tracked by at least one holder.
-        /// 
-        /// \return `true` if the reference count is greater than one, `false` otherwise.
-        ZYPHRYON_INLINE Bool IsTracked() const
+        /// \brief Checks if there are multiple references to this object.
+        ///
+        /// \return `true` if there are multiple references, `false` otherwise.
+        ZYPHRYON_INLINE Bool IsHeld() const
         {
             return mReferences.load(std::memory_order_acquire) > 1;
         }
@@ -63,6 +61,6 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        mutable Atomic<UInt32> mReferences;
+        Atomic<UInt32> mReferences;
     };
 }

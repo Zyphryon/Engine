@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -23,182 +23,133 @@ namespace Audio
     /// \brief Provides high-level management of the audio subsystem.
     class Service final : public AbstractService<Service>
     {
+        // TODO: MulticastDelegates (OnDeviceConnected, OnDeviceDisconnected, OnSoundFinished)
+
     public:
 
-        /// \brief Constructs the audio service and attaches it to the system context.
+        /// \brief Constructs the audio service and registers it with the system host.
         ///
-        /// \param Host The parent system context managing this subsystem.
+        /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
-        /// \brief Advances the audio driver once per frame.
-        ///
-        /// \param Time The time step data for the current frame.
+        /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
 
-        /// \brief Initializes the audio driver with a backend and output device.
-        ///
-        /// Must be called before any playback.
+        /// \brief Initializes the audio service with the specified backend and device.
         ///
         /// \param Backend The audio backend to use.
-        /// \param Device  Name or identifier of the output device to initialize.
-        /// \return `true` if initialization succeeded, `false` otherwise.
+        /// \param Device  The identifier of the audio device to use.
         Bool Initialize(Backend Backend, ConstStr8 Device);
 
-        /// \brief Suspends audio output.
-        ZYPHRYON_INLINE void Suspend()
-        {
-            mDriver->Suspend();
-        }
-
-        /// \brief Resumes audio output after being suspended.
-        ZYPHRYON_INLINE void Restore()
-        {
-            mDriver->Restore();
-        }
-
-        /// \brief Sets the active listener used for spatial audio.
+        /// \brief Retrieves the capabilities of the audio driver.
         ///
-        /// \param Listener The active audio listener in world space.
-        ZYPHRYON_INLINE void SetListener(Ref<Listener> Listener)
-        {
-            mDriver->SetListener(Listener);
-        }
+        /// \return The driver's capabilities.
+        ConstRef<Capabilities> GetCapabilities() const;
 
-        /// \brief Sets the master volume applied to all sounds.
+        /// \brief Suspends audio processing.
+        void Suspend();
+
+        /// \brief Restores audio processing after being suspended.
+        void Restore();
+
+        /// \brief Sets the master volume for all audio output.
         ///
-        /// \param Volume Volume multiplier (`1.0` = default, `0.0` = mute).
-        ZYPHRYON_INLINE void SetMasterVolume(Real32 Volume)
-        {
-            LOG_ASSERT(Volume >= 0.0f, "Volume must be non-negative");
+        /// \param Volume The master volume level (0.0 = silent, 1.0 = full volume).
+        void SetMasterVolume(Real32 Volume);
 
-            mDriver->SetMasterVolume(Volume);
-        }
-
-        /// \brief Sets the volume for a category’s submix.
+        /// \brief Gets the current master volume level.
         ///
-        /// \param Category Logical audio category.
-        /// \param Volume   Volume multiplier (`1.0` = default, `0.0` = mute).
-        ZYPHRYON_INLINE void SetSubmixVolume(Category Category, Real32 Volume)
-        {
-            LOG_ASSERT(Volume >= 0.0f, "Volume must be non-negative");
+        /// \return The master volume level (0.0 = silent, 1.0 = full volume).
+        Real32 GetMasterVolume();
 
-            mDriver->SetSubmixVolume(Enum::Cast(Category), Volume);
-        }
-
-        /// \brief Gets the master audio volume.
+        /// \brief Sets the volume for a specific audio category.
         ///
-        /// \return Current master volume multiplier.
-        ZYPHRYON_INLINE Real32 GetMasterVolume() const
-        {
-            return mDriver->GetMasterVolume();
-        }
+        /// \param Category The audio category to adjust.
+        /// \param Volume   The volume level for the category (0.0 = silent, 1.0 = full volume).
+        void SetSubmixVolume(Category Category, Real32 Volume);
 
-        /// \brief Gets the volume of a category’s submix.
+        /// \brief Gets the current volume level for a specific audio category.
         ///
-        /// \param Category Logical audio category.
-        /// \return Current submix volume multiplier.
-        ZYPHRYON_INLINE Real32 GetCategoryVolume(Category Category) const
-        {
-            return mDriver->GetSubmixVolume(Enum::Cast(Category));
-        }
+        /// \param Category The audio category to query.
+        /// \return The volume level for the category (0.0 = silent, 1.0 = full volume).
+        Real32 GetSubmixVolume(Category Category);
 
-        /// \brief Plays a music track.
+        /// \brief Sets the listener's pose in 3D space.
         ///
-        /// \param Sound   Handle to the music asset.
-        /// \param Emitter Optional emitter for spatial playback.
-        /// \param Repeat  `true` to loop, `false` to play once.
-        void PlayMusic(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter = nullptr, Bool Repeat = true);
+        /// \param Pose The new pose of the listener.
+        void SetListenerPose(ConstRef<Pose> Pose);
 
-        /// \brief Stops the currently playing music track.
-        void StopMusic();
-
-        /// \brief Plays a sound effect.
+        /// \brief Sets the listener's directional cone parameters.
         ///
-        /// \param Sound   Handle to the effect.
-        /// \param Emitter Optional emitter for spatial playback.
-        /// \param Repeat  `true` to loop, `false` to play once.
-        /// \return Handle representing the playback instance.
-        Object PlayEffect(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter, Bool Repeat = false);
+        /// \param InnerAngle The inner angle of the cone in degrees.
+        /// \param OuterAngle The outer angle of the cone in degrees.
+        /// \param OuterGain  The gain applied outside the outer cone (0.0 = silent, 1.0 = full volume).
+        void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain);
 
-        /// \brief Plays a voice line.
+        /// \brief Plays an audio track with specified parameters.
         ///
-        /// \param Sound   Handle to the voice line.
-        /// \param Emitter Optional emitter for spatial playback.
-        /// \return Handle representing the playback instance.
-        Object PlayVoice(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter);
+        /// \param Category The audio category for the playback.
+        /// \param Track    The audio track to play.
+        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Pitch    The playback pitch (1.0 = normal pitch).
+        /// \return A handle to the playback instance.
+        Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch);
 
-        /// \brief Plays an ambient sound.
+        /// \brief Plays a spatial audio track with specified parameters.
         ///
-        /// \param Sound   Handle to the ambient track.
-        /// \param Emitter Optional emitter for spatial playback.
-        /// \param Repeat  `true` to loop, `false` to play once.
-        /// \return Handle representing the playback instance.
-        Object PlayAmbient(ConstTracker<Sound> Sound, ConstTracker<Emitter> Emitter = nullptr, Bool Repeat = true);
+        /// \param Category The audio category for the playback.
+        /// \param Track    The audio track to play.
+        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Pitch    The playback pitch (1.0 = normal pitch).
+        /// \param Emitter  The audio emitter defining spatial properties.
+        /// \param Pose     The pose of the audio source in 3D space.
+        /// \return A handle to the playback instance.
+        Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch, ConstTracker<Emitter> Emitter, ConstRef<Pose> Pose);
 
-        /// \brief Plays an interface sound.
+        /// \brief Sets whether a specific audio playback instance should loop.
         ///
-        /// \param Sound Handle to the sound.
-        /// \return Handle representing the playback instance.
-        Object PlayInterface(ConstTracker<Sound> Sound);
+        /// \param Handle  The handle of the playback instance.
+        /// \param Looping `true` to enable looping, `false` to disable.
+        void SetPlaybackLooping(Object Handle, Bool Looping);
 
-        /// \brief Sets the playback gain for a sound instance.
+        /// \brief Sets the pitch for a specific audio playback instance.
         ///
-        /// \param Instance Handle to the active sound instance.
-        /// \param Gain     Linear multiplier (`1.0` = default, `0.0` = mute).
-        ZYPHRYON_INLINE void SetGain(Object Instance, Real32 Gain)
-        {
-            mDriver->SetGain(Instance, Gain);
-        }
+        /// \param Handle The handle of the playback instance
+        /// \param Pitch  The new pitch value (1.0 = normal pitch).
+        void SetPlaybackPitch(Object Handle, Real32 Pitch);
 
-        /// \brief Sets the playback pitch for a sound instance.
+        /// \brief Sets the volume for a specific audio playback instance.
         ///
-        /// \param Instance Handle to the active sound instance.
-        /// \param Ratio    Playback rate multiplier (`1.0` = default, `0.5` = one octave lower, `2.0` = one octave higher).
-        ZYPHRYON_INLINE void SetPitch(Object Instance, Real32 Ratio)
-        {
-            mDriver->SetPitch(Instance, Ratio);
-        }
+        /// \param Handle The handle of the playback instance
+        /// \param Volume The new volume value (0.0 = silent, 1.0 = full volume).
+        void SetPlaybackVolume(Object Handle, Real32 Volume);
 
-        /// \brief Pauses playback of an active sound instance.
+        /// \brief Sets the pose for a specific audio playback instance.
         ///
-        /// \param Instance Handle to the active sound instance.
-        ZYPHRYON_INLINE void Pause(Object Instance)
-        {
-            mDriver->Pause(Instance);
-        }
+        /// \param Handle The handle of the playback instance.
+        /// \param Pose   The new pose of the playback instance.
+        void SetPlaybackPose(Object Handle, ConstRef<Pose> Pose);
 
-        /// \brief Resumes playback of a paused sound instance.
+        /// \brief Stops a specific audio playback instance.
         ///
-        /// \param Instance Handle to the active sound instance.
-        ZYPHRYON_INLINE void Resume(Object Instance)
-        {
-            mDriver->Resume(Instance);
-        }
+        /// \param Handle The handle of the playback instance to stop.
+        void Stop(Object Handle);
 
-        /// \brief Stops playback of a sound instance.
+        /// \brief Pauses a specific audio playback instance.
         ///
-        /// \param Instance    Handle to the active sound instance.
-        /// \param Immediately `true` to stop abruptly, `false` to allow fade-out.
-        ZYPHRYON_INLINE void Stop(Object Instance, Bool Immediately = false)
-        {
-            mDriver->Stop(Instance, Immediately);
-        }
+        /// \param Handle The handle of the playback instance to pause.
+        void Pause(Object Handle);
 
-        /// \brief Stops all instances associated with an emitter.
+        /// \brief Resumes a specific audio playback instance.
         ///
-        /// \param Emitter     Emitter associated with one or more active sound instances.
-        /// \param Immediately `true` to stop abruptly, `false` to allow fade-out.
-        ZYPHRYON_INLINE void Stop(ConstTracker<Emitter> Emitter, Bool Immediately = true)
-        {
-            mDriver->Stop(Emitter, Immediately);
-        }
-
+        /// \param Handle The handle of the playback instance to resume.
+        void Resume(Object Handle);
+        
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Unique<Driver> mDriver;
-        Object         mMusic  = 0;
     };
 }

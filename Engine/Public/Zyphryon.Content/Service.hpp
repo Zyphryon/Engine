@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -138,7 +138,7 @@ namespace Content
         /// \return `true` if the operation succeeded, `false` otherwise.
         ZYPHRYON_INLINE Bool Save(ConstRef<Uri> Key, ConstStr8 Data)
         {
-            return Save(Key, ConstSpan<Byte>(reinterpret_cast<ConstPtr<Byte>>(Data.data()), Data.size()));
+            return Save(Key, ConstSpan(reinterpret_cast<ConstPtr<Byte>>(Data.data()), Data.size()));
         }
 
         /// \brief Synchronously deletes a resource from the appropriate mount.
@@ -156,9 +156,9 @@ namespace Content
         ///
         /// \param Key    The URI of the resource.
         /// \param Parent Optional scope to track this resource as a dependency.
-        /// \return A tracker to the requested resource.
+        /// \return A Tracker to the requested resource.
         template<typename Type>
-        ZYPHRYON_INLINE Tracker<Type> Load(AnyRef<Uri> Key, Ptr<Scope> Parent = nullptr)
+        ZYPHRYON_INLINE Tracker<Type> Load(ConstRef<Uri> Key, Ptr<Scope> Parent = nullptr)
         {
             Tracker<Type> Asset = Type::GetCache().GetOrCreate(Resolve(Key, Parent), true);
 
@@ -250,26 +250,23 @@ namespace Content
         /// \param Asset The resource to delete.
         void OnAssetDelete(Ref<Resource> Asset);
 
-        /// \brief Registers the engine's default mounts and loaders.
-        void RegisterDefaultResources();
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        TextTable<Tracker<Loader>> mLoaders;
-        TextTable<Tracker<Mount>>  mMounts;
+        Table<UInt64, Tracker<Loader>> mLoaders;
+        Table<UInt64, Tracker<Mount>>  mMounts;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Thread, kMaxThreads> mLoaderThreads;
-        Mutex                      mLoaderLatch;
-        Vector<Scope>              mLoaderList;
-        Condition                  mLoaderCondition;
-        Mutex                      mParserLatch;
-        Vector<Scope>              mParserList;
-        Atomic<UInt32>             mParserPending;
+        Array<Thread, kMaxThreads>     mLoaderThreads;
+        Mutex                          mLoaderMutex;
+        Vector<Scope>                  mLoaderList;
+        Gate                           mLoaderGate;
+        Mutex                          mParserMutex;
+        Vector<Scope>                  mParserList;
+        Atomic<UInt32>                 mParserPending;
     };
 }

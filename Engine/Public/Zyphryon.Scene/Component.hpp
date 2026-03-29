@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Common.hpp"
 #include "Entity.hpp"
 #include "Factory.hpp"
 
@@ -23,8 +24,8 @@ namespace Scene
 {
     /// \brief Represents a typed component within the ECS (Entity-Component System).
     ///
-    /// \tparam Class The C++ type that defines this component.
-    template<typename Class>
+    /// \tparam Type The C++ type that defines this component.
+    template<typename Type>
     class Component : public Entity
     {
     public:
@@ -134,7 +135,7 @@ namespace Scene
             switch (Trait)
             {
                 case Trait::Serializable:
-                    mHandle.set<Factory>(Factory::Create<Class>());
+                    mHandle.set<Factory>(Factory::Create<Type>());
                     break;
                 case Trait::Inheritable:
                     mHandle.add(flecs::OnInstantiate, flecs::Inherit);

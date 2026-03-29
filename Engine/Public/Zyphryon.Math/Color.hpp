@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -12,8 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Log.hpp"
-#include "Zyphryon.Base/Scalar.hpp"
+#include "Scalar.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -89,6 +88,22 @@ inline namespace Math
             return R * 0.2126f + G * 0.7152f + B * 0.0722f;
         }
 
+        /// \brief Checks if the color is opaque (alpha channel is at maximum value).
+        ///
+        /// \return `true` if the color is opaque, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool IsOpaque() const
+        {
+            return GetAlpha() == Limit();
+        }
+
+        /// \brief Checks if the color is transparent (alpha channel is below maximum value).
+        ///
+        /// \return `true` if the color is transparent, `false` otherwise.
+        ZYPHRYON_INLINE constexpr Bool IsTransparent() const
+        {
+            return GetAlpha() < Limit();
+        }
+
         /// \brief Packs color components into a 32-bit RGBA format.
         ///
         /// \return A 32-bit unsigned integer representing the packed RGBA value.
@@ -98,15 +113,7 @@ inline namespace Math
             const UInt32 G = static_cast<UInt32>(Scale<UINT8_MAX>(mComponents[1]));
             const UInt32 B = static_cast<UInt32>(Scale<UINT8_MAX>(mComponents[2]));
             const UInt32 A = static_cast<UInt32>(Scale<UINT8_MAX>(mComponents[3]));
-
-            if constexpr (ZYPHRYON_LITTLE_ENDIAN)
-            {
-                return (A << 24) | (B  << 16) | (G << 8) | R;
-            }
-            else
-            {
-                return (R << 24) | (G  << 16) | (B << 8) | A;
-            }
+            return (A << 24) | (B  << 16) | (G << 8) | R;
         }
 
         /// \brief Adds another color to this color (component-wise RGBA).
@@ -344,14 +351,6 @@ inline namespace Math
             return !(* this == Other);
         }
 
-        /// \brief Computes a hash value for the object.
-        ///
-        /// \return A hash value uniquely representing the current state of the object.
-        ZYPHRYON_INLINE constexpr UInt64 Hash() const
-        {
-            return HashCombine(this);
-        }
-
         /// \brief Serializes the state of the object to or from the specified archive.
         /// 
         /// \param Archive The archive to serialize the object with.
@@ -367,7 +366,7 @@ inline namespace Math
         ///
         /// \return The maximum channel value.
         template<typename Primitive = Type>
-        ZYPHRYON_INLINE constexpr static Primitive Limit()
+        ZYPHRYON_INLINE static constexpr Primitive Limit()
         {
             if constexpr(IsReal<Primitive>)
             {
@@ -375,7 +374,7 @@ inline namespace Math
             }
             else
             {
-                return std::numeric_limits<Primitive>::max();
+                return kMaximum<Primitive>;
             }
         }
 
@@ -384,7 +383,7 @@ inline namespace Math
         /// \param Channel The channel value to scale.
         /// \return The scaled channel value in the range of \p Other.
         template<UInt Value>
-        ZYPHRYON_INLINE constexpr static auto Scale(Type Channel)
+        ZYPHRYON_INLINE static constexpr auto Scale(Type Channel)
         {
             if constexpr (IsReal<Type>)
             {
@@ -401,7 +400,7 @@ inline namespace Math
         /// \brief Returns a fully transparent black color.
         ///
         /// \return A color representing transparent black.
-        ZYPHRYON_INLINE constexpr static AnyColor Transparent()
+        ZYPHRYON_INLINE static constexpr AnyColor Transparent()
         {
             return AnyColor(Type(0), Type(0), Type(0), Type(0));
         }
@@ -409,7 +408,7 @@ inline namespace Math
         /// \brief Returns an opaque black color.
         ///
         /// \return A color representing opaque black.
-        ZYPHRYON_INLINE constexpr static AnyColor Black()
+        ZYPHRYON_INLINE static constexpr AnyColor Black()
         {
             return AnyColor(Type(0), Type(0), Type(0), Limit());
         }
@@ -417,15 +416,24 @@ inline namespace Math
         /// \brief Returns an opaque white color.
         ///
         /// \return A color representing opaque white.
-        ZYPHRYON_INLINE constexpr static AnyColor White()
+        ZYPHRYON_INLINE static constexpr AnyColor White()
         {
             return AnyColor(Limit(), Limit(), Limit(), Limit());
+        }
+
+        /// \brief Returns a white color with the specified opacity.
+        ///
+        /// \param Opacity The alpha value for the white color, where 0 is fully transparent and Limit() is fully opaque.
+        /// \return A color representing white with the specified opacity.
+        ZYPHRYON_INLINE static constexpr AnyColor White(Type Opacity)
+        {
+            return AnyColor(Limit(), Limit(), Limit(), Opacity);
         }
 
         /// \brief Returns an opaque 50% gray color.
         ///
         /// \return A color representing opaque gray.
-        ZYPHRYON_INLINE constexpr static AnyColor Gray()
+        ZYPHRYON_INLINE static constexpr AnyColor Gray()
         {
             return AnyColor(Limit() / Type(2), Limit() / Type(2), Limit() / Type(2), Limit());
         }
@@ -483,7 +491,7 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyColor Min(AnyColor First, AnyColor Second)
+        ZYPHRYON_INLINE static constexpr AnyColor Min(AnyColor First, AnyColor Second)
         {
             return AnyColor(Base::Min(First.GetRed(),   Second.GetRed()),
                             Base::Min(First.GetGreen(), Second.GetGreen()),
@@ -496,7 +504,7 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with the component-wise maximum values.
-        ZYPHRYON_INLINE constexpr static AnyColor Max(AnyColor First, AnyColor Second)
+        ZYPHRYON_INLINE static constexpr AnyColor Max(AnyColor First, AnyColor Second)
         {
             return AnyColor(Base::Max(First.GetRed(),   Second.GetRed()),
                             Base::Max(First.GetGreen(), Second.GetGreen()),
@@ -510,7 +518,7 @@ inline namespace Math
         /// \param Minimum Minimum allowed channel value.
         /// \param Maximum Maximum allowed channel value.
         /// \return A color with the component values clamped.
-        ZYPHRYON_INLINE constexpr static AnyColor Clamp(AnyColor Color, Type Minimum, Type Maximum)
+        ZYPHRYON_INLINE static constexpr AnyColor Clamp(AnyColor Color, Type Minimum, Type Maximum)
         {
             return AnyColor(Base::Clamp(Color.GetRed(),   Minimum, Maximum),
                             Base::Clamp(Color.GetGreen(), Minimum, Maximum),
@@ -522,7 +530,7 @@ inline namespace Math
         ///
         /// \param Color The input color.
         /// \return A color with all channels saturated to the legal range.
-        ZYPHRYON_INLINE constexpr static AnyColor Saturate(AnyColor Color)
+        ZYPHRYON_INLINE static constexpr AnyColor Saturate(AnyColor Color)
         {
             return Clamp(Color, Type(0), Limit());
         }
@@ -532,19 +540,20 @@ inline namespace Math
         /// \param First  The first color.
         /// \param Second The second color.
         /// \return A color with modulated RGB and the alpha of \p First.
-        ZYPHRYON_INLINE constexpr static AnyColor Modulate(AnyColor First, AnyColor Second)
+        ZYPHRYON_INLINE static constexpr AnyColor Modulate(AnyColor First, AnyColor Second)
+            requires(IsReal<Type>)
         {
-            return AnyColor(First.GetRed()   * Second.GetRed(),
-                            First.GetGreen() * Second.GetGreen(),
-                            First.GetBlue()  * Second.GetBlue(),
-                            First.GetAlpha());
+            const Type Red   = (First.GetRed() * Second.GetRed());
+            const Type Green = (First.GetGreen() * Second.GetGreen());
+            const Type Blue  = (First.GetBlue() * Second.GetBlue());
+            return AnyColor(Red, Green, Blue, First.GetAlpha());
         }
 
         /// \brief Returns the inverted color (1 - channel).
         ///
         /// \param Color The input color.
         /// \return A color where each RGB channel is inverted. Alpha is preserved.
-        ZYPHRYON_INLINE constexpr static AnyColor Invert(AnyColor Color)
+        ZYPHRYON_INLINE static constexpr AnyColor Invert(AnyColor Color)
         {
             return AnyColor(Limit() - Color.GetRed(), Limit() - Color.GetGreen(), Limit() - Color.GetBlue(), Color.GetAlpha());
         }
@@ -555,7 +564,8 @@ inline namespace Math
         /// \param End         The ending color.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A color interpolated between the start and end colors.
-        ZYPHRYON_INLINE constexpr static AnyColor Lerp(AnyColor Start, AnyColor End, Real32 Percentage)
+        ZYPHRYON_INLINE static constexpr AnyColor Lerp(AnyColor Start, AnyColor End, Real32 Percentage)
+            requires(IsReal<Type>)
         {
             const Type Red   = Base::Lerp(Start.GetRed(),   End.GetRed(),   Percentage);
             const Type Green = Base::Lerp(Start.GetGreen(), End.GetGreen(), Percentage);
@@ -569,7 +579,7 @@ inline namespace Math
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Type, 4> mComponents;
+        Type mComponents[4];
     };
 
     /// \brief Represents a color with 32-bit floating-point channels in the normalized range [0,1].

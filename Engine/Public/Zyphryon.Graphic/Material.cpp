@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2025 by Agustin L. Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -24,8 +24,7 @@ namespace Graphic
 
     Material::Material(AnyRef<Content::Uri> Key)
         : AbstractResource(Move(Key)),
-          mID   { 0 },
-          mKind { Kind::Opaque }
+          mID   { 0 }
     {
     }
 
@@ -39,11 +38,14 @@ namespace Graphic
         mID = Host.GetService<Service>()->CreateMaterial();
 
         // Creates the textures if it requires exclusive allocation on this host.
-        for (ConstTracker<Texture> Texture : mTextures)
+        for (UInt32 Slot = 0; Slot < mTextures.size(); ++Slot)
         {
-            if (Texture && Texture->HasPolicy(Policy::Exclusive))
+            if (ConstTracker<Texture> Texture = mTextures[Slot])
             {
-                Texture->Create(Host);
+                if (Texture->HasPolicy(Policy::Exclusive))
+                {
+                    Texture->Create(Host);
+                }
             }
         }
 
@@ -56,11 +58,14 @@ namespace Graphic
     void Material::OnDelete(Ref<Service::Host> Host)
     {
         // Releases the textures if it requires exclusive allocation on this host.
-        for (ConstTracker<Texture> Texture : mTextures)
+        for (UInt32 Slot = 0; Slot < mTextures.size(); ++Slot)
         {
-            if (Texture && Texture->HasPolicy(Policy::Exclusive))
+            if (ConstTracker<Texture> Texture = mTextures[Slot])
             {
-                Texture->Delete(Host);
+                if (Texture->HasPolicy(Policy::Exclusive))
+                {
+                    Texture->Delete(Host);
+                }
             }
         }
 
