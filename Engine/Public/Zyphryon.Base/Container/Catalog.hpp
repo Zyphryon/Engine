@@ -105,7 +105,7 @@ inline namespace Base
             {
                 if (mAllocator.IsAllocated(Handle))
                 {
-                    InPlaceDelete<Type>(& mStorage[Handle - 1]);
+                    InPlaceDelete<Type>(mStorage[Handle - 1]);
                 }
             }
             mAllocator.Clear();
