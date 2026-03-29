@@ -128,6 +128,37 @@ inline namespace Base
         return std::ceil(Value);
     }
 
+    /// \brief Computes the logarithm of a number with a given base.
+    ///
+    /// \param Number The number to compute the logarithm for.
+    /// \param Base   The base of the logarithm (default is 2).
+    /// \return The logarithm of \a Number to the base \a Base.
+    template<typename Type, typename Other = UInt32>
+    constexpr Type Log(Type Number, Other Base = Other(2))
+        requires (IsReal<Type> && IsIntegral<Other>)
+    {
+        return std::log(Number) / std::log(static_cast<Type>(Base));
+    }
+
+    /// \brief Computes the integer logarithm of a number with a given base.
+    ///
+    /// \param Number The number to compute the integer logarithm for.
+    /// \param Base   The base of the logarithm (default is 2).
+    /// \return The integer logarithm of \a Number to the base \a Base.
+    template<typename Type, typename Other = Type>
+    constexpr Type Log(Type Number, Other Base = Other(2))
+        requires (IsIntegral<Type> && IsIntegral<Other>)
+    {
+        Type Result = Type(0);
+
+        while (Number >= Base)
+        {
+            Number /= Base;
+            ++Result;
+        }
+        return Result;
+    }
+
     /// \brief Linearly interpolates between two scalar.
     ///
     /// \param Start      The starting scalar.

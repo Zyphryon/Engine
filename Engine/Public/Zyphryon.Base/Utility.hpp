@@ -86,6 +86,32 @@ inline namespace Base
         return ((Offset + Alignment - 1) / Alignment) * Alignment;
     }
 
+    /// \brief Converts 2D coordinates to a 1D index based on the width of the 2D structure.
+    ///
+    /// \param X     The x-coordinate (column index).
+    /// \param Y     The y-coordinate (row index).
+    /// \param Width The width of the 2D structure (number of columns).
+    /// \return The corresponding 1D index for the given 2D coordinates.
+    template<typename Type>
+    static constexpr Type Index2D(Type X, Type Y, Type Width)
+    {
+        return Y * Width + X;
+    }
+
+    /// \brief Converts 3D coordinates to a 1D index based on the width and height of the 3D structure.
+    ///
+    /// \param X      The x-coordinate (column index).
+    /// \param Y      The y-coordinate (row index).
+    /// \param Z      The z-coordinate (depth index).
+    /// \param Width  The width of the 3D structure (number of columns).
+    /// \param Height The height of the 3D structure (number of rows).
+    /// \return The corresponding 1D index for the given 3D coordinates.
+    template<typename Type>
+    static constexpr auto Index3D(Type X, Type Y, Type Z, Type Width, Type Height)
+    {
+        return Z * (Width * Height) + Y * Width + X;
+    }
+
     /// \brief Captures a member function and its associated object into a callable lambda.
     ///
     /// \tparam Method The member function pointer to capture.

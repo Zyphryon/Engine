@@ -32,6 +32,7 @@
 #include "Container/Pool.hpp"
 #include "Container/Slot.hpp"
 #include "Container/Symbol.hpp"
+#include "Container/Variant.hpp"
 
 #include "Domain/Locator.hpp"
 #include "Domain/Service.hpp"
