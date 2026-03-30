@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Math/Matrix3x2.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -400,11 +401,11 @@ inline namespace Math
             return Circle(Vector2::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }
 
-        /// \brief Transform a 2D circle by a 4x4 transformation matrix.
+        /// \brief Transform a circle using a 4x4 transformation matrix.
         ///
-        /// \param Circle The input circle in local space.
-        /// \param Matrix The transformation matrix to apply.
-        /// \return A transformed circle in world space.
+        /// \param Circle The circle to transform.
+        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \return A circle resulting from transforming the circle with the matrix.
         ZYPHRYON_INLINE static Circle Transform(Circle Circle, ConstRef<Matrix4x4> Matrix)
         {
             const Vector2 Center = Matrix4x4::Project<true>(Matrix, Circle.GetCenter());
@@ -418,6 +419,27 @@ inline namespace Math
             }
 
             const Vector2 Edge = Matrix4x4::Project<true>(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
+            return Math::Circle(Center, (Edge - Center).GetLength());
+        }
+
+        /// \brief Transform a circle using a 3x2 transformation matrix.
+        ///
+        /// \param Circle The circle to transform.
+        /// \param Matrix The 3x2 transformation matrix to apply.
+        /// \return A circle resulting from transforming the circle with the matrix.
+        ZYPHRYON_INLINE static Circle Transform(Circle Circle, ConstRef<Matrix3x2> Matrix)
+        {
+            const Vector2 Center = Matrix3x2::Project(Matrix, Circle.GetCenter());
+
+            const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
+            const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
+
+            if (IsAlmostEqual(ScaleX, ScaleY))
+            {
+                return Math::Circle(Center, Circle.GetRadius() * ScaleX);
+            }
+
+            const Vector2 Edge = Matrix3x2::Project(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
             return Math::Circle(Center, (Edge - Center).GetLength());
         }
 

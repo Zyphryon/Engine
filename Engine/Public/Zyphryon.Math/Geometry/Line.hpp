@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Math/Matrix3x2.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -339,15 +340,26 @@ inline namespace Math
                         Vector2::Lerp(Start.mEnd,   End.mEnd,   Percentage));
         }
 
-        /// \brief Transform a 2D line by a 4x4 transformation matrix.
+        /// \brief Transform a line using a 4x4 transformation matrix.
         ///
-        /// \param Line   The input line in local space.
-        /// \param Matrix The transformation matrix to apply.
-        /// \return A transformed line in world space.
+        /// \param Line   The line to transform.
+        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \return A line resulting from transforming the line with the matrix.
         ZYPHRYON_INLINE static Line Transform(Line Line, ConstRef<Matrix4x4> Matrix)
         {
             return Math::Line(Matrix4x4::Project<true>(Matrix, Line.GetStart()),
                               Matrix4x4::Project<true>(Matrix, Line.GetEnd()));
+        }
+
+        /// \brief Transform a line using a 3x2 transformation matrix.
+        ///
+        /// \param Line   The line to transform.
+        /// \param Matrix The 3x2 transformation matrix to apply.
+        /// \return A line resulting from transforming the line with the matrix.
+        ZYPHRYON_INLINE static Line Transform(Line Line, ConstRef<Matrix3x2> Matrix)
+        {
+            return Math::Line(Matrix3x2::Project(Matrix, Line.GetStart()),
+                              Matrix3x2::Project(Matrix, Line.GetEnd()));
         }
 
     private:

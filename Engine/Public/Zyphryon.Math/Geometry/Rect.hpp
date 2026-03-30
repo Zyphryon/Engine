@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Math/Matrix3x2.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 #include "Zyphryon.Math/Pivot.hpp"
 
@@ -835,11 +836,11 @@ inline namespace Math
             return Start + (End - Start) * Percentage;
         }
 
-        /// \brief Transform a 2D axis-aligned rectangle by a 4x4 matrix.
+        /// \brief Transform a rectangle using a 4x4 transformation matrix.
         ///
-        /// \param Rectangle The input rectangle in local space.
-        /// \param Matrix    The transformation matrix.
-        /// \return An axis-aligned rectangle enclosing the projected corners.
+        /// \param Rectangle The rectangle to transform.
+        /// \param Matrix    The 4x4 transformation matrix to apply.
+        /// \return A rectangle resulting from transforming the rectangle with the matrix.
         ZYPHRYON_INLINE static AnyRect Transform(AnyRect Rectangle, ConstRef<Matrix4x4> Matrix)
             requires (IsReal<Type>)
         {
@@ -848,16 +849,38 @@ inline namespace Math
             const Vector4 CornerY(Rectangle.GetMaximumY(), Rectangle.GetMaximumY(),
                                   Rectangle.GetMinimumY(), Rectangle.GetMinimumY());
 
-            const Vector4 ProjectionX = (CornerX * Vector4::SplatX(Matrix.GetColumn(0)) +
-                                         CornerY * Vector4::SplatX(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatX(Matrix.GetColumn(3)));
+            const Vector4 C0 = Matrix.GetColumn(0);
+            const Vector4 C1 = Matrix.GetColumn(1);
+            const Vector4 C3 = Matrix.GetColumn(3);
 
-            const Vector4 ProjectionY = (CornerX * Vector4::SplatY(Matrix.GetColumn(0)) +
-                                         CornerY * Vector4::SplatY(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatY(Matrix.GetColumn(3)));
+            const Vector4 PX = CornerX * Vector4::SplatX(C0) + CornerY * Vector4::SplatX(C1) + Vector4::SplatX(C3);
+            const Vector4 PY = CornerX * Vector4::SplatY(C0) + CornerY * Vector4::SplatY(C1) + Vector4::SplatY(C3);
 
-            return AnyRect(Vector4::HorizontalMin(ProjectionX), Vector4::HorizontalMin(ProjectionY),
-                           Vector4::HorizontalMax(ProjectionX), Vector4::HorizontalMax(ProjectionY));
+            return AnyRect(Vector4::HorizontalMin(PX), Vector4::HorizontalMin(PY),
+                           Vector4::HorizontalMax(PX), Vector4::HorizontalMax(PY));
+        }
+
+        /// \brief Transform a rectangle using a 3x2 transformation matrix.
+        ///
+        /// \param Rectangle The rectangle to transform.
+        /// \param Matrix    The 3x2 transformation matrix to apply.
+        /// \return A rectangle resulting from transforming the rectangle with the matrix.
+        ZYPHRYON_INLINE static AnyRect Transform(AnyRect Rectangle, ConstRef<Matrix3x2> Matrix)
+            requires (IsReal<Type>)
+        {
+            const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
+                                  Rectangle.GetMaximumX(), Rectangle.GetMinimumX());
+            const Vector4 CornerY(Rectangle.GetMaximumY(), Rectangle.GetMaximumY(),
+                                  Rectangle.GetMinimumY(), Rectangle.GetMinimumY());
+
+            const Vector4 C0 = Matrix.GetColumn(0);
+            const Vector4 C1 = Matrix.GetColumn(1);
+
+            const Vector4 PX = CornerX * Vector4::SplatX(C0) + CornerY * Vector4::SplatX(C1) + Vector4::SplatZ(C0);
+            const Vector4 PY = CornerX * Vector4::SplatY(C0) + CornerY * Vector4::SplatY(C1) + Vector4::SplatZ(C1);
+
+            return AnyRect(Vector4::HorizontalMin(PX), Vector4::HorizontalMin(PY),
+                           Vector4::HorizontalMax(PX), Vector4::HorizontalMax(PY));
         }
 
         /// \brief Iterates over the difference bands between two rectangles, invoking a callback for each band.
