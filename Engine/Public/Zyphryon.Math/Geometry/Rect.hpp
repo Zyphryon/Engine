@@ -868,20 +868,20 @@ inline namespace Math
         ZYPHRYON_INLINE static AnyRect Transform(AnyRect Rectangle, ConstRef<Matrix3x2> Matrix)
             requires (IsReal<Type>)
         {
-            const Real32 MinX = Rectangle.GetMinimumX();
-            const Real32 MaxX = Rectangle.GetMaximumX();
-            const Real32 MinY = Rectangle.GetMinimumY();
-            const Real32 MaxY = Rectangle.GetMaximumY();
+            const Type MinX = Rectangle.GetMinimumX();
+            const Type MaxX = Rectangle.GetMaximumX();
+            const Type MinY = Rectangle.GetMinimumY();
+            const Type MaxY = Rectangle.GetMaximumY();
 
             const Vector2 P0 = Matrix3x2::Project(Matrix, Vector2(MinX, MaxY));
             const Vector2 P1 = Matrix3x2::Project(Matrix, Vector2(MaxX, MaxY));
             const Vector2 P2 = Matrix3x2::Project(Matrix, Vector2(MaxX, MinY));
             const Vector2 P3 = Matrix3x2::Project(Matrix, Vector2(MinX, MinY));
 
-            const Real32 OutMinX = Min(Min(P0.GetX(), P1.GetX()), Min(P2.GetX(), P3.GetX()));
-            const Real32 OutMaxX = Max(Max(P0.GetX(), P1.GetX()), Max(P2.GetX(), P3.GetX()));
-            const Real32 OutMinY = Min(Min(P0.GetY(), P1.GetY()), Min(P2.GetY(), P3.GetY()));
-            const Real32 OutMaxY = Max(Max(P0.GetY(), P1.GetY()), Max(P2.GetY(), P3.GetY()));
+            const Type OutMinX = Math::Min(P0.GetX(), P1.GetX(), P2.GetX(), P3.GetX());
+            const Type OutMaxX = Math::Max(P0.GetX(), P1.GetX(), P2.GetX(), P3.GetX());
+            const Type OutMinY = Math::Min(P0.GetY(), P1.GetY(), P2.GetY(), P3.GetY());
+            const Type OutMaxY = Math::Max(P0.GetY(), P1.GetY(), P2.GetY(), P3.GetY());
 
             return AnyRect(OutMinX, OutMinY, OutMaxX, OutMaxY);
         }
