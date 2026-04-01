@@ -182,7 +182,7 @@ namespace Render
             // Set the vertex buffers for drawing and issue the draw command.
             mEncoder.SetVertices(0, VtxStream);
             mEncoder.SetIndices(0, 0, 0);
-            mEncoder.Draw(4, 0,  0, Instances);
+            mEncoder.Draw(4, 0, 0, Instances);
             mEncoder.ResetBindings();
         }
 
