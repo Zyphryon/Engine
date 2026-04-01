@@ -127,7 +127,7 @@ inline namespace Base
         template<typename Function, typename... Arguments>
         ZYPHRYON_INLINE decltype(auto) Visit(AnyRef<Function> Visitor, AnyRef<Arguments>... Others)
         {
-            return std::visit(Forward<Function>(Visitor), mStorage, Others.mHolder...);
+            return std::visit(Forward<Function>(Visitor), mStorage, Others.mStorage...);
         }
 
         /// \brief Applies a visitor to multiple variants simultaneously.
@@ -138,7 +138,7 @@ inline namespace Base
         template<typename Function, typename... Arguments>
         ZYPHRYON_INLINE decltype(auto) Visit(AnyRef<Function> Visitor, AnyRef<Arguments>... Others) const
         {
-            return std::visit(Forward<Function>(Visitor), mStorage, Others.mHolder...);
+            return std::visit(Forward<Function>(Visitor), mStorage, Others.mStorage...);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.
