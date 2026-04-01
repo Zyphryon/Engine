@@ -183,6 +183,21 @@ inline namespace Base
             return (* GetPtr(Handle));
         }
 
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeObject(mAllocator);
+
+            // Serialize each allocated element in the storage array.
+            ForEach([&](Ref<Type> Element)
+            {
+                Archive.SerializeObject(Element);
+            });
+        }
+
     private:
 
         /// \brief Gets a pointer to the object associated with the given handle.

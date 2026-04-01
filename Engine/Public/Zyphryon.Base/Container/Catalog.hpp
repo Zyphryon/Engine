@@ -195,6 +195,27 @@ inline namespace Base
             return mStorage[Handle - 1];
         }
 
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeObject(mAllocator);
+
+            // Ensure the storage vector is appropriately sized when deserializing.
+            if constexpr (Serializer::IsReader)
+            {
+                mStorage.resize(mAllocator.GetHead());
+            }
+
+            // Serialize each allocated element in the storage vector.
+            ForEach([&](Ref<Type> Element)
+            {
+                Archive.SerializeObject(Element);
+            });
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
