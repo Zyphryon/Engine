@@ -148,10 +148,11 @@ inline namespace Base
         ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
         {
             // Serialize the current type index to identify which alternative is active.
-            Archive.SerializeUInt(mStorage.index());
+            UInt32 ID = mStorage.index();
+            Archive.SerializeUInt(ID);
 
             // Serialize the actual data based on the active type index.
-            RunByIndex(mStorage.index(), [&]<UInt32 Index>()
+            RunByIndex(ID, [&]<UInt32 Index>()
             {
                 if constexpr (Serializer::IsReader)
                 {
@@ -166,13 +167,23 @@ inline namespace Base
         /// \brief Alias for the underlying storage type of the variant, which is a `std::variant` of the specified types.
         using Storage = std::variant<Types...>;
 
-        /// \brief Helper function to run a callback based on the current variant index.
+        /// \brief Helper function to run a callback based on the active type index of the variant.
         ///
-        /// \param Index  The index to match against the variant's active type index.
-        /// \param Action The callback to invoke when a match is found.
+        /// \param Index  The index of the active type in the variant.
+        /// \param Action The callback to execute, which should be a template that can be instantiated with the index.
+        template <typename Callback>
+        static constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action)
+        {
+            RunByIndex(Index, Action, std::make_index_sequence<std::variant_size_v<Storage>> { });
+        }
+
+        /// \brief Helper function to run a callback based on the active type index of the variant, using an index sequence to handle multiple types.
+        ///
+        /// \tparam Values The index sequence representing the possible type indices in the variant.
+        /// \param  Index  The index of the active type in the variant.
+        /// \param  Action The callback to execute, which should be a template that can be instantiated with the index.
         template <typename Callback, UInt... Values>
-        constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action,
-            std::index_sequence<Values...> = std::make_index_sequence<std::variant_size_v<Storage>>{ })
+        static constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action, std::index_sequence<Values...>)
         {
             ((Values == Index ? (Action.template operator()<Values>(), true) : false) || ...);
         }
