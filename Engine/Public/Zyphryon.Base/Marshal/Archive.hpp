@@ -302,7 +302,7 @@ inline namespace Base
         {
             if constexpr (IsReader)
             {
-                Value = mArchive.ReadText();
+                Value = Str8(mArchive.ReadText());
             }
             else
             {

@@ -301,8 +301,9 @@ inline namespace Base
         /// \return A view over the read string.
         ZYPHRYON_INLINE ConstStr8 ReadText()
         {
-            const UInt32 Size = ReadUInt<UInt32>();
-            const auto Data = Read<ConstPtr<Char>>(Size);
+            const UInt32         Size = ReadUInt<UInt32>();
+            const ConstPtr<Char> Data = Read<ConstPtr<Char>>(Size);
+
             return ConstStr8(Data, Data ? Size : 0);
         }
 
