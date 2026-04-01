@@ -1486,8 +1486,8 @@ namespace Graphic
 
             if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
             {
-                Min = Base::Min(Element, Min);
-                Max = Base::Max(Element + 1, Max);
+                Min = Math::Min(Element, Min);
+                Max = Math::Max(Element + 1, Max);
             }
 
             Array[Element]       = mBuffers[New.Buffer].Object.Get();
@@ -1532,8 +1532,8 @@ namespace Graphic
         {
             if (OldSlots[Slot] != NewSlots[Slot])
             {
-                Min = Base::Min(Slot, Min);
-                Max = Base::Max(Slot + 1, Max);
+                Min = Math::Min(Slot, Min);
+                Max = Math::Max(Slot + 1, Max);
             }
         }
 
@@ -1575,8 +1575,8 @@ namespace Graphic
         {
             if (OldSlots[Slot] != NewSlots[Slot])
             {
-                Min = Base::Min(Slot, Min);
-                Max = Base::Max(Slot + 1, Max);
+                Min = Math::Min(Slot, Min);
+                Max = Math::Max(Slot + 1, Max);
             }
         }
 
@@ -1606,8 +1606,8 @@ namespace Graphic
 
             if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
             {
-                Min = Base::Min(Element, Min);
-                Max = Base::Max(Element + 1, Max);
+                Min = Math::Min(Element, Min);
+                Max = Math::Max(Element + 1, Max);
             }
 
             Array[Element]       = mBuffers[New.Buffer].Object.Get();

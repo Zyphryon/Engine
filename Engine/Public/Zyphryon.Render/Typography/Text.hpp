@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Font.hpp"
-#include "Zyphryon.Content/Proxy.hpp"
 #include "Zyphryon.Math/Color.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -22,7 +21,7 @@
 
 namespace Render
 {
-    /// \brief Represents a text with rendering properties.
+    /// \brief Represent rendering properties of a text.
     class Text final
     {
     public:
@@ -33,12 +32,26 @@ namespace Render
         {
         }
 
+        /// \brief Constructs a new Text instance with specified properties.
+        ///
+        /// \param Font    The font used for rendering the text.
+        /// \param Size    The size of the text.
+        /// \param Tint    The tint color applied to the text.
+        /// \param Padding The padding between characters in the text.
+        ZYPHRYON_INLINE Text(ConstTracker<Font> Font, Real32 Size, IntColor8 Tint, Vector2 Padding)
+            : mFont    { Font },
+              mSize    { Size },
+              mTint    { Tint },
+              mPadding { Padding }
+        {
+        }
+
         /// \brief Sets the font used for rendering the text.
         ///
         /// \param Font The font to set.
         ZYPHRYON_INLINE void SetFont(ConstTracker<Font> Font)
         {
-            mFont = Content::Proxy(Font);
+            mFont = Font;
         }
 
         /// \brief Gets the font used for rendering the text.
@@ -46,7 +59,7 @@ namespace Render
         /// \return The current font.
         ZYPHRYON_INLINE ConstTracker<Font> GetFont() const
         {
-            return mFont.GetResource();
+            return mFont;
         }
 
         /// \brief Sets the size of the text.
@@ -81,22 +94,6 @@ namespace Render
             return mTint;
         }
 
-        /// \brief Sets the content of the text.
-        ///
-        /// \param Content The text content to set.
-        ZYPHRYON_INLINE void SetContent(ConstStr8 Content)
-        {
-            mContent = Content;
-        }
-
-        /// \brief Gets the content of the text.
-        ///
-        /// \return The current text content.
-        ZYPHRYON_INLINE ConstStr8 GetContent() const
-        {
-            return mContent;
-        }
-
         /// \brief Sets the padding between characters in the text.
         ///
         /// \param Padding The padding to set.
@@ -113,54 +110,14 @@ namespace Render
             return mPadding;
         }
 
-        /// \brief Sets the origin point for text alignment.
-        ///
-        /// \param Origin The origin to set.
-        ZYPHRYON_INLINE void SetOrigin(Pivot Origin)
-        {
-            mOrigin = Origin;
-        }
-
-        /// \brief Gets the origin point for text alignment.
-        ///
-        /// \return The current origin.
-        ZYPHRYON_INLINE Pivot GetOrigin() const
-        {
-            return mOrigin;
-        }
-
-        /// \brief Resolves the deferred component using the provided service.
-        ///
-        /// \param Service The service used to load deferred resources.
-        ZYPHRYON_INLINE void OnResolve(Ref<Content::Service> Service)
-        {
-            mFont.Resolve(Service);
-        }
-
-        /// \brief Serializes the state of the object to or from the specified archive.
-        ///
-        /// \param Archive The archive to serialize the object with.
-        template<typename Serializer>
-        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
-        {
-            Archive.SerializeObject(mFont);
-            Archive.SerializeObject(mSize);
-            Archive.SerializeObject(mTint);
-            Archive.SerializeObject(mContent);
-            Archive.SerializeObject(mPadding);
-            Archive.SerializeObject(mOrigin);
-        }
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Content::Proxy<Font> mFont;
-        Real32               mSize;
-        IntColor8            mTint;
-        Str8                 mContent;
-        Vector2              mPadding;
-        Pivot                mOrigin;
+        Tracker<Font> mFont;
+        Real32        mSize;
+        IntColor8     mTint;
+        Vector2       mPadding;
     };
 }

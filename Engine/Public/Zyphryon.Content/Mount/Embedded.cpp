@@ -24,7 +24,7 @@ namespace Content
 
     Vector<Mount::Item> Embedded::Enumerate(ConstStr8 Path) const
     {
-        return {};
+        return { };
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

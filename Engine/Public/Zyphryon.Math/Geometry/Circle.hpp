@@ -62,7 +62,7 @@ inline namespace Math
         /// \return `true` if center is approximately zero and radius is approximately zero, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
         {
-            return mCenter.IsAlmostZero() && Base::IsAlmostZero(mRadius);
+            return mCenter.IsAlmostZero() && Math::IsAlmostZero(mRadius);
         }
 
         /// \brief Checks if the circle is valid (radius >= 0).
@@ -78,7 +78,7 @@ inline namespace Math
         /// \return `true` if the radius is approximately zero, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsEmpty() const
         {
-            return Base::IsAlmostZero(mRadius);
+            return Math::IsAlmostZero(mRadius);
         }
 
         /// \brief Sets the center and radius of the circle.
@@ -269,7 +269,7 @@ inline namespace Math
         /// \return A new circle with scaled radius.
         ZYPHRYON_INLINE constexpr Circle operator/(Real32 Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             return Circle(mCenter, mRadius / Scalar);
         }
@@ -310,7 +310,7 @@ inline namespace Math
         /// \return A reference to the updated circle.
         ZYPHRYON_INLINE constexpr Ref<Circle> operator/=(Real32 Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             mRadius /= Scalar;
             return (* this);
@@ -354,7 +354,7 @@ inline namespace Math
         {
             const Vector2 Direction = Second.mCenter - First.mCenter;
             const Real32 Distance   = Direction.GetLength();
-            LOG_ASSERT(!Base::IsAlmostZero(Distance), "Centers are identical and neither circle contains the other");
+            LOG_ASSERT(!Math::IsAlmostZero(Distance), "Centers are identical and neither circle contains the other");
 
             if (Distance + Second.mRadius <= First.mRadius)
             {
@@ -397,7 +397,7 @@ inline namespace Math
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");
 
-            const Real32 Radius = Base::Lerp(Start.mRadius, End.mRadius, Percentage);
+            const Real32 Radius = Math::Lerp(Start.mRadius, End.mRadius, Percentage);
             return Circle(Vector2::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }
 
@@ -418,7 +418,7 @@ inline namespace Math
                 return Math::Circle(Center, Circle.GetRadius() * ScaleX);
             }
 
-            const Vector2 Edge = Matrix4x4::Project<true>(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
+            const Vector2 Edge = Matrix4x4::Project<true>(Matrix, Circle.GetCenter() + Vector2(Circle.mRadius, 0));
             return Math::Circle(Center, (Edge - Center).GetLength());
         }
 
@@ -431,15 +431,15 @@ inline namespace Math
         {
             const Vector2 Center = Matrix3x2::Project(Matrix, Circle.GetCenter());
 
-            const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
-            const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
+            const Real32 ScaleX = Matrix.GetBasisX().GetLength();
+            const Real32 ScaleY = Matrix.GetBasisY().GetLength();
 
             if (IsAlmostEqual(ScaleX, ScaleY))
             {
                 return Math::Circle(Center, Circle.GetRadius() * ScaleX);
             }
 
-            const Vector2 Edge = Matrix3x2::Project(Matrix, Vector2(Circle.GetCenter() + Vector2(Circle.mRadius, 0)));
+            const Vector2 Edge = Matrix3x2::Project(Matrix, Circle.GetCenter() + Vector2(Circle.GetRadius(), 0.0f));
             return Math::Circle(Center, (Edge - Center).GetLength());
         }
 

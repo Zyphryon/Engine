@@ -119,6 +119,7 @@ namespace Render
         Command.Layout.Center = Shape.GetCenter();
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
+        Command.Layout.Data0  = Shape.GetSize() * 0.5f;
 
         constexpr UInt32              Type     = Enum::Cast(Type::Rect);
         const     Collector::Priority Priority = Tint.IsOpaque()
@@ -183,13 +184,12 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::DrawText(ConstRef<Text> Text, ConstRef<Matrix3x2> Transform, Real32 Order, UInt8 Effect)
+    void Canvas::DrawText(ConstRef<Text> Text, ConstStr8 Content, ConstRef<Matrix3x2> Transform, Real32 Order, UInt8 Effect)
     {
         ConstTracker<Font> Font = Text.GetFont();
 
         // Calculate the origin point for the text layout based on the content, size, origin, and padding settings.
         const Real32 Size = Text.GetSize();
-        const Rect Origin = Font->Layout(Text.GetContent(), Size, Text.GetOrigin(), Text.GetPadding()); // TODO: Cache
 
         // The line height in font units.
         const Real32 LineHeight = Font->GetLineHeight(Text.GetSize(), Text.GetPadding());
@@ -197,19 +197,19 @@ namespace Render
         const ConstPtr<Graphic::Material> Material = Font->GetMaterial();
 
         // Iterate through each character in the text content and generate draw commands for each glyph.
-        Real32 CurrentX = Origin.GetX();
-        Real32 CurrentY = Origin.GetY();
+        Real32 CurrentX = 0.0f;
+        Real32 CurrentY = 0.0f;
         UInt32 Previous = 0;
 
         constexpr UInt32 Type     = Enum::Cast(Type::Glyph);
         const     UInt16 Pipeline = mPipelines[Type]->GetID();
 
-        IterateUTF8(Text.GetContent(), [&](UInt32 Codepoint)
+        IterateUTF8(Content, [&](UInt32 Codepoint)
         {
             switch (Codepoint)
             {
             case '\r':
-                CurrentX = Origin.GetX();
+                CurrentX = 0.0f;
                 break;
             case '\n':
                 CurrentY -= LineHeight;
@@ -224,8 +224,7 @@ namespace Render
                         Ref<GlyphCommand> Command = mGlyphs.emplace_back();
 
                         Command.Material         = Material;
-                        Command.Layout.Transform = Transform;
-                        Command.Layout.Transform.GetColumn(0).SetW(Order);
+                        Command.Layout.Transform.SetData(Transform, Order);
                         Command.Layout.Frame     = Glyph->AtlasBounds;
                         Command.Layout.Offset.Set(
                             CurrentX + Glyph->LocalBounds.GetX() * Size,
@@ -260,8 +259,7 @@ namespace Render
             : Collector::Priority::Transparent;
 
         Ref<SpriteCommand> Command = mSprites.emplace_back();
-        Command.Layout.Transform = Transform;
-        Command.Layout.Transform.GetColumn(0).SetW(Order);
+        Command.Layout.Transform.SetData(Transform, Order);
         Command.Layout.Frame     = Sprite.GetFrame();
         Command.Layout.Size      = Sprite.GetSize();
         Command.Layout.Color     = Sprite.GetTint();
@@ -320,6 +318,8 @@ namespace Render
 
     void Canvas::CreateDefaultResources(ConstTracker<Content::Service> Content)
     {
+        // TODO: Non-Opaque Rect/Line pipelines.
+
         mPipelines[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Shapes/Circle.effect");
         mPipelines[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Shapes/Ring.effect");
         mPipelines[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Shapes/Line.effect");

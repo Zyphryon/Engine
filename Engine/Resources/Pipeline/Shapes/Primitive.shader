@@ -80,7 +80,7 @@ ps_Input vertex(vs_Input Input)
 
     Result.Thickness = Input.Data.w * 0.5;
 
-    Offset = Input.Data.xy * (Local.x * Input.Data.z) + float2(-Input.Data.w, Input.Data.z) * (Local.y * Result.Thickness);
+    Offset = Input.Data.xy * (Local.x * Input.Data.z) + float2(-Input.Data.y, Input.Data.x) * (Local.y * Result.Thickness);
 
     Local *= 1.0 + Result.Thickness;   // TODO: Fix Thickness
 

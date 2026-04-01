@@ -194,10 +194,10 @@ inline namespace Math
         /// \return A new color that is the quotient of the two colors.
         ZYPHRYON_INLINE constexpr AnyColor operator/(AnyColor Color) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[2]), "Division by zero (Blue)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[3]), "Division by zero (Alpha)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[2]), "Division by zero (Blue)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[3]), "Division by zero (Alpha)");
 
             return AnyColor(mComponents[0] / Color.mComponents[0],
                             mComponents[1] / Color.mComponents[1],
@@ -211,7 +211,7 @@ inline namespace Math
         /// \return A new color with all channels divided by the scalar.
         ZYPHRYON_INLINE constexpr AnyColor operator/(Type Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             return AnyColor(mComponents[0] / Scalar,
                             mComponents[1] / Scalar,
@@ -303,10 +303,10 @@ inline namespace Math
         /// \return A reference to the updated color.
         ZYPHRYON_INLINE constexpr Ref<AnyColor> operator/=(AnyColor Color)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[2]), "Division by zero (Blue)");
-            LOG_ASSERT(!Base::IsAlmostZero(Color.mComponents[3]), "Division by zero (Alpha)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[0]), "Division by zero (Red)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[1]), "Division by zero (Green)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[2]), "Division by zero (Blue)");
+            LOG_ASSERT(!Math::IsAlmostZero(Color.mComponents[3]), "Division by zero (Alpha)");
 
             mComponents[0] /= Color.mComponents[0];
             mComponents[1] /= Color.mComponents[1];
@@ -321,7 +321,7 @@ inline namespace Math
         /// \return A reference to the updated color.
         ZYPHRYON_INLINE constexpr Ref<AnyColor> operator/=(Type Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             mComponents[0] /= Scalar;
             mComponents[1] /= Scalar;
@@ -387,7 +387,7 @@ inline namespace Math
         {
             if constexpr (IsReal<Type>)
             {
-                return Base::Clamp(Channel, Type(0), Limit()) * Value;
+                return Math::Clamp(Channel, Type(0), Limit()) * Value;
             }
             else
             {
@@ -493,10 +493,10 @@ inline namespace Math
         /// \return A color with the component-wise maximum values.
         ZYPHRYON_INLINE static constexpr AnyColor Min(AnyColor First, AnyColor Second)
         {
-            return AnyColor(Base::Min(First.GetRed(),   Second.GetRed()),
-                            Base::Min(First.GetGreen(), Second.GetGreen()),
-                            Base::Min(First.GetBlue(),  Second.GetBlue()),
-                            Base::Min(First.GetAlpha(), Second.GetAlpha()));
+            return AnyColor(Math::Min(First.GetRed(),   Second.GetRed()),
+                            Math::Min(First.GetGreen(), Second.GetGreen()),
+                            Math::Min(First.GetBlue(),  Second.GetBlue()),
+                            Math::Min(First.GetAlpha(), Second.GetAlpha()));
         }
 
         /// \brief Returns the component-wise maximum of two colors.
@@ -506,10 +506,10 @@ inline namespace Math
         /// \return A color with the component-wise maximum values.
         ZYPHRYON_INLINE static constexpr AnyColor Max(AnyColor First, AnyColor Second)
         {
-            return AnyColor(Base::Max(First.GetRed(),   Second.GetRed()),
-                            Base::Max(First.GetGreen(), Second.GetGreen()),
-                            Base::Max(First.GetBlue(),  Second.GetBlue()),
-                            Base::Max(First.GetAlpha(), Second.GetAlpha()));
+            return AnyColor(Math::Max(First.GetRed(),   Second.GetRed()),
+                            Math::Max(First.GetGreen(), Second.GetGreen()),
+                            Math::Max(First.GetBlue(),  Second.GetBlue()),
+                            Math::Max(First.GetAlpha(), Second.GetAlpha()));
         }
 
         /// \brief Clamps each channel of a color between a minimum and maximum value.
@@ -520,10 +520,10 @@ inline namespace Math
         /// \return A color with the component values clamped.
         ZYPHRYON_INLINE static constexpr AnyColor Clamp(AnyColor Color, Type Minimum, Type Maximum)
         {
-            return AnyColor(Base::Clamp(Color.GetRed(),   Minimum, Maximum),
-                            Base::Clamp(Color.GetGreen(), Minimum, Maximum),
-                            Base::Clamp(Color.GetBlue(),  Minimum, Maximum),
-                            Base::Clamp(Color.GetAlpha(), Minimum, Maximum));
+            return AnyColor(Math::Clamp(Color.GetRed(),   Minimum, Maximum),
+                            Math::Clamp(Color.GetGreen(), Minimum, Maximum),
+                            Math::Clamp(Color.GetBlue(),  Minimum, Maximum),
+                            Math::Clamp(Color.GetAlpha(), Minimum, Maximum));
         }
 
         /// \brief Clamps all channels of a color to the valid range [0, Limit].
@@ -567,10 +567,10 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyColor Lerp(AnyColor Start, AnyColor End, Real32 Percentage)
             requires(IsReal<Type>)
         {
-            const Type Red   = Base::Lerp(Start.GetRed(),   End.GetRed(),   Percentage);
-            const Type Green = Base::Lerp(Start.GetGreen(), End.GetGreen(), Percentage);
-            const Type Blue  = Base::Lerp(Start.GetBlue(),  End.GetBlue(),  Percentage);
-            const Type Alpha = Base::Lerp(Start.GetAlpha(), End.GetAlpha(), Percentage);
+            const Type Red   = Math::Lerp(Start.GetRed(),   End.GetRed(),   Percentage);
+            const Type Green = Math::Lerp(Start.GetGreen(), End.GetGreen(), Percentage);
+            const Type Blue  = Math::Lerp(Start.GetBlue(),  End.GetBlue(),  Percentage);
+            const Type Alpha = Math::Lerp(Start.GetAlpha(), End.GetAlpha(), Percentage);
             return AnyColor(Red, Green, Blue, Alpha);
         }
 

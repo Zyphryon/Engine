@@ -101,7 +101,16 @@ inline namespace Math
         {
             LOG_ASSERT(IsFinite(), "Matrix contains invalid (NaN/Inf) values before orthogonality check");
 
-            return (Transpose(* this) * (* this)).IsIdentity();
+            const Vector3 X = mColumns[0].GetXYZ();
+            const Vector3 Y = mColumns[1].GetXYZ();
+            const Vector3 Z = mColumns[2].GetXYZ();
+
+            return IsAlmostZero(Vector3::Dot(X, Y)) &&
+                   IsAlmostZero(Vector3::Dot(X, Z)) &&
+                   IsAlmostZero(Vector3::Dot(Y, Z)) &&
+                   X.IsNormalized() &&
+                   Y.IsNormalized() &&
+                   Z.IsNormalized();
         }
 
         /// \brief Checks if all components of the matrix are finite (not NaN or Inf).
@@ -193,7 +202,11 @@ inline namespace Math
         /// \return Vector containing the scale of each axis.
         ZYPHRYON_INLINE Vector3 GetScale() const
         {
-            return Vector3(mColumns[0].GetLength(), mColumns[1].GetLength(), mColumns[2].GetLength());
+            const Real32 ScaleX = mColumns[0].GetLength();
+            const Real32 ScaleY = mColumns[1].GetLength();
+            const Real32 ScaleZ = mColumns[2].GetLength();
+
+            return Vector3(ScaleX, ScaleY, ScaleZ);
         }
 
         /// \brief Gets the translation vector from the matrix.
@@ -299,25 +312,30 @@ inline namespace Math
         /// \return A reference to the updated matrix.
         ZYPHRYON_INLINE Ref<Matrix4x4> operator*=(ConstRef<Matrix4x4> Other)
         {
-            mColumns[0] = Other.mColumns[0] * Vector4::SplatX(mColumns[0]) +
-                          Other.mColumns[1] * Vector4::SplatY(mColumns[0]) +
-                          Other.mColumns[2] * Vector4::SplatZ(mColumns[0]) +
-                          Other.mColumns[3] * Vector4::SplatW(mColumns[0]);
+            const Vector4 C0 = mColumns[0];
+            const Vector4 C1 = mColumns[1];
+            const Vector4 C2 = mColumns[2];
+            const Vector4 C3 = mColumns[3];
 
-            mColumns[1] = Other.mColumns[0] * Vector4::SplatX(mColumns[1]) +
-                          Other.mColumns[1] * Vector4::SplatY(mColumns[1]) +
-                          Other.mColumns[2] * Vector4::SplatZ(mColumns[1]) +
-                          Other.mColumns[3] * Vector4::SplatW(mColumns[1]);
+            mColumns[0] = Other.mColumns[0] * Vector4::SplatX(C0) +
+                          Other.mColumns[1] * Vector4::SplatY(C0) +
+                          Other.mColumns[2] * Vector4::SplatZ(C0) +
+                          Other.mColumns[3] * Vector4::SplatW(C0);
 
-            mColumns[2] = Other.mColumns[0] * Vector4::SplatX(mColumns[2]) +
-                          Other.mColumns[1] * Vector4::SplatY(mColumns[2]) +
-                          Other.mColumns[2] * Vector4::SplatZ(mColumns[2]) +
-                          Other.mColumns[3] * Vector4::SplatW(mColumns[2]);
+            mColumns[1] = Other.mColumns[0] * Vector4::SplatX(C1) +
+                          Other.mColumns[1] * Vector4::SplatY(C1) +
+                          Other.mColumns[2] * Vector4::SplatZ(C1) +
+                          Other.mColumns[3] * Vector4::SplatW(C1);
 
-            mColumns[3] = Other.mColumns[0] * Vector4::SplatX(mColumns[3]) +
-                          Other.mColumns[1] * Vector4::SplatY(mColumns[3]) +
-                          Other.mColumns[2] * Vector4::SplatZ(mColumns[3]) +
-                          Other.mColumns[3] * Vector4::SplatW(mColumns[3]);
+            mColumns[2] = Other.mColumns[0] * Vector4::SplatX(C2) +
+                          Other.mColumns[1] * Vector4::SplatY(C2) +
+                          Other.mColumns[2] * Vector4::SplatZ(C2) +
+                          Other.mColumns[3] * Vector4::SplatW(C2);
+
+            mColumns[3] = Other.mColumns[0] * Vector4::SplatX(C3) +
+                          Other.mColumns[1] * Vector4::SplatY(C3) +
+                          Other.mColumns[2] * Vector4::SplatZ(C3) +
+                          Other.mColumns[3] * Vector4::SplatW(C3);
 
             return (* this);
         }
@@ -385,7 +403,7 @@ inline namespace Math
             else
             {
                 const Real32 W = Result.GetW();
-                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+                LOG_ASSERT(!Math::IsAlmostZero(W), "Division by zero (W)");
 
                 const Real32 InvW = 1.0f / W;
                 return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
@@ -415,7 +433,7 @@ inline namespace Math
             else
             {
                 const Real32 W = Result.GetW();
-                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+                LOG_ASSERT(!Math::IsAlmostZero(W), "Division by zero (W)");
 
                 const Real32 InvW = 1.0f / W;
                 return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
@@ -445,7 +463,7 @@ inline namespace Math
             else
             {
                 const Real32 W = Result.GetW();
-                LOG_ASSERT(!Base::IsAlmostZero(W), "Division by zero (W)");
+                LOG_ASSERT(!Math::IsAlmostZero(W), "Division by zero (W)");
 
                 return (W != 0.0f ? Result * (1.0f / W) : Result);
             }

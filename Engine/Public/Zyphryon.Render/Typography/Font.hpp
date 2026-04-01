@@ -160,6 +160,20 @@ namespace Render
         /// \return The bounding rectangle of the text in pixels, positioned according to the alignment.
         Rect Layout(ConstStr8 Content, Real32 Size, Pivot Origin, Vector2 Padding) const;
 
+        /// \brief Calculates the origin point for the text based on the specified alignment.
+        ///
+        /// \param Content The text string encoded in UTF-8.
+        /// \param Size    The size at which the font is evaluated.
+        /// \param Origin  The pivot point defining the text alignment.
+        /// \param Padding Additional spacing applied between characters, in pixels.
+        /// \return The origin point, which can be used to position the text according.
+        ZYPHRYON_INLINE Vector2 GetOrigin(ConstStr8 Content, Real32 Size, Pivot Origin, Vector2 Padding) const
+        {
+            const Vector2 Boundaries = Measure(Content, Size, Padding);
+
+            return Vector2(Boundaries.GetX() * Origin.GetX(), Boundaries.GetY() * Origin.GetY());
+        }
+
     private:
 
         /// \copydoc Resource::OnCreate

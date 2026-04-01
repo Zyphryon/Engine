@@ -78,7 +78,7 @@ inline namespace Math
         ///
         /// \param Origin The origin point for rotation and scale.
         /// \return A 3x2 transformation matrix that combines translation, scale, and rotation with the specified origin.
-        ZYPHRYON_INLINE Matrix3x2 Compute(Pivot Origin) const
+        ZYPHRYON_INLINE Matrix3x2 Compute(Vector2 Origin) const
         {
             return Matrix3x2::FromTransform(mTranslation, mScale, mRotation, Origin);
         }

@@ -84,7 +84,7 @@ inline namespace Math
         /// \return `true` if all components are approximately zero, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
         {
-            return Base::IsAlmostZero(mX) && Base::IsAlmostZero(mY) && Base::IsAlmostZero(mZ);
+            return Math::IsAlmostZero(mX) && Math::IsAlmostZero(mY) && Math::IsAlmostZero(mZ);
         }
 
         /// \brief Checks if all components are approximately equal to the given values.
@@ -95,7 +95,7 @@ inline namespace Math
         /// \return `true` if all components are approximately equal, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsAlmostEqual(Type X, Type Y, Type Z) const
         {
-            return Base::IsAlmostEqual(mX, X) && Base::IsAlmostEqual(mY, Y) && Base::IsAlmostEqual(mZ, Z);
+            return Math::IsAlmostEqual(mX, X) && Math::IsAlmostEqual(mY, Y) && Math::IsAlmostEqual(mZ, Z);
         }
 
         /// \brief Checks if the vector is normalized.
@@ -104,7 +104,7 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Bool IsNormalized() const
             requires(IsReal<Type>)
         {
-            return Base::IsAlmostEqual(GetLengthSquared(), Type(1));
+            return Math::IsAlmostEqual(GetLengthSquared(), Type(1));
         }
 
         /// \brief Checks if all components are approximately equal within a tolerance.
@@ -291,7 +291,7 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             const Type Length = GetLength() * Other.GetLength();
-            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
             return Angle::FromCosine(Dot(* this, Other) / Length);
         }
@@ -364,9 +364,9 @@ inline namespace Math
         /// \return A new vector that is the quotient of the two vectors.
         ZYPHRYON_INLINE constexpr AnyVector3 operator/(AnyVector3 Vector) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
 
             return AnyVector3(mX / Vector.mX, mY / Vector.mY, mZ / Vector.mZ);
         }
@@ -377,7 +377,7 @@ inline namespace Math
         /// \return A new vector with the scalar divided into all components.
         ZYPHRYON_INLINE constexpr AnyVector3 operator/(Type Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             return AnyVector3(mX / Scalar, mY / Scalar, mZ / Scalar);
         }
@@ -506,9 +506,9 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator/=(AnyVector3 Vector)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
 
             mX /= Vector.mX;
             mY /= Vector.mY;
@@ -522,7 +522,7 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE constexpr Ref<AnyVector3> operator/=(Type Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             mX /= Scalar;
             mY /= Scalar;
@@ -685,7 +685,7 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             const Type Length = Vector.GetLength();
-            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot normalize a zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(Length), "Cannot normalize a zero-length vector");
 
             return Vector * (Type(1) / Length);
         }
@@ -709,7 +709,7 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             const Type Denominator = Dot(Target, Target);
-            LOG_ASSERT(!Base::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
 
             return Target * (Dot(Source, Target) / Denominator);
         }
@@ -757,7 +757,7 @@ inline namespace Math
         /// \return A vector with the component-wise minimum values.
         ZYPHRYON_INLINE static constexpr AnyVector3 Min(AnyVector3 P0, AnyVector3 P1)
         {
-            return AnyVector3(Base::Min(P0.mX, P1.mX), Base::Min(P0.mY, P1.mY), Base::Min(P0.mZ, P1.mZ));
+            return AnyVector3(Math::Min(P0.mX, P1.mX), Math::Min(P0.mY, P1.mY), Math::Min(P0.mZ, P1.mZ));
         }
 
         /// \brief Returns the component-wise maximum of two vectors.
@@ -767,7 +767,7 @@ inline namespace Math
         /// \return A vector with the component-wise maximum values.
         ZYPHRYON_INLINE static constexpr AnyVector3 Max(AnyVector3 P0, AnyVector3 P1)
         {
-            return AnyVector3(Base::Max(P0.mX, P1.mX), Base::Max(P0.mY, P1.mY), Base::Max(P0.mZ, P1.mZ));
+            return AnyVector3(Math::Max(P0.mX, P1.mX), Math::Max(P0.mY, P1.mY), Math::Max(P0.mZ, P1.mZ));
         }
 
         /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
@@ -779,9 +779,9 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyVector3 Clamp(AnyVector3 Vector, AnyVector3 Min, AnyVector3 Max)
         {
             return AnyVector3(
-                Base::Clamp(Vector.mX, Min.mX, Max.mX),
-                Base::Clamp(Vector.mY, Min.mY, Max.mY),
-                Base::Clamp(Vector.mZ, Min.mZ, Max.mZ));
+                Math::Clamp(Vector.mX, Min.mX, Max.mX),
+                Math::Clamp(Vector.mY, Min.mY, Max.mY),
+                Math::Clamp(Vector.mZ, Min.mZ, Max.mZ));
         }
 
         /// \brief Returns a vector with each component floored to the nearest integer.
@@ -791,7 +791,7 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyVector3 Floor(AnyVector3 Vector)
             requires(IsReal<Type>)
         {
-            return AnyVector3(Base::Floor(Vector.mX), Base::Floor(Vector.mY), Base::Floor(Vector.mZ));
+            return AnyVector3(Math::Floor(Vector.mX), Math::Floor(Vector.mY), Math::Floor(Vector.mZ));
         }
 
         /// \brief Returns a vector with each component ceiled to the nearest integer.
@@ -801,7 +801,7 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyVector3 Ceil(AnyVector3 Vector)
             requires(IsReal<Type>)
         {
-            return AnyVector3(Base::Ceil(Vector.mX), Base::Ceil(Vector.mY), Base::Ceil(Vector.mZ));
+            return AnyVector3(Math::Ceil(Vector.mX), Math::Ceil(Vector.mY), Math::Ceil(Vector.mZ));
         }
 
         /// \brief Linearly interpolates between two vectors.

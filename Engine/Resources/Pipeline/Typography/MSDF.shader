@@ -54,28 +54,29 @@ struct ps_Input
 
 // VS Main
 
-ps_Input vertex(vs_Input Input)
+float2 TessellateRect(uint VertexID)
 {
-    static const float2 Quad[4] =
-    {
+    static const float2 kUnitRectCorners[4] = {
         float2(0, 0),
         float2(1, 0),
         float2(0, 1),
         float2(1, 1)
     };
+    return kUnitRectCorners[VertexID];
+}
 
-    const float2 Corner   = Quad[Input.VertexID];
-    const float2 LocalPos = Input.Local.xy + Corner * Input.Local.zw;
-
-    // Apply transform
-    const float3 WorldPos = float3(
-        dot(Input.Transform0.xyz, float3(LocalPos, 1.0)),
-        dot(Input.Transform1.xyz, float3(LocalPos, 1.0)),
-        0.0);
+ps_Input vertex(vs_Input Input)
+{
+    const float2 Corner   = TessellateRect(Input.VertexID);
+    const float2 Local    = Input.Local.xy + Corner * Input.Local.zw;
+    const float2 Position = float2(
+        dot(Local, Input.Transform0.xy) + Input.Transform0.z,
+        dot(Local, Input.Transform1.xy) + Input.Transform1.z
+    );
 
     ps_Input Result;
 
-    Result.Position = mul(u_Camera, float4(WorldPos, 1.0));
+    Result.Position = mul(u_Camera, float4(Position, Input.Transform0.w, 1.0));
     Result.Texture  = lerp(Input.Frame.xy, Input.Frame.zw, Corner);
     Result.Color    = Input.Color;
     Result.Effect   = Input.Effect;

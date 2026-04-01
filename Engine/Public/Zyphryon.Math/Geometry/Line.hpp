@@ -207,10 +207,10 @@ inline namespace Math
                 return true;
             }
 
-            return (Base::IsAlmostZero(O1) && Contains(Other.mStart)
-                ||  Base::IsAlmostZero(O2) && Contains(Other.mEnd)
-                ||  Base::IsAlmostZero(O3) && Other.Contains(mStart)
-                ||  Base::IsAlmostZero(O4) && Other.Contains(mEnd));
+            return (Math::IsAlmostZero(O1) && Contains(Other.mStart)
+                ||  Math::IsAlmostZero(O2) && Contains(Other.mEnd)
+                ||  Math::IsAlmostZero(O3) && Other.Contains(mStart)
+                ||  Math::IsAlmostZero(O4) && Other.Contains(mEnd));
         }
 
         /// \brief Checks if this line is equal to another line.

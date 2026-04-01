@@ -25,13 +25,13 @@ inline namespace Base
     ///
     /// \tparam Types The list of types that the variant can hold.
     template<typename... Types>
-    class Variant final
+    class Variant
     {
     public:
 
         /// \brief Constructs a variant with the first alternative type default-initialized.
         ZYPHRYON_INLINE Variant()
-            : mStorage{std::in_place_index<0>}
+            : mStorage { std::in_place_index<0> }
         {
         }
 
@@ -40,7 +40,7 @@ inline namespace Base
         /// \param Parameters Arguments to forward to the constructor of the type.
         template<typename Type, typename... Arguments>
         ZYPHRYON_INLINE Variant(AnyRef<Arguments>... Parameters)
-            : mStorage{ std::in_place_type<Type>, Forward<Arguments>(Parameters)... }
+            : mStorage { std::in_place_type<Type>, Forward<Arguments>(Parameters)... }
         {
         }
 
@@ -163,13 +163,16 @@ inline namespace Base
 
     private:
 
+        /// \brief Alias for the underlying storage type of the variant, which is a `std::variant` of the specified types.
+        using Storage = std::variant<Types...>;
+
         /// \brief Helper function to run a callback based on the current variant index.
         ///
         /// \param Index  The index to match against the variant's active type index.
         /// \param Action The callback to invoke when a match is found.
         template <typename Callback, UInt... Values>
         constexpr void RunByIndex(UInt32 Index, AnyRef<Callback> Action,
-            std::index_sequence<Values...> = std::make_index_sequence<std::variant_size_v<decltype(mStorage)>>{ })
+            std::index_sequence<Values...> = std::make_index_sequence<std::variant_size_v<Storage>>{ })
         {
             ((Values == Index ? (Action.template operator()<Values>(), true) : false) || ...);
         }
@@ -179,6 +182,6 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        std::variant<Types...> mStorage;
+        Storage mStorage;
     };
 }

@@ -93,7 +93,7 @@ inline namespace Base
     /// \param Width The width of the 2D structure (number of columns).
     /// \return The corresponding 1D index for the given 2D coordinates.
     template<typename Type>
-    static constexpr Type Index2D(Type X, Type Y, Type Width)
+    static constexpr auto Index2D(Type X, Type Y, Type Width)
     {
         return Y * Width + X;
     }

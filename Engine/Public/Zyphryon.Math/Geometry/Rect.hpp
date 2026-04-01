@@ -88,8 +88,8 @@ inline namespace Math
         /// \return `true` if all coordinates are approximately zero, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool IsAlmostZero() const
         {
-            return Base::IsAlmostZero(mMinimumX) && Base::IsAlmostZero(mMinimumY) &&
-                   Base::IsAlmostZero(mMaximumX) && Base::IsAlmostZero(mMaximumY);
+            return Math::IsAlmostZero(mMinimumX) && Math::IsAlmostZero(mMinimumY) &&
+                   Math::IsAlmostZero(mMaximumX) && Math::IsAlmostZero(mMaximumY);
         }
 
         /// \brief Sets the coordinates of the rectangle.
@@ -321,10 +321,10 @@ inline namespace Math
         /// \return `true` if all coordinates are approximately equal, `false` otherwise.
         ZYPHRYON_INLINE constexpr Bool operator==(AnyRect Other) const
         {
-            return Base::IsAlmostEqual(mMinimumX, Other.mMinimumX) &&
-                   Base::IsAlmostEqual(mMinimumY, Other.mMinimumY) &&
-                   Base::IsAlmostEqual(mMaximumX, Other.mMaximumX) &&
-                   Base::IsAlmostEqual(mMaximumY, Other.mMaximumY);
+            return Math::IsAlmostEqual(mMinimumX, Other.mMinimumX) &&
+                   Math::IsAlmostEqual(mMinimumY, Other.mMinimumY) &&
+                   Math::IsAlmostEqual(mMaximumX, Other.mMaximumX) &&
+                   Math::IsAlmostEqual(mMaximumY, Other.mMaximumY);
         }
 
         /// \brief Checks if this rectangle is not equal to another rectangle.
@@ -429,7 +429,7 @@ inline namespace Math
         /// \return A new rectangle with the scalar divided by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator/(Type Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             return AnyRect(mMinimumX / Scalar, mMinimumY / Scalar, mMaximumX / Scalar, mMaximumY / Scalar);
         }
@@ -440,8 +440,8 @@ inline namespace Math
         /// \return A new rectangle with the vector divided by all coordinates.
         ZYPHRYON_INLINE constexpr AnyRect operator/(AnyVector2<Type> Vector) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
             return AnyRect(mMinimumX / Vector.GetX(),
                            mMinimumY / Vector.GetY(),
@@ -593,7 +593,7 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator/=(Type Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             mMinimumX /= Scalar;
             mMinimumY /= Scalar;
@@ -609,8 +609,8 @@ inline namespace Math
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator/=(AnyVector2<Type> Vector)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
 
             mMinimumX /= Vector.GetX();
             mMinimumY /= Vector.GetY();
@@ -696,10 +696,10 @@ inline namespace Math
         /// \return A canonicalized rectangle.
         ZYPHRYON_INLINE static constexpr AnyRect Canonicalize(AnyRect Rectangle)
         {
-            const Type X1 = Base::Min(Rectangle.mMinimumX, Rectangle.mMaximumX);
-            const Type X2 = Base::Max(Rectangle.mMinimumX, Rectangle.mMaximumX);
-            const Type Y1 = Base::Min(Rectangle.mMinimumY, Rectangle.mMaximumY);
-            const Type Y2 = Base::Max(Rectangle.mMinimumY, Rectangle.mMaximumY);
+            const Type X1 = Math::Min(Rectangle.mMinimumX, Rectangle.mMaximumX);
+            const Type X2 = Math::Max(Rectangle.mMinimumX, Rectangle.mMaximumX);
+            const Type Y1 = Math::Min(Rectangle.mMinimumY, Rectangle.mMaximumY);
+            const Type Y2 = Math::Max(Rectangle.mMinimumY, Rectangle.mMaximumY);
             return AnyRect(X1, Y1, X2, Y2);
         }
 
@@ -711,10 +711,10 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyRect Min(AnyRect First, AnyRect Second)
         {
             return AnyRect(
-                Base::Min(First.mMinimumX, Second.mMinimumX),
-                Base::Min(First.mMinimumY, Second.mMinimumY),
-                Base::Min(First.mMaximumX, Second.mMaximumX),
-                Base::Min(First.mMaximumY, Second.mMaximumY));
+                Math::Min(First.mMinimumX, Second.mMinimumX),
+                Math::Min(First.mMinimumY, Second.mMinimumY),
+                Math::Min(First.mMaximumX, Second.mMaximumX),
+                Math::Min(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Returns the component-wise maximum of two rectangles.
@@ -725,10 +725,10 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyRect Max(AnyRect First, AnyRect Second)
         {
             return AnyRect(
-                Base::Max(First.mMinimumX, Second.mMinimumX),
-                Base::Max(First.mMinimumY, Second.mMinimumY),
-                Base::Max(First.mMaximumX, Second.mMaximumX),
-                Base::Max(First.mMaximumY, Second.mMaximumY));
+                Math::Max(First.mMinimumX, Second.mMinimumX),
+                Math::Max(First.mMinimumY, Second.mMinimumY),
+                Math::Max(First.mMaximumX, Second.mMaximumX),
+                Math::Max(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Returns a rectangle with all coordinates floored to the nearest integer.
@@ -739,10 +739,10 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             return AnyRect(
-                Base::Floor(Rectangle.mMinimumX),
-                Base::Floor(Rectangle.mMinimumY),
-                Base::Floor(Rectangle.mMaximumX),
-                Base::Floor(Rectangle.mMaximumY));
+                Math::Floor(Rectangle.mMinimumX),
+                Math::Floor(Rectangle.mMinimumY),
+                Math::Floor(Rectangle.mMaximumX),
+                Math::Floor(Rectangle.mMaximumY));
         }
 
         /// \brief Returns a rectangle with all coordinates ceiled to the nearest integer.
@@ -753,10 +753,10 @@ inline namespace Math
             requires(IsReal<Type>)
         {
             return AnyRect(
-                Base::Ceil(Rectangle.mMinimumX),
-                Base::Ceil(Rectangle.mMinimumY),
-                Base::Ceil(Rectangle.mMaximumX),
-                Base::Ceil(Rectangle.mMaximumY));
+                Math::Ceil(Rectangle.mMinimumX),
+                Math::Ceil(Rectangle.mMinimumY),
+                Math::Ceil(Rectangle.mMaximumX),
+                Math::Ceil(Rectangle.mMaximumY));
         }
 
         /// \brief Returns the intersection of two rectangles.
@@ -766,10 +766,10 @@ inline namespace Math
         /// \return A rectangle representing the overlapping region. If they don't overlap, the rect may be invalid.
         ZYPHRYON_INLINE static constexpr AnyRect Intersection(AnyRect First, AnyRect Second)
         {
-            const Type MinimumX = Base::Max(First.mMinimumX, Second.mMinimumX);
-            const Type MinimumY = Base::Max(First.mMinimumY, Second.mMinimumY);
-            const Type MaximumX = Base::Min(First.mMaximumX, Second.mMaximumX);
-            const Type MaximumY = Base::Min(First.mMaximumY, Second.mMaximumY);
+            const Type MinimumX = Math::Max(First.mMinimumX, Second.mMinimumX);
+            const Type MinimumY = Math::Max(First.mMinimumY, Second.mMinimumY);
+            const Type MaximumX = Math::Min(First.mMaximumX, Second.mMaximumX);
+            const Type MaximumY = Math::Min(First.mMaximumY, Second.mMaximumY);
 
             if (MaximumX > MinimumX && MaximumY > MinimumY)
             {
@@ -786,10 +786,10 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyRect Union(AnyRect First, AnyRect Second)
         {
             return AnyRect(
-                Base::Min(First.mMinimumX, Second.mMinimumX),
-                Base::Min(First.mMinimumY, Second.mMinimumY),
-                Base::Max(First.mMaximumX, Second.mMaximumX),
-                Base::Max(First.mMaximumY, Second.mMaximumY));
+                Math::Min(First.mMinimumX, Second.mMinimumX),
+                Math::Min(First.mMinimumY, Second.mMinimumY),
+                Math::Max(First.mMaximumX, Second.mMaximumX),
+                Math::Max(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Computes an integer-aligned rectangle that fully encloses the given rectangle.
@@ -800,10 +800,10 @@ inline namespace Math
         ZYPHRYON_INLINE static constexpr AnyRect<Target> Enclose(AnyRect Rectangle)
             requires(IsReal<Type> && IsIntegral<Target>)
         {
-            const Target MinimumX = static_cast<Target>(Base::Floor(Rectangle.mMinimumX));
-            const Target MinimumY = static_cast<Target>(Base::Floor(Rectangle.mMinimumY));
-            const Target MaximumX = static_cast<Target>(Base::Ceil(Rectangle.mMaximumX));
-            const Target MaximumY = static_cast<Target>(Base::Ceil(Rectangle.mMaximumY));
+            const Target MinimumX = static_cast<Target>(Math::Floor(Rectangle.mMinimumX));
+            const Target MinimumY = static_cast<Target>(Math::Floor(Rectangle.mMinimumY));
+            const Target MaximumX = static_cast<Target>(Math::Ceil(Rectangle.mMaximumX));
+            const Target MaximumY = static_cast<Target>(Math::Ceil(Rectangle.mMaximumY));
 
             return AnyRect<Target>(MinimumX, MinimumY, MaximumX, MaximumY);
         }
@@ -868,19 +868,22 @@ inline namespace Math
         ZYPHRYON_INLINE static AnyRect Transform(AnyRect Rectangle, ConstRef<Matrix3x2> Matrix)
             requires (IsReal<Type>)
         {
-            const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
-                                  Rectangle.GetMaximumX(), Rectangle.GetMinimumX());
-            const Vector4 CornerY(Rectangle.GetMaximumY(), Rectangle.GetMaximumY(),
-                                  Rectangle.GetMinimumY(), Rectangle.GetMinimumY());
+            const Real32 MinX = Rectangle.GetMinimumX();
+            const Real32 MaxX = Rectangle.GetMaximumX();
+            const Real32 MinY = Rectangle.GetMinimumY();
+            const Real32 MaxY = Rectangle.GetMaximumY();
 
-            const Vector4 C0 = Matrix.GetColumn(0);
-            const Vector4 C1 = Matrix.GetColumn(1);
+            const Vector2 P0 = Matrix3x2::Project(Matrix, Vector2(MinX, MaxY));
+            const Vector2 P1 = Matrix3x2::Project(Matrix, Vector2(MaxX, MaxY));
+            const Vector2 P2 = Matrix3x2::Project(Matrix, Vector2(MaxX, MinY));
+            const Vector2 P3 = Matrix3x2::Project(Matrix, Vector2(MinX, MinY));
 
-            const Vector4 PX = CornerX * Vector4::SplatX(C0) + CornerY * Vector4::SplatX(C1) + Vector4::SplatZ(C0);
-            const Vector4 PY = CornerX * Vector4::SplatY(C0) + CornerY * Vector4::SplatY(C1) + Vector4::SplatZ(C1);
+            const Real32 OutMinX = Min(Min(P0.GetX(), P1.GetX()), Min(P2.GetX(), P3.GetX()));
+            const Real32 OutMaxX = Max(Max(P0.GetX(), P1.GetX()), Max(P2.GetX(), P3.GetX()));
+            const Real32 OutMinY = Min(Min(P0.GetY(), P1.GetY()), Min(P2.GetY(), P3.GetY()));
+            const Real32 OutMaxY = Max(Max(P0.GetY(), P1.GetY()), Max(P2.GetY(), P3.GetY()));
 
-            return AnyRect(Vector4::HorizontalMin(PX), Vector4::HorizontalMin(PY),
-                           Vector4::HorizontalMax(PX), Vector4::HorizontalMax(PY));
+            return AnyRect(OutMinX, OutMinY, OutMaxX, OutMaxY);
         }
 
         /// \brief Iterates over the difference bands between two rectangles, invoking a callback for each band.

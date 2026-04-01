@@ -496,7 +496,7 @@ namespace Graphic
         ZYPHRYON_INLINE Vector3 GetWorldCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
-            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+            LOG_ASSERT(!Math::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
             const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
@@ -514,7 +514,7 @@ namespace Graphic
         ZYPHRYON_INLINE Vector2 GetWorldCoordinates(Vector2 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
-            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+            LOG_ASSERT(!Math::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
             const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
@@ -531,7 +531,7 @@ namespace Graphic
         ZYPHRYON_INLINE Vector3 GetScreenCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
-            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+            LOG_ASSERT(!Math::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
             const Vector3 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 
@@ -551,7 +551,7 @@ namespace Graphic
         ZYPHRYON_INLINE Vector2 GetScreenCoordinates(Vector2 Position, ConstRef<Viewport> Viewport) const
         {
             LOG_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
-            LOG_ASSERT(!Base::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
+            LOG_ASSERT(!Math::IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
             const Vector2 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 

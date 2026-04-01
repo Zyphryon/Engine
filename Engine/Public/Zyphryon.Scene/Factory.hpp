@@ -9,31 +9,15 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Content/Service.hpp"
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 namespace Scene
 {
-    /// \brief Concept to check if a type supports resolution of deferred dependencies.
-    template<typename Type>
-    concept CanResolve = requires(Ref<Type> Object, Ref<Content::Service> Content)
-    {
-        Object.OnResolve(Content);
-    };
-
     /// \brief Handles serialization and deserialization for a specific component type.
     class Factory final
     {
     public:
-
-        /// \brief Type alias for resolver function.
-        using Resolver   = void (*)(Ref<Content::Service>, Ptr<void>);
 
         /// \brief Type alias for serializer functions.
         template<typename Type>
@@ -48,11 +32,9 @@ namespace Scene
         ///
         /// \param Reader   Function pointer used for deserialization.
         /// \param Writer   Function pointer used for serialization.
-        /// \param Resolver Function pointer used for resolving dependencies.
-        ZYPHRYON_INLINE Factory(Serializer<Reader> Reader, Serializer<Writer> Writer, Resolver Resolver)
-            : mReader   { Reader },
-              mWriter   { Writer },
-              mResolver { Resolver }
+        ZYPHRYON_INLINE Factory(Serializer<Reader> Reader, Serializer<Writer> Writer)
+            : mReader { Reader },
+              mWriter { Writer }
         {
         }
 
@@ -74,15 +56,6 @@ namespace Scene
             mWriter(Archive(Writer), Component);
         }
 
-        /// \brief Resolves deferred dependencies for a component.
-        ///
-        /// \param Service   The service used to load deferred resources.
-        /// \param Component Pointer to the raw memory of the component instance.
-        ZYPHRYON_INLINE void Resolve(Ref<Content::Service> Service, Ptr<void> Component) const
-        {
-            mResolver(Service, Component);
-        }
-
     public:
 
         /// \brief Creates a Factory instance for a specific component type.
@@ -93,7 +66,7 @@ namespace Scene
         template<typename Component>
         ZYPHRYON_INLINE static Factory Create()
         {
-            return Factory(&OnRead<Component>, &OnWrite<Component>, &OnResolve<Component>);
+            return Factory(&OnRead<Component>, &OnWrite<Component>);
         }
 
     private:
@@ -124,19 +97,6 @@ namespace Scene
             }
         }
 
-        /// \brief Static resolve callback for deferred component dependencies.
-        ///
-        /// \param Content   The content service used for resolving dependencies.
-        /// \param Component Pointer to the raw memory of the component instance.
-        template<typename Type>
-        ZYPHRYON_INLINE static void OnResolve(Ref<Content::Service> Content, Ptr<void> Component)
-        {
-            if constexpr (CanResolve<Type>)
-            {
-                static_cast<Ptr<Type>>(Component)->OnResolve(Content);
-            }
-        }
-
     protected:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -144,6 +104,5 @@ namespace Scene
 
         Serializer<Reader> mReader;
         Serializer<Writer> mWriter;
-        Resolver           mResolver;
     };
 }

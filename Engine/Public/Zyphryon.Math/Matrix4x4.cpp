@@ -66,11 +66,11 @@ inline namespace Math
         //       SubFactor06 = m[1][2] * m[3][3] - m[3][2] * m[1][3]
         //       SubFactor13 = m[1][2] * m[2][3] - m[2][2] * m[1][3]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
 
             Fac0 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -80,11 +80,11 @@ inline namespace Math
         //       SubFactor07 = m[1][1] * m[3][3] - m[3][1] * m[1][3]
         //       SubFactor14 = m[1][1] * m[2][3] - m[2][1] * m[1][3]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
 
             Fac1 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -94,11 +94,11 @@ inline namespace Math
         //       SubFactor08 = m[1][1] * m[3][2] - m[3][1] * m[1][2]
         //       SubFactor15 = m[1][1] * m[2][2] - m[2][1] * m[1][2]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
 
             Fac2 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -108,11 +108,11 @@ inline namespace Math
         //       SubFactor09 = m[1][0] * m[3][3] - m[3][0] * m[1][3]
         //       SubFactor16 = m[1][0] * m[2][3] - m[2][0] * m[1][3]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<3, 3, 3, 3>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<3, 3, 3, 3>(Col2, Col1);
 
             Fac3 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -122,11 +122,11 @@ inline namespace Math
         //       SubFactor10 = m[1][0] * m[3][2] - m[3][0] * m[1][2]
         //       SubFactor17 = m[1][0] * m[2][2] - m[2][0] * m[1][2]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<2, 2, 2, 2>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<2, 2, 2, 2>(Col2, Col1);
 
             Fac4 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -136,11 +136,11 @@ inline namespace Math
         //       SubFactor12 = m[1][0] * m[3][1] - m[3][0] * m[1][1]
         //       SubFactor18 = m[1][0] * m[2][1] - m[2][0] * m[1][1]
         {
-            const Vector4 Swp0a = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
+            const Vector4 Swp0A = Vector4::Swizzle<1, 1, 1, 1>(Col3, Col2);
+            const Vector4 Swp0B = Vector4::Swizzle<0, 0, 0, 0>(Col3, Col2);
             const Vector4 Swp00 = Vector4::Swizzle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0a);
-            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0b);
+            const Vector4 Swp01 = Vector4::Swizzle<2, 0, 0, 0>(Swp0A);
+            const Vector4 Swp02 = Vector4::Swizzle<2, 0, 0, 0>(Swp0B);
             const Vector4 Swp03 = Vector4::Swizzle<1, 1, 1, 1>(Col2, Col1);
 
             Fac5 = (Swp00 * Swp01) - (Swp02 * Swp03);
@@ -177,9 +177,9 @@ inline namespace Math
         const Real32 Len0 = Vector4::Dot3(Matrix.mColumns[0], Matrix.mColumns[0]);
         const Real32 Len1 = Vector4::Dot3(Matrix.mColumns[1], Matrix.mColumns[1]);
         const Real32 Len2 = Vector4::Dot3(Matrix.mColumns[2], Matrix.mColumns[2]);
-        LOG_ASSERT(!Base::IsAlmostZero(Len0) &&
-                   !Base::IsAlmostZero(Len1) &&
-                   !Base::IsAlmostZero(Len2), "Invalid affine matrix: zero-length basis vector");
+        LOG_ASSERT(!Math::IsAlmostZero(Len0) &&
+                   !Math::IsAlmostZero(Len1) &&
+                   !Math::IsAlmostZero(Len2), "Invalid affine matrix: zero-length basis vector");
 
         const Vector4 Col0 = Matrix.mColumns[0] * (Len0 < kEpsilon<Real32> ? 1.0f : 1.0f / Len0);
         const Vector4 Col1 = Matrix.mColumns[1] * (Len1 < kEpsilon<Real32> ? 1.0f : 1.0f / Len1);
@@ -211,7 +211,7 @@ inline namespace Math
 
     Matrix4x4 Matrix4x4::CreatePerspective(Angle FovY, Real32 Aspect, Real32 ZNear, Real32 ZFar)
     {
-        LOG_ASSERT(!Base::IsAlmostZero(ZFar - ZNear), "Invalid perspective matrix: near/far planes too close");
+        LOG_ASSERT(!Math::IsAlmostZero(ZFar - ZNear), "Invalid perspective matrix: near/far planes too close");
         LOG_ASSERT(ZFar > ZNear, "Invalid perspective matrix: ZFar must be greater than ZNear");
 
         const Real32 ScaleY = 1.0f / Angle::Tangent(FovY * 0.5f);
@@ -229,9 +229,9 @@ inline namespace Math
 
     Matrix4x4 Matrix4x4::CreateOrthographic(Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar)
     {
-        LOG_ASSERT(!Base::IsAlmostZero(Right - Left), "Invalid orthographic matrix: width is zero");
-        LOG_ASSERT(!Base::IsAlmostZero(Top - Bottom), "Invalid orthographic matrix: height is zero");
-        LOG_ASSERT(!Base::IsAlmostZero(ZFar - ZNear), "Invalid orthographic matrix: depth is zero");
+        LOG_ASSERT(!Math::IsAlmostZero(Right - Left), "Invalid orthographic matrix: width is zero");
+        LOG_ASSERT(!Math::IsAlmostZero(Top - Bottom), "Invalid orthographic matrix: height is zero");
+        LOG_ASSERT(!Math::IsAlmostZero(ZFar - ZNear), "Invalid orthographic matrix: depth is zero");
         LOG_ASSERT(ZFar > ZNear, "Invalid orthographic matrix: ZFar must be greater than ZNear");
 
         const Real32 InvWidth  = 1.0f / (Right - Left);
