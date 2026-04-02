@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Common.hpp"
+#include "Concept.hpp"
 #include <flecs.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -21,6 +22,7 @@
 
 namespace Scene
 {
+
     /// \brief Represents an entity within the ECS (Entity-Component System).
     ///
     /// An entity is a lightweight handle or identifier that serves as a container for components and tags.
@@ -204,6 +206,17 @@ namespace Scene
             return (* this);
         }
 
+        /// \brief Adds a pair consisting of two component types.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Add() const
+        {
+            return Add<typename Pair::First, typename Pair::Second>();
+        }
+
         /// \brief Adds a pair consisting of two entities.
         ///
         /// \param Tag       The entity used as the pair's first element.
@@ -243,6 +256,19 @@ namespace Scene
 
         /// \brief Sets or replaces the data of a pair on this entity.
         ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        /// \param Data  The component data for the pair's second element.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Set(AnyRef<typename Pair::Second> Data) const
+        {
+            mHandle.set_second<typename Pair::First>(Move(Data));
+            return (* this);
+        }
+
+        /// \brief Sets or replaces the data of a pair on this entity.
+        ///
         /// \param Tag  The entity used as the pair's first element.
         /// \param Data The component data for the pair's second element.
         ///
@@ -277,6 +303,18 @@ namespace Scene
         ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace<Tag, Component>(Forward<Arguments>(Parameters)...);
+            return (* this);
+        }
+
+        /// \brief Constructs a pair in-place on this entity.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair, typename... Arguments>
+        ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(AnyRef<Arguments>... Parameters) const
+        {
+            mHandle.emplace<typename Pair::First, typename Pair::Second>(Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -362,6 +400,17 @@ namespace Scene
             return (* this);
         }
 
+        /// \brief Removes a pair from this entity.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Remove() const
+        {
+            return Remove<typename Pair::First, typename Pair::Second>();
+        }
+
         /// \brief Removes a pair from this entity, with a tag type and target entity.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
@@ -418,6 +467,17 @@ namespace Scene
         ZYPHRYON_INLINE Bool Has() const
         {
             return mHandle.has<Tag, Target>();
+        }
+
+        /// \brief Checks whether this entity has a specific pair of entities.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return `true` if the entity has the specified pair, `false` otherwise.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE Bool Has() const
+        {
+            return Has<typename Pair::First, typename Pair::Second>();
         }
 
         /// \brief Checks whether this entity has a specific pair of entities.
@@ -501,6 +561,17 @@ namespace Scene
             }
         }
 
+        /// \brief Retrieves a pointer to a pair,.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A pointer to the component data, or nullptr if not present.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE decltype(auto) TryGetPair() const
+        {
+            return TryGetPair<typename Pair::First, typename Pair::Second>();
+        }
+
         /// \brief Retrieves a reference to a component on this entity.
         ///
         /// \tparam Component The component type to retrieve.
@@ -538,6 +609,17 @@ namespace Scene
             }
         }
 
+        /// \brief Retrieves a reference to a pair, where both elements are types.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the component data.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE decltype(auto) GetPair() const
+        {
+            return GetPair<typename Pair::First, typename Pair::Second>();
+        }
+
         /// \brief Marks a component as modified on this entity.
         ///
         /// \tparam Component The component type to notify.
@@ -572,6 +654,17 @@ namespace Scene
         {
             mHandle.modified<Tag, Target>();
             return (* this);
+        }
+
+        /// \brief Marks a pair as modified on this entity.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Notify() const
+        {
+            return Notify<typename Pair::First, typename Pair::Second>();
         }
 
         /// \brief Marks a pair as modified on this entity, using two entities.
@@ -622,6 +715,17 @@ namespace Scene
             return (* this);
         }
 
+        /// \brief Enables a pair of types on this entity.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Enable() const
+        {
+            return Enable<typename Pair::First, typename Pair::Second>();
+        }
+
         /// \brief Enables a pair of entities on this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
@@ -668,6 +772,17 @@ namespace Scene
         {
             mHandle.disable<Tag, Target>();
             return (* this);
+        }
+
+        /// \brief Disables a pair of types on this entity.
+        ///
+        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
+        ///
+        /// \return A reference to the updated entity.
+        template<IsPairDSL Pair>
+        ZYPHRYON_INLINE ConstRef<Entity> Disable() const
+        {
+            return Disable<typename Pair::First, typename Pair::Second>();
         }
 
         /// \brief Disables a pair of entities on this entity.
