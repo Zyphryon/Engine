@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Primitive.hpp"
+#include <bit>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,6 +21,18 @@
 
 inline namespace Bit
 {
+    /// \brief Reinterprets the bits of a value as a different type.
+    ///
+    /// \tparam Target The type to which the bits will be reinterpreted.
+    /// \tparam Source The type of the input value whose bits will be reinterpreted.
+    /// \param Value   The value to reinterpret as the target type.
+    /// \return The reinterpreted value of the target type.
+    template<typename Target, typename Source>
+    static constexpr Target BitCast(ConstRef<Source> Value)
+    {
+        return std::bit_cast<Target>(Value);
+    }
+
     /// \brief Extracts specific bits from a field based on an offset and mask.
     ///
     /// \param Field  The field from which to extract bits.

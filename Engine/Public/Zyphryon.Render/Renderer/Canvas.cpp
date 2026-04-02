@@ -184,7 +184,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::DrawText(ConstRef<Text> Text, ConstStr8 Content, ConstRef<Matrix3x2> Transform, Real32 Order, UInt8 Effect)
+    void Canvas::DrawText(ConstRef<Text> Text, ConstStr8 Content, ConstRef<Matrix3x2> Transform, Real32 Order, UInt32 Effect)
     {
         ConstTracker<Font> Font = Text.GetFont();
 
@@ -224,7 +224,7 @@ namespace Render
                         Ref<GlyphCommand> Command = mGlyphs.emplace_back();
 
                         Command.Material         = Material;
-                        Command.Layout.Transform.SetData(Transform, Order);
+                        Command.Layout.Transform.SetData(Transform, Order, BitCast<Real32>(Effect));
                         Command.Layout.Frame     = Glyph->AtlasBounds;
                         Command.Layout.Offset.Set(
                             CurrentX + Glyph->LocalBounds.GetX() * Size,
@@ -233,7 +233,6 @@ namespace Render
                             Glyph->LocalBounds.GetWidth()  * Size,
                             Glyph->LocalBounds.GetHeight() * Size);
                         Command.Layout.Color     = Text.GetTint();
-                        Command.Layout.Effect    = Effect;
 
                         mCollector.Push(
                             Collector::Object(Type, mGlyphs.size() - 1),

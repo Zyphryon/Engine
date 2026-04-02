@@ -41,7 +41,6 @@ struct vs_Input
     float4   Frame      : TEXCOORD0;
     float4   Local      : CUSTOM2;
     float4   Color      : COLOR0;
-    uint     Effect     : CUSTOM3;
 };
 
 struct ps_Input
@@ -79,7 +78,7 @@ ps_Input vertex(vs_Input Input)
     Result.Position = mul(u_Camera, float4(Position, Input.Transform0.w, 1.0));
     Result.Texture  = lerp(Input.Frame.xy, Input.Frame.zw, Corner);
     Result.Color    = Input.Color;
-    Result.Effect   = Input.Effect;
+    Result.Effect   = asuint(Input.Transform1.w);
 
     return Result;
 }
@@ -93,7 +92,7 @@ float Median(float3 Color)
 
 float Spread(float2 Coordinates, float2 Unit)
 {
-    return max(0.5 * dot(Unit, 1.0 / fwidth(Coordinates)), 1.0);
+    return max(dot(Unit, 1.0 / fwidth(Coordinates)) * 0.5, 1.0);
 }
 
 float4 fragment(ps_Input Input) : SV_Target
@@ -108,15 +107,14 @@ float4 fragment(ps_Input Input) : SV_Target
     const float  Scale = Spread(Input.Texture, u_Range);
 
     // Interpolated distance field depending on rounded vs sharp style.
-    const float InnerStrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
-    const float OuterStrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
+    const float StrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
+    const float StrokeBase     = StrokeDistance - FontParameters.u_InsetThreshold;
 
     // Convert distance to alpha coverage.
-    const float InnerStrokeA = Scale * (InnerStrokeDistance - FontParameters.u_InsetThreshold)
+    const float InnerStrokeA = Scale * (StrokeBase)
             + 0.5
             + FontParameters.u_OutsetOffset;
-    const float OuterStrokeA = Scale * (OuterStrokeDistance - FontParameters.u_InsetThreshold
-            + FontParameters.u_OutsetWidthRelative)
+    const float OuterStrokeA = Scale * (StrokeBase + FontParameters.u_OutsetWidthRelative)
             + 0.5
             + FontParameters.u_OutsetOffset
             + FontParameters.u_OutsetWidthAbsolute;

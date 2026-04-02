@@ -227,7 +227,7 @@ namespace Render
         template<UInt32 Bits = 24>
         ZYPHRYON_INLINE static UInt32 DepthToBits(Real32 Depth)
         {
-            const UInt32 Raw   = std::bit_cast<UInt32>(Depth);
+            const UInt32 Raw   = BitCast<UInt32>(Depth);
             const UInt32 Mask  = -static_cast<SInt32>(Raw >> 31) | 0x80000000u;
             return (Raw ^ Mask) >> (32 - Bits);
         }

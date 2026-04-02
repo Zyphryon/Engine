@@ -21,8 +21,7 @@
         ["CUSTOM1",   "Float32x4",   0, 16, 1],
         ["TEXCOORD0", "Float32x4",   0, 32, 1],
         ["CUSTOM2",   "Float32x4",   0, 48, 1],
-        ["COLOR0",    "UIntNorm8x4", 0, 64, 1],
-        ["CUSTOM3",   "UInt8x4",     0, 68, 1]
+        ["COLOR0",    "UIntNorm8x4", 0, 64, 1]
     ]
 
     Primitive       = "TriangleStrip"
