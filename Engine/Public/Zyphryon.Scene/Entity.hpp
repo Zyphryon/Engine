@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Common.hpp"
-#include "Concept.hpp"
 #include <flecs.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -22,7 +21,6 @@
 
 namespace Scene
 {
-
     /// \brief Represents an entity within the ECS (Entity-Component System).
     ///
     /// An entity is a lightweight handle or identifier that serves as a container for components and tags.
@@ -157,7 +155,7 @@ namespace Scene
             return mHandle.enabled();
         }
 
-        /// \brief Adds a tag component to this entity.
+        /// \brief Adds a tag component to this entity to this entity.
         ///
         /// \tparam Tag The tag type to add.
         ///
@@ -169,7 +167,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a component identified by an entity.
+        /// \brief Adds a component identified by an entity to this entity.
         ///
         /// \param Component The entity that represents the component.
         ///
@@ -180,7 +178,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a pair consisting of a tag type and a target entity.
+        /// \brief Adds a value pair component to this entity.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -193,7 +191,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a pair consisting of two component types.
+        /// \brief Adds a relationship pair component to this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -206,7 +204,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a pair consisting of two component types.
+        /// \brief Adds a relationship pair component to this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -217,7 +215,7 @@ namespace Scene
             return Add<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Adds a pair consisting of two entities.
+        /// \brief Adds a pair component to this entity.
         ///
         /// \param Tag       The entity used as the pair's first element.
         /// \param Component The entity used as the pair's second element.
@@ -241,7 +239,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Sets or replaces the data of a pair on this entity.
+        /// \brief Sets or replaces the data of a pair component on this entity.
         ///
         /// \tparam Tag The tag type used as the pair's first element.
         /// \param Data The component data for the pair's second element.
@@ -254,7 +252,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Sets or replaces the data of a pair on this entity.
+        /// \brief Sets or replaces the data of a pair component on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         /// \param Data  The component data for the pair's second element.
@@ -267,7 +265,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Sets or replaces the data of a pair on this entity.
+        /// \brief Sets or replaces the data of a pair component on this entity.
         ///
         /// \param Tag  The entity used as the pair's first element.
         /// \param Data The component data for the pair's second element.
@@ -292,7 +290,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a pair in-place on this entity, with a tag type and component type.
+        /// \brief Constructs a pair component in-place on this entity.
         ///
         /// \tparam Tag       The tag type used as the pair's first element.
         /// \tparam Component The component type used as the pair's second element.
@@ -306,7 +304,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a pair in-place on this entity.
+        /// \brief Constructs a pair component in-place on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -318,7 +316,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a pair in-place on this entity, with a tag entity and component type.
+        /// \brief Constructs a pair component in-place on this entity.
         ///
         /// \param Tag        The entity used as the pair's first element.
         /// \param Parameters The constructor parameters for the component.
@@ -335,36 +333,36 @@ namespace Scene
         ///
         /// \param Component The component entity to ensure.
         ///
-        /// \return Pointer to the component data.
+        /// \return A pointer to the component data.
         ZYPHRYON_INLINE Ptr<void> Ensure(Entity Component) const
         {
             return mHandle.ensure(Component.GetID());
         }
 
-        /// \brief Ensures a pair exists on this entity, with a tag type and target entity.
+        /// \brief Ensures a pair component exists on this entity.
         ///
-        /// \tparam Tag  The tag type used as the pair's first element.
+        /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return Pointer to the component data.
+        /// \return A pointer to the component data.
         template<typename Tag>
         ZYPHRYON_INLINE Ptr<void> Ensure(Entity Target) const
         {
             return mHandle.ensure<Tag>(Target.GetID());
         }
 
-        /// \brief Ensures a pair exists on this entity, with two entities.
+        /// \brief Ensures a pair component exists on this entity.
         ///
         /// \param Tag       The entity used as the pair's first element.
         /// \param Component The entity used as the pair's second element.
         ///
-        /// \return Pointer to the component data.
+        /// \return A pointer to the component data.
         ZYPHRYON_INLINE Ptr<void> Ensure(Entity Tag, Entity Component) const
         {
             return mHandle.ensure(Tag.GetID(), Component.GetID());
         }
 
-        /// \brief Removes a component from this entity.
+        /// \brief Removes a component or tag from this entity.
         ///
         /// \tparam Component The component type to remove.
         ///
@@ -387,7 +385,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair from this entity, using two component types.
+        /// \brief Removes a pair component from this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -400,7 +398,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair from this entity.
+        /// \brief Removes a pair component from this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -411,7 +409,7 @@ namespace Scene
             return Remove<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Removes a pair from this entity, with a tag type and target entity.
+        /// \brief Removes a pair component from this entity.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -424,7 +422,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair from this entity, with two entities.
+        /// \brief Removes a pair component from this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -436,7 +434,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Checks whether this entity has a given component.
+        /// \brief Checks whether this entity has a specific component.
         ///
         /// \tparam Component The component type to check for.
         ///
@@ -447,7 +445,7 @@ namespace Scene
             return mHandle.has<Component>();
         }
 
-        /// \brief Checks whether this entity has a given component or tag entity.
+        /// \brief Checks whether this entity has a specific component.
         ///
         /// \param Component The entity representing the component or tag.
         ///
@@ -457,7 +455,7 @@ namespace Scene
             return mHandle.has(Component.GetID());
         }
 
-        /// \brief Checks whether this entity has a specific pair of types.
+        /// \brief Checks whether this entity has a specific pair component.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -469,7 +467,7 @@ namespace Scene
             return mHandle.has<Tag, Target>();
         }
 
-        /// \brief Checks whether this entity has a specific pair of entities.
+        /// \brief Checks whether this entity has a specific pair component.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -480,7 +478,7 @@ namespace Scene
             return Has<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Checks whether this entity has a specific pair of entities.
+        /// \brief Checks whether this entity has a specific pair component.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -491,7 +489,17 @@ namespace Scene
             return mHandle.has(Tag.GetID(), Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a component on this entity if it exists.
+        /// \brief Retrieves a pointer to a component on this entity.
+        ///
+        /// \param Component The entity representing the component.
+        ///
+        /// \return A pointer to the component data, or nullptr if not present.
+        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
+        {
+            return mHandle.try_get_mut(Component.GetID());
+        }
+
+        /// \brief Retrieves a pointer to a component on this entity.
         ///
         /// \tparam Component The component type to retrieve.
         ///
@@ -509,17 +517,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a pointer to a component represented by an entity.
-        ///
-        /// \param Component The entity representing the component.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
-        {
-            return mHandle.try_get_mut(Component.GetID());
-        }
-
-        /// \brief Retrieves a pointer to a pair, where the first element is a tag type and the second is an entity.
+        /// \brief Retrieves a pointer to a pair component on this entity.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -531,7 +529,7 @@ namespace Scene
             return mHandle.try_get_mut<Tag>(Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a pair, where both elements are entities.
+        /// \brief Retrieves a pointer to a pair component on this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -542,7 +540,7 @@ namespace Scene
             return mHandle.try_get_mut(Tag.GetID(), Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a pair, where both elements are types.
+        /// \brief Retrieves a pointer to a pair component on this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -561,7 +559,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a pointer to a pair,.
+        /// \brief Retrieves a pointer to a pair component on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -590,7 +588,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a pair, where both elements are types.
+        /// \brief Retrieves a reference to a pair component on this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -609,7 +607,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a pair, where both elements are types.
+        /// \brief Retrieves a reference to a pair component on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -643,7 +641,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Marks a pair as modified on this entity, using two types.
+        /// \brief Marks a pair component as modified on this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -656,7 +654,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Marks a pair as modified on this entity.
+        /// \brief Marks a pair component as modified on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -667,7 +665,7 @@ namespace Scene
             return Notify<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Marks a pair as modified on this entity, using two entities.
+        /// \brief Marks a pair component as modified on this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -702,7 +700,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Enables a pair of types on this entity.
+        /// \brief Enables a pair component on this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -715,7 +713,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Enables a pair of types on this entity.
+        /// \brief Enables a pair component on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -726,7 +724,7 @@ namespace Scene
             return Enable<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Enables a pair of entities on this entity.
+        /// \brief Enables a pair component on this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -761,7 +759,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Disables a pair of types on this entity.
+        /// \brief Disable a pair component on this entity.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -774,7 +772,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Disables a pair of types on this entity.
+        /// \brief Disable a pair component on this entity.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -785,7 +783,7 @@ namespace Scene
             return Disable<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Disables a pair of entities on this entity.
+        /// \brief Disable a pair component on this entity.
         ///
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
@@ -1030,7 +1028,7 @@ namespace Scene
         /// \brief Conditionally enables or disables a component on the specified entity.
         ///
         /// \tparam Component The type of component to toggle.
-        /// \tparam Enable    If `true`, the component will be enabled. If `false`, the component will be disabled.
+        /// \tparam Enable    If `true`, the component will be enabled, otherwise the component will be disabled.
         /// \param Actor The target entity on which to toggle the component state.
         template<typename Component, Bool Enable>
         ZYPHRYON_INLINE static void ToggleComponent(Entity Actor)
@@ -1048,7 +1046,7 @@ namespace Scene
         /// \brief Recursively enables or disables a component on the specified entity and all its children.
         ///
         /// \tparam Component The type of component to toggle throughout the hierarchy.
-        /// \tparam Enable    If `true`, the component will be enabled. If `false`, the component will be disabled.
+        /// \tparam Enable    If `true`, the component will be enabled, otherwise the component will be disabled.
         /// \param Actor The root entity of the hierarchy on which to start the operation.
         template<typename Component, Bool Enable>
         ZYPHRYON_INLINE static void ToggleComponentInHierarchy(Entity Actor)
