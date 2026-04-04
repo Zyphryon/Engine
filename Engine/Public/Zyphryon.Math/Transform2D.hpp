@@ -66,21 +66,13 @@ inline namespace Math
             SetTranslation(Translation);
         }
 
-        /// \brief Computes the final transformation matrix.
-        /// 
-        /// \return A 3x2 transformation matrix that combines translation, scale, rotation and skew.
-        ZYPHRYON_INLINE Matrix3x2 Compute() const
-        {
-            return Matrix3x2::FromTransform(mTranslation, mScale, mRotation, mSkew);
-        }
-
         /// \brief Computes the final transformation matrix with an origin point.
         ///
-        /// \param Origin The origin point for rotation and scale.
+        /// \param Origin The center point for rotation, scale, and skew operations.
         /// \return A 3x2 transformation matrix that combines translation, scale, rotation and skew with the specified origin.
-        ZYPHRYON_INLINE Matrix3x2 Compute(Vector2 Origin) const
+        ZYPHRYON_INLINE Matrix3x2 Compute(Vector2 Origin = Vector2()) const
         {
-            return Matrix3x2::FromTransform(mTranslation, mScale, mRotation, mSkew, Origin);
+            return Matrix3x2::FromTransform(Origin, mTranslation, mScale, mRotation, mSkew);
         }
 
         /// \brief Sets the translation vector for the transform in 2D space.

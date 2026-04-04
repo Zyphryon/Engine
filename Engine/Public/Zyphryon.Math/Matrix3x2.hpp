@@ -278,39 +278,15 @@ inline namespace Math
             return FromSkew(Angle(), Y);
         }
 
-        /// \brief Creates a transformation matrix from translation, scale, and rotation components.
-        ///
-        /// \param Translation The translation vector.
-        /// \param Scale       The scale vector.
-        /// \param Rotation    The rotation angle.
-        /// \param Skew        The skew angles along the X and Y axes.
-        /// \return A transformation matrix that combines the specified translation, scale, and rotation.
-        ZYPHRYON_INLINE static Matrix3x2 FromTransform(Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
-        {
-            const Real32 C = Angle::Cosine(Rotation);
-            const Real32 S = Angle::Sine(Rotation);
-            const Real32 U = Angle::Tangent(Skew.GetX());
-            const Real32 T = Angle::Tangent(Skew.GetY());
-
-            const Real32 M00 =  C * Scale.GetX() + U * S * Scale.GetY();
-            const Real32 M10 =  S * Scale.GetX() + U * C * Scale.GetY();
-            const Real32 M20 = Translation.GetX();
-            const Real32 M01 = -S * Scale.GetX() + T * C * Scale.GetY();
-            const Real32 M11 =  C * Scale.GetX() + T * S * Scale.GetY();
-            const Real32 M21 = Translation.GetY();
-
-            return Matrix3x2(M00, M10, M20, M01,  M11, M21);
-        }
-
         /// \brief Creates a transformation matrix from translation, scale, rotation, and origin components.
         ///
-        /// \param Translation The translation vector.
-        /// \param Scale       The scale vector.
-        /// \param Rotation    The rotation angle.
-        /// \param Skew        The skew angles along the X and Y axes.
-        /// \param Origin      The origin point for rotation and scale.
+        /// \param Origin      The center point for rotation, scale, and skew operations.
+        /// \param Translation The final position offset applied after all other transformations.
+        /// \param Scale       The scaling factors along the X and Y axes.
+        /// \param Rotation    The rotation angle (in radians or degrees based on Angle type).
+        /// \param Skew        The shear angles: X skew shears along X axis, Y skew along Y axis.
         /// \return A transformation matrix that combines the specified translation, scale, rotation, and origin.
-        ZYPHRYON_INLINE static Matrix3x2 FromTransform(Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew, Vector2 Origin)
+        ZYPHRYON_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
         {
             const Real32 C = Angle::Cosine(Rotation);
             const Real32 S = Angle::Sine(Rotation);
