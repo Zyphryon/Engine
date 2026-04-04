@@ -29,7 +29,7 @@ namespace Scene
 
         // Ensures that handles within this range are exclusively for entities created during runtime,
         // preventing conflicts with internal engine objects like components or archetypes.
-        mWorld.set_entity_range(kMinRangeEntities, kMaxRangeEntities);
+        mWorld.range_set(mWorld.range_new(kMinRangeEntities, kMaxRangeEntities));
 
         // Register engine’s built-in components and systems.
         RegisterDefaultComponentsAndSystems();
