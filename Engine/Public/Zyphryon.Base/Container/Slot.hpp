@@ -151,6 +151,30 @@ inline namespace Base
             return mHead - mPool.size();
         }
 
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeVector(mPool);
+            Archive.SerializeUInt(mHead);
+
+            // Reconstruct the mask based on the current head and pool state.
+            if constexpr (Serializer::IsReader)
+            {
+                mMask.reset();
+
+                for (UInt32 Handle = 1; Handle <= mHead; ++Handle)
+                {
+                    if (std::ranges::find(mPool, Handle) == mPool.end())
+                    {
+                        mMask.set(Handle - 1);
+                    }
+                }
+            }
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

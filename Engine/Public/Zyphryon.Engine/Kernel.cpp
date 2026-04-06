@@ -109,7 +109,7 @@ namespace Engine
     void Kernel::Run()
     {
         // Updates the simulation time by calculating the absolute time.
-        mTime.SetAbsolute(Time::GetUptimeInNanoseconds());
+        mTime.SetAbsolute(Time::GetUptimeInSeconds());
 
         // Main application loop.
         while (mActive)

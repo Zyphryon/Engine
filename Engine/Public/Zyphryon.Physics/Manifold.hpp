@@ -42,7 +42,7 @@ namespace Physics
         /// \return `true` if the manifold represents a collision, `false` otherwise.
         ZYPHRYON_INLINE Bool IsValid() const
         {
-            return mContacts.GetSize() > 0 && mPenetration > static_cast<Type>(0);
+            return mContacts.size() > 0 && mPenetration > static_cast<Type>(0);
         }
 
         /// \brief Sets the collision normal from a 2D vector.

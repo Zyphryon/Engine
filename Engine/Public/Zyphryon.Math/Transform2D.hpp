@@ -66,21 +66,13 @@ inline namespace Math
             SetTranslation(Translation);
         }
 
-        /// \brief Computes the final transformation matrix.
-        /// 
-        /// \return A 3x2 transformation matrix that combines translation, scale, and rotation.
-        ZYPHRYON_INLINE Matrix3x2 Compute() const
-        {
-            return Matrix3x2::FromTransform(mTranslation, mScale, mRotation);
-        }
-
         /// \brief Computes the final transformation matrix with an origin point.
         ///
-        /// \param Origin The origin point for rotation and scale.
-        /// \return A 3x2 transformation matrix that combines translation, scale, and rotation with the specified origin.
-        ZYPHRYON_INLINE Matrix3x2 Compute(Pivot Origin) const
+        /// \param Origin The center point for rotation, scale, and skew operations.
+        /// \return A 3x2 transformation matrix that combines translation, scale, rotation and skew with the specified origin.
+        ZYPHRYON_INLINE Matrix3x2 Compute(Vector2 Origin = Vector2()) const
         {
-            return Matrix3x2::FromTransform(mTranslation, mScale, mRotation, Origin);
+            return Matrix3x2::FromTransform(Origin, mTranslation, mScale, mRotation, mSkew);
         }
 
         /// \brief Sets the translation vector for the transform in 2D space.
@@ -137,6 +129,25 @@ inline namespace Math
             return mRotation;
         }
 
+        /// \brief Sets the skew angles for the transform along the X and Y axes.
+        ///
+        /// \param X The skew angle along the X axis, represented as an angle in radians.
+        /// \param Y The skew angle along the Y axis, represented as an angle in radians.
+        /// \return A reference to this transform, modified by the new skew angles.
+        ZYPHRYON_INLINE Ref<Transform2D> SetSkew(Angle X, Angle Y)
+        {
+            mSkew.Set(X.GetRadians(), Y.GetRadians());
+            return (* this);
+        }
+
+        /// \brief Gets the current skew angles of the transform along the X and Y axes.
+        ///
+        /// \return A reference to the skew vector.
+        ZYPHRYON_INLINE Vector2 GetSkew() const
+        {
+            return mSkew;
+        }
+
         /// \brief Translates the transform by the given 2D vector.
         /// 
         /// \param Translation The translation vector to apply (2D).
@@ -182,6 +193,35 @@ inline namespace Math
             return (* this);
         }
 
+        /// \brief Skews the transform by the specified angles along the X and Y axes.
+        ///
+        /// \param X The skew angle along the X axis, represented as an angle in radians.
+        /// \param Y The skew angle along the Y axis, represented as an angle in radians.
+        /// \return A reference to this transform, modified by the skew.
+        ZYPHRYON_INLINE Ref<Transform2D> Skew(Angle X, Angle Y)
+        {
+            mSkew += Vector2(X.GetRadians(), Y.GetRadians());
+            return (* this);
+        }
+
+        /// \brief Skews the transform by the specified angle along the X axis.
+        ///
+        /// \param X The skew angle along the X axis, represented as an angle in radians.
+        /// \return A reference to this transform, modified by the skew.
+        ZYPHRYON_INLINE Ref<Transform2D> SkewX(Angle X)
+        {
+            return Skew(X, Angle());
+        }
+
+        /// \brief Skews the transform by the specified angle along the Y axis.
+        ///
+        /// \param Y The skew angle along the Y axis, represented as an angle in radians.
+        /// \return A reference to this transform, modified by the skew.
+        ZYPHRYON_INLINE Ref<Transform2D> SkewY(Angle Y)
+        {
+            return Skew(Angle(), Y);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         /// 
         /// \param Archive The archive to serialize the object with.
@@ -191,6 +231,7 @@ inline namespace Math
             Archive.SerializeObject(mTranslation);
             Archive.SerializeObject(mScale);
             Archive.SerializeObject(mRotation);
+            Archive.SerializeObject(mSkew);
         }
 
     private:
@@ -201,5 +242,6 @@ inline namespace Math
         Vector2 mTranslation;
         Vector2 mScale;
         Angle   mRotation;
+        Vector2 mSkew;
     };
 }

@@ -1,0 +1,39 @@
+[Properties.Blend]      # Straight Alpha-Blending
+
+    SrcColor        = "SrcAlpha"
+    DstColor        = "OneMinusSrcAlpha"
+    SrcAlpha        = "One"
+    DstAlpha        = "OneMinusSrcAlpha"
+
+[Properties.Depth]      # Enable Depth Write / Depth Testing
+
+    Mask            = 1
+    Condition       = "LessEqual"
+
+[Properties.Rasterizer] # Disable Cull
+
+    Cull            = "None"
+
+[Properties.Layout]
+
+    Attributes      = [
+        ["POSITION",  "Float32x2",   0,  0],
+        ["TEXCOORD0", "Float32x2",   0,  8],
+        ["COLOR0",    "UIntNorm8x4", 0, 16],
+    ]
+
+    Primitive       = "TriangleList"
+
+[Program.Textures]
+
+    Albedo          = 0
+
+[Program.Vertex]
+
+    Entry           = "vertex"
+    Filename        = "Basic2D.shader"
+
+[Program.Fragment]
+
+    Entry           = "fragment"
+    Filename        = "Basic2D.shader"

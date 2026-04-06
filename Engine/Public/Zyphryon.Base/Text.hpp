@@ -65,7 +65,7 @@ inline namespace Base
     static void IterateUTF8(ConstStr8 Text, AnyRef<Function> Callback)
     {
         ConstPtr<Char> Data      = Text.data();
-        UInt           Size      = Text.size();
+        size_t         Size      = Text.size();
         UInt32         Codepoint = SDL_StepUTF8(&Data, &Size);
 
         while (Codepoint != 0)

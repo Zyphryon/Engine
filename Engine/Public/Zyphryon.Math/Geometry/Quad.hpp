@@ -101,10 +101,10 @@ inline namespace Math
         /// \return A Rect representing the bounding box that contains all corners of the quadrilateral.
         ZYPHRYON_INLINE Rect GetBoundaries() const
         {
-            const Real32 MinX = Base::Min(mCorners[0].GetX(), mCorners[1].GetX(), mCorners[2].GetX(), mCorners[3].GetX());
-            const Real32 MaxX = Base::Max(mCorners[0].GetX(), mCorners[1].GetX(), mCorners[2].GetX(), mCorners[3].GetX());
-            const Real32 MinY = Base::Min(mCorners[0].GetY(), mCorners[1].GetY(), mCorners[2].GetY(), mCorners[3].GetY());
-            const Real32 MaxY = Base::Max(mCorners[0].GetY(), mCorners[1].GetY(), mCorners[2].GetY(), mCorners[3].GetY());
+            const Real32 MinX = Math::Min(mCorners[0].GetX(), mCorners[1].GetX(), mCorners[2].GetX(), mCorners[3].GetX());
+            const Real32 MaxX = Math::Max(mCorners[0].GetX(), mCorners[1].GetX(), mCorners[2].GetX(), mCorners[3].GetX());
+            const Real32 MinY = Math::Min(mCorners[0].GetY(), mCorners[1].GetY(), mCorners[2].GetY(), mCorners[3].GetY());
+            const Real32 MaxY = Math::Max(mCorners[0].GetY(), mCorners[1].GetY(), mCorners[2].GetY(), mCorners[3].GetY());
             return Rect(MinX, MinY, MaxX, MaxY);
         }
 
@@ -302,7 +302,7 @@ inline namespace Math
         /// \return A new quadrilateral with the scalar divided by all coordinates.
         ZYPHRYON_INLINE constexpr Quad operator/(Real32 Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
             return Quad(mCorners[0] / Scalar,
                         mCorners[1] / Scalar, 
                         mCorners[2] / Scalar, 
@@ -315,8 +315,8 @@ inline namespace Math
         /// \return A new quadrilateral with the vector divided by all coordinates.
         ZYPHRYON_INLINE constexpr Quad operator/(Vector2 Vector) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
             return Quad(mCorners[0] / Vector,
                         mCorners[1] / Vector, 
                         mCorners[2] / Vector, 
@@ -433,7 +433,7 @@ inline namespace Math
         /// \return A reference to the updated quadrilateral.
         ZYPHRYON_INLINE constexpr Ref<Quad> operator/=(Real32 Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
             mCorners[0] /= Scalar;
             mCorners[1] /= Scalar;
             mCorners[2] /= Scalar;
@@ -447,8 +447,8 @@ inline namespace Math
         /// \return A reference to the updated quadrilateral.
         ZYPHRYON_INLINE constexpr Ref<Quad> operator/=(Vector2 Vector)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            LOG_ASSERT(!Base::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
+            LOG_ASSERT(!Math::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
             mCorners[0] /= Vector;
             mCorners[1] /= Vector;
             mCorners[2] /= Vector;
@@ -526,11 +526,11 @@ inline namespace Math
                         Vector2::Lerp(Start.mCorners[3], End.mCorners[3], Percentage));
         }
 
-        /// \brief Transform an axis-aligned rectangle by a 4x4 matrix.
+        /// \brief Transforms a rectangle into a quadrilateral using a 4x4 transformation matrix.
         ///
-        /// \param Rectangle The input rectangle.
-        /// \param Matrix    The transformation matrix.
-        /// \return The projected quadrilateral.
+        /// \param Rectangle The rectangle to transform.
+        /// \param Matrix    The 4x4 transformation matrix to apply.
+        /// \return A quadrilateral resulting from transforming the rectangle with the matrix.
         ZYPHRYON_INLINE static Quad Transform(AnyRect<Real32> Rectangle, ConstRef<Matrix4x4> Matrix)
         {
             const Vector4 CornerX(Rectangle.GetMinimumX(), Rectangle.GetMaximumX(),
@@ -538,23 +538,42 @@ inline namespace Math
             const Vector4 CornerY(Rectangle.GetMinimumY(), Rectangle.GetMinimumY(),
                                   Rectangle.GetMaximumY(), Rectangle.GetMaximumY());
 
-            const Vector4 ProjectionX = (CornerX * Vector4::SplatX(Matrix.GetColumn(0)) +
-                                         CornerY * Vector4::SplatX(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatX(Matrix.GetColumn(3)));
+            const Vector4 C0 = Matrix.GetColumn(0);
+            const Vector4 C1 = Matrix.GetColumn(1);
+            const Vector4 C3 = Matrix.GetColumn(3);
 
-            const Vector4 ProjectionY = (CornerX * Vector4::SplatY(Matrix.GetColumn(0)) +
-                                         CornerY * Vector4::SplatY(Matrix.GetColumn(1)) +
-                                                   Vector4::SplatY(Matrix.GetColumn(3)));
+            const Vector4 PX = CornerX * Vector4::SplatX(C0) + CornerY * Vector4::SplatX(C1) + Vector4::SplatX(C3);
+            const Vector4 PY = CornerX * Vector4::SplatY(C0) + CornerY * Vector4::SplatY(C1) + Vector4::SplatY(C3);
 
             ZYPHRYON_ALIGN(16) Real32 VectorX[4];
             ZYPHRYON_ALIGN(16) Real32 VectorY[4];
-            ProjectionX.Store(VectorX);
-            ProjectionY.Store(VectorY);
+            PX.Store(VectorX);
+            PY.Store(VectorY);
 
             return Quad(Vector2(VectorX[0], VectorY[0]),
                         Vector2(VectorX[1], VectorY[1]),
                         Vector2(VectorX[2], VectorY[2]),
                         Vector2(VectorX[3], VectorY[3]));
+        }
+
+        /// \brief Transforms a rectangle into a quadrilateral using a 3x2 transformation matrix.
+        ///
+        /// \param Rectangle The rectangle to transform.
+        /// \param Matrix    The 3x2 transformation matrix to apply.
+        /// \return A quadrilateral resulting from transforming the rectangle with the matrix.
+        ZYPHRYON_INLINE static Quad Transform(AnyRect<Real32> Rectangle, ConstRef<Matrix3x2> Matrix)
+        {
+            const Real32 MinX = Rectangle.GetMinimumX();
+            const Real32 MaxX = Rectangle.GetMaximumX();
+            const Real32 MinY = Rectangle.GetMinimumY();
+            const Real32 MaxY = Rectangle.GetMaximumY();
+
+            const Vector2 P0 = Matrix3x2::Project(Matrix, Vector2(MinX, MinY));
+            const Vector2 P1 = Matrix3x2::Project(Matrix, Vector2(MaxX, MinY));
+            const Vector2 P2 = Matrix3x2::Project(Matrix, Vector2(MaxX, MaxY));
+            const Vector2 P3 = Matrix3x2::Project(Matrix, Vector2(MinX, MaxY));
+
+            return Quad(P0, P1, P2, P3);
         }
 
     private:

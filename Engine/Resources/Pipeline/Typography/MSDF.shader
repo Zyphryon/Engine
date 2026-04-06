@@ -41,7 +41,6 @@ struct vs_Input
     float4   Frame      : TEXCOORD0;
     float4   Local      : CUSTOM2;
     float4   Color      : COLOR0;
-    uint     Effect     : CUSTOM3;
 };
 
 struct ps_Input
@@ -54,31 +53,32 @@ struct ps_Input
 
 // VS Main
 
-ps_Input vertex(vs_Input Input)
+float2 TessellateRect(uint VertexID)
 {
-    static const float2 Quad[4] =
-    {
+    static const float2 kUnitRectCorners[4] = {
         float2(0, 0),
         float2(1, 0),
         float2(0, 1),
         float2(1, 1)
     };
+    return kUnitRectCorners[VertexID];
+}
 
-    const float2 Corner   = Quad[Input.VertexID];
-    const float2 LocalPos = Input.Local.xy + Corner * Input.Local.zw;
-
-    // Apply transform
-    const float3 WorldPos = float3(
-        dot(Input.Transform0.xyz, float3(LocalPos, 1.0)),
-        dot(Input.Transform1.xyz, float3(LocalPos, 1.0)),
-        0.0);
+ps_Input vertex(vs_Input Input)
+{
+    const float2 Corner   = TessellateRect(Input.VertexID);
+    const float2 Local    = Input.Local.xy + Corner * Input.Local.zw;
+    const float2 Position = float2(
+        dot(Local, Input.Transform0.xy) + Input.Transform0.z,
+        dot(Local, Input.Transform1.xy) + Input.Transform1.z
+    );
 
     ps_Input Result;
 
-    Result.Position = mul(u_Camera, float4(WorldPos, 1.0));
+    Result.Position = mul(u_Camera, float4(Position, Input.Transform0.w, 1.0));
     Result.Texture  = lerp(Input.Frame.xy, Input.Frame.zw, Corner);
     Result.Color    = Input.Color;
-    Result.Effect   = Input.Effect;
+    Result.Effect   = asuint(Input.Transform1.w);
 
     return Result;
 }
@@ -92,7 +92,7 @@ float Median(float3 Color)
 
 float Spread(float2 Coordinates, float2 Unit)
 {
-    return max(0.5 * dot(Unit, 1.0 / fwidth(Coordinates)), 1.0);
+    return max(dot(Unit, 1.0 / fwidth(Coordinates)) * 0.5, 1.0);
 }
 
 float4 fragment(ps_Input Input) : SV_Target
@@ -107,15 +107,14 @@ float4 fragment(ps_Input Input) : SV_Target
     const float  Scale = Spread(Input.Texture, u_Range);
 
     // Interpolated distance field depending on rounded vs sharp style.
-    const float InnerStrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
-    const float OuterStrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
+    const float StrokeDistance = lerp(DistanceMSDF, DistanceSDF, FontParameters.u_InsetRoundness);
+    const float StrokeBase     = StrokeDistance - FontParameters.u_InsetThreshold;
 
     // Convert distance to alpha coverage.
-    const float InnerStrokeA = Scale * (InnerStrokeDistance - FontParameters.u_InsetThreshold)
+    const float InnerStrokeA = Scale * (StrokeBase)
             + 0.5
             + FontParameters.u_OutsetOffset;
-    const float OuterStrokeA = Scale * (OuterStrokeDistance - FontParameters.u_InsetThreshold
-            + FontParameters.u_OutsetWidthRelative)
+    const float OuterStrokeA = Scale * (StrokeBase + FontParameters.u_OutsetWidthRelative)
             + 0.5
             + FontParameters.u_OutsetOffset
             + FontParameters.u_OutsetWidthAbsolute;

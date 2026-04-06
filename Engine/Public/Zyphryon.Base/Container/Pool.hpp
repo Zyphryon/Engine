@@ -93,7 +93,7 @@ inline namespace Base
             {
                 if (mAllocator.IsAllocated(Handle))
                 {
-                    InPlaceDelete<Type>(GetPtr(Handle));
+                    InPlaceDelete<Type>(* GetPtr(Handle));
                 }
             }
             mAllocator.Clear();
@@ -181,6 +181,21 @@ inline namespace Base
             LOG_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range handle");
 
             return (* GetPtr(Handle));
+        }
+
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZYPHRYON_INLINE void OnSerialize(Serializer Archive)
+        {
+            Archive.SerializeObject(mAllocator);
+
+            // Serialize each allocated element in the storage array.
+            ForEach([&](Ref<Type> Element)
+            {
+                Archive.SerializeObject(Element);
+            });
         }
 
     private:

@@ -14,6 +14,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Collector.hpp"
+#include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Encoder.hpp"
 #include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Math/Matrix3x2.hpp"
@@ -109,10 +110,11 @@ namespace Render
         /// \brief Issues a draw command for drawing text with the specified parameters.
         ///
         /// \param Text      The text to draw, containing font, size, tint, and content information.
+        /// \param Content   The UTF-8 encoded string content of the text to draw.
         /// \param Transform The transformation matrix to apply to the text for positioning, scaling, and rotation.
         /// \param Order     The depth value for rendering order.
         /// \param Effect    The text effect to apply to the text (default is 0, which means no effect).
-        void DrawText(ConstRef<Text> Text, ConstRef<Matrix3x2> Transform, Real32 Order, UInt8 Effect = 0);
+        void DrawText(ConstRef<Text> Text, ConstStr8 Content, ConstRef<Matrix3x2> Transform, Real32 Order, UInt32 Effect = 0);
 
         /// \brief Issues a draw command for drawing a sprite with the specified parameters.
         ///
@@ -179,9 +181,9 @@ namespace Render
             Callback(VtxData);
 
             // Set the vertex buffers for drawing and issue the draw command.
-            mEncoder.SetVertices(0, VtxStream.Buffer, 0, VtxStream.Stride);
+            mEncoder.SetVertices(0, VtxStream);
             mEncoder.SetIndices(0, 0, 0);
-            mEncoder.Draw(4, 0, VtxStream.Offset / sizeof(Vertex), Instances);
+            mEncoder.Draw(4, 0, 0, Instances);
             mEncoder.ResetBindings();
         }
 
@@ -201,6 +203,35 @@ namespace Render
 
         /// \brief Defines a type alias for an array of trackers to graphics pipelines, indexed by an enumeration type.
         using Pipelines = Array<Tracker<Graphic::Pipeline>, Enum::Count<Type>()>;
+
+        /// \brief Defines a structure representing a 2x3 transformation matrix with an additional depth value.
+        struct ZYPHRYON_ALIGN(16) Matrix2x3Packed final
+        {
+            /// \brief The first column of the 2x3 transformation matrix.
+            Vector3 Column0;
+
+            /// \brief The depth value for rendering order, where lower values are rendered behind higher values.
+            Real32  Order;
+
+            /// \brief The second column of the 2x3 transformation matrix.
+            Vector3 Column1;
+
+            /// \brief Additional user custom data that can be used for various purposes.
+            Real32  Custom;
+
+            /// \brief Sets the values of the matrix from a 3x2 transformation matrix and a depth value.
+            ///
+            /// \param Matrix The 3x2 transformation matrix to convert into the packed format.
+            /// \param Depth  The depth value to set for rendering order.
+            /// \param Data   The additional custom data to set (default is 0.0f).
+            ZYPHRYON_INLINE void SetData(ConstRef<Matrix3x2> Matrix, Real32 Depth, Real32 Data = 0.0f)
+            {
+                Column0 = Matrix.GetColumn(0);
+                Order   = Depth;
+                Column1 = Matrix.GetColumn(1);
+                Custom  = Data;
+            }
+        };
 
         /// \brief Defines a structure representing the input data for drawing a shape in the GPU.
         struct ShapeLayout final
@@ -232,16 +263,16 @@ namespace Render
         struct SpriteLayout final
         {
             /// The transformation matrix to apply to the sprite for positioning, scaling, and rotation.
-            Matrix3x2   Transform;
+            Matrix2x3Packed Transform;
 
             /// The source rectangle within the sprite's texture, defining the portion of the texture to use.
-            Rect        Frame;
+            Rect            Frame;
 
             /// Additional data for the sprite, such as size stored as a 2D vector.
-            Vector2     Size;
+            Vector2         Size;
 
             /// Color tint to apply to the sprite, represented as an 8-bit integer color (RGBA).
-            IntColor8   Color;
+            IntColor8       Color;
         };
 
         /// \brief Structure representing a draw command for a sprite, containing its input data.
@@ -261,22 +292,20 @@ namespace Render
         struct GlyphLayout final
         {
             /// The transformation matrix to apply to the text for positioning, scaling, and rotation.
-            Matrix3x2   Transform;
+            Matrix2x3Packed Transform;
 
             /// The source rectangle within the text's texture, defining the portion of the texture to use.
-            Rect        Frame;
+            Rect            Frame;
 
             /// Additional data for the text, such as offset stored as a 2D vector, used for positioning glyphs relative to the text layout.
-            Vector2     Offset;
+            Vector2         Offset;     // TODO: UInt16x2
 
             /// Additional data for the text, such as size stored as a 2D vector.
-            Vector2     Size;
+            Vector2         Size;       // TODO: UInt16x2
 
             /// Color tint to apply to the text, represented as an 8-bit integer color (RGBA).
-            IntColor8   Color;
+            IntColor8       Color;
 
-            /// The index of the text effect to apply to the glyph.
-            UInt8       Effect;
         };
 
         /// \brief Structure representing a draw command for a glyph, containing its input data.

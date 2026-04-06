@@ -26,6 +26,16 @@ inline namespace Math
     {
     public:
 
+        /// \brief Enumeration for component masks used in SIMD operations.
+        enum class Mask : UInt32
+        {
+            XY   = 0x31,    ///< Mask for x and y components.
+            XYZ  = 0x71,    ///< Mask for x, y and z components.
+            XYZW = 0xF1     ///< Mask for all components (x, y, z and w).
+        };
+
+    public:
+
         /// \brief Initializes the vector to (0.0f, 0.0f, 0.0f, 0.0f).
         ZYPHRYON_INLINE Vector4()
             : mRegister { _mm_setzero_ps() }
@@ -104,6 +114,16 @@ inline namespace Math
         {
             mRegister = _mm_set_ps(W, Z, Y, X);
             return (* this);
+        }
+
+        /// \brief Sets the components of the vector using a Vector3 and an optional w value.
+        ///
+        /// \param XYZ The Vector3 containing the new x, y, and z values.
+        /// \param W   The new w value (default to 0.0).
+        /// \return A reference to this vector after the update.
+        ZYPHRYON_INLINE Ref<Vector4> Set(Vector3 XYZ, Real32 W = 0.0f)
+        {
+            return Set(XYZ.GetX(), XYZ.GetY(), XYZ.GetZ(), W);
         }
 
         /// \brief Sets the x-component of the vector.
@@ -197,17 +217,19 @@ inline namespace Math
         /// \brief Calculates the length (magnitude) of the vector.
         /// 
         /// \return The length of the vector.
+        template<Mask Mask = Mask::XYZ>
         ZYPHRYON_INLINE Real32 GetLength() const
         {
-            return Sqrt(GetLengthSquared());
+            return Sqrt(GetLengthSquared<Mask>());
         }
 
         /// \brief Calculates the squared length of the vector.
         /// 
         /// \return The squared length of the vector (no square root).
+        template<Mask Mask = Mask::XYZ>
         ZYPHRYON_INLINE Real32 GetLengthSquared() const
         {
-            return _mm_cvtss_f32(_mm_dp_ps(mRegister, mRegister, 0xF1));
+            return _mm_cvtss_f32(_mm_dp_ps(mRegister, mRegister, Enum::Cast(Mask)));
         }
 
         /// \brief Calculates the distance between this vector and another vector.
@@ -235,7 +257,7 @@ inline namespace Math
         ZYPHRYON_INLINE Angle GetAngle(Vector4 Other) const
         {
             const Real32 Length = GetLength() * Other.GetLength();
-            LOG_ASSERT(!Base::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
             return Angle::FromCosine(Dot3(* this, Other) / Length);
         }
@@ -338,7 +360,7 @@ inline namespace Math
         /// \return A new vector with the scalar divided by all components.
         ZYPHRYON_INLINE Vector4 operator/(Real32 Scalar) const
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             return Vector4(_mm_div_ps(mRegister, _mm_set_ps1(Scalar)));
         }
@@ -439,7 +461,7 @@ inline namespace Math
         /// \return A reference to the updated vector.
         ZYPHRYON_INLINE Ref<Vector4> operator/=(Real32 Scalar)
         {
-            LOG_ASSERT(!Base::IsAlmostZero(Scalar), "Division by zero");
+            LOG_ASSERT(!Math::IsAlmostZero(Scalar), "Division by zero");
 
             mRegister = _mm_div_ps(mRegister, _mm_set_ps1(Scalar));
             return (* this);
@@ -751,7 +773,7 @@ inline namespace Math
         ZYPHRYON_INLINE static Vector4 Normalize(Vector4 Vector)
         {
             const __m128 Dot = _mm_dp_ps(Vector.mRegister, Vector.mRegister, 0xFF);
-            LOG_ASSERT(!Base::IsAlmostZero(_mm_cvtss_f32(Dot)), "Cannot normalize zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(_mm_cvtss_f32(Dot)), "Cannot normalize zero-length vector");
 
             return Vector4(_mm_mul_ps(Vector.mRegister, _mm_rsqrt_ps(Dot)));
         }
@@ -764,7 +786,7 @@ inline namespace Math
         ZYPHRYON_INLINE static Vector4 Project(Vector4 Source, Vector4 Target)
         {
             const Real32 Denominator = Dot3(Target, Target);
-            LOG_ASSERT(!Base::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
+            LOG_ASSERT(!Math::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
 
             return Target * (Dot3(Source, Target) / Denominator);
         }
