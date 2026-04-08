@@ -23,7 +23,9 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : AbstractService { Host }
+        : AbstractService { Host },
+          Locator         { Host },
+          mMultiplier     { 1.0f }
     {
         mWorld.set_threads(SDL_GetNumLogicalCPUCores());
 
@@ -42,10 +44,13 @@ namespace Scene
     {
         ZYPHRYON_PROFILE_SCOPE("Scene::Tick");
 
-        /// Update the world time component.
+        // Scale the frame delta by the time multiplier to allow for time dilation effects.
+        Time = Base::Time(Time.GetAbsolute(), Time.GetDelta() * mMultiplier);
+
+        // Update the world time component.
         mWorld.set<Base::Time>(Time);
 
-        /// Advance the ECS world simulation by the frame delta.
+        // Advance the ECS world simulation by the frame delta.
         mWorld.progress(Time.GetDelta());
     }
 
@@ -61,29 +66,29 @@ namespace Scene
             const UInt32 ID = Reader.ReadInt<UInt32>();
             mArchetypes.Acquire(ID);
 
-            /// Allocate prefab entity with the serialized identifier.
+            // Allocate prefab entity with the serialized identifier.
             const Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
             Archetype.Add(EcsPrefab);
 
-            /// Read and set archetype name.
+            // Read and set archetype name.
             if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
             {
                 Archetype.SetName(Name);
             }
 
-            /// Read and set archetype display name.
+            // Read and set archetype display name.
             if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
             {
                 Archetype.SetDisplayName(Name);
             }
 
-            /// Read and set base archetype reference if present.
+            // Read and set base archetype reference if present.
             if (const UInt32 Base = Reader.ReadInt<UInt32>(); Base)
             {
                 Archetype.SetArchetype(GetEntity(kMinRangeArchetypes + Base));
             }
 
-            /// Load all serialized components for this archetype.
+            // Load all serialized components for this archetype.
             LoadComponents(Reader, Archetype);
         }
     }
@@ -99,20 +104,20 @@ namespace Scene
         {
             if (Entity Archetype = GetEntity(kMinRangeArchetypes + Element); Archetype.IsValid())
             {
-                /// Write archetype identifier.
+                // Write archetype identifier.
                 Writer.WriteInt(Archetype.GetID() - kMinRangeArchetypes);
 
-                /// Write archetype name.
+                // Write archetype name.
                 Writer.WriteText(Archetype.GetName());
 
-                /// Write archetype display name.
+                // Write archetype display name.
                 Writer.WriteText(Archetype.GetDisplayName());
 
-                /// Write base archetype reference or `0` if none.
+                // Write base archetype reference or `0` if none.
                 const Entity Base = Archetype.GetArchetype();
                 Writer.WriteInt(Base.IsValid() ? Base.GetID() - kMinRangeArchetypes : 0);
 
-                /// Write all components of the archetype.
+                // Write all components of the archetype.
                 SaveComponents(Writer, Archetype);
             }
         }
@@ -125,25 +130,25 @@ namespace Scene
     {
         const Entity Actor = CreateEntity();
 
-        /// Read and assign entity name if present.
+        // Read and assign entity name if present.
         if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetName(Name);
         }
 
-        /// Read and assign entity display name if present.
+        // Read and assign entity display name if present.
         if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
         {
             Actor.SetDisplayName(Name);
         }
 
-        /// Read and assign archetype reference if present.
+        // Read and assign archetype reference if present.
         if (const UInt64 Base = Reader.ReadInt<UInt64>(); Base)
         {
             Actor.SetArchetype(GetEntity(kMinRangeArchetypes + Base));
         }
 
-        /// Load all serialized components for the entity.
+        // Load all serialized components for the entity.
         LoadComponents(Reader, Actor);
         return Actor;
     }
@@ -153,17 +158,17 @@ namespace Scene
 
     Entity Service::LoadEntityHierarchy(Ref<Reader> Reader)
     {
-        /// Read and construct the root entity.
+        // Read and construct the root entity.
         const Entity Actor = LoadEntity(Reader);
 
-        /// Recursively read and attach all child entities.
+        // Recursively read and attach all child entities.
         while (Reader.Peek<UInt32>() != -1)
         {
             Entity Children = LoadEntityHierarchy(Reader);
             Children.SetParent(Actor);
         }
 
-        /// Skip delimiter marking the end of this hierarchy.
+        // Skip delimiter marking the end of this hierarchy.
         Reader.Skip(sizeof(UInt32));
         return Actor;
     }
@@ -178,15 +183,15 @@ namespace Scene
             return;
         }
 
-        /// Write entity name and display name.
+        // Write entity name and display name.
         Writer.WriteText(Actor.GetName());
         Writer.WriteText(Actor.GetDisplayName());
 
-        /// Write archetype reference or `0` if none.
+        // Write archetype reference or `0` if none.
         const Entity Archetype = Actor.GetArchetype();
         Writer.WriteInt<UInt64>(Archetype.IsValid() ? Archetype.GetID() - kMinRangeArchetypes : 0);
 
-        /// Write all components of the entity.
+        // Write all components of the entity.
         SaveComponents(Writer, Actor);
     }
 
@@ -200,16 +205,16 @@ namespace Scene
             return;
         }
 
-        /// Write the entity and its components.
+        // Write the entity and its components.
         SaveEntity(Writer, Actor);
 
-        /// Recursively write all child entities.
+        // Recursively write all child entities.
         Actor.Children([&](Entity Children)
         {
             SaveEntityHierarchy(Writer, Children);
         });
 
-        /// Write delimiter marking the end of the hierarchy.
+        // Write delimiter marking the end of the hierarchy.
         Writer.WriteUInt32(-1);
     }
 
@@ -220,18 +225,18 @@ namespace Scene
     {
         while (Reader.Peek<UInt32>() != -1)
         {
-            /// Read first element of the pair (tag/relationship); empty means single component.
+            // Read first element of the pair (tag/relationship); empty means single component.
             const Str8   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
             const Entity First = Pair.empty() ? Entity() : mWorld.component(Pair.c_str());
 
-            /// Read component name and resolve the component entity.
+            // Read component name and resolve the component entity.
             const Str8   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
             const Entity Second = mWorld.component(Name.c_str());
 
-            /// Read serialized component payload.
+            // Read serialized component payload.
             const ConstSpan<Byte> Bundle = Reader.ReadBlock<UInt16, Byte>();
 
-            /// Apply payload if present; otherwise attach component without data.
+            // Apply payload if present; otherwise attach component without data.
             if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
             {
                 if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
@@ -241,6 +246,9 @@ namespace Scene
                         if (const Ptr<void> Memory = Actor.Ensure(First, Second))
                         {
                             Serializer->Read(Data, Memory);
+
+                            // Resolve deferred dependencies for the component after deserialization.
+                            Serializer->Resolve(Locator::GetService<Content::Service>(), Memory);
                         }
                         Actor.Notify(First, Second);
                     }
@@ -249,6 +257,9 @@ namespace Scene
                         if (const Ptr<void> Memory = Actor.Ensure(Second))
                         {
                             Serializer->Read(Data, Memory);
+
+                            // Resolve deferred dependencies for the component after deserialization.
+                            Serializer->Resolve(Locator::GetService<Content::Service>(), Memory);
                         }
                         Actor.Notify(Second);
                     }
@@ -271,7 +282,7 @@ namespace Scene
             }
         }
 
-        /// Skip delimiter marking the end of the component list.
+        // Skip delimiter marking the end of the component list.
         Reader.Skip(sizeof(UInt32));
     }
 
@@ -280,7 +291,7 @@ namespace Scene
 
     void Service::SaveComponents(Ref<Writer> Writer, Entity Actor)
     {
-        /// Iterate over each component attached to the entity.
+        // Iterate over each component attached to the entity.
         const auto OnIterateEntityComponents = [&](Entity Component)
         {
             Entity First;
@@ -300,13 +311,13 @@ namespace Scene
 
             if (Serializer && (!First.IsValid() || First.Has<Factory>()))
             {
-                /// Write the name of the relation tag if valid, otherwise an empty string.
+                // Write the name of the relation tag if valid, otherwise an empty string.
                 Writer.WriteText(First.IsValid() ? First.GetName() : "");
 
-                /// Write the name of the relation target or component.
+                // Write the name of the relation target or component.
                 Writer.WriteText(Second.GetName());
 
-                /// Write the serialized component bundle to the output stream.
+                // Write the serialized component bundle to the output stream.
                 Writer.WriteBlock<UInt16>([&](Ref<Base::Writer> Output)
                 {
                     Serializer->Write(Output, Actor.TryGet(Component));
@@ -315,7 +326,7 @@ namespace Scene
         };
         Actor.Iterate(OnIterateEntityComponents);
 
-        /// Write delimiter marking the end of the component list.
+        // Write delimiter marking the end of the component list.
         Writer.WriteUInt32(-1);
     }
 
@@ -325,10 +336,10 @@ namespace Scene
     void Service::RegisterDefaultComponentsAndSystems()
     {
 #ifdef   FLECS_REST_SERVICE
-        /// Import built-in ECS statistics module.
+        // Import built-in ECS statistics module.
         mWorld.import<flecs::stats>();
 
-        /// Enable REST service for remote ECS inspection.
+        // Enable REST service for remote ECS inspection.
         mWorld.emplace<flecs::Rest>();
 #endif // FLECS_REST_SERVICE
 

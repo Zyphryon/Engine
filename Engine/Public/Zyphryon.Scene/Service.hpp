@@ -26,7 +26,7 @@
 namespace Scene
 {
     /// \brief Provides high-level management of the scene subsystem.
-    class Service final : public AbstractService<Service>
+    class Service final : public AbstractService<Service>, Locator<Content::Service>
     {
     public:
 
@@ -37,6 +37,24 @@ namespace Scene
 
         /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
+
+        /// \brief Sets the global time scale multiplier for the scene.
+        ///
+        /// \param Scale The new time scale multiplier. Must be non-negative.
+        ZYPHRYON_INLINE void SetTimeScale(Real32 Scale)
+        {
+            LOG_ASSERT(Scale >= 0.0f, "Time scale cannot be negative");
+
+            mMultiplier = Scale;
+        }
+
+        /// \brief Gets the current global time scale multiplier for the scene.
+        ///
+        /// \return The current time scale multiplier.
+        ZYPHRYON_INLINE Real32 GetTimeScale() const
+        {
+            return mMultiplier;
+        }
 
         /// \brief Compacts memory by removing unused entities and components.
         ///
@@ -463,6 +481,7 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         flecs::world              mWorld;
+        Real32                    mMultiplier;
         Slot<kMaxCountArchetypes> mArchetypes;
         Query<>                   mArchetypesQueryAll;
     };
