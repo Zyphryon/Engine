@@ -26,7 +26,7 @@
 namespace Scene
 {
     /// \brief Provides high-level management of the scene subsystem.
-    class Service final : public AbstractService<Service>, Locator<Content::Service>
+    class Service final : public AbstractService<Service>
     {
     public:
 

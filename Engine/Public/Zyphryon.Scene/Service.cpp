@@ -24,7 +24,6 @@ namespace Scene
 
     Service::Service(Ref<Host> Host)
         : AbstractService { Host },
-          Locator         { Host },
           mMultiplier     { 1.0f }
     {
         mWorld.set_threads(SDL_GetNumLogicalCPUCores());
@@ -246,9 +245,6 @@ namespace Scene
                         if (const Ptr<void> Memory = Actor.Ensure(First, Second))
                         {
                             Serializer->Read(Data, Memory);
-
-                            // Resolve deferred dependencies for the component after deserialization.
-                            Serializer->Resolve(Locator::GetService<Content::Service>(), Memory);
                         }
                         Actor.Notify(First, Second);
                     }
@@ -257,9 +253,6 @@ namespace Scene
                         if (const Ptr<void> Memory = Actor.Ensure(Second))
                         {
                             Serializer->Read(Data, Memory);
-
-                            // Resolve deferred dependencies for the component after deserialization.
-                            Serializer->Resolve(Locator::GetService<Content::Service>(), Memory);
                         }
                         Actor.Notify(Second);
                     }
