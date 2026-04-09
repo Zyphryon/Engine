@@ -125,6 +125,62 @@ namespace Scene
             return (* this);
         }
 
+        /// \brief Overrides the add behavior of this component with a custom function.
+        ///
+        /// \param Action The function to execute when this component is added to an entity.
+        /// \return A reference to this component.
+        template<typename Function>
+        ZYPHRYON_INLINE ConstRef<Component> OnAdd(AnyRef<Function> Action) const
+        {
+            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
+
+            Handle.on_add(Forward<Function>(Action));
+
+            return (* this);
+        }
+
+        /// \brief Overrides the set behavior of this component with a custom function.
+        ///
+        /// \param Action The function to execute when this component is set on an entity.
+        /// \return A reference to this component.
+        template<typename Function>
+        ZYPHRYON_INLINE ConstRef<Component> OnSet(AnyRef<Function> Action) const
+        {
+            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
+
+            Handle.on_set(Forward<Function>(Action));
+
+            return (* this);
+        }
+
+        /// \brief Overrides the remove behavior of this component with a custom function.
+        ///
+        /// \param Action The function to execute when this component is removed from an entity.
+        /// \return A reference to this component.
+        template<typename Function>
+        ZYPHRYON_INLINE ConstRef<Component> OnRemove(AnyRef<Function> Action) const
+        {
+            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
+
+            Handle.on_remove(Forward<Function>(Action));
+
+            return (* this);
+        }
+
+        /// \brief Overrides the replace behavior of this component with a custom function.
+        ///
+        /// \param Action The function to execute when this component is replaced on an entity.
+        /// \return A reference to this component.
+        template<typename Function>
+        ZYPHRYON_INLINE ConstRef<Component> OnReplace(AnyRef<Function> Action) const
+        {
+            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
+
+            Handle.on_replace(Forward<Function>(Action));
+
+            return (* this);
+        }
+
     private:
 
         /// \brief Applies a specific trait to this component.
