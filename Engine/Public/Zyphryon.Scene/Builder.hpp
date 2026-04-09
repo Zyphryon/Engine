@@ -360,7 +360,7 @@ namespace Scene::DSL::_
     template<typename... Types>
     struct ExtractTypesFromExpression<Out<Types...>>
     {
-        using Type = typename ExtractAndFilterTypes<Types...>::Type;
+        using Type = TypeList<>;
     };
 
     /// \brief Extracts component types from an \c Out expression.
