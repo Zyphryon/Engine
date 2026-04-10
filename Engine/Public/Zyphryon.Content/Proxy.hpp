@@ -29,6 +29,15 @@ namespace Content
         /// \brief Creates a proxy without an associated resource.
         ZYPHRYON_INLINE Proxy() = default;
 
+        /// \brief Creates a proxy from a resource path.
+        ///
+        /// \param Path The URI path to the resource to create a proxy for.
+        ZYPHRYON_INLINE Proxy(AnyRef<Uri> Path)
+            : mPath     { Move(Path) },
+              mResource { nullptr }
+        {
+        }
+
         /// \brief Creates a proxy from an existing resource.
         ///
         /// \param Resource The resource to create a proxy for.
