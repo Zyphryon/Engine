@@ -31,6 +31,14 @@ namespace Content
 
     public:
 
+        /// \brief A delegate type for asset completion callbacks, invoked when a resource finishes loading.
+        using AssetDelegate = Delegate<void(Ref<Resource>), DelegateInlineSize::Small>;
+
+        /// \brief Event triggered when an asset has completed loading and is ready for use.
+        MulticastDelegate<void(Ref<Resource>)> OnAssetComplete;
+
+    public:
+
         /// \brief Constructs the content service and registers it with the system host.
         ///
         /// \param Host The system context that owns and manages this service.
@@ -209,6 +217,17 @@ namespace Content
             Type::GetCache().Prune(Force, Capture<& Service::OnAssetDelete>(this));
         }
 
+        /// \brief Subscribes to notifications for when a resource with the specified URI is loaded or unloaded.
+        ///
+        /// \param Key      The URI of the resource to subscribe to.
+        /// \param Delegate The delegate to invoke when the resource is loaded or unloaded.
+        void Subscribe(ConstRef<Uri> Key, AnyRef<AssetDelegate> Delegate);
+
+        /// \brief Unsubscribes from notifications for a specific resource URI.
+        ///
+        /// \param Key The URI of the resource to unsubscribe from.
+        void Unsubscribe(ConstRef<Uri> Key);
+
     private:
 
         /// \brief Resolves a potentially context-relative URI into an absolute URI.
@@ -257,6 +276,7 @@ namespace Content
 
         Table<UInt64, Tracker<Loader>> mLoaders;
         Table<UInt64, Tracker<Mount>>  mMounts;
+        Table<UInt64, AssetDelegate>   mSubscriptions;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

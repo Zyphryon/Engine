@@ -204,6 +204,22 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::Subscribe(ConstRef<Uri> Key, AnyRef<AssetDelegate> Delegate)
+    {
+        mSubscriptions.try_emplace(Hash(Key), Move(Delegate));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Unsubscribe(ConstRef<Uri> Key)
+    {
+        mSubscriptions.erase(Hash(Key));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::OnLoaderThread(ConstRef<std::stop_token> Token)
     {
         ZYPHRYON_PROFILE_THREAD("I/O Thread");
@@ -323,6 +339,15 @@ namespace Content
         LOG_DEBUG("Content: Loading '{}'", Asset.GetKey().GetUrl());
 
         Asset.Create(GetHost());
+
+        // Notify listeners that the asset has finished loading.
+        OnAssetComplete.Broadcast(Asset);
+
+        // Invoke subscription delegate if one exists for this asset.
+        if (const auto Iterator = mSubscriptions.find(Hash(Asset.GetKey())); Iterator != mSubscriptions.end())
+        {
+            Iterator->second(Asset);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -333,5 +358,11 @@ namespace Content
         LOG_DEBUG("Content: Unloading '{}'", Asset.GetKey().GetUrl());
 
         Asset.Delete(GetHost());
+
+        // Invoke subscription delegate if one exists for this asset.
+        if (const auto Iterator = mSubscriptions.find(Hash(Asset.GetKey())); Iterator != mSubscriptions.end())
+        {
+            Iterator->second(Asset);
+        }
     }
 }
