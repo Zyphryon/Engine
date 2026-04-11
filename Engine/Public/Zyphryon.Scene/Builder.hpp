@@ -342,6 +342,13 @@ namespace Scene::DSL::_
     template<typename Expression>
     struct ExtractTypesFromExpression;
 
+    /// \brief Extracts component types from an \c With expression.
+    template<typename... Types>
+    struct ExtractTypesFromExpression<With<Types...>>
+    {
+        using Type = TypeList<>;
+    };
+
     /// \brief Extracts component types from an \c In expression.
     template<typename... Types>
     struct ExtractTypesFromExpression<In<Types...>>
