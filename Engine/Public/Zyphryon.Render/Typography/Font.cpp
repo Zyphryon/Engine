@@ -46,7 +46,7 @@ namespace Render
 
         Real32 CurrentX = 0.0f;
         Real32 MaximumX = 0.0f;
-        Real32 MaximumY = 0.0f;
+        Real32 MaximumY = LineHeight;
         UInt32 Previous = 0;
 
         // Iterate through each codepoint in the string.
@@ -59,7 +59,7 @@ namespace Render
                 Previous = 0;
                 break;
             case '\n':
-                MaximumY -= LineHeight;
+                MaximumY += LineHeight;
                 Previous = 0;
                 break;
             default:
@@ -79,16 +79,6 @@ namespace Render
             }
         });
         return Vector2(MaximumX, MaximumY) * Size;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Rect Font::Layout(ConstStr8 Content, Real32 Size, Pivot Origin, Vector2 Padding) const
-    {
-        const Vector2 Boundaries = Measure(Content, Size, Padding);
-
-        return Rect::Anchor(Rect(Vector2(), Boundaries), Origin);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

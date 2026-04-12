@@ -151,27 +151,18 @@ namespace Render
         /// \return The dimensions of the text in pixels.
         Vector2 Measure(ConstStr8 Content, Real32 Size, Vector2 Padding) const;
 
-        /// \brief Calculates the bounding rectangle for a text string at the specified font size.
+        /// \brief Calculates the alignment offset for text based on a pivot point.
         ///
         /// \param Content The text string encoded in UTF-8.
         /// \param Size    The size at which the font is evaluated.
-        /// \param Origin  The pivot point defining the text alignment.
-        /// \param Padding Additional spacing applied between characters, in pixels.
-        /// \return The bounding rectangle of the text in pixels, positioned according to the alignment.
-        Rect Layout(ConstStr8 Content, Real32 Size, Pivot Origin, Vector2 Padding) const;
-
-        /// \brief Calculates the origin point for the text based on the specified alignment.
-        ///
-        /// \param Content The text string encoded in UTF-8.
-        /// \param Size    The size at which the font is evaluated.
-        /// \param Origin  The pivot point defining the text alignment.
-        /// \param Padding Additional spacing applied between characters, in pixels.
-        /// \return The origin point, which can be used to position the text according.
-        ZYPHRYON_INLINE Vector2 GetOrigin(ConstStr8 Content, Real32 Size, Pivot Origin, Vector2 Padding) const
+        /// \param Pivot   The pivot point representing the desired text alignment (normalized coordinates).
+        /// \param Padding Additional spacing applied between characters.
+        /// \return The offset to apply to the text position to achieve the specified alignment, in pixels.
+        ZYPHRYON_INLINE Vector2 Align(ConstStr8 Content, Real32 Size, Pivot Pivot, Vector2 Padding) const
         {
-            const Vector2 Boundaries = Measure(Content, Size, Padding);
+            const Vector2 Dimension = Measure(Content, Size, Padding);
 
-            return Vector2(Boundaries.GetX() * Origin.GetX(), Boundaries.GetY() * Origin.GetY());
+            return Vector2(Dimension.GetX() * Pivot.GetX(), Dimension.GetY() * Pivot.GetY());
         }
 
     private:
