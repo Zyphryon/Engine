@@ -32,7 +32,7 @@ namespace Content
     public:
 
         /// \brief A delegate type for asset completion callbacks, invoked when a resource finishes loading.
-        using AssetDelegate = Delegate<void(Ref<Resource>), DelegateInlineSize::Small>;
+        using AssetDelegate = Delegate<void(Ref<Resource>)>;
 
         /// \brief Event triggered when an asset has completed loading and is ready for use.
         MulticastDelegate<void(Ref<Resource>)> OnAssetComplete;
