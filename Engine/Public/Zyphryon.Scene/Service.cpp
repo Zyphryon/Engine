@@ -48,10 +48,10 @@ namespace Scene
         mTime = Base::Time(mTime.GetAbsolute() + Delta, Delta);
 
         // Update the world time component.
-        mWorld.set<Base::Time>(Time);
+        mWorld.set<Base::Time>(mTime);
 
         // Advance the ECS world simulation by the frame delta.
-        mWorld.progress(Time.GetDelta());
+        mWorld.progress(mTime.GetDelta());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
