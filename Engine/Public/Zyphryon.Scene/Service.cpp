@@ -44,7 +44,8 @@ namespace Scene
         ZYPHRYON_PROFILE_SCOPE("Scene::Tick");
 
         // Scale the frame delta by the time multiplier to allow for time dilation effects.
-        Time = Base::Time(Time.GetAbsolute(), Time.GetDelta() * mMultiplier);
+        const Real64 Delta = Time.GetDelta() * mMultiplier;
+        mTime = Base::Time(mTime.GetAbsolute() + Delta, Delta);
 
         // Update the world time component.
         mWorld.set<Base::Time>(Time);

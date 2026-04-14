@@ -481,6 +481,7 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         flecs::world              mWorld;
+        Time                      mTime;
         Real32                    mMultiplier;
         Slot<kMaxCountArchetypes> mArchetypes;
         Query<>                   mArchetypesQueryAll;
