@@ -78,6 +78,5 @@ namespace Scene
         Singleton,    ///< Component exists only once globally (per world).
         Final,        ///< Component cannot be extended or overridden.
         Symmetric,    ///< Component has symmetric behavior in relationships.
-        Phase,        ///< Component is a phase.
     };
 }

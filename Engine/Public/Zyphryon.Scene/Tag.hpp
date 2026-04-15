@@ -29,6 +29,9 @@ namespace Scene
         static constexpr ConstStr8 kName = Symbol;
     };
 
+    /// \brief Tag type for marking default or general-purpose objects.
+    using Default   = Tag<"Default">;
+
     /// \brief Tag type for marking transient (non-persistent) objects.
     ///
     /// Objects with this tag are not intended to persist across serialization boundaries.

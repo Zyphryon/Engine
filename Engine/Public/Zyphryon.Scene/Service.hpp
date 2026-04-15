@@ -14,6 +14,7 @@
 
 #include "Component.hpp"
 #include "Pin.hpp"
+#include "Pipeline.hpp"
 #include "Query.hpp"
 #include "System.hpp"
 #include "Tag.hpp"
@@ -243,15 +244,44 @@ namespace Scene
             return Entity(Observer);
         }
 
-        /// \brief Creates a new phase entity for organizing system execution order.
+        /// \brief Creates a new phase entity with an optional dependency.
         ///
-        /// \tparam Name      The name of the phase.
-        /// \param Dependency An existing phase entity that this new phase will depend on.
+        /// \tparam Name      The tag type to use as the phase identifier.
+        /// \tparam Type      Optional component type to add to the phase entity.
+        /// \param Dependency An optional entity that this phase should depend on.
         /// \return The newly created phase entity.
-        template<Symbol Name>
-        ZYPHRYON_INLINE Entity CreatePhase(Entity Dependency)
+        template<Symbol Name, typename Type = Default>
+        ZYPHRYON_INLINE Entity CreatePhase(Entity Dependency = Entity()) const
         {
-            return GetComponent<Tag<Name>>().AddTrait(Trait::Phase).DependsOn(Dependency);
+            const auto Phase = GetComponent<Tag<Name>>();
+
+            if constexpr (IsEqual<Type, Default>)
+            {
+                Phase.Add(flecs::Phase);
+            }
+            else
+            {
+                Phase.template Add<Type>();
+            }
+
+            if (Dependency.IsValid())
+            {
+                Phase.DependsOn(Dependency);
+            }
+            return Phase;
+        }
+
+        /// \brief Creates a new pipeline with specified compile-time and runtime expressions.
+        ///
+        /// \param Runtime Optional runtime expressions to refine the query.
+        /// \return The constructed pipeline object.
+        template<typename... CompileExpression, typename... RuntimeExpression>
+        ZYPHRYON_INLINE Pipeline CreatePipeline(AnyRef<RuntimeExpression>... Runtime) const
+        {
+            flecs::pipeline_builder<> Builder = mWorld.pipeline().with(flecs::System);
+            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+
+            return Pipeline(Builder.build());
         }
 
         /// \brief Creates a timer as a tick source in the world.
