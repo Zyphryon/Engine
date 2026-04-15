@@ -269,6 +269,7 @@ namespace Scene
         /// \param Event   The event entity to subscribe to (e.g. OnAdd).
         /// \param Each    The callback to invoke for each matching entity.
         /// \param Runtime Optional runtime expressions to refine the query.
+        /// \return The entity representing the observer.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZYPHRYON_INLINE Entity CreateObserver(ConstStr8 Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
@@ -317,7 +318,6 @@ namespace Scene
         /// \param Execution Execution mode for the system.
         /// \param Each      The callback to run for each entity.
         /// \param Runtime   Optional runtime expressions to refine the query.
-        ///
         /// \return The constructed system object.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
@@ -351,7 +351,6 @@ namespace Scene
         /// \param Each      Callback invoked for each entity.
         /// \param End       Callback invoked after iteration.
         /// \param Runtime   Optional runtime expressions to refine the query.
-        ///
         /// \return The constructed system object.
         template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
         ZYPHRYON_INLINE auto CreateSystemWithLifecycle(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const

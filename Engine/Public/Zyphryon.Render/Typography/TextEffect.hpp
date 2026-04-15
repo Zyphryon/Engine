@@ -27,39 +27,39 @@ namespace Render
 
         /// \brief Constructs a text effect with default parameters.
         ZYPHRYON_INLINE constexpr TextEffect()
-            : mOutsetOffset        { 0.0f },
-              mOutsetWidthRelative { 0.0f },
-              mOutsetWidthAbsolute { 0.0f },
-              mOutsetBlur          { 0.0f },
-              mInsetRoundness      { 1.0f },
-              mInsetThreshold      { 0.5f }
+            : mOutsetOffset   { 0.0f },
+              mOutsetWidth    { 0.0f },
+              mOutsetBias     { 0.0f },
+              mOutsetBlur     { 0.0f },
+              mInsetRoundness { 1.0f },
+              mInsetThreshold { 0.5f }
         {
         }
 
         /// \brief Constructs a text effect with specified parameters.
         ///
-        /// \param OutsetColor          The color of the text outset.
-        /// \param OutsetOffset         The offset of the text outset.
-        /// \param OutsetWidthRelative  The relative width of the text outset.
-        /// \param OutsetWidthAbsolute  The absolute width of the text outset.
-        /// \param OutsetBlur           The blur amount of the text outset.
-        /// \param InsetRoundness       The roundness of the text inset.
-        /// \param InsetThreshold       The threshold for the text inset.
+        /// \param OutsetColor    The color of the text outset.
+        /// \param OutsetOffset   The offset of the text outset.
+        /// \param OutsetWidth    The relative width of the text outset (relative to font size).
+        /// \param OutsetBias     The absolute width bias of the text outset (added to relative width).
+        /// \param OutsetBlur     The blur amount of the text outset.
+        /// \param InsetRoundness The roundness of the text inset.
+        /// \param InsetThreshold The threshold for the text inset.
         ZYPHRYON_INLINE constexpr TextEffect(
             Color  OutsetColor,
             Real32 OutsetOffset,
-            Real32 OutsetWidthRelative,
-            Real32 OutsetWidthAbsolute,
+            Real32 OutsetWidth,
+            Real32 OutsetBias,
             Real32 OutsetBlur,
             Real32 InsetRoundness,
             Real32 InsetThreshold)
-            : mOutsetColor         { OutsetColor },
-              mOutsetOffset        { OutsetOffset },
-              mOutsetWidthRelative { OutsetWidthRelative },
-              mOutsetWidthAbsolute { OutsetWidthAbsolute },
-              mOutsetBlur          { OutsetBlur },
-              mInsetRoundness      { InsetRoundness },
-              mInsetThreshold      { InsetThreshold }
+            : mOutsetColor    { OutsetColor },
+              mOutsetOffset   { OutsetOffset },
+              mOutsetWidth    { OutsetWidth },
+              mOutsetBias     { OutsetBias },
+              mOutsetBlur     { OutsetBlur },
+              mInsetRoundness { InsetRoundness },
+              mInsetThreshold { InsetThreshold }
         {
         }
 
@@ -84,7 +84,7 @@ namespace Render
         /// \return The relative outset width.
         ZYPHRYON_INLINE constexpr Real32 GetOutsetWidthRelative() const
         {
-            return mOutsetWidthRelative;
+            return mOutsetWidth;
         }
 
         /// \brief Gets the absolute outset width value.
@@ -92,7 +92,7 @@ namespace Render
         /// \return The absolute outset width.
         ZYPHRYON_INLINE constexpr Real32 GetOutsetWidthAbsolute() const
         {
-            return mOutsetWidthAbsolute;
+            return mOutsetBias;
         }
 
         /// \brief Gets the outset blur value.
@@ -127,8 +127,8 @@ namespace Render
         {
             Archive.SerializeObject(mOutsetColor);
             Archive.SerializeObject(mOutsetOffset);
-            Archive.SerializeObject(mOutsetWidthRelative);
-            Archive.SerializeObject(mOutsetWidthAbsolute);
+            Archive.SerializeObject(mOutsetWidth);
+            Archive.SerializeObject(mOutsetBias);
             Archive.SerializeObject(mOutsetBlur);
             Archive.SerializeObject(mInsetRoundness);
             Archive.SerializeObject(mInsetThreshold);
@@ -141,19 +141,19 @@ namespace Render
         /// \param Width    The width of the outline.
         /// \param Softness The softness of the outline.
         /// \param Tint     The color tint of the outline.
-        ZYPHRYON_INLINE constexpr static TextEffect Outline(Real32 Width, Real32 Softness, ConstRef<Color> Tint)
+        ZYPHRYON_INLINE constexpr static TextEffect Outline(Real32 Width, Real32 Softness, Color Tint)
         {
             return TextEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a shadow text effect with specified parameters.
         ///
-        /// \param Width    The width of the shadow.
         /// \param Softness The softness of the shadow.
         /// \param Tint     The color tint of the shadow.
-        ZYPHRYON_INLINE constexpr static TextEffect Shadow(Real32 Width, Real32 Softness, ConstRef<Color> Tint)
+
+        ZYPHRYON_INLINE constexpr static TextEffect Shadow(Real32 Softness, Color Tint)
         {
-            return TextEffect(Tint, 0.25f, Width, 0.0f, Softness, 1.0f, 0.5f);
+            return TextEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a bold text effect with specified thickness.
@@ -168,20 +168,7 @@ namespace Render
         /// \param Thickness The thickness of the bold effect.
         ZYPHRYON_INLINE constexpr static TextEffect Bold(Real32 Thickness)
         {
-            return TextEffect(Color(0, 0, 0, 0), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
-        }
-
-        ZYPHRYON_INLINE constexpr static TextEffect Glow(Real32 Size, Real32 Softness, ConstRef<Color> Tint)
-        {
-            return TextEffect(
-                Tint,     // glow color
-                0.0f,     // no offset (centered)
-                Size,     // outward expansion
-                0.0f,
-                Softness, // blur = softness
-                1.0f,     // keep sharp glyph base
-                0.5f      // normal threshold
-            );
+            return TextEffect(Color::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
         }
 
     private:
@@ -191,8 +178,8 @@ namespace Render
 
         Color  mOutsetColor;
         Real32 mOutsetOffset;
-        Real32 mOutsetWidthRelative;
-        Real32 mOutsetWidthAbsolute;
+        Real32 mOutsetWidth;
+        Real32 mOutsetBias;
         Real32 mOutsetBlur;
         Real32 mInsetRoundness;
         Real32 mInsetThreshold;

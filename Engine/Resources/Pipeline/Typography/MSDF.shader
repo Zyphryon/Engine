@@ -21,8 +21,8 @@ cbuffer cb_Object   : register(b3)
     {
         float4 u_OutsetTint;
         float  u_OutsetOffset;
-        float  u_OutsetWidthRelative;
-        float  u_OutsetWidthAbsolute;
+        float  u_OutsetWidth;
+        float  u_OutsetBias;
         float  u_OutsetBlur;
         float  u_InsetRoundness;
         float  u_InsetThreshold;
@@ -101,7 +101,7 @@ float4 fragment(ps_Input Input) : SV_Target
 
     const float4 Sample       = ColorTexture.Sample(ColorSampler, Input.Texture);
     const float  DistanceSDF  = Sample.a;
-    const float  DistanceMSDF = min(Median(Sample.rgb), DistanceSDF + 0.1);
+    const float  DistanceMSDF = Median(Sample.rgb);
 
     // Convert atlas distance into normalized screen-space range.
     const float  Scale = Spread(Input.Texture, u_Range);
@@ -114,10 +114,10 @@ float4 fragment(ps_Input Input) : SV_Target
     const float InnerStrokeA = Scale * (StrokeBase)
             + 0.5
             + FontParameters.u_OutsetOffset;
-    const float OuterStrokeA = Scale * (StrokeBase + FontParameters.u_OutsetWidthRelative)
+    const float OuterStrokeA = Scale * (StrokeBase + FontParameters.u_OutsetWidth)
             + 0.5
             + FontParameters.u_OutsetOffset
-            + FontParameters.u_OutsetWidthAbsolute;
+            + FontParameters.u_OutsetBias;
 
     float4 InnerColor  = Input.Color;
     float4 OuterColor  = FontParameters.u_OutsetTint;
@@ -125,7 +125,7 @@ float4 fragment(ps_Input Input) : SV_Target
     float OuterOpacity = clamp(OuterStrokeA, 0.0, 1.0);
 
     // Optional: Apply Blur Effect
-    const float BlurStart  = FontParameters.u_OutsetWidthRelative + FontParameters.u_OutsetWidthAbsolute / Scale;
+    const float BlurStart  = FontParameters.u_OutsetWidth + FontParameters.u_OutsetBias / Scale;
     const float BlurEnd    = BlurStart * (1.0 - FontParameters.u_OutsetBlur);
     const float BlurDist   = FontParameters.u_InsetThreshold - DistanceSDF - FontParameters.u_OutsetOffset / Scale;
     const float BlurFactor = lerp(1.0, smoothstep(BlurStart, BlurEnd, BlurDist), step(0.0001, FontParameters.u_OutsetBlur));
