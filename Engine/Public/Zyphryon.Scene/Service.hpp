@@ -250,25 +250,28 @@ namespace Scene
         /// \tparam Type      Optional component type to add to the phase entity.
         /// \param Dependency An optional entity that this phase should depend on.
         /// \return The newly created phase entity.
-        template<Symbol Name, typename Type = Default>
+        template<Symbol Name, typename Type = Phase>
         ZYPHRYON_INLINE Entity CreatePhase(Entity Dependency = Entity()) const
         {
-            const auto Phase = GetComponent<Tag<Name>>();
+            const auto Component = GetComponent<Tag<Name>>();
 
-            if constexpr (IsEqual<Type, Default>)
+            if constexpr (IsEqual<Type, Phase>)
             {
-                Phase.Add(flecs::Phase);
+                Component.Add(flecs::Phase);
             }
             else
             {
-                Phase.template Add<Type>();
+                if constexpr (!IsEqual<Type, Empty>)
+                {
+                    Component.template Add<Type>();
+                }
             }
 
             if (Dependency.IsValid())
             {
-                Phase.DependsOn(Dependency);
+                Component.DependsOn(Dependency);
             }
-            return Phase;
+            return Component;
         }
 
         /// \brief Creates a new pipeline with specified compile-time and runtime expressions.

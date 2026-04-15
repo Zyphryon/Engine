@@ -29,8 +29,11 @@ namespace Scene
         static constexpr ConstStr8 kName = Symbol;
     };
 
-    /// \brief Tag type for marking default or general-purpose objects.
-    using Default   = Tag<"Default">;
+    /// \brief Tag type for indicate the absence of a specific tag or component in queries or systems.
+    using Empty     = Tag<"Empty">;
+
+    /// \brief Tag type for indicate the use of phase-based execution in systems or pipelines.
+    using Phase     = Tag<"Phase">;
 
     /// \brief Tag type for marking transient (non-persistent) objects.
     ///
