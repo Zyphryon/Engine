@@ -40,20 +40,15 @@ namespace Render
         /// \param Host The service host to use for rendering operations.
         Canvas(Ref<Service::Host> Host);
 
-        /// \brief Sets the transformation matrix for the canvas, which will be applied to all during this session.
-        ///
-        /// \param Transform The transformation matrix to apply to all rendered shapes and sprites during this session.
-        void SetTransform(ConstRef<Matrix4x4> Transform);
-
-        /// \brief Sets the scissor rectangle for clipping rendered objects to a specific region.
-        ///
-        /// \param Scissor The scissor rectangle defining the clipping region for rendered objects.
-        void SetScissor(Graphic::Scissor Scissor);
-
         /// \brief Sets the graphics pipeline to use for subsequent draw calls (only Sprites).
         ///
         /// \param Pipeline The graphics pipeline to set for subsequent draw calls.
         void SetPipeline(ConstTracker<Graphic::Pipeline> Pipeline);
+
+        /// \brief Begins a new drawing session with the specified projection matrix.
+        ///
+        /// \param Projection The projection matrix to use for rendering transformations.
+        void Begin(ConstRef<Matrix4x4> Projection);
 
         /// \brief Issues a draw command for drawing a circle shape with the specified parameters.
         ///
@@ -123,8 +118,8 @@ namespace Render
         /// \param Order     The depth value for rendering order.
         void DrawSprite(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order);
 
-        /// \brief Flushes all pending draw commands to the graphics service.
-        void Flush();
+        /// \brief Ends the current drawing session, flushing any pending draw commands.
+        void End();
 
     private:
 
@@ -354,7 +349,7 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<TextEffect, 64>     mGlyphEffects;
+        Array<TextEffect, 64>     mGlyphEffects;        // TODO: Dynamic
         Graphic::Stream           mGlyphEffectsStream;
     };
 }

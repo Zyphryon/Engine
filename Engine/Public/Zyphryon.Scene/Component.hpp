@@ -26,7 +26,7 @@ namespace Scene
     ///
     /// \tparam Type The C++ type that defines this component.
     template<typename Type>
-    class Component : public Entity
+    class Component final : public Entity
     {
     public:
 
