@@ -72,7 +72,7 @@ inline namespace Math
         /// \return A 3x2 transformation matrix that combines translation, scale, rotation and skew with the specified origin.
         ZYPHRYON_INLINE Matrix3x2 Compute(Vector2 Origin = Vector2()) const
         {
-            return Matrix3x2::FromTransform(Origin, mTranslation, mScale, mRotation, Vector2::Zero());
+            return Matrix3x2::FromTransform(Origin, mTranslation, mScale, mRotation);
         }
 
         /// \brief Sets the translation vector for the transform in 2D space.

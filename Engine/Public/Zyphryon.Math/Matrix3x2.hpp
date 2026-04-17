@@ -284,6 +284,28 @@ inline namespace Math
         /// \param Translation The final position offset applied after all other transformations.
         /// \param Scale       The scaling factors along the X and Y axes.
         /// \param Rotation    The rotation angle (in radians or degrees based on Angle type).
+        /// \return A transformation matrix that combines the specified translation, scale, rotation, and origin.
+        ZYPHRYON_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation)
+        {
+            const Real32 C = Angle::Cosine(Rotation);
+            const Real32 S = Angle::Sine(Rotation);
+
+            const Real32 M00 =  C * Scale.GetX();
+            const Real32 M10 =  S * Scale.GetX();
+            const Real32 M20 = Translation.GetX() - (Origin.GetX() * M00 + Origin.GetY() * M10);
+            const Real32 M01 = -S * Scale.GetX();
+            const Real32 M11 =  C * Scale.GetX();
+            const Real32 M21 = Translation.GetY() - (Origin.GetX() * M01 + Origin.GetY() * M11);
+
+            return Matrix3x2(M00, M10, M20, M01, M11, M21);
+        }
+
+        /// \brief Creates a transformation matrix from translation, scale, rotation, skew and origin components.
+        ///
+        /// \param Origin      The center point for rotation, scale, and skew operations.
+        /// \param Translation The final position offset applied after all other transformations.
+        /// \param Scale       The scaling factors along the X and Y axes.
+        /// \param Rotation    The rotation angle (in radians or degrees based on Angle type).
         /// \param Skew        The shear angles: X skew shears along X axis, Y skew along Y axis.
         /// \return A transformation matrix that combines the specified translation, scale, rotation, and origin.
         ZYPHRYON_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
