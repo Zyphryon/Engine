@@ -157,4 +157,14 @@ inline namespace Base
     {
         std::destroy_at(& Object);
     }
+
+    /// \brief Creates a span that references a single object, treating it as a one-element array.
+    ///
+    /// \param Value The object to create a span for.
+    /// \return A span containing a reference to the provided object.
+    template <typename Type>
+    static constexpr Span<Type> Spanify(Ref<Type> Value)
+    {
+        return Span<Type>(std::addressof(Value), 1);
+    }
 }

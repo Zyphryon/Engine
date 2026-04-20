@@ -30,16 +30,6 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::Begin(ConstRef<Matrix4x4> Projection)
-    {
-        const Graphic::Stream Scene
-            = mService->AllocateTransientBuffer(Graphic::Usage::Uniform, ConstSpan(& Projection, 1));
-        mEncoder.SetUniform(Enum::Cast(Graphic::Pipeline::Tier::Global), Scene);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Canvas::SetPipeline(ConstTracker<Graphic::Pipeline> Pipeline)
     {
         mPipelines[Enum::Cast(Type::Sprite)] = Pipeline;
@@ -48,10 +38,28 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Canvas::SetShift(Vector2 Shift)
+    {
+        mShift = Shift;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Canvas::Begin(ConstRef<Matrix4x4> Projection)
+    {
+        const Graphic::Stream Scene
+            = mService->AllocateTransientBuffer(Graphic::Usage::Uniform, Spanify(Projection));
+        mEncoder.SetUniform(Enum::Cast(Graphic::Pipeline::Tier::Global), Scene);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Canvas::DrawCircle(ConstRef<Circle> Shape, Real32 Order, IntColor8 Tint)
     {
         Ref<ShapeCommand> Command = mShapes.emplace_back();
-        Command.Layout.Center = Shape.GetCenter();
+        Command.Layout.Center = Shape.GetCenter() + mShift;
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
         Command.Layout.Data0.SetX(Shape.GetRadius());
@@ -69,7 +77,7 @@ namespace Render
     void Canvas::DrawRing(ConstRef<Circle> Shape, Real32 Order, IntColor8 Tint, Real32 Thickness)
     {
         Ref<ShapeCommand> Command = mShapes.emplace_back();
-        Command.Layout.Center = Shape.GetCenter();
+        Command.Layout.Center = Shape.GetCenter() + mShift;
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
         Command.Layout.Data0.Set(Shape.GetRadius(), Thickness);
@@ -87,7 +95,7 @@ namespace Render
     void Canvas::DrawLine(ConstRef<Line> Shape, Real32 Order, IntColor8 Tint, Real32 Thickness)
     {
         Ref<ShapeCommand> Command = mShapes.emplace_back();
-        Command.Layout.Center = Shape.GetMidpoint();
+        Command.Layout.Center = Shape.GetMidpoint() + mShift;
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
         Command.Layout.Data0  = Shape.GetDirection();
@@ -108,7 +116,7 @@ namespace Render
     void Canvas::DrawRect(ConstRef<Rect> Shape, Real32 Order, IntColor8 Tint)
     {
         Ref<ShapeCommand> Command = mShapes.emplace_back();
-        Command.Layout.Center = Shape.GetCenter();
+        Command.Layout.Center = Shape.GetCenter() + mShift;
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
         Command.Layout.Data0  = Shape.GetSize() * 0.5f;
@@ -150,7 +158,7 @@ namespace Render
     void Canvas::DrawRoundedRect(ConstRef<Rect> Shape, Real32 Order, IntColor8 Tint, Real32 Radius)
     {
         Ref<ShapeCommand> Command = mShapes.emplace_back();
-        Command.Layout.Center = Shape.GetCenter();
+        Command.Layout.Center = Shape.GetCenter() + mShift;
         Command.Layout.Order  = Order;
         Command.Layout.Color  = Tint;
         Command.Layout.Data0 = Vector2(Shape.GetSize() * 0.5f);
@@ -217,6 +225,7 @@ namespace Render
 
                         Command.Material         = Material;
                         Command.Layout.Transform.SetData(Transform, Order, BitCast<Real32>(Effect));
+                        Command.Layout.Transform.Shift(mShift);
                         Command.Layout.Frame     = Glyph->AtlasBounds;
                         Command.Layout.Offset.Set(
                             CurrentX + Glyph->LocalBounds.GetX() * Size,
@@ -251,6 +260,7 @@ namespace Render
 
         Ref<SpriteCommand> Command = mSprites.emplace_back();
         Command.Layout.Transform.SetData(Transform, Order);
+        Command.Layout.Transform.Shift(mShift);
         Command.Layout.Frame     = Sprite.GetFrame();
         Command.Layout.Size      = Sprite.GetSize();
         Command.Layout.Color     = Sprite.GetTint();
@@ -342,6 +352,9 @@ namespace Render
 
         // Clear the list of glyphs after processing to prepare for the next frame.
         mGlyphs.clear();
+
+        // Reset the shift to zero after processing to ensure it doesn't affect subsequent frames unless explicitly set again.
+        mShift.Set(0.0f, 0.0f);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
