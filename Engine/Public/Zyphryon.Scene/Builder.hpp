@@ -131,6 +131,32 @@ namespace Scene::DSL
         }
     };
 
+    /// \brief Marks a up input dependency for a query.
+    template<typename Type>
+    struct Up
+    {
+        Entity Expression; ///< The entity expression for the cascade.
+
+        ZYPHRYON_INLINE constexpr explicit Up(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        {
+            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).up();
+            return Builder;
+        }
+
+        template<typename Constructor>
+        ZYPHRYON_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        {
+            With<Type>::Apply(Builder).up();
+            return Builder;
+        }
+    };
+
     /// \brief Marks one or more components as outputs of a query.
     template<typename... Types>
     struct Out
@@ -359,6 +385,13 @@ namespace Scene::DSL::_
     /// \brief Extracts component types from an \c Cascade expression.
     template<typename Types>
     struct ExtractTypesFromExpression<Cascade<Types>>
+    {
+        using Type = typename ExtractAndFilterTypes<Types>::Type;
+    };
+
+    /// \brief Extracts component types from an \c Up expression.
+    template<typename Types>
+    struct ExtractTypesFromExpression<Up<Types>>
     {
         using Type = typename ExtractAndFilterTypes<Types>::Type;
     };
