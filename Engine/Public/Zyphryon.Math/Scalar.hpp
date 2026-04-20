@@ -128,6 +128,16 @@ inline namespace Math
         return std::ceil(Value);
     }
 
+    /// \brief Rounds the given value to the nearest integer.
+    ///
+    /// \param Value The value to round.
+    /// \return The nearest integer to \a Value.
+    template<typename Type>
+    constexpr Type Round(Type Value)
+    {
+        return std::round(Value);
+    }
+
     /// \brief Computes the logarithm of a number with a given base.
     ///
     /// \param Number The number to compute the logarithm for.
