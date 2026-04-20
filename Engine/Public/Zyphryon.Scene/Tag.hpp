@@ -35,8 +35,6 @@ namespace Scene
     /// \brief Tag type for indicate the use of phase-based execution in systems or pipelines.
     using Phase     = Tag<"Phase">;
 
-    /// \brief Tag type for marking transient (non-persistent) objects.
-    ///
-    /// Objects with this tag are not intended to persist across serialization boundaries.
+    /// \brief Tag type for marking transient (non-persistent across serialization boundaries) objects.
     using Transient = Tag<"Transient">;
 }

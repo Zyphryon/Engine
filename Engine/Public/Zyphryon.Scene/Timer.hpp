@@ -67,7 +67,7 @@ namespace Scene
         /// \brief Sets the interval of the timer in seconds.
         ///
         /// \param Interval The new interval for the timer in seconds.
-        ZYPHRYON_INLINE Ref<Timer> SetInterval(Real32 Interval)
+        ZYPHRYON_INLINE Timer SetInterval(Real32 Interval)
         {
             mHandle.interval(Interval);
             return (* this);
@@ -84,7 +84,7 @@ namespace Scene
         /// \brief Sets the timeout of the timer in seconds.
         ///
         /// \param Timeout The new timeout for the timer in seconds.
-        ZYPHRYON_INLINE Ref<Timer> SetTimeout(Real32 Timeout)
+        ZYPHRYON_INLINE Timer SetTimeout(Real32 Timeout)
         {
             mHandle.timeout(Timeout);
             return (* this);

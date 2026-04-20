@@ -131,8 +131,8 @@ namespace Scene
 
         /// \brief Enables the entity, making it active in the world.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Awake() const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Awake() const
         {
             mHandle.enable();
             return (* this);
@@ -140,8 +140,8 @@ namespace Scene
 
         /// \brief Disables the entity, making it inactive in the world.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Sleep() const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Sleep() const
         {
             mHandle.disable();
             return (* this);
@@ -159,9 +159,9 @@ namespace Scene
         ///
         /// \tparam Tag The tag type to add.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag>
-        ZYPHRYON_INLINE ConstRef<Entity> Add() const
+        ZYPHRYON_INLINE Entity Add() const
         {
             mHandle.add<Tag>();
             return (* this);
@@ -171,8 +171,8 @@ namespace Scene
         ///
         /// \param Component The entity that represents the component.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Add(Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Add(Entity Component) const
         {
             mHandle.add(Component.GetID());
             return (* this);
@@ -183,9 +183,9 @@ namespace Scene
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag>
-        ZYPHRYON_INLINE ConstRef<Entity> Add(Entity Target) const
+        ZYPHRYON_INLINE Entity Add(Entity Target) const
         {
             mHandle.add<Tag>(Target.GetID());
             return (* this);
@@ -196,9 +196,9 @@ namespace Scene
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE ConstRef<Entity> Add() const
+        ZYPHRYON_INLINE Entity Add() const
         {
             mHandle.add<Tag, Target>();
             return (* this);
@@ -208,9 +208,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Add() const
+        ZYPHRYON_INLINE Entity Add() const
         {
             return Add<typename Pair::First, typename Pair::Second>();
         }
@@ -220,8 +220,8 @@ namespace Scene
         /// \param Tag       The entity used as the pair's first element.
         /// \param Component The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Add(Entity Tag, Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Add(Entity Tag, Entity Component) const
         {
             mHandle.add(Tag.GetID(), Component.GetID());
             return (* this);
@@ -231,9 +231,9 @@ namespace Scene
         ///
         /// \param Data The component's data.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Set(AnyRef<Component> Data) const
+        ZYPHRYON_INLINE Entity Set(AnyRef<Component> Data) const
         {
             mHandle.set<Component>(Move(Data));
             return (* this);
@@ -244,9 +244,9 @@ namespace Scene
         /// \tparam Tag The tag type used as the pair's first element.
         /// \param Data The component data for the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Set(AnyRef<Component> Data) const
+        ZYPHRYON_INLINE Entity Set(AnyRef<Component> Data) const
         {
             mHandle.set_second<Tag>(Move(Data));
             return (* this);
@@ -257,9 +257,9 @@ namespace Scene
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         /// \param Data  The component data for the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Set(AnyRef<typename Pair::Second> Data) const
+        ZYPHRYON_INLINE Entity Set(AnyRef<typename Pair::Second> Data) const
         {
             mHandle.set_second<typename Pair::First>(Move(Data));
             return (* this);
@@ -270,9 +270,9 @@ namespace Scene
         /// \param Tag  The entity used as the pair's first element.
         /// \param Data The component data for the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Set(Entity Tag, AnyRef<Component> Data) const
+        ZYPHRYON_INLINE Entity Set(Entity Tag, AnyRef<Component> Data) const
         {
             mHandle.set_second(Tag.GetID(), Move(Data));
             return (* this);
@@ -282,9 +282,9 @@ namespace Scene
         ///
         /// \param Parameters The component's constructor parameters.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component, typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Entity> Emplace(AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE Entity Emplace(AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace<Component>(Forward<Arguments>(Parameters)...);
             return (* this);
@@ -296,9 +296,9 @@ namespace Scene
         /// \tparam Component The component type used as the pair's second element.
         /// \param Parameters The constructor parameters for the component.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Component, typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE Entity EmplacePair(AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace<Tag, Component>(Forward<Arguments>(Parameters)...);
             return (* this);
@@ -308,9 +308,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair, typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE Entity EmplacePair(AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace<typename Pair::First, typename Pair::Second>(Forward<Arguments>(Parameters)...);
             return (* this);
@@ -321,9 +321,9 @@ namespace Scene
         /// \param Tag        The entity used as the pair's first element.
         /// \param Parameters The constructor parameters for the component.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component, typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Entity> EmplacePair(Entity Tag, AnyRef<Arguments>... Parameters) const
+        ZYPHRYON_INLINE Entity EmplacePair(Entity Tag, AnyRef<Arguments>... Parameters) const
         {
             mHandle.emplace_second<Component>(Tag.GetID(), Forward<Arguments>(Parameters)...);
             return (* this);
@@ -366,9 +366,9 @@ namespace Scene
         ///
         /// \tparam Component The component type to remove.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Remove() const
+        ZYPHRYON_INLINE Entity Remove() const
         {
             mHandle.remove<Component>();
             return (* this);
@@ -378,8 +378,8 @@ namespace Scene
         ///
         /// \param Component The entity representing the component or tag.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Remove(Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Remove(Entity Component) const
         {
             mHandle.remove(Component.GetID());
             return (* this);
@@ -390,9 +390,9 @@ namespace Scene
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE ConstRef<Entity> Remove() const
+        ZYPHRYON_INLINE Entity Remove() const
         {
             mHandle.remove<Tag, Target>();
             return (* this);
@@ -402,9 +402,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Remove() const
+        ZYPHRYON_INLINE Entity Remove() const
         {
             return Remove<typename Pair::First, typename Pair::Second>();
         }
@@ -414,9 +414,9 @@ namespace Scene
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag>
-        ZYPHRYON_INLINE ConstRef<Entity> Remove(Entity Target) const
+        ZYPHRYON_INLINE Entity Remove(Entity Target) const
         {
             mHandle.remove<Tag>(Target.GetID());
             return (* this);
@@ -427,8 +427,8 @@ namespace Scene
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Remove(Entity Tag, Entity Target) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Remove(Entity Tag, Entity Target) const
         {
             mHandle.remove(Tag.GetID(), Target.GetID());
             return (* this);
@@ -622,9 +622,9 @@ namespace Scene
         ///
         /// \tparam Component The component type to notify.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Notify() const
+        ZYPHRYON_INLINE Entity Notify() const
         {
             mHandle.modified<Component>();
             return (* this);
@@ -634,8 +634,8 @@ namespace Scene
         ///
         /// \param Component The entity representing the component.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Notify(Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Notify(Entity Component) const
         {
             mHandle.modified(Component.GetID());
             return (* this);
@@ -646,9 +646,9 @@ namespace Scene
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE ConstRef<Entity> Notify() const
+        ZYPHRYON_INLINE Entity Notify() const
         {
             mHandle.modified<Tag, Target>();
             return (* this);
@@ -658,9 +658,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Notify() const
+        ZYPHRYON_INLINE Entity Notify() const
         {
             return Notify<typename Pair::First, typename Pair::Second>();
         }
@@ -670,8 +670,8 @@ namespace Scene
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Notify(Entity Tag, Entity Target) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Notify(Entity Tag, Entity Target) const
         {
             mHandle.modified(Tag.GetID(), Target.GetID());
             return (* this);
@@ -681,9 +681,9 @@ namespace Scene
         ///
         /// \tparam Component The component type to enable.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Enable() const
+        ZYPHRYON_INLINE Entity Enable() const
         {
             mHandle.enable<Component>();
             return (* this);
@@ -693,8 +693,8 @@ namespace Scene
         ///
         /// \param Component The entity representing the component or tag.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Enable(Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Enable(Entity Component) const
         {
             mHandle.enable(Component.GetID());
             return (* this);
@@ -705,9 +705,9 @@ namespace Scene
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE ConstRef<Entity> Enable() const
+        ZYPHRYON_INLINE Entity Enable() const
         {
             mHandle.enable<Tag, Target>();
             return (* this);
@@ -717,9 +717,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Enable() const
+        ZYPHRYON_INLINE Entity Enable() const
         {
             return Enable<typename Pair::First, typename Pair::Second>();
         }
@@ -729,8 +729,8 @@ namespace Scene
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Enable(Entity Tag, Entity Target) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Enable(Entity Tag, Entity Target) const
         {
             mHandle.enable(Tag.GetID(), Target.GetID());
             return (* this);
@@ -740,9 +740,9 @@ namespace Scene
         ///
         /// \tparam Component The component type to disable.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Component>
-        ZYPHRYON_INLINE ConstRef<Entity> Disable() const
+        ZYPHRYON_INLINE Entity Disable() const
         {
             mHandle.disable<Component>();
             return (* this);
@@ -752,8 +752,8 @@ namespace Scene
         ///
         /// \param Component The entity representing the component or tag.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Disable(Entity Component) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Disable(Entity Component) const
         {
             mHandle.disable(Component.GetID());
             return (* this);
@@ -764,9 +764,9 @@ namespace Scene
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Tag, typename Target>
-        ZYPHRYON_INLINE ConstRef<Entity> Disable() const
+        ZYPHRYON_INLINE Entity Disable() const
         {
             mHandle.disable<Tag, Target>();
             return (* this);
@@ -776,9 +776,9 @@ namespace Scene
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<IsPairDSL Pair>
-        ZYPHRYON_INLINE ConstRef<Entity> Disable() const
+        ZYPHRYON_INLINE Entity Disable() const
         {
             return Disable<typename Pair::First, typename Pair::Second>();
         }
@@ -788,8 +788,8 @@ namespace Scene
         /// \param Tag    The entity used as the pair's first element.
         /// \param Target The entity used as the pair's second element.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> Disable(Entity Tag, Entity Target) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity Disable(Entity Tag, Entity Target) const
         {
             mHandle.disable(Tag.GetID(), Target.GetID());
             return (* this);
@@ -799,9 +799,9 @@ namespace Scene
         ///
         /// \tparam Type The parent type.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Type>
-        ZYPHRYON_INLINE ConstRef<Entity> SetParent() const
+        ZYPHRYON_INLINE Entity SetParent() const
         {
             mHandle.child_of<Type>();
             return (* this);
@@ -811,8 +811,8 @@ namespace Scene
         ///
         /// \param Parent The parent entity.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> SetParent(Entity Parent) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity SetParent(Entity Parent) const
         {
             mHandle.child_of(Parent.GetHandle());
             return (* this);
@@ -830,9 +830,9 @@ namespace Scene
         ///
         /// \tparam Type The archetype type.
         ///
-        /// \return A reference to the updated entity.
+        /// \return The updated entity.
         template<typename Type>
-        ZYPHRYON_INLINE ConstRef<Entity> SetArchetype() const
+        ZYPHRYON_INLINE Entity SetArchetype() const
         {
             mHandle.is_a<Type>();
             return (* this);
@@ -842,8 +842,8 @@ namespace Scene
         ///
         /// \param Archetype The archetype entity.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> SetArchetype(Entity Archetype) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity SetArchetype(Entity Archetype) const
         {
             mHandle.is_a(Archetype.GetHandle());
             return (* this);
@@ -899,8 +899,8 @@ namespace Scene
         ///
         /// \param Name The new entity name.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> SetName(ConstStr8 Name) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity SetName(ConstStr8 Name) const
         {
             mHandle.set_name(Str8(Name).c_str()); // TODO: Remove heap allocation (Flecs)
             return (* this);
@@ -919,8 +919,8 @@ namespace Scene
         ///
         /// \param Name The new display name.
         ///
-        /// \return A reference to the updated entity.
-        ZYPHRYON_INLINE ConstRef<Entity> SetDisplayName(ConstStr8 Name) const
+        /// \return The updated entity.
+        ZYPHRYON_INLINE Entity SetDisplayName(ConstStr8 Name) const
         {
             mHandle.set_doc_name(Str8(Name).c_str()); // TODO: Remove heap allocation (Flecs)
             return (* this);
@@ -955,9 +955,9 @@ namespace Scene
         ///
         /// \param Payload     The event payload to dispatch.
         /// \param Immediately If `true`, the event is dispatched immediately; if `false`,
-        /// \return A reference to this entity.
+        /// \return The updated entity.
         template<typename Event>
-        ZYPHRYON_INLINE ConstRef<Entity> Dispatch(ConstRef<Event> Payload, Bool Immediately = false) const
+        ZYPHRYON_INLINE Entity Dispatch(ConstRef<Event> Payload, Bool Immediately = false) const
         {
             if (Immediately)
             {
@@ -973,9 +973,9 @@ namespace Scene
         /// \brief Registers a callback to subscribe events of the specified type on this entity.
         ///
         /// \param Handler The function to call when the event occurs.
-        /// \return A reference to this entity.
+        /// \return The updated entity.
         template<typename Event, typename Callback>
-        ZYPHRYON_INLINE ConstRef<Entity> Subscribe(AnyRef<Callback> Handler) const
+        ZYPHRYON_INLINE Entity Subscribe(AnyRef<Callback> Handler) const
         {
             mHandle.observe<Event>(Move(Handler));
             return (* this);

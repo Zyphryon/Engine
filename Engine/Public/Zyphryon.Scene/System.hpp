@@ -73,8 +73,8 @@ namespace Scene
 
         /// \brief Enables the system, allowing it to be executed.
         ///
-        /// \return A reference to the updated system.
-        ZYPHRYON_INLINE ConstRef<System> Enable() const
+        /// \return The updated system.
+        ZYPHRYON_INLINE System Enable() const
         {
             mHandle.enable();
             return (* this);
@@ -82,11 +82,24 @@ namespace Scene
 
         /// \brief Disables the system, preventing it from being executed.
         ///
-        /// \return A reference to the updated system.
-        ZYPHRYON_INLINE ConstRef<System> Disable() const
+        /// \return The updated system.
+        ZYPHRYON_INLINE System Disable() const
         {
             mHandle.disable();
             return (* this);
+        }
+
+        /// \brief Toggles the enabled state of the system based on a boolean mask.
+        ///
+        /// \param Mask If `true`, the system will be enabled; if `false`, it will be disabled.
+        /// @return The updated system.
+        ZYPHRYON_INLINE System Toggle(Bool Mask) const
+        {
+            if (Mask)
+            {
+                return Enable();
+            }
+            return Disable();
         }
 
     private:

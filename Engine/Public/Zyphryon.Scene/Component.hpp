@@ -69,9 +69,9 @@ namespace Scene
         ///
         /// \param Traits The traits to apply.
         ///
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Component> AddTrait(Arguments... Traits) const
+        ZYPHRYON_INLINE Component AddTrait(Arguments... Traits) const
         {
             (ApplyTrait(Traits), ...);
             return (* this);
@@ -81,9 +81,9 @@ namespace Scene
         ///
         /// \param Traits The traits to remove.
         ///
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename... Arguments>
-        ZYPHRYON_INLINE ConstRef<Component> RemoveTrait(Arguments... Traits) const
+        ZYPHRYON_INLINE Component RemoveTrait(Arguments... Traits) const
         {
             (EraseTrait(Traits), ...);
             return (* this);
@@ -96,9 +96,9 @@ namespace Scene
         ///
         /// \tparam Target The component type to associate with this component.
         ///
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename Target>
-        ZYPHRYON_INLINE ConstRef<Component> With() const
+        ZYPHRYON_INLINE Component With() const
         {
             mHandle.add(EcsWith, mHandle.world().template component<Target>());
             return (* this);
@@ -108,8 +108,8 @@ namespace Scene
         ///
         /// \param Target The component entity to associate with this component.
         ///
-        /// \return A reference to this component.
-        ZYPHRYON_INLINE ConstRef<Component> With(Component Target) const
+        /// \return The updated component.
+        ZYPHRYON_INLINE Component With(Component Target) const
         {
             mHandle.add(EcsWith, Target.GetHandle());
             return (* this);
@@ -118,8 +118,8 @@ namespace Scene
         /// \brief Establishes a dependency relationship between this component and another component type.
         ///
         /// \param Target The component entity that this component depends on.
-        /// \return A reference to this component.
-        ZYPHRYON_INLINE ConstRef<Component> DependsOn(Entity Target) const
+        /// \return The updated component.
+        ZYPHRYON_INLINE Component DependsOn(Entity Target) const
         {
             mHandle.add(EcsDependsOn, Target.GetHandle());
             return (* this);
@@ -128,9 +128,9 @@ namespace Scene
         /// \brief Overrides the add behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is added to an entity.
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename Function>
-        ZYPHRYON_INLINE ConstRef<Component> OnAdd(AnyRef<Function> Action) const
+        ZYPHRYON_INLINE Component OnAdd(AnyRef<Function> Action) const
         {
             flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
 
@@ -142,9 +142,9 @@ namespace Scene
         /// \brief Overrides the set behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is set on an entity.
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename Function>
-        ZYPHRYON_INLINE ConstRef<Component> OnSet(AnyRef<Function> Action) const
+        ZYPHRYON_INLINE Component OnSet(AnyRef<Function> Action) const
         {
             flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
 
@@ -156,9 +156,9 @@ namespace Scene
         /// \brief Overrides the remove behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is removed from an entity.
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename Function>
-        ZYPHRYON_INLINE ConstRef<Component> OnRemove(AnyRef<Function> Action) const
+        ZYPHRYON_INLINE Component OnRemove(AnyRef<Function> Action) const
         {
             flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
 
@@ -170,9 +170,9 @@ namespace Scene
         /// \brief Overrides the replace behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is replaced on an entity.
-        /// \return A reference to this component.
+        /// \return The updated component.
         template<typename Function>
-        ZYPHRYON_INLINE ConstRef<Component> OnReplace(AnyRef<Function> Action) const
+        ZYPHRYON_INLINE Component OnReplace(AnyRef<Function> Action) const
         {
             flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
 
