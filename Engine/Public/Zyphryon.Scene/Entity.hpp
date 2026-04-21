@@ -129,6 +129,21 @@ namespace Scene
             mHandle.destruct();
         }
 
+        /// \brief Sets the active state of this entity.
+        ///
+        /// \param Active If `true`, the entity will be enabled (awake); if `false`, it will be disabled (asleep).
+        ZYPHRYON_INLINE Entity SetActive(Bool Active) const
+        {
+            if (Active)
+            {
+                return Awake();
+            }
+            else
+            {
+                return Sleep();
+            }
+        }
+
         /// \brief Enables the entity, making it active in the world.
         ///
         /// \return The updated entity.
