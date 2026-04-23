@@ -24,28 +24,28 @@ namespace Enum
 
 /// \def ZYPHRYON_DEFINE_BITWISE_ENUM
 /// \brief Defines bitwise operators for the specified enum type.
-#define ZYPHRYON_DEFINE_BITWISE_ENUM(Enum)                                             \
-    constexpr Enum operator&(Enum A, Enum B) noexcept                                  \
-    {                                                                                  \
-      using T = std::underlying_type_t<Enum>;                                          \
-      return static_cast<Enum>(static_cast<T>(A) & static_cast<T>(B));                 \
-    }                                                                                  \
-    constexpr Enum operator|(Enum A, Enum B) noexcept                                  \
-    {                                                                                  \
-      using T = std::underlying_type_t<Enum>;                                          \
-      return static_cast<Enum>(static_cast<T>(A) | static_cast<T>(B));                 \
-    }                                                                                  \
-    constexpr Enum operator^(Enum A, Enum B) noexcept                                  \
-    {                                                                                  \
-      using T = std::underlying_type_t<Enum>;                                          \
-      return static_cast<Enum>(static_cast<T>(A) ^ static_cast<T>(B));                 \
-    }                                                                                  \
-    constexpr Ref<Enum> operator&=(Ref<Enum> A, Enum B) noexcept { return A = A & B; } \
-    constexpr Ref<Enum> operator|=(Ref<Enum> A, Enum B) noexcept { return A = A | B; } \
-    constexpr Ref<Enum> operator^=(Ref<Enum> A, Enum B) noexcept { return A = A ^ B; } \
-    constexpr Enum      operator~(Enum A) noexcept                                     \
-    {                                                                                  \
-      return static_cast<Enum>(~static_cast<std::underlying_type_t<Enum>>(A));         \
+#define ZYPHRYON_DEFINE_BITWISE_ENUM(Enum)                                                    \
+    friend constexpr Enum operator&(Enum A, Enum B) noexcept                                  \
+    {                                                                                         \
+      using T = std::underlying_type_t<Enum>;                                                 \
+      return static_cast<Enum>(static_cast<T>(A) & static_cast<T>(B));                        \
+    }                                                                                         \
+    friend constexpr Enum operator|(Enum A, Enum B) noexcept                                  \
+    {                                                                                         \
+      using T = std::underlying_type_t<Enum>;                                                 \
+      return static_cast<Enum>(static_cast<T>(A) | static_cast<T>(B));                        \
+    }                                                                                         \
+    friend constexpr Enum operator^(Enum A, Enum B) noexcept                                  \
+    {                                                                                         \
+      using T = std::underlying_type_t<Enum>;                                                 \
+      return static_cast<Enum>(static_cast<T>(A) ^ static_cast<T>(B));                        \
+    }                                                                                         \
+    friend constexpr Ref<Enum> operator&=(Ref<Enum> A, Enum B) noexcept { return A = A & B; } \
+    friend constexpr Ref<Enum> operator|=(Ref<Enum> A, Enum B) noexcept { return A = A | B; } \
+    friend constexpr Ref<Enum> operator^=(Ref<Enum> A, Enum B) noexcept { return A = A ^ B; } \
+    friend constexpr Enum      operator~(Enum A) noexcept                                     \
+    {                                                                                         \
+      return static_cast<Enum>(~static_cast<std::underlying_type_t<Enum>>(A));                \
     }
 
     /// \brief Retrieves the name of the specified enum value as a string.
