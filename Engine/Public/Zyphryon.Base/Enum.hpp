@@ -22,31 +22,39 @@
 namespace Enum
 {
 
-/// \def ZYPHRYON_DEFINE_BITWISE_ENUM
-/// \brief Defines bitwise operators for the specified enum type.
-#define ZYPHRYON_DEFINE_BITWISE_ENUM(Enum)                                                    \
-    friend constexpr Enum operator&(Enum A, Enum B) noexcept                                  \
+/// \def ZYPHRYON_DEFINE_BITWISE_ENUM_TYPE
+/// \brief Defines bitwise operators for the specified enum type with the given access level.
+#define ZYPHRYON_DEFINE_BITWISE_ENUM_TYPE(Enum, Access)                                       \
+    Access constexpr Enum operator&(Enum A, Enum B) noexcept                                  \
     {                                                                                         \
       using T = std::underlying_type_t<Enum>;                                                 \
       return static_cast<Enum>(static_cast<T>(A) & static_cast<T>(B));                        \
     }                                                                                         \
-    friend constexpr Enum operator|(Enum A, Enum B) noexcept                                  \
+    Access constexpr Enum operator|(Enum A, Enum B) noexcept                                  \
     {                                                                                         \
       using T = std::underlying_type_t<Enum>;                                                 \
       return static_cast<Enum>(static_cast<T>(A) | static_cast<T>(B));                        \
     }                                                                                         \
-    friend constexpr Enum operator^(Enum A, Enum B) noexcept                                  \
+    Access constexpr Enum operator^(Enum A, Enum B) noexcept                                  \
     {                                                                                         \
       using T = std::underlying_type_t<Enum>;                                                 \
       return static_cast<Enum>(static_cast<T>(A) ^ static_cast<T>(B));                        \
     }                                                                                         \
-    friend constexpr Ref<Enum> operator&=(Ref<Enum> A, Enum B) noexcept { return A = A & B; } \
-    friend constexpr Ref<Enum> operator|=(Ref<Enum> A, Enum B) noexcept { return A = A | B; } \
-    friend constexpr Ref<Enum> operator^=(Ref<Enum> A, Enum B) noexcept { return A = A ^ B; } \
-    friend constexpr Enum      operator~(Enum A) noexcept                                     \
+    Access constexpr Ref<Enum> operator&=(Ref<Enum> A, Enum B) noexcept { return A = A & B; } \
+    Access constexpr Ref<Enum> operator|=(Ref<Enum> A, Enum B) noexcept { return A = A | B; } \
+    Access constexpr Ref<Enum> operator^=(Ref<Enum> A, Enum B) noexcept { return A = A ^ B; } \
+    Access constexpr Enum      operator~(Enum A) noexcept                                     \
     {                                                                                         \
       return static_cast<Enum>(~static_cast<std::underlying_type_t<Enum>>(A));                \
     }
+
+/// \def ZYPHRYON_DEFINE_BITWISE_ENUM
+/// \brief Defines bitwise operators for the specified enum type with inline access.
+#define ZYPHRYON_DEFINE_BITWISE_ENUM(Enum)        ZYPHRYON_DEFINE_BITWISE_ENUM_TYPE(Enum, inline)
+
+/// \def ZYPHRYON_DEFINE_BITWISE_FRIEND_ENUM
+/// \brief Defines bitwise operators for the specified enum type with friend access, allowing them to be used in class scopes.
+#define ZYPHRYON_DEFINE_BITWISE_FRIEND_ENUM(Enum) ZYPHRYON_DEFINE_BITWISE_ENUM_TYPE(Enum, friend)
 
     /// \brief Retrieves the name of the specified enum value as a string.
     ///
