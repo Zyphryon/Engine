@@ -124,11 +124,12 @@ namespace Content
 
         /// \brief Gets the folder portion of the URI.
         ///
-        /// \return The folder path before the first slash, or an empty string if none exists.
+        /// \return The part between the last two slashes, or an empty string if no folder path exists.
         ZYPHRYON_INLINE constexpr ConstStr8 GetFolder() const
         {
-            const auto Offset = mUrl.rfind('/');
-            return (Offset != ConstStr8::npos ? GetPath().substr(0, Offset) : "");
+            const auto Last  = mUrl.rfind('/');
+            const auto First = mUrl.rfind('/', Last != ConstStr8::npos ? Last - 1 : ConstStr8::npos);
+            return (First != ConstStr8::npos ? GetUrl().substr(First + 1, Last - First - 1) : "");
         }
 
         /// \brief Gets the filename portion of the URI.
