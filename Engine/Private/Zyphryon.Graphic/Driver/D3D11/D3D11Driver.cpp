@@ -1104,13 +1104,23 @@ namespace Graphic
     {
         Ref<D3D11Pass> D3D11Pass = mPasses[Pass];
 
-        // Clear color attachments as specified.
         Vector<Ptr<ID3D11RenderTargetView>, kMaxAttachments> Attachments;
+        for (ConstRef<D3D11ColorAttachment> Attachment : D3D11Pass.Colors)
+        {
+            Attachments.emplace_back(Attachment.TargetResource.Get());
+        }
 
-        for (UInt32 Index = 0; Index < D3D11Pass.Colors.size(); ++Index)
+        // Bind the render targets for the rendering pass.
+        const Ptr<ID3D11DepthStencilView> DSAttachment
+            = (D3D11Pass.DepthStencil.Target ? D3D11Pass.DepthStencil.Target.Get() : nullptr);
+        mDeviceImmediate->OMSetRenderTargets(Attachments.size(), Attachments.data(), DSAttachment);
+
+        // TODO: Discard (DiscardView?)
+
+        // Clear color attachments as specified.
+        for (UInt32 Index = 0; Index < Attachments.size(); ++Index)
         {
             ConstRef<D3D11ColorAttachment> Attachment = D3D11Pass.Colors[Index];
-            Attachments.emplace_back(Attachment.TargetResource.Get());
 
             if (Attachment.LoadAction == Operation::Clear)
             {
@@ -1135,12 +1145,6 @@ namespace Graphic
             mDeviceImmediate->ClearDepthStencilView(D3D11Pass.DepthStencil.Target.Get(), Mode, Depth, Stencil);
         }
 
-        // TODO: Discard (DiscardView?)
-
-        // Bind the render targets for the rendering pass.
-        const Ptr<ID3D11DepthStencilView> DSAttachment
-            = (D3D11Pass.DepthStencil.Target ? D3D11Pass.DepthStencil.Target.Get() : nullptr);
-        mDeviceImmediate->OMSetRenderTargets(Attachments.size(), Attachments.data(), DSAttachment);
 
         // Set the viewport for rendering.
         const CD3D11_VIEWPORT Rect(
