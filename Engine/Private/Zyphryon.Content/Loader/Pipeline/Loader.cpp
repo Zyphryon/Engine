@@ -146,7 +146,7 @@ namespace Content
         }
 
         // Parse 'shader' section
-        Graphic::Shaders Shaders;
+        Graphic::Program Shaders;
         Shaders[0] = Compile(Service, Scope, Program.GetSection("Vertex"), Graphic::Stage::Vertex);
         Shaders[1] = Compile(Service, Scope, Program.GetSection("Fragment"), Graphic::Stage::Fragment);
 

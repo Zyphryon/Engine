@@ -32,7 +32,7 @@ namespace Audio
         ///
         /// \param Data  The encoded audio data blob.
         /// \param Track The track metadata associated with the audio data.
-        /// \return A unique pointer to the created decoder.
+        /// \return The decoded audio track ready for playback.
         virtual Tracker<Decoder> Decode(ConstRef<Blob> Data, ConstRef<class Track> Track) = 0;
     };
 }

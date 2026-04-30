@@ -44,12 +44,12 @@ namespace Graphic
         /// \param Key The unique content key identifying this pipeline.
         explicit Pipeline(AnyRef<Content::Uri> Key);
 
-        /// \brief Loads the pipeline with the specified program, textures, and properties.
+        /// \brief Loads the pipeline with the specified shader program, fixed states, and texture bindings.
         ///
-        /// \param Shaders  The shader program bytecode for the pipeline.
-        /// \param States   The pipeline states descriptor.
+        /// \param Program  The shader program associated with the pipeline.
+        /// \param States   The fixed states configuration for the pipeline.
         /// \param Textures The list of texture bindings for the pipeline.
-        void Load(AnyRef<Shaders> Shaders, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures);
+        void Load(AnyRef<Program> Program, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures);
 
         /// \brief Gets the unique identifier of the pipeline.
         ///
@@ -89,7 +89,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Object                                    mID;
-        Shaders                                   mShaders;
+        Program                                   mProgram;
         States                                    mStates;
         EntryList<TextureSemantic, kMaxResources> mTextures;      /// TODO: Reflection
     };

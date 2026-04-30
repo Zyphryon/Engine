@@ -14,7 +14,6 @@
 
 #include "Zyphryon.Graphic/Driver.hpp"
 #include <d3d11_4.h>
-#include <d3d12.h>
 #include <wrl/client.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -64,29 +63,26 @@ namespace Graphic
         /// \copydoc Driver::UnmapBuffer(Object)
         void UnmapBuffer(Object ID) override;
 
-        /// \copydoc Driver::CreatePass(Object, ConstSpan<Attachment>, ConstRef<Attachment>)
-        void CreatePass(Object ID, ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary) override;
+        /// \copydoc Driver::CreatePass(Object, ConstSpan<ColorAttachment>, DepthStencilAttachment)
+        void CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthStencilAttachment DepthStencil) override;
 
         /// \copydoc Driver::DeletePass(Object)
         void DeletePass(Object ID) override;
 
-        /// \copydoc Driver::CreatePipeline(Object, ConstRef<Shaders>, ConstRef<States>)
-        void CreatePipeline(Object ID, ConstRef<Shaders> Shaders, ConstRef<States> States) override;
+        /// \copydoc Driver::CreatePipeline(Object, ConstRef<Program>, ConstRef<States>)
+        void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States) override;
 
         /// \copydoc Driver::DeletePipeline(Object)
         void DeletePipeline(Object ID) override;
 
-        /// \copydoc Driver::CreateTexture(Object, Access, TextureType, TextureFormat, TextureLayout, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
-        void CreateTexture(Object ID, Access Access, TextureType Type, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data) override;
+        /// \copydoc Driver::CreateTexture(Object, TextureType, TextureFormat, Access, Usage, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
+        void CreateTexture(Object ID, TextureType Type, TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data) override;
 
-        /// \copydoc Driver::UpdateTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, ConstSpan<Byte>)
-        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data) override;
+        /// \copydoc Driver::UpdateTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, Bool, ConstSpan<Byte>)
+        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, Bool Invalidate, ConstSpan<Byte> Data) override;
 
         /// \copydoc Driver::DeleteTexture(Object)
         void DeleteTexture(Object ID) override;
-
-        /// \copydoc Driver::ResizeTexture(Object, UInt16, UInt16, UInt8)
-        void ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps) override;
 
         /// \copydoc Driver::CopyTexture(Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, Bool, UInt16, UInt16)
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height) override;
@@ -94,11 +90,11 @@ namespace Graphic
         /// \copydoc Driver::ReadTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16)
         Blob ReadTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height) override;
 
-        /// \copydoc Driver::Prepare(Object, ConstRef<Viewport>, Clear, Color, Real32, UInt8)
-        void Prepare(Object Pass, ConstRef<Viewport> Viewport, Clear Target, Color Tint, Real32 Depth, UInt8 Stencil) override;
+        /// \copydoc Driver::Prepare(Object, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
+        void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
 
-        /// \copydoc Driver::Submit(ConstSpan<DrawPacket>)
-        void Submit(ConstSpan<DrawPacket> Submissions) override;
+        /// \copydoc Driver::Submit(ConstSpan<DrawItem>)
+        void Submit(ConstSpan<DrawItem> Items) override;
 
         /// \copydoc Driver::Commit(Object)
         void Commit(Object Pass) override;
@@ -109,21 +105,30 @@ namespace Graphic
         template<typename Type>
         using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
-        /// \brief Internal wrapper for Direct3D 11 attachment resources.
-        struct D3D11Attachment final
+        /// \brief Internal wrapper for Direct3D 11 buffer resources.
+        using D3D11Buffer = ComPtr<ID3D11Buffer>;
+
+        /// \brief Internal wrapper for Direct3D 11 color attachment resources.
+        struct D3D11ColorAttachment final
         {
-            ComPtr<ID3D11RenderTargetView> Resource;
-            ComPtr<ID3D11Resource>         Source;
-            UInt32                         SourceLevel;
             ComPtr<ID3D11Resource>         Target;
+            ComPtr<ID3D11RenderTargetView> TargetResource;
             UInt32                         TargetLevel;
-            DXGI_FORMAT                    TargetFormat;
+            ComPtr<ID3D11Resource>         Resolve;
+            UInt32                         ResolveLevel;
+            DXGI_FORMAT                    ResolveFormat;
+            Operation                      LoadAction;
+            Operation                      StoreAction;
         };
 
-        /// \brief Internal wrapper for Direct3D 11 buffer resources.
-        struct D3D11Buffer final
+        /// \brief Internal wrapper for Direct3D 11 depth/stencil attachment resources.
+        struct D3D11DepthStencilAttachment final
         {
-            ComPtr<ID3D11Buffer> Object;
+            ComPtr<ID3D11DepthStencilView> Target;
+            Operation                      DepthLoadAction;
+            Operation                      DepthStoreAction;
+            Operation                      StencilLoadAction;
+            Operation                      StencilStoreAction;
         };
 
         /// \brief Internal wrapper for Direct3D 11 pass resources.
@@ -134,8 +139,8 @@ namespace Graphic
                 Colors.clear();
             }
 
-            Vector<D3D11Attachment, kMaxAttachments> Colors;
-            ComPtr<ID3D11DepthStencilView>           Auxiliary;
+            Vector<D3D11ColorAttachment, kMaxAttachments> Colors;
+            D3D11DepthStencilAttachment                   DepthStencil;
         };
 
         /// \brief Internal wrapper for Direct3D 11 pipeline resources.
@@ -151,10 +156,7 @@ namespace Graphic
         };
 
         /// \brief Internal wrapper for Direct3D 11 sampler resources.
-        struct D3D11Sampler final
-        {
-            ComPtr<ID3D11SamplerState> Object;
-        };
+        using D3D11Sampler = ComPtr<ID3D11SamplerState>;
 
         /// \brief Internal wrapper for Direct3D 11 texture resources.
         struct D3D11Texture final
@@ -162,6 +164,7 @@ namespace Graphic
             ComPtr<ID3D11Texture2D>          Object;
             ComPtr<ID3D11ShaderResourceView> Resource;
             TextureFormat                    Format;
+            UINT                             Samples;
         };
 
         /// \brief Direct3D 11 device capabilities and feature support.
@@ -180,54 +183,51 @@ namespace Graphic
         /// \brief Queries device capabilities.
         void LoadCapabilities();
 
-        /// \brief Initializes default rendering states.
-        void LoadStates();
-
         /// \brief Creates a swapchain for the specified display and associates it with a render pass.
         ///
-        /// \param Pass    Render pass object that will be linked to the swapchain.
-        /// \param Window  Handle to the window for presentation.
-        /// \param Width   Width of the swapchain back-buffer in pixels.
-        /// \param Height  Height of the swapchain back-buffer in pixels.
-        /// \param Samples Multisampling count for anti-aliasing.
+        /// \param Pass    The render pass to associate with the swapchain.
+        /// \param Window  The native window handle to create the swapchain for.
+        /// \param Width   The width of the swapchain buffers in pixels.
+        /// \param Height  The height of the swapchain buffers in pixels.
+        /// \param Samples The multisample count for the swapchain buffers.
         void CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, UInt16 Width, UInt16 Height, UInt8 Samples);
 
         /// \brief Creates the render targets and depth resources for a swapchain-backed render pass.
         ///
-        /// \param Pass    Render pass object that will own the swapchain attachments.
-        /// \param Width   Width of the back-buffer in pixels.
-        /// \param Height  Height of the back-buffer in pixels.
-        /// \param Samples Multisampling count for anti-aliasing.
+        /// \param Pass    The render pass to create resources for.
+        /// \param Width   The width of the render targets in pixels.
+        /// \param Height  The height of the render targets in pixels.
+        /// \param Samples The multisample count for the render targets.
         void CreateSwapchainResources(Ref<D3D11Pass> Pass, UInt16 Width, UInt16 Height, UInt8 Samples) const;
 
-        /// \brief Applies vertex buffer bindings from the latest submission.
+        /// \brief Applies the vertex buffer and index buffer resources for a draw item.
         ///
-        /// \param Oldest Previous submission state used for comparison.
-        /// \param Newest Current submission state containing updated resources.
-        void ApplyVertexResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const;
+        /// \param Oldest The oldest draw item that was submitted.
+        /// \param Newest The newest draw item that is being submitted.
+        void ApplyVertexResources(ConstRef<DrawItem> Oldest, ConstRef<DrawItem> Newest) const;
 
-        /// \brief Applies sampler bindings from the latest submission.
+        /// \brief Applies the sampler state resources for a draw item.
         ///
-        /// \param Oldest Previous submission state used for comparison.
-        /// \param Newest Current submission state containing updated resources.
-        void ApplySamplerResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest);
+        /// \param Oldest The oldest draw item that was submitted.
+        /// \param Newest The newest draw item that is being submitted.
+        void ApplySamplerResources(ConstRef<DrawItem> Oldest, ConstRef<DrawItem> Newest);
 
-        /// \brief Applies texture bindings from the latest submission.
+        /// \brief Applies the texture resources for a draw item.
         ///
-        /// \param Oldest Previous submission state used for comparison.
-        /// \param Newest Current submission state containing updated resources.
-        void ApplyTextureResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const;
+        /// \param Oldest The oldest draw item that was submitted.
+        /// \param Newest The newest draw item that is being submitted.
+        void ApplyTextureResources(ConstRef<DrawItem> Oldest, ConstRef<DrawItem> Newest) const;
 
-        /// \brief Applies uniform buffer bindings from the latest submission.
+        /// \brief Applies the uniform resources for a draw item.
         ///
-        /// \param Oldest Previous submission state used for comparison.
-        /// \param Newest Current submission state containing updated resources.
-        void ApplyUniformResources(ConstRef<DrawPacket> Oldest, ConstRef<DrawPacket> Newest) const;
+        /// \param Oldest The oldest draw item that was submitted.
+        /// \param Newest The newest draw item that is being submitted.
+        void ApplyUniformResources(ConstRef<DrawItem> Oldest, ConstRef<DrawItem> Newest) const;
 
-        /// \brief Retrieves an existing sampler or creates a new one based on the descriptor.
+        /// \brief Gets an existing sampler state with the specified descriptor or creates a new one if it doesn't exist.
         ///
-        /// \param Descriptor The sampler descriptor parameters.
-        /// \return A reference to the sampler object.
+        /// \param Descriptor The sampler descriptor defining the desired sampler state configuration.
+        /// \return A reference to the existing or newly created sampler state resource that matches the specified
         Ref<D3D11Sampler> GetOrCreateSampler(Sampler Descriptor);
 
     private:
@@ -240,12 +240,11 @@ namespace Graphic
         ComPtr<IDXGIFactory1>               mDeviceFactory;
         D3D11Properties                     mProperties;
         Device                              mCapabilities;
-        DrawPacket                          mStates;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ComPtr<IDXGISwapChain>              mDisplay;
+        ComPtr<IDXGISwapChain>              mSwapchain;
         Array<D3D11Buffer, kMaxBuffers>     mBuffers;
         Array<D3D11Pass, kMaxPasses>        mPasses;
         Array<D3D11Pipeline, kMaxPipelines> mPipelines;

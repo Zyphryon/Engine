@@ -31,9 +31,7 @@ namespace Graphic
 
     public:
 
-        /// \brief Constructs an encoder with optional submission capacity.
-        /// 
-        /// \param Capacity Number of submissions to reserve space for.
+
         ZYPHRYON_INLINE explicit Encoder(UInt32 Capacity = kDefaultCapacity)
         {
             mInFlightSubmission.reserve(Capacity);
@@ -43,115 +41,113 @@ namespace Graphic
         ZYPHRYON_INLINE void Clear()
         {
             mInFlightSubmission.clear();
-            mInFlightCommand = DrawPacket();
+            mInFlightCommand = DrawItem();
         }
 
-        /// \brief Sets the indices stream to use for this submission.
-        /// 
-        /// \param Stream Stream containing topology data.
-        ZYPHRYON_INLINE void SetIndices(ConstRef<Stream> Stream)
+        /// \brief Sets the index buffer stream for indexed draw calls.
+        ///
+        /// \param Stream The stream containing the index buffer, offset, and stride information.
+        ZYPHRYON_INLINE void SetIndices(Stream Stream)
         {
             mInFlightCommand.Indices = Stream;
         }
 
-        /// \brief Sets the indices stream using buffer parameters.
-        /// 
-        /// \param Buffer GPU buffer handle.
-        /// \param Offset Byte offset into the buffer.
-        /// \param Stride Stride of each element in the buffer.
-        ZYPHRYON_INLINE void SetIndices(Object Buffer, UInt32 Offset, UInt32 Stride)
+        /// \brief Sets the index buffer stream for indexed draw calls.
+        ///
+        /// \param Buffer The buffer object containing the index data.
+        /// \param Stride The byte stride between consecutive indices in the buffer.
+        /// \param Offset The byte offset into the buffer where index data begins.
+        ZYPHRYON_INLINE void SetIndices(Object Buffer, UInt16 Stride, UInt32 Offset)
         {
             SetIndices(Stream(Buffer, Stride, Offset));
         }
 
-        /// \brief Sets a vertices stream at the specified register.
-        /// 
-        /// \param Register Slot index in the shader.
-        /// \param Stream   Vertex buffer stream to bind.
-        ZYPHRYON_INLINE void SetVertices(UInt32 Register, ConstRef<Stream> Stream)
+        /// \brief Sets a vertex buffer stream for a specific shader register.
+        ///
+        /// \param Register The shader register index to bind the vertex stream to.
+        /// \param Stream   The stream containing the vertex buffer, offset, and stride information.
+        ZYPHRYON_INLINE void SetVertices(UInt32 Register, Stream Stream)
         {
             mInFlightCommand.Vertices[Register] = Stream;
         }
 
-        /// \brief Sets a vertices stream using buffer parameters.
-        /// 
-        /// \param Register Slot index in the shader.
-        /// \param Buffer   GPU buffer handle.
-        /// \param Offset   Byte offset into the buffer.
-        /// \param Stride   Stride of each element in the buffer.
-        ZYPHRYON_INLINE void SetVertices(UInt32 Register, Object Buffer, UInt32 Offset, UInt32 Stride)
+        /// \brief Sets a vertex buffer stream for a specific shader register.
+        ///
+        /// \param Register The shader register index to bind the vertex stream to.
+        /// \param Buffer   The buffer object containing the vertex data.
+        /// \param Stride   The byte stride between consecutive vertices in the buffer.
+        /// \param Offset   The byte offset into the buffer where vertex data begins.
+        ZYPHRYON_INLINE void SetVertices(UInt32 Register, Object Buffer, UInt16 Stride, UInt32 Offset)
         {
             SetVertices(Register, Stream(Buffer, Stride, Offset));
         }
 
-        /// \brief Sets a uniform buffer at the specified register.
-        /// 
-        /// \param Register Slot index in the shader.
-        /// \param Stream   Uniform buffer stream to bind.
-        ZYPHRYON_INLINE void SetUniform(UInt32 Register, ConstRef<Stream> Stream)
+        /// \brief Sets a uniform buffer stream for a specific shader register.
+        ///
+        /// \param Register The shader register index to bind the uniform stream to.
+        /// \param Stream   The stream containing the uniform buffer, offset, and stride information.
+        ZYPHRYON_INLINE void SetUniform(UInt32 Register, Stream Stream)
         {
             mInFlightCommand.Uniforms[Register] = Stream;
         }
 
-        /// \brief Sets a uniform buffer using buffer parameters.
-        /// 
-        /// \param Register Slot index in the shader.
-        /// \param Buffer   GPU buffer handle.
-        /// \param Offset   Byte offset into the buffer.
-        /// \param Stride   Stride of each element in the buffer.
-        ZYPHRYON_INLINE void SetUniform(UInt32 Register, Object Buffer, UInt32 Offset, UInt32 Stride)
+        /// \brief Sets a uniform buffer stream for a specific shader register.
+        ///
+        /// \param Register The shader register index to bind the uniform stream to.
+        /// \param Buffer   The buffer object containing the uniform data.
+        /// \param Stride   The byte stride between consecutive uniform elements in the buffer.
+        /// \param Offset   The byte offset into the buffer where uniform data begins.
+        ZYPHRYON_INLINE void SetUniform(UInt32 Register, Object Buffer, UInt16 Stride, UInt32 Offset)
         {
             SetUniform(Register, Stream(Buffer, Stride, Offset));
         }
 
-        /// \brief Sets the scissor rectangle used for rendering.
-        /// 
-        /// \param Scissor Scissor region in screen space.
-        ZYPHRYON_INLINE void SetScissor(ConstRef<Scissor> Scissor)
+        /// \brief Sets the scissor rectangle for the draw call, defining the pixel area affected by rendering.
+        ///
+        /// \param Scissor The scissor rectangle to set for the draw call.
+        ZYPHRYON_INLINE void SetScissor(Scissor Scissor)
         {
             mInFlightCommand.Scissor = Scissor;
         }
 
-        /// \brief Sets the stencil reference value for stencil testing.
-        /// 
-        /// \param Stencil Reference value to compare against.
+        /// \brief Sets the stencil reference value for stencil testing and operations during the draw call.
+        ///
+        /// \param Stencil The stencil reference value to set for the draw call.
         ZYPHRYON_INLINE void SetStencil(UInt8 Stencil)
         {
             mInFlightCommand.Stencil = Stencil;
         }
 
-        /// \brief Sets the pipeline to use for the current submission.
-        /// 
-        /// \param Pipeline Handle to a compiled graphics pipeline object.
+        /// \brief Sets the pipeline state object for the draw call, defining fixed-function state and shader program.
+        ///
+        /// \param Pipeline The pipeline object to set for the draw call.
         ZYPHRYON_INLINE void SetPipeline(Object Pipeline)
         {
             mInFlightCommand.Pipeline = Pipeline;
         }
 
-        /// \brief Sets the pipeline to use for the current submission.
-        /// 
-        /// \param Pipeline Pipeline object wrapper.
+        /// \brief Sets the pipeline state object for the draw call, defining fixed-function state and shader program.
         ZYPHRYON_INLINE void SetPipeline(ConstRef<Pipeline> Pipeline)
         {
             SetPipeline(Pipeline.GetID());
         }
 
-        /// \brief Sets a texture at the specified register.
-        /// 
-        /// \param Register The slot index in the shader.
-        /// \param Texture  The texture handle to bind.
-        /// \param Sampler  The sampler handle to bind.
+        /// \brief Binds a texture and sampler to a specific shader register for the draw call.
+        ///
+        /// \param Register The shader register index to bind the texture and sampler to.
+        /// \param Texture  The texture object to bind to the specified register.
+        /// \param Sampler  The sampler state to use when sampling the bound texture in the shader.
         ZYPHRYON_INLINE void SetTexture(UInt32 Register, Object Texture, Sampler Sampler)
         {
             mInFlightCommand.Textures.emplace_back(Entry(Register, Texture));
             mInFlightCommand.Samplers.emplace_back(Entry(Register, Sampler));
         }
 
-        /// \brief Sets a texture at the specified register.
-        /// 
-        /// \param Register The slot index in the shader.
-        /// \param Texture  The texture object wrapper.
-        /// \param Sampler  The sampler handle to bind.
+        /// \brief Binds a texture and sampler to a specific shader register for the draw call.
+        ///
+        /// \param Register The shader register index to bind the texture and sampler to.
+        /// \param Texture  The texture object to bind to the specified register.
+        /// \param Sampler  The sampler state to use when sampling the bound texture in the shader.
         ZYPHRYON_INLINE void SetTexture(UInt32 Register, ConstRef<Texture> Texture, Sampler Sampler)
         {
             SetTexture(Register, Texture.GetID(), Sampler);
@@ -178,34 +174,29 @@ namespace Graphic
         /// \param Base      Base vertex index (or first vertex for non-indexed).
         /// \param Offset    Offset into index buffer or vertex buffer.
         /// \param Instances Number of instances to draw (defaults to 1).
-        ZYPHRYON_INLINE void Draw(UInt32 Count, UInt32 Base, UInt32 Offset, UInt32 Instances = 1)
+        ZYPHRYON_INLINE void Draw(UInt32 Count, SInt32 Base, UInt32 Offset, UInt32 Instances = 1)
         {
-            Ref<DrawCommand> Parameters = mInFlightCommand.Command;
-            Parameters.Count     = Count;
-            Parameters.Base      = Base;
-            Parameters.Offset    = Offset;
-            Parameters.Instances = Instances;
-
+            mInFlightCommand.Parameters = DrawCall(Count, Base, Offset, Instances);
             mInFlightSubmission.push_back(mInFlightCommand);
         }
 
-        /// \brief Resets the current in-flight command without clearing recorded submissions.
+        /// \brief Clears the current in-flight command and resets it to default state for the next submission.
         ZYPHRYON_INLINE void Reset()
         {
-            mInFlightCommand = DrawPacket();
+            mInFlightCommand = DrawItem();
         }
 
-        /// \brief Resets texture and sampler bindings for the current in-flight command.
+        /// \brief Clears texture and sampler bindings from the current in-flight command.
         ZYPHRYON_INLINE void ResetBindings()
         {
             mInFlightCommand.Textures.clear();
             mInFlightCommand.Samplers.clear();
         }
 
-        /// \brief Returns the list of all recorded submissions.
-        /// 
-        /// \return Span to the list of finalized submissions.
-        ZYPHRYON_INLINE ConstSpan<DrawPacket> GetSubmissions() const
+        /// \brief Gets a read-only view of the list of recorded draw submissions.
+        ///
+        /// \return A constant span containing the recorded draw items ready for submission to the GPU.
+        ZYPHRYON_INLINE ConstSpan<DrawItem> GetSubmissions() const
         {
             return mInFlightSubmission;
         }
@@ -215,7 +206,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Vector<DrawPacket> mInFlightSubmission;
-        DrawPacket         mInFlightCommand;
+        Vector<DrawItem> mInFlightSubmission;
+        DrawItem         mInFlightCommand;
     };
 }

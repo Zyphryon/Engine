@@ -107,15 +107,4 @@ namespace Enum
     {
         return enchantum::count<Type>;
     }
-
-    /// \brief Checks if the specified flags are included in the given enum value.
-    ///
-    /// \param Value The enum value to check.
-    /// \param Flag  The flags to check for inclusion.
-    /// \return `true` if all flags are included in the value, `false` otherwise.
-    template<typename Type>
-    static constexpr Bool Includes(Type Value, Type Flag)
-    {
-        return (Value & Flag) == Flag;
-    }
 }

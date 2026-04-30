@@ -15,7 +15,7 @@ public:
         ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>();
 
         const Graphic::Viewport Viewport(0, 0, GetDevice().GetWidth(), GetDevice().GetHeight());
-        Graphics->Prepare(Graphic::kDisplay, Viewport, Graphic::Clear::All, Color::Black(), 1, 0);
+        Graphics->Prepare(Graphic::kDisplay, Viewport, Color::Black(), 1, 0);
         {
 
         }

@@ -198,7 +198,7 @@ namespace Engine
         Content->AddLoader(Tracker<Content::ArteryFontLoader>::Create());
 
         Graphic::Device Device = GetService<Graphic::Service>()->GetDevice();
-        Content->AddLoader(Tracker<Content::PipelineLoader>::Create(Device.Backend, Device.Language));
+        Content->AddLoader(Tracker<Content::PipelineLoader>::Create(Device.Backend, Device.Version));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

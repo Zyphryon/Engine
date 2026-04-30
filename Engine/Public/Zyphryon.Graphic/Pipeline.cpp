@@ -31,9 +31,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Pipeline::Load(AnyRef<Shaders> Shaders, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures)
+    void Pipeline::Load(AnyRef<Program> Program, AnyRef<States> States, AnyRef<EntryList<TextureSemantic, kMaxResources>> Textures)
     {
-        mShaders  = Move(Shaders);
+        mProgram  = Move(Program);
         mStates   = Move(States);
         mTextures = Move(Textures);
     }
@@ -43,7 +43,7 @@ namespace Graphic
 
     Bool Pipeline::OnCreate(Ref<Service::Host> Host)
     {
-        mID = Host.GetService<Service>()->CreatePipeline(Move(mShaders), mStates);
+        mID = Host.GetService<Service>()->CreatePipeline(Move(mProgram), mStates);
 
         return mID > 0;
     }

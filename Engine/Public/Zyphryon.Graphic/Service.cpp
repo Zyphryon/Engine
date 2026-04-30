@@ -56,7 +56,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Service::Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples)
+    Bool Service::Initialize(Backend Backend, Ptr<SDL_Window> Display, UInt16 Width, UInt16 Height, Multisample Samples)
     {
         ZYPHRYON_PROFILE_SCOPE("Graphic::Initialize");
 
@@ -77,7 +77,7 @@ namespace Graphic
 
             if (mDriver)
             {
-                WriteCommand<CommandTypes::Initialize>(GetProducerFrame(), Swapchain, Width, Height, Samples);
+                WriteCommand<CommandTypes::Initialize>(GetProducerFrame(), Display, Width, Height, Samples);
                 FlushCommands(false); // Handles the immediate encoding and begins the process of transferring data to the GPU.
                 FlushCommands(false); // Ensures that all data has been completely processed and synchronized.
             }
@@ -88,7 +88,7 @@ namespace Graphic
             {
                 ConstRef<Device> Device = mDriver->GetDevice();
                 LOG_INFO("Graphics: using {}", Enum::Name(Device.Backend));
-                LOG_INFO("Graphics: Detected shader model {}", Enum::Cast(Device.Language) + 1);
+                LOG_INFO("Graphics: Detected shader model {}", Enum::Cast(Device.Version) + 1);
 
                 for (ConstRef<Adapter> Adapter : Device.Adapters)
                 {
@@ -111,13 +111,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateBuffer(Access Access, Usage Usage, UInt32 Length, AnyRef<Blob> Data)
+    Object Service::CreateBuffer(Access Access, Usage Usage, UInt32 Capacity, AnyRef<Blob> Data)
     {
         const Object ID = mBuffers.Allocate();
 
         if (ID)
         {
-            WriteCommand<CommandTypes::CreateBuffer>(GetProducerFrame(), ID, Access, Usage, Length, Move(Data));
+            WriteCommand<CommandTypes::CreateBuffer>(GetProducerFrame(), ID, Access, Usage, Capacity, Move(Data));
         }
         return ID;
     }
@@ -147,11 +147,11 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::ResizeBuffer(Object ID, UInt32 Size)
+    void Service::ResizeBuffer(Object ID, UInt32 Capacity)
     {
         LOG_ASSERT(mBuffers.IsAllocated(ID), "Buffer ID is not valid");
 
-        WriteCommand<CommandTypes::ResizeBuffer>(GetProducerFrame(), ID, Size);
+        WriteCommand<CommandTypes::ResizeBuffer>(GetProducerFrame(), ID, Capacity);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -186,15 +186,15 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreatePass(ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary)
+    Object Service::CreatePass(ConstSpan<ColorAttachment> Colors, DepthStencilAttachment DepthStencil)
     {
         const Object ID = mPasses.Allocate();
 
         if (ID)
         {
-            Vector<Attachment, kMaxAttachments> Attachments(Colors.begin(), Colors.end());
+            Vector<ColorAttachment, kMaxAttachments> ColorAttachments(Colors.begin(), Colors.end());
 
-            WriteCommand<CommandTypes::CreatePass>(GetProducerFrame(), ID, Move(Attachments), Move(Auxiliary));
+            WriteCommand<CommandTypes::CreatePass>(GetProducerFrame(), ID, Move(ColorAttachments), DepthStencil);
         }
         return ID;
     }
@@ -214,13 +214,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreatePipeline(AnyRef<Shaders> Shaders, ConstRef<States> States)
+    Object Service::CreatePipeline(AnyRef<Program> Program, ConstRef<States> States)
     {
         const Object ID = mPipelines.Allocate();
 
         if (ID)
         {
-            WriteCommand<CommandTypes::CreatePipeline>(GetProducerFrame(), ID, Move(Shaders), States);
+            WriteCommand<CommandTypes::CreatePipeline>(GetProducerFrame(), ID, Move(Program), States);
         }
         return ID;
     }
@@ -240,14 +240,14 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateTexture(Access Access, TextureType Type, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
+    Object Service::CreateTexture(TextureType Type, TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
     {
         const Object ID = mTextures.Allocate();
 
         if (ID)
         {
             WriteCommand<CommandTypes::CreateTexture>(
-                GetProducerFrame(), ID, Access, Type, Format, Layout, Width, Height, Mipmaps, Samples, Move(Data));
+                GetProducerFrame(), ID, Type, Format, Access, Usage, Width, Height, Mipmaps, Samples, Move(Data));
         }
         return ID;
     }
@@ -255,11 +255,11 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data)
+    void Service::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, Bool Invalidate, AnyRef<Blob> Data)
     {
         LOG_ASSERT(mTextures.IsAllocated(ID), "Texture ID is not valid");
 
-        WriteCommand<CommandTypes::UpdateTexture>(GetProducerFrame(), ID, Level, X, Y, Width, Height, Pitch, Move(Data));
+        WriteCommand<CommandTypes::UpdateTexture>(GetProducerFrame(), ID, Level, X, Y, Width, Height, Pitch, Invalidate, Move(Data));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -272,16 +272,6 @@ namespace Graphic
         mTextures.Free(ID);
 
         WriteCommand<CommandTypes::DeleteTexture>(GetProducerFrame(), ID);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps)
-    {
-        LOG_ASSERT(mTextures.IsAllocated(ID), "Texture ID is not valid");
-
-        WriteCommand<CommandTypes::ResizeTexture>(GetProducerFrame(), ID, Width, Height, Mipmaps);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -300,21 +290,23 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Prepare(Object Pass, ConstRef<Viewport> Viewport, Clear Target, Color Tint, Real32 Depth, UInt8 Stencil)
+    void Service::Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
     {
-        WriteCommand<CommandTypes::Prepare>(GetProducerFrame(), Pass, Viewport, Target, Tint, Depth, Stencil);
+        Vector<Color, kMaxAttachments> ClearColorParams(Colors.begin(), Colors.end());
+
+        WriteCommand<CommandTypes::Prepare>(GetProducerFrame(), Pass, Viewport, ClearColorParams, Depth, Stencil);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Submit(ConstSpan<DrawPacket> Submissions)
+    void Service::Submit(ConstSpan<DrawItem> Items)
     {
-        LOG_ASSERT(!Submissions.empty(), "Requires at least one draw command");
+        LOG_ASSERT(!Items.empty(), "Requires at least one draw command");
 
         Ref<Writer> Writer = GetProducerFrame();
         Writer.WriteEnum(CommandType::Submit);
-        Writer.WriteBlock<UInt16, DrawPacket>(Submissions);
+        Writer.WriteBlock<UInt16, DrawItem>(Items);
     }
     
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -464,11 +456,6 @@ namespace Graphic
                 DispatchCommand<&Driver::DeleteTexture, CommandTypes::DeleteTexture>(Frame);
                 break;
             }
-            case CommandType::ResizeTexture:
-            {
-                DispatchCommand<&Driver::ResizeTexture, CommandTypes::ResizeTexture>(Frame);
-                break;
-            }
             case CommandType::CopyTexture:
             {
                 DispatchCommand<&Driver::CopyTexture, CommandTypes::CopyTexture>(Frame);
@@ -481,7 +468,7 @@ namespace Graphic
             }
             case CommandType::Submit:
             {
-                mDriver->Submit(Frame.ReadBlock<UInt16, DrawPacket>());
+                mDriver->Submit(Frame.ReadBlock<UInt16, DrawItem>());
                 break;
             }
             case CommandType::Commit:

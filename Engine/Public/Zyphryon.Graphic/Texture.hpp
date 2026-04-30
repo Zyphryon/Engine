@@ -33,28 +33,28 @@ namespace Graphic
         /// \param Key The unique content key identifying this texture.
         explicit Texture(AnyRef<Content::Uri> Key);
 
-        /// \brief Loads texture data into the resource.
+        /// \brief Loads the texture with specified parameters and raw data.
         ///
-        /// \param Access  Specifies the CPU/GPU access mode.
-        /// \param Format  Pixel format of the texture data.
-        /// \param Layout  Memory layout of the texture.
-        /// \param Width   Width in pixels.
-        /// \param Height  Height in pixels.
-        /// \param Level   Mipmap level to load.
-        /// \param Samples Samples per pixel (multisampling).
-        /// \param Data    Raw texture data.
-        void Load(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data);
+        /// \param Format  The pixel format used for storage and sampling.
+        /// \param Access  The access mode for the texture (e.g., static, dynamic, stream).
+        /// \param Usage   The intended usage of the texture (e.g., sample, render target).
+        /// \param Width   The width of the texture in pixels.
+        /// \param Height  The height of the texture in pixels.
+        /// \param Level   The mipmap level of the texture to load.
+        /// \param Samples The multisample count for multisampled textures.
+        /// \param Data    The raw pixel data blob to load into the texture.
+        void Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data);
 
-        /// \brief Loads a standard source texture (non-render target).
+        /// \brief Loads the texture with default access and usage, using the provided parameters and raw data.
         ///
-        /// \param Format Pixel format.
-        /// \param Width  Width in pixels.
-        /// \param Height Height in pixels.
-        /// \param Level  Mipmap level.
-        /// \param Data   Raw texture data.
+        /// \param Format The pixel format used for storage and sampling.
+        /// \param Width  The width of the texture in pixels.
+        /// \param Height The height of the texture in pixels.
+        /// \param Level  The mipmap level of the texture to load.
+        /// \param Data   The raw pixel data blob to load into the texture.
         ZYPHRYON_INLINE void Load(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Level, AnyRef<Blob> Data)
         {
-            Load(Access::Stream, Format, TextureLayout::Source, Width, Height, Level, Multisample::X1, Move(Data));
+            Load(Format, Access::Stream, Usage::Sample, Width, Height, Level, Multisample::X1, Move(Data));
         }
 
         /// \brief Returns the GPU object ID associated with this texture.
@@ -89,12 +89,12 @@ namespace Graphic
             return mFormat;
         }
 
-        /// \brief Returns the layout of the texture in memory.
+        /// \brief Returns the usage pattern of the texture.
         ///
-        /// \return The layout type.
-        ZYPHRYON_INLINE TextureLayout GetLayout() const
+        /// \return The intended usage of the texture.
+        ZYPHRYON_INLINE Usage GetUsage() const
         {
-            return mLayout;
+            return mUsage;
         }
 
         /// \brief Returns the width of the texture in pixels.
@@ -143,10 +143,10 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Object        mID;
-        Access        mAccess;
         TextureType   mType;
         TextureFormat mFormat;
-        TextureLayout mLayout;
+        Access        mAccess;
+        Usage         mUsage;
         UInt16        mWidth;
         UInt16        mHeight;
         UInt8         mLevel;

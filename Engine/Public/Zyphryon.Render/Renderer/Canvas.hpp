@@ -161,8 +161,8 @@ namespace Render
             Callback(VtxData, IdxData);
 
             // Set the vertex and index buffers for drawing and issue the draw command.
-            mEncoder.SetVertices(0, VtxStream.Buffer, 0, VtxStream.Stride);
-            mEncoder.SetIndices(IdxStream.Buffer, 0, IdxStream.Stride);
+            mEncoder.SetVertices(0, VtxStream.Buffer, VtxStream.Stride, 0);
+            mEncoder.SetIndices(IdxStream.Buffer, IdxStream.Stride, 0);
             mEncoder.Draw(Indices, VtxStream.Offset / sizeof(Vertex), IdxStream.Offset / sizeof(Index));
             mEncoder.ResetBindings();
         }

@@ -25,10 +25,10 @@ namespace Graphic
     Texture::Texture(AnyRef<Content::Uri> Key)
         : AbstractResource(Move(Key)),
           mID      { 0 },
-          mAccess  { Access::Stream },
           mType    { TextureType::Texture2D },
           mFormat  { TextureFormat::RGBA8UInt },
-          mLayout  { TextureLayout::Source },
+          mAccess  { Access::Stream },
+          mUsage   { Usage::Sample },
           mWidth   { 0 },
           mHeight  { 0 },
           mLevel   { 0 },
@@ -39,11 +39,11 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Texture::Load(Access Access, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data)
+    void Texture::Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data)
     {
-        mAccess  = Access;
         mFormat  = Format;
-        mLayout  = Layout;
+        mAccess  = Access;
+        mUsage   = Usage;
         mWidth   = Width;
         mHeight  = Height;
         mLevel   = Level;
@@ -58,8 +58,7 @@ namespace Graphic
     {
         SetMemory(mData.GetSize());
 
-        mID = Host.GetService<Service>()->CreateTexture(
-            mAccess, mType, mFormat, mLayout, mWidth, mHeight, mLevel, mSamples, Move(mData));
+        mID = Host.GetService<Service>()->CreateTexture(mType, mFormat, mAccess, mUsage, mWidth, mHeight, mLevel, mSamples, Move(mData));
 
         return mID > 0;
     }

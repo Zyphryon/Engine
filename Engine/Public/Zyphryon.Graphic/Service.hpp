@@ -58,26 +58,26 @@ namespace Graphic
         /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
 
-        /// \brief Initializes the rendering backend.
+        /// \brief Initializes the driver with the specified display and rendering parameters.
         ///
-        /// \param Backend   Rendering backend to initialize.
-        /// \param Swapchain Native window handle for presentation.
-        /// \param Width     Initial surface width in pixels.
-        /// \param Height    Initial surface height in pixels.
-        /// \param Samples   Initial multisampling level.
-        /// \return `true` if the initialization was successful, `false` otherwise.
-        Bool Initialize(Backend Backend, Ptr<SDL_Window> Swapchain, UInt16 Width, UInt16 Height, Multisample Samples);
+        /// \param Backend The graphics backend to use for rendering.
+        /// \param Display The native display handle to render into.
+        /// \param Width   The width of the rendering surface in pixels.
+        /// \param Height  The height of the rendering surface in pixels.
+        /// \param Samples The multisample count for anti-aliasing.
+        /// \return `true` if initialization succeeded, `false` otherwise.
+        Bool Initialize(Backend Backend, Ptr<SDL_Window> Display, UInt16 Width, UInt16 Height, Multisample Samples);
 
-        /// \brief Resets the graphics driver with new surface parameters.
+        /// \brief Resets the rendering surface to the specified resolution and multisample level.
         ///
-        /// \param Width   The new surface width in pixels.
-        /// \param Height  The new surface height in pixels.
-        /// \param Samples The new multisampling level.
+        /// \param Width   The new width of the rendering surface in pixels.
+        /// \param Height  The new height of the rendering surface in pixels.
+        /// \param Samples The new multisample count for anti-aliasing.
         void Reset(UInt16 Width, UInt16 Height, Multisample Samples);
 
-        /// \brief Retrieves the device associated with this driver.
+        /// \brief Gets the device associated with this driver.
         ///
-        /// \return A constant reference to the device.
+        /// \return A constant reference to the device associated with this driver.
         ZYPHRYON_INLINE ConstRef<Device> GetDevice() const
         {
             return mDriver->GetDevice();
@@ -123,64 +123,64 @@ namespace Graphic
             return Allocation.Descriptor;
         }
 
-        /// \brief Creates a buffer resource with the specified parameters.
+        /// \brief Creates a buffer resource with the specified parameters and initial data.
         ///
-        /// \param Access The access pattern for the buffer.
-        /// \param Usage  The intended usage of the buffer.
-        /// \param Length The length of the buffer in bytes.
-        /// \param Data   Optional initial data to populate the buffer.
+        /// \param Access   The access pattern for the buffer (e.g., read, write).
+        /// \param Usage    The intended usage of the buffer (e.g., vertex, index).
+        /// \param Capacity The capacity of the buffer in bytes.
+        /// \param Data     The initial data to populate the buffer with.
         /// \return The identifier of the created buffer.
-        Object CreateBuffer(Access Access, Usage Usage, UInt32 Length, AnyRef<Blob> Data);
+        Object CreateBuffer(Access Access, Usage Usage, UInt32 Capacity, AnyRef<Blob> Data);
 
-        /// \brief Creates a buffer resource with the specified parameters.
+        /// \brief Creates a buffer resource with the specified parameters and no initial data.
         ///
-        /// \param Access The access pattern for the buffer.
-        /// \param Usage  The intended usage of the buffer.
-        /// \param Length The length of the buffer in bytes.
+        /// \param Access   The access pattern for the buffer (e.g., read, write).
+        /// \param Usage    The intended usage of the buffer (e.g., vertex, index).
+        /// \param Capacity The capacity of the buffer in bytes.
         /// \return The identifier of the created buffer.
-        ZYPHRYON_INLINE Object CreateBuffer(Access Access, Usage Usage, UInt32 Length)
+        ZYPHRYON_INLINE Object CreateBuffer(Access Access, Usage Usage, UInt32 Capacity)
         {
-            return CreateBuffer(Access, Usage, Length, Blob());
+            return CreateBuffer(Access, Usage, Capacity, Blob());
         }
 
-        /// \brief Creates a buffer resource with the specified parameters.
+        /// \brief Creates a buffer resource with the specified parameters and initial data.
         ///
-        /// \param Access The access pattern for the buffer.
-        /// \param Usage  The intended usage of the buffer.
-        /// \param Data   Optional initial data to populate the buffer.
+        /// \param Access The access pattern for the buffer (e.g., read, write).
+        /// \param Usage  The intended usage of the buffer (e.g., vertex, index).
+        /// \param Data   The initial data to populate the buffer with.
         /// \return The identifier of the created buffer.
         ZYPHRYON_INLINE Object CreateBuffer(Access Access, Usage Usage, AnyRef<Blob> Data)
         {
             return CreateBuffer(Access, Usage, Data.GetSize(), Move(Data));
         }
 
-        /// \brief Updates a region of the specified buffer with new data.
+        /// \brief Updates a region of an existing buffer resource with new data.
         ///
-        /// \param ID         The identifier of the buffer to update.
-        /// \param Offset     The byte offset within the buffer to start the update.
-        /// \param Invalidate Whether to invalidate the previous contents of the buffer.
+        /// \param ID         The identifier of the buffer resource to update.
+        /// \param Offset     The byte offset within the buffer to start updating.
+        /// \param Invalidate Whether to invalidate the existing buffer data before updating.
         /// \param Data       The new data to write into the buffer.
         void UpdateBuffer(Object ID, UInt32 Offset, Bool Invalidate, AnyRef<Blob> Data);
 
-        /// \brief Deletes the specified buffer resource.
+        /// \brief Deletes a buffer resource, freeing associated memory.
         ///
-        /// \param ID The identifier of the buffer to delete.
+        /// \param ID The identifier of the buffer resource to delete.
         void DeleteBuffer(Object ID);
 
         /// \brief Resizes the specified buffer to a new size.
         ///
-        /// \param ID   The identifier of the buffer to resize.
-        /// \param Size The new size of the buffer in bytes.
-        void ResizeBuffer(Object ID, UInt32 Size);
+        /// \param ID       The identifier of the buffer to resize.
+        /// \param Capacity The new size of the buffer in bytes.
+        void ResizeBuffer(Object ID, UInt32 Capacity);
 
-        /// \brief Copies data between two buffers.
+        /// \brief Copies data from one buffer to another, with optional invalidation of the destination buffer.
         ///
-        /// \param SrcBuffer  The source buffer identifier.
-        /// \param SrcOffset  The byte offset within the source buffer.
-        /// \param DstBuffer  The destination buffer identifier.
-        /// \param DstOffset  The byte offset within the destination buffer.
-        /// \param Invalidate Whether to invalidate the destination buffer's previous contents.
-        /// \param Size       The number of bytes to copy.
+        /// \param SrcBuffer  The identifier of the source buffer to copy from.
+        /// \param SrcOffset  The byte offset within the source buffer to start copying from.
+        /// \param DstBuffer  The identifier of the destination buffer to copy to.
+        /// \param DstOffset  The byte offset within the destination buffer to start copying to.
+        /// \param Invalidate Whether to invalidate the existing data in the destination buffer before copying.
+        /// \param Size       The number of bytes to copy from the source buffer to the destination.
         void CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, Bool Invalidate, UInt32 Size);
 
         /// \brief Creates a material resource.
@@ -188,85 +188,77 @@ namespace Graphic
         /// \return The identifier of the created material.
         Object CreateMaterial();
 
-        /// \brief Deletes the specified material resource.
+        /// \brief Deletes a material resource, freeing associated memory and GPU state.
         ///
         /// \param ID The identifier of the material to delete.
         void DeleteMaterial(Object ID);
 
-        /// \brief Creates a render pass with the specified attachments.
+        /// \brief Creates a render pass resource with the specified attachments.
         ///
-        /// \param Colors    The color attachments for the render pass.
-        /// \param Auxiliary The auxiliary attachment for the render pass (e.g., depth/stencil).
+        /// \param Colors       The color attachments to use for the render pass.
+        /// \param DepthStencil The depth/stencil attachment to use for the render pass.
         /// \return The identifier of the created render pass.
-        Object CreatePass(ConstSpan<Attachment> Colors, ConstRef<Attachment> Auxiliary);
+        Object CreatePass(ConstSpan<ColorAttachment> Colors, DepthStencilAttachment DepthStencil);
 
-        /// \brief Deletes the specified render pass.
+        /// \brief Deletes a render pass resource, freeing associated memory.
         ///
-        /// \param ID The identifier of the render pass to delete.
+        /// \param ID The identifier of the render pass resource to delete.
         void DeletePass(Object ID);
 
-        /// \brief Creates a pipeline state object with the given program and descriptor.
+        /// \brief Creates a pipeline resource with the specified program and states.
         ///
-        /// \param Shaders The shader program bytecode for the pipeline.
-        /// \param States  The fixed-function states for the pipeline.
+        /// \param Program The shader program to use for the pipeline.
+        /// \param States  The pipeline states to configure for the pipeline.
         /// \return The identifier of the created pipeline.
-        Object CreatePipeline(AnyRef<Shaders> Shaders, ConstRef<States> States);
+        Object CreatePipeline(AnyRef<Program> Program, ConstRef<States> States);
 
-        /// \brief Deletes the specified pipeline state object.
+        /// \brief Deletes a pipeline resource, freeing associated memory.
         ///
-        /// \param ID The identifier of the pipeline to delete.
+        /// \param ID The identifier of the pipeline resource to delete.
         void DeletePipeline(Object ID);
 
-        /// \brief Creates a texture resource with the specified parameters.
+        /// \brief Creates a texture resource with the specified parameters and optional initial data.
         ///
-        /// \param Access  The access pattern for the texture.
-        /// \param Type    The type of the texture (e.g., 2D, cube).
-        /// \param Format  The pixel format of the texture.
-        /// \param Layout  The memory layout of the texture.
+        /// \param Type    The type of the texture (e.g., 2D, 3D, cube map).
+        /// \param Format  The pixel format of the texture (e.g., RGBA8, DXT1).
+        /// \param Access  The access pattern for the texture (e.g., read, write).
+        /// \param Usage   The intended usage of the texture (e.g., render target, shader resource).
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
-        /// \param Mipmaps The number of mipmap levels.
-        /// \param Samples The multisampling level.
-        /// \param Data    Optional initial data to populate the texture.
+        /// \param Mipmaps The number of mipmap levels for the texture.
+        /// \param Samples The multisample count for the texture, if applicable.
         /// \return The identifier of the created texture.
-        Object CreateTexture(Access Access, TextureType Type, TextureFormat Format, TextureLayout Layout, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
+        Object CreateTexture(TextureType Type, TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
 
-        /// \brief Updates a region of the specified texture with new data.
+        /// \brief Updates a region of an existing texture resource with new data.
         ///
-        /// \param ID     The identifier of the texture to update.
-        /// \param Level  The mipmap level to update.
-        /// \param X      The X offset within the texture to start the update.
-        /// \param Y      The Y offset within the texture to start the update.
-        /// \param Width  The width of the region to update in pixels.
-        /// \param Height The height of the region to update in pixels.
-        /// \param Pitch  The number of bytes per row of the source data.
-        /// \param Data   The new data to write into the texture.
-        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data);
+        /// \param ID         The identifier of the texture resource to update.
+        /// \param Level      The mipmap level of the texture to update.
+        /// \param X          The X offset within the texture to start updating.
+        /// \param Y          The Y offset within the texture to start updating.
+        /// \param Width      The width of the region to update in pixels.
+        /// \param Height     The height of the region to update in pixels.
+        /// \param Pitch      The number of bytes in a row of the texture data, including any padding.
+        /// \param Invalidate Whether to invalidate the existing texture data in the specified region before updating.
+        /// \param Data       The new texture data to write into the specified region, organized by mipmap level and array layer.
+        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, Bool Invalidate, AnyRef<Blob> Data);
 
-        /// \brief Deletes the specified texture resource.
+        /// \brief Deletes a texture resource, freeing associated memory.
         ///
-        /// \param ID The identifier of the texture to delete.
+        /// \param ID The identifier of the texture resource to delete.
         void DeleteTexture(Object ID);
 
-        /// \brief Resizes the specified texture to new dimensions and mipmap levels.
+        /// \brief Copies a region of one texture resource to another.
         ///
-        /// \param ID      The identifier of the texture to resize.
-        /// \param Width   The new width of the texture in pixels.
-        /// \param Height  The new height of the texture in pixels.
-        /// \param Mipmaps The new number of mipmap levels for the texture.
-        void ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps);
-
-        /// \brief Copies data between two textures.
-        ///
-        /// \param SrcTexture The source texture identifier.
-        /// \param SrcLevel   The mipmap level of the source texture.
-        /// \param SrcX       The X offset within the source texture.
-        /// \param SrcY       The Y offset within the source texture.
-        /// \param DstTexture The destination texture identifier.
-        /// \param DstLevel   The mipmap level of the destination texture.
-        /// \param DstX       The X offset within the destination texture.
-        /// \param DstY       The Y offset within the destination texture.
-        /// \param Invalidate Whether to invalidate the destination texture's previous contents.
+        /// \param SrcTexture The identifier of the source texture to copy from.
+        /// \param SrcLevel   The mipmap level of the source texture to copy from.
+        /// \param SrcX       The X offset within the source texture to start copying from.
+        /// \param SrcY       The Y offset within the source texture to start copying from.
+        /// \param DstTexture The identifier of the destination texture to copy to.
+        /// \param DstLevel   The mipmap level of the destination texture to copy to.
+        /// \param DstX       The X offset within the destination texture to start copying to.
+        /// \param DstY       The Y offset within the destination texture to start copying to.
+        /// \param Invalidate Whether to invalidate the existing texture data in the destination region before copying.
         /// \param Width      The width of the region to copy in pixels.
         /// \param Height     The height of the region to copy in pixels.
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height);
@@ -275,18 +267,29 @@ namespace Graphic
         ///
         /// \param Pass     The render pass to prepare.
         /// \param Viewport The viewport defining the rendering area.
-        /// \param Target   The clear target specifying which buffers to clear.
-        /// \param Tint     The clear color tint.
-        /// \param Depth    The clear depth value.
-        /// \param Stencil  The clear stencil value.
-        void Prepare(Object Pass, ConstRef<Viewport> Viewport, Clear Target, Color Tint, Real32 Depth, UInt8 Stencil);
+        /// \param Colors   The clear colors for each color attachment, in order.
+        /// \param Depth    The clear depth value (used when the pass has a depth attachment).
+        /// \param Stencil  The clear stencil value (used when the pass has a stencil attachment).
+        void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil);
 
-        /// \brief Submits a collection of rendering commands to the GPU.
+        /// \brief Prepares the specified render pass for rendering.
         ///
-        /// \param Submissions The collection of submission commands to execute.
-        void Submit(ConstSpan<DrawPacket> Submissions);
+        /// \param Pass     The render pass to prepare.
+        /// \param Viewport The viewport defining the rendering area.
+        /// \param Color    The clear color to use for all color attachments.
+        /// \param Depth    The clear depth value (used when the pass has a depth attachment).
+        /// \param Stencil  The clear stencil value (used when the pass has a stencil attachment).
+        ZYPHRYON_INLINE void Prepare(Object Pass, ConstRef<Viewport> Viewport, Color Color, Real32 Depth, UInt8 Stencil)
+        {
+            Prepare(Pass, Viewport, Spanify(Color), Depth, Stencil);
+        }
 
-        /// \brief Commits the rendered results of the specified pass to the display.
+        /// \brief Submits a list of draw items to the currently prepared render pass for execution.
+        ///
+        /// \param Items The list of draw items to submit.
+        void Submit(ConstSpan<DrawItem> Items);
+
+        /// \brief Commits the rendered results of the specified pass.
         ///
         /// \param Pass The render pass to commit.
         void Commit(Object Pass);
@@ -329,7 +332,6 @@ namespace Graphic
             CreateTexture,  ///< \see Driver::CreateTexture
             UpdateTexture,  ///< \see Driver::UpdateTexture
             DeleteTexture,  ///< \see Driver::DeleteTexture
-            ResizeTexture,  ///< \see Driver::ResizeTexture
             CopyTexture,    ///< \see Driver::CopyTexture
             Prepare,        ///< \see Driver::Prepare
             Submit,         ///< \see Driver::Submit
@@ -380,16 +382,15 @@ namespace Graphic
             using DeleteBuffer   = Command<CommandType::DeleteBuffer, Object>;
             using ResizeBuffer   = Command<CommandType::ResizeBuffer, Object, UInt32>;
             using CopyBuffer     = Command<CommandType::CopyBuffer, Object, UInt32, Object, UInt32, Bool, UInt32>;
-            using CreatePass     = Command<CommandType::CreatePass, Object, Vector<Attachment, kMaxAttachments>, Attachment>;
+            using CreatePass     = Command<CommandType::CreatePass, Object, Vector<ColorAttachment, kMaxAttachments>, DepthStencilAttachment>;
             using DeletePass     = Command<CommandType::DeletePass, Object>;
-            using CreatePipeline = Command<CommandType::CreatePipeline, Object, Shaders, States>;
+            using CreatePipeline = Command<CommandType::CreatePipeline, Object, Program, States>;
             using DeletePipeline = Command<CommandType::DeletePipeline, Object>;
-            using CreateTexture  = Command<CommandType::CreateTexture, Object, Access, TextureType, TextureFormat, TextureLayout, UInt16, UInt16, UInt8, Multisample, Blob>;
-            using UpdateTexture  = Command<CommandType::UpdateTexture, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, Blob>;
+            using CreateTexture  = Command<CommandType::CreateTexture, Object, TextureType, TextureFormat, Access, Usage, UInt16, UInt16, UInt8, Multisample, Blob>;
+            using UpdateTexture  = Command<CommandType::UpdateTexture, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, Bool, Blob>;
             using DeleteTexture  = Command<CommandType::DeleteTexture, Object>;
-            using ResizeTexture  = Command<CommandType::ResizeTexture, Object, UInt16, UInt16, UInt8>;
             using CopyTexture    = Command<CommandType::CopyTexture, Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, Bool, UInt16, UInt16>;
-            using Prepare        = Command<CommandType::Prepare, Object, Viewport, Clear, Color, Real32, UInt8>;
+            using Prepare        = Command<CommandType::Prepare, Object, Viewport, Vector<Color, kMaxAttachments>, Real32, UInt8>;
             using Commit         = Command<CommandType::Commit, Object>;
         };
 

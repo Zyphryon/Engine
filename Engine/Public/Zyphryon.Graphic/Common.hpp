@@ -15,16 +15,19 @@
 namespace Graphic
 {
     /// \brief Constants used across the graphic module.
-    enum : UInt
+    enum : UInt32
     {
+        /// \brief Alignment requirement for GPU uniform buffer resources.
+        kUniformAlignment      = 0x00010,
+
         /// \brief Alignment requirement for GPU uniform buffer offsets.
         kUniformBlockAlignment = 0x0100,
 
         /// \brief Maximum block size (64 KB) used for uniform buffer pages.
         kUniformBlockCapacity  = 0x10000,
 
-        /// \brief Default swapchain buffer for display presentation.
-        kDisplay               = 0x0000,
+        /// \brief Identifier for the default display used for rendering.
+        kDisplay               = 0x00000,
 
         /// \brief Maximum number of color attachments in a render pass.
         kMaxAttachments        = 0x0004,
@@ -60,20 +63,20 @@ namespace Graphic
         kMaxTextures           = 0x1000,
     };
 
+    /// \brief Specifies the intended usage pattern of a GPU resource in terms of CPU and GPU access.
+    enum class Access : UInt8
+    {
+        Immutable, ///< Initialized once at creation; read-only by the GPU.
+        Dynamic,   ///< Written frequently by the CPU; read by the GPU (mapped access).
+        Stream,    ///< Written occasionally by the CPU via explicit uploads; read by the GPU.
+    };
+
     /// \brief Describes the available graphics backend.
     enum class Backend : UInt8
     {
         None,         ///< No backend selected.
         D3D11,        ///< Direct3D 11 backend.
         GLES3,        ///< OpenGL ES 3.x backend.
-    };
-
-    /// \brief Specifies the memory access of a resource.
-    enum class Access : UInt8
-    {
-        Immutable, ///< Initialized once at creation; read-only by the GPU.
-        Dynamic,   ///< Written frequently by the CPU; read by the GPU (mapped access).
-        Stream,    ///< Written occasionally by the CPU via explicit uploads; read by the GPU.
     };
 
     /// \brief Specifies how source and destination colors are factored in blending.
@@ -127,17 +130,6 @@ namespace Graphic
     };
     ZYPHRYON_DEFINE_BITWISE_ENUM(Channel)
 
-    /// \brief Specifies which parts of a render pass should be cleared.
-    enum class Clear : UInt8
-    {
-        None      = 0b0000, ///< Do not clear any attachments.
-        Color     = 0b0001, ///< Clear color attachments.
-        Depth     = 0b0010, ///< Clear depth attachment.
-        Stencil   = 0b0100, ///< Clear stencil attachment.
-        All       = 0b0111, ///< Clear color, depth, and stencil attachments.
-    };
-    ZYPHRYON_DEFINE_BITWISE_ENUM(Clear)
-
     /// \brief Specifies the origin location for the coordinate systems.
     enum class Coordinates : UInt8
     {
@@ -160,7 +152,7 @@ namespace Graphic
         Wireframe, ///< Render triangles as wireframes.
     };
 
-    /// \brief Specifies the shader language version.
+    /// \brief Describes the shader language version.
     enum class Language : UInt8
     {
         SM1, ///< Shader Model 1
@@ -171,7 +163,7 @@ namespace Graphic
         SM6, ///< Shader Model 6
     };
 
-    /// \brief Specifies the number of samples for multisampling.
+    /// \brief Describes the number of samples for multisampling.
     enum class Multisample : UInt8
     {
         X1,  ///< Single sample (no multisampling).
@@ -179,6 +171,15 @@ namespace Graphic
         X4,  ///< 4x multisampling.
         X8,  ///< 8x multisampling.
         X16, ///< 16x multisampling.
+    };
+
+    /// \brief Specifies the operation to perform on render targets at the beginning and end of a render pass.
+    enum class Operation : UInt8
+    {
+        Load,    ///< Preserve existing contents.
+        Clear,   ///< Clear to a specified value.
+        Store,   ///< Write contents to memory.
+        Discard, ///< Discard contents after rendering.
     };
 
     /// \brief Specifies the type of geometric primitive to render.
@@ -191,14 +192,14 @@ namespace Graphic
         TriangleStrip,  ///< Connected triangles (1 triangle per vertex after the first two).
     };
 
-    /// \brief Specifies the shader stage in the graphics pipeline.
+    /// \brief Describes the shader stage in the graphics pipeline.
     enum class Stage : UInt8
     {
         Vertex,   ///< Vertex shader stage.
         Fragment, ///< Fragment (pixel) shader stage.
     };
 
-    /// \brief Defines the action to perform when a test (e.g., stencil) passes or fails.
+    /// \brief Specifies the action to perform when a test (e.g., stencil) passes or fails.
     enum class TestAction : UInt8
     {
         Keep,              ///< Keep the current value.
@@ -211,7 +212,7 @@ namespace Graphic
         IncrementSaturate, ///< Increment the value, but clamp to the maximum.
     };
 
-    /// \brief Defines the comparison condition used in depth or stencil tests.
+    /// \brief Specifies the comparison condition used in depth or stencil tests.
     enum class TestCondition : UInt8
     {
         Always,       ///< Always passes the test.
@@ -224,7 +225,7 @@ namespace Graphic
         LessEqual,    ///< Passes if source <= destination.
     };
 
-    /// \brief Defines how texture coordinates outside the [0,1] range are handled.
+    /// \brief Specifies how texture coordinates outside the [0,1] range are handled.
     enum class TextureAddress : UInt8
     {
         Clamp,   ///< Clamp to edge; coordinates are clamped to the nearest valid texel.
@@ -233,7 +234,7 @@ namespace Graphic
         Mirror,  ///< Mirror texture at every integer boundary.
     };
 
-    /// \brief Defines the border color used when border addressing mode is selected.
+    /// \brief Specifies the border color used when border addressing mode is selected.
     enum class TextureBorder : UInt8
     {
         OpaqueBlack,        ///< Opaque black border color.
@@ -323,14 +324,6 @@ namespace Graphic
         D32S8UIntNorm,         ///< 32-bit floating-point depth + 8-bit stencil.
     };
 
-    /// \brief Describes how a texture is used within a rendering or compute pass.
-    enum class TextureLayout : UInt8
-    {
-        Source,   ///< Used as input (e.g., sampled in a shader).
-        Target,   ///< Used as output (e.g., render or compute target).
-        Dual,     ///< Used as both input and output in the same pass.
-    };
-
     /// \brief Describes logical texture semantic used in materials and pipelines.
     enum class TextureSemantic : UInt8
     {
@@ -349,21 +342,24 @@ namespace Graphic
         None,         ///< No semantic assigned.
     };
 
-    /// \brief Specifies the dimensionality of a texture.
+    /// \brief Describes the dimensionality of a texture.
     enum class TextureType : UInt8
     {
         Texture2D,      ///< 2D texture.
     };
 
-    /// \brief Specifies the intended usage of a resource.
+    /// \brief Specifies the intended usage of a GPU resource.
     enum class Usage : UInt8
     {
-        Vertex,  ///< Used as a vertex buffer.
-        Index,   ///< Used as an index buffer.
-        Uniform, ///< Used as an uniform buffer.
+        Vertex,         ///< Resource is used as a vertex buffer.
+        Index,          ///< Resource is used as an index buffer.
+        Uniform,        ///< Resource is used as a uniform buffer.
+        Sample,         ///< Resource is used as a shader resource for sampling (e.g., texture).
+        Target,         ///< Resource is used as a render target or depth/stencil attachment.
     };
+    ZYPHRYON_DEFINE_BITWISE_ENUM(Usage)
 
-    /// \brief Specifies the format of a vertex attribute.
+    /// \brief Describes the format of vertex attributes in a vertex buffer.
     enum class VertexFormat : UInt8
     {
         Float16x2,          ///< Two 16-bit floating-point.
@@ -396,7 +392,7 @@ namespace Graphic
         UIntNorm10_10_10_2, ///< Three 10-bit unsigned normalized integers + 2-bit unsigned integer.
     };
 
-    /// \brief Identifies the semantic meaning of a vertex attribute.
+    /// \brief Describes the logical semantic meaning of a vertex attribute in a shader.
     enum class VertexSemantic : UInt8
     {
         Position,      ///< Defines the vertex position.
@@ -424,10 +420,10 @@ namespace Graphic
         None,          ///< No semantic assigned.
     };
 
-    /// \brief Defines a handle to a graphics object.
+    /// \brief Defines the handle used for identifying GPU resources.
     using Object = UInt16;
 
-    /// \brief Describes a display resolution supported by a graphics adapter.
+    /// \brief Represents a display mode supported by the graphics device.
     struct Resolution final
     {
         /// The width of the display mode in pixels.
@@ -443,43 +439,61 @@ namespace Graphic
     /// \brief Describes a graphics adapter (GPU) available on the system.
     struct Adapter final
     {
-        /// The human-readable name of the graphics adapter.
-        Str8   Description;
+        /// The vendor identifier for the graphics adapter.
+        Str8               Description;
 
-        /// The dedicated video memory in megabytes (MB).
-        UInt32 Memory;
+        /// The dedicated video memory available on the graphics adapter in MBs.
+        UInt32             Memory;
 
-        /// The list of supported display resolutions.
+        /// The display modes supported by the graphics adapter.
         Vector<Resolution> Resolutions;
     };
 
-    /// \brief Describes the capabilities of a graphics device.
+    /// \brief Describes the capabilities and limits of the graphics device.
     struct Capabilities final
     {
-        /// The maximum number of texture dimension (width or height).
+        /// The maximum supported texture dimension (width and height) in pixels.
         UInt32 MaxTextureDimension;
 
-        /// The maximum number of texture array layers.
-        UInt32 MaxTextureLayers;
+        /// The maximum number of texture layers (array slices or cube faces) supported by the device.
+        UInt16 MaxTextureLayers;
+
+        /// The maximum number of mipmap levels supported for textures.
+        UInt8  MaxTextureMipmaps;
+
+        /// The maximum number of texture units (samplers) available in shader stages.
+        UInt8  MaxTextureSlots;
+
+        /// The maximum number of render targets that can be bound simultaneously in a render pass.
+        UInt8  MaxRenderTargets;
+
+        /// The maximum number of uniform buffer slots available in shader stages.
+        UInt8  MaxVertexAttributes;
+
+        /// The maximum number of vertex input streams that can be used simultaneously in a draw call.
+        UInt8  MaxVertexStreams;
+
+        /// The maximum anisotropy level supported for texture sampling.
+        UInt8  MaxAnisotropy;
     };
 
-    /// \brief Describes the current graphics device and its capabilities.
+    /// \brief Describes the graphics device and its capabilities.
     struct Device final
     {
-        /// The current graphics backend in use.
-        Backend         Backend  = Backend::None;
+        /// The graphics backend currently in use (e.g., Direct3D 11, OpenGL ES 3.x).
+        Backend         Backend        = Backend::None;
 
-        /// The current multisampling level.
-        Multisample     Samples  = Multisample::X1;
+        /// The shader language version supported by the graphics device.
+        Language        Version        = Language::SM1;
 
-        /// The current graphics API version.
-        Language        Language = Language::SM1;
+        /// The number of samples used for multisampling anti-aliasing (MSAA) on the main window.
+        Multisample     Samples        = Multisample::X1;
 
-        /// The list of available graphics adapters.
+        /// The capabilities and limits of the graphics device.
+        Capabilities    Capabilities   = {};
+
+        /// The list of graphics adapters (GPUs) available on the system.
         Vector<Adapter> Adapters;
-
-        /// The graphics capabilities of the system.
-        Capabilities    Capabilities;
     };
 
     /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
@@ -520,38 +534,51 @@ namespace Graphic
         Real32 MaxDepth = 1.0f;
     };
 
-    /// \brief Defines a resource binding entry mapping a register to a resource.
-    template<typename Value>
-    struct Entry final
+    /// \brief Defines the configuration for a color attachment in a render pass.
+    struct ColorAttachment final
     {
-        /// The binding register index (slot).
-        UInt8 Register;
+        /// The texture object used as the render target for this attachment.
+        Object    Target       = 0;
 
-        /// The bound resource element (e.g., buffer, texture, sampler).
-        Value Resource;
+        /// The mipmap level of the render target (if applicable).
+        UInt8     TargetLevel  = 0;
+
+        /// The texture object used as the resolve target for multisampled render targets (if multisampling is used).
+        Object    Resolve      = 0;
+
+        /// The mipmap level of the resolve target (if multisampling is used).
+        UInt8     ResolveLevel = 0;
+
+        /// The operation to perform on the color buffer at the beginning of a render pass.
+        Operation LoadAction   = Operation::Load;
+
+        /// The operation to perform on the color buffer at the end of a render pass.
+        Operation StoreAction  = Operation::Store;
     };
 
-    /// \brief Defines a list of resource binding entries.
-    template<typename Value, UInt Capacity>
-    using EntryList = Vector<Entry<Value>, Capacity>;
-
-    /// \brief Defines a texture attachment in a render pass.
-    struct Attachment final
+    /// \brief Defines the configuration for a depth/stencil attachment in a render pass.
+    struct DepthStencilAttachment final
     {
-        /// The target texture that receives the rendered output.
-        Object TargetTexture = 0;
+        /// The texture object used as the render target for this attachment.
+        Object    Target             = 0;
 
-        /// The mipmap level of the target texture to render to.
-        UInt8  TargetLevel   = 0;
+        /// The mipmap level of the render target (if applicable).
+        UInt8     TargetLevel        = 0;
 
-        /// The multisample source texture that provides input data for rendering.
-        Object SourceTexture = 0;
+        /// The operation to perform on the depth buffer at the beginning of a render pass.
+        Operation DepthLoadAction    = Operation::Load;
 
-        /// The mipmap level of the source texture to sample from.
-        UInt8  SourceLevel   = 0;
+        /// The operation to perform on the depth buffer at the end of a render pass.
+        Operation DepthStoreAction   = Operation::Store;
+
+        /// The operation to perform on the stencil buffer at the beginning of a render pass.
+        Operation StencilLoadAction  = Operation::Load;
+
+        /// The operation to perform on the stencil buffer at the end of a render pass.
+        Operation StencilStoreAction = Operation::Store;
     };
 
-    /// \brief Defines a vertex attribute within a vertex layout.
+    /// \brief Defines the layout of a vertex attribute within a vertex buffer.
     struct Attribute final
     {
         /// The semantic meaning of the vertex attribute.
@@ -583,8 +610,8 @@ namespace Graphic
         UInt32 Offset = 0;
     };
 
-    /// \brief Defines the shader program bytecode for a rendering pipeline.
-    using  Shaders = Array<Blob, Enum::Count<Stage>()>;
+    /// \brief Defines a shader program consisting of compiled shader blobs for each stage.
+    using  Program = Array<Blob, Enum::Count<Stage>()>;
 
     /// \brief Defines the fixed-function GPU state used by a rendering pipeline.
     struct States final
@@ -674,7 +701,7 @@ namespace Graphic
         Primitive      InputPrimitive        = Primitive::TriangleList;
     };
 
-    /// \brief Defines the sampling parameters for a texture sampler.
+    /// \brief Defines the sampling parameters for texture access in shaders.
     struct Sampler final
     {
         /// The wrapping mode for the U (horizontal) texture coordinate.
@@ -696,56 +723,71 @@ namespace Graphic
         TextureBorder  Border       = TextureBorder::OpaqueBlack;
     };
 
-    /// \brief Defines a draw command for rendering operations, supporting both indexed and non-indexed rendering.
-    struct DrawCommand final
+    /// \brief Defines a resource binding entry for shaders, associating a shader register with a resource.
+    template<typename Value>
+    struct Entry final
+    {
+        /// The shader register index to which the resource will be bound.
+        UInt8 Register;
+
+        /// The resource to bind to the specified register.
+        Value Resource;
+    };
+
+    /// \brief Defines a list of resource binding entries for shaders, with a fixed capacity.
+    template<typename Value, UInt32 Capacity>
+    using  EntryList = Vector<Entry<Value>, Capacity>;
+
+    /// \brief Defines the parameters for a draw cal.
+    struct DrawCall final
     {
         /// The number of vertices or indices to draw.
         UInt32 Count     = 0;
 
-        /// The starting index or vertex location.
+        /// The base vertex index for non-indexed draw calls or the vertex offset for indexed draw calls.
         SInt32 Base      = 0;
 
-        /// The byte offset within the vertex or index buffer.
+        /// The byte offset within the index buffer for indexed draw calls or the vertex offset for non-indexed draw calls.
         UInt32 Offset    = 0;
 
-        /// The number of instances to render (for instanced draws).
+        /// The number of instances to draw for instanced rendering (1 for non-instanced draws).
         UInt32 Instances = 1;
     };
 
-    /// \brief Defines a complete draw packet for rendering operations.
-    struct DrawPacket final
+    /// \brief Defines a complete draw item, encapsulating all state and resources needed for a single draw call.
+    struct DrawItem final
     {
-        /// \brief Maximum number of vertex buffer streams.
+        /// \brief The maximum number of vertex input streams that can be used simultaneously in a draw call.
         static constexpr UInt8 kMaxVertexStreams  = 0x0008;
 
-        /// \brief Maximum number of uniform buffer streams.
+        /// \brief The maximum number of uniform buffer streams that can be used simultaneously in a draw call.
         static constexpr UInt8 kMaxUniformStreams = 0x0004;
 
-        /// The scissor recTtangle used for pixel clipping.
+        /// The scissor rectangle defining the pixel area affected by rendering.
         Scissor                           Scissor;
 
-        /// The stencil reference value for stencil testing.
+        /// The stencil reference value used in stencil testing and operations.
         UInt8                             Stencil  = 0;
 
-        /// The pipeline object to bind for rendering.
+        /// The pipeline state object defining the fixed-function state and shader program for rendering.
         Object                            Pipeline = 0;
 
-        /// Collection of vertex buffer bindings for geometry input.
-        Array<Stream,  kMaxVertexStreams> Vertices;     // TODO: EntryList?
+        /// The list of vertex buffer streams providing vertex data for the draw call.
+        Array<Stream,  kMaxVertexStreams> Vertices;
 
-        /// Index buffer binding used for indexed rendering.
+        /// The stream providing index data for indexed draw calls (optional).
         Stream                            Indices;
 
-        /// Collection of uniform buffer bindings for the pipeline.
-        Array<Stream, kMaxUniformStreams> Uniforms;     // TODO: EntryList?
+        /// The list of uniform buffer streams providing shader constants for the draw call.
+        Array<Stream, kMaxUniformStreams> Uniforms;
 
-        /// Collection of sampler bindings for texture sampling.
+        /// The list of sampler bindings for the shader stages used in the draw call.
         EntryList<Sampler, kMaxResources> Samplers;
 
-        /// Collection of texture bindings for the pipeline.
+        /// The list of texture bindings for the shader stages used in the draw call.
         EntryList<Object,  kMaxResources> Textures;
 
-        /// The draw parameters for the rendering command.
-        DrawCommand                       Command;
+        /// The parameters defining the draw call, including vertex count, instance count, and offsets.
+        DrawCall                          Parameters;
     };
 }

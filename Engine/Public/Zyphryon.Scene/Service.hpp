@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Component.hpp"
-#include "Pin.hpp"
 #include "Pipeline.hpp"
 #include "Query.hpp"
 #include "System.hpp"
@@ -60,9 +59,20 @@ namespace Scene
         /// \brief Compacts memory by removing unused entities and components.
         ///
         /// This helps reduce fragmentation and optimize memory usage.
-        void Shrink()
+        ZYPHRYON_INLINE void Shrink()
         {
             mWorld.shrink();
+        }
+
+        /// \brief Purges all instances of a specific component type from the world.
+        ///
+        /// This removes the specified component from every entity that currently has it.
+        ///
+        /// \tparam Component The component type to clear from all entities.
+        template<typename Component>
+        ZYPHRYON_INLINE void Purge()
+        {
+            mWorld.remove_all<Component>();
         }
 
         /// \brief Defers execution of a callback until the end of the current frame.
@@ -83,71 +93,6 @@ namespace Scene
             {
                 mWorld.defer_end();
             }
-        }
-
-        /// \brief Provides a singleton tag of the given type to the world.
-        ///
-        /// \tparam Component The tag type to register.
-        template<typename Component>
-        ZYPHRYON_INLINE void Provide()
-        {
-            mWorld.add<Component>();
-        }
-
-        /// \brief Provides a singleton component of the given type in the world.
-        ///
-        /// \param Data The instance of the component to associate with the singleton.
-        template<typename Component>
-        ZYPHRYON_INLINE void Provide(AnyRef<Component> Data)
-        {
-            mWorld.set<Component>(Move(Data));
-        }
-
-        /// \brief Accesses the singleton instance of the given type.
-        ///
-        /// \tparam Component The tag or component type to access.
-        /// \return A reference to the singleton instance.
-        template<typename Component>
-        ZYPHRYON_INLINE Ref<Component> Access()
-        {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mWorld.get<Component>();
-            }
-            else
-            {
-                return mWorld.get_mut<Component>();
-            }
-        }
-
-        /// \brief Checks if a singleton of the given type exists in the world.
-        ///
-        /// \tparam Component The tag or component type to check.
-        /// \return `true` if the singleton exists, otherwise `false`.
-        template<typename Component>
-        ZYPHRYON_INLINE Bool Contains() const
-        {
-            return mWorld.has<Component>();
-        }
-
-        /// \brief Revokes a singleton of the given type from the world.
-        ///
-        /// \tparam Component The tag or component type to remove.
-        template<typename Component>
-        ZYPHRYON_INLINE void Revoke()
-        {
-            mWorld.remove<Component>();
-        }
-
-        /// \brief Clears all instances of a component type from the world.
-        ///
-        /// This removes the specified component from every entity that currently has it.
-        ///
-        /// \tparam Component The component type to clear from all entities.
-        template<typename Component>
-        ZYPHRYON_INLINE void Clear()
-        {
-            mWorld.remove_all<Component>();
         }
 
         /// \brief Creates a new entity.
@@ -181,6 +126,14 @@ namespace Scene
             const Entity Actor = Allocate<true>();
             Source.Clone(Actor);
             return Actor;
+        }
+
+        /// \brief Retrieves the entity representing the world itself.
+        ///
+        /// \return The entity representing the world.
+        ZYPHRYON_INLINE Entity GetWorld() const
+        {
+            return Scene::Entity(flecs::World);
         }
 
         /// \brief Retrieves an entity by its unique identifier.
@@ -223,25 +176,6 @@ namespace Scene
         ZYPHRYON_INLINE Component<Target> GetComponent(ConstStr8 ID = flecs::_::type_name<Target>()) const
         {
             return Component<Target>(mWorld.component<Target>(ID.data()));
-        }
-
-        /// \brief Subscribes to a specific event.
-        ///
-        /// \tparam Event The event type to subscribe to (e.g. OnAdd).
-        /// \param Name   The name of the observer.
-        /// \param Each   The callback to invoke for each matching entity and event data.
-        /// \return The entity representing the observer.
-        template<typename Event, typename FEach>
-        ZYPHRYON_INLINE Entity Subscribe(ConstStr8 Name, AnyRef<FEach> Each)
-        {
-            flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
-            Builder.event<Event>().with(flecs::Any);
-
-            const flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
-            {
-                Each(Entity(Iterator.entity(Element)), * Iterator.param<Event>());
-            });
-            return Entity(Observer);
         }
 
         /// \brief Creates a new phase entity with an optional dependency.
