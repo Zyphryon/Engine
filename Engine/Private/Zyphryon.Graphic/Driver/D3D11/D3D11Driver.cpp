@@ -1364,27 +1364,57 @@ namespace Graphic
                 mCapabilities.Version                          = Language::SM5;
                 mCapabilities.Capabilities.MaxTextureDimension = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
                 mCapabilities.Capabilities.MaxTextureLayers    = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps   = D3D11_REQ_MIP_LEVELS;
+                mCapabilities.Capabilities.MaxTextureSlots     = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
+                mCapabilities.Capabilities.MaxRenderTargets    = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
+                mCapabilities.Capabilities.MaxVertexAttributes = D3D11_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
+                mCapabilities.Capabilities.MaxVertexStreams    = D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
+                mCapabilities.Capabilities.MaxAnisotropy       = D3D11_REQ_MAXANISOTROPY;
                 break;
             case D3D_FEATURE_LEVEL_10_1:
             case D3D_FEATURE_LEVEL_10_0:
                 mCapabilities.Version                          = Language::SM4;
                 mCapabilities.Capabilities.MaxTextureDimension = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
                 mCapabilities.Capabilities.MaxTextureLayers    = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+                mCapabilities.Capabilities.MaxTextureMipmaps   = D3D10_REQ_MIP_LEVELS;
+                mCapabilities.Capabilities.MaxTextureSlots     = D3D10_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
+                mCapabilities.Capabilities.MaxRenderTargets    = D3D10_SIMULTANEOUS_RENDER_TARGET_COUNT;
+                mCapabilities.Capabilities.MaxVertexAttributes = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
+                mCapabilities.Capabilities.MaxVertexStreams    = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
+                mCapabilities.Capabilities.MaxAnisotropy       = D3D10_REQ_MAXANISOTROPY;
                 break;
             case D3D_FEATURE_LEVEL_9_3:
                 mCapabilities.Version                          = Language::SM3;
                 mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
                 mCapabilities.Capabilities.MaxTextureLayers    = 0;
+                mCapabilities.Capabilities.MaxTextureMipmaps   = 16;
+                mCapabilities.Capabilities.MaxTextureSlots     = 16;
+                mCapabilities.Capabilities.MaxRenderTargets    = 4;
+                mCapabilities.Capabilities.MaxVertexAttributes = 16;
+                mCapabilities.Capabilities.MaxVertexStreams    = 16;
+                mCapabilities.Capabilities.MaxAnisotropy       = 16;
                 break;
             case D3D_FEATURE_LEVEL_9_2:
                 mCapabilities.Version                          = Language::SM2;
                 mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
                 mCapabilities.Capabilities.MaxTextureLayers    = 0;
+                mCapabilities.Capabilities.MaxTextureMipmaps   = 16;
+                mCapabilities.Capabilities.MaxTextureSlots     = 16;
+                mCapabilities.Capabilities.MaxRenderTargets    = 1;
+                mCapabilities.Capabilities.MaxVertexAttributes = 16;
+                mCapabilities.Capabilities.MaxVertexStreams    = 16;
+                mCapabilities.Capabilities.MaxAnisotropy       = 2;
                 break;
             case D3D_FEATURE_LEVEL_9_1:
                 mCapabilities.Version                          = Language::SM1;
                 mCapabilities.Capabilities.MaxTextureDimension = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
                 mCapabilities.Capabilities.MaxTextureLayers    = 0;
+                mCapabilities.Capabilities.MaxTextureMipmaps   = 16;
+                mCapabilities.Capabilities.MaxTextureSlots     = 16;
+                mCapabilities.Capabilities.MaxRenderTargets    = 1;
+                mCapabilities.Capabilities.MaxVertexAttributes = 16;
+                mCapabilities.Capabilities.MaxVertexStreams    = 16;
+                mCapabilities.Capabilities.MaxAnisotropy       = 2;
                 break;
             default:
                 break;

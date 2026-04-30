@@ -467,7 +467,7 @@ namespace Graphic
         /// The maximum number of render targets that can be bound simultaneously in a render pass.
         UInt8  MaxRenderTargets;
 
-        /// The maximum number of uniform buffer slots available in shader stages.
+        /// The maximum number of vertex attributes that can be used in a vertex buffer and accessed in a vertex shader.
         UInt8  MaxVertexAttributes;
 
         /// The maximum number of vertex input streams that can be used simultaneously in a draw call.
@@ -550,10 +550,10 @@ namespace Graphic
         UInt8     ResolveLevel = 0;
 
         /// The operation to perform on the color buffer at the beginning of a render pass.
-        Operation LoadAction   = Operation::Load;
+        Operation LoadAction   = Operation::Clear;
 
         /// The operation to perform on the color buffer at the end of a render pass.
-        Operation StoreAction  = Operation::Store;
+        Operation StoreAction  = Operation::Discard;
     };
 
     /// \brief Defines the configuration for a depth/stencil attachment in a render pass.
@@ -566,16 +566,16 @@ namespace Graphic
         UInt8     TargetLevel        = 0;
 
         /// The operation to perform on the depth buffer at the beginning of a render pass.
-        Operation DepthLoadAction    = Operation::Load;
+        Operation DepthLoadAction    = Operation::Clear;
 
         /// The operation to perform on the depth buffer at the end of a render pass.
-        Operation DepthStoreAction   = Operation::Store;
+        Operation DepthStoreAction   = Operation::Discard;
 
         /// The operation to perform on the stencil buffer at the beginning of a render pass.
-        Operation StencilLoadAction  = Operation::Load;
+        Operation StencilLoadAction  = Operation::Clear;
 
         /// The operation to perform on the stencil buffer at the end of a render pass.
-        Operation StencilStoreAction = Operation::Store;
+        Operation StencilStoreAction = Operation::Discard;
     };
 
     /// \brief Defines the layout of a vertex attribute within a vertex buffer.
