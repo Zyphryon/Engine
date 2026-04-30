@@ -167,6 +167,14 @@ namespace Graphic
         /// \param ID The identifier of the texture resource to delete.
         virtual void DeleteTexture(Object ID) = 0;
 
+        /// \brief Resizes the specified texture to new dimensions and mipmap levels.
+        ///
+        /// \param ID      The identifier of the texture to resize.
+        /// \param Width   The new width of the texture in pixels.
+        /// \param Height  The new height of the texture in pixels.
+        /// \param Mipmaps The new number of mipmap levels for the texture.
+        virtual void ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps) = 0;
+
         /// \brief Copies a region of one texture resource to another.
         ///
         /// \param SrcTexture The identifier of the source texture to copy from.

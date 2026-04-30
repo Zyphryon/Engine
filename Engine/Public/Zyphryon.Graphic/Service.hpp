@@ -248,6 +248,14 @@ namespace Graphic
         /// \param ID The identifier of the texture resource to delete.
         void DeleteTexture(Object ID);
 
+        /// \brief Resizes the specified texture to new dimensions and mipmap levels.
+        ///
+        /// \param ID      The identifier of the texture to resize.
+        /// \param Width   The new width of the texture in pixels.
+        /// \param Height  The new height of the texture in pixels.
+        /// \param Mipmaps The new number of mipmap levels for the texture.
+        void ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps);
+
         /// \brief Copies a region of one texture resource to another.
         ///
         /// \param SrcTexture The identifier of the source texture to copy from.
@@ -332,6 +340,7 @@ namespace Graphic
             CreateTexture,  ///< \see Driver::CreateTexture
             UpdateTexture,  ///< \see Driver::UpdateTexture
             DeleteTexture,  ///< \see Driver::DeleteTexture
+            ResizeTexture,  ///< \see Driver::ResizeTexture
             CopyTexture,    ///< \see Driver::CopyTexture
             Prepare,        ///< \see Driver::Prepare
             Submit,         ///< \see Driver::Submit
@@ -389,6 +398,7 @@ namespace Graphic
             using CreateTexture  = Command<CommandType::CreateTexture, Object, TextureType, TextureFormat, Access, Usage, UInt16, UInt16, UInt8, Multisample, Blob>;
             using UpdateTexture  = Command<CommandType::UpdateTexture, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, Bool, Blob>;
             using DeleteTexture  = Command<CommandType::DeleteTexture, Object>;
+            using ResizeTexture  = Command<CommandType::ResizeTexture, Object, UInt16, UInt16, UInt8>;
             using CopyTexture    = Command<CommandType::CopyTexture, Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, Bool, UInt16, UInt16>;
             using Prepare        = Command<CommandType::Prepare, Object, Viewport, Vector<Color, kMaxAttachments>, Real32, UInt8>;
             using Commit         = Command<CommandType::Commit, Object>;

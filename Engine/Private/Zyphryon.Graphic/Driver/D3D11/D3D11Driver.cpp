@@ -1043,6 +1043,42 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void D3D11Driver::ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps)
+    {
+        Ref<D3D11Texture> Texture = mTextures[ID];
+
+        // Query the existing texture description to preserve all current settings.
+        D3D11_TEXTURE2D_DESC Descriptor;
+        Texture.Object->GetDesc(&Descriptor);
+
+        // Update dimensions and mip levels while leaving other properties unchanged.
+        Descriptor.Width     = Width;
+        Descriptor.Height    = Height;
+        Descriptor.MipLevels = Mipmaps;
+
+        // Recreate the texture with the updated description.
+        CheckIfSucceed(mDevice->CreateTexture2D(
+            &Descriptor, nullptr, Texture.Object.ReleaseAndGetAddressOf()));
+
+        // Recreate the shader resource view if one existed previously.
+        if (Texture.Resource)
+        {
+            const D3D11_SRV_DIMENSION Dimension =
+                Descriptor.SampleDesc.Count > 1
+                    ? D3D11_SRV_DIMENSION_TEXTURE2DMS
+                    : D3D11_SRV_DIMENSION_TEXTURE2D;
+
+            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(
+                Dimension, AsColorResourceFormat(Texture.Format), 0, Mipmaps);
+
+            CheckIfSucceed(mDevice->CreateShaderResourceView(
+                Texture.Object.Get(), &View, Texture.Resource.ReleaseAndGetAddressOf()));
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void D3D11Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16  SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height)
     {
         const D3D11_BOX Offset       = CD3D11_BOX(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);

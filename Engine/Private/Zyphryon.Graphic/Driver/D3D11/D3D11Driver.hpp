@@ -84,6 +84,9 @@ namespace Graphic
         /// \copydoc Driver::DeleteTexture(Object)
         void DeleteTexture(Object ID) override;
 
+        /// \copydoc Driver::ResizeTexture(Object, UInt16, UInt16, UInt8)
+        void ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps) override;
+
         /// \copydoc Driver::CopyTexture(Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, Bool, UInt16, UInt16)
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height) override;
 

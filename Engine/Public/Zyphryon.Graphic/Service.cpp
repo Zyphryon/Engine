@@ -277,6 +277,16 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::ResizeTexture(Object ID, UInt16 Width, UInt16 Height, UInt8 Mipmaps)
+    {
+        LOG_ASSERT(mTextures.IsAllocated(ID), "Texture ID is not valid");
+
+        WriteCommand<CommandTypes::ResizeTexture>(GetProducerFrame(), ID, Width, Height, Mipmaps);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, Bool Invalidate, UInt16 Width, UInt16 Height)
     {
         LOG_ASSERT(mTextures.IsAllocated(SrcTexture), "Source texture is not valid");
@@ -454,6 +464,11 @@ namespace Graphic
             case CommandType::DeleteTexture:
             {
                 DispatchCommand<&Driver::DeleteTexture, CommandTypes::DeleteTexture>(Frame);
+                break;
+            }
+            case CommandType::ResizeTexture:
+            {
+                DispatchCommand<&Driver::ResizeTexture, CommandTypes::ResizeTexture>(Frame);
                 break;
             }
             case CommandType::CopyTexture:
