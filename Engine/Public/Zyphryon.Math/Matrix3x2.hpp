@@ -325,6 +325,34 @@ inline namespace Math
             return Matrix3x2(M00, M10, M20, M01, M11, M21);
         }
 
+        /// \brief Applies a translation to an existing matrix, returning a new matrix with the translation applied.
+        ///
+        /// \param Matrix The original matrix to apply the translation to.
+        /// \param Offset The 2D offset to apply as a translation to the matrix.
+        /// \return A new matrix with the translation applied.
+        ZYPHRYON_INLINE static Matrix3x2 WithTranslation(ConstRef<Matrix3x2> Matrix, Vector2 Offset)
+        {
+            const Vector3 Column0 = Matrix.GetColumn(0);
+            const Vector3 Column1 = Matrix.GetColumn(1);
+
+            return Matrix3x2(Column0.GetX(), Column0.GetY(), Column0.GetZ() + Offset.GetX(),
+                             Column1.GetX(), Column1.GetY(), Column1.GetZ() + Offset.GetY());
+        }
+
+        /// \brief Applies a scaling transformation to an existing matrix, returning a new matrix with the scale applied.
+        ///
+        /// \param Matrix The original matrix to apply the scaling to.
+        /// \param Factor The scaling factors along the X and Y axes to apply to the matrix.
+        /// \return A new matrix with the scaling applied.
+        ZYPHRYON_INLINE static Matrix3x2 WithScale(ConstRef<Matrix3x2> Matrix, Vector2 Factor)
+        {
+            const Vector3 Column0 = Matrix.GetColumn(0);
+            const Vector3 Column1 = Matrix.GetColumn(1);
+
+            return Matrix3x2(Column0.GetX() * Factor.GetX(), Column0.GetY() * Factor.GetX(), Column0.GetZ(),
+                             Column1.GetX() * Factor.GetY(), Column1.GetY() * Factor.GetY(), Column1.GetZ());
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

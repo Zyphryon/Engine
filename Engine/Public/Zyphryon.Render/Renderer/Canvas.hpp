@@ -45,11 +45,6 @@ namespace Render
         /// \param Pipeline The graphics pipeline to set for subsequent draw calls.
         void SetPipeline(ConstTracker<Graphic::Pipeline> Pipeline);
 
-        /// \brief Sets the shift to apply to all subsequent draw calls, allowing for parallax effects or camera movement.
-        ///
-        /// \param Shift The shift vector to apply to all subsequent draw calls.
-        void SetShift(Vector2 Shift);
-
         /// \brief Begins a new drawing session with the specified projection matrix.
         ///
         /// \param Projection The projection matrix to use for rendering transformations.
@@ -231,15 +226,6 @@ namespace Render
                 Column1 = Matrix.GetColumn(1);
                 Custom  = Data;
             }
-
-            /// \brief Applies a shift to the transformation matrix.
-            ///
-            /// \param Offset The 2D offset to apply as a shift to the transformation matrix.
-            ZYPHRYON_INLINE void Shift(Vector2 Offset)
-            {
-                Column0.SetZ(Column0.GetZ() + Offset.GetX());
-                Column1.SetZ(Column1.GetZ() + Offset.GetY());
-            }
         };
 
         /// \brief Defines a structure representing the input data for drawing a shape in the GPU.
@@ -359,7 +345,6 @@ namespace Render
         Vector<ShapeCommand>      mShapes;
         Vector<SpriteCommand>     mSprites;
         Vector<GlyphCommand>      mGlyphs;
-        Vector2                   mShift;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
