@@ -1125,7 +1125,7 @@ namespace Graphic
             if (Attachment.LoadAction == Operation::Clear)
             {
                 mDeviceImmediate->ClearRenderTargetView(
-                    Attachments.back(), reinterpret_cast<ConstPtr<FLOAT>>(& Colors[Index]));
+                    Attachments[Index], reinterpret_cast<ConstPtr<FLOAT>>(& Colors[Index]));
             }
         }
 
