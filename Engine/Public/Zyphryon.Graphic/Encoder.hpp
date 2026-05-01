@@ -165,6 +165,10 @@ namespace Graphic
                 {
                     SetTexture(Binding.Register, Texture->GetID(), Material.GetSampler(Binding.Resource));
                 }
+                else
+                {
+                    SetTexture(Binding.Register, 0u, Sampler());
+                }
             }
         }
 
