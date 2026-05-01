@@ -1,4 +1,3 @@
-            /// The graphics pipeline to use for rendering the sprite.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin Alvarez. All rights reserved.
 //
