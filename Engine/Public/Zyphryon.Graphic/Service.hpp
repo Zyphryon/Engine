@@ -230,6 +230,21 @@ namespace Graphic
         /// \return The identifier of the created texture.
         Object CreateTexture(TextureType Type, TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
 
+        /// \brief Creates a texture resource for use as a render target.
+        ///
+        /// param Format   The pixel format of the texture (e.g., RGBA8, DXT1).
+        /// param Resource Whether the texture will also be used as a shader resource for sampling.
+        /// param Width    The width of the texture in pixels.
+        /// param Height   The height of the texture in pixels.
+        /// param Mipmaps  The number of mipmap levels for the texture.
+        /// param Samples  The multisample count for the texture, if applicable.
+        /// \return The identifier of the created texture.
+        ZYPHRYON_INLINE Object CreateTexture(TextureFormat Format, Bool Resource, UInt16 Width, UInt16 Height, UInt8 Mipmaps = 1, Multisample Samples = Multisample::X1)
+        {
+            const Usage Usage = (Resource ? Usage::Target | Usage::Sample : Usage::Target);
+            return CreateTexture(TextureType::Texture2D, Format, Access::Immutable, Usage, Width, Height, Mipmaps, Samples, {});
+        }
+
         /// \brief Updates a region of an existing texture resource with new data.
         ///
         /// \param ID         The identifier of the texture resource to update.
