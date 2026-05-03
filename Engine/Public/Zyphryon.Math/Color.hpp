@@ -397,6 +397,21 @@ inline namespace Math
 
     public:
 
+        /// \brief Converts a color from 8-bit RGBA format to 32-bit floating-point format.
+        ///
+        /// \param Color The color in 8-bit RGBA format to convert.
+        /// \return The converted color in 32-bit floating-point format, with each channel normalized to the range [0, 1].
+        ZYPHRYON_INLINE static constexpr AnyColor<Real32> FromColor8(AnyColor<UInt8> Color)
+        {
+            constexpr Real32 kLimitInverse = 1.0f / Limit<UInt8>();
+
+            const Real32 R = static_cast<Real32>(Color.GetRed())   * kLimitInverse;
+            const Real32 G = static_cast<Real32>(Color.GetGreen()) * kLimitInverse;
+            const Real32 B = static_cast<Real32>(Color.GetBlue())  * kLimitInverse;
+            const Real32 A = static_cast<Real32>(Color.GetAlpha()) * kLimitInverse;
+            return AnyColor(R, G, B, A);
+        }
+
         /// \brief Returns a fully transparent black color.
         ///
         /// \return A color representing transparent black.
