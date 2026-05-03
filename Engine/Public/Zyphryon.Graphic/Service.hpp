@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Driver.hpp"
+#include "Encoder.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -311,6 +312,18 @@ namespace Graphic
         ///
         /// \param Items The list of draw items to submit.
         void Submit(ConstSpan<DrawItem> Items);
+
+        /// \brief Submits the draw items recorded in the specified encoder, then clears the encoder.
+        ///
+        /// \param Encoder The encoder containing the draw items to submit.
+        ZYPHRYON_INLINE void Submit(Ref<Encoder> Encoder)
+        {
+            if (const ConstSpan<Graphic::DrawItem> Items = Encoder.GetSubmissions(); !Items.empty())
+            {
+                Submit(Items);
+            }
+            Encoder.Clear();
+        }
 
         /// \brief Commits all pending rendering commands for the currently prepared render pass.
         void Commit();

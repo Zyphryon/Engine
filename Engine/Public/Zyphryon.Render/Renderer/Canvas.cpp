@@ -297,11 +297,7 @@ namespace Render
         Reset();
 
         // Submit all encoded draw packets to the graphics service for rendering.
-        if (const ConstSpan<Graphic::DrawItem> Submissions = mEncoder.GetSubmissions(); !Submissions.empty())
-        {
-            mService->Submit(Submissions);
-        }
-        mEncoder.Clear();
+        mService->Submit(mEncoder);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
