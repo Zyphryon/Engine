@@ -44,6 +44,10 @@ inline namespace Base
     template<typename Type>
     using StripAll     = std::remove_cv_t<StripPtr<StripRef<Type>>>;
 
+    /// \brief Applies type decay to a type, removing references, pointers, and cv-qualifiers.
+    template<typename Type>
+    using Decay        = std::decay_t<Type>;
+
     /// \brief Checks if \a From is convertible to \a To.
     template<class Base, class Derived>
     concept IsCastable = std::is_convertible_v<Base, Derived>;

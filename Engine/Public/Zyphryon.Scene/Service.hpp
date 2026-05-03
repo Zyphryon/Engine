@@ -245,8 +245,8 @@ namespace Scene
 
             Builder.event(Event.GetHandle());
 
-            using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
-            return Entity(Builder.run(Query::template Runner<FEach>(Move(Each))));
+            using Types = typename DSL::_::ExtractTypes<CompileExpression...>::Type;
+            return Entity(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
         }
 
         /// \brief Creates a query with optional compile-time and runtime expressions.
@@ -273,8 +273,6 @@ namespace Scene
                 Builder.cache_kind(flecs::QueryCacheNone);
                 break;
             }
-
-            using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
             return Query(Builder.build());
         }
 
@@ -305,8 +303,8 @@ namespace Scene
             }
             Builder.kind(Phase.GetHandle());
 
-            using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
-            return System(Builder.run(Query::template Runner<FEach>(Move(Each))));
+            using Types = typename DSL::_::ExtractTypes<CompileExpression...>::Type;
+            return System(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
         }
 
         /// \brief Creates a system with begin, each, and end callbacks.
@@ -338,8 +336,8 @@ namespace Scene
             }
             Builder.kind(Phase.GetHandle());
 
-            using Query = DSL::_::Extract<typename DSL::_::ExtractTypes<CompileExpression...>::Type, Query>::Type;
-            return System(Builder.run(Query::template Runner<FBegin, FEach, FEnd>(Move(Begin), Move(Each), Move(End))));
+            using Types = typename DSL::_::ExtractTypes<CompileExpression...>::Type;
+            return System(Builder.run(DSL::_::RunnerFactoryLifecycle<Types, FBegin, FEach, FEnd>::Make(Move(Begin), Move(Each), Move(End))));
         }
 
         /// \brief Iterates over all archetype entities.
@@ -450,6 +448,6 @@ namespace Scene
         Time                      mTime;
         Real32                    mMultiplier;
         Slot<kMaxCountArchetypes> mArchetypes;
-        Query<>                   mArchetypesQueryAll;
+        Query                     mArchetypesQueryAll;
     };
 }

@@ -447,15 +447,48 @@ namespace Scene::DSL::_
         using Type = decltype((TypeList<>{} + ... + typename ExtractTypesFromExpression<Expressions>::Type{}));
     };
 
-    /// \brief Transforms a list of types into a new template instantiation.
-    template <typename Types, template <typename...> class Target>
-    struct Extract;
+    /// \brief Factory for creating query runner functions based on a list of component types and an iteration function.
+    template<typename TypeList, typename FEach>
+    struct RunnerFactory;
 
-    /// \brief Specialization of Extract for lists of types.
-    template <typename... Types, template <typename...> class Target>
-    struct Extract<TypeList<Types...>, Target>
+    /// \brief Factory specialization for creating a runner function that invokes a callback for each query result.
+    template<typename... Types, typename FEach>
+    struct RunnerFactory<TypeList<Types...>, FEach>
     {
-        using Type = Target<Types...>;
+        ZYPHRYON_INLINE static auto Make(AnyRef<FEach> Each)
+        {
+            return [Each = Move(Each)](Ref<flecs::iter> Iterator)
+            {
+                while (Iterator.next())
+                {
+                    flecs::_::each_delegate<FEach, Types...>(Each)
+                        .invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
+                }
+            };
+        }
+    };
+
+    /// \brief Factory specialization for creating a runner function that invokes callbacks for the beginning, each iteration, and the end of a query execution.
+    template<typename TypeList, typename FBegin, typename FEach, typename FEnd>
+    struct RunnerFactoryLifecycle;
+
+    /// \brief Factory specialization for creating a runner function that invokes callbacks for the beginning, each iteration, and the end of a query execution.
+    template<typename... Types, typename FBegin, typename FEach, typename FEnd>
+    struct RunnerFactoryLifecycle<TypeList<Types...>, FBegin, FEach, FEnd>
+    {
+        ZYPHRYON_INLINE static auto Make(AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End)
+        {
+            return [Begin = Move(Begin), Each = Move(Each), End = Move(End)](Ref<flecs::iter> Iterator)
+            {
+                Begin();
+                while (Iterator.next())
+                {
+                    flecs::_::each_delegate<FEach, Types...>(Each)
+                        .invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
+                }
+                End();
+            };
+        }
     };
 
     /// \brief Convenience alias for transforming a list of types into a new template instantiation.
