@@ -357,7 +357,7 @@ namespace Scene
         template<typename Tag, typename Function>
         ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
         {
-            CreateQuery<DSL::In<Tag>>("QueryTag", Cache::Default).Run(Callback);
+            CreateQuery<DSL::In<Tag>>(Format("QueryTag<{}>", Tag::kName), Cache::Default).Run(Callback);
         }
 
         /// \brief Loads all archetypes from a stream.
