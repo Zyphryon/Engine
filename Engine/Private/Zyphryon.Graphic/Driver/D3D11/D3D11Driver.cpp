@@ -1155,6 +1155,9 @@ namespace Graphic
             Viewport.MinDepth,
             Viewport.MaxDepth);
         mDeviceImmediate->RSSetViewports(1, &Rect);
+
+        // Cache the currently active pass for subsequent draw calls.
+        mOutput = Pass;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1280,10 +1283,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Commit(Object Pass)
+    void D3D11Driver::Commit()
     {
         /// Resolve multisample color attachments into their corresponding single-sample targets.
-        for (ConstRef<D3D11ColorAttachment> Attachment : mPasses[Pass].Colors)
+        for (ConstRef<D3D11ColorAttachment> Attachment : mPasses[mOutput].Colors)
         {
             if (Attachment.StoreAction == Operation::Store)
             {
@@ -1302,7 +1305,7 @@ namespace Graphic
         // TODO: Discard (DiscardView?)
 
         /// Present the swap chain if this is the primary rendering pass.
-        if (Pass == kDisplay)
+        if (mOutput == kDisplay)
         {
             const UInt Flag = mProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
             CheckIfSucceed(mSwapchain->Present(0, Flag));

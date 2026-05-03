@@ -215,9 +215,7 @@ namespace Graphic
         /// \param Items The list of draw items to submit.
         virtual void Submit(ConstSpan<DrawItem> Items) = 0;
 
-        /// \brief Commits the rendered results of the specified pass.
-        ///
-        /// \param Pass The render pass to commit.
-        virtual void Commit(Object Pass) = 0;
+        /// \brief Commits all pending rendering commands for the currently prepared render pass.
+        virtual void Commit() = 0;
     };
 }

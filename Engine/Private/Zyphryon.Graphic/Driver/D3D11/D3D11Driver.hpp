@@ -99,8 +99,8 @@ namespace Graphic
         /// \copydoc Driver::Submit(ConstSpan<DrawItem>)
         void Submit(ConstSpan<DrawItem> Items) override;
 
-        /// \copydoc Driver::Commit(Object)
-        void Commit(Object Pass) override;
+        /// \copydoc Driver::Commit()
+        void Commit() override;
 
     private:
 
@@ -247,6 +247,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        Object                              mOutput;
         ComPtr<IDXGISwapChain>              mSwapchain;
         Array<D3D11Buffer, kMaxBuffers>     mBuffers;
         Array<D3D11Pass, kMaxPasses>        mPasses;

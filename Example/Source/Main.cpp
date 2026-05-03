@@ -19,7 +19,7 @@ public:
         {
 
         }
-        Graphics->Commit(Graphic::kDisplay);
+        Graphics->Commit();
     }
 
     void OnTeardown () override

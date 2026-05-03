@@ -312,10 +312,8 @@ namespace Graphic
         /// \param Items The list of draw items to submit.
         void Submit(ConstSpan<DrawItem> Items);
 
-        /// \brief Commits the rendered results of the specified pass.
-        ///
-        /// \param Pass The render pass to commit.
-        void Commit(Object Pass);
+        /// \brief Commits all pending rendering commands for the currently prepared render pass.
+        void Commit();
 
     private:
 
@@ -416,7 +414,7 @@ namespace Graphic
             using ResizeTexture  = Command<CommandType::ResizeTexture, Object, UInt16, UInt16, UInt8>;
             using CopyTexture    = Command<CommandType::CopyTexture, Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, Bool, UInt16, UInt16>;
             using Prepare        = Command<CommandType::Prepare, Object, Viewport, Vector<Color, kMaxAttachments>, Real32, UInt8>;
-            using Commit         = Command<CommandType::Commit, Object>;
+            using Commit         = Command<CommandType::Commit>;
         };
 
         /// \brief Writes a GPU command to the specified stream.
