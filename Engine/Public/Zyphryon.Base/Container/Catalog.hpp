@@ -127,6 +127,15 @@ inline namespace Base
             return mAllocator.IsEmpty();
         }
 
+        /// \brief Checks if a given handle is currently allocated.
+        ///
+        /// \param Handle The handle to check for allocation.
+        /// \return `true` if the handle is allocated, otherwise `false`.
+        ZYPHRYON_INLINE Bool IsAllocated(UInt32 Handle) const
+        {
+            return mAllocator.IsAllocated(Handle);
+        }
+
         /// \brief Returns the highest sequential handle ever issued.
         ///
         /// \return The maximum issued handle value.
