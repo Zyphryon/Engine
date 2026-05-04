@@ -116,6 +116,33 @@ inline namespace Math
             return (A << 24) | (B  << 16) | (G << 8) | R;
         }
 
+        /// \brief Converts a floating-point color to an 8-bit integer color.
+        ///
+        /// \return The converted color in 8-bit integer format.
+        ZYPHRYON_INLINE constexpr AnyColor<UInt8> ToColor8() const
+            requires(IsReal<Type>)
+        {
+            return AnyColor<UInt8>(
+                static_cast<UInt8>(Scale<UINT8_MAX>(mComponents[0])),
+                static_cast<UInt8>(Scale<UINT8_MAX>(mComponents[1])),
+                static_cast<UInt8>(Scale<UINT8_MAX>(mComponents[2])),
+                static_cast<UInt8>(Scale<UINT8_MAX>(mComponents[3])));
+        }
+
+        /// \brief Returns the RGB channels premultiplied by an intensity scalar.
+        ///
+        /// \param Intensity The intensity scalar to multiply the RGB channels by.
+        /// \param Alpha     The alpha value to use for the resulting color.
+        /// \return A new color with RGB multiplied by intensity and alpha preserved.
+        ZYPHRYON_INLINE constexpr AnyColor WithIntensity(Type Intensity, Type Alpha) const
+            requires(IsReal<Type>)
+        {
+            return AnyColor(mComponents[0] * Intensity,
+                            mComponents[1] * Intensity,
+                            mComponents[2] * Intensity,
+                            Alpha);
+        }
+
         /// \brief Adds another color to this color (component-wise RGBA).
         ///
         /// \param Color The color to add.

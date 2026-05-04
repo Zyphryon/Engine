@@ -351,11 +351,11 @@ namespace Graphic
     /// \brief Specifies the intended usage of a GPU resource.
     enum class Usage : UInt8
     {
-        Vertex,         ///< Resource is used as a vertex buffer.
-        Index,          ///< Resource is used as an index buffer.
-        Uniform,        ///< Resource is used as a uniform buffer.
-        Sample,         ///< Resource is used as a shader resource for sampling (e.g., texture).
-        Target,         ///< Resource is used as a render target or depth/stencil attachment.
+        Vertex  = 0b00000001,   ///< Resource is used as a vertex buffer.
+        Index   = 0b00000010,   ///< Resource is used as an index buffer.
+        Uniform = 0b00000100,   ///< Resource is used as a uniform buffer.
+        Sample  = 0b00001000,   ///< Resource is used as a shader resource for sampling (e.g., texture).
+        Target  = 0b00010000,   ///< Resource is used as a render target or depth/stencil attachment.
     };
     ZYPHRYON_DEFINE_BITWISE_ENUM(Usage)
 

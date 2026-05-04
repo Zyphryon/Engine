@@ -18,6 +18,7 @@
 #include "System.hpp"
 #include "Tag.hpp"
 #include "Timer.hpp"
+#include "World.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -130,10 +131,10 @@ namespace Scene
 
         /// \brief Retrieves the entity representing the world itself.
         ///
-        /// \return The entity representing the world.
-        ZYPHRYON_INLINE Entity GetWorld() const
+        /// \return The world entity object.
+        ZYPHRYON_INLINE World GetWorld()
         {
-            return Scene::Entity(flecs::World);
+            return World(mWorld);
         }
 
         /// \brief Retrieves an entity by its unique identifier.

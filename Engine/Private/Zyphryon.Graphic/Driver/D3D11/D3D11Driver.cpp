@@ -329,12 +329,29 @@ namespace Graphic
 
     static constexpr auto As(Usage Value) noexcept
     {
-        static constexpr Array kMapping = {
-            D3D11_BIND_VERTEX_BUFFER,          // Usage::Vertex
-            D3D11_BIND_INDEX_BUFFER,           // Usage::Index
-            D3D11_BIND_CONSTANT_BUFFER,        // Usage::Uniform
-        };
-        return kMapping[Enum::Cast(Value)];
+        UINT Flags = 0;
+
+        if (HasBit(Value, Usage::Vertex))
+        {
+            Flags |= D3D11_BIND_VERTEX_BUFFER;
+        }
+        if (HasBit(Value, Usage::Index))
+        {
+            Flags |= D3D11_BIND_INDEX_BUFFER;
+        }
+        if (HasBit(Value, Usage::Uniform))
+        {
+            Flags |= D3D11_BIND_CONSTANT_BUFFER;
+        }
+        if (HasBit(Value, Usage::Sample))
+        {
+            Flags |= D3D11_BIND_SHADER_RESOURCE;
+        }
+        if (HasBit(Value, Usage::Target))
+        {
+            Flags |= D3D11_BIND_RENDER_TARGET;
+        }
+        return static_cast<D3D11_BIND_FLAG>(Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -718,9 +735,9 @@ namespace Graphic
             Access == Access::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0);
 
         D3D11_SUBRESOURCE_DATA Content {
-        Data.data(),
-        static_cast<UINT>(Data.size_bytes())
-    };
+            Data.data(),
+            static_cast<UINT>(Data.size_bytes())
+        };
 
         const Ptr<D3D11_SUBRESOURCE_DATA> Memory = (Data.empty() ? nullptr : &Content);
         CheckIfSucceed(mDevice->CreateBuffer(&Descriptor, Memory, mBuffers[ID].GetAddressOf()));

@@ -243,7 +243,7 @@ namespace Graphic
         ZYPHRYON_INLINE Object CreateTexture(TextureFormat Format, Bool Resource, UInt16 Width, UInt16 Height, UInt8 Mipmaps = 1, Multisample Samples = Multisample::X1)
         {
             const Usage Usage = (Resource ? Usage::Target | Usage::Sample : Usage::Target);
-            return CreateTexture(TextureType::Texture2D, Format, Access::Immutable, Usage, Width, Height, Mipmaps, Samples, {});
+            return CreateTexture(TextureType::Texture2D, Format, Access::Stream, Usage, Width, Height, Mipmaps, Samples, {});
         }
 
         /// \brief Updates a region of an existing texture resource with new data.
