@@ -92,7 +92,7 @@ namespace Input
                     Event.MouseAxis.DeltaX,
                     Event.MouseAxis.DeltaY);
             case Event::Type::MouseScroll:
-                return OnMouseScroll.Propagate(Event.MouseAxis.DeltaX, Event.MouseAxis.DeltaY);
+                return OnMouseScroll.Propagate(Event.MouseScroll.DeltaX, Event.MouseScroll.DeltaY);
             case Event::Type::WindowFocus:
                 return OnWindowFocus.Propagate(Event.WindowFocus.State);
             case Event::Type::WindowResize:
