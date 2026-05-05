@@ -71,6 +71,12 @@ inline namespace Base
             0xAAAAAAAAAAAAAAAAULL
         };
 
+        // Handle empty input.
+        if (Size == 0)
+        {
+            return Mix(Seed ^ kSecret[2], kSecret[1]);
+        }
+
         // Initialize the seed.
         Seed ^= Mix(Seed ^ kSecret[2], kSecret[1]);
 

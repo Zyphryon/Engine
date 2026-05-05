@@ -27,6 +27,11 @@ namespace Graphic
 
     public:
 
+        /// \brief Defines the texture semantic slots available for material resources.
+        static constexpr UInt8 kMaxSemantics = Enum::Count<TextureSemantic>();
+
+    public:
+
         /// \brief Constructs a material resource with the given content key.
         ///
         /// \param Key The unique content key identifying this material.
@@ -117,8 +122,8 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Object                                 mID;
-        Array<Tracker<Texture>, kMaxResources> mTextures;
-        Array<Sampler, kMaxResources>          mSamplers;
+        Array<Tracker<Texture>, kMaxSemantics> mTextures;
+        Array<Sampler, kMaxSemantics>          mSamplers;
         Vector<Byte>                           mParameters;
     };
 }
