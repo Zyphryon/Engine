@@ -190,30 +190,30 @@ namespace Scene
         {
             switch (Trait)
             {
-                case Trait::Serializable:
-                    mHandle.set<Factory>(Factory::Create<Type>());
-                    break;
-                case Trait::Inheritable:
-                    mHandle.add(flecs::OnInstantiate, flecs::Inherit);
-                    break;
-                case Trait::Toggleable:
-                    mHandle.add(flecs::CanToggle);
-                    break;
-                case Trait::Sparse:
-                    mHandle.add(flecs::DontFragment);
-                    break;
-                case Trait::Associative:
-                    mHandle.add(flecs::PairIsTag);
-                    break;
-                case Trait::Singleton:
-                    mHandle.add(flecs::Singleton);
-                    break;
-                case Trait::Final:
-                    mHandle.add(flecs::Final);
-                    break;
-                case Trait::Symmetric:
-                    mHandle.add(flecs::Symmetric);
-                    break;
+            case Trait::Serializable:
+                mHandle.set<Factory>(Factory::Create<Type>());
+                break;
+            case Trait::Inheritable:
+                mHandle.add(flecs::OnInstantiate, flecs::Inherit);
+                break;
+            case Trait::Toggleable:
+                mHandle.add(flecs::CanToggle);
+                break;
+            case Trait::Sparse:
+                mHandle.add(flecs::DontFragment);
+                break;
+            case Trait::Associative:
+                mHandle.add(flecs::PairIsTag);
+                break;
+            case Trait::Singleton:
+                mHandle.add(flecs::Singleton);
+                break;
+            case Trait::Final:
+                mHandle.add(flecs::Final);
+                break;
+            case Trait::Symmetric:
+                mHandle.add(flecs::Symmetric);
+                break;
             }
         }
 
@@ -224,30 +224,30 @@ namespace Scene
         {
             switch (Trait)
             {
-                case Trait::Serializable:
-                    mHandle.remove<Factory>();
-                    break;
-                case Trait::Inheritable:
-                    mHandle.remove(flecs::OnInstantiate, flecs::Inherit);
-                    break;
-                case Trait::Toggleable:
-                    mHandle.remove(flecs::CanToggle);
-                    break;
-                case Trait::Sparse:
-                    mHandle.remove(flecs::Sparse);
-                    break;
-                case Trait::Associative:
-                    mHandle.remove(flecs::PairIsTag);
-                    break;
-                case Trait::Singleton:
-                    mHandle.remove(flecs::Singleton);
-                    break;
-                case Trait::Final:
-                    mHandle.remove(flecs::Final);
-                    break;
-                case Trait::Symmetric:
-                    mHandle.remove(flecs::Symmetric);
-                    break;
+            case Trait::Serializable:
+                mHandle.remove<Factory>();
+                break;
+            case Trait::Inheritable:
+                mHandle.remove(flecs::OnInstantiate, flecs::Inherit);
+                break;
+            case Trait::Toggleable:
+                mHandle.remove(flecs::CanToggle);
+                break;
+            case Trait::Sparse:
+                mHandle.remove(flecs::Sparse);
+                break;
+            case Trait::Associative:
+                mHandle.remove(flecs::PairIsTag);
+                break;
+            case Trait::Singleton:
+                mHandle.remove(flecs::Singleton);
+                break;
+            case Trait::Final:
+                mHandle.remove(flecs::Final);
+                break;
+            case Trait::Symmetric:
+                mHandle.remove(flecs::Symmetric);
+                break;
             }
         }
     };

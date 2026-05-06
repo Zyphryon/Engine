@@ -389,108 +389,108 @@ namespace Graphic
     {
         switch (Type)
         {
-            case CommandType::Initialize:
+        case CommandType::Initialize:
+        {
+            if (const Bool Succeed = DispatchCommand<&Driver::Initialize, CommandTypes::Initialize>(Frame); Succeed)
             {
-                if (const Bool Succeed = DispatchCommand<&Driver::Initialize, CommandTypes::Initialize>(Frame); Succeed)
-                {
-                    CreateInFlightArenas();
-                }
-                else
-                {
-                    mDriver = nullptr;
-                }
-                break;
+                CreateInFlightArenas();
             }
-            case CommandType::Reset:
+            else
             {
-                DispatchCommand<&Driver::Reset, CommandTypes::Reset>(Frame);
-                break;
+                mDriver = nullptr;
             }
-            case CommandType::CreateBuffer:
-            {
-                DispatchCommand<&Driver::CreateBuffer, CommandTypes::CreateBuffer>(Frame);
-                break;
-            }
-            case CommandType::UpdateBuffer:
-            {
-                DispatchCommand<&Driver::UpdateBuffer, CommandTypes::UpdateBuffer>(Frame);
-                break;
-            }
-            case CommandType::DeleteBuffer:
-            {
-                DispatchCommand<&Driver::DeleteBuffer, CommandTypes::DeleteBuffer>(Frame);
-                break;
-            }
-            case CommandType::ResizeBuffer:
-            {
-                DispatchCommand<&Driver::ResizeBuffer, CommandTypes::ResizeBuffer>(Frame);
-                break;
-            }
-            case CommandType::CopyBuffer:
-            {
-                DispatchCommand<&Driver::CopyBuffer, CommandTypes::CopyBuffer>(Frame);
-                break;
-            }
-            case CommandType::CreatePass:
-            {
-                DispatchCommand<&Driver::CreatePass, CommandTypes::CreatePass>(Frame);
-                break;
-            }
-            case CommandType::DeletePass:
-            {
-                DispatchCommand<&Driver::DeletePass, CommandTypes::DeletePass>(Frame);
-                break;
-            }
-            case CommandType::CreatePipeline:
-            {
-                DispatchCommand<&Driver::CreatePipeline, CommandTypes::CreatePipeline>(Frame);
-                break;
-            }
-            case CommandType::DeletePipeline:
-            {
-                DispatchCommand<&Driver::DeletePipeline, CommandTypes::DeletePipeline>(Frame);
-                break;
-            }
-            case CommandType::CreateTexture:
-            {
-                DispatchCommand<&Driver::CreateTexture, CommandTypes::CreateTexture>(Frame);
-                break;
-            }
-            case CommandType::UpdateTexture:
-            {
-                DispatchCommand<&Driver::UpdateTexture, CommandTypes::UpdateTexture>(Frame);
-                break;
-            }
-            case CommandType::DeleteTexture:
-            {
-                DispatchCommand<&Driver::DeleteTexture, CommandTypes::DeleteTexture>(Frame);
-                break;
-            }
-            case CommandType::ResizeTexture:
-            {
-                DispatchCommand<&Driver::ResizeTexture, CommandTypes::ResizeTexture>(Frame);
-                break;
-            }
-            case CommandType::CopyTexture:
-            {
-                DispatchCommand<&Driver::CopyTexture, CommandTypes::CopyTexture>(Frame);
-                break;
-            }
-            case CommandType::Prepare:
-            {
-                DispatchCommand<&Driver::Prepare, CommandTypes::Prepare>(Frame);
-                break;
-            }
-            case CommandType::Submit:
-            {
-                mDriver->Submit(Frame.ReadBlock<UInt16, DrawItem>());
-                break;
-            }
-            case CommandType::Commit:
-            {
-                DispatchCommand<&Driver::Commit, CommandTypes::Commit>(Frame);
-                break;
-            }
+            break;
+        }
+        case CommandType::Reset:
+        {
+            DispatchCommand<&Driver::Reset, CommandTypes::Reset>(Frame);
+            break;
+        }
+        case CommandType::CreateBuffer:
+        {
+            DispatchCommand<&Driver::CreateBuffer, CommandTypes::CreateBuffer>(Frame);
+            break;
+        }
+        case CommandType::UpdateBuffer:
+        {
+            DispatchCommand<&Driver::UpdateBuffer, CommandTypes::UpdateBuffer>(Frame);
+            break;
+        }
+        case CommandType::DeleteBuffer:
+        {
+            DispatchCommand<&Driver::DeleteBuffer, CommandTypes::DeleteBuffer>(Frame);
+            break;
+        }
+        case CommandType::ResizeBuffer:
+        {
+            DispatchCommand<&Driver::ResizeBuffer, CommandTypes::ResizeBuffer>(Frame);
+            break;
+        }
+        case CommandType::CopyBuffer:
+        {
+            DispatchCommand<&Driver::CopyBuffer, CommandTypes::CopyBuffer>(Frame);
+            break;
+        }
+        case CommandType::CreatePass:
+        {
+            DispatchCommand<&Driver::CreatePass, CommandTypes::CreatePass>(Frame);
+            break;
+        }
+        case CommandType::DeletePass:
+        {
+            DispatchCommand<&Driver::DeletePass, CommandTypes::DeletePass>(Frame);
+            break;
+        }
+        case CommandType::CreatePipeline:
+        {
+            DispatchCommand<&Driver::CreatePipeline, CommandTypes::CreatePipeline>(Frame);
+            break;
+        }
+        case CommandType::DeletePipeline:
+        {
+            DispatchCommand<&Driver::DeletePipeline, CommandTypes::DeletePipeline>(Frame);
+            break;
+        }
+        case CommandType::CreateTexture:
+        {
+            DispatchCommand<&Driver::CreateTexture, CommandTypes::CreateTexture>(Frame);
+            break;
+        }
+        case CommandType::UpdateTexture:
+        {
+            DispatchCommand<&Driver::UpdateTexture, CommandTypes::UpdateTexture>(Frame);
+            break;
+        }
+        case CommandType::DeleteTexture:
+        {
+            DispatchCommand<&Driver::DeleteTexture, CommandTypes::DeleteTexture>(Frame);
+            break;
+        }
+        case CommandType::ResizeTexture:
+        {
+            DispatchCommand<&Driver::ResizeTexture, CommandTypes::ResizeTexture>(Frame);
+            break;
+        }
+        case CommandType::CopyTexture:
+        {
+            DispatchCommand<&Driver::CopyTexture, CommandTypes::CopyTexture>(Frame);
+            break;
+        }
+        case CommandType::Prepare:
+        {
+            DispatchCommand<&Driver::Prepare, CommandTypes::Prepare>(Frame);
+            break;
+        }
+        case CommandType::Submit:
+        {
+            mDriver->Submit(Frame.ReadBlock<UInt16, DrawItem>());
+            break;
+        }
+        case CommandType::Commit:
+        {
+            DispatchCommand<&Driver::Commit, CommandTypes::Commit>(Frame);
+            break;
+        }
         }
     }
 

@@ -168,12 +168,12 @@ namespace Render
         {
             switch (Priority)
             {
-                case Priority::Opaque:
-                    return GenerateOpaqueOrderKey(Pipeline, Material, Mesh, Depth);
-                case Priority::Transparent:
-                    return GenerateAlphaOrderKey(Pipeline, Material, Mesh, Depth);
-                default:
-                    return 0;
+            case Priority::Opaque:
+                return GenerateOpaqueOrderKey(Pipeline, Material, Mesh, Depth);
+            case Priority::Transparent:
+                return GenerateAlphaOrderKey(Pipeline, Material, Mesh, Depth);
+            default:
+                return 0;
             }
         }
 
