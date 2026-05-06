@@ -170,6 +170,19 @@ inline namespace Base
             }
         }
 
+        /// \brief Attempts to retrieve a pointer to the object associated with the given handle.
+        ///
+        /// \param Handle The handle of the object to retrieve.
+        /// \return A pointer to the object if the handle is allocated, or `nullptr` if the handle is invalid.
+        ZYPHRYON_INLINE Ptr<Type> TryGet(UInt32 Handle)
+        {
+            if (mAllocator.IsAllocated(Handle))
+            {
+                return GetPtr(Handle);
+            }
+            return nullptr;
+        }
+
         /// \brief Accesses the element associated with the given handle.
         ///
         /// \param Handle The handle of the element to access. Must be a valid, allocated handle.
