@@ -359,6 +359,42 @@ namespace Scene
             CreateQuery<DSL::In<Tag>>(Format("QueryTag<{}>", Tag::kName), Cache::Default).Run(Callback);
         }
 
+        /// \brief Subscribes to an event with a callback that receives the event payload.
+        ///
+        /// \param Name The name of the subscriber.
+        /// \param Each The callback to invoke for each event occurrence, which receives the entity and event payload.
+        template<typename Event, typename FEach>
+        ZYPHRYON_INLINE Entity Subscribe(ConstStr8 Name, AnyRef<FEach> Each)
+        {
+            flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
+            Builder.event<Event>().with(flecs::Any);
+
+            const flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
+            {
+                Each(Entity(Iterator.entity(Element)), * Iterator.param<Event>());
+            });
+            return Entity(Observer);
+        }
+
+        /// \brief Publishes an event with the specified payload.
+        ///
+        /// \param Payload   The data associated with the event to publish.
+        /// \param Immediate If `true`, the event is emitted immediately; otherwise, it is enqueued for deferred processing.
+        template<typename Event>
+        ZYPHRYON_INLINE void Publish(ConstRef<Event> Payload, Bool Immediate = false)
+        {
+            flecs::entity Publiser(mWorld, EcsWorld);
+
+            if (Immediate)
+            {
+                Publiser.emit(Payload);
+            }
+            else
+            {
+                Publiser.enqueue(Payload);
+            }
+        }
+
         /// \brief Loads all archetypes from a stream.
         ///
         /// \param Reader The stream containing serialized archetypes.
