@@ -22,6 +22,16 @@ namespace Engine
         /// \brief Constructs a new set of engine properties with default values.
         Properties();
 
+        /// \brief Loads engine properties from a TOML file.
+        ///
+        /// \param Parser The TOML parser containing the configuration data to load.
+        void Load(Ref<TOMLParser> Parser);
+
+        /// \brief Saves the current engine properties to a TOML file.
+        ///
+        /// \param Parser The TOML parser to which the configuration data will be saved.
+        void Save(Ref<TOMLParser> Parser) const;
+
         /// \brief Sets the window system handle.
         ///
         /// \param Handle Native platform-specific window handle.

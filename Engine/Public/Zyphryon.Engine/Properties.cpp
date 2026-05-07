@@ -39,4 +39,32 @@ namespace Engine
           mAudioPauseOnFocusLost { false }
     {
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Properties::Load(Ref<TOMLParser> Parser)
+    {
+        const TOMLSection Window = Parser.GetSection("Window");
+
+        mWindowWidth      = Window.GetInteger("width",   mWindowWidth);
+        mWindowHeight     = Window.GetInteger("height",  mWindowHeight);
+        mWindowSamples    = Window.GetInteger("samples", mWindowSamples);
+        mWindowFullscreen = Window.GetBool("fullscreen", mWindowFullscreen);
+        mWindowBorderless = Window.GetBool("borderless", mWindowBorderless);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Properties::Save(Ref<TOMLParser> Parser) const
+    {
+        TOMLSection Window = Parser.GetSection("Window");
+
+        Window.SetInteger("width",   mWindowWidth);
+        Window.SetInteger("height",  mWindowHeight);
+        Window.SetInteger("samples", mWindowSamples);
+        Window.SetBool("fullscreen", mWindowFullscreen);
+        Window.SetBool("borderless", mWindowBorderless);
+    }
 }
