@@ -135,6 +135,24 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Kernel::Sync(Ref<Properties> Properties)
+    {
+        Properties = mProperties;
+        Properties.SetWindowWidth(mDevice.GetWidth());
+        Properties.SetWindowHeight(mDevice.GetHeight());
+
+        if (ConstTracker<Graphic::Service> Graphics = GetService<Graphic::Service>())
+        {
+            Properties.SetWindowSamples(Enum::Cast(Graphics->GetDevice().Samples));
+        }
+
+        Properties.SetWindowFullscreen(mDevice.IsFullscreen());
+        Properties.SetWindowBorderless(mDevice.IsBorderless());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Kernel::InitializeClientServices()
     {
         // Initializes input service.
@@ -164,7 +182,7 @@ namespace Engine
         ConstTracker<Graphic::Service> Graphics = AddService<Graphic::Service>();
 
         const Graphic::Backend     Backend = Enum::Cast(mProperties.GetVideoDriver(), Graphic::Backend::None);
-        const Graphic::Multisample Samples = Enum::Cast(Format("X{}", mProperties.GetWindowSamples()), Graphic::Multisample::X1);
+        const Graphic::Multisample Samples = static_cast<Graphic::Multisample>(mProperties.GetWindowSamples());
 
         if (!Graphics->Initialize(Backend, mDevice.GetHandle(), mDevice.GetWidth(), mDevice.GetHeight(), Samples))
         {

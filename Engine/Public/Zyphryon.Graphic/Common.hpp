@@ -166,11 +166,11 @@ namespace Graphic
     /// \brief Describes the number of samples for multisampling.
     enum class Multisample : UInt8
     {
-        X1,  ///< Single sample (no multisampling).
-        X2,  ///< 2x multisampling.
-        X4,  ///< 4x multisampling.
-        X8,  ///< 8x multisampling.
-        X16, ///< 16x multisampling.
+        X1  = 1,  ///< Single sample (no multisampling).
+        X2  = 2,  ///< 2x multisampling.
+        X4  = 4,  ///< 4x multisampling.
+        X8  = 8,  ///< 8x multisampling.
+        X16 = 16, ///< 16x multisampling.
     };
 
     /// \brief Specifies the operation to perform on render targets at the beginning and end of a render pass.

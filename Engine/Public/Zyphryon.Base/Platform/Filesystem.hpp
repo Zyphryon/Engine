@@ -58,6 +58,13 @@ namespace Filesystem
         return SDL_CopyFile(Source.data(), Destination.data());
     }
 
+    /// \brief Recursively copies all files and directories from the source path to the destination path.
+    ///
+    /// \param Source      The path of the directory to be copied.
+    /// \param Destination The path where the directory should be copied to.
+    /// \return `true` if all files and directories were successfully copied, `false` otherwise.
+    Bool CopyAll(ConstStr8 Source, ConstStr8 Destination);
+
     /// \brief Deletes the file or directory at the specified path.
     ///
     /// \param Path The path of the file or directory to be deleted.
@@ -99,10 +106,12 @@ namespace Filesystem
         return SDL_SaveFile(Path.data(), Data, Count * sizeof(Type));
     }
 
-    /// \brief Recursively copies all files and directories from the source path to the destination path.
+    /// \brief Saves text data to a file at the specified path.
     ///
-    /// \param Source      The path of the directory to be copied.
-    /// \param Destination The path where the directory should be copied to.
-    /// \return `true` if all files and directories were successfully copied, `false` otherwise.
-    Bool CopyAll(ConstStr8 Source, ConstStr8 Destination);
+    /// \param Path The path where the file should be saved.
+    /// \param Data A string containing the text data to be saved to the file.
+    ZYPHRYON_INLINE static Bool Save(ConstStr8 Path, ConstStr8 Data)
+    {
+        return Save(Path, Data.data(), static_cast<UInt32>(Data.size()));
+    }
 }

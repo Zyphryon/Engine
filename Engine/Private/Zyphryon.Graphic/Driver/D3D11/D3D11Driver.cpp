@@ -115,14 +115,20 @@ namespace Graphic
 
     static constexpr auto As(Multisample Value) noexcept
     {
-        static constexpr Array kMapping = {
-            1,        // Multisample::X1
-            2,        // Multisample::X2
-            4,        // Multisample::X4
-            8,        // Multisample::X8
-            16,       // Multisample::X16
-        };
-        return kMapping[Enum::Cast(Value)];
+        switch (Value)
+        {
+        case Multisample::X1:
+            return 1;
+        case Multisample::X2:
+            return 2;
+        case Multisample::X4:
+            return 4;
+        case Multisample::X8:
+            return 8;
+        case Multisample::X16:
+            return 16;
+        }
+        return 1;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

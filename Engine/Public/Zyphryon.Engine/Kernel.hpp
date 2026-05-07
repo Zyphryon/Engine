@@ -51,6 +51,11 @@ namespace Engine
         /// \brief Signals the application to exit gracefully.
         void Exit();
 
+        /// \brief Synchronizes the current runtime state into the given properties object.
+        ///
+        /// \param Properties The properties object to fill with the current runtime state.
+        void Sync(Ref<Properties> Properties);
+
         /// \brief Gets the native window device.
         ///
         /// \return The native window device.
