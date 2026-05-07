@@ -89,12 +89,14 @@ namespace Filesystem
 
     /// \brief Saves binary data to a file at the specified path.
     ///
-    /// \param Path The path where the file should be saved.
-    /// \param Data A Blob containing the binary data to be saved to the file.
+    /// \param Path  The path where the file should be saved.
+    /// \param Data  A Blob containing the binary data to be saved to the file.
+    /// \param Count The number of elements of the specified type to be saved to the file.
     /// \return `true` if the file was successfully saved, `false` otherwise.
-    ZYPHRYON_INLINE static Bool Save(ConstStr8 Path, AnyRef<Blob> Data)
+    template<typename Type>
+    ZYPHRYON_INLINE static Bool Save(ConstStr8 Path, ConstPtr<Type> Data, UInt32 Count)
     {
-        return SDL_SaveFile(Path.data(), Data.GetData<void>(), Data.GetSize());
+        return SDL_SaveFile(Path.data(), Data, Count * sizeof(Type));
     }
 
     /// \brief Recursively copies all files and directories from the source path to the destination path.
