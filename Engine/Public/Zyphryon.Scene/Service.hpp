@@ -347,7 +347,12 @@ namespace Scene
         template<typename Function>
         ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
         {
-            mArchetypesQueryAll.Run(Callback);
+            mWorld.defer_begin();
+            {
+                // Defer the archetype query to ensure safe iteration even if archetypes are modified.
+                mArchetypesQueryAll.Run(Callback);
+            }
+            mWorld.defer_end();
         }
 
         /// \brief Iterates over all entities with a given tag.
