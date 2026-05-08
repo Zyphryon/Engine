@@ -90,8 +90,9 @@ namespace Filesystem
     /// return A Blob containing the contents of the loaded file.
     ZYPHRYON_INLINE static Blob Load(ConstStr8 Path)
     {
-        size_t Size = 0;
-        return Blob(SDL_LoadFile(Path.data(), std::addressof(Size)), Size, SDL_free);
+        size_t          Size = 0;
+        const Ptr<void> Data = SDL_LoadFile(Path.data(), std::addressof(Size));
+        return Blob(Data, Size, SDL_free);
     }
 
     /// \brief Saves binary data to a file at the specified path.
