@@ -350,7 +350,7 @@ namespace Scene
             mWorld.defer_begin();
             {
                 // Defer the archetype query to ensure safe iteration even if archetypes are modified.
-                mArchetypesQueryAll.Run(Callback);
+                mQueryArchetypes.Run(Callback);
             }
             mWorld.defer_end();
         }
@@ -400,6 +400,20 @@ namespace Scene
             }
         }
 
+        /// \brief Loads the world state from a stream.
+        ///
+        /// \note Only singleton components directly on the world entity are serialized.
+        ///
+        /// \param Reader The stream containing the serialized world state.
+        void LoadWorld(Ref<Reader> Reader);
+
+        /// \brief Saves the world state to a stream.
+        ///
+        /// \note Only singleton components directly on the world entity are serialized.
+        ///
+        /// \param Writer The stream to write the serialized world state to.
+        void SaveWorld(Ref<Writer> Writer);
+
         /// \brief Loads all archetypes from a stream.
         ///
         /// \param Reader The stream containing serialized archetypes.
@@ -438,7 +452,104 @@ namespace Scene
         ///
         /// \param Reader The stream containing the serialized components.
         /// \param Actor  The entity to apply the components to.
+        template<typename Owner>
+        void LoadComponent(Ref<Reader> Reader, Owner Actor)
+        {
+	        // Read first element of the pair (tag/relationship); empty means single component.
+            const Str8   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
+            const Entity First = Pair.empty() ? Entity() : mWorld.component(Pair.c_str());
+
+            // Read component name and resolve the component entity.
+            const Str8   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
+            const Entity Second = mWorld.component(Name.c_str());
+
+            // Read serialized component payload.
+            const ConstSpan<Byte> Bundle = Reader.ReadBlock<UInt16, Byte>();
+
+            // Apply payload if present; otherwise attach component without data.
+            if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
+            {
+                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
+                {
+                    if (First.IsValid())
+                    {
+                        if (const Ptr<void> Memory = Actor.Ensure(First, Second))
+                        {
+                            Serializer->Read(Data, Memory);
+                        }
+                        Actor.Notify(First, Second);
+                    }
+                    else
+                    {
+                        if (const Ptr<void> Memory = Actor.Ensure(Second))
+                        {
+                            Serializer->Read(Data, Memory);
+                        }
+                        Actor.Notify(Second);
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("World: Trying to load an invalid component '{}'", Second.GetName());
+                }
+            }
+            else
+            {
+                if (First.IsValid())
+                {
+                    Actor.Add(First, Second);
+                }
+                else
+                {
+                    Actor.Add(Second);
+                }
+            }
+        }
+
+        /// \brief Loads all components of an entity.
+        ///
+        /// \param Reader The stream containing the serialized components.
+        /// \param Actor  The entity to apply the components to.
         void LoadComponents(Ref<Reader> Reader, Entity Actor);
+
+        /// \brief Saves a single component of an entity.
+        ///
+        /// \param Writer    The stream to write the component to.
+        /// \param Actor     The entity that owns the component.
+        /// \param Component The component to serialize.
+        template<typename Owner>
+        void SaveComponent(Ref<Writer> Writer, Owner Actor, Entity Component)
+        {
+            Entity First;
+            Entity Second;
+
+            if (Component.IsPair())
+            {
+                First  = Component.GetFirst();
+                Second = Component.GetSecond();
+            }
+            else
+            {
+                Second = Component;
+            }
+
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.template TryGet<const Factory>() : nullptr;
+
+            if (Serializer && (!First.IsValid() || First.template Has<Factory>()))
+            {
+                // Write the name of the relation tag if valid, otherwise an empty string.
+                Writer.WriteText(First.IsValid() ? First.GetName() : "");
+
+                // Write the name of the relation target or component.
+                Writer.WriteText(Second.GetName());
+
+                // Write the serialized component bundle to the output stream.
+                Writer.WriteBlock<UInt16>([&](Ref<Base::Writer> Output)
+                {
+                    Serializer->Write(Output, Actor.TryGet(Component));
+                });
+            }
+        }
 
         /// \brief Saves all components of an entity.
         ///
@@ -490,6 +601,11 @@ namespace Scene
         Time                      mTime;
         Real32                    mMultiplier;
         Slot<kMaxCountArchetypes> mArchetypes;
-        Query                     mArchetypesQueryAll;
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Query                     mQuerySingletons;
+        Query                     mQueryArchetypes;
     };
 }

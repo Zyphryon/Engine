@@ -57,6 +57,40 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::LoadWorld(Ref<Reader> Reader)
+    {
+        const World World = GetWorld();
+
+        // Load all singleton components directly on the world entity.
+        while (Reader.Peek<UInt32>() != -1)
+        {
+            LoadComponent(Reader, World);
+        }
+
+        // Skip delimiter marking the end of the component list.
+        Reader.Skip(sizeof(UInt32));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SaveWorld(Ref<Writer> Writer)
+    {
+        const World World = GetWorld();
+
+        // Serialize all singleton components directly on the world entity.
+        mQuerySingletons.Run([&](Entity Component)
+        {
+            SaveComponent(Writer, World, Component);
+        });
+
+        // Write delimiter marking the end of the component list.
+        Writer.WriteUInt32(-1);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::LoadArchetypes(Ref<Reader> Reader)
     {
         const UInt32 Size = Reader.ReadInt32();
@@ -225,55 +259,7 @@ namespace Scene
     {
         while (Reader.Peek<UInt32>() != -1)
         {
-            // Read first element of the pair (tag/relationship); empty means single component.
-            const Str8   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const Entity First = Pair.empty() ? Entity() : mWorld.component(Pair.c_str());
-
-            // Read component name and resolve the component entity.
-            const Str8   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const Entity Second = mWorld.component(Name.c_str());
-
-            // Read serialized component payload.
-            const ConstSpan<Byte> Bundle = Reader.ReadBlock<UInt16, Byte>();
-
-            // Apply payload if present; otherwise attach component without data.
-            if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
-            {
-                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
-                {
-                    if (First.IsValid())
-                    {
-                        if (const Ptr<void> Memory = Actor.Ensure(First, Second))
-                        {
-                            Serializer->Read(Data, Memory);
-                        }
-                        Actor.Notify(First, Second);
-                    }
-                    else
-                    {
-                        if (const Ptr<void> Memory = Actor.Ensure(Second))
-                        {
-                            Serializer->Read(Data, Memory);
-                        }
-                        Actor.Notify(Second);
-                    }
-                }
-                else
-                {
-                    LOG_WARNING("World: Trying to load an invalid component '{}'", Second.GetName());
-                }
-            }
-            else
-            {
-                if (First.IsValid())
-                {
-                    Actor.Add(First, Second);
-                }
-                else
-                {
-                    Actor.Add(Second);
-                }
-            }
+            LoadComponent(Reader, Actor);
         }
 
         // Skip delimiter marking the end of the component list.
@@ -288,35 +274,7 @@ namespace Scene
         // Iterate over each component attached to the entity.
         const auto OnIterateEntityComponents = [&](Entity Component)
         {
-            Entity First;
-            Entity Second;
-
-            if (Component.IsPair())
-            {
-                First  = Component.GetFirst();
-                Second = Component.GetSecond();
-            }
-            else
-            {
-                Second = Component;
-            }
-
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.TryGet<const Factory>() : nullptr;
-
-            if (Serializer && (!First.IsValid() || First.Has<Factory>()))
-            {
-                // Write the name of the relation tag if valid, otherwise an empty string.
-                Writer.WriteText(First.IsValid() ? First.GetName() : "");
-
-                // Write the name of the relation target or component.
-                Writer.WriteText(Second.GetName());
-
-                // Write the serialized component bundle to the output stream.
-                Writer.WriteBlock<UInt16>([&](Ref<Base::Writer> Output)
-                {
-                    Serializer->Write(Output, Actor.TryGet(Component));
-                });
-            }
+            SaveComponent(Writer, Actor, Component);
         };
         Actor.Iterate(OnIterateEntityComponents);
 
@@ -344,7 +302,10 @@ namespace Scene
         }, DSL::In(flecs::Prefab));
 
         // Create a query that matches all archetypes (prefabs).
-        mArchetypesQueryAll = CreateQuery("_Archetypes::Query", Cache::Default, DSL::In(EcsPrefab));
+        mQueryArchetypes = CreateQuery("_Archetypes::Query", Cache::Default, DSL::In(EcsPrefab));
+
+        // Create a query that matches all singletons (components directly on the world entity).
+        mQuerySingletons = CreateQuery("_Singletons::Query", Cache::Default, DSL::In(EcsSingleton));
 
         // Register Factory component (serialization).
         GetComponent<Factory>("Factory").AddTrait(Trait::Final);

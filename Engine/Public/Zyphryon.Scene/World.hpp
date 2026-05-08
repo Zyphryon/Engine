@@ -38,6 +38,19 @@ namespace Scene
         {
         }
 
+        /// \brief Adds a singleton component to this world.
+        ///
+        /// \tparam Component The component entity to add.
+        ///
+        /// \return The updated world.
+        ZYPHRYON_INLINE World Add(Entity Component) const
+        {
+            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
+            Target.Add(Component);
+
+            return (* this);
+        }
+
         /// \brief Adds a singleton tag component to this world.
         ///
         /// \tparam Tag The tag type to add.
@@ -50,7 +63,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a value pair component to this world.
+        /// \brief Adds a singleton value pair component to this world.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -63,7 +76,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a relationship pair component to this world.
+        /// \brief Adds a singleton relationship pair component to this world.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -76,7 +89,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Adds a relationship pair component to this world.
+        /// \brief Adds a singleton relationship pair component to this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -87,7 +100,7 @@ namespace Scene
             return Add<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Adds a pair component to this world.
+        /// \brief Adds a singleton pair component to this world.
         ///
         /// \param Tag       The world used as the pair's first element.
         /// \param Component The world used as the pair's second element.
@@ -99,7 +112,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Sets or replaces the data of a component on this world.
+        /// \brief Sets or replaces the data of a singleton component on this world.
         ///
         /// \param Data The component's data.
         ///
@@ -111,7 +124,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a component in-place on this world.
+        /// \brief Constructs a singleton component in-place on this world.
         ///
         /// \param Parameters The component's constructor parameters.
         ///
@@ -123,7 +136,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a pair component in-place on this world.
+        /// \brief Constructs a singleton pair component in-place on this world.
         ///
         /// \tparam Tag       The tag type used as the pair's first element.
         /// \tparam Component The component type used as the pair's second element.
@@ -137,7 +150,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a pair component in-place on this world.
+        /// \brief Constructs a singleton pair component in-place on this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -149,7 +162,28 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a component or tag from this world.
+        /// \brief Ensures that a singleton component exists on this world, creating it if necessary.
+        ///
+        /// \param Component The world representing the component to ensure.
+        /// \return A pointer to the component data, which may be newly created or existing.
+        ZYPHRYON_INLINE Ptr<void> Ensure(Entity Component) const
+        {
+            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
+            return Target.Ensure(Component);
+        }
+
+        /// \brief Ensures that a singleton pair component exists on this world, creating it if necessary.
+        ///
+        /// \param Tag       The entity used as the pair's first element.
+        /// \param Component The entity used as the pair's second element.
+        /// \return A pointer to the component data, which may be newly created or existing.
+        ZYPHRYON_INLINE Ptr<void> Ensure(Entity Tag, Entity Component) const
+        {
+            const Entity Target(Entity::Handle(mHandle, Tag.GetID()));
+            return Target.Ensure(Tag, Component);
+        }
+
+        /// \brief Removes a singleton component or tag from this world.
         ///
         /// \tparam Component The component type to remove.
         ///
@@ -161,7 +195,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair component from this world.
+        /// \brief Removes a singleton pair component from this world.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -174,7 +208,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair component from this world.
+        /// \brief Removes a singleton pair component from this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -185,7 +219,7 @@ namespace Scene
             return Remove<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Removes a pair component from this world.
+        /// \brief Removes a singleton pair component from this world.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -198,7 +232,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a pair component from this world.
+        /// \brief Removes a singleton pair component from this world.
         ///
         /// \param Tag    The world used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -210,7 +244,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Checks whether this world has a specific component.
+        /// \brief Checks whether this world has a specific singleton component.
         ///
         /// \tparam Component The component type to check for.
         ///
@@ -221,7 +255,7 @@ namespace Scene
             return mHandle.has<Component>();
         }
 
-        /// \brief Checks whether this world has a specific pair component.
+        /// \brief Checks whether this world has a specific singleton pair component.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -233,7 +267,7 @@ namespace Scene
             return mHandle.has<Tag, Target>();
         }
 
-        /// \brief Checks whether this world has a specific pair component.
+        /// \brief Checks whether this world has a specific singleton pair component.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -244,7 +278,7 @@ namespace Scene
             return Has<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Checks whether this world has a specific pair component.
+        /// \brief Checks whether this world has a specific singleton pair component.
         ///
         /// \param Tag    The world used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -255,7 +289,7 @@ namespace Scene
             return mHandle.has(Tag.GetID(), Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a component on this world.
+        /// \brief Retrieves a pointer to a singleton component on this world.
         ///
         /// \param Component The world representing the component.
         ///
@@ -265,7 +299,7 @@ namespace Scene
             return mHandle.try_get_mut(Component.GetID());
         }
 
-        /// \brief Retrieves a pointer to a component on this world.
+        /// \brief Retrieves a pointer to a singleton component on this world.
         ///
         /// \tparam Component The component type to retrieve.
         ///
@@ -283,7 +317,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a pointer to a pair component on this world.
+        /// \brief Retrieves a pointer to a singleton pair component on this world.
         ///
         /// \tparam Tag   The tag type used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -295,7 +329,7 @@ namespace Scene
             return mHandle.try_get_mut<Tag>(Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a pair component on this world.
+        /// \brief Retrieves a pointer to a singleton pair component on this world.
         ///
         /// \param Tag    The world used as the pair's first element.
         /// \param Target The world used as the pair's second element.
@@ -306,7 +340,7 @@ namespace Scene
             return mHandle.try_get_mut(Tag.GetID(), Target.GetID());
         }
 
-        /// \brief Retrieves a pointer to a pair component on this world.
+        /// \brief Retrieves a pointer to a singleton pair component on this world.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -325,7 +359,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a pointer to a pair component on this world.
+        /// \brief Retrieves a pointer to a singleton pair component on this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -336,7 +370,7 @@ namespace Scene
             return TryGetPair<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Retrieves a reference to a component on this world.
+        /// \brief Retrieves a reference to a singleton component on this world.
         ///
         /// \tparam Component The component type to retrieve.
         ///
@@ -354,7 +388,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a pair component on this world.
+        /// \brief Retrieves a reference to a singleton pair component on this world.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -373,7 +407,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a pair component on this world.
+        /// \brief Retrieves a reference to a singleton pair component on this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
@@ -384,7 +418,34 @@ namespace Scene
             return GetPair<typename Pair::First, typename Pair::Second>();
         }
 
-        /// \brief Marks a component as modified on this world.
+        /// \brief Marks a singleton component as modified.
+        ///
+        /// \param Component The entity representing the component.
+        ///
+        /// \return The updated world.
+        ZYPHRYON_INLINE World Notify(Entity Component) const
+        {
+            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
+            Target.Notify(Component);
+
+            return (* this);
+        }
+
+        /// \brief Marks a singleton pair component as modified on this entity.
+        ///
+        /// \param Tag       The entity used as the pair's first element.
+        /// \param Component The entity used as the pair's second element.
+        ///
+        /// \return The updated world.
+        ZYPHRYON_INLINE World Notify(Entity Tag, Entity Component) const
+        {
+            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
+            Target.Notify(Tag, Target);
+
+            return (* this);
+        }
+
+        /// \brief Marks a singleton component as modified on this world.
         ///
         /// \tparam Component The component type to notify.
         ///
@@ -396,7 +457,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Marks a pair component as modified on this world.
+        /// \brief Marks a singleton pair component as modified on this world.
         ///
         /// \tparam Tag    The tag type used as the pair's first element.
         /// \tparam Target The component type used as the pair's second element.
@@ -409,7 +470,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Marks a pair component as modified on this world.
+        /// \brief Marks a singleton pair component as modified on this world.
         ///
         /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
         ///
