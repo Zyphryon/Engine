@@ -59,7 +59,7 @@ namespace Content
         /// \brief Reads all bytes from a file located at the specified path.
         ///
         /// \param Path Path to the file within this mount.
-        /// \return A \ref Blob containing the file's raw binary data.
+        /// \return A \ref Blob containing the file's raw binary data, or an empty \ref Blob if the file does not exist.
         virtual Blob Read(ConstStr8 Path) = 0;
 
         /// \brief Writes raw bytes to a file at the specified path.

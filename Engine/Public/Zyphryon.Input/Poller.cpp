@@ -156,7 +156,7 @@ namespace Input
         case SDLK_SCROLLLOCK:
             return Key::Scroll;
         case SDLK_NUMLOCKCLEAR:
-            return Key::Lock;
+            return Key::NumLock;
         case SDLK_PRINTSCREEN:
             return Key::Print;
         case SDLK_PAUSE:
@@ -238,12 +238,16 @@ namespace Input
             return Key::LeftCtrl;
         case SDLK_LALT:
             return Key::LeftAlt;
+        case SDLK_LGUI:
+            return Key::LeftSuper;
         case SDLK_RSHIFT:
             return Key::RightShift;
         case SDLK_RCTRL:
             return Key::RightCtrl;
         case SDLK_RALT:
             return Key::RightAlt;
+        case SDLK_RGUI:
+            return Key::RightSuper;
         case SDLK_MENU:
             return Key::Menu;
         default:

@@ -66,7 +66,7 @@ inline namespace Math
 
     public:
 
-        /// \brief Predefined pivot point at the top-left corner (0.0, 0.0).
+        /// \brief Predefined pivot point at the top-left corner (0.0, 1.0).
         ///
         /// \return A pivot point representing the top-left corner.
         ZYPHRYON_INLINE static constexpr Pivot LeftTop()
@@ -82,7 +82,7 @@ inline namespace Math
             return Pivot(0.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-left corner (0.0, 1.0).
+        /// \brief Predefined pivot point at the bottom-left corner (0.0, 0.0).
         ///
         /// \return A pivot point representing the bottom-left corner.
         ZYPHRYON_INLINE static constexpr Pivot LeftBottom()
@@ -90,7 +90,7 @@ inline namespace Math
             return Pivot(0.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the top-center edge (0.5, 0.0).
+        /// \brief Predefined pivot point at the top-center edge (0.5, 1.0).
         ///
         /// \return A pivot point representing the top-center edge.
         ZYPHRYON_INLINE static constexpr Pivot CenterTop()
@@ -106,7 +106,7 @@ inline namespace Math
             return Pivot(0.5f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-center edge (0.5, 1.0).
+        /// \brief Predefined pivot point at the bottom-center edge (0.5, 0.0).
         ///
         /// \return A pivot point representing the bottom-center edge.
         ZYPHRYON_INLINE static constexpr Pivot CenterBottom()
@@ -114,7 +114,7 @@ inline namespace Math
             return Pivot(0.5f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the top-right corner (1.0, 0.0).
+        /// \brief Predefined pivot point at the top-right corner (1.0, 1.0).
         ///
         /// \return A pivot point representing the top-right corner.
         ZYPHRYON_INLINE static constexpr Pivot RightTop()
@@ -130,7 +130,7 @@ inline namespace Math
             return Pivot(1.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-right corner (1.0, 1.0).
+        /// \brief Predefined pivot point at the bottom-right corner (1.0, 0.0).
         ///
         /// \return A pivot point representing the bottom-right corner.
         ZYPHRYON_INLINE static constexpr Pivot RightBottom()

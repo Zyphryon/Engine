@@ -117,9 +117,9 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real32 MADriver::GetMasterVolume()
+    Real32 MADriver::GetMasterVolume() const
     {
-        return ma_engine_get_volume(&mEngine);
+        return ma_engine_get_volume(const_cast<Ptr<ma_engine>>(&mEngine));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -134,9 +134,9 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real32 MADriver::GetSubmixVolume(Category Category)
+    Real32 MADriver::GetSubmixVolume(Category Category) const
     {
-        Ref<ma_sound_group> Submix = mSubmixes[Enum::Cast(Category)];
+        ConstRef<ma_sound_group> Submix = mSubmixes[Enum::Cast(Category)];
         return ma_sound_group_get_volume(&Submix);
     }
 

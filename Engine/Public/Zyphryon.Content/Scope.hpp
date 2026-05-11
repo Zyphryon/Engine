@@ -56,15 +56,21 @@ namespace Content
 
         /// \brief Checks whether all dependent resources have finished loading.
         ///
+        /// A dependency is considered finished when it has either completed or failed.
+        ///
         /// \return `true` if no dependencies remain, otherwise `false`.
         ZYPHRYON_INLINE Bool Poll()
         {
-            for (UInt32 Element = 0; Element < mDependencies.size(); ++Element)
+            for (UInt32 Element = 0; Element < mDependencies.size();)
             {
-                if (mDependencies[Element]->HasCompleted())
+                if (mDependencies[Element]->HasFinished())
                 {
                     Swap(mDependencies[Element], mDependencies.back());
                     mDependencies.pop_back();
+                }
+                else
+                {
+                    ++Element;
                 }
             }
             return mDependencies.empty();

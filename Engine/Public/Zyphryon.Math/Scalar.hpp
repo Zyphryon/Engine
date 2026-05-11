@@ -25,7 +25,7 @@ inline namespace Math
     template<typename Type>
     inline constexpr Type kPI       = Type(3.141592653589793238462643383279502884e+00);
 
-    /// \brief Mathematical constant representing the value of two times pi.
+    /// \brief Mathematical constant representing the machine epsilon (smallest difference from 1.0).
     template<typename Type>
     inline constexpr Type kEpsilon  = std::numeric_limits<Type>::epsilon();
 

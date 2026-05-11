@@ -20,8 +20,8 @@
 
 namespace Scene
 {
-    /// \brief Represents the world or scene context within the ECS (Entity-Component System).
-    class World
+    /// \brief Represents the world entity within the ECS, acting as a bridge to singleton components.
+    class World final
     {
     public:
 
@@ -38,85 +38,67 @@ namespace Scene
         {
         }
 
-        /// \brief Adds a singleton component to this world.
+        /// \brief Attaches a singleton component or tag to the world.
         ///
-        /// \tparam Component The component entity to add.
+        /// \tparam Component The component or tag type to attach.
+        /// \return This world, allowing for method chaining.
+        template<typename Component>
+        ZYPHRYON_INLINE World Add() const
+        {
+            mHandle.add<Component>();
+            return (* this);
+        }
+
+        /// \brief Attaches a component or tag to the world using a runtime entity.
         ///
-        /// \return The updated world.
+        /// \param Component The component or tag entity to attach.
+        /// \return This world, allowing for method chaining.
         ZYPHRYON_INLINE World Add(Entity Component) const
         {
-            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
-            Target.Add(Component);
-
+            Component.Add(Component);
             return (* this);
         }
 
-        /// \brief Adds a singleton tag component to this world.
+        /// \brief Attaches a singleton relation pair to the world using two compile-time types.
         ///
-        /// \tparam Tag The tag type to add.
-        ///
-        /// \return The updated world.
-        template<typename Tag>
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The target type of the relation.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component>
         ZYPHRYON_INLINE World Add() const
         {
-            mHandle.add<Tag>();
+            mHandle.add<Relation, Component>();
             return (* this);
         }
 
-        /// \brief Adds a singleton value pair component to this world.
+        /// \brief Attaches a singleton relation pair using a compile-time relation and a runtime target entity.
         ///
-        /// \tparam Tag   The tag type used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return The updated world.
-        template<typename Tag>
-        ZYPHRYON_INLINE World Add(Entity Target) const
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity of the relation.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation>
+        ZYPHRYON_INLINE World Add(Entity Component) const
         {
-            mHandle.add<Tag>(Target.GetID());
+            mHandle.add<Relation>(Component.GetHandle());
             return (* this);
         }
 
-        /// \brief Adds a singleton relationship pair component to this world.
+        /// \brief Attaches a singleton relation pair using two runtime entities.
         ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        ///
-        /// \return The updated world.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE World Add() const
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Add(Entity Relation, Entity Component) const
         {
-            mHandle.add<Tag, Target>();
+            mHandle.add(Relation.GetHandle(), Component.GetHandle());
             return (* this);
         }
 
-        /// \brief Adds a singleton relationship pair component to this world.
+        /// \brief Sets the value of a singleton component on the world.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return The updated world.
-        template<IsPairDSL Pair>
-        ZYPHRYON_INLINE World Add() const
-        {
-            return Add<typename Pair::First, typename Pair::Second>();
-        }
-
-        /// \brief Adds a singleton pair component to this world.
-        ///
-        /// \param Tag       The world used as the pair's first element.
-        /// \param Component The world used as the pair's second element.
-        ///
-        /// \return The updated world.
-        ZYPHRYON_INLINE World Add(Entity Tag, Entity Component) const
-        {
-            mHandle.add(Tag.GetID(), Component.GetID());
-            return (* this);
-        }
-
-        /// \brief Sets or replaces the data of a singleton component on this world.
-        ///
-        /// \param Data The component's data.
-        ///
-        /// \return The updated world.
+        /// \tparam Component The component type to set.
+        /// \param  Data      The data to assign.
+        /// \return This world, allowing for method chaining.
         template<typename Component>
         ZYPHRYON_INLINE World Set(AnyRef<Component> Data) const
         {
@@ -124,70 +106,166 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Constructs a singleton component in-place on this world.
+        /// \brief Sets the value of a singleton component on a relation pair using a compile-time relation.
         ///
-        /// \param Parameters The component's constructor parameters.
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The component type to set.
+        /// \param  Data      The data to assign.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component>
+        ZYPHRYON_INLINE World Set(AnyRef<Component> Data) const
+        {
+            mHandle.set<Relation, Component>(Move(Data));
+            return (* this);
+        }
+
+        /// \brief Sets the value of a singleton component on a relation pair using a runtime relation entity.
         ///
-        /// \return The updated world.
+        /// \tparam Component The component type to set.
+        /// \param  Relation  The relation entity.
+        /// \param  Data      The data to assign.
+        /// \return This world, allowing for method chaining.
+        template<typename Component>
+        ZYPHRYON_INLINE World Set(Entity Relation, AnyRef<Component> Data) const
+        {
+            mHandle.set<Component>(Relation.GetHandle(), Move(Data));
+            return (* this);
+        }
+
+        /// \brief Constructs a singleton component directly on the world, forwarding arguments to its constructor.
+        ///
+        /// \tparam Component  The component type to construct.
+        /// \param  Parameters Arguments forwarded to the component constructor.
+        /// \return This world, allowing for method chaining.
         template<typename Component, typename... Arguments>
         ZYPHRYON_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
+            requires (!IsEqual<Decay<Arguments>, Entity> && ...)
         {
             mHandle.emplace<Component>(Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
-        /// \brief Constructs a singleton pair component in-place on this world.
+        /// \brief Constructs a singleton component on a relation pair, forwarding arguments to its constructor.
         ///
-        /// \tparam Tag       The tag type used as the pair's first element.
-        /// \tparam Component The component type used as the pair's second element.
-        /// \param Parameters The constructor parameters for the component.
-        ///
-        /// \return The updated world.
-        template<typename Tag, typename Component, typename... Arguments>
-        ZYPHRYON_INLINE World EmplacePair(AnyRef<Arguments>... Parameters) const
+        /// \tparam Relation   The relation type.
+        /// \tparam Component  The component type to construct.
+        /// \param  Parameters Arguments forwarded to the component constructor.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component, typename... Arguments>
+        ZYPHRYON_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
         {
-            mHandle.emplace<Tag, Component>(Forward<Arguments>(Parameters)...);
+            mHandle.component<Component>().template emplace<Relation, Component>(Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
-        /// \brief Constructs a singleton pair component in-place on this world.
+        /// \brief Constructs a singleton component using a runtime relation, forwarding arguments to its constructor.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return The updated world.
-        template<IsPairDSL Pair, typename... Arguments>
-        ZYPHRYON_INLINE World EmplacePair(AnyRef<Arguments>... Parameters) const
+        /// \tparam Component  The component type to construct.
+        /// \param  Relation   The relation entity.
+        /// \param  Parameters Arguments forwarded to the component constructor.
+        /// \return This world, allowing for method chaining.
+        template<typename Component, typename... Arguments>
+        ZYPHRYON_INLINE World Emplace(Entity Relation, AnyRef<Arguments>... Parameters) const
         {
-            mHandle.emplace<typename Pair::First, typename Pair::Second>(Forward<Arguments>(Parameters)...);
+            mHandle.component<Component>().template emplace_second<Component>(Relation.GetHandle(), Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
-        /// \brief Ensures that a singleton component exists on this world, creating it if necessary.
+        /// \brief Gets a writable pointer to a singleton component, creating it if it does not exist.
         ///
-        /// \param Component The world representing the component to ensure.
-        /// \return A pointer to the component data, which may be newly created or existing.
+        /// \tparam Component The component type to retrieve or create.
+        /// \return A pointer to the component data.
+        template<typename Component>
+        ZYPHRYON_INLINE Ptr<void> Ensure() const
+        {
+            return mHandle.ensure<Component>();
+        }
+
+        /// \brief Gets a writable pointer to a singleton component by runtime entity, creating it if it does not exist.
+        ///
+        /// \param Component The component entity to retrieve or create.
+        /// \return A pointer to the component data.
         ZYPHRYON_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
-            return Target.Ensure(Component);
+            return Component.Ensure(Component);
         }
 
-        /// \brief Ensures that a singleton pair component exists on this world, creating it if necessary.
+        /// \brief Gets a writable pointer to a singleton component on a relation pair using a runtime relation.
         ///
-        /// \param Tag       The entity used as the pair's first element.
-        /// \param Component The entity used as the pair's second element.
-        /// \return A pointer to the component data, which may be newly created or existing.
-        ZYPHRYON_INLINE Ptr<void> Ensure(Entity Tag, Entity Component) const
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity of the relation.
+        /// \return A pointer to the component data.
+        template<typename Relation>
+        ZYPHRYON_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            const Entity Target(Entity::Handle(mHandle, Tag.GetID()));
-            return Target.Ensure(Tag, Component);
+            return Component.Ensure<Relation>(Component);
         }
 
-        /// \brief Removes a singleton component or tag from this world.
+        /// \brief Gets a writable pointer to a singleton component on a relation pair using two runtime entities.
         ///
-        /// \tparam Component The component type to remove.
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return A pointer to the component data.
+        ZYPHRYON_INLINE Ptr<void> Ensure(Entity Relation, Entity Component) const
+        {
+            return Component.Ensure(Relation, Component);
+        }
+
+        /// \brief Checks if the world has a singleton component or tag.
         ///
-        /// \return The updated world.
+        /// \tparam Component The component or tag type to check.
+        /// \return `true` if it exists, `false` otherwise.
+        template<typename Component>
+        ZYPHRYON_INLINE Bool Has() const
+        {
+            return mHandle.has<Component>();
+        }
+
+        /// \brief Checks if the world has a given singleton component using a runtime entity.
+        ///
+        /// \param Component The component entity to check.
+        /// \return `true` if it exists, `false` otherwise.
+        ZYPHRYON_INLINE Bool Has(Entity Component) const
+        {
+            return Component.Has(Component);
+        }
+
+        /// \brief Checks if the world has a singleton relation pair using two compile-time types.
+        ///
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The target type of the relation.
+        /// \return `true` if the pair exists, `false` otherwise.
+        template<typename Relation, typename Component>
+        ZYPHRYON_INLINE Bool Has() const
+        {
+            return mHandle.has<Relation, Component>();
+        }
+
+        /// \brief Checks if the world has a singleton relation pair using a compile-time relation and a runtime target.
+        ///
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity to check.
+        /// \return `true` if the pair exists, `false` otherwise.
+        template<typename Relation>
+        ZYPHRYON_INLINE Bool Has(Entity Component) const
+        {
+            return mHandle.has<Relation>(Component.GetHandle());
+        }
+
+        /// \brief Checks if the world has a singleton relation pair using two runtime entities.
+        ///
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return `true` if the pair exists, `false` otherwise.
+        ZYPHRYON_INLINE Bool Has(Entity Relation, Entity Component) const
+        {
+            return mHandle.has(Relation.GetHandle(), Component.GetHandle());
+        }
+
+        /// \brief Removes a singleton component or tag from the world.
+        ///
+        /// \tparam Component The component or tag type to remove.
+        /// \return This world, allowing for method chaining.
         template<typename Component>
         ZYPHRYON_INLINE World Remove() const
         {
@@ -195,185 +273,110 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Removes a singleton pair component from this world.
+        /// \brief Removes a singleton component or tag from the world using a runtime entity.
         ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
+        /// \param Component The component or tag entity to remove.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Remove(Entity Component) const
+        {
+            Component.Remove(Component);
+            return (* this);
+        }
+
+        /// \brief Removes a singleton relation pair from the world using two compile-time types.
         ///
-        /// \return The updated world.
-        template<typename Tag, typename Target>
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The target type of the relation.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component>
         ZYPHRYON_INLINE World Remove() const
         {
-            mHandle.remove<Tag, Target>();
+            mHandle.remove<Relation, Component>();
             return (* this);
         }
 
-        /// \brief Removes a singleton pair component from this world.
+        /// \brief Removes a singleton relation pair using a compile-time relation and a runtime target entity.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return The updated world.
-        template<IsPairDSL Pair>
-        ZYPHRYON_INLINE World Remove() const
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity to remove.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation>
+        ZYPHRYON_INLINE World Remove(Entity Component) const
         {
-            return Remove<typename Pair::First, typename Pair::Second>();
-        }
-
-        /// \brief Removes a singleton pair component from this world.
-        ///
-        /// \tparam Tag   The tag type used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return The updated world.
-        template<typename Tag>
-        ZYPHRYON_INLINE World Remove(Entity Target) const
-        {
-            mHandle.remove<Tag>(Target.GetID());
+            mHandle.remove<Relation>(Component.GetHandle());
             return (* this);
         }
 
-        /// \brief Removes a singleton pair component from this world.
+        /// \brief Removes a singleton relation pair using two runtime entities.
         ///
-        /// \param Tag    The world used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return The updated world.
-        ZYPHRYON_INLINE World Remove(Entity Tag, Entity Target) const
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Remove(Entity Relation, Entity Component) const
         {
-            mHandle.remove(Tag.GetID(), Target.GetID());
+            mHandle.remove(Relation.GetHandle(), Component.GetHandle());
             return (* this);
         }
 
-        /// \brief Checks whether this world has a specific singleton component.
+        /// \brief Remove all occurrences instances of a component.
         ///
-        /// \tparam Component The component type to check for.
-        ///
-        /// \return `true` if the world has the component, `false` otherwise.
+        /// \tparam Component The component or tag type to remove.
+        /// \return This world, allowing for method chaining.
         template<typename Component>
-        ZYPHRYON_INLINE Bool Has() const
+        ZYPHRYON_INLINE World Purge() const
         {
-            return mHandle.has<Component>();
+            mHandle.remove_all<Component>();
+            return (* this);
         }
 
-        /// \brief Checks whether this world has a specific singleton pair component.
+        /// \brief Remove all occurrences of a component using a runtime entity.
         ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        ///
-        /// \return `true` if the world has the specified pair, `false` otherwise.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Bool Has() const
+        /// \param Component The component or tag entity to remove.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Purge(Entity Component) const
         {
-            return mHandle.has<Tag, Target>();
+            mHandle.remove_all(Component.GetID());
+            return (* this);
         }
 
-        /// \brief Checks whether this world has a specific singleton pair component.
+        /// \brief Remove all occurrences of a relation pair using two compile-time types.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return `true` if the world has the specified pair, `false` otherwise.
-        template<IsPairDSL Pair>
-        ZYPHRYON_INLINE Bool Has() const
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The target type of the relation.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component>
+        ZYPHRYON_INLINE World Purge() const
         {
-            return Has<typename Pair::First, typename Pair::Second>();
+            mHandle.remove_all<Relation, Component>();
+            return (* this);
         }
 
-        /// \brief Checks whether this world has a specific singleton pair component.
+        /// \brief Remove all occurrences of a relation pair using a compile-time relation and a runtime target entity.
         ///
-        /// \param Tag    The world used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return `true` if the world has the specified pair, `false` otherwise.
-        ZYPHRYON_INLINE Bool Has(Entity Tag, Entity Target) const
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity to remove.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation>
+        ZYPHRYON_INLINE World Purge(Entity Component) const
         {
-            return mHandle.has(Tag.GetID(), Target.GetID());
+            mHandle.remove_all<Relation>(Component.GetHandle());
+            return (* this);
         }
 
-        /// \brief Retrieves a pointer to a singleton component on this world.
+        /// \brief Remove all occurrences of a relation pair using two runtime entities.
         ///
-        /// \param Component The world representing the component.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Purge(Entity Relation, Entity Component) const
         {
-            return mHandle.try_get_mut(Component.GetID());
+            mHandle.remove_all(Relation.GetHandle(), Component.GetHandle());
+            return (* this);
         }
 
-        /// \brief Retrieves a pointer to a singleton component on this world.
+        /// \brief Gets a reference to a singleton component on the world.
         ///
         /// \tparam Component The component type to retrieve.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        template<typename Component>
-        ZYPHRYON_INLINE Ptr<Component> TryGet() const
-        {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mHandle.try_get<Component>();
-            }
-            else
-            {
-                return mHandle.try_get_mut<Component>();
-            }
-        }
-
-        /// \brief Retrieves a pointer to a singleton pair component on this world.
-        ///
-        /// \tparam Tag   The tag type used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        template<typename Tag>
-        ZYPHRYON_INLINE Ptr<void> TryGetPair(Entity Target) const
-        {
-            return mHandle.try_get_mut<Tag>(Target.GetID());
-        }
-
-        /// \brief Retrieves a pointer to a singleton pair component on this world.
-        ///
-        /// \param Tag    The world used as the pair's first element.
-        /// \param Target The world used as the pair's second element.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        ZYPHRYON_INLINE Ptr<void> TryGetPair(Entity Tag, Entity Target) const
-        {
-            return mHandle.try_get_mut(Tag.GetID(), Target.GetID());
-        }
-
-        /// \brief Retrieves a pointer to a singleton pair component on this world.
-        ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Ptr<Target> TryGetPair() const
-        {
-            if constexpr (IsImmutable<Target>)
-            {
-                return mHandle.try_get<Tag, Target>();
-            }
-            else
-            {
-                return mHandle.try_get_mut<Tag, Target>();
-            }
-        }
-
-        /// \brief Retrieves a pointer to a singleton pair component on this world.
-        ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return A pointer to the component data, or nullptr if not present.
-        template<IsPairDSL Pair>
-        ZYPHRYON_INLINE decltype(auto) TryGetPair() const
-        {
-            return TryGetPair<typename Pair::First, typename Pair::Second>();
-        }
-
-        /// \brief Retrieves a reference to a singleton component on this world.
-        ///
-        /// \tparam Component The component type to retrieve.
-        ///
         /// \return A reference to the component data.
         template<typename Component>
         ZYPHRYON_INLINE Ref<Component> Get() const
@@ -388,68 +391,93 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves a reference to a singleton pair component on this world.
+        /// \brief Gets a reference to a singleton component on a relation pair using two compile-time types.
         ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        ///
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The component type to retrieve.
         /// \return A reference to the component data.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Ref<Target> GetPair() const
+        template<typename Relation, typename Component>
+        ZYPHRYON_INLINE Ref<Component> Get() const
         {
-            if constexpr (IsImmutable<Target>)
+            if constexpr (IsImmutable<Component>)
             {
-                return mHandle.get<Tag, Target>();
+                return mHandle.get<Relation, Component>();
             }
             else
             {
-                return mHandle.get_mut<Tag, Target>();
+                return mHandle.get_mut<Relation, Component>();
             }
         }
 
-        /// \brief Retrieves a reference to a singleton pair component on this world.
+        /// \brief Gets a pointer to a singleton component, or null if it does not exist.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return A reference to the component data.
-        template<IsPairDSL Pair>
-        ZYPHRYON_INLINE decltype(auto) GetPair() const
+        /// \tparam Component The component type to look up.
+        /// \return A pointer to the component data, or null if not found.
+        template<typename Component>
+        ZYPHRYON_INLINE Ptr<Component> TryGet() const
         {
-            return GetPair<typename Pair::First, typename Pair::Second>();
+            if constexpr (IsImmutable<Component>)
+            {
+                return mHandle.try_get<Component>();
+            }
+            else
+            {
+                return mHandle.try_get_mut<Component>();
+            }
         }
 
-        /// \brief Marks a singleton component as modified.
+        /// \brief Gets a raw pointer to a singleton component by runtime entity, or null if not found.
         ///
-        /// \param Component The entity representing the component.
-        ///
-        /// \return The updated world.
-        ZYPHRYON_INLINE World Notify(Entity Component) const
+        /// \param Component The component entity to look up.
+        /// \return A pointer to the component data, or null if not found.
+        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
         {
-            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
-            Target.Notify(Component);
-
-            return (* this);
+            return mHandle.try_get_mut(Component.GetID());
         }
 
-        /// \brief Marks a singleton pair component as modified on this entity.
+        /// \brief Gets a pointer to a singleton component on a relation pair, or null if not found.
         ///
-        /// \param Tag       The entity used as the pair's first element.
-        /// \param Component The entity used as the pair's second element.
-        ///
-        /// \return The updated world.
-        ZYPHRYON_INLINE World Notify(Entity Tag, Entity Component) const
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The component type to look up.
+        /// \return A pointer to the component data, or null if not found.
+        template<typename Relation, typename Component>
+        ZYPHRYON_INLINE Ptr<Component> TryGet() const
         {
-            const Entity Target(Entity::Handle(mHandle, Component.GetID()));
-            Target.Notify(Tag, Target);
-
-            return (* this);
+            if constexpr (IsImmutable<Component>)
+            {
+                return mHandle.try_get<Relation, Component>();
+            }
+            else
+            {
+                return mHandle.try_get_mut<Relation, Component>();
+            }
         }
 
-        /// \brief Marks a singleton component as modified on this world.
+        /// \brief Gets a raw pointer to a singleton component on a relation pair using a runtime target, or null if not found.
         ///
-        /// \tparam Component The component type to notify.
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity to look up.
+        /// \return A pointer to the component data, or null if not found.
+        template<typename Relation>
+        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Component) const
+        {
+            return mHandle.try_get_mut<Relation>(Component.GetID());
+        }
+
+        /// \brief Gets a raw pointer to a singleton component on a relation pair using two runtime entities, or null if not found.
         ///
-        /// \return The updated world.
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return A pointer to the component data, or null if not found.
+        ZYPHRYON_INLINE Ptr<void> TryGet(Entity Relation, Entity Component) const
+        {
+            return mHandle.try_get_mut(Relation.GetID(), Component.GetID());
+        }
+
+        /// \brief Notifies systems that a singleton component on the world has changed.
+        ///
+        /// \tparam Component The component type that was modified.
+        /// \return This world, allowing for method chaining.
         template<typename Component>
         ZYPHRYON_INLINE World Notify() const
         {
@@ -457,69 +485,80 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Marks a singleton pair component as modified on this world.
+        /// \brief Notifies systems that a singleton component has changed using a runtime entity.
         ///
-        /// \tparam Tag    The tag type used as the pair's first element.
-        /// \tparam Target The component type used as the pair's second element.
-        ///
-        /// \return The updated world.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE World Notify() const
+        /// \param Component The component entity that was modified.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Notify(Entity Component) const
         {
-            mHandle.modified<Tag, Target>();
+            Component.Notify(Component);
             return (* this);
         }
 
-        /// \brief Marks a singleton pair component as modified on this world.
+        /// \brief Notifies systems that a singleton component on a relation pair has changed.
         ///
-        /// \tparam Pair The pair type, which must satisfy the `IsPairDSL` concept.
-        ///
-        /// \return The updated world.
-        template<IsPairDSL Pair>
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The component type that was modified.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation, typename Component>
         ZYPHRYON_INLINE World Notify() const
         {
-            return Notify<typename Pair::First, typename Pair::Second>();
+            mHandle.modified<Relation, Component>();
+            return (* this);
         }
 
-        /// \brief Iterates over all children of this world.
+        /// \brief Notifies systems that a singleton component on a relation pair has changed using a runtime target.
         ///
-        /// \param Callback The function to call for each child world.
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity that was modified.
+        /// \return This world, allowing for method chaining.
+        template<typename Relation>
+        ZYPHRYON_INLINE World Notify(Entity Component) const
+        {
+            mHandle.modified<Relation>(Component.GetID());
+            return (* this);
+        }
+
+        /// \brief Notifies systems that a singleton component on a relation pair has changed using two runtime entities.
+        ///
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity that was modified.
+        /// \return This world, allowing for method chaining.
+        ZYPHRYON_INLINE World Notify(Entity Relation, Entity Component) const
+        {
+            Component.Notify(Relation, Component);
+            return (* this);
+        }
+
+        /// \brief Iterates over all child entities of the world and invokes a callback for each one.
+        ///
+        /// \param Callback The function to call for each child entity.
         template<typename Function>
         ZYPHRYON_INLINE void Children(AnyRef<Function> Callback) const
         {
-            mHandle.children(Callback);
+            mHandle.children(Forward<Function>(Callback));
         }
 
-        /// \brief Iterates over all children of this world that match a specific tag.
+        /// \brief Iterates over all child entities related via a specific relation and invokes a callback for each one.
         ///
-        /// \tparam Tag     The tag type to filter children by.
-        /// \param Callback The function to call for each child world.
-        template<typename Tag, typename Function>
+        /// \tparam Relation The relation type to filter children by.
+        /// \param  Callback The function to call for each matching child entity.
+        template<typename Relation, typename Function>
         ZYPHRYON_INLINE void Children(AnyRef<Function> Callback) const
         {
-            mHandle.children<Tag>(Callback);
+            mHandle.children<Relation>(Forward<Function>(Callback));
         }
 
-        /// \brief Iterates over all components of this world.
+        /// \brief Iterates over all singleton components and tags on the world and invokes a callback for each one.
         ///
-        /// \param Callback The function to call for each component.
+        /// \param Callback The function to call for each component or tag.
         template<typename Function>
-        ZYPHRYON_INLINE void Iterate(AnyRef<Function> Callback) const
+        ZYPHRYON_INLINE void Each(AnyRef<Function> Callback) const
         {
-            mHandle.each(Callback);
+            mHandle.query_builder<>().with(flecs::Singleton).each(Forward<Function>(Callback));
         }
 
-        /// \brief Iterates over all components of this world that match a specific tag.
-        ///
-        /// \tparam Tag     The tag type to filter components by.
-        /// \param Callback The function to call for each component.
-        template<typename Tag, typename Function>
-        ZYPHRYON_INLINE void Iterate(AnyRef<Function> Callback) const
-        {
-            mHandle.each<Tag>(Callback);
-        }
-
-    protected:
+    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

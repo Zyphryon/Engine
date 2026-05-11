@@ -179,7 +179,7 @@ inline namespace Math
     {
         LOG_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return -(Angle::Sine(kPI<Type> * Time) - 1) / 2;
+        return -(Angle::Cosine(kPI<Type> * Time) - 1) / 2;
     }
 
     /// \brief Exponential easing function (accelerating from zero velocity).

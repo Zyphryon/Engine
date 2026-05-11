@@ -25,14 +25,14 @@ namespace Scene
     {
     public:
 
-        /// \brief Constructs an empty pipeline with no associated handle.
+        /// \brief Constructs an invalid pipeline with no associated world or systems.
         ZYPHRYON_INLINE Pipeline() = default;
 
         /// \brief Constructs a pipeline from an existing handle.
         ///
         /// \param Handle The handle of this pipeline.
         ZYPHRYON_INLINE Pipeline(Handle Handle)
-            : Entity(Handle)
+            : Entity { Handle }
         {
         }
 

@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Bit
+inline namespace Base
 {
     /// \brief Reinterprets the bits of a value as a different type.
     ///
@@ -135,7 +135,7 @@ inline namespace Bit
     template<typename Type>
     static constexpr auto GetBit(Ptr<Type> Pointer, auto Offset, auto Mask)
     {
-        if constexpr (ZYPHRYON_CPU_BIT ==64)
+        if constexpr (ZYPHRYON_CPU_BIT == 64)
         {
             // Extract specific bits from a pointer based on offset and mask for 64-bit architectures.
             return GetBit(reinterpret_cast<UInt64>(Pointer), Offset, Mask);

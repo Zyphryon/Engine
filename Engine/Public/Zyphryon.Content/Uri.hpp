@@ -122,9 +122,9 @@ namespace Content
             return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 3) : mUrl);
         }
 
-        /// \brief Gets the folder portion of the URI.
+        /// \brief Gets the immediate parent folder name of the URI.
         ///
-        /// \return The part between the last two slashes, or an empty string if no folder path exists.
+        /// \return The folder name between the last two slashes, or an empty string if no parent folder exists.
         ZYPHRYON_INLINE constexpr ConstStr8 GetFolder() const
         {
             const auto Last  = mUrl.rfind('/');
@@ -141,13 +141,13 @@ namespace Content
             return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1) : GetPath());
         }
 
-        /// \brief Gets the file extension portion of the URI.
+        /// \brief Gets the file extension portion of the URI, without the leading dot.
         ///
-        /// \return The part after the last dot, or an empty string if none exists.
+        /// \return The extension string after the last dot, or an empty string if none exists.
         ZYPHRYON_INLINE constexpr ConstStr8 GetExtension() const
         {
             const auto Offset = mUrl.rfind('.');
-            return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1, mUrl.length()) : "");
+            return (Offset != ConstStr8::npos ? GetUrl().substr(Offset + 1) : "");
         }
 
         /// \brief Computes a hash value for the object.

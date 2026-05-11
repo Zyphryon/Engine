@@ -92,12 +92,12 @@ namespace Content
             return nullptr;
         }
 
-        /// \brief Removes an asset if it has finished loading and is not retained.
+        /// \brief Removes an asset if it has finished loading.
         ///
         /// Thread-safe. Acquires a lock on the internal registry.
         ///
         /// \param Key The URI of the asset to remove.
-        /// \return `true` if the asset was removed, otherwise `false`.
+        /// \return `true` if the asset was found and had finished loading, otherwise `false`.
         Bool Remove(ConstRef<Uri> Key)
         {
             Guard Lock(mMutex);
@@ -120,7 +120,7 @@ namespace Content
         /// Thread-safe. Acquires a lock on the internal registry.
         ///
         /// \param Force      If `true`, all finished assets are removed regardless of tracking state.
-        /// \param Dispatcher Callback invoked before removing each asset.
+        /// \param Dispatcher Callback invoked for each asset before it is removed.
         template<typename Function>
         void Prune(Bool Force, AnyRef<Function> Dispatcher)
         {

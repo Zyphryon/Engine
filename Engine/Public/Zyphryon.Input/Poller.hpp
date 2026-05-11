@@ -26,10 +26,10 @@ namespace Input
     public:
 
         /// \brief The maximum number of translated input events stored in a single frame.
-        static constexpr UInt kMaxEventsPerFrame = 32;
+        static constexpr UInt32 kMaxEventsPerFrame = 32;
 
         /// \brief The maximum size of text input captured in a single frame.
-        static constexpr UInt kMaxTextInputSize  = 256;
+        static constexpr UInt32 kMaxTextInputSize  = 256;
 
     public:
 

@@ -47,7 +47,7 @@ namespace Graphic
 
         /// \brief Sets a texture for the specified semantic slot.
         ///
-        /// \param Semantic The texture semantic slot to set
+        /// \param Semantic The texture semantic slot to set.
         /// \param Texture  The texture to assign to the slot.
         ZYPHRYON_INLINE void SetTexture(TextureSemantic Semantic, ConstTracker<Texture> Texture)
         {
@@ -65,7 +65,7 @@ namespace Graphic
 
         /// \brief Sets a sampler for the specified semantic slot.
         ///
-        /// \param Semantic The texture semantic slot to set
+        /// \param Semantic The texture semantic slot to set.
         /// \param Sampler  The sampler to assign to the slot.
         ZYPHRYON_INLINE void SetSampler(TextureSemantic Semantic, Sampler Sampler)
         {

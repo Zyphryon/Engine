@@ -42,7 +42,7 @@ inline namespace Math
         /// \param MinimumX The minimum X coordinate of the rectangle.
         /// \param MinimumY The minimum Y coordinate of the rectangle.
         /// \param MaximumX The maximum X coordinate of the rectangle.
-        /// \param MaximumY the maximum Y coordinate of the rectangle.
+        /// \param MaximumY The maximum Y coordinate of the rectangle.
         ZYPHRYON_INLINE constexpr AnyRect(Type MinimumX, Type MinimumY, Type MaximumX, Type MaximumY)
             : mMinimumX { MinimumX },
               mMinimumY { MinimumY },
@@ -97,7 +97,7 @@ inline namespace Math
         /// \param MinimumX The minimum X coordinate of the rectangle.
         /// \param MinimumY The minimum Y coordinate of the rectangle.
         /// \param MaximumX The maximum X coordinate of the rectangle.
-        /// \param MaximumY the maximum Y coordinate of the rectangle.
+        /// \param MaximumY The maximum Y coordinate of the rectangle.
         ZYPHRYON_INLINE constexpr void Set(Type MinimumX, Type MinimumY, Type MaximumX, Type MaximumY)
         {
             mMinimumX = MinimumX;
@@ -625,6 +625,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator<<=(Type Scalar)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -641,6 +642,7 @@ inline namespace Math
         /// \param Scalar The scalar to shift by.
         /// \return A reference to the updated rectangle.
         ZYPHRYON_INLINE constexpr Ref<AnyRect> operator>>=(Type Scalar)
+            requires(IsIntegral<Type>)
         {
             LOG_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
 
@@ -819,7 +821,7 @@ inline namespace Math
             const Type OffsetX = Rectangle.GetMinimumX() - Origin.GetX() * Rectangle.GetWidth();
             const Type OffsetY = Rectangle.GetMinimumY() - Origin.GetY() * Rectangle.GetHeight();
 
-            return AnyRect(OffsetX, OffsetY, Rectangle.GetWidth(), Rectangle.GetHeight());
+            return AnyRect(OffsetX, OffsetY, OffsetX + Rectangle.GetWidth(), OffsetY + Rectangle.GetHeight());
         }
 
         /// \brief Linearly interpolates between two rectangles.

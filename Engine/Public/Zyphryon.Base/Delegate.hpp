@@ -757,7 +757,7 @@ inline namespace Base
         /// \brief Removes all delegates from the multicast list.
         ZYPHRYON_INLINE void Clear()
         {
-            mDelegates.Clear();
+            mDelegates.clear();
         }
 
         /// \brief Invokes all bound delegates with the provided arguments.

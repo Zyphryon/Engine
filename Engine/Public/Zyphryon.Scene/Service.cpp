@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
+#include "Codec.hpp"
 #include <SDL3/SDL_cpuinfo.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -51,235 +52,103 @@ namespace Scene
         mWorld.set<Base::Time>(mTime);
 
         // Advance the ECS world simulation by the frame delta.
-        mWorld.progress(mTime.GetDelta());
+        mWorld.progress(static_cast<Real32>(mTime.GetDelta()));
+
+        // TODO: Optimize (ecs_delete_empty_tables)
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::LoadWorld(Ref<Reader> Reader)
+    void Service::LoadWorld(Ref<Reader> Archive)
     {
-        const World World = GetWorld();
+        Codec::ReadComponentsOf(mWorld, Archive, World(mWorld));
+    }
 
-        // Load all singleton components directly on the world entity.
-        while (Reader.Peek<UInt32>() != -1)
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SaveWorld(Ref<Writer> Archive)
+    {
+        Codec::WriteComponentsOf(Archive, World(mWorld));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Entity Service::LoadHierarchy(Ref<Reader> Archive)
+    {
+        const Entity Actor = CreateEntity();
+        Actor.Load(Archive);
+
+        // Read entity's hierarchy.
+        for (Reader Hierarchy(Archive.ReadBlock<UInt32, Byte>()); Hierarchy.GetAvailable() > 0;)
         {
-            LoadComponent(Reader, World);
+            const Entity Children = LoadHierarchy(Hierarchy);
+            Children.SetParent(Actor);
         }
 
-        // Skip delimiter marking the end of the component list.
-        Reader.Skip(sizeof(UInt32));
+        return Actor;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SaveWorld(Ref<Writer> Writer)
+    void Service::SaveHierarchy(Ref<Writer> Archive, Entity Actor)
     {
-        const World World = GetWorld();
-
-        // Serialize all singleton components directly on the world entity.
-        mQuerySingletons.Run([&](Entity Component)
+        if (Actor.Has<Transient>())
         {
-            SaveComponent(Writer, World, Component);
-        });
+            return;
+        }
 
-        // Write delimiter marking the end of the component list.
-        Writer.WriteUInt32(-1);
+        // Writes the entity's data.
+        Actor.Save(Archive);
+
+        // Writes the entity's hierarchy.
+        Archive.WriteBlock<UInt16>([this, Actor](Ref<Writer> Output)
+        {
+            Actor.Children([&](Entity Children)
+            {
+                SaveHierarchy(Output, Children);
+            });
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::LoadArchetypes(Ref<Reader> Reader)
+    void Service::LoadArchetypes(Ref<Reader> Archive)
     {
-        const UInt32 Size = Reader.ReadInt32();
+        const UInt32 Size = Archive.ReadUInt32();
 
         for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
-            const UInt32 ID = Reader.ReadInt<UInt32>();
+            const UInt32 ID = Archive.ReadInt<UInt32>();
             mArchetypes.Acquire(ID);
 
-            // Allocate prefab entity with the serialized identifier.
-            const Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
+            Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
             Archetype.Add(EcsPrefab);
 
-            // Read and set archetype name.
-            if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
-            {
-                Archetype.SetName(Name);
-            }
-
-            // Read and set archetype display name.
-            if (ConstStr8 Name = Reader.ReadText(); !Name.empty())
-            {
-                Archetype.SetDisplayName(Name);
-            }
-
-            // Read and set base archetype reference if present.
-            if (const UInt32 Base = Reader.ReadInt<UInt32>(); Base)
-            {
-                Archetype.SetArchetype(GetEntity(kMinRangeArchetypes + Base));
-            }
-
-            // Load all serialized components for this archetype.
-            LoadComponents(Reader, Archetype);
+            Archetype.Load(Archive);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SaveArchetypes(Ref<Writer> Writer)
+    void Service::SaveArchetypes(Ref<Writer> Archive)
     {
-        Writer.WriteInt32(mArchetypes.GetSize());
+        Archive.WriteUInt32(mArchetypes.GetSize());
 
         for (UInt32 Element = 1, Limit = mArchetypes.GetHead(); Element <= Limit; ++Element)
         {
             if (Entity Archetype = GetEntity(kMinRangeArchetypes + Element); Archetype.IsValid())
             {
-                // Write archetype identifier.
-                Writer.WriteInt(Archetype.GetID() - kMinRangeArchetypes);
+                Archive.WriteInt(Archetype.GetID() - kMinRangeArchetypes);
 
-                // Write archetype name.
-                Writer.WriteText(Archetype.GetName());
-
-                // Write archetype display name.
-                Writer.WriteText(Archetype.GetDisplayName());
-
-                // Write base archetype reference or `0` if none.
-                const Entity Base = Archetype.GetArchetype();
-                Writer.WriteInt(Base.IsValid() ? Base.GetID() - kMinRangeArchetypes : 0);
-
-                // Write all components of the archetype.
-                SaveComponents(Writer, Archetype);
+                Archetype.Save(Archive);
             }
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Entity Service::LoadEntity(Ref<Reader> Reader)
-    {
-        const Entity Actor = CreateEntity();
-
-        // Read and assign entity name if present.
-        if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
-        {
-            Actor.SetName(Name);
-        }
-
-        // Read and assign entity display name if present.
-        if (const ConstStr8 Name = Reader.ReadText(); !Name.empty())
-        {
-            Actor.SetDisplayName(Name);
-        }
-
-        // Read and assign archetype reference if present.
-        if (const UInt64 Base = Reader.ReadInt<UInt64>(); Base)
-        {
-            Actor.SetArchetype(GetEntity(kMinRangeArchetypes + Base));
-        }
-
-        // Load all serialized components for the entity.
-        LoadComponents(Reader, Actor);
-        return Actor;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Entity Service::LoadEntityHierarchy(Ref<Reader> Reader)
-    {
-        // Read and construct the root entity.
-        const Entity Actor = LoadEntity(Reader);
-
-        // Recursively read and attach all child entities.
-        while (Reader.Peek<UInt32>() != -1)
-        {
-            Entity Children = LoadEntityHierarchy(Reader);
-            Children.SetParent(Actor);
-        }
-
-        // Skip delimiter marking the end of this hierarchy.
-        Reader.Skip(sizeof(UInt32));
-        return Actor;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::SaveEntity(Ref<Writer> Writer, Entity Actor)
-    {
-        if (Actor.Has<Transient>())
-        {
-            return;
-        }
-
-        // Write entity name and display name.
-        Writer.WriteText(Actor.GetName());
-        Writer.WriteText(Actor.GetDisplayName());
-
-        // Write archetype reference or `0` if none.
-        const Entity Archetype = Actor.GetArchetype();
-        Writer.WriteInt<UInt64>(Archetype.IsValid() ? Archetype.GetID() - kMinRangeArchetypes : 0);
-
-        // Write all components of the entity.
-        SaveComponents(Writer, Actor);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::SaveEntityHierarchy(Ref<Writer> Writer, Entity Actor)
-    {
-        if (Actor.Has<Transient>())
-        {
-            return;
-        }
-
-        // Write the entity and its components.
-        SaveEntity(Writer, Actor);
-
-        // Recursively write all child entities.
-        Actor.Children([&](Entity Children)
-        {
-            SaveEntityHierarchy(Writer, Children);
-        });
-
-        // Write delimiter marking the end of the hierarchy.
-        Writer.WriteUInt32(-1);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::LoadComponents(Ref<Reader> Reader, Entity Actor)
-    {
-        while (Reader.Peek<UInt32>() != -1)
-        {
-            LoadComponent(Reader, Actor);
-        }
-
-        // Skip delimiter marking the end of the component list.
-        Reader.Skip(sizeof(UInt32));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::SaveComponents(Ref<Writer> Writer, Entity Actor)
-    {
-        // Iterate over each component attached to the entity.
-        const auto OnIterateEntityComponents = [&](Entity Component)
-        {
-            SaveComponent(Writer, Actor, Component);
-        };
-        Actor.Iterate(OnIterateEntityComponents);
-
-        // Write delimiter marking the end of the component list.
-        Writer.WriteUInt32(-1);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -301,19 +170,13 @@ namespace Scene
             mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
         }, DSL::In(flecs::Prefab));
 
-        // Create a query that matches all archetypes (prefabs).
-        mQueryArchetypes = CreateQuery("_Archetypes::Query", Cache::Default, DSL::In(EcsPrefab));
-
-        // Create a query that matches all singletons (components directly on the world entity).
-        mQuerySingletons = CreateQuery("_Singletons::Query", Cache::Default, DSL::In(EcsSingleton));
-
         // Register Factory component (serialization).
-        GetComponent<Factory>("Factory").AddTrait(Trait::Final);
+        GetComponent<Factory>("Factory").Grant(Trait::Final);
 
         // Register Time component as singleton (tracks global time state).
-        GetComponent<Time>("Time").AddTrait(Trait::Final, Trait::Singleton);
+        GetComponent<Time>("Time").Grant(Trait::Final, Trait::Singleton);
 
         // Register Transient component (marks entities as non serializable).
-        GetComponent<Transient>("Transient").AddTrait(Trait::Associative);
+        GetComponent<Transient>("Transient").Grant(Trait::Associative);
     }
 }

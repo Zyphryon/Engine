@@ -239,6 +239,11 @@ inline namespace Base
             });
         }
 
+        /// \brief Creates a blob that wraps an existing pointer and size, without taking ownership.
+        ///
+        /// \param Pointer The pointer to the existing data to wrap.
+        /// \param Size    The size of the data in bytes.
+        /// \return A blob managing the provided pointer and size.
         template<typename Type>
         ZYPHRYON_INLINE static Blob Wrap(Ptr<Type> Pointer, UInt32 Size)
         {
@@ -246,7 +251,6 @@ inline namespace Base
             {
             });
         }
-
 
     private:
 

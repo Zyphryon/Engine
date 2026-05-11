@@ -70,7 +70,7 @@ namespace Input
         /// \brief Dispatches events to the appropriate delegates.
         ///
         /// \param Event The event to handle.
-        /// \return `true` if the event was handled and should not propagate further, otherwise
+        /// \return `true` if the event was handled and should not propagate further, otherwise `false`.
         ZYPHRYON_INLINE Bool Invoke(ConstRef<Event> Event) const
         {
             switch (Event.Kind)

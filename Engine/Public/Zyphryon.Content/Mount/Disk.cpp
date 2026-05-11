@@ -64,12 +64,17 @@ namespace Content
     {
         Blob Result;
 
-        if (const Ptr<SDL_IOStream> Stream = SDL_IOFromFile(Format("{}{}", mPath, Path).data(), "r"); Stream)
+        if (const Ptr<SDL_IOStream> Stream = SDL_IOFromFile(Format("{}{}", mPath, Path).data(), "rb"); Stream)
         {
             if (const SInt64 Size = SDL_GetIOSize(Stream); Size > 0)
             {
-                Result = Blob::Bytes(SDL_GetIOSize(Stream));
-                SDL_ReadIO(Stream, Result.GetData(), Result.GetSize());
+                Result = Blob::Bytes(Size);
+
+                if (SDL_ReadIO(Stream, Result.GetData(), Result.GetSize()) != Result.GetSize())
+                {
+                    LOG_ERROR("Incomplete read for file: {}", Path);
+                    Result = Blob();
+                }
             }
             else
             {
@@ -115,7 +120,7 @@ namespace Content
     {
         if (Path.empty())
         {
-            return Str8(SDL_GetCurrentDirectory());
+            return Filesystem::GetBase();
         }
         return (Path.ends_with("/") ? Str8(Path) : Str8(Path).append("/"));
     }

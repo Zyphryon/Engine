@@ -99,7 +99,7 @@ namespace Input
         End,            ///< End key.
         Capital,        ///< Caps Lock key.
         Scroll,         ///< Scroll Lock key.
-        Lock,           ///< Generic lock key.
+        NumLock,        ///< Num Lock key.
         Print,          ///< Print Screen key.
         Pause,          ///< Pause/Break key.
         F1,             ///< F1 function key.
@@ -170,6 +170,8 @@ namespace Input
         union
         {
             /// \brief Data for \ref Type::KeyType.
+            ///
+            /// \warning \c Text is a non-owning view into the poller's internal buffer.
             struct
             {
                 ConstStr8 Text;

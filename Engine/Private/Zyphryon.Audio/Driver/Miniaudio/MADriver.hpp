@@ -51,13 +51,13 @@ namespace Audio
         void SetMasterVolume(Real32 Volume) override;
 
         /// \copydoc Driver::GetMasterVolume()
-        Real32 GetMasterVolume() override;
+        Real32 GetMasterVolume() const override;
 
         /// \copydoc Driver::SetSubmixVolume(Category, Real32)
         void SetSubmixVolume(Category Category, Real32 Volume) override;
 
         /// \copydoc Driver::GetSubmixVolume(Category)
-        Real32 GetSubmixVolume(Category Category) override;
+        Real32 GetSubmixVolume(Category Category) const override;
 
         /// \copydoc Driver::SetListenerPose(ConstRef<Pose>)
         void SetListenerPose(ConstRef<Pose> Pose) override;

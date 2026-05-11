@@ -43,6 +43,8 @@ inline namespace Base
 
     /// \brief Formats a UTF-8 string using the specified arguments.
     ///
+    /// \note Uses a thread-local buffer of 4096 bytes.
+    ///
     /// \param Format     The format string, following std::format syntax.
     /// \param Parameters The parameters to substitute into the format string.
     /// \return A formatted UTF-8 string.

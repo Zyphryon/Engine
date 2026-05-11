@@ -156,7 +156,7 @@ namespace Render
         /// \brief Defines a type alias for a queue of rendering commands.
         using Queue = Vector<Command>;
 
-        /// \brief Generates a sort key for a draw command based.
+        /// \brief Generates a sort key for a draw command based on rendering state and priority.
         ///
         /// \param Priority The rendering priority of the draw command, which determines the sorting strategy.
         /// \param Pipeline The graphics pipeline used for the draw call.
@@ -222,7 +222,7 @@ namespace Render
 
         /// \brief Converts a floating-point depth value to a sortable integer representation.
         ///
-        /// \param  Depth The depth value to convert, which may be any finite floating-point value.
+        /// \param Depth The depth value to convert, which may be any finite floating-point value.
         /// \return A sortable integer where the natural integer order matches the original float order.
         template<UInt32 Bits = 24>
         ZYPHRYON_INLINE static UInt32 DepthToBits(Real32 Depth)

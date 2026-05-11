@@ -16,7 +16,7 @@ inline namespace Math
 {
     /// \brief Represents a pseudo-random number generator (PRNG).
     ///
-    /// It uses the xoshiro256** algorithm for generating high-quality random numbers.
+    /// It uses the xoshiro256+ algorithm for generating high-quality random numbers.
     class Random final
     {
     public:

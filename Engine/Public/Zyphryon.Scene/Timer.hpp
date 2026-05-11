@@ -32,7 +32,7 @@ namespace Scene
 
         /// \brief Constructs an invalid timer.
         ZYPHRYON_INLINE Timer()
-            : mHandle (Handle::null())
+            : mHandle { Handle::null() }
         {
         }
 
@@ -44,7 +44,7 @@ namespace Scene
         {
         }
 
-        /// \brief Returns the internal handle representing this timer.
+        /// \brief Gets the internal handle representing this timer.
         ///
         /// \return The timer handle.
         ZYPHRYON_INLINE Handle GetHandle() const
@@ -53,29 +53,36 @@ namespace Scene
         }
 
         /// \brief Resumes the timer, starting or continuing its countdown.
-        ZYPHRYON_INLINE void Resume()
+        ///
+        /// \return This timer, allowing for method chaining.
+        ZYPHRYON_INLINE Timer Resume()
         {
             mHandle.start();
+            return (* this);
         }
 
         /// \brief Pauses the timer, stopping its countdown.
-        ZYPHRYON_INLINE void Pause()
+        ///
+        /// \return This timer, allowing for method chaining.
+        ZYPHRYON_INLINE Timer Pause()
         {
             mHandle.stop();
+            return (* this);
         }
 
         /// \brief Sets the interval of the timer in seconds.
         ///
         /// \param Interval The new interval for the timer in seconds.
+        /// \return This timer, allowing for method chaining.
         ZYPHRYON_INLINE Timer SetInterval(Real32 Interval)
         {
             mHandle.interval(Interval);
             return (* this);
         }
 
-        /// \brief Retrieves the current interval of the timer in seconds.
+        /// \brief Gets the current interval of the timer in seconds.
         ///
-        /// \return The timer's interval in seconds.
+        /// \return The interval of the timer in seconds.
         ZYPHRYON_INLINE Real32 GetInterval() const
         {
             return mHandle.interval();
@@ -84,15 +91,16 @@ namespace Scene
         /// \brief Sets the timeout of the timer in seconds.
         ///
         /// \param Timeout The new timeout for the timer in seconds.
+        /// \return This timer, allowing for method chaining.
         ZYPHRYON_INLINE Timer SetTimeout(Real32 Timeout)
         {
             mHandle.timeout(Timeout);
             return (* this);
         }
 
-        /// \brief Retrieves the current timeout of the timer in seconds.
+        /// \brief Gets the current timeout of the timer in seconds.
         ///
-        /// \return The timer's timeout in seconds.
+        /// \return The timeout of the timer in seconds.
         ZYPHRYON_INLINE Real32 GetTimeout() const
         {
             return mHandle.timeout();

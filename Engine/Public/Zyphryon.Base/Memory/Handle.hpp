@@ -41,7 +41,7 @@ inline namespace Base
         ///
         /// \param ID The identifier value for the handle.
         template<typename Other>
-        ZYPHRYON_INLINE constexpr Handle(Other ID)
+        ZYPHRYON_INLINE constexpr explicit Handle(Other ID)
             : mID { static_cast<Type>(ID) }
         {
         }

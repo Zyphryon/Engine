@@ -21,7 +21,7 @@
 
 namespace Audio
 {
-    /// \brief Define emission properties for 3D audio sources.
+    /// \brief Defines emission properties for 3D audio sources.
     class Emitter final : public Trackable<Emitter>
     {
     public:

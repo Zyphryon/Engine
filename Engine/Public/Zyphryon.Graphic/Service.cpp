@@ -160,7 +160,7 @@ namespace Graphic
     void Service::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, Bool Invalidate, UInt32 Size)
     {
         LOG_ASSERT(mBuffers.IsAllocated(SrcBuffer), "Source buffer is not valid");
-        LOG_ASSERT(mBuffers.IsAllocated(SrcOffset), "Destination buffer is not valid");
+        LOG_ASSERT(mBuffers.IsAllocated(DstBuffer), "Destination buffer is not valid");
 
         WriteCommand<CommandTypes::CopyBuffer>(GetProducerFrame(), SrcBuffer, SrcOffset, DstBuffer, DstOffset, Invalidate, Size);
     }
@@ -499,7 +499,7 @@ namespace Graphic
 
     void Service::CreateInFlightArenas()
     {
-        static auto CreateBuffer = [&](Usage Usage, UInt32 Capacity)
+        auto CreateBuffer = [&](Usage Usage, UInt32 Capacity)
         {
             Ref<InFlightArena> Arena = mArenas[Enum::Cast(Usage)];
             Arena.Handle   = mBuffers.Allocate();

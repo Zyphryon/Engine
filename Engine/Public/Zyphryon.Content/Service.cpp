@@ -1,4 +1,4 @@
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -188,22 +188,6 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Wait(UInt32 Sleep)
-    {
-        ZYPHRYON_PROFILE_SCOPE("Content::Wait");
-
-        while (mParserPending.load(std::memory_order_acquire) > 0)
-        {
-            OnTick(Time());
-
-            // Sleep to avoid busy-waiting.
-            SDL_Delay(Sleep);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Service::Subscribe(ConstRef<Uri> Key, AnyRef<AssetDelegate> Delegate)
     {
         mSubscriptions.try_emplace(Hash(Key), Move(Delegate));
@@ -317,6 +301,7 @@ namespace Content
         // Atomically transitions the resource's status from Idle to Queued.
         if (Asset->Transition(Resource::Status::Idle, Resource::Status::Queued))
         {
+
             // Queues the resource.
             {
                 Guard Guard(mLoaderMutex);

@@ -35,7 +35,7 @@ namespace Graphic
         /// \param Display The native display handle to render into.
         /// \param Width   The width of the rendering surface in pixels.
         /// \param Height  The height of the rendering surface in pixels.
-        /// \param Samples The multisample count for anti-aliasing.
+        /// \param Samples The multisample count for antialiasing.
         /// \return `true` if initialization succeeded, `false` otherwise.
         virtual Bool Initialize(Ptr<SDL_Window> Display, UInt16 Width, UInt16 Height, Multisample Samples) = 0;
 
@@ -43,7 +43,7 @@ namespace Graphic
         ///
         /// \param Width   The new width of the rendering surface in pixels.
         /// \param Height  The new height of the rendering surface in pixels.
-        /// \param Samples The new multisample count for anti-aliasing.
+        /// \param Samples The new multisample count for antialiasing.
         virtual void Reset(UInt16 Width, UInt16 Height, Multisample Samples) = 0;
 
         /// \brief Gets the device associated with this driver.
@@ -54,7 +54,7 @@ namespace Graphic
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
         ///
         /// \param ID       The identifier for the buffer resource.
-        /// \param Access   The access pattern for the buffer (e.g., read, write).
+        /// \param Access   The CPU access pattern for the buffer.
         /// \param Usage    The intended usage of the buffer (e.g., vertex, index).
         /// \param Capacity The capacity of the buffer in bytes.
         /// \param Data     Optional initial data to populate the buffer with.
@@ -140,7 +140,7 @@ namespace Graphic
         /// \param ID      The identifier for the texture resource.
         /// \param Type    The type of the texture (e.g., 2D, 3D, cube map).
         /// \param Format  The pixel format of the texture (e.g., RGBA8, DXT1).
-        /// \param Access  The access pattern for the texture (e.g., read, write).
+        /// \param Access  The CPU access pattern for the texture.
         /// \param Usage   The intended usage of the texture (e.g., render target, shader resource).
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
@@ -198,7 +198,7 @@ namespace Graphic
         /// \param Y      The Y offset within the texture to start reading from.
         /// \param Width  The width of the region to read in pixels.
         /// \param Height The height of the region to read in pixels.
-        /// \return The CPU buffer containing the texture data read from the specified region of the texture
+        /// \return The CPU buffer containing the texture data read from the specified region of the texture.
         virtual Blob ReadTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height) = 0;
 
         /// \brief Prepares the specified render pass for rendering.

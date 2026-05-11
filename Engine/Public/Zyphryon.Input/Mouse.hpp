@@ -30,7 +30,7 @@ namespace Input
 
     public:
 
-        /// \brief Constructs a new mouse input device with default state.
+        /// \brief Constructs a new mouse input device with default states.
         ZYPHRYON_INLINE Mouse()
             : mThisX       { 0 },
               mThisY       { 0 },

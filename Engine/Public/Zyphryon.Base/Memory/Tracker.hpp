@@ -46,7 +46,7 @@ inline namespace Base
         ///
         /// \param Instance The instance to be managed by the tracker.
         template<typename Derived>
-        ZYPHRYON_INLINE Tracker(Ptr<Derived> Instance)
+        ZYPHRYON_INLINE explicit Tracker(Ptr<Derived> Instance)
             requires IsDerived<Type, Derived>
             : mInstance(static_cast<Ptr<Type>>(Instance))
         {
@@ -185,11 +185,17 @@ inline namespace Base
             return mInstance != nullptr;
         }
 
+        /// \brief Converts the tracker to a mutable pointer to the managed instance.
+        ///
+        /// \return A mutable pointer to the managed instance, or \c nullptr if empty.
         ZYPHRYON_INLINE constexpr operator Ptr<Type>()
         {
             return mInstance;
         }
 
+        /// \brief Converts the tracker to a const pointer to the managed instance.
+        ///
+        /// \return A pointer to the managed instance, or \c nullptr if empty.
         ZYPHRYON_INLINE constexpr operator ConstPtr<Type>() const
         {
             return mInstance;

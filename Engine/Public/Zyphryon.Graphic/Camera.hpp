@@ -54,16 +54,16 @@ namespace Graphic
             return mProjection;
         }
 
-        /// \brief Sets the view matrix of the camera.
+        /// \brief Sets the view matrix of the camera directly, bypassing the internal transform.
         ///
         /// \param Matrix The new view matrix.
         ZYPHRYON_INLINE void SetView(ConstRef<Matrix4x4> Matrix)
         {
             mView = Matrix;
-            mMask = SetBit(mMask, kBitMaskProjection);
+            mMask = SetBit(mMask, kBitMaskView);
         }
 
-        /// \brief Returns the current view of the camera.
+        /// \brief Returns the current view matrix of the camera.
         ///
         /// \return The view matrix.
         ZYPHRYON_INLINE ConstRef<Matrix4x4> GetView() const
@@ -71,7 +71,7 @@ namespace Graphic
             return mView;
         }
 
-        /// \brief Returns the current view-projection of the camera.
+        /// \brief Returns the current view-projection matrix of the camera.
         ///
         /// \return The view-projection matrix.
         ZYPHRYON_INLINE ConstRef<Matrix4x4> GetViewProjection() const
@@ -137,10 +137,10 @@ namespace Graphic
 
         /// \brief Sets the perspective projection matrix.
         ///
-        /// \param Eyes   Field of view in radians.
-        /// \param Aspect Aspect ratio (width / height).
-        /// \param ZNear  Distance to the near clipping plane.
-        /// \param ZFar   Distance to the far clipping plane.
+        /// \param Eyes   The field of view angle in radians.
+        /// \param Aspect The aspect ratio (width / height).
+        /// \param ZNear  The distance to the near clipping plane.
+        /// \param ZFar   The distance to the far clipping plane.
         ZYPHRYON_INLINE void SetPerspective(Real32 Eyes, Real32 Aspect, Real32 ZNear, Real32 ZFar)
         {
             mProjection = Matrix4x4::CreatePerspective(Eyes, Aspect, ZNear, ZFar);
@@ -149,12 +149,12 @@ namespace Graphic
 
         /// \brief Sets the orthographic projection matrix using bounds.
         ///
-        /// \param Left   Left clipping plane.
-        /// \param Right  Right clipping plane.
-        /// \param Bottom Bottom clipping plane.
-        /// \param Top    Top clipping plane.
-        /// \param ZNear  Near clipping plane.
-        /// \param ZFar   Far clipping plane.
+        /// \param Left   The left clipping plane.
+        /// \param Right  The right clipping plane.
+        /// \param Bottom The bottom clipping plane.
+        /// \param Top    The top clipping plane.
+        /// \param ZNear  The near clipping plane.
+        /// \param ZFar   The far clipping plane.
         ZYPHRYON_INLINE void SetOrthographic(Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar)
         {
             mProjection = Matrix4x4::CreateOrthographic(Left, Right, Bottom, Top, ZNear, ZFar);
@@ -163,10 +163,10 @@ namespace Graphic
 
         /// \brief Sets an orthographic projection with given dimensions.
         ///
-        /// \param Width  Viewport width.
-        /// \param Height Viewport height.
-        /// \param ZNear  Distance to near clipping plane.
-        /// \param ZFar   Distance to far clipping plane.
+        /// \param Width  The viewport width.
+        /// \param Height The viewport height.
+        /// \param ZNear  The distance to the near clipping plane.
+        /// \param ZFar   The distance to the far clipping plane.
         ZYPHRYON_INLINE void SetOrthographic(Real32 Width, Real32 Height, Real32 ZNear, Real32 ZFar)
         {
             SetOrthographic(0, Width, Height, 0, ZNear, ZFar);
@@ -174,9 +174,9 @@ namespace Graphic
 
         /// \brief Sets the view matrix using eye position, target focus, and up direction.
         ///
-        /// \param Eye   Camera position.
-        /// \param Focus Target position the camera looks at.
-        /// \param Up    Upward direction for orientation.
+        /// \param Eye   The camera position in world space.
+        /// \param Focus The target position the camera looks at.
+        /// \param Up    The upward direction for orientation.
         ZYPHRYON_INLINE void SetLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
             const Matrix4x4 Matrix = Matrix4x4::InverseAffine(Matrix4x4::CreateLook(Eye, Focus, Up));
@@ -190,7 +190,7 @@ namespace Graphic
 
         /// \brief Sets the camera translation.
         ///
-        /// \param Translation Camera's 3D coordinate.
+        /// \param Translation The camera's 3D position.
         ZYPHRYON_INLINE void SetTranslation(Vector3 Translation)
         {
             mTransform.SetTranslation(Translation);
@@ -199,7 +199,7 @@ namespace Graphic
 
         /// \brief Sets the camera translation.
         ///
-        /// \param Translation Camera's 2D coordinate.
+        /// \param Translation The camera's 2D position (Z is set to 0).
         ZYPHRYON_INLINE void SetTranslation(Vector2 Translation)
         {
             mTransform.SetTranslation(Translation);
@@ -208,9 +208,9 @@ namespace Graphic
 
         /// \brief Sets the camera translation.
         ///
-        /// \param X Camera's X coordinate.
-        /// \param Y Camera's Y coordinate.
-        /// \param Z Camera's Z coordinate.
+        /// \param X The camera's X coordinate.
+        /// \param Y The camera's Y coordinate.
+        /// \param Z The camera's Z coordinate.
         ZYPHRYON_INLINE void SetTranslation(Real32 X, Real32 Y, Real32 Z)
         {
             mTransform.SetTranslation(Vector3(X, Y, Z));
@@ -219,8 +219,8 @@ namespace Graphic
 
         /// \brief Sets the camera translation.
         ///
-        /// \param X Camera's X coordinate.
-        /// \param Y Camera's Y coordinate.
+        /// \param X The camera's X coordinate.
+        /// \param Y The camera's Y coordinate.
         ZYPHRYON_INLINE void SetTranslation(Real32 X, Real32 Y)
         {
             mTransform.SetTranslation(Vector2(X, Y));
@@ -237,7 +237,7 @@ namespace Graphic
 
         /// \brief Sets the camera scale.
         ///
-        /// \param Scale Camera's 3D scale factor.
+        /// \param Scale The camera's 3D scale factor.
         ZYPHRYON_INLINE void SetScale(Vector3 Scale)
         {
             mTransform.SetScale(Scale);
@@ -246,7 +246,7 @@ namespace Graphic
 
         /// \brief Sets the camera scale.
         ///
-        /// \param Scale Camera's 2D scale factor.
+        /// \param Scale The camera's 2D scale factor (Z scale is set to 1).
         ZYPHRYON_INLINE void SetScale(Vector2 Scale)
         {
             mTransform.SetScale(Scale);
@@ -255,9 +255,9 @@ namespace Graphic
 
         /// \brief Sets the camera scale.
         ///
-        /// \param X Camera's X scale factor.
-        /// \param Y Camera's Y scale factor.
-        /// \param Z Camera's Z scale factor.
+        /// \param X The camera's X scale factor.
+        /// \param Y The camera's Y scale factor.
+        /// \param Z The camera's Z scale factor.
         ZYPHRYON_INLINE void SetScale(Real32 X, Real32 Y, Real32 Z)
         {
             mTransform.SetScale(Vector3(X, Y, Z));
@@ -266,8 +266,8 @@ namespace Graphic
 
         /// \brief Sets the camera scale.
         ///
-        /// \param X Camera's X scale factor.
-        /// \param Y Camera's Y scale factor.
+        /// \param X The camera's X scale factor.
+        /// \param Y The camera's Y scale factor.
         ZYPHRYON_INLINE void SetScale(Real32 X, Real32 Y)
         {
             mTransform.SetScale(Vector2(X, Y));
@@ -284,8 +284,8 @@ namespace Graphic
 
         /// \brief Sets the camera rotation using an angle and axis.
         ///
-        /// \param Angle Rotation angle in radians.
-        /// \param Axis  Rotation axis.
+        /// \param Angle The rotation angle in radians.
+        /// \param Axis  The 3D rotation axis.
         ZYPHRYON_INLINE void SetRotation(Real32 Angle, Vector3 Axis)
         {
             mTransform.SetRotation(Quaternion::FromAngles(Angle, Axis));
@@ -294,8 +294,8 @@ namespace Graphic
 
         /// \brief Sets the camera rotation using an angle and axis.
         ///
-        /// \param Angle Rotation angle in radians.
-        /// \param Axis  2D axis (X, Y).
+        /// \param Angle The rotation angle in radians.
+        /// \param Axis  The 2D axis (X, Y) used as the rotation axis (Z is set to 0).
         ZYPHRYON_INLINE void SetRotation(Real32 Angle, Vector2 Axis)
         {
             mTransform.SetRotation(Quaternion::FromAngles(Angle, Vector3(Axis.GetX(), Axis.GetY(), 0)));
@@ -304,7 +304,7 @@ namespace Graphic
 
         /// \brief Sets the camera rotation using Euler angles.
         ///
-        /// \param Angles Euler angles in radians (pitch, yaw, roll).
+        /// \param Angles The Euler angles in radians (pitch, yaw, roll).
         ZYPHRYON_INLINE void SetRotation(Vector3 Angles)
         {
             mTransform.SetRotation(Quaternion::FromEulerAngles(Angles));
@@ -324,8 +324,8 @@ namespace Graphic
 
         /// \brief Sets the camera rotation from a direction vector and up vector.
         ///
-        /// \param Direction Forward direction.
-        /// \param Up        Upward vector.
+        /// \param Direction The forward direction vector.
+        /// \param Up        The upward reference vector.
         ZYPHRYON_INLINE void SetRotation(Vector3 Direction, Vector3 Up)
         {
             mTransform.SetRotation(Quaternion::FromDirection(Direction, Up));
@@ -334,9 +334,9 @@ namespace Graphic
 
         /// \brief Sets the camera rotation from look-at vectors.
         ///
-        /// \param Eye   Camera position.
-        /// \param Focus Look-at target.
-        /// \param Up    Upward vector.
+        /// \param Eye   The camera position in world space.
+        /// \param Focus The look-at target position.
+        /// \param Up    The upward reference vector.
         ZYPHRYON_INLINE void SetRotation(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
             mTransform.SetRotation(Quaternion::FromDirection(Focus - Eye, Up));
@@ -345,7 +345,7 @@ namespace Graphic
 
         /// \brief Sets the camera rotation from a quaternion rotation.
         ///
-        /// \param Rotation A unit quaternion representing the desired orientation.
+        /// \param Rotation The unit quaternion representing the desired orientation.
         ZYPHRYON_INLINE void SetRotation(Quaternion Rotation)
         {
             mTransform.SetRotation(Rotation);
@@ -362,7 +362,7 @@ namespace Graphic
 
         /// \brief Applies a relative translation to the camera.
         ///
-        /// \param Translation 3D vector to translate.
+        /// \param Translation The 3D translation vector to apply.
         ZYPHRYON_INLINE void Translate(Vector3 Translation)
         {
             mTransform.Translate(Translation);
@@ -371,7 +371,7 @@ namespace Graphic
 
         /// \brief Applies a relative translation to the camera.
         ///
-        /// \param Translation 2D vector to translate.
+        /// \param Translation The 2D translation vector to apply (Z is unchanged).
         ZYPHRYON_INLINE void Translate(Vector2 Translation)
         {
             mTransform.Translate(Translation);
@@ -380,9 +380,9 @@ namespace Graphic
 
         /// \brief Applies a relative translation to the camera.
         ///
-        /// \param X X offset.
-        /// \param Y Y offset.
-        /// \param Z Z offset.
+        /// \param X The X translation offset.
+        /// \param Y The Y translation offset.
+        /// \param Z The Z translation offset.
         ZYPHRYON_INLINE void Translate(Real32 X, Real32 Y, Real32 Z)
         {
             mTransform.Translate(Vector3(X, Y, Z));
@@ -391,8 +391,8 @@ namespace Graphic
 
         /// \brief Applies a relative translation to the camera.
         ///
-        /// \param X X offset.
-        /// \param Y Y offset.
+        /// \param X The X translation offset.
+        /// \param Y The Y translation offset.
         ZYPHRYON_INLINE void Translate(Real32 X, Real32 Y)
         {
             mTransform.Translate(Vector2(X, Y));
@@ -401,7 +401,7 @@ namespace Graphic
 
         /// \brief Applies a relative scaling to the camera.
         ///
-        /// \param Scale 3D scale factor.
+        /// \param Scale The 3D scale factor to apply.
         ZYPHRYON_INLINE void Scale(Vector3 Scale)
         {
             mTransform.Scale(Scale);
@@ -410,7 +410,7 @@ namespace Graphic
 
         /// \brief Applies a relative scaling to the camera.
         ///
-        /// \param Scale 2D scale factor.
+        /// \param Scale The 2D scale factor to apply (Z scale is unchanged).
         ZYPHRYON_INLINE void Scale(Vector2 Scale)
         {
             mTransform.Scale(Scale);
@@ -419,9 +419,9 @@ namespace Graphic
 
         /// \brief Applies a relative scaling to the camera.
         ///
-        /// \param X Scale on X-axis.
-        /// \param Y Scale on Y-axis.
-        /// \param Z Scale on Z-axis.
+        /// \param X The scale factor on the X-axis.
+        /// \param Y The scale factor on the Y-axis.
+        /// \param Z The scale factor on the Z-axis.
         ZYPHRYON_INLINE void Scale(Real32 X, Real32 Y, Real32 Z)
         {
             mTransform.Scale(Vector3(X, Y, Z));
@@ -430,8 +430,8 @@ namespace Graphic
 
         /// \brief Applies a relative scaling to the camera.
         ///
-        /// \param X Scale on X-axis.
-        /// \param Y Scale on Y-axis.
+        /// \param X The scale factor on the X-axis.
+        /// \param Y The scale factor on the Y-axis.
         ZYPHRYON_INLINE void Scale(Real32 X, Real32 Y)
         {
             mTransform.Scale(Vector2(X, Y));
@@ -440,8 +440,8 @@ namespace Graphic
 
         /// \brief Applies a relative rotation to the camera.
         ///
-        /// \param Angle Rotation angle.
-        /// \param Axis  3D axis of rotation.
+        /// \param Angle The rotation angle in radians.
+        /// \param Axis  The 3D axis of rotation.
         ZYPHRYON_INLINE void Rotate(Real32 Angle, Vector3 Axis)
         {
             mTransform.Rotate(Angle, Axis);
@@ -450,8 +450,8 @@ namespace Graphic
 
         /// \brief Applies a relative rotation to the camera.
         ///
-        /// \param Angle Rotation angle.
-        /// \param Axis  2D axis.
+        /// \param Angle The rotation angle in radians.
+        /// \param Axis  The 2D axis (X, Y) used as the rotation axis (Z is set to 0).
         ZYPHRYON_INLINE void Rotate(Real32 Angle, Vector2 Axis)
         {
             mTransform.Rotate(Angle, Vector3(Axis.GetX(), Axis.GetY(), 0));
@@ -460,7 +460,7 @@ namespace Graphic
 
         /// \brief Applies relative Euler angle rotation.
         ///
-        /// \param Angles Pitch, Yaw, Roll angles.
+        /// \param Angles The Euler angles (pitch, yaw, roll) in radians.
         ZYPHRYON_INLINE void Rotate(Vector3 Angles)
         {
             mTransform.Rotate(Angles);
@@ -480,14 +480,14 @@ namespace Graphic
 
         /// \brief Applies relative Euler angle rotation.
         ///
-        /// \param Angles 2D rotation angles (X, Y).
+        /// \param Angles The 2D rotation angles in radians (X = pitch, Y = yaw).
         ZYPHRYON_INLINE void Rotate(Vector2 Angles)
         {
             mTransform.Rotate(Angles);
             mMask = SetBit(mMask, kBitMaskTransformation);
         }
 
-        /// \brief Transforms a screen-space coordinates into world-space position.
+        /// \brief Transforms screen-space coordinates into a world-space position.
         ///
         /// \param Position The 3D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
@@ -505,7 +505,7 @@ namespace Graphic
             return Matrix4x4::Project<false>(mViewProjectionInverse, Vector3(X, Y, Z));
         }
 
-        /// \brief Transforms a screen-space coordinates into world-space position.
+        /// \brief Transforms screen-space coordinates into a world-space position.
         ///
         /// \param Position The 2D point in screen space to transform.
         /// \param Viewport The viewport definition, including dimensions and depth range.
@@ -536,7 +536,7 @@ namespace Graphic
             const Vector3 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
-            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);
+            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Point.GetY(), Viewport);
             const Real32 Z = Point.GetZ() * (Viewport.MaxDepth - Viewport.MinDepth) + Viewport.MinDepth;
 
             return Vector3(X, Y, Z);
@@ -556,7 +556,7 @@ namespace Graphic
             const Vector2 Point = Matrix4x4::Project<false>(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
-            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Position.GetY(), Viewport);
+            const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Point.GetY(), Viewport);
 
             return Vector2(X, Y);
         }
@@ -565,6 +565,7 @@ namespace Graphic
 
         static constexpr UInt32 kBitMaskTransformation = 1 << 0;
         static constexpr UInt32 kBitMaskProjection     = 1 << 1;
+        static constexpr UInt32 kBitMaskView           = 1 << 2;
 
         /// \brief Converts a screen-space Y coordinate to a normalized device Y coordinate.
         ///
@@ -580,7 +581,7 @@ namespace Graphic
             }
             else
             {
-                return ((Y - Viewport.Y) / Viewport.Height ) * 2.0f - 1.0f;
+                return ((Y - Viewport.Y) / Viewport.Height) * 2.0f - 1.0f;
             }
         }
 

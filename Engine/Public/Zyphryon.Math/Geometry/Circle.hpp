@@ -215,7 +215,8 @@ inline namespace Math
         ZYPHRYON_INLINE constexpr Bool Test(Circle Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
-            return DistanceSquared <= (mRadius + Other.mRadius);
+            const Real32 RadiusSum       = mRadius + Other.mRadius;
+            return DistanceSquared <= (RadiusSum * RadiusSum);
         }
 
         /// \brief Checks if this circle is equal to another circle.
@@ -354,7 +355,6 @@ inline namespace Math
         {
             const Vector2 Direction = Second.mCenter - First.mCenter;
             const Real32 Distance   = Direction.GetLength();
-            LOG_ASSERT(!Math::IsAlmostZero(Distance), "Centers are identical and neither circle contains the other");
 
             if (Distance + Second.mRadius <= First.mRadius)
             {
@@ -365,6 +365,8 @@ inline namespace Math
             {
                 return Second;
             }
+
+            LOG_ASSERT(!Math::IsAlmostZero(Distance), "Centers are identical and neither circle contains the other");
 
             const Real32 Radius = (Distance + First.mRadius + Second.mRadius) * 0.5f;
             return Circle(First.mCenter + Direction * ((Radius - First.mRadius) / Distance), Radius);
@@ -392,7 +394,7 @@ inline namespace Math
         /// \param Start      The starting circle.
         /// \param End        The ending circle.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
-        /// \return A rectangle interpolated between the start and end circle.
+        /// \return A circle interpolated between the start and end circle.
         ZYPHRYON_INLINE static constexpr Circle Lerp(Circle Start, Circle End, Real32 Percentage)
         {
             LOG_ASSERT(Percentage >= 0.0f && Percentage <= 1.0f, "Percentage must be in [0, 1]");

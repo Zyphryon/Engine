@@ -99,7 +99,7 @@ namespace Render
         ///
         /// \param Size    The size at which the font is evaluated.
         /// \param Padding Additional spacing applied between lines, in pixels.
-        /// \return The line height in pixels, which is the distance from one baseline to the
+        /// \return The line height in pixels, which is the distance from one baseline to the next.
         ZYPHRYON_INLINE Real32 GetLineHeight(Real32 Size, Vector2 Padding) const
         {
             return (mMetrics.Ascender - mMetrics.Descender + Padding.GetY()) * Size;

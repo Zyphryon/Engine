@@ -128,7 +128,7 @@ inline namespace Math
 
         /// \brief Gets the current translation of the transform.
         /// 
-        /// \return A reference to the translation vector (4D).
+        /// \return The current translation vector (3D).
         ZYPHRYON_INLINE Vector3 GetTranslation() const
         {
             return mTranslation;
@@ -155,7 +155,7 @@ inline namespace Math
 
         /// \brief Gets the current scale of the transform.
         /// 
-        /// \return A reference to the scale vector.
+        /// \return The current scale vector (3D).
         ZYPHRYON_INLINE Vector3 GetScale() const
         {
             return mScale;
@@ -173,7 +173,7 @@ inline namespace Math
 
         /// \brief Gets the current rotation of the transform.
         /// 
-        /// \return A reference to the quaternion representing the rotation.
+        /// \return The current quaternion representing the rotation.
         ZYPHRYON_INLINE Quaternion GetRotation() const
         {
             return mRotation;
@@ -243,8 +243,8 @@ inline namespace Math
             return (* this);
         }
 
-        /// \brief Rotates the transform in world space  by pitch and yaw (using Euler angles).
-        /// 
+        /// \brief Rotates the transform in world space by pitch and yaw (using Euler angles).
+        ///
         /// \param Angles The 2D vector containing pitch and yaw (X = pitch, Y = yaw).
         /// \return A reference to this transform, modified by the rotation.
         ZYPHRYON_INLINE Ref<Transform3D> Rotate(Vector2 Angles)

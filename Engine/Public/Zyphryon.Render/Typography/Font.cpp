@@ -109,7 +109,7 @@ namespace Render
                 Previous = 0;
                 break;
             case '\n':
-                LineY -= LineHeight;
+                LineY   -= LineHeight;
                 CurrentY = 0.0f;
                 Previous = 0;
                 break;
@@ -128,7 +128,7 @@ namespace Render
 
                     CurrentX += Glyph->Advance;
 
-                    if (MinimumY == 0.0f)
+                    if (LineY == 0.0f)
                     {
                         MaximumY = Max(MaximumY, Glyph->LocalBounds.GetMaximumY());
                     }

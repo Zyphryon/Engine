@@ -24,37 +24,37 @@ namespace Physics
 {
     /// \brief Tests for intersection between two circles and generates a contact manifold if they intersect.
     ///
-    /// \param P0       The first geometric shape.
-    /// \param P1       The second geometric shape.
+    /// \param First    The first geometric shape.
+    /// \param Second   The second geometric shape.
     /// \param Manifold Output parameter to store the contact manifold if an intersection occurs.
     /// \return `true` if the shapes intersect, otherwise `false`.
-    Bool Intersects(Circle P0, Circle P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Circle First, Circle Second, Ptr<Manifold> Manifold);
 
     /// \brief Tests for intersection between a circle and a rectangle and generates a contact manifold if they intersect.
     ///
-    /// \param P0       The first geometric shape.
-    /// \param P1       The second geometric shape.
+    /// \param First    The first geometric shape.
+    /// \param Second   The second geometric shape.
     /// \param Manifold Output parameter to store the contact manifold if an intersection occurs.
     /// \return `true` if the shapes intersect, otherwise `false`.
-    Bool Intersects(Circle P0, Rect P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Circle First, Rect Second, Ptr<Manifold> Manifold);
 
     /// \brief Tests for intersection between two rectangles and generates a contact manifold if they intersect.
     ///
-    /// \param P0       The first geometric shape.
-    /// \param P1       The second geometric shape.
+    /// \param First    The first geometric shape.
+    /// \param Second   The second geometric shape.
     /// \param Manifold Output parameter to store the contact manifold if an intersection occurs.
     /// \return `true` if the shapes intersect, otherwise `false`.
-    Bool Intersects(Rect P0, Rect P1, Ptr<Manifold> Manifold);
+    Bool Intersects(Rect First, Rect Second, Ptr<Manifold> Manifold);
 
     /// \brief Tests for intersection between a rectangle and a circle and generates a contact manifold if they intersect.
     ///
-    /// \param P0       The first geometric shape.
-    /// \param P1       The second geometric shape.
+    /// \param First    The first geometric shape.
+    /// \param Second   The second geometric shape.
     /// \param Manifold Output parameter to store the contact manifold if an intersection occurs.
     /// \return `true` if the shapes intersect, otherwise `false`.
-    ZYPHRYON_INLINE Bool Intersects(Rect P0, Circle P1, Ptr<Manifold> Manifold)
+    ZYPHRYON_INLINE Bool Intersects(Rect First, Circle Second, Ptr<Manifold> Manifold)
     {
-        const Bool Result = Intersects(P1, P0, Manifold);
+        const Bool Result = Intersects(Second, First, Manifold);
 
         if (Result && Manifold)
         {

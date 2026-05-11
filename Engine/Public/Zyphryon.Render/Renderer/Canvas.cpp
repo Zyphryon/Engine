@@ -233,10 +233,10 @@ namespace Render
                             Material->GetID());
                     }
                     CurrentX += (Font->GetKerning(Previous, Codepoint) + Glyph->Advance) * Size;
+                    Previous  = Codepoint;
                 }
                 break;
             }
-            Previous = Codepoint;
         });
     }
 

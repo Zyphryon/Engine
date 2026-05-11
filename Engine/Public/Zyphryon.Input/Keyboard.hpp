@@ -30,6 +30,13 @@ namespace Input
 
     public:
 
+        /// \brief Constructs a new keyboard input device with default states.
+        ZYPHRYON_INLINE Keyboard()
+            : mLastKeys { },
+              mThisKeys { }
+        {
+        }
+
         /// \brief Begins a new frame, updating the keyboard state.
         void Begin();
 

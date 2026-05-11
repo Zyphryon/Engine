@@ -21,6 +21,8 @@
 namespace Content
 {
     /// \brief Virtual filesystem mount backed by memory, using a compiled resource pack.
+    ///
+    /// Resources are embedded at compile time via the \c ZyphryonRC tool.
     class Embedded final : public Mount
     {
     public:

@@ -29,7 +29,7 @@
 
 namespace Render
 {
-    /// \brief A 2D canvas that draws basic shapes, text, and sprites using a graphics service.
+    /// \brief Represents a 2D canvas that draws basic shapes, text, and sprites using a graphics service.
     class Canvas final
     {
     public:
@@ -69,7 +69,7 @@ namespace Render
         /// \param Shape     The line segment to draw.
         /// \param Order     The depth value for rendering order.
         /// \param Tint      The tint color to apply to the line.
-        /// \param Thickness The thickness of the line (default is 1.0f).
+        /// \param Thickness The thickness of the line (default is 1.0).
         void DrawLine(ConstRef<Line> Shape, Real32 Order, IntColor8 Tint, Real32 Thickness = 1.0f);
 
         /// \brief Issues a draw command for drawing a quadrilateral shape with the specified parameters.
@@ -92,7 +92,7 @@ namespace Render
         /// \param Shape  The rectangle shape defining the rounded rectangle to draw.
         /// \param Order  The depth value for rendering order.
         /// \param Tint   The tint color to apply to the rounded rectangle.
-        /// \param Radius The radius of the rounded corners (default is 1.0
+        /// \param Radius The radius of the rounded corners (default is 1.0f).
         void DrawRoundedRect(ConstRef<Rect> Shape, Real32 Order, IntColor8 Tint, Real32 Radius = 1.0f);
 
         /// \brief Sets the parameters for a text effect at the specified index, which can be applied to text rendering.
@@ -161,7 +161,7 @@ namespace Render
             mEncoder.ResetBindings();
         }
 
-        /// \brief Issues a draw command using the specified vertex format and a callback to write instances data.
+        /// \brief Issues a draw command using the specified vertex format and a callback to write instance data.
         ///
         /// \param Instances The number of instances to allocate for drawing.
         /// \param Callback  A callback function that writes vertex data into the allocated buffer.

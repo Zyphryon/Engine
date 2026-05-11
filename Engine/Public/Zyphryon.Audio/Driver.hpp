@@ -58,7 +58,7 @@ namespace Audio
         /// \brief Gets the current master volume level.
         ///
         /// \return The master volume level (0.0 = silent, 1.0 = full volume).
-        virtual Real32 GetMasterVolume() = 0;
+        virtual Real32 GetMasterVolume() const = 0;
 
         /// \brief Sets the volume for a specific audio category.
         ///
@@ -70,7 +70,7 @@ namespace Audio
         ///
         /// \param Category The audio category to query.
         /// \return The volume level for the category (0.0 = silent, 1.0 = full volume).
-        virtual Real32 GetSubmixVolume(Category Category) = 0;
+        virtual Real32 GetSubmixVolume(Category Category) const = 0;
 
         /// \brief Sets the listener's pose in 3D space.
         ///
@@ -90,7 +90,7 @@ namespace Audio
         /// \param Track    The audio track to play.
         /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
         /// \param Pitch    The playback pitch (1.0 = normal pitch).
-        /// \return A handle to the playback instance.
+        /// \return A handle to the playback instance, or `0` if the operation failed.
         virtual Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch) = 0;
 
         /// \brief Plays a spatial audio track with specified parameters.
@@ -101,7 +101,7 @@ namespace Audio
         /// \param Pitch    The playback pitch (1.0 = normal pitch).
         /// \param Emitter  The audio emitter defining spatial properties.
         /// \param Pose     The pose of the audio source in 3D space.
-        /// \return A handle to the playback instance.
+        /// \return A handle to the playback instance, or `0` if the operation failed.
         virtual Object Play(Category Category, ConstTracker<Track> Track, Real32 Volume, Real32 Pitch, ConstTracker<Emitter> Emitter, ConstRef<Pose> Pose) = 0;
 
         /// \brief Sets whether a specific audio playback instance should loop.

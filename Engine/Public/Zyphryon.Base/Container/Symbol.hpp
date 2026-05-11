@@ -64,7 +64,7 @@ inline namespace Base
 
         /// \brief Converts the symbol to a constant string view.
         ///
-        /// \return A `ConstStr8` view of the symbol's string data.
+        /// \return A string-view of the symbol's string data.
         ZYPHRYON_INLINE consteval operator ConstStr8() const
         {
             return ConstStr8(Data, Capacity - 1);

@@ -87,7 +87,7 @@ inline namespace Math
 
         /// \brief Gets the current translation of the transform.
         /// 
-        /// \return A reference to the translation vector.
+        /// \return The current translation vector (2D).
         ZYPHRYON_INLINE Vector2 GetTranslation() const
         {
             return mTranslation;
@@ -105,7 +105,7 @@ inline namespace Math
 
         /// \brief Gets the current scale of the transform.
         /// 
-        /// \return A reference to the scale vector.
+        /// \return The current scale vector (2D).
         ZYPHRYON_INLINE Vector2 GetScale() const
         {
             return mScale;

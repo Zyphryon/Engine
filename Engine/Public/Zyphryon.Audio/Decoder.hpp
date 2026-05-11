@@ -22,13 +22,13 @@ namespace Audio
         /// \brief Ensures derived class can be destroyed polymorphically.
         virtual ~Decoder() = default;
 
-        /// \brief Seek to a specific frame in the audio stream.
+        /// \brief Seeks to a specific frame in the audio stream.
         ///
         /// \param Frame The target frame to seek to.
         /// \return `true` if the seek operation was successful, otherwise `false`.
         virtual Bool Seek(UInt64 Frame) = 0;
 
-        /// \brief Get the current frame position in the audio stream.
+        /// \brief Gets the current frame position in the audio stream.
         ///
         /// \return The current frame position.
         virtual UInt64 Tell() const = 0;

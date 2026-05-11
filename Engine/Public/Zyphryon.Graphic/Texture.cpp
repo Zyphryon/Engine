@@ -31,7 +31,7 @@ namespace Graphic
           mUsage   { Usage::Sample },
           mWidth   { 0 },
           mHeight  { 0 },
-          mLevel   { 0 },
+          mMipmaps { 0 },
           mSamples { Multisample::X1 }
     {
     }
@@ -39,14 +39,14 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Texture::Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data)
+    void Texture::Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
     {
         mFormat  = Format;
         mAccess  = Access;
         mUsage   = Usage;
         mWidth   = Width;
         mHeight  = Height;
-        mLevel   = Level;
+        mMipmaps = Mipmaps;
         mSamples = Samples;
         mData    = Move(Data);
     }
@@ -58,7 +58,7 @@ namespace Graphic
     {
         SetMemory(mData.GetSize());
 
-        mID = Host.GetService<Service>()->CreateTexture(mType, mFormat, mAccess, mUsage, mWidth, mHeight, mLevel, mSamples, Move(mData));
+        mID = Host.GetService<Service>()->CreateTexture(mType, mFormat, mAccess, mUsage, mWidth, mHeight, mMipmaps, mSamples, Move(mData));
 
         return mID > 0;
     }

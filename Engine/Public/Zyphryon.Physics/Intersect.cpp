@@ -21,11 +21,11 @@ namespace Physics
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(Circle P0, Circle P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Circle First, Circle Second, Ptr<Manifold> Manifold)
     {
-        const Vector2 Delta           = P1.GetCenter() - P0.GetCenter();
+        const Vector2 Delta           = Second.GetCenter() - First.GetCenter();
         const Real32  DistanceSquared = Delta.GetLengthSquared();
-        const Real32  SumRadius       = P0.GetRadius() + P1.GetRadius();
+        const Real32  SumRadius       = First.GetRadius() + Second.GetRadius();
 
         if (DistanceSquared > SumRadius * SumRadius)
         {
@@ -39,7 +39,7 @@ namespace Physics
 
             Manifold->SetPenetration(SumRadius - Distance);
             Manifold->SetNormal(Normal);
-            Manifold->AddContact(P0.GetCenter() + Normal * P0.GetRadius());
+            Manifold->AddContact(First.GetCenter() + Normal * First.GetRadius());
         }
         return true;
     }
@@ -47,13 +47,13 @@ namespace Physics
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(Circle P0, Rect P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Circle First, Rect Second, Ptr<Manifold> Manifold)
     {
-        const Vector2 Center          = P0.GetCenter();
-        const Vector2 Closest         = P1.GetNearest(Center);
+        const Vector2 Center          = First.GetCenter();
+        const Vector2 Closest         = Second.GetNearest(Center);
         const Vector2 Delta           = Center - Closest;
         const Real32  DistanceSquared = Delta.GetLengthSquared();
-        const Real32  Radius          = P0.GetRadius();
+        const Real32  Radius          = First.GetRadius();
 
         if (DistanceSquared > Radius * Radius)
         {
@@ -72,20 +72,20 @@ namespace Physics
             }
             else
             {
-                Real32 Side = Closest.GetX() - P1.GetMinimumX();
+                Real32 Side = Closest.GetX() - Second.GetMinimumX();
                 Normal      = Vector2(-1.0f, 0.0f);
 
-                if (const Real32 Right = P1.GetMaximumX() - Closest.GetX(); Right < Side)
+                if (const Real32 Right = Second.GetMaximumX() - Closest.GetX(); Right < Side)
                 {
                     Side   = Right;
                     Normal = Vector2::UnitX();
                 }
-                if (const Real32 Bottom = Closest.GetY() - P1.GetMinimumY(); Bottom < Side)
+                if (const Real32 Bottom = Closest.GetY() - Second.GetMinimumY(); Bottom < Side)
                 {
                     Side   = Bottom;
                     Normal = Vector2(0.0f, -1.0f);
                 }
-                if (const Real32 Top = P1.GetMaximumY() - Closest.GetY(); Top < Side)
+                if (const Real32 Top = Second.GetMaximumY() - Closest.GetY(); Top < Side)
                 {
                     Side   = Top;
                     Normal = Vector2::UnitY();
@@ -103,22 +103,22 @@ namespace Physics
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Intersects(Rect P0, Rect P1, Ptr<Manifold> Manifold)
+    Bool Intersects(Rect First, Rect Second, Ptr<Manifold> Manifold)
     {
-        const Rect Intersection = Rect::Intersection(P0, P1);
-
-        if (Intersection.IsAlmostZero())
+        if (!First.Test(Second))
         {
             return false;
         }
 
         if (Manifold)
         {
+            const Rect Intersection = Rect::Intersection(First, Second);
+
             const Real32 OverlapX = Intersection.GetWidth();
             const Real32 OverlapY = Intersection.GetHeight();
 
-            const Vector2 Center0 = P0.GetCenter();
-            const Vector2 Center1 = P1.GetCenter();
+            const Vector2 Center0 = First.GetCenter();
+            const Vector2 Center1 = Second.GetCenter();
 
             Vector2 Normal;
 
@@ -126,7 +126,7 @@ namespace Physics
             {
                 Normal = (Center1.GetX() >= Center0.GetX()) ? Vector2::UnitX() : Vector2(-1.0f, 0.0f);
 
-                const Real32 XFace = (Normal.GetX() > 0.0f) ? P1.GetMinimumX() : P1.GetMaximumX();
+                const Real32 XFace = (Normal.GetX() > 0.0f) ? Second.GetMinimumX() : Second.GetMaximumX();
 
                 Manifold->SetPenetration(OverlapX);
                 Manifold->SetNormal(Normal);
@@ -141,7 +141,7 @@ namespace Physics
             {
                 Normal = (Center1.GetY() >= Center0.GetY()) ? Vector2::UnitY() : Vector2(0.0f, -1.0f);
 
-                const Real32 YFace = (Normal.GetY() > 0.0f) ? P1.GetMinimumY() : P1.GetMaximumY();
+                const Real32 YFace = (Normal.GetY() > 0.0f) ? Second.GetMinimumY() : Second.GetMaximumY();
 
                 Manifold->SetPenetration(OverlapY);
                 Manifold->SetNormal(Normal);

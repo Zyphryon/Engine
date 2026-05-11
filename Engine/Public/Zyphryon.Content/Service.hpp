@@ -155,11 +155,6 @@ namespace Content
         /// \return `true` if the operation succeeded, `false` otherwise.
         Bool Delete(ConstRef<Uri> Key);
 
-        /// \brief Blocks the calling thread until all pending load operations are complete.
-        ///
-        /// \param Sleep If non-zero, the thread sleeps for the specified number of milliseconds between checks.
-        void Wait(UInt32 Sleep = 100);
-
         /// \brief Requests an asynchronous load of a resource.
         ///
         /// \param Key    The URI of the resource.
@@ -178,8 +173,8 @@ namespace Content
         }
 
         /// \brief Reloads a finished resource in-place, preserving the existing reference.
-        /// 
-        /// Reloading is only performed if the asset has finished loading successfully.
+        ///
+        /// Reloading is performed for any asset that has finished.
         ///
         /// \param Asset The resource instance to reload.
         template<typename Type>
@@ -217,7 +212,7 @@ namespace Content
             Type::GetCache().Prune(Force, Capture<& Service::OnAssetDelete>(this));
         }
 
-        /// \brief Subscribes to notifications for when a resource with the specified URI is loaded or unloaded.
+        /// \brief Subscribes to notifications for when a specific resource URI is loaded or unloaded.
         ///
         /// \param Key      The URI of the resource to subscribe to.
         /// \param Delegate The delegate to invoke when the resource is loaded or unloaded.
@@ -227,6 +222,14 @@ namespace Content
         ///
         /// \param Key The URI of the resource to unsubscribe from.
         void Unsubscribe(ConstRef<Uri> Key);
+
+        /// \brief Returns the number of asset load operations currently in flight.
+        ///
+        /// \return The number of assets that have been queued but not yet finalized.
+        ZYPHRYON_INLINE UInt32 GetPending() const
+        {
+            return mParserPending.load(std::memory_order_acquire);
+        }
 
     private:
 

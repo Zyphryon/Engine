@@ -133,8 +133,8 @@ namespace Graphic
     /// \brief Specifies the origin location for the coordinate systems.
     enum class Coordinates : UInt8
     {
-        Northwest,  ///< Origin at the top-left corner (Y increases downward).
-        Southwest   ///< Origin at the bottom-left corner (Y increases upward).
+        Northwest,  ///< Origin in the top-left corner (Y increases downward).
+        Southwest   ///< Origin in the bottom-left corner (Y increases upward).
     };
 
     /// \brief Specifies face culling behavior in rasterization.
@@ -268,13 +268,13 @@ namespace Graphic
         BC3UIntNorm,           ///< Block-compressed RGBA (DXT5), unsigned normalized.
         BC3UIntNorm_sRGB,      ///< Block-compressed RGBA (DXT5), sRGB gamma-corrected.
         BC4UIntNorm,           ///< Block-compressed single-channel (red), unsigned normalized.
-        BC4SIntNorm,           ///< Block-compressed single-channel (red), signed normalized
+        BC4SIntNorm,           ///< Block-compressed single-channel (red), signed normalized.
         BC5UIntNorm,           ///< Block-compressed two-channel (red-green), unsigned normalized.
-        BC5SIntNorm,           ///< Block-compressed two-channel (red-green), signed normalized
-        BC6UFloat,             ///< Block-compressed HDR RGB, unsigned float
-        BC6SFloat,             ///< Block-compressed HDR RGB, signed float
-        BC7UIntNorm,           ///< High-quality block-compressed RGBA
-        BC7UIntNorm_sRGB,      ///< High-quality block-compressed RGBA, sRGB
+        BC5SIntNorm,           ///< Block-compressed two-channel (red-green), signed normalized.
+        BC6UFloat,             ///< Block-compressed HDR RGB, unsigned float.
+        BC6SFloat,             ///< Block-compressed HDR RGB, signed float.
+        BC7UIntNorm,           ///< High-quality block-compressed RGBA.
+        BC7UIntNorm_sRGB,      ///< High-quality block-compressed RGBA, sRGB.
         R8SInt,                ///< 8-bit signed integer.
         R8SIntNorm,            ///< 8-bit signed normalized.
         R8UInt,                ///< 8-bit unsigned integer.
@@ -315,12 +315,12 @@ namespace Graphic
         RGBA32SInt,            ///< 4×32-bit signed integers.
         RGBA32UInt,            ///< 4×32-bit unsigned integers.
         RGBA32Float,           ///< 4×32-bit floating-point.
-        RGB10A2UInt,           ///< 10-bit RGB + 2-bit alpha, unsigned integer
-        RGB10A2UIntNorm,       ///< 10-bit RGB + 2-bit alpha, unsigned normalized
+        RGB10A2UInt,           ///< 10-bit RGB + 2-bit alpha, unsigned integer.
+        RGB10A2UIntNorm,       ///< 10-bit RGB + 2-bit alpha, unsigned normalized.
         D16Float,              ///< 16-bit floating-point depth.
         D16UIntNorm,           ///< 16-bit unsigned normalized depth.
         D32Float,              ///< 32-bit floating-point depth.
-        D24S8UIntNorm,         ///< 24-bit floating-point depth + 8-bit stencil.
+        D24S8UIntNorm,         ///< 24-bit unsigned normalized depth + 8-bit stencil.
         D32S8UIntNorm,         ///< 32-bit floating-point depth + 8-bit stencil.
     };
 
@@ -382,7 +382,7 @@ namespace Graphic
         UIntNorm16x4,       ///< Four normalized 16-bit unsigned integers.
         SInt32x1,           ///< One 32-bit signed integer.
         UInt32x1,           ///< One 32-bit unsigned integer.
-        SInt32x2,           ///< Two 32-bi  t signed integers.
+        SInt32x2,           ///< Two 32-bit signed integers.
         UInt32x2,           ///< Two 32-bit unsigned integers.
         SInt32x3,           ///< Three 32-bit signed integers.
         UInt32x3,           ///< Three 32-bit unsigned integers.
@@ -413,10 +413,6 @@ namespace Graphic
         TexCoord5,     ///< Defines the sixth set of texture coordinates.
         TexCoord6,     ///< Defines the seventh set of texture coordinates.
         TexCoord7,     ///< Defines the eighth set of texture coordinates.
-        Custom0,       ///< Defines a custom vertex attribute.
-        Custom1,       ///< Defines a custom vertex attribute.
-        Custom2,       ///< Defines a custom vertex attribute.
-        Custom3,       ///< Defines a custom vertex attribute.
         None,          ///< No semantic assigned.
     };
 
@@ -439,7 +435,7 @@ namespace Graphic
     /// \brief Describes a graphics adapter (GPU) available on the system.
     struct Adapter final
     {
-        /// The vendor identifier for the graphics adapter.
+        /// The human-readable description string of the graphics adapter.
         Str8               Description;
 
         /// The dedicated video memory available on the graphics adapter in MBs.
@@ -719,7 +715,7 @@ namespace Graphic
         /// The comparison function used for comparison sampling (shadow/depth maps).
         TestCondition  Comparison   = TestCondition::Always;
 
-        //// The border color used when wrap mode border is selected.
+        /// The border color used when wrap mode border is selected.
         TextureBorder  Border       = TextureBorder::OpaqueBlack;
     };
 
@@ -738,7 +734,7 @@ namespace Graphic
     template<typename Value, UInt32 Capacity>
     using  EntryList = Vector<Entry<Value>, Capacity>;
 
-    /// \brief Defines the parameters for a draw cal.
+    /// \brief Defines the parameters for a draw call.
     struct DrawCall final
     {
         /// The number of vertices or indices to draw.

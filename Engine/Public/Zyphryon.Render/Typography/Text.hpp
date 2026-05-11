@@ -21,7 +21,7 @@
 
 namespace Render
 {
-    /// \brief Represent rendering properties of a text.
+    /// \brief Represents rendering properties of a text.
     class Text final
     {
     public:
@@ -80,7 +80,7 @@ namespace Render
 
         /// \brief Sets the tint color applied to the text.
         ///
-        /// \param Tint The tint color  to set.
+        /// \param Tint The tint color to set.
         ZYPHRYON_INLINE void SetTint(IntColor8 Tint)
         {
             mTint = Tint;
@@ -88,7 +88,7 @@ namespace Render
 
         /// \brief Gets the tint color applied to the text.
         ///
-        /// \return The current tint color .
+        /// \return The current tint color.
         ZYPHRYON_INLINE IntColor8 GetTint() const
         {
             return mTint;

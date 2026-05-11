@@ -21,17 +21,19 @@
 
 namespace Graphic
 {
-    /// \brief Encapsulate draw submission commands to be issued to the GPU.
+    /// \brief Encapsulates draw submission commands to be issued to the GPU.
     class Encoder final
     {
     public:
 
-        /// \brief Default capacity for pre allocated submission storage.
+        /// \brief Default capacity for pre-allocated submission storage.
         static constexpr UInt32 kDefaultCapacity = 128;
 
     public:
 
-
+        /// \brief Constructs an encoder with the specified submission storage capacity.
+        ///
+        /// \param Capacity The initial reserved capacity for draw submissions.
         ZYPHRYON_INLINE explicit Encoder(UInt32 Capacity = kDefaultCapacity)
         {
             mInFlightSubmission.reserve(Capacity);
@@ -127,6 +129,8 @@ namespace Graphic
         }
 
         /// \brief Sets the pipeline state object for the draw call, defining fixed-function state and shader program.
+        ///
+        /// \param Pipeline The pipeline resource whose GPU ID will be bound for the draw call.
         ZYPHRYON_INLINE void SetPipeline(ConstRef<Pipeline> Pipeline)
         {
             SetPipeline(Pipeline.GetID());
@@ -154,9 +158,9 @@ namespace Graphic
         }
 
         /// \brief Binds textures and samplers from the material using pipeline-defined semantic mappings.
-        /// 
-        /// \param Pipeline Pipeline that defines expected texture semantics and slots.
-        /// \param Material Material providing resources for those semantics.
+        ///
+        /// \param Pipeline The pipeline that defines expected texture semantics and register slots.
+        /// \param Material The material providing texture and sampler resources for those semantics.
         ZYPHRYON_INLINE void Bind(ConstRef<Pipeline> Pipeline, ConstRef<Material> Material)
         {
             for (ConstRef<Entry<TextureSemantic>> Binding : Pipeline.GetTextures())
@@ -174,17 +178,17 @@ namespace Graphic
 
         /// \brief Finalizes the current draw command and adds it to the submission list.
         ///
-        /// \param Count     Number of indices or vertices to draw.
-        /// \param Base      Base vertex index (or first vertex for non-indexed).
-        /// \param Offset    Offset into index buffer or vertex buffer.
-        /// \param Instances Number of instances to draw (defaults to 1).
+        /// \param Count     The number of indices or vertices to draw.
+        /// \param Base      The base vertex index (or first vertex for non-indexed draws).
+        /// \param Offset    The byte offset into the index buffer or vertex buffer.
+        /// \param Instances The number of instances to draw (defaults to 1).
         ZYPHRYON_INLINE void Draw(UInt32 Count, SInt32 Base, UInt32 Offset, UInt32 Instances = 1)
         {
             mInFlightCommand.Parameters = DrawCall(Count, Base, Offset, Instances);
             mInFlightSubmission.push_back(mInFlightCommand);
         }
 
-        /// \brief Clears the current in-flight command and resets it to default state for the next submission.
+        /// \brief Resets the current in-flight command to default state for the next submission.
         ZYPHRYON_INLINE void Reset()
         {
             mInFlightCommand = DrawItem();

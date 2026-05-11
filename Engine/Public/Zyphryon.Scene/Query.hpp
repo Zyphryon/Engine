@@ -30,7 +30,7 @@ namespace Scene
 
     public:
 
-        /// \brief Constructs an empty query with no associated handle.
+        /// \brief Constructs an invalid query with no associated world or filters.
         ZYPHRYON_INLINE Query() = default;
 
         /// \brief Constructs a query from an existing handle.
@@ -67,7 +67,7 @@ namespace Scene
             }
         }
 
-        /// \brief Retrieves the number of entities matching the query.
+        /// \brief Gets the number of entities matching the query.
         ///
         /// \return The count of matching entities.
         ZYPHRYON_INLINE UInt64 Matches() const
@@ -87,25 +87,8 @@ namespace Scene
             mHandle.run(Runner::Make(Move(Each)));
         }
 
-        /// \brief Executes the query with optional begin and end callbacks.
-        ///
-        /// \param Begin The function or functor executed before processing entities.
-        /// \param Each  The function or functor executed for each matching entity.
-        /// \param End   The function or functor executed after processing entities.
-        template<typename... Types, typename FBegin, typename FEach, typename FEnd>
-        ZYPHRYON_INLINE void Run(AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End) const
-        {
-            using Signature = DSL::_::TypeList<Types...>;
-            using Runner    = DSL::_::RunnerFactoryLifecycle<Signature, Decay<FBegin>, Decay<FEach>, Decay<FEnd>>;
-
-            mHandle.run(Runner::Make(Move(Begin), Move(Each), Move(End)));
-        }
-
-        /// \brief Move-assigns a query from another query instance.
-        ///
-        /// \param Other The query to move from.
-        /// \return Reference to this query.
-        ZYPHRYON_INLINE Ref<Query> operator=(AnyRef<Query> Other)
+        /// \brief Move-assigns a query from another query instance, transferring ownership.
+        ZYPHRYON_INLINE Ref<Query> operator=(AnyRef<Query> Other) noexcept
         {
             if (this != &Other)
             {
@@ -114,7 +97,7 @@ namespace Scene
             return (* this);
         }
 
-        /// \brief Copy assignment is explicitly disabled.
+        /// \brief Deleted copy assignment operator to prevent copying of queries.
         ZYPHRYON_INLINE Ref<Query> operator=(ConstRef<Query>) = delete;
 
     private:

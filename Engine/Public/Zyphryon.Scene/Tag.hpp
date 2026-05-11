@@ -29,12 +29,6 @@ namespace Scene
         static constexpr ConstStr8 kName = Symbol;
     };
 
-    /// \brief Tag type for indicate the absence of a specific tag or component in queries or systems.
-    using Empty     = Tag<"Empty">;
-
-    /// \brief Tag type for indicate the use of phase-based execution in systems or pipelines.
-    using Phase     = Tag<"Phase">;
-
-    /// \brief Tag type for marking transient (non-persistent across serialization boundaries) objects.
+    /// \brief Tag type that marks transient objects that are not persisted across serialization boundaries.
     using Transient = Tag<"Transient">;
 }

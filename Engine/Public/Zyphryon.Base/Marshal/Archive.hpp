@@ -29,8 +29,8 @@ inline namespace Base
     };
 
     /// \brief Generic serialization archive for reading or writing binary data.
-    /// 
-    /// provides a unified interface for serializing data to or from a binary stream,
+    ///
+    /// Provides a unified interface for serializing data to or from a binary stream,
     /// depending on whether the underlying archive type is a `Reader` or a `Writer`.
     /// 
     /// \tparam T The underlying archive type. Must be either `Reader` or `Writer`.
@@ -50,7 +50,7 @@ inline namespace Base
         /// \brief Constructs an archive wrapper from an underlying reader or writer.
         /// 
         /// \param Archive Reference to the internal reader or writer instance.
-        ZYPHRYON_INLINE Archive(Ref<T> Archive)
+        ZYPHRYON_INLINE explicit Archive(Ref<T> Archive)
             : mArchive { Archive }
         {
         }
@@ -88,7 +88,10 @@ inline namespace Base
         }
 
         /// \brief Serializes a signed integer value using platform-native size and format.
-        /// 
+        ///
+        /// \warning Uses \c SInt which maps to \c intmax_t and varies in size between 32-bit and 64-bit platforms.
+        ///          Do not use this for cross-platform binary serialization; prefer \c SerializeInt32 or \c SerializeInt64.
+        ///
         /// \param Value Reference to the value.
         template<typename Type>
         ZYPHRYON_INLINE void SerializeInt(Ref<Type> Value)
@@ -104,6 +107,9 @@ inline namespace Base
         }
 
         /// \brief Serializes an unsigned integer value using platform-native size and format.
+        ///
+        /// \warning Uses \c UInt which maps to \c uintmax_t and varies in size between 32-bit and 64-bit platforms.
+        ///          Do not use this for cross-platform binary serialization; prefer \c SerializeUInt32 or \c SerializeUInt64.
         ///
         /// \param Value Reference to the value.
         template<typename Type>

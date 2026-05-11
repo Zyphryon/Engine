@@ -65,7 +65,7 @@ namespace Graphic
         /// \param Display The native display handle to render into.
         /// \param Width   The width of the rendering surface in pixels.
         /// \param Height  The height of the rendering surface in pixels.
-        /// \param Samples The multisample count for anti-aliasing.
+        /// \param Samples The multisample count for antialiasing.
         /// \return `true` if initialization succeeded, `false` otherwise.
         Bool Initialize(Backend Backend, Ptr<SDL_Window> Display, UInt16 Width, UInt16 Height, Multisample Samples);
 
@@ -73,12 +73,12 @@ namespace Graphic
         ///
         /// \param Width   The new width of the rendering surface in pixels.
         /// \param Height  The new height of the rendering surface in pixels.
-        /// \param Samples The new multisample count for anti-aliasing.
+        /// \param Samples The new multisample count for antialiasing.
         void Reset(UInt16 Width, UInt16 Height, Multisample Samples);
 
-        /// \brief Gets the device associated with this driver.
+        /// \brief Gets the device associated with this service.
         ///
-        /// \return A constant reference to the device associated with this driver.
+        /// \return A constant reference to the device associated with this service.
         ZYPHRYON_INLINE ConstRef<Device> GetDevice() const
         {
             return mDriver->GetDevice();
@@ -126,7 +126,7 @@ namespace Graphic
 
         /// \brief Creates a buffer resource with the specified parameters and initial data.
         ///
-        /// \param Access   The access pattern for the buffer (e.g., read, write).
+        /// \param Access   The CPU access pattern for the buffer.
         /// \param Usage    The intended usage of the buffer (e.g., vertex, index).
         /// \param Capacity The capacity of the buffer in bytes.
         /// \param Data     The initial data to populate the buffer with.
@@ -135,7 +135,7 @@ namespace Graphic
 
         /// \brief Creates a buffer resource with the specified parameters and no initial data.
         ///
-        /// \param Access   The access pattern for the buffer (e.g., read, write).
+        /// \param Access   The CPU access pattern for the buffer.
         /// \param Usage    The intended usage of the buffer (e.g., vertex, index).
         /// \param Capacity The capacity of the buffer in bytes.
         /// \return The identifier of the created buffer.
@@ -146,7 +146,7 @@ namespace Graphic
 
         /// \brief Creates a buffer resource with the specified parameters and initial data.
         ///
-        /// \param Access The access pattern for the buffer (e.g., read, write).
+        /// \param Access The CPU access pattern for the buffer.
         /// \param Usage  The intended usage of the buffer (e.g., vertex, index).
         /// \param Data   The initial data to populate the buffer with.
         /// \return The identifier of the created buffer.
@@ -222,7 +222,7 @@ namespace Graphic
         ///
         /// \param Type    The type of the texture (e.g., 2D, 3D, cube map).
         /// \param Format  The pixel format of the texture (e.g., RGBA8, DXT1).
-        /// \param Access  The access pattern for the texture (e.g., read, write).
+        /// \param Access  The CPU access pattern for the texture.
         /// \param Usage   The intended usage of the texture (e.g., render target, shader resource).
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
@@ -233,12 +233,12 @@ namespace Graphic
 
         /// \brief Creates a texture resource for use as a render target.
         ///
-        /// param Format   The pixel format of the texture (e.g., RGBA8, DXT1).
-        /// param Resource Whether the texture will also be used as a shader resource for sampling.
-        /// param Width    The width of the texture in pixels.
-        /// param Height   The height of the texture in pixels.
-        /// param Mipmaps  The number of mipmap levels for the texture.
-        /// param Samples  The multisample count for the texture, if applicable.
+        /// \param Format   The pixel format of the texture (e.g., RGBA8, DXT1).
+        /// \param Resource Whether the texture will also be used as a shader resource for sampling.
+        /// \param Width    The width of the texture in pixels.
+        /// \param Height   The height of the texture in pixels.
+        /// \param Mipmaps  The number of mipmap levels for the texture.
+        /// \param Samples  The multisample count for the texture, if applicable.
         /// \return The identifier of the created texture.
         ZYPHRYON_INLINE Object CreateTexture(TextureFormat Format, Bool Resource, UInt16 Width, UInt16 Height, UInt8 Mipmaps = 1, Multisample Samples = Multisample::X1)
         {
@@ -335,7 +335,7 @@ namespace Graphic
 
         /// \brief Returns the frame currently open for CPU recording (producer).
         ///
-        /// \return Reference to the producer (CPU) frame.
+        /// \return A reference to the producer (CPU) frame.
         ZYPHRYON_INLINE Ref<Writer> GetProducerFrame()
         {
             return mFrames[mProducer];
@@ -343,7 +343,7 @@ namespace Graphic
 
         /// \brief Returns the frame currently being consumed by the GPU.
         ///
-        /// \return Reference to the consumer (GPU) frame.
+        /// \return A reference to the consumer (GPU) frame.
         ZYPHRYON_INLINE Ref<Writer> GetConsumerFrame()
         {
             return mFrames[mConsumer];
@@ -438,10 +438,10 @@ namespace Graphic
         template<typename Command, typename... Arguments>
         ZYPHRYON_INLINE void WriteCommand(Ref<Writer> Stream, AnyRef<Arguments>... Parameters)
         {
-            /// Write the command type identifier.
+            // Write the command type identifier.
             Stream.WriteUInt8(static_cast<UInt8>(Command::kType));
 
-            /// Write the command arguments.
+            // Write the command arguments.
             Stream.WriteStruct<Command>(Forward<Arguments>(Parameters)...);
         }
 
@@ -483,8 +483,8 @@ namespace Graphic
 
         /// \brief Dispatches execution of a single GPU command from the frame stream.
         ///
-        /// \param Type  Type of command to run.
-        /// \param Frame Source stream containing the encoded command data.
+        /// \param Type  The type of command to execute.
+        /// \param Frame The source stream containing the encoded command data.
         void OnCommandExecute(CommandType Type, Ref<Reader> Frame);
 
         /// \brief Defines an in-flight buffer being tracked by the service.

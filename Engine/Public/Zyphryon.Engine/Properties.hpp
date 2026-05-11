@@ -34,7 +34,7 @@ namespace Engine
 
         /// \brief Sets the window system handle.
         ///
-        /// \param Handle Native platform-specific window handle.
+        /// \param Handle The native platform-specific window handle.
         ZYPHRYON_INLINE void SetWindowHandle(UInt Handle)
         {
             mWindowHandle = Handle;
@@ -42,7 +42,7 @@ namespace Engine
 
         /// \brief Gets the native window handle.
         ///
-        /// \return Native platform-specific window handle.
+        /// \return The native platform-specific window handle.
         ZYPHRYON_INLINE UInt GetWindowHandle() const
         {
             return mWindowHandle;
@@ -50,7 +50,7 @@ namespace Engine
 
         /// \brief Sets the window title string.
         ///
-        /// \param Title Window title as UTF-8 text.
+        /// \param Title The window title as UTF-8 text.
         ZYPHRYON_INLINE void SetWindowTitle(ConstStr8 Title)
         {
             mWindowTitle = Title;
@@ -58,7 +58,7 @@ namespace Engine
 
         /// \brief Gets the current window title.
         ///
-        /// \return Window title as UTF-8 text.
+        /// \return The window title as UTF-8 text.
         ZYPHRYON_INLINE ConstStr8 GetWindowTitle() const
         {
             return mWindowTitle;
@@ -66,7 +66,7 @@ namespace Engine
 
         /// \brief Sets the width of the window in pixels.
         ///
-        /// \param Width New window width in pixels.
+        /// \param Width The new window width in pixels.
         ZYPHRYON_INLINE void SetWindowWidth(UInt16 Width)
         {
             mWindowWidth = Width;
@@ -74,7 +74,7 @@ namespace Engine
 
         /// \brief Gets the window width.
         ///
-        /// \return Width of the window in pixels.
+        /// \return The width of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetWindowWidth() const
         {
             return mWindowWidth;
@@ -82,7 +82,7 @@ namespace Engine
 
         /// \brief Sets the height of the window in pixels.
         ///
-        /// \param Height New window height in pixels.
+        /// \param Height The new window height in pixels.
         ZYPHRYON_INLINE void SetWindowHeight(UInt16 Height)
         {
             mWindowHeight = Height;
@@ -90,7 +90,7 @@ namespace Engine
 
         /// \brief Gets the window height.
         ///
-        /// \return Height of the window in pixels.
+        /// \return The height of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetWindowHeight() const
         {
             return mWindowHeight;
@@ -98,7 +98,7 @@ namespace Engine
 
         /// \brief Sets the number of samples used for window multisampling.
         ///
-        /// \param Samples New multisample count for the window.
+        /// \param Samples The new multisample count for the window.
         ZYPHRYON_INLINE void SetWindowSamples(UInt8 Samples)
         {
             mWindowSamples = Samples;
@@ -106,7 +106,7 @@ namespace Engine
 
         /// \brief Retrieves the current multisample count of the window.
         ///
-        /// \return Number of samples used for window multisampling.
+        /// \return The number of samples used for window multisampling.
         ZYPHRYON_INLINE UInt8 GetWindowSamples() const
         {
             return mWindowSamples;
@@ -146,7 +146,7 @@ namespace Engine
 
         /// \brief Sets the preferred audio output device.
         ///
-        /// \param Device Identifier or name of the audio device.
+        /// \param Device The identifier or name of the audio device.
         ZYPHRYON_INLINE void SetAudioDevice(ConstStr8 Device)
         {
             mAudioDevice = Device;
@@ -154,7 +154,7 @@ namespace Engine
 
         /// \brief Gets the selected audio device.
         ///
-        /// \return Identifier or name of the audio device.
+        /// \return The identifier or name of the audio device.
         ZYPHRYON_INLINE ConstStr8 GetAudioDevice() const
         {
             return mAudioDevice;
@@ -178,7 +178,7 @@ namespace Engine
 
         /// \brief Sets the name of the graphics API driver.
         ///
-        /// \param Driver Driver name or backend (e.g., "Direct3D11", "OpenGL").
+        /// \param Driver The driver name or backend (e.g., "Direct3D11", "OpenGL").
         ZYPHRYON_INLINE void SetVideoDriver(ConstStr8 Driver)
         {
             mVideoDriver = Driver;
@@ -186,7 +186,7 @@ namespace Engine
 
         /// \brief Gets the active graphics driver.
         ///
-        /// \return Driver name (e.g., "Direct3D11", "OpenGL").
+        /// \return The driver name (e.g., "Direct3D11", "OpenGL").
         ZYPHRYON_INLINE ConstStr8 GetVideoDriver() const
         {
             return mVideoDriver;
@@ -194,7 +194,7 @@ namespace Engine
 
         /// \brief Sets the GPU or video device to be used.
         ///
-        /// \param Device Identifier of the video device.
+        /// \param Device The identifier of the video device.
         ZYPHRYON_INLINE void SetVideoDevice(ConstStr8 Device)
         {
             mVideoDevice = Device;
@@ -202,7 +202,7 @@ namespace Engine
 
         /// \brief Gets the selected video device.
         ///
-        /// \return Identifier of the video device.
+        /// \return The identifier of the video device.
         ZYPHRYON_INLINE ConstStr8 GetVideoDevice() const
         {
             return mVideoDevice;

@@ -317,25 +317,25 @@ inline namespace Math
             const Vector4 C2 = mColumns[2];
             const Vector4 C3 = mColumns[3];
 
-            mColumns[0] = Other.mColumns[0] * Vector4::SplatX(C0) +
-                          Other.mColumns[1] * Vector4::SplatY(C0) +
-                          Other.mColumns[2] * Vector4::SplatZ(C0) +
-                          Other.mColumns[3] * Vector4::SplatW(C0);
+            mColumns[0] = C0 * Vector4::SplatX(Other.mColumns[0]) +
+                          C1 * Vector4::SplatY(Other.mColumns[0]) +
+                          C2 * Vector4::SplatZ(Other.mColumns[0]) +
+                          C3 * Vector4::SplatW(Other.mColumns[0]);
 
-            mColumns[1] = Other.mColumns[0] * Vector4::SplatX(C1) +
-                          Other.mColumns[1] * Vector4::SplatY(C1) +
-                          Other.mColumns[2] * Vector4::SplatZ(C1) +
-                          Other.mColumns[3] * Vector4::SplatW(C1);
+            mColumns[1] = C0 * Vector4::SplatX(Other.mColumns[1]) +
+                          C1 * Vector4::SplatY(Other.mColumns[1]) +
+                          C2 * Vector4::SplatZ(Other.mColumns[1]) +
+                          C3 * Vector4::SplatW(Other.mColumns[1]);
 
-            mColumns[2] = Other.mColumns[0] * Vector4::SplatX(C2) +
-                          Other.mColumns[1] * Vector4::SplatY(C2) +
-                          Other.mColumns[2] * Vector4::SplatZ(C2) +
-                          Other.mColumns[3] * Vector4::SplatW(C2);
+            mColumns[2] = C0 * Vector4::SplatX(Other.mColumns[2]) +
+                          C1 * Vector4::SplatY(Other.mColumns[2]) +
+                          C2 * Vector4::SplatZ(Other.mColumns[2]) +
+                          C3 * Vector4::SplatW(Other.mColumns[2]);
 
-            mColumns[3] = Other.mColumns[0] * Vector4::SplatX(C3) +
-                          Other.mColumns[1] * Vector4::SplatY(C3) +
-                          Other.mColumns[2] * Vector4::SplatZ(C3) +
-                          Other.mColumns[3] * Vector4::SplatW(C3);
+            mColumns[3] = C0 * Vector4::SplatX(Other.mColumns[3]) +
+                          C1 * Vector4::SplatY(Other.mColumns[3]) +
+                          C2 * Vector4::SplatZ(Other.mColumns[3]) +
+                          C3 * Vector4::SplatW(Other.mColumns[3]);
 
             return (* this);
         }

@@ -32,7 +32,7 @@ namespace Content
         /// \brief Creates a proxy from a resource path.
         ///
         /// \param Path The URI path to the resource to create a proxy for.
-        ZYPHRYON_INLINE Proxy(AnyRef<Uri> Path)
+        ZYPHRYON_INLINE explicit Proxy(AnyRef<Uri> Path)
             : mPath     { Move(Path) },
               mResource { nullptr }
         {

@@ -69,6 +69,6 @@ namespace Audio
         Vector<Str8> Devices;
     };
 
-    /// \brief Type alias for audio playback identifiers.
+    /// \brief A handle representing an active audio playback instance.
     using Object = UInt32;
 }

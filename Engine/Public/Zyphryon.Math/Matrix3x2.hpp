@@ -291,10 +291,10 @@ inline namespace Math
             const Real32 S = Angle::Sine(Rotation);
 
             const Real32 M00 =  C * Scale.GetX();
-            const Real32 M10 =  S * Scale.GetX();
+            const Real32 M10 = -S * Scale.GetY();
             const Real32 M20 = Translation.GetX() - (Origin.GetX() * M00 + Origin.GetY() * M10);
-            const Real32 M01 = -S * Scale.GetX();
-            const Real32 M11 =  C * Scale.GetX();
+            const Real32 M01 =  S * Scale.GetX();
+            const Real32 M11 =  C * Scale.GetY();
             const Real32 M21 = Translation.GetY() - (Origin.GetX() * M01 + Origin.GetY() * M11);
 
             return Matrix3x2(M00, M10, M20, M01, M11, M21);
@@ -316,10 +316,10 @@ inline namespace Math
             const Real32 T = Angle::Tangent(Skew.GetY());
 
             const Real32 M00 =  C * Scale.GetX() + U * S * Scale.GetY();
-            const Real32 M10 =  S * Scale.GetX() + U * C * Scale.GetY();
+            const Real32 M10 = -S * Scale.GetY() + U * C * Scale.GetY();
             const Real32 M20 = Translation.GetX() - (Origin.GetX() * M00 + Origin.GetY() * M10);
-            const Real32 M01 = -S * Scale.GetX() + T * C * Scale.GetY();
-            const Real32 M11 =  C * Scale.GetX() + T * S * Scale.GetY();
+            const Real32 M01 =  S * Scale.GetX() + T * C * Scale.GetY();
+            const Real32 M11 =  C * Scale.GetY() + T * S * Scale.GetY();
             const Real32 M21 = Translation.GetY() - (Origin.GetX() * M01 + Origin.GetY() * M11);
 
             return Matrix3x2(M00, M10, M20, M01, M11, M21);

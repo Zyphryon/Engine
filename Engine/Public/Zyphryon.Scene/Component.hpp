@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Common.hpp"
 #include "Entity.hpp"
 #include "Factory.hpp"
 
@@ -30,14 +29,14 @@ namespace Scene
     {
     public:
 
-        /// \brief Constructs an empty component.
+        /// \brief Constructs an invalid component with no associated world or type.
         ZYPHRYON_INLINE Component() = default;
 
         /// \brief Constructs a component from an existing entity handle.
         ///
         /// \param Handle The handle of this component.
         ZYPHRYON_INLINE Component(Handle Handle)
-            : Entity(Handle)
+            : Entity { Handle }
         {
         }
 
@@ -45,11 +44,11 @@ namespace Scene
         ///
         /// \param Id The identifier that defines this component.
         ZYPHRYON_INLINE Component(flecs::id Id)
-            : Entity(Id)
+            : Entity { Id }
         {
         }
 
-        /// \brief Retrieves the size, in bytes, of the component type.
+        /// \brief Gets the size, in bytes, of the component type.
         ///
         /// \return The size of the component in bytes.
         ZYPHRYON_INLINE UInt32 GetSize() const
@@ -57,7 +56,7 @@ namespace Scene
             return Get<flecs::Component>().size;
         }
 
-        /// \brief Retrieves the alignment requirement of the component type.
+        /// \brief Gets the alignment requirement of the component type.
         ///
         /// \return The alignment of the component in bytes.
         ZYPHRYON_INLINE UInt32 GetAlignment() const
@@ -65,13 +64,12 @@ namespace Scene
             return Get<flecs::Component>().alignment;
         }
 
-        /// \brief Adds one or more behavioral traits to this component.
+        /// \brief Grants one or more behavioral traits to this component.
         ///
-        /// \param Traits The traits to apply.
-        ///
-        /// \return The updated component.
+        /// \param Traits The traits to grant.
+        /// \return This component, allowing for method chaining.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component AddTrait(Arguments... Traits) const
+        ZYPHRYON_INLINE Component Grant(Arguments... Traits) const
         {
             (ApplyTrait(Traits), ...);
             return (* this);
@@ -80,10 +78,9 @@ namespace Scene
         /// \brief Removes one or more behavioral traits from this component.
         ///
         /// \param Traits The traits to remove.
-        ///
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename... Arguments>
-        ZYPHRYON_INLINE Component RemoveTrait(Arguments... Traits) const
+        ZYPHRYON_INLINE Component Revoke(Arguments... Traits) const
         {
             (EraseTrait(Traits), ...);
             return (* this);
@@ -95,8 +92,7 @@ namespace Scene
         /// automatically include the specified component type.
         ///
         /// \tparam Target The component type to associate with this component.
-        ///
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename Target>
         ZYPHRYON_INLINE Component With() const
         {
@@ -107,8 +103,7 @@ namespace Scene
         /// \brief Establishes a "with" context between this component and another component entity.
         ///
         /// \param Target The component entity to associate with this component.
-        ///
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         ZYPHRYON_INLINE Component With(Component Target) const
         {
             mHandle.add(EcsWith, Target.GetHandle());
@@ -118,7 +113,7 @@ namespace Scene
         /// \brief Establishes a dependency relationship between this component and another component type.
         ///
         /// \param Target The component entity that this component depends on.
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         ZYPHRYON_INLINE Component DependsOn(Entity Target) const
         {
             mHandle.add(EcsDependsOn, Target.GetHandle());
@@ -128,7 +123,7 @@ namespace Scene
         /// \brief Overrides the add behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is added to an entity.
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename Function>
         ZYPHRYON_INLINE Component OnAdd(AnyRef<Function> Action) const
         {
@@ -142,7 +137,7 @@ namespace Scene
         /// \brief Overrides the set behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is set on an entity.
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename Function>
         ZYPHRYON_INLINE Component OnSet(AnyRef<Function> Action) const
         {
@@ -156,7 +151,7 @@ namespace Scene
         /// \brief Overrides the remove behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is removed from an entity.
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename Function>
         ZYPHRYON_INLINE Component OnRemove(AnyRef<Function> Action) const
         {
@@ -170,7 +165,7 @@ namespace Scene
         /// \brief Overrides the replace behavior of this component with a custom function.
         ///
         /// \param Action The function to execute when this component is replaced on an entity.
-        /// \return The updated component.
+        /// \return This component, allowing for method chaining.
         template<typename Function>
         ZYPHRYON_INLINE Component OnReplace(AnyRef<Function> Action) const
         {
@@ -183,9 +178,9 @@ namespace Scene
 
     private:
 
-        /// \brief Applies a specific trait to this component.
+        /// \brief Grants a specific trait to this component.
         ///
-        /// \param Trait The trait to apply.
+        /// \param Trait The trait to grant.
         ZYPHRYON_INLINE void ApplyTrait(Trait Trait) const
         {
             switch (Trait)
@@ -217,9 +212,9 @@ namespace Scene
             }
         }
 
-        /// \brief Removes a specific trait from this component.
+        /// \brief Revokes a specific trait from this component.
         ///
-        /// \param Trait The trait to remove.
+        /// \param Trait The trait to revoke.
         ZYPHRYON_INLINE void EraseTrait(Trait Trait) const
         {
             switch (Trait)

@@ -141,6 +141,7 @@ namespace Render
         /// \param Width    The width of the outline.
         /// \param Softness The softness of the outline.
         /// \param Tint     The color tint of the outline.
+        /// \return A TextEffect configured as an outline.
         ZYPHRYON_INLINE constexpr static TextEffect Outline(Real32 Width, Real32 Softness, Color Tint)
         {
             return TextEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
@@ -150,7 +151,7 @@ namespace Render
         ///
         /// \param Softness The softness of the shadow.
         /// \param Tint     The color tint of the shadow.
-
+        /// \return A TextEffect configured as a shadow.
         ZYPHRYON_INLINE constexpr static TextEffect Shadow(Real32 Softness, Color Tint)
         {
             return TextEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
@@ -166,6 +167,7 @@ namespace Render
         ///       0.20 = Maximum bold (may cause artifacts)
         ///
         /// \param Thickness The thickness of the bold effect.
+        /// \return A TextEffect configured as a bold style.
         ZYPHRYON_INLINE constexpr static TextEffect Bold(Real32 Thickness)
         {
             return TextEffect(Color::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);

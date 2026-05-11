@@ -30,10 +30,10 @@ namespace Engine
 
         /// \brief Constructs a window with the given parameters.
         ///
-        /// \param Handle     Platform-specific window handle (e.g., HWND on Windows, X11 Window on Linux).
-        /// \param Title      UTF-8 title of the window.
-        /// \param Width      Width of the window in pixels.
-        /// \param Height     Height of the window in pixels.
+        /// \param Handle     The platform-specific window handle (e.g., HWND on Windows, X11 Window on Linux).
+        /// \param Title      The UTF-8 title of the window.
+        /// \param Width      The width of the window in pixels.
+        /// \param Height     The height of the window in pixels.
         /// \param Fullscreen `true` to start in fullscreen mode, otherwise `false`.
         /// \param Borderless `true` to remove window borders, otherwise `false`.
         Device(UInt Handle, ConstStr8 Title, UInt16 Width, UInt16 Height, Bool Fullscreen, Bool Borderless);
@@ -43,7 +43,7 @@ namespace Engine
 
         /// \brief Returns the internal SDL window handle.
         ///
-        /// \return Pointer to the underlying SDL_Window.
+        /// \return The pointer to the underlying SDL_Window.
         ZYPHRYON_INLINE Ptr<SDL_Window> GetHandle() const
         {
             return mHandle;
@@ -51,7 +51,7 @@ namespace Engine
 
         /// \brief Sets the window title.
         ///
-        /// \param Title UTF-8 title string.
+        /// \param Title The UTF-8 title string.
         ZYPHRYON_INLINE void SetTitle(ConstStr8 Title)
         {
             SDL_SetWindowTitle(mHandle, Title.data());
@@ -59,7 +59,7 @@ namespace Engine
 
         /// \brief Returns the current window title.
         ///
-        /// \return UTF-8 title string.
+        /// \return The UTF-8 title string.
         ZYPHRYON_INLINE ConstStr8 GetTitle() const
         {
             return SDL_GetWindowTitle(mHandle);
@@ -134,8 +134,8 @@ namespace Engine
 
         /// \brief Sets the window size in pixels.
         ///
-        /// \param Width  New window width in pixels.
-        /// \param Height New window height in pixels.
+        /// \param Width  The new window width in pixels.
+        /// \param Height The new window height in pixels.
         ZYPHRYON_INLINE void Resize(UInt16 Width, UInt16 Height)
         {
             SDL_SetWindowSize(mHandle, Width, Height);
@@ -143,7 +143,7 @@ namespace Engine
 
         /// \brief Returns the width of the window.
         ///
-        /// \return Width in pixels.
+        /// \return The width of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetWidth() const
         {
             int Width;
@@ -153,7 +153,7 @@ namespace Engine
 
         /// \brief Returns the height of the window.
         ///
-        /// \return Height in pixels.
+        /// \return The height of the window in pixels.
         ZYPHRYON_INLINE UInt16 GetHeight() const
         {
             int Height;
@@ -163,7 +163,7 @@ namespace Engine
 
         /// \brief Returns the DPI scale factor for the window.
         ///
-        /// \return Display scale factor.
+        /// \return The display scale factor.
         ZYPHRYON_INLINE Real32 GetScale() const
         {
             return SDL_GetWindowDisplayScale(mHandle);
@@ -171,7 +171,7 @@ namespace Engine
 
         /// \brief Sets the clipboard text.
         ///
-        /// \param Text UTF-8 string to copy to clipboard.
+        /// \param Text The UTF-8 string to copy to clipboard.
         ZYPHRYON_INLINE void SetClipboard(ConstStr8 Text)
         {
             SDL_SetClipboardText(Text.data());
@@ -179,7 +179,7 @@ namespace Engine
 
         /// \brief Returns the current clipboard text.
         ///
-        /// \return UTF-8 clipboard contents.
+        /// \return The UTF-8 clipboard contents.
         ZYPHRYON_INLINE Str8 GetClipboard() const
         {
             return SDL_GetClipboardText();

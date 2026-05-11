@@ -22,7 +22,7 @@
 
 namespace Render
 {
-    /// \brief Represent rendering properties of a sprite.
+    /// \brief Represents rendering properties of a sprite.
     class Sprite final
     {
     public:

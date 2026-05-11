@@ -55,6 +55,7 @@ namespace Engine
 #endif  // SDL_PLATFORM_WIN32
 
         mHandle = SDL_CreateWindowWithProperties(Config);
+        SDL_DestroyProperties(Config);
 
 #ifdef     SDL_PLATFORM_WIN32
         if (mHandle)

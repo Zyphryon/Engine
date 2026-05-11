@@ -33,7 +33,8 @@ namespace Physics
 
         /// \brief Constructor initializing the manifold to an empty state.
         ZYPHRYON_INLINE AnyManifold()
-            : mPenetration { static_cast<Type>(0) }
+            : mNormal      { },
+              mPenetration { static_cast<Type>(0) }
         {
         }
 

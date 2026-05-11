@@ -313,7 +313,7 @@ inline namespace Math
 
         /// \brief Anchors a line relative to a pivot point.
         ///
-        /// \param Line   The line circle.
+        /// \param Line   The source line.
         /// \param Origin The pivot point for anchoring.
         /// \return A line anchored according to the pivot.
         ZYPHRYON_INLINE static constexpr Line Anchor(Line Line, Pivot Origin)

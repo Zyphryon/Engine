@@ -38,8 +38,8 @@ namespace Engine
         ///
         /// This must be called before entering the main loop. It configures the environment based on the configuration.
         ///
-        /// \param Mode       Runtime mode (e.g., client, server).
-        /// \param Properties Application configuration values.
+        /// \param Mode       The runtime mode (e.g., client, server).
+        /// \param Properties The application configuration values.
         void Initialize(Mode Mode, AnyRef<Properties> Properties);
 
         /// \brief Polls the main execution loop once.
@@ -87,7 +87,7 @@ namespace Engine
         ///
         /// Override this method to update game logic or simulation systems.
         ///
-        /// \param Tick Time information for the current frame.
+        /// \param Tick The time information for the current frame.
         virtual void OnTick(Time Tick)
         {
         }

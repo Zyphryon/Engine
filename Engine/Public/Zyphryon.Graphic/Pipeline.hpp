@@ -59,9 +59,9 @@ namespace Graphic
             return mID;
         }
 
-        /// \brief Gets the list of texture bindings for the pipeline
+        /// \brief Gets the list of texture bindings for the pipeline.
         ///
-        /// \return A list of texture bindings.
+        /// \return A list of texture semantic bindings for shader slots.
         ZYPHRYON_INLINE ConstSpan<Entry<TextureSemantic>> GetTextures() const
         {
             return mTextures;

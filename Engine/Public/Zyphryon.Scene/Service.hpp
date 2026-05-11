@@ -26,7 +26,7 @@
 
 namespace Scene
 {
-    /// \brief Provides high-level management of the scene subsystem.
+    /// \brief Manages the world lifecycle, entity allocation, and scene serialization.
     class Service final : public AbstractService<Service>
     {
     public:
@@ -39,168 +39,104 @@ namespace Scene
         /// \copydoc Service::OnTick(Time)
         void OnTick(Time Time) override;
 
-        /// \brief Sets the global time scale multiplier for the scene.
+        /// \brief Gets a world handle that provides access to singleton components.
         ///
-        /// \param Scale The new time scale multiplier. Must be non-negative.
-        ZYPHRYON_INLINE void SetTimeScale(Real32 Scale)
-        {
-            LOG_ASSERT(Scale >= 0.0f, "Time scale cannot be negative");
-
-            mMultiplier = Scale;
-        }
-
-        /// \brief Gets the current global time scale multiplier for the scene.
-        ///
-        /// \return The current time scale multiplier.
-        ZYPHRYON_INLINE Real32 GetTimeScale() const
-        {
-            return mMultiplier;
-        }
-
-        /// \brief Compacts memory by removing unused entities and components.
-        ///
-        /// This helps reduce fragmentation and optimize memory usage.
-        ZYPHRYON_INLINE void Shrink()
-        {
-            mWorld.shrink();
-        }
-
-        /// \brief Purges all instances of a specific component type from the world.
-        ///
-        /// This removes the specified component from every entity that currently has it.
-        ///
-        /// \tparam Component The component type to clear from all entities.
-        template<typename Component>
-        ZYPHRYON_INLINE void Purge()
-        {
-            mWorld.remove_all<Component>();
-        }
-
-        /// \brief Defers execution of a callback until the end of the current frame.
-        ///
-        /// If called during iteration, the callback is queued and executed safely once iteration ends.
-        /// Otherwise, it executes immediately.
-        ///
-        /// \param Callback   The function to execute.
-        /// \param Parameters The arguments to forward to the callback.
-        template<typename Function, typename ...Arguments>
-        ZYPHRYON_INLINE void Schedule(AnyRef<Function> Callback, AnyRef<Arguments>... Parameters)
-        {
-            const Bool Dirty = mWorld.defer_begin();
-
-            Callback(Forward<Arguments>(Parameters)...);
-
-            if (Dirty)
-            {
-                mWorld.defer_end();
-            }
-        }
-
-        /// \brief Creates a new entity.
-        ///
-        /// \return The newly created entity object.
-        ZYPHRYON_INLINE Entity CreateEntity()
-        {
-            const Entity Actor = Allocate<false>();
-            Actor.Add(EcsFinal);
-            return Actor;
-        }
-
-        /// \brief Creates a new archetype entity.
-        ///
-        /// \return The newly created archetype entity object.
-        ZYPHRYON_INLINE Entity CreateArchetype()
-        {
-            const Entity Actor = Allocate<true>();
-            Actor.Add(EcsPrefab);
-            return Actor;
-        }
-
-        /// \brief Clones an existing archetype entity.
-        ///
-        /// \param Source The archetype entity to clone from.
-        /// \return The newly created archetype entity object.
-        ZYPHRYON_INLINE Entity CloneArchetype(Entity Source)
-        {
-            LOG_ASSERT(Source.IsArchetype(), "Source entity is not an archetype");
-
-            const Entity Actor = Allocate<true>();
-            Source.Clone(Actor);
-            return Actor;
-        }
-
-        /// \brief Retrieves the entity representing the world itself.
-        ///
-        /// \return The world entity object.
+        /// \return The world wrapper for the world.
         ZYPHRYON_INLINE World GetWorld()
         {
             return World(mWorld);
         }
 
-        /// \brief Retrieves an entity by its unique identifier.
+        /// \brief Sets the global timescale applied to all system delta times each tick.
         ///
-        /// \param ID The unique identifier of the entity.
-        /// \return A valid entity if alive, otherwise an empty entity.
-        ZYPHRYON_INLINE Entity GetEntity(UInt64 ID) const
+        /// \param Scale The multiplier to apply to elapsed time. Must be non-negative.
+        ZYPHRYON_INLINE void SetTimeScale(Real32 Scale)
         {
-            const Entity::Handle Handle = mWorld.entity(ID);
-            return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
+            LOG_ASSERT(Scale >= 0.0f, "Timescale cannot be negative");
+
+            mMultiplier = Scale;
         }
 
-        /// \brief Retrieves an entity by its unique name.
+        /// \brief Gets the current global timescale.
         ///
-        /// \param Name The unique name of the entity.
-        /// \return A valid entity if alive, otherwise an empty entity.
-        ZYPHRYON_INLINE Entity GetEntity(ConstStr8 Name) const
+        /// \return The timescale multiplier currently in effect.
+        ZYPHRYON_INLINE Real32 GetTimeScale() const
         {
-            const Entity::Handle Handle = mWorld.lookup(Name.data());
-            return Handle.is_valid() && mWorld.is_alive(Handle) ? Entity(Handle) : Entity();
+            return mMultiplier;
         }
 
-        /// \brief Retrieves the entity associated with a specific relation pair.
+        /// \brief Creates a new runtime entity and marks it as non-inheritable.
         ///
-        /// \tparam Tag    The relation tag component.
-        /// \tparam Target The relation target component.
-        /// \return The entity representing the pair if it exists, otherwise an empty entity.
-        template<typename Tag, typename Target>
-        ZYPHRYON_INLINE Entity GetEntity() const
+        /// \return The newly created entity.
+        ZYPHRYON_INLINE Entity CreateEntity()
         {
-            return Entity(mWorld.entity(mWorld.pair<Tag, Target>()));
+            const Entity Actor = Allocate<false>();
+            Actor.Add(flecs::Final);
+            return Actor;
         }
 
-        /// \brief Retrieves or creates a component type in the world.
+        /// \brief Creates a new archetype entity, optionally cloning an existing one.
         ///
-        /// \tparam Target The component type to retrieve or create.
-        /// \param ID      The unique name of the component type. If empty, the type's default name is used.
-        /// \return The component object representing the type.
-        template<typename Target>
-        ZYPHRYON_INLINE Component<Target> GetComponent(ConstStr8 ID = flecs::_::type_name<Target>()) const
+        /// \param Source An optional archetype to clone from. Must be a valid archetype if provided.
+        /// \return The newly created archetype entity.
+        ZYPHRYON_INLINE Entity CreateArchetype(Entity Source = Entity())
         {
-            return Component<Target>(mWorld.component<Target>(ID.data()));
-        }
+            const Entity Actor = Allocate<true>();
 
-        /// \brief Creates a new phase entity with an optional dependency.
-        ///
-        /// \tparam Name      The tag type to use as the phase identifier.
-        /// \tparam Type      Optional component type to add to the phase entity.
-        /// \param Dependency An optional entity that this phase should depend on.
-        /// \return The newly created phase entity.
-        template<Symbol Name, typename Type = Phase>
-        ZYPHRYON_INLINE Entity CreatePhase(Entity Dependency = Entity()) const
-        {
-            const auto Component = GetComponent<Tag<Name>>();
-
-            if constexpr (IsEqual<Type, Phase>)
+            if (Source.IsValid())
             {
-                Component.Add(flecs::Phase);
+                LOG_ASSERT(Source.IsArchetype(), "Source entity is not an archetype");
+
+                Source.Clone(Actor);
             }
             else
             {
-                if constexpr (!IsEqual<Type, Empty>)
-                {
-                    Component.template Add<Type>();
-                }
+                Actor.Add(flecs::Prefab);
             }
+            return Actor;
+        }
+
+        /// \brief Looks up a live entity by its unique numeric identifier.
+        ///
+        /// \param ID The numeric entity identifier to resolve.
+        /// \return The entity corresponding to the given ID, or an invalid entity if not found.
+        ZYPHRYON_INLINE Entity GetEntity(UInt64 ID) const
+        {
+            const Entity::Handle Handle = mWorld.entity(ID);
+            return Entity(Handle);
+        }
+
+        /// \brief Looks up a live entity by its registered name.
+        ///
+        /// \param Name The name to search for in the world.
+        /// \return The entity with the given name, or an invalid entity if not found.
+        ZYPHRYON_INLINE Entity GetEntity(ConstStr8 Name) const
+        {
+            const Entity::Handle Handle = mWorld.lookup(Name.data());
+            return Entity(Handle);
+        }
+
+        /// \brief Registers or retrieves a typed component in the world under the given identifier.
+        ///
+        /// \param ID The string identifier used to register or look up the component.
+        /// \return A typed component handle for \p Type.
+        template<typename Type>
+        ZYPHRYON_INLINE Component<Type> GetComponent(ConstStr8 ID) const
+        {
+            return Component<Type>(mWorld.component<Type>(ID.data()));
+        }
+
+        /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.
+        ///
+        /// \tparam Name       The compile-time symbol used as the tag name and identifier.
+        /// \param  Type       The phase kind entity this phase belongs to.
+        /// \param  Dependency An optional phase entity that this phase depends on and must run after.
+        /// \return The entity representing the newly created phase.
+        template<Symbol Name>
+        ZYPHRYON_INLINE Entity CreatePhase(Entity Type, Entity Dependency = Entity()) const
+        {
+            const auto Component = GetComponent<Tag<Name>>();
+            Component.Add(Type);
 
             if (Dependency.IsValid())
             {
@@ -209,10 +145,15 @@ namespace Scene
             return Component;
         }
 
-        /// \brief Creates a new pipeline with specified compile-time and runtime expressions.
+        /// \brief Creates a pipeline that controls which systems run and in what order.
         ///
-        /// \param Runtime Optional runtime expressions to refine the query.
-        /// \return The constructed pipeline object.
+        /// Compile-time DSL expressions are applied to the pipeline builder to filter the systems
+        /// it will execute. Optional runtime expressions can extend the filter dynamically.
+        ///
+        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
+        /// \tparam RuntimeExpression Zero or more runtime expression types.
+        /// \param  Runtime           The runtime expression values to append to the pipeline filter.
+        /// \return The constructed pipeline.
         template<typename... CompileExpression, typename... RuntimeExpression>
         ZYPHRYON_INLINE Pipeline CreatePipeline(AnyRef<RuntimeExpression>... Runtime) const
         {
@@ -222,22 +163,16 @@ namespace Scene
             return Pipeline(Builder.build());
         }
 
-        /// \brief Creates a timer as a tick source in the world.
+        /// \brief Creates a reactive observer that fires a callback when entities match an event.
         ///
-        /// \return The newly created timer object.
-        ZYPHRYON_INLINE Timer CreateTimer()
-        {
-            const Timer::Handle Handle = mWorld.timer();
-            return Timer(Handle);
-        }
-
-        /// \brief Creates an observer for reacting to ECS events.
-        ///
-        /// \param Name    The name of the observer.
-        /// \param Event   The event entity to subscribe to (e.g. OnAdd).
-        /// \param Each    The callback to invoke for each matching entity.
-        /// \param Runtime Optional runtime expressions to refine the query.
-        /// \return The entity representing the observer.
+        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
+        /// \tparam FEach             The callable type invoked for each matching entity.
+        /// \tparam RuntimeExpression Zero or more runtime expression types.
+        /// \param  Name              The optional display name for the observer entity.
+        /// \param  Event             The event entity that triggers the observer.
+        /// \param  Each              The callback invoked for each entity that matches the event.
+        /// \param  Runtime           The runtime expression values to append to the observer filter.
+        /// \return The entity representing the created observer.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZYPHRYON_INLINE Entity CreateObserver(ConstStr8 Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
@@ -250,14 +185,16 @@ namespace Scene
             return Entity(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
         }
 
-        /// \brief Creates a query with optional compile-time and runtime expressions.
+        /// \brief Creates a cached or uncached query over entities matching the given expressions.
         ///
-        /// \param Name    The name of the query.
-        /// \param Policy  The caching policy for the query results.
-        /// \param Runtime Optional runtime expressions to refine the query.
-        /// \return The constructed query object.
+        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
+        /// \tparam RuntimeExpression Zero or more runtime expression types.
+        /// \param  Name              The optional display name for the query.
+        /// \param  Policy            The caching strategy to apply to this query.
+        /// \param  Runtime           The runtime expression values to append to the query filter.
+        /// \return The constructed query.
         template<typename... CompileExpression, typename... RuntimeExpression>
-        ZYPHRYON_INLINE auto CreateQuery(ConstStr8 Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
+        ZYPHRYON_INLINE Query CreateQuery(ConstStr8 Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::query_builder<> Builder = mWorld.query_builder<>(Name.empty() ? nullptr : Name.data());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
@@ -277,16 +214,27 @@ namespace Scene
             return Query(Builder.build());
         }
 
-        /// \brief Creates a system with a single execution callback.
+        /// \brief Creates a timer entity that can be used to rate-limit or schedule systems.
         ///
-        /// \param Name      The name of the system.
-        /// \param Phase     The phase entity (e.g. PreUpdate, OnUpdate).
-        /// \param Execution Execution mode for the system.
-        /// \param Each      The callback to run for each entity.
-        /// \param Runtime   Optional runtime expressions to refine the query.
-        /// \return The constructed system object.
+        /// \return The newly created timer.
+        ZYPHRYON_INLINE Timer CreateTimer()
+        {
+            const Timer::Handle Handle = mWorld.timer();
+            return Timer(Handle);
+        }
+
+        /// \brief Creates a system that runs a callback each tick for all matching entities.
+        ///
+        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
+        /// \tparam RuntimeExpression Zero or more runtime expression types.
+        /// \param  Name              The optional display name for the system entity.
+        /// \param  Phase             The phase entity that determines when this system runs.
+        /// \param  Execution         The threading mode for this system.
+        /// \param  Each              The callback invoked for each matching entity.
+        /// \param  Runtime           The runtime expression values to append to the system filter.
+        /// \return The created system.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
-        ZYPHRYON_INLINE auto CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
+        ZYPHRYON_INLINE System CreateSystem(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::system_builder<> Builder = mWorld.system<>(Name.empty() ? nullptr : Name.data());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
@@ -308,18 +256,20 @@ namespace Scene
             return System(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
         }
 
-        /// \brief Creates a system with begin, each, and end callbacks.
+        /// \brief Creates a system with explicit begin, per-entity, and end lifecycle callbacks.
         ///
-        /// \param Name      The name of the system.
-        /// \param Phase     The phase entity (e.g. PreUpdate, OnUpdate).
-        /// \param Execution Execution mode for the system.
-        /// \param Begin     Callback invoked before iteration.
-        /// \param Each      Callback invoked for each entity.
-        /// \param End       Callback invoked after iteration.
-        /// \param Runtime   Optional runtime expressions to refine the query.
-        /// \return The constructed system object.
+        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
+        /// \tparam RuntimeExpression Zero or more runtime expression types.
+        /// \param  Name              The optional display name for the system entity.
+        /// \param  Phase             The phase entity that determines when this system runs.
+        /// \param  Execution         The threading mode for this system.
+        /// \param  Begin             The callback invoked before the per-entity loop.
+        /// \param  Each              The callback invoked for each matching entity.
+        /// \param  End               The callback invoked after the per-entity loop.
+        /// \param  Runtime           The runtime expression values to append to the system filter.
+        /// \return The created system.
         template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
-        ZYPHRYON_INLINE auto CreateSystemWithLifecycle(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
+        ZYPHRYON_INLINE System CreateSystemWithLifecycle(ConstStr8 Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::system_builder<> Builder = mWorld.system<>(Name.empty() ? nullptr : Name.data());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
@@ -341,255 +291,100 @@ namespace Scene
             return System(Builder.run(DSL::_::RunnerFactoryLifecycle<Types, FBegin, FEach, FEnd>::Make(Move(Begin), Move(Each), Move(End))));
         }
 
-        /// \brief Iterates over all archetype entities.
+        /// \brief Iterates over all allocated archetype entities and invokes a callback for each one.
         ///
-        /// \param Callback The function invoked once per archetype entity.
+        /// \param Callback The function to call for each archetype entity.
         template<typename Function>
         ZYPHRYON_INLINE void QueryArchetypes(AnyRef<Function> Callback) const
         {
-            mWorld.defer_begin();
+            for (UInt32 Handle = 1; Handle <= mArchetypes.GetHead(); ++Handle)
             {
-                // Defer the archetype query to ensure safe iteration even if archetypes are modified.
-                mQueryArchetypes.Run(Callback);
+                if (mArchetypes.IsAllocated(Handle))
+                {
+                    Callback(Entity(kMinRangeArchetypes + Handle - 1));
+                }
             }
-            mWorld.defer_end();
         }
 
-        /// \brief Iterates over all entities with a given tag.
+        /// \brief Iterates over all entities that carry a specific tag and invokes a callback for each one.
         ///
-        /// \param Callback The function invoked once per matching entity.
+        /// \tparam Tag      The tag type to filter entities by.
+        /// \param  Callback The function to call for each matching entity.
         template<typename Tag, typename Function>
         ZYPHRYON_INLINE void QueryTag(AnyRef<Function> Callback) const
         {
             CreateQuery<DSL::In<Tag>>(Format("QueryTag<{}>", Tag::kName), Cache::Default).Run(Callback);
         }
 
-        /// \brief Subscribes to an event with a callback that receives the event payload.
+        /// \brief Loads all singleton components from a binary archive into the world.
         ///
-        /// \param Name The name of the subscriber.
-        /// \param Each The callback to invoke for each event occurrence, which receives the entity and event payload.
-        template<typename Event, typename FEach>
-        ZYPHRYON_INLINE Entity Subscribe(ConstStr8 Name, AnyRef<FEach> Each)
-        {
-            flecs::observer_builder<> Builder = mWorld.observer<>(Name.empty() ? nullptr : Name.data());
-            Builder.event<Event>().with(flecs::Any);
+        /// \param Archive The binary data reader to read the world state from.
+        void LoadWorld(Ref<Reader> Archive);
 
-            const flecs::entity Observer = Builder.each([Each](Ref<flecs::iter> Iterator, size_t Element)
-            {
-                Each(Entity(Iterator.entity(Element)), * Iterator.param<Event>());
-            });
-            return Entity(Observer);
-        }
-
-        /// \brief Publishes an event with the specified payload.
+        /// \brief Saves all singleton components of the world to a binary archive.
         ///
-        /// \param Payload   The data associated with the event to publish.
-        /// \param Immediate If `true`, the event is emitted immediately; otherwise, it is enqueued for deferred processing.
-        template<typename Event>
-        ZYPHRYON_INLINE void Publish(ConstRef<Event> Payload, Bool Immediate = false)
-        {
-            flecs::entity Publiser(mWorld, EcsWorld);
+        /// \param Archive The binary data writer to write the world state to.
+        void SaveWorld(Ref<Writer> Archive);
 
-            if (Immediate)
-            {
-                Publiser.emit(Payload);
-            }
-            else
-            {
-                Publiser.enqueue(Payload);
-            }
-        }
-
-        /// \brief Loads the world state from a stream.
+        /// \brief Loads a full entity hierarchy from a binary archive and returns the root entity.
         ///
-        /// \note Only singleton components directly on the world entity are serialized.
+        /// \param Archive The binary data reader to read the hierarchy from.
+        /// \return The root entity of the loaded hierarchy.
+        Entity LoadHierarchy(Ref<Reader> Archive);
+
+        /// \brief Saves a full entity hierarchy rooted at the given actor to a binary archive.
         ///
-        /// \param Reader The stream containing the serialized world state.
-        void LoadWorld(Ref<Reader> Reader);
+        /// \param Archive The binary data writer to write the hierarchy to.
+        /// \param Actor   The root entity of the hierarchy to save.
+        void SaveHierarchy(Ref<Writer> Archive, Entity Actor);
 
-        /// \brief Saves the world state to a stream.
+        /// \brief Loads all archetypes from a binary archive and registers them in the world.
         ///
-        /// \note Only singleton components directly on the world entity are serialized.
+        /// \param Archive The binary data reader to read the archetypes from.
+        void LoadArchetypes(Ref<Reader> Archive);
+
+        /// \brief Saves all currently registered archetypes to a binary archive.
         ///
-        /// \param Writer The stream to write the serialized world state to.
-        void SaveWorld(Ref<Writer> Writer);
-
-        /// \brief Loads all archetypes from a stream.
-        ///
-        /// \param Reader The stream containing serialized archetypes.
-        void LoadArchetypes(Ref<Reader> Reader);
-
-        /// \brief Saves all archetypes to a stream.
-        ///
-        /// \param Writer The stream to write serialized archetypes to.
-        void SaveArchetypes(Ref<Writer> Writer);
-
-        /// \brief Loads a single entity from a stream.
-        ///
-        /// \param Reader The stream containing the serialized entity.
-        /// \return The deserialized entity.
-        Entity LoadEntity(Ref<Reader> Reader);
-
-        /// \brief Loads an entity hierarchy from a stream.
-        ///
-        /// \param Reader The stream containing the serialized hierarchy.
-        /// \return The root entity of the deserialized hierarchy.
-        Entity LoadEntityHierarchy(Ref<Reader> Reader);
-
-        /// \brief Saves a single entity to a stream.
-        ///
-        /// \param Writer The stream to write the entity to.
-        /// \param Actor  The entity to serialize.
-        void SaveEntity(Ref<Writer> Writer, Entity Actor);
-
-        /// \brief Saves an entity hierarchy to a stream.
-        ///
-        /// \param Writer The stream to write the hierarchy to.
-        /// \param Actor  The root entity to serialize.
-        void SaveEntityHierarchy(Ref<Writer> Writer, Entity Actor);
-
-        /// \brief Loads all components of an entity.
-        ///
-        /// \param Reader The stream containing the serialized components.
-        /// \param Actor  The entity to apply the components to.
-        template<typename Owner>
-        void LoadComponent(Ref<Reader> Reader, Owner Actor)
-        {
-	        // Read first element of the pair (tag/relationship); empty means single component.
-            const Str8   Pair(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const Entity First = Pair.empty() ? Entity() : mWorld.component(Pair.c_str());
-
-            // Read component name and resolve the component entity.
-            const Str8   Name(Reader.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const Entity Second = mWorld.component(Name.c_str());
-
-            // Read serialized component payload.
-            const ConstSpan<Byte> Bundle = Reader.ReadBlock<UInt16, Byte>();
-
-            // Apply payload if present; otherwise attach component without data.
-            if (Base::Reader Data(Bundle); Data.GetAvailable() > 0)
-            {
-                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
-                {
-                    if (First.IsValid())
-                    {
-                        if (const Ptr<void> Memory = Actor.Ensure(First, Second))
-                        {
-                            Serializer->Read(Data, Memory);
-                        }
-                        Actor.Notify(First, Second);
-                    }
-                    else
-                    {
-                        if (const Ptr<void> Memory = Actor.Ensure(Second))
-                        {
-                            Serializer->Read(Data, Memory);
-                        }
-                        Actor.Notify(Second);
-                    }
-                }
-                else
-                {
-                    LOG_WARNING("World: Trying to load an invalid component '{}'", Second.GetName());
-                }
-            }
-            else
-            {
-                if (First.IsValid())
-                {
-                    Actor.Add(First, Second);
-                }
-                else
-                {
-                    Actor.Add(Second);
-                }
-            }
-        }
-
-        /// \brief Loads all components of an entity.
-        ///
-        /// \param Reader The stream containing the serialized components.
-        /// \param Actor  The entity to apply the components to.
-        void LoadComponents(Ref<Reader> Reader, Entity Actor);
-
-        /// \brief Saves a single component of an entity.
-        ///
-        /// \param Writer    The stream to write the component to.
-        /// \param Actor     The entity that owns the component.
-        /// \param Component The component to serialize.
-        template<typename Owner>
-        void SaveComponent(Ref<Writer> Writer, Owner Actor, Entity Component)
-        {
-            Entity First;
-            Entity Second;
-
-            if (Component.IsPair())
-            {
-                First  = Component.GetFirst();
-                Second = Component.GetSecond();
-            }
-            else
-            {
-                Second = Component;
-            }
-
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.template TryGet<const Factory>() : nullptr;
-
-            if (Serializer && (!First.IsValid() || First.template Has<Factory>()))
-            {
-                // Write the name of the relation tag if valid, otherwise an empty string.
-                Writer.WriteText(First.IsValid() ? First.GetName() : "");
-
-                // Write the name of the relation target or component.
-                Writer.WriteText(Second.GetName());
-
-                // Write the serialized component bundle to the output stream.
-                Writer.WriteBlock<UInt16>([&](Ref<Base::Writer> Output)
-                {
-                    Serializer->Write(Output, Actor.TryGet(Component));
-                });
-            }
-        }
-
-        /// \brief Saves all components of an entity.
-        ///
-        /// \param Writer The stream to write the components to.
-        /// \param Actor  The entity whose components to serialize.
-        void SaveComponents(Ref<Writer> Writer, Entity Actor);
+        /// \param Archive The binary data writer to write the archetypes to.
+        void SaveArchetypes(Ref<Writer> Archive);
 
     private:
 
-        /// \brief Registers the engine’s built-in components and systems.
+        /// \brief Registers built-in components and default system hooks into the world.
         void RegisterDefaultComponentsAndSystems();
 
-        /// \brief Allocates a new entity.
+        /// \brief Allocates a new entity or archetype handle, reusing an existing ID if provided.
         ///
-        /// \tparam Archetype If `true`, creates an archetype entity; otherwise a regular entity.
-        /// \param ID         Optional explicit identifier. If `0`, a new unique ID is generated.
-        /// \return The newly allocated entity object.
+        /// If \p Archetype is `true`, the entity is allocated from the archetype slot pool using a
+        /// reserved ID range. If an ID is supplied and the entity is already known to the world, its
+        /// generation is bumped; otherwise the entity is made alive for the first time.
+        ///
+        /// \tparam Archetype `true` to allocate from the archetype pool, `false` for a regular entity.
+        /// \param  ID        An optional existing numeric entity ID to reuse. Pass `0` to auto-assign.
+        /// \return The allocated entity handle.
         template<Bool Archetype>
         ZYPHRYON_INLINE Entity Allocate(UInt64 ID = 0)
         {
-            flecs::entity Actor;
+            flecs::entity Handle;
 
-            if constexpr(Archetype)
+            if constexpr (Archetype)
             {
-                Actor = mWorld.entity(ID ? ID : kMinRangeArchetypes + mArchetypes.Allocate());
+                Handle = mWorld.entity(ID ? ID : kMinRangeArchetypes + mArchetypes.Allocate());
             }
             else
             {
-                Actor = (ID ? mWorld.entity(ID) : mWorld.entity());
+                Handle = (ID ? mWorld.entity(ID) : mWorld.entity());
             }
 
-            if (const Entity::Handle Generation = mWorld.get_alive(Actor); ID > 0 && Generation)
+            if (const Entity::Handle Generation = mWorld.get_alive(Handle); ID > 0 && Generation)
             {
-                mWorld.set_version(Actor);
+                mWorld.set_version(Handle);
             }
             else
             {
-                Actor = mWorld.make_alive(Actor);
+                mWorld.make_alive(Handle);
             }
-            return Actor;
+            return Handle;
         }
 
     private:
@@ -597,15 +392,10 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        flecs::world              mWorld;
+        flecs::world              mWorld;       // TODO: Support for multiple world
         Time                      mTime;
         Real32                    mMultiplier;
         Slot<kMaxCountArchetypes> mArchetypes;
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        Query                     mQuerySingletons;
-        Query                     mQueryArchetypes;
     };
 }
+

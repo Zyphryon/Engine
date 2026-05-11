@@ -36,28 +36,28 @@ namespace Graphic
         /// \brief Loads the texture with specified parameters and raw data.
         ///
         /// \param Format  The pixel format used for storage and sampling.
-        /// \param Access  The access mode for the texture (e.g., static, dynamic, stream).
-        /// \param Usage   The intended usage of the texture (e.g., sample, render target).
+        /// \param Access  The CPU access pattern for the texture.
+        /// \param Usage   The intended usage of the texture (e.g., Sample, Target).
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
-        /// \param Level   The mipmap level of the texture to load.
+        /// \param Mipmaps The number of mipmap levels for the texture.
         /// \param Samples The multisample count for multisampled textures.
         /// \param Data    The raw pixel data blob to load into the texture.
-        void Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Level, Multisample Samples, AnyRef<Blob> Data);
+        void Load(TextureFormat Format, Access Access, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
 
         /// \brief Loads the texture with default access and usage, using the provided parameters and raw data.
         ///
-        /// \param Format The pixel format used for storage and sampling.
-        /// \param Width  The width of the texture in pixels.
-        /// \param Height The height of the texture in pixels.
-        /// \param Level  The mipmap level of the texture to load.
-        /// \param Data   The raw pixel data blob to load into the texture.
-        ZYPHRYON_INLINE void Load(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Level, AnyRef<Blob> Data)
+        /// \param Format  The pixel format used for storage and sampling.
+        /// \param Width   The width of the texture in pixels.
+        /// \param Height  The height of the texture in pixels.
+        /// \param Mipmaps The number of mipmap levels for the texture.
+        /// \param Data    The raw pixel data blob to load into the texture.
+        ZYPHRYON_INLINE void Load(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Mipmaps, AnyRef<Blob> Data)
         {
-            Load(Format, Access::Stream, Usage::Sample, Width, Height, Level, Multisample::X1, Move(Data));
+            Load(Format, Access::Stream, Usage::Sample, Width, Height, Mipmaps, Multisample::X1, Move(Data));
         }
 
-        /// \brief Returns the GPU object ID associated with this texture.
+        /// \brief Gets the GPU object ID associated with this texture.
         ///
         /// \return The driver-level texture handle.
         ZYPHRYON_INLINE Object GetID() const
@@ -65,7 +65,7 @@ namespace Graphic
             return mID;
         }
 
-        /// \brief Returns the access mode of the texture.
+        /// \brief Gets the access mode of the texture.
         ///
         /// \return The access mode.
         ZYPHRYON_INLINE Access GetAccess() const
@@ -73,7 +73,7 @@ namespace Graphic
             return mAccess;
         }
 
-        /// \brief Returns the type of the texture.
+        /// \brief Gets the type of the texture.
         ///
         /// \return The texture type.
         ZYPHRYON_INLINE TextureType GetType() const
@@ -81,7 +81,7 @@ namespace Graphic
             return mType;
         }
 
-        /// \brief Returns the pixel format of the texture.
+        /// \brief Gets the pixel format of the texture.
         ///
         /// \return The format used for storage and sampling.
         ZYPHRYON_INLINE TextureFormat GetFormat() const
@@ -89,7 +89,7 @@ namespace Graphic
             return mFormat;
         }
 
-        /// \brief Returns the usage pattern of the texture.
+        /// \brief Gets the usage pattern of the texture.
         ///
         /// \return The intended usage of the texture.
         ZYPHRYON_INLINE Usage GetUsage() const
@@ -97,7 +97,7 @@ namespace Graphic
             return mUsage;
         }
 
-        /// \brief Returns the width of the texture in pixels.
+        /// \brief Gets the width of the texture in pixels.
         ///
         /// \return The width in pixels.
         ZYPHRYON_INLINE UInt16 GetWidth() const
@@ -105,7 +105,7 @@ namespace Graphic
             return mWidth;
         }
 
-        /// \brief Returns the height of the texture in pixels.
+        /// \brief Gets the height of the texture in pixels.
         ///
         /// \return The height in pixels.
         ZYPHRYON_INLINE UInt16 GetHeight() const
@@ -113,15 +113,15 @@ namespace Graphic
             return mHeight;
         }
 
-        /// \brief Returns the mipmap level.
+        /// \brief Gets the number of mipmap levels in the texture.
         ///
-        /// \return The mipmap level in the texture.
-        ZYPHRYON_INLINE UInt8 GetLevel() const
+        /// \return The number of mipmap levels.
+        ZYPHRYON_INLINE UInt8 GetMipmaps() const
         {
-            return mLevel;
+            return mMipmaps;
         }
 
-        /// \brief Returns the multisample count used for multisampling.
+        /// \brief Gets the multisample count used for multisampling.
         ///
         /// \return The multisample count.
         ZYPHRYON_INLINE Multisample GetSamples() const
@@ -149,7 +149,7 @@ namespace Graphic
         Usage         mUsage;
         UInt16        mWidth;
         UInt16        mHeight;
-        UInt8         mLevel;
+        UInt8         mMipmaps;
         Multisample   mSamples;
         Blob          mData;
     };

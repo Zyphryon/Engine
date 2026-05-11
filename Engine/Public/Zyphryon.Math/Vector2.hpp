@@ -616,7 +616,7 @@ inline namespace Math
         /// \return `true` if the vectors are parallel, `false` otherwise.
         ZYPHRYON_INLINE static constexpr Bool IsParallel(AnyVector2 P0, AnyVector2 P1)
         {
-            return Cross(P0, P1).IsAlmostZero();
+            return Math::IsAlmostZero(Cross(P0, P1));
         }
 
         /// \brief Returns a vector perpendicular to the given vector.
