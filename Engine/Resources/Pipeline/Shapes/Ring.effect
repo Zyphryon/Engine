@@ -1,37 +1,37 @@
 [Properties.Blend]  # Premultiplied Alpha Blending (ideal for SDF)
 
-SrcColor        = "One"
-DstColor        = "OneMinusSrcAlpha"
-SrcAlpha        = "One"
-DstAlpha        = "OneMinusSrcAlpha"
+    SrcColor        = "One"
+    DstColor        = "OneMinusSrcAlpha"
+    SrcAlpha        = "One"
+    DstAlpha        = "OneMinusSrcAlpha"
 
 [Properties.Depth]  # Disable Depth Write / Enable Depth Testing
 
-Mask            = 0
-Condition       = "LessEqual"
+    Mask            = 0
+    Condition       = "LessEqual"
 
 [Properties.Rasterizer]
 
-Cull	    	= "None"		# Disable Backface Culling
+    Cull	    	= "None"		# Disable Backface Culling
 
 [Properties.Layout]
 
-Attributes      = [
-	["POSITION",  "Float32x3",   0,  0, 1],
-	["COLOR0",    "UIntNorm8x4", 0, 12, 1],
-	["CUSTOM0",   "Float32x4",   0, 16, 1],
-]
+    Attributes      = [
+        ["POSITION",  "Float32x3",   0,  0, 1],
+        ["COLOR0",    "UIntNorm8x4", 0, 12, 1],
+        ["TEXCOORD0", "Float32x4",   0, 16, 1],
+    ]
 
-Primitive       = "TriangleStrip"
+    Primitive       = "TriangleStrip"
 
 [Program.Vertex]
 
-Entry           = "vertex"
-Filename        = "Primitive.shader"
-Defines         = ["SHAPE_RING", "USE_SDF"]
+    Entry           = "vertex"
+    Filename        = "Primitive.shader"
+    Defines         = ["SHAPE_RING", "USE_SDF"]
 
 [Program.Fragment]
 
-Entry           = "fragment"
-Filename        = "Primitive.shader"
-Defines         = ["SHAPE_RING", "USE_SDF", "USE_AA"]
+    Entry           = "fragment"
+    Filename        = "Primitive.shader"
+    Defines         = ["SHAPE_RING", "USE_SDF", "USE_AA"]

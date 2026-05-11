@@ -555,7 +555,14 @@ namespace Scene
         template<typename Function>
         ZYPHRYON_INLINE void Each(AnyRef<Function> Callback) const
         {
-            mHandle.query_builder<>().with(flecs::Singleton).each(Forward<Function>(Callback));
+            const auto OnCallback = [&](Entity Component)
+            {
+                if (Has(Component))
+                {
+                    Callback(Component);
+                }
+            };
+            mHandle.query_builder<>().with(flecs::Singleton).each(OnCallback);
         }
 
     private:

@@ -36,10 +36,10 @@ struct vs_Input
 {
     uint     VertexID   : SV_VertexID;
 
-    float4   Transform0 : CUSTOM0;
-    float4   Transform1 : CUSTOM1;
-    float4   Frame      : TEXCOORD0;
-    float4   Local      : CUSTOM2;
+    float4   Transform0 : TEXCOORD0;
+    float4   Transform1 : TEXCOORD1;
+    float4   Frame      : TEXCOORD2;
+    float4   Local      : TEXCOORD3;
     float4   Color      : COLOR0;
 };
 
@@ -48,7 +48,7 @@ struct ps_Input
     float4               Position : SV_POSITION;
     float2               Texture  : TEXCOORD0;
     float4               Color    : COLOR0;
-    nointerpolation uint Effect   : CUSTOM3;
+    nointerpolation uint Effect   : TEXCOORD1;
 };
 
 // VS Main

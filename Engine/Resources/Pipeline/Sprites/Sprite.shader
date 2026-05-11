@@ -16,10 +16,10 @@ struct vs_Input
 {
     uint     VertexID   : SV_VertexID;
 
-    float4   Transform0 : CUSTOM0;
-    float4   Transform1 : CUSTOM1;
-    float4   Frame      : TEXCOORD0;
-    float2   Size       : CUSTOM2;
+    float4   Transform0 : TEXCOORD0;
+    float4   Transform1 : TEXCOORD1;
+    float4   Frame      : TEXCOORD2;
+    float2   Size       : TEXCOORD3;
     float4   Color      : COLOR0;
 };
 

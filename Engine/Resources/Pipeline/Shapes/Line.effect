@@ -19,7 +19,7 @@
 	Attributes      = [
 		["POSITION",  "Float32x3",   0,  0, 1],
 		["COLOR0",    "UIntNorm8x4", 0, 12, 1],
-		["CUSTOM0",   "Float32x4",   0, 16, 1],
+	    ["TEXCOORD0", "Float32x4",   0, 16, 1],
 	]
 
 	Primitive       = "TriangleStrip"

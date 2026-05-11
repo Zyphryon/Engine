@@ -21,7 +21,7 @@ struct vs_Input
 
     float3 Center   : POSITION;
     float4 Color    : COLOR0;
-    float4 Data     : CUSTOM0;
+    float4 Data     : TEXCOORD0;
 };
 
 struct ps_Input
@@ -30,11 +30,11 @@ struct ps_Input
     float4 Color     : COLOR0;
 
 #ifdef USE_SDF
-    float2 Local     : CUSTOM0;
+    float2 Local     : TEXCOORD0;
 #endif
 
 #if   defined(SHAPE_RING) || defined(SHAPE_LINE) || defined(SHAPE_ROUNDED_RECT)
-    float  Thickness : CUSTOM1;
+    float  Thickness : TEXCOORD1;
 #endif
 };
 

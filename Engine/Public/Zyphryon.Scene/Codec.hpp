@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Entity.hpp"
 #include "Factory.hpp"
-#include <flecs.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -36,21 +36,21 @@ namespace Scene
         {
             // Read first element of the pair (tag/relationship); empty means single component.
             const Str8 Pair(Archive.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const flecs::entity First = Pair.empty() ? flecs::entity() : World.lookup(Pair.c_str());
+            const Entity First = Pair.empty() ? Entity() : World.lookup(Pair.c_str());
 
             // Read component name and resolve the component entity.
             const Str8 Name(Archive.ReadText()); // TODO: Remove heap allocation (Flecs Limitation)
-            const flecs::entity Second = World.lookup(Name.c_str());
+            const Entity Second = World.lookup(Name.c_str());
 
             // Read serialized component payload.
-            const ConstSpan<Byte> Bundle = Archive.ReadBlock<UInt16, Byte>();
+            const ConstSpan<Byte> Bundle = Archive.ReadBlock<UInt32, Byte>();
 
             // Apply payload if present; otherwise attach component without data.
             if (Reader Data(Bundle); Data.GetAvailable() > 0)
             {
-                if (const ConstPtr<Factory> Serializer = Second.try_get<const Factory>())
+                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
                 {
-                    if (First.is_valid())
+                    if (First.IsValid())
                     {
                         if (const Ptr<void> Memory = Actor.Ensure(First, Second))
                         {
@@ -69,12 +69,12 @@ namespace Scene
                 }
                 else
                 {
-                    LOG_WARNING("Serializer: Trying to load an unregistered component '{}'", Second.name().c_str());
+                    LOG_WARNING("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
                 }
             }
             else
             {
-                if (First.is_valid())
+                if (First.IsValid())
                 {
                     Actor.Add(First, Second);
                 }
@@ -93,9 +93,7 @@ namespace Scene
         template<typename Owner>
         ZYPHRYON_INLINE static void ReadComponentsOf(ConstRef<flecs::world> World, Ref<Reader> Archive, Owner Actor)
         {
-            Reader Scope(Archive.ReadBlock<UInt32, Byte>());
-
-            while (Scope.GetAvailable() > 0)
+            for (Reader Scope(Archive.ReadBlock<UInt16, Byte>()); Scope.GetAvailable() > 0;)
             {
                 ReadComponent(World, Scope, Actor);
             }
@@ -107,35 +105,33 @@ namespace Scene
         /// \param Actor     The actor from which to save the component.
         /// \param Component The component entity to save, which may be a single component or a relation pair.
         template<typename Owner>
-        ZYPHRYON_INLINE static void WriteComponent(Ref<Writer> Archive, Owner Actor, flecs::entity Component)
+        ZYPHRYON_INLINE static void WriteComponent(Ref<Writer> Archive, Owner Actor, Entity Component)
         {
-            flecs::entity First;
-            flecs::entity Second;
+            Entity First;
+            Entity Second;
 
-            if (Component.is_pair())
+            if (Component.IsPair())
             {
-                First  = Component.first();
-                Second = Component.second();
+                First  = Component.GetRelation();
+                Second = Component.GetComponent();
             }
             else
             {
                 Second = Component;
             }
 
-            const ConstPtr<Factory> Serializer = Second.is_valid() ? Second.try_get<const Factory>() : nullptr;
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.TryGet<const Factory>() : nullptr;
 
-            if (Serializer && (!First.is_valid() || First.has<Factory>()))
+            if (Serializer && (!First.IsValid() || First.Has<Factory>()))
             {
                 // Write the name of the relation tag if valid, otherwise an empty string.
-                const flecs::string_view FirstName(First.is_valid() ? First.name() : "");
-                Archive.WriteText(First.is_valid() ? ConstStr8(FirstName.c_str(), FirstName.size()) : "");
+                Archive.WriteText(First.IsValid() ? First.GetName() : "");
 
                 // Write the name of the relation target or component.
-                const flecs::string_view SecondName(Second.name());
-                Archive.WriteText(ConstStr8(SecondName.c_str(), SecondName.size()));
+                Archive.WriteText(Second.GetName());
 
                 // Write the serialized component bundle to the output stream.
-                Archive.WriteBlock<UInt16>([&](Ref<Writer> Output)
+                Archive.WriteBlock<UInt32>([&](Ref<Writer> Output)
                 {
                     Serializer->Write(Output, Actor.TryGet(Component));
                 });
@@ -151,9 +147,9 @@ namespace Scene
         {
             Archive.WriteBlock<UInt16>([Actor](Ref<Writer> Output)
             {
-                Actor.Each([&]<typename T0>(T0 Component)
+                Actor.Each([&](Entity Component)
                 {
-                    WriteComponent<Owner>(Output, Actor, flecs::entity(Component));
+                    WriteComponent<Owner>(Output, Actor, Component);
                 });
             });
         }

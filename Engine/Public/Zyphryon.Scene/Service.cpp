@@ -105,7 +105,7 @@ namespace Scene
         Actor.Save(Archive);
 
         // Writes the entity's hierarchy.
-        Archive.WriteBlock<UInt16>([this, Actor](Ref<Writer> Output)
+        Archive.WriteBlock<UInt32>([this, Actor](Ref<Writer> Output)
         {
             Actor.Children([&](Entity Children)
             {

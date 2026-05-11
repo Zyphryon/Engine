@@ -422,10 +422,6 @@ namespace Graphic
             "TEXCOORD",         // VertexSemantic::TexCoord5
             "TEXCOORD",         // VertexSemantic::TexCoord6
             "TEXCOORD",         // VertexSemantic::TexCoord7
-            "CUSTOM",           // VertexSemantic::Custom0
-            "CUSTOM",           // VertexSemantic::Custom1
-            "CUSTOM",           // VertexSemantic::Custom2
-            "CUSTOM",           // VertexSemantic::Custom3
         };
         return kMapping[Enum::Cast(Value)];
     }
