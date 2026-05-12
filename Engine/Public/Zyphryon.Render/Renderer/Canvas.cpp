@@ -233,10 +233,10 @@ namespace Render
                             Material->GetID());
                     }
                     CurrentX += (Font->GetKerning(Previous, Codepoint) + Glyph->Advance) * Size;
-                    Previous  = Codepoint;
                 }
                 break;
             }
+            Previous = Codepoint;
         });
     }
 
@@ -267,6 +267,31 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Canvas::DrawModel(ConstRef<Model> Model, ConstRef<Matrix4x4> Transform, Real32 Order)
+    {
+        const Collector::Priority Priority = Collector::Priority::Opaque;
+
+        for (ConstRef<Mesh::Primitive> Primitive : Model.GetMesh()->GetPrimitives())
+        {
+            Ref<ModelCommand> Command = mModels.emplace_back();
+            Command.Layout.Transform = Transform;
+            Command.Material   = Model.GetMaterial(Primitive.Material);
+            Command.Pipeline   = mPipelines[Enum::Cast(Type::Model)];
+            Command.Primitive  = &Primitive;
+            Command.Mesh       = Model.GetMesh();
+
+            constexpr UInt32 Type = Enum::Cast(Type::Model);
+
+            mCollector.Push(Collector::Object(Type, mModels.size() - 1), Priority, Order,
+                Model.GetMesh()->GetVertices(),
+                Command.Pipeline->GetID(),
+                Command.Material->GetID());
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Canvas::End()
     {
         // Prepare any necessary resources or state before processing the collected rendering commands.
@@ -289,6 +314,9 @@ namespace Render
                 break;
             case Type::Glyph:
                 WriteGlyphs(Commands);
+                break;
+            case Type::Model:
+                WriteModels(Commands);
                 break;
             }
         });
@@ -314,6 +342,7 @@ namespace Render
         mPipelines[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Shapes/RoundedRect.effect");
         mPipelines[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Sprites/Opaque.effect");
         mPipelines[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Typography/MSDF.effect");
+        mPipelines[Enum::Cast(Type::Model)]       = Content->Load<Graphic::Pipeline>("Engine://Pipeline/Models/Opaque.effect");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -338,6 +367,9 @@ namespace Render
 
         // Clear the list of glyphs after processing to prepare for the next frame.
         mGlyphs.clear();
+
+        // Clear the list of models after processing to prepare for the next frame.
+        mModels.clear();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -428,4 +460,47 @@ namespace Render
             }
         });
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Canvas::WriteModels(ConstSpan<Collector::Command> Commands)
+    {
+        // Since all commands in this batch share the same pipeline, material, and vertex buffer,
+        // we bind them once for the entire batch.
+        Ref<ModelCommand> First = mModels[Commands.front().Entry.Slot];
+        Bind(First.Pipeline, First.Material);
+
+        // Bind each unique vertex stream based on the pipeline's input attribute layout.
+        const ConstPtr<Mesh::Primitive> Primitive = First.Primitive;
+        ConstRef<Graphic::States>       States    = First.Pipeline->GetStates();
+
+        UInt8 StreamBound = 0u;
+        for (ConstRef<Graphic::Attribute> Attribute : States.InputAttributes)
+        {
+            if (const UInt32 Mask = static_cast<UInt8>(1u << Attribute.Stream); !HasBit(StreamBound, Mask))
+            {
+                if (ConstRef<Mesh::Attribute> Data = Primitive->GetAttribute(Attribute.Semantic); Data.Stride > 0)
+                {
+                    mEncoder.SetVertices(Attribute.Stream, First.Mesh->GetVertices(), Data.Stride, Data.Offset);
+                }
+                StreamBound = SetBit(StreamBound, Mask);
+            }
+        }
+
+        // Fill the instance buffer with each model's packed transform.
+        const auto [LayoutData, LayoutStream] = mService->AllocateTransientBuffer<ModelLayout>(Graphic::Usage::Vertex, Commands.size());
+
+        for (UInt32 Element = 0; Element < Commands.size(); ++Element)
+        {
+            LayoutData[Element] = mModels[Commands[Element].Entry.Slot].Layout;
+        }
+        mEncoder.SetVertices(2, LayoutStream);
+
+        // Bind the index buffer and issue one instanced draw call for the whole batch.
+        mEncoder.SetIndices(First.Mesh->GetIndices(), Primitive->Indices.Stride, Primitive->Indices.Offset);
+        mEncoder.Draw(Primitive->Indices.Length / Primitive->Indices.Stride, 0, 0, Commands.size());
+        mEncoder.ResetBindings();
+    }
 }
+

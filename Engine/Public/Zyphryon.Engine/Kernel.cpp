@@ -22,6 +22,7 @@
 #include "Zyphryon.Content/Loader/Sound/WAV/Loader.hpp"     // TODO: Plugin Based
 #include "Zyphryon.Content/Loader/Texture/STB/Loader.hpp"   // TODO: Plugin Based
 #include "Zyphryon.Content/Loader/Material/Loader.hpp"
+#include "Zyphryon.Content/Loader/Model/GLTF/Loader.hpp"    // TODO: Plugin Based
 #include "Zyphryon.Content/Loader/Pipeline/Loader.hpp"
 #include "Zyphryon.Content/Loader/Font/Artery/Loader.hpp"   // TODO: Plugin Based
 
@@ -213,6 +214,7 @@ namespace Engine
         Content->AddLoader(Tracker<Content::WAVLoader>::Create());
         Content->AddLoader(Tracker<Content::STBLoader>::Create());
         Content->AddLoader(Tracker<Content::MaterialLoader>::Create());
+        Content->AddLoader(Tracker<Content::GLTFLoader>::Create());
         Content->AddLoader(Tracker<Content::ArteryFontLoader>::Create());
 
         Graphic::Device Device = GetService<Graphic::Service>()->GetDevice();

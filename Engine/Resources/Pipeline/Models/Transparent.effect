@@ -1,0 +1,45 @@
+[Properties.Blend]  # Straight Alpha-Blending
+
+    SrcColor        = "SrcAlpha"
+    DstColor        = "OneMinusSrcAlpha"
+    SrcAlpha        = "SrcAlpha"
+    DstAlpha        = "OneMinusSrcAlpha"
+
+[Properties.Depth]  # Enable Depth Write / Depth Testing
+
+    Mask            = 0
+    Condition       = "LessEqual"
+
+[Properties.Rasterizer]
+
+    Cull            = "Back"
+
+[Properties.Layout]
+
+    Attributes      = [
+        ["POSITION",  "Float32x3", 0,  0, 0],
+        ["TEXCOORD0", "Float32x2", 1,  0, 0],
+
+        # Per-instance: four columns of the 4x4 model transform (stream 2, Divisor = 1)
+        ["TEXCOORD4", "Float32x4", 2,  0, 1],
+        ["TEXCOORD5", "Float32x4", 2, 16, 1],
+        ["TEXCOORD6", "Float32x4", 2, 32, 1],
+        ["TEXCOORD7", "Float32x4", 2, 48, 1],
+    ]
+
+    Primitive       = "TriangleList"
+
+[Program.Textures]
+
+    Albedo          = 0
+
+[Program.Vertex]
+
+    Entry           = "vertex"
+    Filename        = "Model.shader"
+
+[Program.Fragment]
+
+    Entry           = "fragment"
+    Filename        = "Model.shader"
+

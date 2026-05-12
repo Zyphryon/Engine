@@ -40,7 +40,7 @@ namespace Graphic
         /// \brief Sets the projection matrix of the camera.
         ///
         /// \param Matrix The new projection matrix.
-        ZYPHRYON_INLINE void SetProjectionMatrix(ConstRef<Matrix4x4> Matrix)
+        ZYPHRYON_INLINE void SetProjection(ConstRef<Matrix4x4> Matrix)
         {
             mProjection = Matrix;
             mMask       = SetBit(mMask, kBitMaskProjection);
@@ -49,7 +49,7 @@ namespace Graphic
         /// \brief Returns the current projection of the camera.
         ///
         /// \return The projection matrix.
-        ZYPHRYON_INLINE ConstRef<Matrix4x4> GetProjectionMatrix() const
+        ZYPHRYON_INLINE ConstRef<Matrix4x4> GetProjection() const
         {
             return mProjection;
         }

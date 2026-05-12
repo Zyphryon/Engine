@@ -201,6 +201,22 @@ TARGET_INCLUDE_DIRECTORIES(Ankerl INTERFACE ${external_ankerl_SOURCE_DIR}/includ
 LIST(APPEND PROJECT_DEPENDENCIES "Ankerl")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (GLTF) (MIT) -> TODO: Remove
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+ADD_COMPILE_DEFINITIONS(TINYGLTF_NO_STB_IMAGE_WRITE)
+
+FetchContent_Declare(External_GLTF
+        GIT_REPOSITORY https://github.com/syoyo/tinygltf
+        GIT_TAG release)
+FetchContent_MakeAvailable(External_GLTF)
+
+ADD_LIBRARY(GLTF INTERFACE)
+TARGET_INCLUDE_DIRECTORIES(GLTF INTERFACE ${external_gltf_SOURCE_DIR})
+
+LIST(APPEND PROJECT_DEPENDENCIES "GLTF")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (BMP / PNG / JPG / TGA) (PUBLIC_DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

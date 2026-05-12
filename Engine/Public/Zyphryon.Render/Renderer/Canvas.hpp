@@ -19,6 +19,7 @@
 #include "Zyphryon.Math/Matrix3x2.hpp"
 #include "Zyphryon.Math/Geometry/Circle.hpp"
 #include "Zyphryon.Math/Geometry/Line.hpp"
+#include "Zyphryon.Render/Model/Model.hpp"
 #include "Zyphryon.Render/Sprite/Sprite.hpp"
 #include "Zyphryon.Render/Typography/Text.hpp"
 #include "Zyphryon.Render/Typography/TextEffect.hpp"
@@ -29,7 +30,7 @@
 
 namespace Render
 {
-    /// \brief Represents a 2D canvas that draws basic shapes, text, and sprites using a graphics service.
+    /// \brief A 2D canvas that draws basic shapes, text, and sprites using a graphics service.
     class Canvas final
     {
     public:
@@ -69,7 +70,7 @@ namespace Render
         /// \param Shape     The line segment to draw.
         /// \param Order     The depth value for rendering order.
         /// \param Tint      The tint color to apply to the line.
-        /// \param Thickness The thickness of the line (default is 1.0).
+        /// \param Thickness The thickness of the line (default is 1.0f).
         void DrawLine(ConstRef<Line> Shape, Real32 Order, IntColor8 Tint, Real32 Thickness = 1.0f);
 
         /// \brief Issues a draw command for drawing a quadrilateral shape with the specified parameters.
@@ -92,7 +93,7 @@ namespace Render
         /// \param Shape  The rectangle shape defining the rounded rectangle to draw.
         /// \param Order  The depth value for rendering order.
         /// \param Tint   The tint color to apply to the rounded rectangle.
-        /// \param Radius The radius of the rounded corners (default is 1.0f).
+        /// \param Radius The radius of the rounded corners (default is 1.0
         void DrawRoundedRect(ConstRef<Rect> Shape, Real32 Order, IntColor8 Tint, Real32 Radius = 1.0f);
 
         /// \brief Sets the parameters for a text effect at the specified index, which can be applied to text rendering.
@@ -116,6 +117,12 @@ namespace Render
         /// \param Transform The transformation matrix to apply to the sprite for positioning, scaling, and rotation.
         /// \param Order     The depth value for rendering order.
         void DrawSprite(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order);
+
+        /// \brief Issues a draw command for drawing a model with the specified parameters.
+        ///
+        /// \param Model     The model to draw, containing mesh and material information.
+        /// \param Transform The transformation matrix to apply to the model for positioning, scaling, and rotation.
+        void DrawModel(ConstRef<Model> Model, ConstRef<Matrix4x4> Transform, Real32 Order);
 
         /// \brief Ends the current drawing session, flushing any pending draw commands.
         void End();
@@ -161,7 +168,7 @@ namespace Render
             mEncoder.ResetBindings();
         }
 
-        /// \brief Issues a draw command using the specified vertex format and a callback to write instance data.
+        /// \brief Issues a draw command using the specified vertex format and a callback to write instances data.
         ///
         /// \param Instances The number of instances to allocate for drawing.
         /// \param Callback  A callback function that writes vertex data into the allocated buffer.
@@ -193,6 +200,7 @@ namespace Render
             RoundedRect,    ///< A filled rectangle with rounded corners defined by a center point.
             Sprite,         ///< A sprite for drawing textured quads.
             Glyph,          ///< A text glyph for drawing characters from a font atlas.
+            Model,          ///< A 3D model for drawing complex geometry with materials.
         };
 
         /// \brief Defines a type alias for an array of trackers to graphics pipelines, indexed by an enumeration type.
@@ -251,6 +259,32 @@ namespace Render
         {
             /// The input data for the sprite.
             ShapeLayout Layout;
+        };
+
+        /// \brief Defines a structure representing the input data for drawing a model in the GPU.
+        struct ModelLayout final
+        {
+            /// The transformation matrix to apply to the model for positioning, scaling, and rotation.
+            Matrix4x4 Transform;
+        };
+
+        /// \brief Structure representing a draw command for a model, containing its input data.
+        struct ModelCommand final
+        {
+            /// The graphics pipeline to use for rendering the model.
+            ConstPtr<Graphic::Pipeline> Pipeline;
+
+            /// The material to use for rendering the model, containing shader parameters and resources.
+            ConstPtr<Graphic::Material> Material;
+
+            /// The primitive to use for rendering the model.
+            ConstPtr<Mesh::Primitive>   Primitive;
+
+            /// The mesh that contains the buffers.
+            ConstPtr<Mesh>              Mesh;
+
+            /// The input data for the model.
+            ModelLayout                 Layout;
         };
 
         /// \brief Defines a structure representing the input data for drawing a sprite in the GPU.
@@ -328,6 +362,11 @@ namespace Render
         /// \param Commands A span of glyph draw commands to be processed and encoded for rendering.
         void WriteGlyphs(ConstSpan<Collector::Command> Commands);
 
+        /// \brief Writes a batch of model draw commands to the graphics encoder for rendering.
+        ///
+        /// \param Commands A span of model draw commands to be processed and encoded for rendering.
+        void WriteModels(ConstSpan<Collector::Command> Commands);
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -344,6 +383,7 @@ namespace Render
         Vector<ShapeCommand>      mShapes;
         Vector<SpriteCommand>     mSprites;
         Vector<GlyphCommand>      mGlyphs;
+        Vector<ModelCommand>      mModels;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -1,9 +1,9 @@
 [Properties.Blend]  # Straight Alpha-Blending
 
-    SrcColor        = "SrcAlpha"
-    DstColor        = "OneMinusSrcAlpha"
-    SrcAlpha        = "SrcAlpha"
-    DstAlpha        = "OneMinusSrcAlpha"
+    SrcColor        = "One"
+    DstColor        = "Zero"
+    SrcAlpha        = "One"
+    DstAlpha        = "Zero"
 
 [Properties.Depth]  # Enable Depth Write / Depth Testing
 

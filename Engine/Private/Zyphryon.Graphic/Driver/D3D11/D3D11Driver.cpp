@@ -949,7 +949,7 @@ namespace Graphic
         {
             D3D11_RASTERIZER_DESC Description = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 
-            Description.FrontCounterClockwise = TRUE;
+            Description.FrontCounterClockwise = FALSE;
             Description.DepthBias             = States.DepthBias;
             Description.DepthBiasClamp        = States.DepthBiasClamp;
             Description.SlopeScaledDepthBias  = States.DepthBiasSlope;
