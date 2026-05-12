@@ -275,6 +275,20 @@ namespace Render
         {
             /// The transformation matrix to apply to the model for positioning, scaling, and rotation.
             Matrix4x4 Transform;
+
+            /// The target depth layer (Order) for the model, used to map the model's Z range to a
+            /// tiny depth-buffer slice so it sorts correctly alongside 2D sprites.
+            Real32    Order;
+
+            /// The world-space minimum Z of the model's transformed AABB, used as the base for Z remapping.
+            Real32    BoundsMinZ;
+
+            /// The reciprocal of the world-space Z extent of the model's transformed AABB (1 / (MaxZ - MinZ)).
+            /// Multiplied with (world.z - BoundsMinZ) in the shader to get a normalised [0,1] depth within the model.
+            Real32    BoundsRangeZInv;
+
+            /// Explicit padding to maintain 16-byte alignment of the structure.
+            Real32    Padding;
         };
 
         /// \brief Structure representing a draw command for a model, containing its input data.

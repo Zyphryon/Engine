@@ -25,6 +25,9 @@
         ["TEXCOORD5", "Float32x4", 2, 16, 1],
         ["TEXCOORD6", "Float32x4", 2, 32, 1],
         ["TEXCOORD7", "Float32x4", 2, 48, 1],
+
+        # Per-instance: depth remapping params (Order, BoundsMinZ, BoundsRangeZInv, Padding)
+        ["COLOR3",    "Float32x4", 2, 64, 1],
     ]
 
     Primitive       = "TriangleList"

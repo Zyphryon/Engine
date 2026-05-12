@@ -271,10 +271,23 @@ namespace Render
     {
         const Collector::Priority Priority = Collector::Priority::Opaque;
 
+        // Compute the world-space AABB of the model using the Arvo fast-transform.
+        // This gives us the Z range we need to compress into the depth-buffer slice.
+        const Box    WorldBounds  = Box::Transform(Model.GetMesh()->GetBounds(), Transform);
+        const Real32 BoundsMinZ   = WorldBounds.GetMinimumZ();
+        const Real32 BoundsRangeZ = WorldBounds.GetDepth();
+
+        // Pre-compute the reciprocal so the shader can use a multiply instead of a divide.
+        // Guard against a degenerate (flat) model — if Z extent is zero every vertex gets t=0.
+        const Real32 BoundsRangeZInv = (BoundsRangeZ > 0.0f) ? (1.0f / BoundsRangeZ) : 0.0f;
+
         for (ConstRef<Mesh::Primitive> Primitive : Model.GetMesh()->GetPrimitives())
         {
             Ref<ModelCommand> Command = mModels.emplace_back();
-            Command.Layout.Transform = Transform;
+            Command.Layout.Transform       = Transform;
+            Command.Layout.Order           = Order;
+            Command.Layout.BoundsMinZ      = BoundsMinZ;
+            Command.Layout.BoundsRangeZInv = BoundsRangeZInv;
             Command.Material   = Model.GetMaterial(Primitive.Material);
             Command.Pipeline   = mPipelines[Enum::Cast(Type::Model)];
             Command.Primitive  = &Primitive;
