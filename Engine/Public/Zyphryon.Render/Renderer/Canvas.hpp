@@ -35,6 +35,21 @@ namespace Render
     {
     public:
 
+        /// \brief Enumeration of supported types that can be drawn on the canvas.
+        enum class Type : UInt8
+        {
+            Circle,         ///< A filled circle shape defined by a center point and radius.
+            Ring,           ///< A ring shape defined by a center point, inner radius, and outer radius.
+            Line,           ///< A line shape defined by a start point and end point.
+            Rect,           ///< A filled rectangle shape defined by a center point, width, and height.
+            RoundedRect,    ///< A filled rectangle with rounded corners defined by a center point.
+            Sprite,         ///< A sprite for drawing textured quads.
+            Glyph,          ///< A text glyph for drawing characters from a font atlas.
+            Model,          ///< A 3D model for drawing complex geometry with materials.
+        };
+
+    public:
+
         /// \brief Constructs a canvas with the specified service host.
         ///
         /// \param Host The service host to use for rendering operations.
@@ -42,8 +57,9 @@ namespace Render
 
         /// \brief Sets the graphics pipeline to use for subsequent draw calls (only Sprites).
         ///
+        /// \param Type     The type to change the pipeline.
         /// \param Pipeline The graphics pipeline to set for subsequent draw calls.
-        void SetPipeline(ConstTracker<Graphic::Pipeline> Pipeline);
+        void SetPipeline(Type Type, ConstTracker<Graphic::Pipeline> Pipeline);
 
         /// \brief Begins a new drawing session with the specified projection matrix.
         ///
@@ -199,18 +215,6 @@ namespace Render
 
     private:
 
-        /// \brief Enumeration of supported types that can be drawn on the canvas.
-        enum class Type : UInt8
-        {
-            Circle,         ///< A filled circle shape defined by a center point and radius.
-            Ring,           ///< A ring shape defined by a center point, inner radius, and outer radius.
-            Line,           ///< A line shape defined by a start point and end point.
-            Rect,           ///< A filled rectangle shape defined by a center point, width, and height.
-            RoundedRect,    ///< A filled rectangle with rounded corners defined by a center point.
-            Sprite,         ///< A sprite for drawing textured quads.
-            Glyph,          ///< A text glyph for drawing characters from a font atlas.
-            Model,          ///< A 3D model for drawing complex geometry with materials.
-        };
 
         /// \brief Defines a type alias for an array of trackers to graphics pipelines, indexed by an enumeration type.
         using Pipelines = Array<Tracker<Graphic::Pipeline>, Enum::Count<Type>()>;
