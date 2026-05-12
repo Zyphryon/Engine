@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Matrix3x2.hpp"
 #include "Quaternion.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -613,6 +614,21 @@ inline namespace Math
             const Vector4 C2(XZ + WY, YZ - WX, 1.0f - (XX + YY), 0.0f);
             const Vector4 C3(0.0f, 0.0f, 0.0f, 1.0f);
             return Matrix4x4(C0, C1, C2, C3);
+        }
+
+        /// \brief Promotes a 2D affine Matrix3x2 to a column-major 4x4 matrix.
+        ///
+        /// \param Matrix The source 2D affine matrix to promote.
+        /// \return A 4x4 matrix equivalent to the 2D affine transform.
+        ZYPHRYON_INLINE static Matrix4x4 FromMatrix3x2(ConstRef<Matrix3x2> Matrix)
+        {
+            const Vector3 C0 = Matrix.GetColumn(0);
+            const Vector3 C1 = Matrix.GetColumn(1);
+
+            return Matrix4x4(C0.GetX(),  C1.GetX(),  0.0f, 0.0f,
+                             C0.GetY(),  C1.GetY(),  0.0f, 0.0f,
+                             0.0f,            0.0f,  1.0f, 0.0f,
+                             C0.GetZ(),  C1.GetZ(),  0.0f, 1.0f);
         }
 
         /// \brief Creates a transformation matrix from components.
