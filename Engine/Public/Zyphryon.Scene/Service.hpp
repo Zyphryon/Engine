@@ -301,7 +301,7 @@ namespace Scene
             {
                 if (mArchetypes.IsAllocated(Handle))
                 {
-                    Callback(Entity(kMinRangeArchetypes + Handle - 1));
+                    Callback(GetEntity(kMinRangeArchetypes + Handle));
                 }
             }
         }
