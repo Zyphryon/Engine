@@ -230,7 +230,9 @@ namespace Content
         // Parse each mesh from the model
         const Tracker<Render::Mesh> Mesh = Tracker<Render::Mesh>::Create("Mesh");
         Mesh->SetPolicy(Resource::Policy::Exclusive);
-        Mesh->Load(Move(BlockForVertices), Move(BlockForIndices));
+
+        Box  Bounds    = Box::Invalid();
+        Bool HasBounds = false;
 
         for (ConstRef<tinygltf::Mesh> GLTFMesh : GLTFModel.meshes)
         {
@@ -262,6 +264,21 @@ namespace Content
                 {
                     Primitive.Attributes[Enum::Cast(Semantic)] = Render::Mesh::Attribute(Length, Offset, Stride);
                 }
+
+                // Accumulate the model AABB using the POSITION accessor's pre-computed min/max values
+                if (Name == "POSITION" && GLTFAccessor.minValues.size() >= 3 && GLTFAccessor.maxValues.size() >= 3)
+                {
+                    const Box PrimitiveBounds(
+                        static_cast<Real32>(GLTFAccessor.minValues[0]),
+                        static_cast<Real32>(GLTFAccessor.minValues[1]),
+                        static_cast<Real32>(GLTFAccessor.minValues[2]),
+                        static_cast<Real32>(GLTFAccessor.maxValues[0]),
+                        static_cast<Real32>(GLTFAccessor.maxValues[1]),
+                        static_cast<Real32>(GLTFAccessor.maxValues[2]));
+
+                    Bounds    = HasBounds ? Box::Union(Bounds, PrimitiveBounds) : PrimitiveBounds;
+                    HasBounds = true;
+                }
             }
 
             // Parse indices
@@ -281,6 +298,7 @@ namespace Content
 
             Mesh->AddPrimitive(Move(Primitive));
         }
+        Mesh->Load(Move(BlockForVertices), Move(BlockForIndices), Bounds);
 
         // Load the asset properties
         const Tracker<Render::Model> Asset = Tracker<Render::Model>::Cast(Scope.GetResource());

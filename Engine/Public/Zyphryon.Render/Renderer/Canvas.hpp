@@ -124,6 +124,15 @@ namespace Render
         /// \param Transform The transformation matrix to apply to the model for positioning, scaling, and rotation.
         void DrawModel(ConstRef<Model> Model, ConstRef<Matrix4x4> Transform, Real32 Order);
 
+        /// \brief Issues draw commands that outline an axis-aligned bounding box as a wireframe for debugging.
+        ///
+        /// \param Shape     The axis-aligned bounding box to visualize.
+        /// \param Transform The transformation matrix to apply to the box (same as the corresponding DrawModel call).
+        /// \param Order     The depth value for rendering order.
+        /// \param Tint      The tint color to apply to the wireframe lines.
+        /// \param Thickness The thickness of the wireframe lines (default is 1.0f).
+        void DrawBox(ConstRef<Box> Shape, ConstRef<Matrix4x4> Transform, Real32 Order, IntColor8 Tint, Real32 Thickness = 1.0f);
+
         /// \brief Ends the current drawing session, flushing any pending draw commands.
         void End();
 

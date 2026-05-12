@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include <Zyphryon.Math/Geometry/Box.hpp>
 #include "Zyphryon.Graphic/Common.hpp"
 #include "Zyphryon.Content/Resource.hpp"
 
@@ -110,7 +111,8 @@ namespace Render
         ///
         /// \param Vertices Binary blob containing vertex buffer data.
         /// \param Indices  Binary blob containing index buffer data.
-        void Load(AnyRef<Blob> Vertices, AnyRef<Blob> Indices);
+        /// \param Bounds   Boundaries of the mesh.
+        void Load(AnyRef<Blob> Vertices, AnyRef<Blob> Indices, Box Bounds);
 
         /// \brief Gets the GPU object representing the vertex buffer.
         ///
@@ -126,6 +128,14 @@ namespace Render
         ZYPHRYON_INLINE Graphic::Object GetIndices() const
         {
             return mIndices.Buffer;
+        }
+
+        /// \brief Gets the boundaries of the mesh.
+        ///
+        /// \return The boundaries of the mesh.
+        ZYPHRYON_INLINE ConstRef<Box> GetBounds() const
+        {
+            return mBounds;
         }
 
         /// \brief Adds a new primitive to the mesh.
@@ -169,5 +179,6 @@ namespace Render
         Storage           mVertices;
         Storage           mIndices;
         Vector<Primitive> mPrimitives;
+        Box               mBounds;
     };
 }

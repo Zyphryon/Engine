@@ -292,6 +292,18 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Canvas::DrawBox(ConstRef<Box> Shape, ConstRef<Matrix4x4> Transform, Real32 Order, IntColor8 Tint, Real32 Thickness)
+    {
+        const Box World = Box::Transform(Shape, Transform);
+
+        DrawStrokeRect(
+            Rect(World.GetMinimumX(), World.GetMinimumY(), World.GetMaximumX(), World.GetMaximumY()),
+            Order, Tint, Thickness);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Canvas::End()
     {
         // Prepare any necessary resources or state before processing the collected rendering commands.
