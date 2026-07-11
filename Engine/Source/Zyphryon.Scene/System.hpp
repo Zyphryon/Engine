@@ -1,0 +1,99 @@
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+//
+// This work is licensed under the terms of the MIT license.
+//
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#pragma once
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [  HEADER  ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#include "Common.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [   CODE   ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+namespace Scene
+{
+    /// \brief Represents a system that operates on entities matching queries within the ECS (Entity-Component System).
+    ///
+    /// Systems define logic that runs automatically or can be executed manually.
+    class System
+    {
+    public:
+
+        /// \brief Underlying handle type for the ECS system.
+        using Handle = flecs::system;
+
+    public:
+
+        /// \brief Constructs an empty system with no associated handle.
+        ZY_INLINE System() = default;
+
+        /// \brief Constructs a system from an existing handle.
+        ///
+        /// \param Handle The handle of this system.
+        ZY_INLINE System(Handle Handle)
+            : mHandle { Handle }
+        {
+        }
+
+        /// \brief Destroys the system and releases its underlying resources.
+        ///
+        /// \note The system becomes invalid after destruction.
+        ZY_INLINE void Destruct()
+        {
+            if (mHandle)
+            {
+                mHandle.destruct();
+                mHandle = Handle();
+            }
+        }
+
+        /// \brief Checks if the system is currently enabled.
+        ///
+        /// \return `true` if the system is enabled and can be executed, `false` otherwise.
+        ZY_INLINE Bool IsEnabled() const
+        {
+            return !mHandle.has(EcsDisabled);
+        }
+
+        /// \brief Executes the system logic.
+        ///
+        /// \param Delta The time step to pass to the system.
+        ZY_INLINE void Run(Real32 Delta) const
+        {
+            mHandle.run(Delta);
+        }
+
+        /// \brief Enables the system, allowing it to be executed.
+        ///
+        /// \return This system, allowing for method chaining.
+        ZY_INLINE System Enable() const
+        {
+            mHandle.enable();
+            return (* this);
+        }
+
+        /// \brief Disables the system, preventing it from being executed.
+        ///
+        /// \return This system, allowing for method chaining.
+        ZY_INLINE System Disable() const
+        {
+            mHandle.disable();
+            return (* this);
+        }
+
+    private:
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Handle mHandle;
+    };
+}
