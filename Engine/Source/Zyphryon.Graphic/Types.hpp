@@ -471,6 +471,9 @@ namespace Graphic
     /// \brief Describes the capabilities and limits of the graphics device.
     struct Capabilities final
     {
+        /// \brief Indicates whether the graphics device supports vertex base offset.
+        Bool   SupportsVertexBaseOffset = false;
+
         /// The maximum supported texture dimension (width and height) in pixels.
         UInt32 MaxTextureDimension      = 0;
 
@@ -500,8 +503,6 @@ namespace Graphic
 
         /// The maximum capacity of a uniform buffer block in bytes.
         UInt32 UniformBlockCapacity     = 0;
-
-        // TODO: Add more capabilities...
     };
 
     /// \brief Configuration settings for the graphics device.

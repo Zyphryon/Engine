@@ -445,8 +445,7 @@ namespace Graphic
         /// \param Frame The in-flight frame to update.
         void UploadInFlightFrame(Ref<InFlightFrame> Frame);
 
-        void RegisterBuiltinDrivers();
-
+        /// \brief Registers built-in resource loaders for shaders, textures, and other assets.
         void RegisterBuiltinLoaders();
 
     private:

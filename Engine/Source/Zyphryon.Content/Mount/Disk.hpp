@@ -46,7 +46,7 @@ namespace Content
         void Read(Text Path, AnyRef<OnRead> Callback) override;
 
         /// \see Mount::Write
-        void Write(Text Path, ConstSpan<Byte> Bytes, AnyRef<OnResult> Callback) override;
+        void Write(Text Path, AnyRef<Blob> Bytes, AnyRef<OnResult> Callback) override;
 
     private:
 

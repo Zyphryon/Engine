@@ -71,6 +71,6 @@ namespace Content
         /// \param Path     The path to the file to write, relative to the mount's root.
         /// \param Bytes    The raw binary data to write to the file.
         /// \param Callback The callback function that will be called with the result of the write operation.
-        virtual void Write(Text Path, ConstSpan<Byte> Bytes, AnyRef<OnResult> Callback) = 0;
+        virtual void Write(Text Path, AnyRef<Blob> Bytes, AnyRef<OnResult> Callback) = 0;
     };
 }

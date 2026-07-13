@@ -10,77 +10,96 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Disk.hpp"
+#include "MAStream.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Audio
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Disk::Disk(Text Path)
-        : mPath { Path }
+    MAStream::MAStream()
     {
-        if (StrEndsWith(mPath, "/"))
+        static constexpr ma_data_source_vtable DataSourceFunctionTable =
         {
-            mPath.RemoveLast();
+            .onRead          = Dispatch<&MAStream::OnRead,      MAStream>,
+            .onSeek          = Dispatch<&MAStream::OnSeek,      MAStream>,
+            .onGetDataFormat = Dispatch<&MAStream::OnDescribe,  MAStream>,
+            .onGetCursor     = Dispatch<&MAStream::OnGetCursor, MAStream>,
+            .onGetLength     = Dispatch<&MAStream::OnGetLength, MAStream>,
+            .onSetLooping    = nullptr,
+            .flags           = 0,
+        };
+        static constexpr ma_data_source_config DataSourceDescriptor
+        {
+            .vtable          = AddressOf(DataSourceFunctionTable)
+        };
+
+        const ma_result Result = ma_data_source_init(AddressOf(DataSourceDescriptor), this);
+        if (Result != MA_SUCCESS)
+        {
+            LOG_E("Failed to initialize miniaudio data source");
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Disk::IsAsynchronous() const
+    MAStream::~MAStream()
     {
-        return false;
+        ma_data_source_uninit(this);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Disk::Enumerate(Text Path, AnyRef<OnEnumerate> Callback) const
+    ma_result MAStream::OnRead(Ptr<void> Output, ma_uint64 Count, Ptr<ma_uint64> OutFrames)
     {
-        Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), Move(Callback));
+        (* OutFrames) = mDecoder->Read(Span(static_cast<Ptr<Real32>>(Output), Count));
+        return MA_SUCCESS;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Disk::Delete(Text Path, AnyRef<OnResult> Callback)
+    ma_result MAStream::OnSeek(ma_uint64 Frame)
     {
-        Callback(Filesystem::Delete(Filesystem::Path::Join(mPath, '/', Path)));
+        return mDecoder->Seek(Frame) ? MA_SUCCESS : MA_BAD_SEEK;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Disk::Copy(Text Source, Text Destination, AnyRef<OnResult> Callback)
+    ma_result MAStream::OnDescribe(
+        Ptr<ma_format> OutFormat,
+        Ptr<ma_uint32> OutWidth,
+        Ptr<ma_uint32> OutFrequency, Ptr<ma_channel> OutLayout, size_t LayoutCount)
     {
-        const Filesystem::Path InSource      = Filesystem::Path::Join(mPath, '/', Source);
-        const Filesystem::Path InDestination = Filesystem::Path::Join(mPath, '/', Destination);
+        (* OutFormat)    = ma_format_f32;
+        mDecoder->Probe(OutFrequency, OutWidth, nullptr);
 
-        Callback(Filesystem::Copy(InSource, InDestination));
+        ma_channel_map_init_standard(ma_standard_channel_map_default, OutLayout, LayoutCount, * OutWidth);
+        return MA_SUCCESS;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Disk::Read(Text Path, AnyRef<OnRead> Callback)
+    ma_result MAStream::OnGetCursor(Ptr<ma_uint64> OutCursor)
     {
-        Blob Output;
-        const Filesystem::Result Result = Filesystem::Read(Filesystem::Path::Join(mPath, '/', Path), Output);
-
-        Callback(Result, Move(Output));
+        (* OutCursor) = mDecoder->Tell();
+        return MA_SUCCESS;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Disk::Write(Text Path, AnyRef<Blob> Bytes, AnyRef<OnResult> Callback)
+    ma_result MAStream::OnGetLength(Ptr<ma_uint64> OutLength)
     {
-        Callback(Filesystem::Write(Filesystem::Path::Join(mPath, '/', Path), Bytes));
+        mDecoder->Probe(nullptr, nullptr, OutLength);
+        return MA_SUCCESS;
     }
 }

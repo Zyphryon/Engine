@@ -16,13 +16,6 @@
 #include "Loader/SHDLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
-#ifdef    ZY_GRAPHIC_BACKEND_D3D11
-#include "Driver/D3D11/D3D11Driver.hpp"
-#endif // ZY_GRAPHIC_BACKEND_D3D11
-#ifdef    ZY_GRAPHIC_BACKEND_GLES3
-#include "Driver/GLES3/GLES3Driver.hpp"
-#endif // ZY_GRAPHIC_BACKEND_GLES3
-
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -40,8 +33,6 @@ namespace Graphic
         mWorker = Thread(Capture<& Service::OnWorkerThread>(this));
 
 #endif // ZY_PLATFORM_WEB
-
-        RegisterBuiltinDrivers();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -462,30 +453,6 @@ namespace Graphic
         UpdateInFlightArena(Frame.Vertices, Usage::Vertex);
         UpdateInFlightArena(Frame.Indices,  Usage::Index);
         UpdateInFlightArena(Frame.Uniforms, Usage::Uniform);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::RegisterBuiltinDrivers()
-    {
-#ifdef    ZY_GRAPHIC_BACKEND_D3D11
-
-        Register("D3D11", []() -> Unique<Driver>
-        {
-            return Unique<D3D11Driver>::Create();
-        });
-
-#endif // ZY_GRAPHIC_BACKEND_D3D11
-
-#ifdef    ZY_GRAPHIC_BACKEND_GLES3
-
-        Register("GLES3", []() -> Unique<Driver>
-        {
-            return Unique<GLES3Driver>::Create();
-        });
-
-#endif // ZY_GRAPHIC_BACKEND_GLES3
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

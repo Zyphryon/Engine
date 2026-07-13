@@ -206,11 +206,21 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Write(ConstRef<Uri> Key, ConstSpan<Byte> Data, AnyRef<Mount::OnResult> Callback)
+    void Service::Write(ConstRef<Uri> Key, AnyRef<Blob> Data, AnyRef<Mount::OnResult> Callback)
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {
-            Mount->Write(Key.GetPath(), Data, Move(Callback));  // TODO: Use Blob for Async?
+            if (Mount->IsAsynchronous())
+            {
+                Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
+            }
+            else
+            {
+                GetService<Job::Service>().SubmitOnBackground([Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
+                {
+                    Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
+                });
+            }
         }
         else
         {

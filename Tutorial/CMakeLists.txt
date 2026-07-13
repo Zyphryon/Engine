@@ -12,70 +12,48 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(Zyphryon VERSION 1.0.0)
+PROJECT(ZyTutorial VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Plugins
+## Code
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-INCLUDE(FetchContent)
-INCLUDE(CMakeModules/CMakeApplyCompileOptions.cmake)
-INCLUDE(CMakeModules/CMakeApplyModules.cmake)
-INCLUDE(CMakeModules/CMakeRegisterModule.cmake)
+FILE(GLOB_RECURSE PROJECT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
+LIST(APPEND       PROJECT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Options
+## Dependency (Zyphryon Engine)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_AUDIO_DRIVER_MINIAUDIO    "Audio: Enable Miniaudio as audio backend" OFF)
-OPTION(ZY_AUDIO_LOADER_WAV          "Audio: Enable WAV audio loader"           OFF)
-OPTION(ZY_AUDIO_LOADER_MP3          "Audio: Enable MP3 audio loader"           OFF)
-
-OPTION(ZY_GRAPHIC_DRIVER_D3D11      "Graphic: Enable D3D11 as graphic backend" ${WIN32})
-OPTION(ZY_GRAPHIC_DRIVER_GLES3      "Graphic: Enable GLES3 as graphic backend" $<NOT:$<BOOL:${WIN32}>>)
-OPTION(ZY_GRAPHIC_LOADER_STB        "Graphic: Enable STB image loader"         OFF)
+LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Module
+## Executable
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_SUBDIRECTORY(Engine)
+ADD_EXECUTABLE(${PROJECT_NAME} ${PROJECT_SOURCE})
 
-IF    (ZY_AUDIO_DRIVER_MINIAUDIO)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Libraries
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ADD_SUBDIRECTORY(Module/Audio/Driver/Miniaudio)   ## TODO: Eventually implement my own audio mixin in the core.
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES})
 
-ENDIF ()
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Includes
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-IF    (ZY_AUDIO_LOADER_WAV)
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 
-    ADD_SUBDIRECTORY(Module/Audio/Loader/WAV)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Properties
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ENDIF ()
+ZyApplyCompileOptions(${PROJECT_NAME})
+ZyApplyModules(${PROJECT_NAME})
 
-IF    (ZY_AUDIO_LOADER_MP3)
+IF    (EMSCRIPTEN)
 
-    ADD_SUBDIRECTORY(Module/Audio/Loader/MP3)
-
-ENDIF ()
-
-IF    (ZY_GRAPHIC_DRIVER_D3D11)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Driver/D3D11)
-
-ENDIF ()
-
-IF    (ZY_GRAPHIC_DRIVER_GLES3)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Driver/GLES3)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "--preload-file=${CMAKE_CURRENT_SOURCE_DIR}/Resource@/Resource")
 
 ENDIF ()
-
-
-IF    (ZY_GRAPHIC_LOADER_STB)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Loader/STB)
-
-ENDIF ()
-
-ADD_SUBDIRECTORY(Tutorial)

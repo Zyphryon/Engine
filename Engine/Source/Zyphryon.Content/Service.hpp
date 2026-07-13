@@ -133,7 +133,7 @@ namespace Content
         /// \param Key      The URI key identifying the file to write.
         /// \param Data     The raw binary data to write to the file.
         /// \param Callback The callback invoked with the result of the write operation.
-        void Write(ConstRef<Uri> Key, ConstSpan<Byte> Data, AnyRef<Mount::OnResult> Callback);
+        void Write(ConstRef<Uri> Key, AnyRef<Blob> Data, AnyRef<Mount::OnResult> Callback);
 
         /// \brief Loads a resource of the specified type from the given URI.
         ///

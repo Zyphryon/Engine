@@ -57,11 +57,9 @@ FUNCTION(ZyApplyCompileOptions TARGET)
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
                 /O2
-                /fp:fast
                 /Gw
                 /GL
                 /GS-
-                /GR-
                 /Zc:inline
                 /Zc:preprocessor
             >
@@ -72,6 +70,7 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 /Zi
                 /Zc:inline
             >
+            /GR-
             /arch:SSE4.2
         )
 
@@ -89,11 +88,8 @@ FUNCTION(ZyApplyCompileOptions TARGET)
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
                 -O3
-                -ffast-math
                 -funroll-loops
                 -fomit-frame-pointer
-                -fno-exceptions
-                -fno-rtti
             >
             $<$<NOT:$<CONFIG:Release>>:
                 -O0
@@ -101,6 +97,8 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 -fsanitize=address
                 -fno-omit-frame-pointer
             >
+            -fno-exceptions
+            -fno-rtti
             -msse4.2
             -fvisibility=hidden
         )
