@@ -25,13 +25,13 @@ namespace Scene
     void Entity::Load(Ref<Reader> Archive) const
     {
         // Read the entity's name.
-        if (const Text Name = Archive.ReadText(); !Name.IsEmpty())
+        if (const Str Name = Archive.ReadText(); !Name.IsEmpty())
         {
             SetName(Name);
         }
 
         // Read the entity's alias.
-        if (const Text Alias = Archive.ReadText(); !Alias.IsEmpty())
+        if (const Str Alias = Archive.ReadText(); !Alias.IsEmpty())
         {
             SetAlias(Alias);
         }

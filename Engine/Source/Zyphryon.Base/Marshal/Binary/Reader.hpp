@@ -42,7 +42,6 @@ inline namespace Base
               mSize   { Size },
               mOffset { 0 }
         {
-            ZY_ASSERT(Data && Size > 0, "Invalid data or size.");
         }
 
         /// \brief Gets the underlying data pointer.

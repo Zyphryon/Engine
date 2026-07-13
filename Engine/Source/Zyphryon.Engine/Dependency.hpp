@@ -43,6 +43,14 @@ namespace Engine
             return (* mService);
         }
 
+        /// \brief Gets the resolved service instance.
+        ///
+        /// \return A constant reference to the service instance.
+        ZY_INLINE ConstRef<Type> Fetch() const
+        {
+            return (* mService);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

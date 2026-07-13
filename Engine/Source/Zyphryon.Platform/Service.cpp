@@ -31,13 +31,16 @@ namespace Platform
           mWindow   { mDispatcher }
     {
         mDisplay.Poll();
-    }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Service::~Service()
-    {
+        for (ConstRef<Monitor> Monitor : mDisplay.GetMonitors())
+        {
+            LOG_I("Platform: Found Monitor '{0}' {1}x{2} @ {3} Hz, DPI {4:.2f}",
+                Monitor.GetName(),
+                Monitor.GetWidth(),
+                Monitor.GetHeight(),
+                Monitor.GetFrequency(),
+                Monitor.GetScale());
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -57,7 +60,8 @@ namespace Platform
         // Forwards all queued input events to the input service.
         if (ConstRetainer<Input::Service> Input = GetHost().GetService<Input::Service>())
         {
-            Input->Process(mDispatcher.GetInputEvents());
+            const Dispatcher Snapshot = mDispatcher;
+            Input->Process(Snapshot.GetInputEvents());
         }
         mDispatcher.Reset();
     }
@@ -71,7 +75,7 @@ namespace Platform
 
         if (!Target.IsEmpty() && Target != Monitor.GetName())
         {
-            LOG_WARNING("Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
+            LOG_W("Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
         }
 
         Width  = static_cast<Real32>(Width)  * Monitor.GetScale();

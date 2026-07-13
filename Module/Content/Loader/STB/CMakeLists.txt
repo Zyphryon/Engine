@@ -40,7 +40,8 @@ LIST(APPEND PROJECT_DEFINES "STBI_NO_STDIO")
 LIST(APPEND PROJECT_DEFINES "STB_IMAGE_STATIC")
 
 FetchContent_Declare(External_STB
-        GIT_REPOSITORY https://github.com/nothings/stb)
+        GIT_REPOSITORY https://github.com/nothings/stb
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_STB)
 
 ADD_LIBRARY(STB INTERFACE)

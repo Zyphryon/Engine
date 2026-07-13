@@ -187,6 +187,16 @@ inline namespace Base
         std::memcpy(Destination, Source, Size);
     }
 
+    /// \brief Zero-fills a contiguous range of elements, including any padding bytes.
+    ///
+    /// \param Destination The pointer to the destination range.
+    /// \param Count       The number of elements to zero.
+    template<typename Output>
+    ZY_INLINE void Zero(Ptr<Output> Destination, UInt Count)
+    {
+        std::memset(Destination, 0, Count * sizeof(Output));
+    }
+
     /// \brief Compares two ranges of elements for equality.
     ///
     /// \param Left  The pointer to the first range.

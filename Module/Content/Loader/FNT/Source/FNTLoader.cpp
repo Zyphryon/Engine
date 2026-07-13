@@ -55,12 +55,12 @@ namespace Content
 
         if (!Compare(FontHeader.Tag, "ARTERY/FONT\0\0\0\0\0", sizeof(FontHeader.Tag)))
         {
-            LOG_WARNING("Artery Font: Invalid header detected.");
+            LOG_W("Artery Font: Invalid header detected.");
             return false;
         }
         if (FontHeader.Magic != 0x4D276A5C || FontHeader.RealType != 0x14)
         {
-            LOG_WARNING("Artery Font: Non 32-bit float font.");
+            LOG_W("Artery Font: Non 32-bit float font.");
             return false;
         }
 
@@ -68,7 +68,7 @@ namespace Content
 
         if (FontHeader.VariantCount > 1) // TODO: Support more than 1?
         {
-            LOG_WARNING("Artery Font: Invalid font with more than 1 font-face.");
+            LOG_W("Artery Font: Invalid font with more than 1 font-face.");
             return false;
         }
 
@@ -133,7 +133,7 @@ namespace Content
 
             if (ImageHeader.Encoding != 0x01)
             {
-                LOG_WARNING("Artery Font: Invalid font image.");
+                LOG_W("Artery Font: Invalid font image.");
                 return false; // Only support binary mode & top down orientation
             }
 

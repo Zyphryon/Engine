@@ -84,7 +84,6 @@ inline namespace Base
         if (const ConstPtr<Char> XDGDataHome = getenv("XDG_DATA_HOME"))
         {
             Buffer.Append(StrConvert(XDGDataHome));
-            StrEnsureEndsWith(Buffer, '/');
         }
         else
         {
@@ -113,7 +112,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
-        if (const Ptr<DIR> Directory = opendir(Path::CStr(Path).GetData()))
+        if (const Ptr<DIR> Directory = opendir(Path.GetData()))
         {
             const SInt32 Handle = dirfd(Directory);
 
@@ -161,7 +160,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Make(Text Path)
     {
-        if (mkdir(Path::CStr(Path).GetData(), 0755) == 0 || errno == EEXIST)
+        if (mkdir(Path.GetData(), 0755) == 0 || errno == EEXIST)
         {
             return Result::Success;
         }
@@ -175,7 +174,7 @@ inline namespace Base
     {
 #if defined(ZY_PLATFORM_MACOS)
 
-        if (copyfile(Path::CStr(Source).GetData(), Path::CStr(Destination).GetData(), nullptr, COPYFILE_ALL) == 0)
+        if (copyfile(Source.GetData(), Destination.GetData(), nullptr, COPYFILE_ALL) == 0)
         {
             return Result::Success;
         }
@@ -202,7 +201,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Delete(Text Path)
     {
-        if (remove(Path::CStr(Path).GetData()) == 0 || errno == ENOENT)
+        if (remove(Path.GetData()) == 0 || errno == ENOENT)
         {
             return Result::Success;
         }
@@ -214,7 +213,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
     {
-        if (rename(Path::CStr(Source).GetData(), Path::CStr(Destination).GetData()) == 0)
+        if (rename(Source.GetData(), Destination.GetData()) == 0)
         {
             return Result::Success;
         }
@@ -226,7 +225,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Read(Text Path, Ref<Blob> Output)
     {
-        if (const SInt32 Handle = open(Path::CStr(Path).GetData(), O_RDONLY); Handle >= 0)
+        if (const SInt32 Handle = open(Path.GetData(), O_RDONLY); Handle >= 0)
         {
             const off_t  Size  = lseek(Handle, 0, SEEK_END);
             SInt32       Error = 0;
@@ -278,7 +277,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Write(Text Path, ConstSpan<Byte> Data)
     {
-        if (const SInt32 Handle = open(Path::CStr(Path).GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644); Handle >= 0)
+        if (const SInt32 Handle = open(Path.GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644); Handle >= 0)
         {
             ConstPtr<Byte> Buffer    = Data.GetData();
             UInt           Remaining = Data.GetSize();

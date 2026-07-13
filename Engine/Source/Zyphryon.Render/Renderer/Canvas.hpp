@@ -165,8 +165,8 @@ namespace Render
         ZY_INLINE void Draw(UInt32 Vertices, UInt32 Indices, AnyRef<Writer> Callback)
         {
             // Allocate transient buffers for vertex and index data.
-            const Graphic::Slice<Vertex> VtxData = mService->AllocateVertices<Vertex>(Vertices);
-            const Graphic::Slice<Index>  IdxData = mService->AllocateVertices<Index>(Indices);
+            const Graphic::Transient<Vertex> VtxData = mService->AllocateTransientVertices<Vertex>(Vertices);
+            const Graphic::Transient<Index>  IdxData = mService->AllocateTransientIndices<Index>(Indices);
 
             // Invoke the callback to write vertex and index data into the allocated buffers.
             Callback(VtxData, IdxData);
@@ -196,7 +196,7 @@ namespace Render
         ZY_INLINE void Draw(UInt32 Instances, AnyRef<Writer> Callback)
         {
             // Allocate transient buffers for vertex data.
-            const Graphic::Slice<Vertex> VtxData = mService->AllocateVertices<Vertex>(Instances);
+            const Graphic::Transient<Vertex> VtxData = mService->AllocateTransientVertices<Vertex>(Instances);
 
             // Invoke the callback to write vertex data into the allocated buffers.
             Callback(VtxData);
@@ -204,7 +204,7 @@ namespace Render
             mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mSceneStream;
 
             // Set the vertex buffers for drawing and issue the draw command.
-            mCommand->Vertices.Append(VtxData.GetDescriptor());
+            mCommand->Vertices.Append(VtxData.GetStream());
             mCommand->Parameters = {
                 .Count     = 4,
                 .Base      = 0,

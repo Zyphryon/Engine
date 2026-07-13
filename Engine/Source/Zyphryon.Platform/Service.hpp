@@ -14,7 +14,7 @@
 
 #include "Display.hpp"
 #include "Window.hpp"
-#include "../Zyphryon.Engine/Subsystem.hpp"
+#include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -31,9 +31,6 @@ namespace Platform
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
-
-        /// \brief Destroys the platform service and shuts down the underlying windowing system.
-        ~Service() override;
 
         /// \brief Processes platform events and updates window state each frame.
         ///
@@ -80,5 +77,6 @@ namespace Platform
         Dispatcher mDispatcher;
         Window     mWindow;
         Display    mDisplay;
+        Str        mClipboard;
     };
 }

@@ -11,16 +11,16 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
-#include "Codec/MTLLoader.hpp"
-#include "Codec/VFXLoader.hpp"
-#include "Codec/SHDLoader.hpp"
+#include "Loader/MTLLoader.hpp"
+#include "Loader/VFXLoader.hpp"
+#include "Loader/SHDLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 #ifdef    ZY_GRAPHIC_BACKEND_D3D11
-#include "Backend/D3D11/D3D11Driver.hpp"
+#include "Driver/D3D11/D3D11Driver.hpp"
 #endif // ZY_GRAPHIC_BACKEND_D3D11
 #ifdef    ZY_GRAPHIC_BACKEND_GLES3
-//#include "Driver/Backend/GLES3/GLES3Driver.hpp"
+#include "Driver/GLES3/GLES3Driver.hpp"
 #endif // ZY_GRAPHIC_BACKEND_GLES3
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -41,7 +41,7 @@ namespace Graphic
 
 #endif // ZY_PLATFORM_WEB
 
-        RegisterBackends();
+        RegisterBuiltinDrivers();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -96,22 +96,22 @@ namespace Graphic
             {
                 mDriver = Unique<Driver>::Create();
 
-                LOG_WARNING("Graphics: Failed to initialize driver, using default driver");
+                LOG_W("Graphics: Failed to initialize driver, using default driver");
             }
             else
             {
                 mDriver->Probe(mDescription);
 
-                LOG_INFO("Graphics: using {0}", mDescription.Backend);
-                LOG_INFO("Graphics: Detected Tier ({0})", Enum::GetName(mDescription.Tier));
+                LOG_I("Graphics: Using {0}", mDescription.Backend);
+                LOG_I("Graphics: Detected Tier ({0})", Enum::GetName(mDescription.Tier));
 
                 for (ConstRef<Graphic::Adapter> Endpoint : mDescription.Endpoints)
                 {
-                    LOG_INFO("Graphics: Found GPU '{0}'", Endpoint.Description);
-                    LOG_INFO("Graphics:     Memory {0} (video)", Endpoint.Memory);
+                    LOG_I("Graphics: Found GPU '{0}'", Endpoint.Description);
+                    LOG_I("Graphics:     Memory {0} (video)", Endpoint.Memory);
                 }
 
-                RegisterContentLoaders();
+                RegisterBuiltinLoaders();
             }
         }
         return Successful;
@@ -301,10 +301,11 @@ namespace Graphic
         // Submit all commands recorded since the last render pass was prepared, then commit the current render pass.
         Ref<InFlightPass> InFlightPass = GetInFlightPass();
 
-        ConstSpan<Command> Commands = ConstSpan<Command>(mFrames[mProducer].Commands).Slice(InFlightPass.Cursor);
-        if (!Commands.IsEmpty())
+        const ConstSpan<Command> Commands(mFrames[mProducer].Commands);
+
+        if (const ConstSpan<Command> Slice = Commands.Slice(InFlightPass.Cursor); !Slice.IsEmpty())
         {
-            Enqueue<& Driver::Submit>(Commands);
+            Enqueue<& Driver::Submit>(Slice);
         }
         Enqueue<& Driver::Commit>(InFlightPass.Handle);
     }
@@ -466,9 +467,8 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::RegisterBackends()
+    void Service::RegisterBuiltinDrivers()
     {
-
 #ifdef    ZY_GRAPHIC_BACKEND_D3D11
 
         Register("D3D11", []() -> Unique<Driver>
@@ -479,11 +479,11 @@ namespace Graphic
 #endif // ZY_GRAPHIC_BACKEND_D3D11
 
 #ifdef    ZY_GRAPHIC_BACKEND_GLES3
-        /*
+
         Register("GLES3", []() -> Unique<Driver>
         {
             return Unique<GLES3Driver>::Create();
-        });*/
+        });
 
 #endif // ZY_GRAPHIC_BACKEND_GLES3
     }
@@ -491,7 +491,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::RegisterContentLoaders()
+    void Service::RegisterBuiltinLoaders()
     {
         ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
 

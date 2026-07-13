@@ -66,6 +66,15 @@ namespace Content
             }
         }
 
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mPath);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

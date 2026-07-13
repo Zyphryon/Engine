@@ -12,8 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Text.hpp"
-#include "Zyphryon.Base/Container/Sequence.hpp"
+#include "Format/Processor.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,25 +31,22 @@ inline namespace Base
 
         /// \brief Constructs an empty string.
         ZY_INLINE constexpr String()
-            : mBuffer { }
         {
+            Seal();
         }
-
 
         /// \brief Constructs a string with pre-allocated storage for \p Length characters.
         ///
         /// \param Length The initial length of the string. Must be less than or equal to \p Capacity.
         ZY_INLINE constexpr String(UInt Length)
-            : mBuffer { }
         {
-            mBuffer.Reserve(Length);
+            Reserve(Length);
         }
 
         /// \brief Constructs a string from a text view.
         ///
         /// \param Content The text to copy into the string.
         ZY_INLINE constexpr String(Text Content)
-            : mBuffer { }
         {
             Assign(Content);
         }
@@ -59,9 +55,8 @@ inline namespace Base
         ///
         /// \param Character The character to fill the string with.
         ZY_INLINE constexpr String(Char Character)
-            : mBuffer { }
         {
-            mBuffer.Fill(Character, GetCapacity());
+            Append(Character, GetCapacity());
         }
 
         /// \brief Constructs a string from a null-terminated string literal.
@@ -79,6 +74,7 @@ inline namespace Base
         ZY_INLINE constexpr String(ConstRef<String> Other)
             : mBuffer { Other.mBuffer }
         {
+            Seal();
         }
 
         /// \brief Move constructor that transfers the contents from another string.
@@ -87,6 +83,7 @@ inline namespace Base
         ZY_INLINE constexpr String(AnyRef<String> Other)
             : mBuffer { Move(Other.mBuffer) }
         {
+            Seal();
         }
 
         /// \brief Returns a pointer to the mutable character data.
@@ -173,6 +170,7 @@ inline namespace Base
         ZY_INLINE constexpr void Clear()
         {
             mBuffer.Clear();
+            Seal();
         }
 
         /// \brief Reserves heap capacity for at least the given number of characters.
@@ -188,6 +186,7 @@ inline namespace Base
             {
                 mBuffer.Reserve(Length);
             }
+            Seal();
         }
 
         /// \brief Appends a single character to the end of the string.
@@ -196,6 +195,7 @@ inline namespace Base
         ZY_INLINE constexpr void Append(Char Character)
         {
             mBuffer.Append(Character);
+            Seal();
         }
 
         /// \brief Appends a character repeated the specified number of times to the end of the string.
@@ -205,6 +205,7 @@ inline namespace Base
         ZY_INLINE constexpr void Append(Char Character, UInt Count)
         {
             mBuffer.Fill(Character, Count);
+            Seal();
         }
 
         /// \brief Appends text to the end of the string.
@@ -213,6 +214,68 @@ inline namespace Base
         ZY_INLINE constexpr void Append(Text Content)
         {
             mBuffer.Append(Content);
+            Seal();
+        }
+
+        /// \brief Appends a unicode codepoint as UTF-8 encoded bytes.
+        ///
+        /// \param Codepoint The unicode codepoint to encode.
+        ZY_INLINE constexpr void AppendCodepoint(UInt32 Codepoint)
+        {
+            UInt Length;
+
+            if (Codepoint <= 0x7F)
+            {
+                Length = 1;
+            }
+            else if (Codepoint <= 0x7FF)
+            {
+                Length = 2;
+            }
+            else if (Codepoint <= 0xFFFF)
+            {
+                Length = 3;
+            }
+            else
+            {
+                Length = 4;
+            }
+
+            const UInt Offset = mBuffer.GetSize();
+            mBuffer.Advance(Length);
+
+            switch (Length)
+            {
+            case 1:
+            {
+                mBuffer[Offset]     = static_cast<Char>(Codepoint);
+                break;
+            }
+            case 2:
+            {
+                mBuffer[Offset]     = static_cast<Char>(0xC0 | (Codepoint >> 6));
+                mBuffer[Offset + 1] = static_cast<Char>(0x80 | (Codepoint & 0x3F));
+                break;
+            }
+            case 3:
+            {
+                mBuffer[Offset]     = static_cast<Char>(0xE0 |  (Codepoint >> 12));
+                mBuffer[Offset + 1] = static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F));
+                mBuffer[Offset + 2] = static_cast<Char>(0x80 |  (Codepoint        & 0x3F));
+                break;
+            }
+            case 4:
+            {
+                mBuffer[Offset]     = static_cast<Char>(0xF0 |  (Codepoint >> 18));
+                mBuffer[Offset + 1] = static_cast<Char>(0x80 | ((Codepoint >> 12) & 0x3F));
+                mBuffer[Offset + 2] = static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F));
+                mBuffer[Offset + 3] = static_cast<Char>(0x80 |  (Codepoint        & 0x3F));
+                break;
+            }
+            default:
+                break;
+            }
+            Seal();
         }
 
         /// \brief Appends an integral number to the end of the string.
@@ -227,6 +290,7 @@ inline namespace Base
         {
             const UInt Offset = mBuffer.GetSize();
             mBuffer.Advance(Digits);
+            Seal();
 
             if (Uppercase)
             {
@@ -293,6 +357,7 @@ inline namespace Base
         ZY_INLINE constexpr void Insert(UInt Index, Char Character)
         {
             mBuffer.Insert(Index, Character);
+            Seal();
         }
 
         /// \brief Inserts text at the specified index.
@@ -302,6 +367,7 @@ inline namespace Base
         ZY_INLINE constexpr void Insert(UInt Index, Text Content)
         {
             mBuffer.Insert(Index, Content);
+            Seal();
         }
 
         /// \brief Removes a range of characters from the string.
@@ -311,12 +377,14 @@ inline namespace Base
         ZY_INLINE constexpr void Remove(UInt Index, UInt Length)
         {
             mBuffer.Remove(Index, Length);
+            Seal();
         }
 
         /// \brief Removes the last character from the string.
         ZY_INLINE constexpr void RemoveLast()
         {
             mBuffer.RemoveLast();
+            Seal();
         }
 
         /// \brief Removes up to \p Count characters from the end of the string.
@@ -325,6 +393,7 @@ inline namespace Base
         ZY_INLINE constexpr void RemoveLast(UInt Count)
         {
             mBuffer.Remove(mBuffer.GetSize() - Count, Count);
+            Seal();
         }
 
         /// \brief Shrinks the heap capacity to match the current size.
@@ -332,6 +401,7 @@ inline namespace Base
             requires (Capacity == 0)
         {
             mBuffer.Shrink();
+            Seal();
         }
 
         /// \brief Replaces all occurrences of one character with another.
@@ -381,6 +451,36 @@ inline namespace Base
             return Text(mBuffer.GetData() + Offset, Length);
         }
 
+        /// \brief Formats the string using a runtime pattern and parameters.
+        ///
+        /// \param Pattern    The format pattern string.
+        /// \param Parameters The arguments to format into the pattern.
+        template<typename... Arguments>
+        ZY_INLINE constexpr void Format(Format::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
+        {
+            Clear();
+
+            Format::Processor<String>::Format(*this, Pattern, Parameters...);
+
+            Seal();
+        }
+
+        /// \brief Formats the string using a compile-time pattern and parameters.
+        ///
+        /// \tparam Pattern   The compile-time format pattern.
+        /// \param Parameters The arguments to format into the pattern.
+        template<Symbol Pattern, typename... Arguments>
+        ZY_INLINE constexpr void Format(AnyRef<Arguments>... Parameters)
+        {
+            constexpr Format::Pattern<> kPattern(Pattern);
+
+            Clear();
+
+            Format::Processor<String>::Format(*this, kPattern, Parameters...);
+
+            Seal();
+        }
+
         /// \brief Computes a 64-bit hash of the string.
         ///
         /// Uses FNV-1a at compile time and the engine's runtime hash otherwise.
@@ -390,7 +490,7 @@ inline namespace Base
         {
             if (const UInt Size = GetSize(); Size > 0)
             {
-                return ::Hash(mBuffer.GetData(), Size);
+                return Base::Hash(mBuffer.GetData(), Size);
             }
             return 0;
         }
@@ -427,9 +527,9 @@ inline namespace Base
         /// \param Other The text to compare with.
         /// \return `true` if the strings are equal, `false` otherwise.
         template<UInt Count>
-        ZY_INLINE constexpr Bool operator==(const Char (& Literal)[Count]) const
+        ZY_INLINE constexpr Bool operator==(const Char (& Other)[Count]) const
         {
-            return GetSize() == Count - 1 && ::Compare(GetData(), Literal, GetSize());
+            return GetSize() == Count - 1 && ::Compare(GetData(), Other, GetSize());
         }
 
         /// \brief Checks if this string is equal to another string.
@@ -485,6 +585,8 @@ inline namespace Base
         {
             mBuffer.Clear();
             mBuffer.Append(Character);
+            Seal();
+
             return (* this);
         }
 
@@ -498,7 +600,7 @@ inline namespace Base
             return (* this);
         }
 
-        /// \brief Assigns a null-terminated string literal to the string, replacing its entire contents.
+        /// \brief Assigns a null-Seald string literal to the string, replacing its entire contents.
         ///
         /// \param Literal The string literal to assign.
         /// \return A reference to this string.
@@ -516,6 +618,7 @@ inline namespace Base
         ZY_INLINE constexpr Ref<String> operator=(ConstRef<String> Other)
         {
             mBuffer = Other.mBuffer;
+            Seal();
             return (* this);
         }
 
@@ -526,6 +629,7 @@ inline namespace Base
         ZY_INLINE constexpr Ref<String> operator=(AnyRef<String> Other)
         {
             mBuffer = Move(Other.mBuffer);
+            Seal();
             return (* this);
         }
 
@@ -551,6 +655,53 @@ inline namespace Base
 
     public:
 
+        /// \brief Converts a UTF-16 sequence to a UTF-8 text sequence.
+        ///
+        /// \param Content The UTF-16 sequence to convert.
+        /// \return A sequence of UTF-8 bytes representing the converted text.
+        ZY_INLINE static constexpr String ConvertFromUTF16(ConstSpan<Wide> Content)
+        {
+            String Result(Content.GetSize());
+
+            for (UInt Index = 0; Index < Content.GetSize(); )
+            {
+                const Wide Unit = Content[Index++];
+
+                UInt32 Codepoint;
+
+                if (Unit >= 0xD800 && Unit <= 0xDBFF)
+                {
+                    if (Index < Content.GetSize())
+                    {
+                        if (const Wide Low = Content[Index++]; Low >= 0xDC00 && Low <= 0xDFFF)
+                        {
+                            Codepoint = 0x10000 + ((static_cast<UInt32>(Unit - 0xD800) << 10) | (Low - 0xDC00));
+                        }
+                        else
+                        {
+                            Codepoint = 0xFFFD;
+                            --Index;
+                        }
+                    }
+                    else
+                    {
+                        Codepoint = 0xFFFD;
+                    }
+                }
+                else if (Unit >= 0xDC00 && Unit <= 0xDFFF)
+                {
+                    Codepoint = 0xFFFD;
+                }
+                else
+                {
+                    Codepoint = static_cast<UInt32>(Unit);
+                }
+
+                Result.AppendCodepoint(Codepoint);
+            }
+            return Result;
+        }
+
         /// \brief Joins two pieces of text with a delimiter in between.
         ///
         /// \param Left      The text to appear before the delimiter.
@@ -569,18 +720,52 @@ inline namespace Base
             return Buffer;
         }
 
-        /// \brief Creates a null-terminated string from the given text.
+        /// \brief Creates a formatted string from a runtime format pattern.
         ///
-        /// \param Content The text to copy into the returned string.
-        /// \return A string that contains \p Content followed by a trailing null character.
-        ZY_INLINE static constexpr String CStr(Text Content)
+        /// \param Pattern    The format pattern string.
+        /// \param Parameters The arguments to format into the pattern.
+        /// \return A string with the formatted text.
+        template<typename... Arguments>
+        ZY_INLINE static constexpr String Print(Format::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
         {
-            String Buffer(Content);
-            Buffer.Append('\0');
+            String Buffer;
+            Buffer.Format(Pattern, Parameters...);
+            return Buffer;
+        }
+
+        /// \brief Creates a formatted string from a compile-time format pattern.
+        ///
+        /// \tparam Pattern   The compile-time format pattern.
+        /// \param Parameters The arguments to format into the pattern.
+        /// \return A string with the formatted text.
+        template<Symbol Pattern, typename... Arguments>
+        ZY_INLINE static constexpr String Print(AnyRef<Arguments>... Parameters)
+        {
+            String Buffer;
+            Buffer.template Format<Pattern>(Parameters...);
             return Buffer;
         }
 
     private:
+
+        /// \brief Ensures the underlying buffer is null-terminated at \ref GetData().
+        ///
+        /// \note Must be called after any operation that mutates the buffer's contents or size.
+        ZY_INLINE constexpr void Seal()
+        {
+            const UInt Size = mBuffer.GetSize();
+
+            if constexpr (Capacity > 0)
+            {
+                ZY_ASSERT(Capacity >= Size + 1, "Requested reserve length exceeds fixed capacity");
+            }
+            else
+            {
+                mBuffer.Reserve(Size + 1);
+            }
+
+            mBuffer.GetData()[Size] = '\0';
+        }
 
         /// \brief Assigns text to the string, replacing its entire contents.
         ///
@@ -593,6 +778,7 @@ inline namespace Base
             {
                 mBuffer.Append(Content);
             }
+            Seal();
         }
 
         /// \brief Performs three-way lexicographic comparison with the given text.
@@ -616,21 +802,24 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Sequence<Char, Capacity> mBuffer;
+        Sequence<Char, (Capacity == 0 ? 0 : Capacity + 1)> mBuffer;
     };
 
     /// \brief A heap-backed string with dynamic length and no inline storage limit.
     using Str   = String<0>;
 
-    /// \brief A stack-backed string with a fixed capacity of 15 characters.
-    using Str16 = String<15>;
+    /// \brief A stack-backed string with a fixed capacity of 14 characters.
+    using Str16 = String<14>;
 
-    /// \brief A stack-backed string with a fixed capacity of 31 characters.
-    using Str32 = String<31>;
+    /// \brief A stack-backed string with a fixed capacity of 30 characters.
+    using Str32 = String<30>;
 
-    /// \brief A stack-backed string with a fixed capacity of 47 characters.
-    using Str48 = String<47>;
+    /// \brief A stack-backed string with a fixed capacity of 46 characters.
+    using Str48 = String<46>;
 
-    /// \brief A stack-backed string with a fixed capacity of 63 characters.
-    using Str64 = String<63>;
+    /// \brief A stack-backed string with a fixed capacity of 62 characters.
+    using Str64 = String<62>;
+
+    /// \brief A stack-backed string with a fixed capacity of 94 characters.
+    using Str96 = String<94>;
 }

@@ -101,6 +101,10 @@ inline namespace Base
     template<class Type>
     concept IsTriviallyCopyable = std::is_trivially_copyable_v<Type>;
 
+    /// \brief Concept that is satisfied when \p Type is trivially constructible.
+    template<class Type>
+    concept IsTriviallyConstructible = std::is_trivially_constructible_v<Type>;
+
     /// \brief Concept that is satisfied when \p Type is trivially destructible.
     template<class Type>
     concept IsTriviallyDestructible = std::is_trivially_destructible_v<Type>;

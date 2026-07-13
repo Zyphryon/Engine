@@ -71,11 +71,8 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Entity Service::LoadHierarchy(Ref<Reader> Archive)
+    void Service::LoadHierarchy(Ref<Reader> Archive, Entity Actor)
     {
-        const Entity Actor = CreateEntity();
-        Actor.Load(Archive);
-
         const ConstSpan<Byte> Data = Archive.ReadBlock<UInt32, Byte>();
 
         for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
@@ -83,7 +80,6 @@ namespace Scene
             const Entity Children = LoadHierarchy(Hierarchy);
             Children.SetParent(Actor);
         }
-        return Actor;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -119,7 +115,7 @@ namespace Scene
         for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
             const UInt32 ID = Archive.ReadUInt<UInt32>();
-            mArchetypes.Allocate(ID);
+            mArchetypes.Acquire(ID);
 
             Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
             Archetype.Add(EcsPrefab);

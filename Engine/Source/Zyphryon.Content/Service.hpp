@@ -107,7 +107,7 @@ namespace Content
         ///
         /// \param Key      The URI key identifying the mount and path to enumerate.
         /// \param Callback The callback invoked for each entry found; return `true` to continue, `false` to stop.
-        void Enumerate(ConstRef<Uri> Key, AnyRef<Mount::OnEnumerate> Callback) const;
+        void Enumerate(ConstRef<Uri> Key, AnyRef<Mount::OnEnumerate> Callback);
 
         /// \brief Deletes the file or directory at the specified URI.
         ///
@@ -126,7 +126,7 @@ namespace Content
         ///
         /// \param Key      The URI key identifying the file to read.
         /// \param Callback The callback invoked with the file's contents if the read succeeds.
-        void Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback) const;
+        void Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback);
 
         /// \brief Writes the specified bytes to a file at the given URI, creating or overwriting it as necessary.
         ///

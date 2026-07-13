@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Backend/Common.hpp"
+#include "Types.hpp"
 #include "Zyphryon.Math/Transform3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -502,7 +502,7 @@ namespace Graphic
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
         template<Origin Origin = Origin::Northwest>
-        ZY_INLINE Vector3 GetWorldOrigin(Vector3 Position, ConstRef<Viewport> Viewport) const
+        ZY_INLINE Vector3 GetWorldCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -520,7 +520,7 @@ namespace Graphic
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
         template<Origin Origin = Origin::Northwest>
-        ZY_INLINE Vector2 GetWorldOrigin(Vector2 Position, ConstRef<Viewport> Viewport) const
+        ZY_INLINE Vector2 GetWorldCoordinates(Vector2 Position, ConstRef<Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -537,7 +537,7 @@ namespace Graphic
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel Origin and Z is in depth range.
         template<Origin Origin = Origin::Southwest>
-        ZY_INLINE Vector3 GetScreenOrigin(Vector3 Position, ConstRef<Viewport> Viewport) const
+        ZY_INLINE Vector3 GetScreenCoordinates(Vector3 Position, ConstRef<Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");

@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "String.hpp"
+#include "Text.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -772,37 +772,6 @@ inline namespace Base
         }
     }
 
-    /// \brief Appends a Unicode codepoint to the output as UTF-8 encoded bytes.
-    ///
-    /// \param Output    The output buffer to append to. Must have an Append(Char) method.
-    /// \param Codepoint The Unicode codepoint to encode.
-    template<typename Type>
-    constexpr void StrAppendUTF8(Ref<Type> Output, UInt32 Codepoint)
-    {
-        if (Codepoint <= 0x7F)
-        {
-            Output.Append(static_cast<Char>(Codepoint));
-        }
-        else if (Codepoint <= 0x7FF)
-        {
-            Output.Append(static_cast<Char>(0xC0 | (Codepoint >> 6)));
-            Output.Append(static_cast<Char>(0x80 | (Codepoint & 0x3F)));
-        }
-        else if (Codepoint <= 0xFFFF)
-        {
-            Output.Append(static_cast<Char>(0xE0 |  (Codepoint >> 12)));
-            Output.Append(static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F)));
-            Output.Append(static_cast<Char>(0x80 |  (Codepoint        & 0x3F)));
-        }
-        else
-        {
-            Output.Append(static_cast<Char>(0xF0 |  (Codepoint >> 18)));
-            Output.Append(static_cast<Char>(0x80 | ((Codepoint >> 12) & 0x3F)));
-            Output.Append(static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F)));
-            Output.Append(static_cast<Char>(0x80 |  (Codepoint        & 0x3F)));
-        }
-    }
-  
     /// \brief Converts a UTF-8 text view to a UTF-16 sequence.
     ///
     /// \note Decodes each UTF-8 codepoint from \p Content and encodes it as one or two UTF-16 code units.
@@ -816,7 +785,7 @@ inline namespace Base
 
         if constexpr (Capacity == 0)
         {
-            Result.Reserve(Content.GetSize());
+            Result.Reserve(Content.GetSize() + 1);
         }
 
         for (UInt Index = 0; Index < Content.GetSize(); )
@@ -832,74 +801,8 @@ inline namespace Base
                 Result.Append(static_cast<Wide>(0xDC00 | (Codepoint & 0x3FF)));
             }
         }
+
+        Result.GetData()[Result.GetSize()] = '\0';
         return Result;
-    }
-
-    /// \brief Converts a UTF-16 sequence to a UTF-8 text sequence.
-    ///
-    /// \note Decodes each UTF-16 code unit from \p Content and encodes it as one to four UTF-8 bytes.
-    ///
-    /// \param Content The UTF-16 sequence to convert.
-    /// \return A sequence of UTF-8 bytes representing the converted text.
-    template<UInt Capacity = 0>
-    constexpr String<Capacity> StrConvertUTF8(ConstSpan<Wide> Content)
-    {
-        String<Capacity> Result;
-
-        if constexpr (Capacity == 0)
-        {
-            Result.Reserve(Content.GetSize());
-        }
-
-        for (UInt Index = 0; Index < Content.GetSize(); )
-        {
-            const Wide Unit = Content[Index++];
-
-            UInt32 Codepoint;
-
-            if (Unit >= 0xD800 && Unit <= 0xDBFF)
-            {
-                if (Index < Content.GetSize())
-                {
-                    if (const Wide Low = Content[Index++]; Low >= 0xDC00 && Low <= 0xDFFF)
-                    {
-                        Codepoint = 0x10000 + ((static_cast<UInt32>(Unit - 0xD800) << 10) | (Low - 0xDC00));
-                    }
-                    else
-                    {
-                        Codepoint = 0xFFFD;
-                        --Index;
-                    }
-                }
-                else
-                {
-                    Codepoint = 0xFFFD;
-                }
-            }
-            else if (Unit >= 0xDC00 && Unit <= 0xDFFF)
-            {
-                Codepoint = 0xFFFD;
-            }
-            else
-            {
-                Codepoint = static_cast<UInt32>(Unit);
-            }
-
-            StrAppendUTF8(Result, Codepoint);
-        }
-        return Result;
-    }
-
-    /// \brief Ensures the given container ends with the specified element, appending it if not.
-    ///
-    /// \param Output  The container to check and potentially modify.
-    /// \param Element The element that must appear at the end.
-    template<typename Type, typename Data>
-    constexpr void StrEnsureEndsWith(Ref<Type> Output, Data Element)
-    {
-        if (Output.GetSize() == 0 || Output.GetBack() != Element)
-        {
-            Output.Append(Element);
-        }
     }
 }

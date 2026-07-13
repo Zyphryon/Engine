@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Cache.hpp"
-#include "../Zyphryon.Engine/Subsystem.hpp"
+#include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -82,6 +82,14 @@ namespace Content
         ZY_INLINE void SetStatus(Status Status)
         {
             mStatus.store(Status, std::memory_order_release);
+        }
+        
+        /// \brief Gets the current loading status of the resource.
+        ///
+        /// \return The current status of the resource.
+        ZY_INLINE Status GetStatus() const
+        {
+            return mStatus.load(std::memory_order_acquire);
         }
 
         /// \brief Checks whether the resource has finished loading (successfully or with failure).

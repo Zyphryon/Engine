@@ -29,6 +29,14 @@ inline namespace Base
         /// \brief Constructs an empty bag with no allocated storage.
         ZY_INLINE Bag() = default;
 
+        /// \brief Constructs a bag by copying all keys from another bag.
+        ///
+        /// \param Other The bag to copy from.
+        ZY_INLINE Bag(ConstRef<Bag> Other)
+            : mTable { Other.mTable }
+        {
+        }
+
         /// \brief Constructs a bag by transferring ownership from another bag.
         ///
         /// \param Other The bag to move from, which will be left in an empty state.
@@ -132,6 +140,26 @@ inline namespace Base
         ZY_INLINE Bool Contains(AnyRef<KeyType> Needle) const
         {
             return mTable.Contains(Needle);
+        }
+
+        /// \brief Replaces the contents by copying all keys from \p Other.
+        ///
+        /// \param Other The bag to copy from.
+        /// \return A reference to this bag.
+        ZY_INLINE Ref<Bag> operator=(ConstRef<Bag> Other)
+        {
+            mTable = Other.mTable;
+            return (* this);
+        }
+
+        /// \brief Replaces the contents by taking ownership of \p Other's storage.
+        ///
+        /// \param Other The bag to move from. Left empty after the operation.
+        /// \return A reference to this bag.
+        ZY_INLINE Ref<Bag> operator=(AnyRef<Bag> Other)
+        {
+            mTable = Move(Other.mTable);
+            return (* this);
         }
 
     private:

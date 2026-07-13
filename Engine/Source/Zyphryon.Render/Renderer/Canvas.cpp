@@ -40,10 +40,10 @@ namespace Render
 
     void Canvas::Begin(ConstRef<Matrix4x4> Projection)
     {
-        Graphic::Slice<Byte> Slice = mService->AllocateUniforms<Byte>(sizeof(Matrix4x4));
-        Slice.Copy(ConstSpan(Projection));
+        Graphic::Transient<Matrix4x4> Slice = mService->AllocateTransientUniforms<Matrix4x4>(1);
+        Slice[0] = Projection;
 
-        mSceneStream = Slice.GetDescriptor();
+        mSceneStream = Slice.GetStream();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -306,13 +306,13 @@ namespace Render
     {
         // TODO: Non-Opaque Rect/Line pipelines.
 
-        mPipelines[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Resources://Circle.vfx");
-        mPipelines[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Resources://Ring.vfx");
-        mPipelines[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Resources://Line.vfx");
-        mPipelines[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Resources://Rect.vfx");
-        mPipelines[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Resources://RoundedRect.vfx");
+        mPipelines[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Resources://Technique/Shapes/Circle.vfx");
+        mPipelines[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Resources://Technique/Shapes/Ring.vfx");
+        mPipelines[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Resources://Technique/Shapes/Line.vfx");
+        mPipelines[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Resources://Technique/Shapes/Rect.vfx");
+        mPipelines[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Resources://Technique/Shapes/RoundedRect.vfx");
         // mPipelines[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Resources://SpritesOpaque.vfx");
-        mPipelines[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Resources://MSDF.vfx");
+        mPipelines[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Resources://Technique/Typography/MSDF.vfx");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -320,10 +320,10 @@ namespace Render
 
     void Canvas::Prepare()
     {
-        Graphic::Slice<TextEffect> Slice = mService->AllocateUniforms<TextEffect>(mGlyphEffects.GetSize());
+        Graphic::Transient<TextEffect> Slice = mService->AllocateTransientUniforms<TextEffect>(mGlyphEffects.GetSize());
         Slice.Copy<TextEffect>(mGlyphEffects);
 
-        mGlyphEffectsStream = Slice.GetDescriptor();
+        mGlyphEffectsStream = Slice.GetStream();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -357,7 +357,7 @@ namespace Render
 
             if (Block.Size > 0)
             {
-                Graphic::Slice<Byte> Slice = mService->AllocateUniforms<Byte>(Block.Size);
+                Graphic::Transient<Byte> Slice = mService->AllocateTransientUniforms<Byte>(Block.Size);
 
                 for (ConstRef<Graphic::Schema::UniformField> Member : Block.Structure)
                 {
@@ -372,12 +372,12 @@ namespace Render
                         }
                         else
                         {
-                            LOG_WARNING("Material mismatch uniform type {0}", Member.Hash);
+                            LOG_W("Material mismatch uniform type {0}", Member.Hash);
                         }
                     }
                 }
 
-                mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Slice.GetDescriptor();
+                mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Slice.GetStream();
             }
 
             for (const Graphic::TextureSlot Binding : Schema.GetTextures())
@@ -402,11 +402,11 @@ namespace Render
     void Canvas::WriteShapes(Type Shape, ConstSpan<Collector::Command> Commands)
     {
         // Start another draw command.
-        mCommand = &mService->AllocateCommand();
+        mCommand = mService->AllocateTransientCommands(1).GetData();
         mCommand->Pipeline = mPipelines[Enum::Cast(Shape)]->GetHandle();
 
         // Draw all shapes in the batch using a single draw call with a callback to write each instance.
-        Draw<ShapeLayout>(Commands.GetSize(), [&](Graphic::Slice<ShapeLayout> Instances)
+        Draw<ShapeLayout>(Commands.GetSize(), [&](Graphic::Transient<ShapeLayout> Instances)
         {
             for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
             {
@@ -425,14 +425,14 @@ namespace Render
     void Canvas::WriteSprites(ConstSpan<Collector::Command> Commands)
     {
         // Start another draw command.
-        mCommand = &mService->AllocateCommand();
+        mCommand = mService->AllocateTransientCommands(1).GetData();
 
         // Since all commands in this batch share the same pipeline and material, we bind them once for the entire batch.
         Ref<SpriteCommand> First = mSprites[Commands.GetFront().Entry.Slot];
         Bind(First.Pipeline, First.Material);
 
         // Draw all shapes in the batch using a single draw call with a callback to write each instance.
-        Draw<SpriteLayout>(Commands.GetSize(), [&](Graphic::Slice<SpriteLayout> Instances)
+        Draw<SpriteLayout>(Commands.GetSize(), [&](Graphic::Transient<SpriteLayout> Instances)
         {
             for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
             {
@@ -451,7 +451,7 @@ namespace Render
     void Canvas::WriteGlyphs(ConstSpan<Collector::Command> Commands)
     {
         // Start another draw command.
-        mCommand = &mService->AllocateCommand();
+        mCommand = mService->AllocateTransientCommands(1).GetData();
 
         // Since all commands in this batch share the same pipeline and material, we bind them once for the entire batch.
         Ref<GlyphCommand> First = mGlyphs[Commands.GetFront().Entry.Slot];
@@ -461,7 +461,7 @@ namespace Render
         mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = mGlyphEffectsStream;
 
         // Draw all glyphs in the batch using a single draw call with a callback to write each instance.
-        Draw<GlyphLayout>(Commands.GetSize(), [&](Graphic::Slice<GlyphLayout> Instances)
+        Draw<GlyphLayout>(Commands.GetSize(), [&](Graphic::Transient<GlyphLayout> Instances)
         {
             for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
             {

@@ -127,9 +127,9 @@ inline namespace Base
         /// \param Handle     The handle at which to allocate the object.
         /// \param Parameters The constructor arguments to forward to \p Type.
         template<typename... Arguments>
-        ZY_INLINE constexpr void Allocate(Handle Handle, AnyRef<Arguments>... Parameters)
+        ZY_INLINE constexpr void Acquire(Handle Handle, AnyRef<Arguments>... Parameters)
         {
-            mAllocator.Allocate(Handle);
+            mAllocator.Acquire(Handle);
 
             mStorage.Construct(Handle - 1, Forward<Arguments>(Parameters)...);
         }
@@ -229,6 +229,24 @@ inline namespace Base
             ZY_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range handle");
 
             return mStorage[Handle - 1];
+        }
+
+        /// \brief Serializes the state of the object to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the object with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mAllocator);
+
+            // Serialize each element in the storage array.
+            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            {
+                if (mAllocator.IsAllocated(Handle))
+                {
+                    Archive.Serialize(mStorage[Handle - 1]);
+                }
+            }
         }
 
     private:

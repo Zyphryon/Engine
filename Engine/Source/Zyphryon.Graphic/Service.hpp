@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Backend/Driver.hpp"
-#include "Slice.hpp"
+#include "Driver.hpp"
+#include "Transient.hpp"
 #include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -67,9 +67,9 @@ namespace Graphic
         /// \brief Allocates transient vertex data for the current producer frame.
         ///
         /// \param Count The number of vertices to allocate.
-        /// \return A \ref Slice mapping the CPU memory and the corresponding GPU stream for the allocated vertices.
+        /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated vertices.
         template<typename Format>
-        ZY_INLINE Slice<Format> AllocateVertices(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateTransientVertices(UInt32 Count)
         {
             return RequestInFlightArena<Format>(mFrames[mProducer].Vertices, sizeof(Format), Count);
         }
@@ -77,9 +77,9 @@ namespace Graphic
         /// \brief Allocates transient index data for the current producer frame.
         ///
         /// \param Count The number of indices to allocate.
-        /// \return A \ref Slice mapping the CPU memory and the corresponding GPU stream for the allocated indices.
+        /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated indices.
         template<typename Format>
-        ZY_INLINE Slice<Format> AllocateIndices(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateTransientIndices(UInt32 Count)
         {
             return RequestInFlightArena<Format>(mFrames[mProducer].Indices, sizeof(Format), Count);
         }
@@ -87,9 +87,9 @@ namespace Graphic
         /// \brief Allocates transient uniform data for the current producer frame.
         ///
         /// \param Count The number of uniform blocks to allocate.
-        /// \return A \ref Slice mapping the CPU memory and the corresponding GPU stream for the allocated uniforms.
+        /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated uniforms.
         template<typename Format>
-        ZY_INLINE Slice<Format> AllocateUniforms(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateTransientUniforms(UInt32 Count)
         {
             const UInt16 Alignment = mDescription.Capabilities.UniformBlockAlignment;
 
@@ -99,10 +99,16 @@ namespace Graphic
 
         /// \brief Allocates transient command data for the current frame.
         ///
-        /// \return A \ref Command representing the allocated command data.
-        ZY_INLINE Ref<Command> AllocateCommand()
+        /// \param Count The number of commands to allocate.
+        /// \return A transient span over the allocated command storage.
+        ZY_INLINE Span<Command> AllocateTransientCommands(UInt32 Count)
         {
-            return mFrames[mProducer].Commands.Append();
+            Ref<Sequence<Command>> Collection = mFrames[mProducer].Commands;
+
+            const UInt Offset = Collection.GetSize();
+            Collection.Advance(Count);
+
+            return Span(Collection.GetData() + Offset, Count);;
         }
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
@@ -414,9 +420,9 @@ namespace Graphic
         /// \param Arena  The in-flight arena from which to allocate the transient data.
         /// \param Stride The byte stride of each element, used for alignment and reservation.
         /// \param Count  The number of elements to allocate.
-        /// \return A \ref Slice mapping the allocated CPU memory and the corresponding GPU stream.
+        /// \return A transient mapping the allocated CPU memory and the corresponding GPU stream.
         template<typename Type>
-        ZY_INLINE Slice<Type> RequestInFlightArena(Ref<InFlightArena> Arena, UInt32 Stride, UInt32 Count)
+        ZY_INLINE Transient<Type> RequestInFlightArena(Ref<InFlightArena> Arena, UInt32 Stride, UInt32 Count)
         {
             Ref<Sequence<Byte>> Buffer = Arena.Memory;
 
@@ -426,7 +432,7 @@ namespace Graphic
             Buffer.Advance(Offset - Buffer.GetSize() + Size);
 
             const Ptr<Type> Address = reinterpret_cast<Ptr<Type>>(Buffer.GetData() + Offset);
-            return Slice<Type>(Address, Stream(Arena.Buffer, Stride, Offset));
+            return Transient<Type>(Address, Stream(Arena.Buffer, Stride, Offset));
         }
 
         /// \brief Initializes all in-flight resources for each frame.
@@ -439,11 +445,9 @@ namespace Graphic
         /// \param Frame The in-flight frame to update.
         void UploadInFlightFrame(Ref<InFlightFrame> Frame);
 
-        /// \brief Registers default backends.
-        void RegisterBackends();
+        void RegisterBuiltinDrivers();
 
-        /// \brief Registers default content loaders for graphic resources.
-        void RegisterContentLoaders();
+        void RegisterBuiltinLoaders();
 
     private:
 

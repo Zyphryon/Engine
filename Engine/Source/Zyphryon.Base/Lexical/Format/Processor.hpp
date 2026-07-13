@@ -389,15 +389,4 @@ namespace Format
             }
         }
     };
-
-    /// \brief Formats arguments into the buffer using the given pattern and appends a null terminator.
-    ///
-    /// \param Buffer     The output buffer to write to.
-    /// \param Format     The format pattern containing literal text and placeholders.
-    /// \param Parameters The arguments to substitute into the pattern.
-    template<typename Output, UInt Capacity, typename ...Arguments>
-    ZY_INLINE void Print(Ref<Output> Buffer, AnyRef<Pattern<Capacity>> Format, AnyRef<Arguments>... Parameters)
-    {
-        Processor<Output>::Format(Buffer, Format, Parameters...);
-    }
 }

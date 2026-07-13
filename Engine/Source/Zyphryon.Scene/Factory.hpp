@@ -79,7 +79,7 @@ namespace Scene
         template<typename Type>
         ZY_INLINE static void OnRead(Archive<Reader> Archive, Ptr<void> Component)
         {
-            Archive.Serialize(Text::Empty(), * static_cast<Ptr<Type>>(Component));
+            Archive.Serialize(* static_cast<Ptr<Type>>(Component));
         }
 
         /// \brief Write handler generated for `Type` by `Create<Type>()`.
@@ -89,7 +89,7 @@ namespace Scene
         template<typename Type>
         ZY_INLINE static void OnWrite(Archive<Writer> Archive, Ptr<void> Component)
         {
-            Archive.Serialize(Text::Empty(), * static_cast<Ptr<Type>>(Component));
+            Archive.Serialize(* static_cast<Ptr<Type>>(Component));
         }
 
     protected:

@@ -35,7 +35,8 @@ LIST(APPEND PROJECT_DEFINES "DR_MP3_FLOAT_OUTPUT")
 LIST(APPEND PROJECT_DEFINES "DR_MP3_NO_STDIO")
 
 FetchContent_Declare(External_DRLIBS
-        GIT_REPOSITORY https://github.com/mackron/dr_libs)
+        GIT_REPOSITORY https://github.com/mackron/dr_libs
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_DRLIBS)
 
 ADD_LIBRARY(DrLibsMP3 INTERFACE)

@@ -62,70 +62,65 @@ inline namespace Base
         ///
         /// \param Archive The underlying reader or writer to delegate to.
         ZY_INLINE Archive(Ref<Object> Archive)
-            : mArchive{Archive}
+            : mArchive { Archive }
         {
         }
 
-        /// \brief Serializes a boolean value.
-        ///
-        /// \param Value The value to read into or write from.
-        ZY_INLINE void Serialize(Text, Ref<Bool> Value)
-        {
-            if constexpr (IsReader)
-            {
-                Value = mArchive.template Read<Bool>();
-            }
-            else
-            {
-                mArchive.template Write<Bool>(Value);
-            }
-        }
-
-        /// \brief Serializes an enumeration value via its underlying integral type.
+        /// \brief Serializes a value of any supported type.
         ///
         /// \param Value The value to read into or write from.
         template<typename Type>
-        ZY_INLINE void Serialize(Text, Ref<Type> Value)
-            requires IsEnum<Type>
+        ZY_INLINE void Serialize(Ref<Type> Value)
+            requires (!IsContainer<Type>)
         {
-            using Underlying = Underlying<Type>;
-
-            Underlying Number = static_cast<Underlying>(Value);
-            Serialize(Text::Empty(), Number);
-
-            if constexpr (IsReader)
+            if constexpr (IsAnyOf<Type, Bool>)
             {
-                Value = static_cast<Type>(Number);
+                if constexpr (IsReader)
+                {
+                    Value = mArchive.template Read<Bool>();
+                }
+                else
+                {
+                    mArchive.template Write<Bool>(Value);
+                }
             }
-        }
-
-        /// \brief Serializes an integral or floating-point value.
-        ///
-        /// \param Value The value to read into or write from.
-        template<typename Type>
-        ZY_INLINE void Serialize(Text, Ref<Type> Value)
-            requires IsNumeric<Type>
-        {
-            if constexpr (IsReader)
+            else if constexpr (IsEnum<Type>)
             {
-                Value = mArchive.template Read<Type>();
-            }
-            else
-            {
-                mArchive.template Write<Type>(Value);
-            }
-        }
+                using Underlying = Underlying<Type>;
 
-        /// \brief Serializes an object value by copying its raw bytes.
-        ///
-        /// \param Value The value to read into or write from.
-        template<typename Type>
-        ZY_INLINE void Serialize(Text, Ref<Type> Value)
-            requires (!IsEnum<Type> && !IsNumeric<Type> && !IsContainer<Type>)
-        {
-            if      constexpr (IsSerializable<Type, Archive>)
+                Underlying Number = static_cast<Underlying>(Value);
+                Serialize(Number);
+
+                if constexpr (IsReader)
+                {
+                    Value = static_cast<Type>(Number);
+                }
+            }
+            else if constexpr (IsNumeric<Type>)
+            {
+                if constexpr (IsReader)
+                {
+                    Value = mArchive.template Read<Type>();
+                }
+                else
+                {
+                    mArchive.template Write<Type>(Value);
+                }
+            }
+            else if constexpr (IsSerializable<Type, Archive>)
             {
                 Value.Serialize(* this);
+            }
+            else if constexpr (IsContiguousOf<Type, Char>)
+            {
+                if constexpr (IsReader)
+                {
+                    Value = mArchive.ReadText();
+                }
+                else
+                {
+                    mArchive.WriteText(Value);
+                }
             }
             else if constexpr (IsTriviallyCopyable<Type>)
             {
@@ -133,7 +128,7 @@ inline namespace Base
             }
             else
             {
-                static_assert(false, "Type must implement Serializable interface or be trivially copyable");
+                static_assert(!IsAnyOf<Type, Type>, "Type must implement Serializable interface or be trivially copyable");
             }
         }
 
@@ -141,7 +136,7 @@ inline namespace Base
         ///
         /// \param Value The container to read into or write from.
         template<typename Type>
-        ZY_INLINE void Serialize(Text, Ref<Type> Value)
+        ZY_INLINE void Serialize(Ref<Type> Value)
             requires IsContiguousOf<Type, typename Type::Element>
         {
             if constexpr (IsResizable<Type>)
@@ -159,31 +154,14 @@ inline namespace Base
 
             if constexpr (IsTriviallyCopyable<typename Type::Element>)
             {
-                SerializePtr(Value.GetData(), Value.GetSize());
+                SerializeBlock(Value.GetData(), Value.GetSize());
             }
             else
             {
                 for (Ref<typename Type::Element> Element: Value)
                 {
-                    Serialize(Text::Empty(), Element);
+                    Serialize(Element);
                 }
-            }
-        }
-
-        /// \brief Serializes a text string by reading or writing its contents.
-        ///
-        /// \param Value The string to read into or write from.
-        template<typename Type>
-        ZY_INLINE void Serialize(Text, Ref<Type> Value)
-            requires IsContiguousOf<Type, Char>
-        {
-            if constexpr (IsReader)
-            {
-                Value = mArchive.ReadText();
-            }
-            else
-            {
-                mArchive.WriteText(Value);
             }
         }
 

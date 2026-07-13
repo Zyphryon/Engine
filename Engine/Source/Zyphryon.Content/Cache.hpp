@@ -77,7 +77,7 @@ namespace Content
         {
             Guard Lock(mMutex);
 
-            const UInt64 ID = Hash(Key.GetPath());
+            const UInt64 ID = Hash(Key);
 
             if (const Ptr<Retainer<Type>> Asset = mRegistry.Find(ID))
             {
@@ -103,7 +103,7 @@ namespace Content
         {
             Guard Lock(mMutex);
 
-            return mRegistry.EraseIf(Hash(Key.GetPath()), [](ConstRetainer<Type> Asset)
+            return mRegistry.EraseIf(Hash(Key), [](ConstRetainer<Type> Asset)
             {
                 return Asset->HasFinished();
             });

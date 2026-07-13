@@ -104,11 +104,21 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Enumerate(ConstRef<Uri> Key, AnyRef<Filesystem::OnEnumerate> Callback) const
+    void Service::Enumerate(ConstRef<Uri> Key, AnyRef<Filesystem::OnEnumerate> Callback)
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {
-            Mount->Enumerate(Key.GetPath(), Move(Callback));
+            if (Mount->IsAsynchronous())
+            {
+                Mount->Enumerate(Key.GetPath(), Move(Callback));
+            }
+            else
+            {
+                GetService<Job::Service>().SubmitOnBackground([Key, Mount, Callback = Move(Callback)] mutable
+                {
+                    Mount->Enumerate(Key.GetPath(), Move(Callback));
+                });
+            }
         }
         else
         {
@@ -123,7 +133,17 @@ namespace Content
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {
-            Mount->Delete(Key.GetPath(), Move(Callback));
+            if (Mount->IsAsynchronous())
+            {
+                Mount->Delete(Key.GetPath(), Move(Callback));
+            }
+            else
+            {
+                GetService<Job::Service>().SubmitOnBackground([Key, Mount, Callback = Move(Callback)] mutable
+                {
+                    Mount->Delete(Key.GetPath(), Move(Callback));
+                });
+            }
         }
         else
         {
@@ -140,7 +160,17 @@ namespace Content
 
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Source.GetSchema())))
         {
-            Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
+            if (Mount->IsAsynchronous())
+            {
+                Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
+            }
+            else
+            {
+                GetService<Job::Service>().SubmitOnBackground([Source, Destination, Mount, Callback = Move(Callback)] mutable
+                {
+                    Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
+                });
+            }
         }
         else
         {
@@ -151,11 +181,21 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback) const
+    void Service::Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback)
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {
-            Mount->Read(Key.GetPath(), Move(Callback));
+            if (Mount->IsAsynchronous())
+            {
+                Mount->Read(Key.GetPath(), Move(Callback));
+            }
+            else
+            {
+                GetService<Job::Service>().SubmitOnBackground([Key, Mount, Callback = Move(Callback)] mutable
+                {
+                    Mount->Read(Key.GetPath(), Move(Callback));
+                });
+            }
         }
         else
         {
@@ -170,7 +210,7 @@ namespace Content
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {
-            Mount->Write(Key.GetPath(), Data, Move(Callback));
+            Mount->Write(Key.GetPath(), Data, Move(Callback));  // TODO: Use Blob for Async?
         }
         else
         {
@@ -256,17 +296,17 @@ namespace Content
                 }
                 else
                 {
-                    LOG_WARNING("Content: Failed to parse '{0}'", Key.GetFilename());
+                    LOG_W("Content: Failed to parse '{0}'", Key.GetFilename());
                 }
             }
             else
             {
-                LOG_WARNING("Content: Unknown file format '{0}'", Key.GetExtension());
+                LOG_W("Content: Unknown file format '{0}'", Key.GetExtension());
             }
         }
         else
         {
-            LOG_WARNING("Failed to read asset '{0}' = '{1}'", Asset->GetKey().GetPath(), Enum::GetName(Result));
+            LOG_W("Failed to read asset '{0}' = '{1}'", Asset->GetKey().GetPath(), Enum::GetName(Result));
         }
 
         if (!Successful)
@@ -287,7 +327,7 @@ namespace Content
 
         if (Complete)
         {
-            LOG_DEBUG("Content: Loading '{0}'", Asset.GetKey().GetUrl());
+            LOG_D("Content: Loading '{0}'", Asset.GetKey().GetUrl());
 
             // Invoke the resource's creation hook to allow it to realize any system-side state.
             Complete = Asset.OnCreate(GetHost());
@@ -324,7 +364,7 @@ namespace Content
 
     void Service::OnAssetDelete(Ref<Resource> Asset)
     {
-        LOG_DEBUG("Content: Unloading '{0}'", Asset.GetKey().GetUrl());
+        LOG_D("Content: Unloading '{0}'", Asset.GetKey().GetUrl());
 
         // Invoke the resource's deletion hook to release any system-side state acquired during creation.
         Asset.OnDelete(GetHost());

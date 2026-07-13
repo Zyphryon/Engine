@@ -15,28 +15,28 @@
         },
         "Layout": {
             "Attributes": [
-                ["POSITION",  "Float32x3",   0,  0, 1],
-                ["COLOR0",    "UIntNorm8x4", 0, 12, 1],
-                ["TEXCOORD0", "Float32x4",   0, 16, 1]
+                [0, "Float32x3",   0,  0, 1],
+                [1, "UIntNorm8x4", 0, 12, 1],
+                [2, "Float32x4",   0, 16, 1]
             ],
             "Primitive": "TriangleStrip"
         }
     },
     "Signature": {
         "Uniforms": [
-            { "Slot": "Scene", "Name": "Camera", "Type": "Float4", "Count": 4 }
+            { "Slot": "Global", "Name": "Camera", "Type": "Float4", "Count": 4 }
         ]
     },
     "Program": {
         "Defines": ["SHAPE_LINE"],
         "Shaders": {
             "GLSL": [
-                { "Path": "Primitive-GLSL.shader", "Stage": "Vertex"   },
-                { "Path": "Primitive-GLSL.shader", "Stage": "Fragment" }
+                { "Path": "Primitive-GLSL.shd", "Stage": "Vertex"   },
+                { "Path": "Primitive-GLSL.shd", "Stage": "Fragment" }
             ],
             "HLSL": [
-                { "Path": "Primitive-HLSL.shader", "Stage": "Vertex"   },
-                { "Path": "Primitive-HLSL.shader", "Stage": "Fragment" }
+                { "Path": "Primitive-HLSL.shd", "Stage": "Vertex"   },
+                { "Path": "Primitive-HLSL.shd", "Stage": "Fragment" }
             ]
         }
     }

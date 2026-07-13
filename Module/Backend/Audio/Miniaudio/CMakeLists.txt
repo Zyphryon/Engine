@@ -41,7 +41,8 @@ SET(MINIAUDIO_NO_GENERATION       ON  CACHE BOOL   "" FORCE)
 SET(MINIAUDIO_INSTALL             OFF CACHE BOOL   "" FORCE)
 
 FetchContent_Declare(External_Miniaudio
-        GIT_REPOSITORY https://github.com/mackron/miniaudio)
+        GIT_REPOSITORY https://github.com/mackron/miniaudio
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_Miniaudio)
 
 LIST(APPEND PROJECT_DEPENDENCIES "miniaudio")

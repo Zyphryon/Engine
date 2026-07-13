@@ -44,5 +44,14 @@ namespace Engine
         {
             return Dependency<Type>::Fetch();
         }
+        
+        /// \brief Gets the resolved instance of the specified service type.
+        ///
+        /// \return A constant reference to the resolved service instance.
+        template<typename Type>
+        ZY_INLINE ConstRef<Type> GetService() const
+        {
+            return Dependency<Type>::Fetch();
+        }
     };
 }

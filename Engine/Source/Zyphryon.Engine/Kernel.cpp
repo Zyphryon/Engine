@@ -93,7 +93,7 @@ namespace Engine
     {
 #ifndef   ZY_MODE_HEADLESS
 
-        LOG_INFO("Kernel: Creating platform service");
+        LOG_I("Kernel: Creating platform service");
         ConstRetainer<Platform::Service> Platform = Register<Platform::Service>();
         if (!Platform->Initialize(
             mConfig.GetWindowMonitor(),
@@ -103,11 +103,11 @@ namespace Engine
             mConfig.IsWindowBorderless(),
             mConfig.IsWindowFullscreen()))
         {
-            LOG_DEBUG("Kernel: Failed to initialize platform service");
+            LOG_D("Kernel: Failed to initialize platform service");
             return;
         }
 
-        LOG_INFO("Kernel: Creating input service");
+        LOG_I("Kernel: Creating input service");
         ConstRetainer<Input::Service> Input = Register<Input::Service>();
         Input->OnWindowExit.AddMethod<& Kernel::OnWindowExit>(this);
         Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
@@ -115,21 +115,21 @@ namespace Engine
 
 #endif // ZY_MODE_HEADLESS
 
-        LOG_INFO("Kernel: Creating job service");
+        LOG_I("Kernel: Creating job service");
         Register<Job::Service>();
 
-        LOG_INFO("Kernel: Creating content service");
+        LOG_I("Kernel: Creating content service");
         Register<Content::Service>();
 
-        LOG_INFO("Kernel: Creating scene service");
+        LOG_I("Kernel: Creating scene service");
         Register<Scene::Service>();
 
 #ifndef   ZY_MODE_HEADLESS
 
-        LOG_INFO("Kernel: Creating graphic service");
+        LOG_I("Kernel: Creating graphic service");
         ConstRetainer<Graphic::Service> Graphic = Register<Graphic::Service>();
 
-        LOG_INFO("Kernel: Creating audio service");
+        LOG_I("Kernel: Creating audio service");
         ConstRetainer<Audio::Service> Audio = Register<Audio::Service>();
 
 #endif // ZY_MODE_HEADLESS
@@ -143,7 +143,7 @@ namespace Engine
 #ifndef   ZY_MODE_HEADLESS
         Ref<Platform::Window> Window = Platform->GetWindow();
 
-        LOG_INFO("Kernel: Initializing graphic service");
+        LOG_I("Kernel: Initializing graphic service");
         Graphic::Config GraphicsConfig;
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();
@@ -161,7 +161,7 @@ namespace Engine
 
         Graphic->Initialize(mConfig.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
 
-        LOG_INFO("Kernel: Initializing audio service");
+        LOG_I("Kernel: Initializing audio service");
         Audio->Initialize(mConfig.GetAudioDriver(), mConfig.GetAudioAdapter());
 
 #endif // ZY_MODE_HEADLESS

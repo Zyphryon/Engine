@@ -38,7 +38,7 @@
 #include "Zyphryon.Base/Memory/Retainable.hpp"
 #include "Zyphryon.Base/Memory/Retainer.hpp"
 #include "Zyphryon.Base/Memory/Unique.hpp"
-#include "Zyphryon.Base/Metadata/Enumerator.hpp"
+#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 #include "Zyphryon.Base/Pattern/Switchable.hpp"
 #include "Zyphryon.Base/Platform/Filesystem/Filesystem.hpp"
 #include "Zyphryon.Base/Platform/Telemetry/Log.hpp"

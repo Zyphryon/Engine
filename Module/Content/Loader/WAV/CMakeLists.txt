@@ -34,7 +34,8 @@ LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 LIST(APPEND PROJECT_DEFINES "DR_WAV_NO_STDIO")
 
 FetchContent_Declare(External_DRLIBS
-        GIT_REPOSITORY https://github.com/mackron/dr_libs)
+        GIT_REPOSITORY https://github.com/mackron/dr_libs
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_DRLIBS)
 
 ADD_LIBRARY(DrLibsWAV INTERFACE)

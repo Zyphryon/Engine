@@ -52,7 +52,7 @@ namespace Audio::Miniaudio
     {
         if (ma_context_init(nullptr, 0, nullptr, AddressOf(mContext)) != MA_SUCCESS)
         {
-            LOG_ERROR("Failed to initialize Miniaudio context.");
+            LOG_E("Failed to initialize Miniaudio context.");
             return false;
         }
 
@@ -61,7 +61,7 @@ namespace Audio::Miniaudio
 
         if (ma_engine_init(AddressOf(Configuration), AddressOf(mEngine)) != MA_SUCCESS)
         {
-            LOG_ERROR("Failed to initialize Miniaudio engine.");
+            LOG_E("Failed to initialize Miniaudio engine.");
             return false;
         }
 
@@ -304,7 +304,7 @@ namespace Audio::Miniaudio
 
         if (ma_context_enumerate_devices(AddressOf(mContext), Callback, this) != MA_SUCCESS)
         {
-            LOG_ERROR("Failed to retrieve device list.");
+            LOG_E("Failed to retrieve device list.");
         }
 
         if (const Ptr<ma_device> Device = ma_engine_get_device(AddressOf(mEngine)))

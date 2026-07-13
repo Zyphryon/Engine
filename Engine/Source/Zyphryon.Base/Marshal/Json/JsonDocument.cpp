@@ -101,7 +101,7 @@ inline namespace Base
                             Codepoint |= (Hex - 'A' + 10);
                         }
                     }
-                    StrAppendUTF8(Result, Codepoint);
+                    Result.AppendCodepoint(Codepoint);
                 }
                 break;
                 default:

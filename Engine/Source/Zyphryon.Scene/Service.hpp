@@ -20,7 +20,7 @@
 #include "Tag.hpp"
 #include "Timer.hpp"
 #include "World.hpp"
-#include "../Zyphryon.Engine/Subsystem.hpp"
+#include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -98,7 +98,7 @@ namespace Scene
         /// \return The entity with the given name, or an invalid entity if not found.
         ZY_INLINE Entity GetEntity(Text Name) const
         {
-            const Entity::Handle Handle = mWorld.lookup(String<128>::CStr(Name).GetData());
+            const Entity::Handle Handle = mWorld.lookup(Name.GetData());
             return Entity(Handle);
         }
 
@@ -109,7 +109,7 @@ namespace Scene
         template<typename Type>
         ZY_INLINE Component<Type> GetComponent(Text ID) const
         {
-            return Component<Type>(mWorld.component<Type>(String<128>::CStr(ID).GetData()));
+            return Component<Type>(mWorld.component<Type>(ID.GetData()));
         }
 
         /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.
@@ -162,7 +162,7 @@ namespace Scene
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZY_INLINE Entity CreateObserver(Text Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::observer_builder<> Builder = mWorld.observer<>(String<128>::CStr(Name).GetData());
+            flecs::observer_builder<> Builder = mWorld.observer<>(Name.GetData());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
 
             Builder.event(Event.GetHandle());
@@ -182,7 +182,7 @@ namespace Scene
         template<typename... CompileExpression, typename... RuntimeExpression>
         ZY_INLINE Query CreateQuery(Text Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::query_builder<> Builder = mWorld.query_builder<>(String<128>::CStr(Name).GetData());
+            flecs::query_builder<> Builder = mWorld.query_builder<>(Name.GetData());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
 
             switch (Policy)
@@ -222,7 +222,7 @@ namespace Scene
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZY_INLINE System CreateSystem(Text Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::system_builder<> Builder = mWorld.system<>(String<128>::CStr(Name).GetData());
+            flecs::system_builder<> Builder = mWorld.system<>(Name.GetData());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
 
             switch (Execution)
@@ -257,7 +257,7 @@ namespace Scene
         template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
         ZY_INLINE System CreateSystemWithLifecycle(Text Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::system_builder<> Builder = mWorld.system<>(String<128>::CStr(Name).GetData());
+            flecs::system_builder<> Builder = mWorld.system<>(Str(Name).GetData());
             DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
 
             switch (Execution)
@@ -316,7 +316,18 @@ namespace Scene
         ///
         /// \param Archive The binary data reader to read the hierarchy from.
         /// \return The root entity of the loaded hierarchy.
-        Entity LoadHierarchy(Ref<Reader> Archive);
+        ZY_INLINE Entity LoadHierarchy(Ref<Reader> Archive)
+        {
+            const Entity Actor = CreateEntity();
+            LoadHierarchy(Archive, Actor);
+            return Actor;
+        }
+
+        /// \brief Loads a full entity hierarchy from a binary archive into the specified root entity.
+        ///
+        /// \param Archive The binary data reader to read the hierarchy from.
+        /// \param Actor   The root entity to load the hierarchy into.
+        void LoadHierarchy(Ref<Reader> Archive, Entity Actor);
 
         /// \brief Saves a full entity hierarchy rooted at the given actor to a binary archive.
         ///

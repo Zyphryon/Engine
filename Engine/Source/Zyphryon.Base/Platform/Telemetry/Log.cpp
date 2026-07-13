@@ -13,11 +13,11 @@
 #include "Log.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#   include <windows.h>
+#include <windows.h>
 #elif defined(ZY_PLATFORM_ANDROID)
-#   include <android/log.h>
+#include <android/log.h>
 #elif defined(ZY_PLATFORM_WEB)
-#   include <emscripten/emscripten.h>
+#include <emscripten/emscripten.h>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,7 +45,7 @@ namespace Log
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Write(Priority Priority, Text Message)
+    void Write(UInt8 Priority, Text Message)
     {
         static Bool _Initialized = Initialize();
 
@@ -61,7 +61,7 @@ namespace Log
 
         const UInt8 Level = static_cast<UInt8>(Priority);
 
-        String<Detail::kPrintBufferCapacity> Output;
+        String<4096> Output;
         Output.Append(kPrefixes[Level]);
         Output.Append(Message);
         Output.Append("\033[0m\n"_Text);
@@ -97,7 +97,9 @@ namespace Log
     void Flush()
     {
 #if   defined(ZY_PLATFORM_WINDOWS) || defined(ZY_PLATFORM_LINUX) || defined(ZY_PLATFORM_MACOS)
+
         fflush(stdout);
+
 #endif
     }
 }

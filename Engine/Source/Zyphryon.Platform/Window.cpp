@@ -13,7 +13,7 @@
 #include "Window.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Backend/Win32/Window.inl"
+#include "Driver/Win32/Window.inl"
 #elif defined(ZY_PLATFORM_WEB)
-#include "Backend/Emscripten/Window.inl"
+#include "Driver/Emscripten/Window.inl"
 #endif

@@ -825,7 +825,7 @@ namespace Scene
         /// \return This entity, allowing for method chaining.
         ZY_INLINE Entity SetName(Text Name) const
         {
-            mHandle.set_name(Str64::CStr(Name).GetData());
+            mHandle.set_name(Name.GetData());
             return (* this);
         }
 
@@ -844,7 +844,7 @@ namespace Scene
         /// \return This entity, allowing for method chaining.
         ZY_INLINE Entity SetAlias(Text Name) const
         {
-            mHandle.set_doc_name(Str64::CStr(Name).GetData());
+            mHandle.set_doc_name(Name.GetData());
             return (* this);
         }
 

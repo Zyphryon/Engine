@@ -18,8 +18,8 @@ PROJECT(ZyEngine VERSION 1.0.0 LANGUAGES CXX)
 ## Configuration
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_GRAPHIC_BACKEND_D3D11 "Backend: Enable D3D11 as graphics backend"  ${WIN32})
-OPTION(ZY_GRAPHIC_BACKEND_GLES3 "Backend: Enable GLES3 as graphics backend"  ${EMSCRIPTEN})
+OPTION(ZY_GRAPHIC_BACKEND_D3D11 "Backend: Enable D3D11 as graphics backend" ${WIN32})
+OPTION(ZY_GRAPHIC_BACKEND_GLES3 "Backend: Enable GLES3 as graphics backend" ${EMSCRIPTEN})
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Code
@@ -63,6 +63,7 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 
     FetchContent_Declare(External_Tracy
             GIT_REPOSITORY https://github.com/wolfpld/tracy
+            GIT_SHALLOW    TRUE
             GIT_TAG        v0.13.1)
     FetchContent_MakeAvailable(External_Tracy)
 
@@ -101,7 +102,7 @@ ENDIF ()
 
 FetchContent_Declare(External_Flecs
         GIT_REPOSITORY https://github.com/SanderMertens/flecs
-        GIT_TAG        8512a1424c5f8fcff916603a20f8c24ed0c0316d)
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_Flecs)
 
 LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
@@ -112,7 +113,8 @@ LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 
 FetchContent_Declare(External_Enchantum
         GIT_REPOSITORY https://github.com/ZXShady/enchantum
-        GIT_TAG        0d6115a9eb3e6510e38c73566cd9bc0131ebfc8c)
+        GIT_TAG        main
+        GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_Enchantum)
 
 LIST(APPEND PROJECT_DEPENDENCIES "enchantum")
@@ -125,6 +127,7 @@ IF (ZY_GRAPHIC_BACKEND_GLES3 AND NOT ANDROID AND NOT EMSCRIPTEN)
     FetchContent_Declare(External_Glad
             GIT_REPOSITORY https://github.com/Dav1dde/glad
             GIT_TAG        v2.0.8
+            GIT_SHALLOW    TRUE
             SOURCE_SUBDIR  cmake)
     FetchContent_MakeAvailable(External_Glad)
 

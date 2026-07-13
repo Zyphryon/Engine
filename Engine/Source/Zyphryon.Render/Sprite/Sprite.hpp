@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "../../../../Engine/Source/Zyphryon.Graphic/Material.hpp"
+#include "Zyphryon.Graphic/Material.hpp"
 #include "Zyphryon.Math/Color.hpp"
 #include "Zyphryon.Math/Geometry/Rect.hpp"
 

@@ -178,6 +178,37 @@ inline namespace Base
         return static_cast<Type>(1) / Sqrt(Value);
     }
 
+    /// \brief Computes the logarithm of a number with a given base.
+    ///
+    /// \param Number The number to compute the logarithm for.
+    /// \param Base   The base of the logarithm (default is 2).
+    /// \return The logarithm of \a Number to the base \a Base.
+    template<typename Type, typename Other = UInt32>
+    ZY_INLINE Type Log(Type Number, Other Base = Other(2))
+        requires (IsReal<Type> && IsIntegral<Other>)
+    {
+        return std::log(Number) / std::log(static_cast<Type>(Base));
+    }
+
+    /// \brief Computes the integer logarithm of a number with a given base.
+    ///
+    /// \param Number The number to compute the integer logarithm for.
+    /// \param Base   The base of the logarithm (default is 2).
+    /// \return The integer logarithm of \a Number to the base \a Base.
+    template<typename Type, typename Other = Type>
+    constexpr Type Log(Type Number, Other Base = Other(2))
+        requires (IsIntegral<Type> && IsIntegral<Other>)
+    {
+        Type Result = Type(0);
+
+        while (Number >= Base)
+        {
+            Number /= Base;
+            ++Result;
+        }
+        return Result;
+    }
+
     /// \brief Returns the smallest of the provided values.
     ///
     /// \param Left       The first value to compare.
@@ -455,5 +486,31 @@ inline namespace Base
             return CountDigits<10>(Scaled / Scale) + 1 + Precision;
         }
         return CountDigits<10>(static_cast<UInt>(::Round(Value)));
+    }
+
+    /// \brief Converts 2D coordinates to a 1D index based on the width of the 2D structure.
+    ///
+    /// \param X     The x-coordinate (column index).
+    /// \param Y     The y-coordinate (row index).
+    /// \param Width The width of the 2D structure (number of columns).
+    /// \return The corresponding 1D index for the given 2D coordinates.
+    template<typename Type>
+    constexpr auto ConvertTo1D(Type X, Type Y, Type Width)
+    {
+        return Y * Width + X;
+    }
+
+    /// \brief Converts 3D coordinates to a 1D index based on the width and height of the 3D structure.
+    ///
+    /// \param X      The x-coordinate (column index).
+    /// \param Y      The y-coordinate (row index).
+    /// \param Z      The z-coordinate (depth index).
+    /// \param Width  The width of the 3D structure (number of columns).
+    /// \param Height The height of the 3D structure (number of rows).
+    /// \return The corresponding 1D index for the given 3D coordinates.
+    template<typename Type>
+    constexpr auto ConvertTo1D(Type X, Type Y, Type Z, Type Width, Type Height)
+    {
+        return Z * (Width * Height) + Y * Width + X;
     }
 }

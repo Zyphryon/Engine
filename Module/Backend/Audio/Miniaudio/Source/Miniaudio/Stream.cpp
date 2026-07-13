@@ -41,7 +41,7 @@ namespace Audio::Miniaudio
         const ma_result Result = ma_data_source_init(AddressOf(DataSourceDescriptor), this);
         if (Result != MA_SUCCESS)
         {
-            LOG_ERROR("Failed to initialize miniaudio data source");
+            LOG_E("Failed to initialize miniaudio data source");
         }
     }
 

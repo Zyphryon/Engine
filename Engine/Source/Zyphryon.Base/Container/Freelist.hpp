@@ -105,10 +105,10 @@ inline namespace Base
             return Found + 1;
         }
 
-        /// \brief Allocates a specific slot.
+        /// \brief Acquires a specific slot.
         ///
-        /// \param ID The handle of the slot to allocate.
-        ZY_INLINE constexpr void Allocate(Handle ID)
+        /// \param ID The handle of the slot to acquire.
+        ZY_INLINE constexpr void Acquire(Handle ID)
         {
             ZY_ASSERT(ID > 0 && ID <= Capacity, "Attempted to acquire invalid slot");
             ZY_ASSERT(!IsAllocated(ID), "Attempted to acquire already allocated slot");

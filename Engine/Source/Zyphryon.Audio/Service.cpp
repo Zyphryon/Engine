@@ -71,18 +71,18 @@ namespace Audio
             {
                 mDriver = Unique<Driver>::Create();
 
-                LOG_WARNING("Audio: Failed to initialize driver, using default driver");
+                LOG_W("Audio: Failed to initialize driver, using default driver");
             }
             else
             {
                 Description Description;
                 mDriver->Probe(Description);
 
-                LOG_INFO("Audio: Backend '{0}' with '{1}' selected adapter", Description.Backend, Description.Adapter);
+                LOG_I("Audio: Backend '{0}' with '{1}' selected adapter", Description.Backend, Description.Adapter);
 
                 for (Text Endpoint : Description.Endpoints)
                 {
-                    LOG_INFO("Audio: Found Endpoint '{0}'", Endpoint);
+                    LOG_I("Audio: Found Endpoint '{0}'", Endpoint);
                 }
             }
         }

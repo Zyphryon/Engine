@@ -34,10 +34,10 @@ namespace Platform
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Notification)
 
         /// \brief The maximum number of input events stored in a single frame.
-        static constexpr UInt32 kMaxInputEvents = 32;
+        static constexpr UInt32 kMaxInputEvents = 24;
 
         /// \brief The maximum size of text input captured in a single frame.
-        static constexpr UInt32 kMaxInputText   = 256;
+        static constexpr UInt32 kMaxInputText   = 128;
 
     public:
 

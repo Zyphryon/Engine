@@ -168,7 +168,9 @@ namespace Platform
             return mScale;
         }
 
-        /// TODO_DOCC
+        /// \brief Sets an attribute for the monitor.
+        ///
+        /// \param Attribute The attribute to assign to the monitor.
         ZY_INLINE void SetAttribute(Attribute Attribute)
         {
             mAttributes = SetBit(mAttributes, Attribute);

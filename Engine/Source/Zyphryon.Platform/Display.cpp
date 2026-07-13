@@ -13,7 +13,7 @@
 #include "Display.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Backend/Win32/Display.inl"
+#include "Driver/Win32/Display.inl"
 #elif defined(ZY_PLATFORM_WEB)
-#include "Backend/Emscripten/Display.inl"
+#include "Driver/Emscripten/Display.inl"
 #endif

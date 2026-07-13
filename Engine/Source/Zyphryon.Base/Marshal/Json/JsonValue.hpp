@@ -16,7 +16,7 @@
 #include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Base/Container/Variant.hpp"
 #include "Zyphryon.Base/Lexical/String.hpp"
-#include "Zyphryon.Base/Metadata/Enumerator.hpp"
+#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

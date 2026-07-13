@@ -14,7 +14,7 @@
 
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
-#include "../Zyphryon.Engine/Subsystem.hpp"
+#include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

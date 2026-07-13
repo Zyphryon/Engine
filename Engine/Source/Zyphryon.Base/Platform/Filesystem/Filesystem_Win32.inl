@@ -89,7 +89,7 @@ inline namespace Base
         const DWORD Size = GetModuleFileNameW(nullptr, Buffer, kMaxPathLength);
         ZY_ASSERT(Size != 0, "Failed to get module filename.");
 
-        Path Result = StrConvertUTF8<kMaxPathLength>(ConstSpan(Buffer, Size));
+        Path Result = Path::ConvertFromUTF16(ConstSpan(Buffer, Size));
 
         if (const SInt Slash = StrFindLast(Result, '\\'))
         {
@@ -111,7 +111,7 @@ inline namespace Base
             return Text::Empty();
         }
 
-        String<kMaxPathLength> Buffer = StrConvertUTF8<kMaxPathLength>(StrConvert(Path));
+        String<kMaxPathLength> Buffer = Path::ConvertFromUTF16(StrConvert(Path));
         CoTaskMemFree(Path);
 
         if (!Organization.IsEmpty())
@@ -136,9 +136,9 @@ inline namespace Base
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
-        StrEnsureEndsWith(InPath, L'/');
-        StrEnsureEndsWith(InPath, L'*');
-        StrEnsureEndsWith(InPath, L'\0');
+        InPath.Append(L'/');
+        InPath.Append(L'*');
+        InPath.Append(L'\0');
 
         WIN32_FIND_DATAW Entry;
 
@@ -151,7 +151,7 @@ inline namespace Base
                 if (!(Name[0] == L'.' && (Name.GetSize() == 1 || (Name[1] == L'.' && Name.GetSize() == 2))))
                 {
                     Record Data;
-                    Data.Name = StrConvertUTF8<kMaxNameLength>(Name);
+                    Data.Name = Path::ConvertFromUTF16(Name);
                     Data.Type = GetType(Entry.dwFileAttributes);
                     Data.Size = (static_cast<UInt64>(Entry.nFileSizeHigh) << 32) | Entry.nFileSizeLow;
                     Data.Time = (static_cast<UInt64>(Entry.ftLastWriteTime.dwHighDateTime) << 32) | Entry.ftLastWriteTime.dwLowDateTime;
@@ -176,7 +176,6 @@ inline namespace Base
     Filesystem::Result Filesystem::Make(Text Path)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
-        StrEnsureEndsWith(InPath, L'\0');
 
         if (CreateDirectoryW(InPath.GetData(), nullptr))
         {
@@ -190,11 +189,8 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Copy(Text Source, Text Destination)
     {
-        Sequence<Wide, kMaxPathLength> InSource = StrConvertUTF16<kMaxPathLength>(Source);
-        StrEnsureEndsWith(InSource, L'\0');
-
+        Sequence<Wide, kMaxPathLength> InSource      = StrConvertUTF16<kMaxPathLength>(Source);
         Sequence<Wide, kMaxPathLength> InDestination = StrConvertUTF16<kMaxPathLength>(Destination);
-        StrEnsureEndsWith(InDestination, L'\0');
 
         if (CopyFileExW(InSource.GetData(), InDestination.GetData(), nullptr, nullptr, nullptr, COPY_FILE_NO_BUFFERING))
         {
@@ -209,7 +205,6 @@ inline namespace Base
     Filesystem::Result Filesystem::Delete(Text Path)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
-        StrEnsureEndsWith(InPath, L'\0');
 
         if (const DWORD Attributes = GetFileAttributesW(InPath.GetData()); Attributes != INVALID_FILE_ATTRIBUTES)
         {
@@ -236,11 +231,8 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
     {
-        Sequence<Wide, kMaxPathLength> InSource = StrConvertUTF16<kMaxPathLength>(Source);
-        StrEnsureEndsWith(InSource, L'\0');
-
+        Sequence<Wide, kMaxPathLength> InSource      = StrConvertUTF16<kMaxPathLength>(Source);
         Sequence<Wide, kMaxPathLength> InDestination = StrConvertUTF16<kMaxPathLength>(Destination);
-        StrEnsureEndsWith(InDestination, L'\0');
 
         if (MoveFileExW(InSource.GetData(), InDestination.GetData(), MOVEFILE_REPLACE_EXISTING))
         {
@@ -255,7 +247,6 @@ inline namespace Base
     Filesystem::Result Filesystem::Read(Text Path, Ref<Blob> Output)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
-        StrEnsureEndsWith(InPath, L'\0');
 
         const HANDLE Handle = CreateFileW(
             InPath.GetData(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -269,7 +260,7 @@ inline namespace Base
                 Output = Blob::Allocate<Byte>(static_cast<UInt>(Size.QuadPart));
 
                 Ptr<Byte> Buffer    = Output.GetData();
-                DWORD     Remaining = static_cast<DWORD>(Output.GetSize());
+                DWORD     Remaining = Output.GetSize();
                 DWORD     Error     = ERROR_SUCCESS;
 
                 while (Remaining > 0)
@@ -307,7 +298,6 @@ inline namespace Base
     Filesystem::Result Filesystem::Write(Text Path, ConstSpan<Byte> Data)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
-        StrEnsureEndsWith(InPath, L'\0');
 
         const HANDLE Handle = CreateFileW(
             InPath.GetData(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);

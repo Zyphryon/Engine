@@ -15,11 +15,11 @@
         },
         "Layout": {
             "Attributes": [
-                ["TEXCOORD0", "Float32x4",   0,  0, 1],
-                ["TEXCOORD1", "Float32x4",   0, 16, 1],
-                ["TEXCOORD2", "Float32x4",   0, 32, 1],
-                ["TEXCOORD3", "Float32x4",   0, 48, 1],
-                ["COLOR0",    "UIntNorm8x4", 0, 64, 1]
+                [0, "Float32x4",   0,  0, 1],
+                [1, "Float32x4",   0, 16, 1],
+                [2, "Float32x4",   0, 32, 1],
+                [3, "Float32x4",   0, 48, 1],
+                [4, "UIntNorm8x4", 0, 64, 1]
             ],
             "Primitive": "TriangleStrip"
         }
@@ -30,19 +30,19 @@
         ],
         "Uniforms":
         [
-            { "Slot": "Scene", "Name": "Camera", "Type": "Float4", "Count": 4 },
-            { "Slot": "Material", "Name": "Range", "Type": "Float2" }
+            { "Slot": "Global",   "Name": "Camera", "Type": "Float4", "Count": 4 },
+            { "Slot": "Material", "Name": "Range",  "Type": "Float2" }
         ]
     },
     "Program": {
         "Shaders": {
             "HLSL": [
-                { "Path": "MSDF-HLSL.shader", "Stage": "Vertex"   },
-                { "Path": "MSDF-HLSL.shader", "Stage": "Fragment" }
+                { "Path": "MSDF-HLSL.shd", "Stage": "Vertex"   },
+                { "Path": "MSDF-HLSL.shd", "Stage": "Fragment" }
             ],
 	    "GLSL": [
-                { "Path": "MSDF-GLSL.shader", "Stage": "Vertex"   },
-                { "Path": "MSDF-GLSL.shader", "Stage": "Fragment" }
+                { "Path": "MSDF-GLSL.shd", "Stage": "Vertex"   },
+                { "Path": "MSDF-GLSL.shd", "Stage": "Fragment" }
             ]
         }
     }

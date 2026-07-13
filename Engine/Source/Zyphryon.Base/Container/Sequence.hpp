@@ -464,8 +464,8 @@ inline namespace Base
         /// \brief Finds the first occurrence of the specified element.
         ///
         /// \param Element The element to search for.
-        /// \return The index of the first occurrence, or the size if not found.
-        ZY_INLINE UInt Find(ConstRef<Type> Element) const
+        /// \return The index of the first occurrence, or -1 if not found.
+        ZY_INLINE SInt Find(ConstRef<Type> Element) const
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -474,15 +474,15 @@ inline namespace Base
                     return Index;
                 }
             }
-            return mSize;
+            return -1;
         }
 
         /// \brief Finds the first element matching the specified predicate.
         ///
         /// \param Predicate The unary predicate used to identify the element.
-        /// \return The index of the first matching element, or the size if not found.
+        /// \return The index of the first matching element, or -1 if not found.
         template<typename Callable>
-        ZY_INLINE UInt Find(AnyRef<Callable> Predicate) const
+        ZY_INLINE SInt Find(AnyRef<Callable> Predicate) const
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -491,7 +491,7 @@ inline namespace Base
                     return Index;
                 }
             }
-            return mSize;
+            return -1;
         }
 
         /// \brief Checks whether the sequence contains the specified element.
@@ -500,7 +500,7 @@ inline namespace Base
         /// \return `true` if the element is found, otherwise `false`.
         ZY_INLINE Bool Contains(ConstRef<Type> Element) const
         {
-            return Find(Element) != mSize;
+            return Find(Element) != -1;
         }
 
         /// \brief Checks whether the sequence contains an element matching the specified predicate.
@@ -510,7 +510,7 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE Bool Contains(AnyRef<Callable> Predicate) const
         {
-            return Find(Predicate) != mSize;
+            return Find(Predicate) != -1;
         }
 
         /// \brief Destroys all elements without releasing the underlying heap storage.
@@ -534,6 +534,20 @@ inline namespace Base
             if (const UInt Required = mSize + Size; Required > mCapacity)
             {
                 Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
+            }
+
+            const UInt Offset = mSize;
+
+            if constexpr (IsTriviallyConstructible<Type>)
+            {
+                Zero(mData + Offset, Size);
+            }
+            else
+            {
+                for (UInt Index = Offset; Index < Offset + Size; ++Index)
+                {
+                    Construct<Type>(mData + Index);
+                }
             }
             mSize += Size;
         }
@@ -1016,8 +1030,8 @@ inline namespace Base
         /// \brief Finds the first occurrence of the specified element.
         ///
         /// \param Element The element to search for.
-        /// \return The index of the first occurrence, or the size if not found.
-        ZY_INLINE constexpr UInt Find(ConstRef<Type> Element) const
+        /// \return The index of the first occurrence, or -1 if not found.
+        ZY_INLINE constexpr SInt Find(ConstRef<Type> Element) const
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -1026,15 +1040,15 @@ inline namespace Base
                     return Index;
                 }
             }
-            return mSize;
+            return -1;
         }
 
         /// \brief Finds the first element matching the specified predicate.
         ///
         /// \param Predicate The unary predicate used to identify the element.
-        /// \return The index of the first matching element, or the size if not found.
+        /// \return The index of the first matching element, or -1 if not found.
         template<typename Callable>
-        ZY_INLINE constexpr UInt Find(AnyRef<Callable> Predicate) const
+        ZY_INLINE constexpr SInt Find(AnyRef<Callable> Predicate) const
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -1043,7 +1057,7 @@ inline namespace Base
                     return Index;
                 }
             }
-            return mSize;
+            return -1;
         }
 
         /// \brief Checks whether the sequence contains the specified element.
@@ -1052,7 +1066,7 @@ inline namespace Base
         /// \return `true` if the element is found, otherwise `false`.
         ZY_INLINE constexpr Bool Contains(ConstRef<Type> Element) const
         {
-            return Find(Element) != mSize;
+            return Find(Element) != -1;
         }
 
         /// \brief Checks whether the sequence contains an element matching the specified predicate.
@@ -1062,7 +1076,7 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE constexpr Bool Contains(AnyRef<Callable> Predicate) const
         {
-            return Find(Predicate) != mSize;
+            return Find(Predicate) != -1;
         }
 
         /// \brief Destroys all elements without affecting the fixed-size storage.
@@ -1086,6 +1100,21 @@ inline namespace Base
                     mStorage.Construct(Index + mSize);
                 }
             }
+            else
+            {
+                if constexpr (IsTriviallyConstructible<Type>)
+                {
+                    Zero(mStorage.GetAddress(mSize), Size);
+                }
+                else
+                {
+                    for (UInt Index = 0; Index < Size; ++Index)
+                    {
+                        mStorage.Construct(mSize + Index);
+                    }
+                }
+            }
+
             mSize += Size;
         }
 

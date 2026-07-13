@@ -35,11 +35,11 @@ namespace Scene
         ZY_INLINE static void ReadComponent(ConstRef<flecs::world> World, Ref<Reader> Archive, Owner Actor)
         {
             // Read first element of the pair (tag/relationship); empty means single component.
-            const Str64 Pair = Str64::CStr(Archive.ReadText());
+            const Str64  Pair  = Archive.ReadText();
             const Entity First = Pair.IsEmpty() ? Entity() : World.lookup(Pair.GetData());
 
             // Read component name and resolve the component entity.
-            const Str64 Name = Str64::CStr(Archive.ReadText());
+            const Str64  Name   = Archive.ReadText();
             const Entity Second = World.lookup(Name.GetData());
 
             // Read serialized component payload.
@@ -69,7 +69,7 @@ namespace Scene
                 }
                 else
                 {
-                    LOG_WARNING("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
+                    LOG_W("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
                 }
             }
             else
