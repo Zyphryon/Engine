@@ -35,6 +35,8 @@ OPTION(ZY_GRAPHIC_DRIVER_D3D11      "Graphic: Enable D3D11 as graphic backend" $
 OPTION(ZY_GRAPHIC_DRIVER_GLES3      "Graphic: Enable GLES3 as graphic backend" $<NOT:$<BOOL:${WIN32}>>)
 OPTION(ZY_GRAPHIC_LOADER_STB        "Graphic: Enable STB image loader"         OFF)
 
+OPTION(ZY_RENDER_LOADER_ARTERY      "Render: Enable Artery font loader"        OFF)
+
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Module
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -71,10 +73,15 @@ IF    (ZY_GRAPHIC_DRIVER_GLES3)
 
 ENDIF ()
 
-
 IF    (ZY_GRAPHIC_LOADER_STB)
 
     ADD_SUBDIRECTORY(Module/Graphic/Loader/STB)
+
+ENDIF ()
+
+IF    (ZY_RENDER_LOADER_ARTERY)
+
+    ADD_SUBDIRECTORY(Module/Render/Loader/Artery)
 
 ENDIF ()
 

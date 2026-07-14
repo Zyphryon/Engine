@@ -1,0 +1,97 @@
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+//
+// This work is licensed under the terms of the MIT license.
+//
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Uniforms
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+cbuffer cb_Global   : register(b0)
+{
+    float4x4 u_Camera;
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Attributes
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+struct vs_Input
+{
+    uint     VertexID   : SV_VertexID;
+
+    float4   Transform0 : SLOT0;
+    float4   Transform1 : SLOT1;
+    float4   Frame      : SLOT2;
+    float2   Size       : SLOT3;
+    float4   Color      : SLOT4;
+};
+
+struct ps_Input
+{
+    float4 Position : SV_POSITION;
+    float2 Texture  : TEXCOORD0;
+    float4 Color    : COLOR0;
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Vertex
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#ifdef   VERTEX_SHADER
+
+float2 TessellateRect(uint VertexID)
+{
+    static const float2 kUnitRectCorners[4] = {
+        float2(0, 0),
+        float2(1, 0),
+        float2(0, 1),
+        float2(1, 1)
+    };
+    return kUnitRectCorners[VertexID];
+}
+
+ps_Input main(vs_Input Input)
+{
+    const float2 Corner   = TessellateRect(Input.VertexID);
+    const float2 Local    = Corner * Input.Size;
+    const float2 Position = float2(
+        dot(Local, Input.Transform0.xy) + Input.Transform0.z,
+        dot(Local, Input.Transform1.xy) + Input.Transform1.z
+    );
+
+    ps_Input Result;
+
+    Result.Position = mul(u_Camera, float4(Position, Input.Transform0.w, 1.0));
+    Result.Texture  = lerp(Input.Frame.xy, Input.Frame.zw, float2(Corner.x, 1.0 - Corner.y));
+    Result.Color    = Input.Color;
+
+    return Result;
+}
+
+#endif // VERTEX_SHADER
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Fragment
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#ifdef FRAGMENT_SHADER
+
+Texture2D    s_Albedo        : register(t0);
+SamplerState s_AlbedoSampler : register(s0);
+
+float4 main(ps_Input Input) : SV_Target
+{
+    float4 Texel = s_Albedo.Sample(s_AlbedoSampler, Input.Texture);
+
+#ifdef    ENABLE_ALPHA_TEST
+    clip(Texel.a - 0.001);
+#endif // ENABLE_ALPHA_TEST
+
+    return Input.Color * Texel;
+}
+
+#endif // FRAGMENT_SHADER
