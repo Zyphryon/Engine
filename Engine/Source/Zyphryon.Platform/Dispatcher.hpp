@@ -33,13 +33,13 @@ namespace Platform
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Notification)
 
-        /// \brief The maximum number of input events stored in a single frame.
-        static constexpr UInt32 kMaxInputEvents = 24;
-
-        /// \brief The maximum size of text input captured in a single frame.
-        static constexpr UInt32 kMaxInputText   = 128;
-
     public:
+
+        /// \brief Constructs a new dispatcher instance.
+        ZY_INLINE Dispatcher()
+            : mNotifications { Notification::None }
+        {
+        }
 
         /// \brief Resets the dispatcher queues.
         ZY_INLINE void Reset()
@@ -180,8 +180,8 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Notification                            mNotifications;
-        Sequence<Input::Event, kMaxInputEvents> mInputEvents;
-        String<kMaxInputText>                   mInputText;
+        Notification           mNotifications;
+        Sequence<Input::Event> mInputEvents;
+        Str                    mInputText;
     };
 }

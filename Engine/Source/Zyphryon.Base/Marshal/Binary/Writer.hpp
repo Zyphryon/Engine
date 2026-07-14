@@ -202,7 +202,7 @@ inline namespace Base
         {
             Write<Header>(Value.GetSize());
 
-            if (!Value.empty())
+            if (!Value.IsEmpty())
             {
                 Write<ConstPtr<Type>>(Value.GetData(), Value.GetSizeInBytes());
             }

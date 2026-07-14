@@ -136,10 +136,10 @@ inline namespace Math
 
             const Real32 M00 = A0.GetX() * B0.GetX() + A1.GetX() * B0.GetY();
             const Real32 M10 = A0.GetY() * B0.GetX() + A1.GetY() * B0.GetY();
-            const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A1.GetX() * B1.GetZ();
+            const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A0.GetY() * B1.GetZ();
             const Real32 M01 = A0.GetX() * B1.GetX() + A1.GetX() * B1.GetY();
             const Real32 M11 = A0.GetY() * B1.GetX() + A1.GetY() * B1.GetY();
-            const Real32 M21 = A1.GetZ() + A0.GetY() * B0.GetZ() + A1.GetY() * B1.GetZ();
+            const Real32 M21 = A1.GetZ() + A1.GetX() * B0.GetZ() + A1.GetY() * B1.GetZ();
 
             return Matrix3x2(M00, M10, M20, M01, M11, M21);
         }
@@ -157,10 +157,10 @@ inline namespace Math
 
             const Real32 M00 = A0.GetX() * B0.GetX() + A1.GetX() * B0.GetY();
             const Real32 M10 = A0.GetY() * B0.GetX() + A1.GetY() * B0.GetY();
-            const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A1.GetX() * B1.GetZ();
+            const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A0.GetY() * B1.GetZ();
             const Real32 M01 = A0.GetX() * B1.GetX() + A1.GetX() * B1.GetY();
             const Real32 M11 = A0.GetY() * B1.GetX() + A1.GetY() * B1.GetY();
-            const Real32 M21 = A1.GetZ() + A0.GetY() * B0.GetZ() + A1.GetY() * B1.GetZ();
+            const Real32 M21 = A1.GetZ() + A1.GetX() * B0.GetZ() + A1.GetY() * B1.GetZ();
 
             mColumns[0].Set(M00, M10, M20);
             mColumns[1].Set(M01, M11, M21);

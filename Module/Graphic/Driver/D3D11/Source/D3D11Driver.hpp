@@ -213,7 +213,7 @@ namespace Graphic
         ///
         /// \param Descriptor The sampler descriptor defining the desired sampler state configuration.
         /// \return A sampler state resource that matches the specified descriptor.
-        D3D11Sampler GetOrCreateSampler(Sampler Descriptor);
+        Ptr<ID3D11SamplerState> GetOrCreateSampler(Sampler Descriptor);
 
     private:
 

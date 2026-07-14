@@ -53,6 +53,14 @@ namespace Input
             case Event::Type::MouseDown:
                 mMouse.Process(Event);
                 break;
+            case Event::Type::WindowFocus:
+            {
+                if (!Event.WindowFocus.State)
+                {
+                    ResetOnFocusLost();
+                }
+                break;
+            }
             default:
                 break;
             }
@@ -63,5 +71,14 @@ namespace Input
         {
             Invoke(Event);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::ResetOnFocusLost()
+    {
+        mMouse.ReleaseAllButtons();
+        mKeyboard.Reset();
     }
 }

@@ -39,7 +39,7 @@ inline namespace Base
 
     /// \brief Selects \p Min when \p Limit fits within the bit width of \p Min, otherwise selects \p Max.
     template<auto Limit, typename Min, typename Max>
-    using Smallest      = Select<(Limit <= (1ULL << (sizeof(Min) * 8))), Min, Max>;
+    using Smallest      = Select<(Limit < (1ULL << (sizeof(Min) * 8))), Min, Max>;
 
     /// \brief Computes the common type to which all \p Arguments can be implicitly converted.
     template<typename... Arguments>

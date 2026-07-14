@@ -537,7 +537,7 @@ inline namespace Math
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return A vector containing the cross product of the XYZ components, with W from P0.
+        /// \return A vector containing the cross product of the XYZ components, with W = 0.
         ZY_INLINE static Vector4 Cross3(Vector4 P0, Vector4 P1);
 
         /// \brief Gets the component-wise minimum of two vectors.

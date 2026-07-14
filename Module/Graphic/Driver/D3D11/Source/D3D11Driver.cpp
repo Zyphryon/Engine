@@ -1069,7 +1069,7 @@ namespace Graphic
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
-            Array[Element] = GetOrCreateSampler(New).Get();
+            Array[Element] = GetOrCreateSampler(New);
         }
 
         if (Min < Max)
@@ -1152,9 +1152,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    D3D11Driver::D3D11Sampler D3D11Driver::GetOrCreateSampler(Sampler Descriptor)
+    Ptr<ID3D11SamplerState> D3D11Driver::GetOrCreateSampler(Sampler Descriptor)
     {
-        D3D11Sampler Sampler = mSamplers.FindOrInsert(Hash(Descriptor));
+        Ref<D3D11Sampler> Sampler = mSamplers.FindOrInsert(Hash(Descriptor));
 
         if (Sampler == nullptr)
         {
@@ -1199,6 +1199,6 @@ namespace Graphic
 
             D3D11Check(mDevice->CreateSamplerState(AddressOf(SamplerDescriptor), Sampler.GetAddressOf()));
         }
-        return Sampler;
+        return Sampler.Get();
     }
 }

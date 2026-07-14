@@ -48,6 +48,9 @@ namespace Input
         /// \brief Clears all stored mouse state.
         void Reset();
 
+        /// \brief Clears all stored mouse button state.
+        void ReleaseAllButtons();
+
         /// \brief Gets the current X position of the mouse cursor.
         ///
         /// \return The X coordinate of the mouse cursor.

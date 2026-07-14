@@ -94,7 +94,7 @@ namespace Physics
             }
 
             Manifold->SetPenetration(Penetration);
-            Manifold->SetNormal(Normal);
+            Manifold->SetNormal(-Normal);
             Manifold->AddContact(Center - Normal * Radius);
         }
         return true;

@@ -11,7 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "STBLoader.hpp"
-#include "../../../../../Engine/Source/Zyphryon.Graphic/Image.hpp"
+#include "Zyphryon.Graphic/Image.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -36,7 +36,7 @@ namespace Content
         if (Image)
         {
             // Wraps the decoded image data in a Blob with a custom deleter.
-            Blob Chunk(Image, Width * Height * Channel, [](Ptr<void> Pointer)
+            Blob Chunk(Image, Width * Height * STBI_rgb_alpha, [](Ptr<void> Pointer)
             {
                 stbi_image_free(Pointer);
             });

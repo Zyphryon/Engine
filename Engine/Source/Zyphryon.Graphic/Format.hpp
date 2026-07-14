@@ -56,11 +56,11 @@ namespace Graphic
             { 8,   4, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC3UIntNorm
             { 8,   4, 4, 0, 0, 1, 0, 0, 1, 0, 1 },  // TextureFormat::BC3UIntNorm_sRGB
             { 4,   4, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC4UIntNorm
-            { 4,   4, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::BC4SIntNorm
+            { 4,   4, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC4SIntNorm
             { 8,   4, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC5UIntNorm
-            { 8,   4, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::BC5SIntNorm
-            { 8,   4, 3, 0, 0, 0, 1, 0, 1, 1, 1 },  // TextureFormat::BC6UFloat
-            { 8,   4, 3, 0, 0, 0, 1, 0, 1, 1, 1 },  // TextureFormat::BC6SFloat
+            { 8,   4, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC5SIntNorm
+            { 8,   4, 3, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::BC6UFloat
+            { 8,   4, 3, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::BC6SFloat
             { 8,   4, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::BC7UIntNorm
             { 8,   4, 4, 0, 0, 1, 0, 0, 1, 0, 1 },  // TextureFormat::BC7UIntNorm_sRGB
             { 4,   4, 3, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::ETC2RGBUIntNorm
@@ -70,50 +70,50 @@ namespace Graphic
             { 8,   4, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::ETC2RGBAUIntNorm
             { 8,   4, 4, 0, 0, 1, 0, 0, 1, 0, 1 },  // TextureFormat::ETC2RGBAUIntNorm_sRGB
             { 4,   4, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::EACR11UIntNorm
-            { 4,   4, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::EACR11SIntNorm
+            { 4,   4, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::EACR11SIntNorm
             { 8,   4, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::EACRG11UIntNorm
-            { 8,   4, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::EACRG11SIntNorm
-            { 8,   1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::R8SInt
-            { 8,   1, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::R8SIntNorm
-            { 8,   1, 1, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::R8UInt
+            { 8,   4, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::EACRG11SIntNorm
+            { 8,   1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R8SInt
+            { 8,   1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::R8SIntNorm
+            { 8,   1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R8UInt
             { 8,   1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::R8UIntNorm
-            { 16,  1, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::R16SInt
-            { 16,  1, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::R16SIntNorm
-            { 16,  1, 1, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::R16UInt
+            { 16,  1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R16SInt
+            { 16,  1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::R16SIntNorm
+            { 16,  1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R16UInt
             { 16,  1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::R16UIntNorm
-            { 16,  1, 1, 0, 0, 0, 1, 0, 0, 0, 1 },  // TextureFormat::R16Float
-            { 32,  1, 1, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::R32SInt
-            { 32,  1, 1, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::R32UInt
-            { 32,  1, 1, 0, 0, 0, 1, 0, 0, 0, 1 },  // TextureFormat::R32Float
-            { 16,  1, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RG8SInt
-            { 16,  1, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RG8SIntNorm
-            { 16,  1, 2, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RG8UInt
+            { 16,  1, 1, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::R16Float
+            { 32,  1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R32SInt
+            { 32,  1, 1, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::R32UInt
+            { 32,  1, 1, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::R32Float
+            { 16,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG8SInt
+            { 16,  1, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RG8SIntNorm
+            { 16,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG8UInt
             { 16,  1, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RG8UIntNorm
-            { 32,  1, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RG16SInt
-            { 32,  1, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RG16SIntNorm
-            { 32,  1, 2, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RG16UInt
+            { 32,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG16SInt
+            { 32,  1, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RG16SIntNorm
+            { 32,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG16UInt
             { 32,  1, 2, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RG16UIntNorm
-            { 32,  1, 2, 0, 0, 0, 1, 0, 0, 0, 1 },  // TextureFormat::RG16Float
-            { 64,  1, 2, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RG32SInt
-            { 64,  1, 2, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RG32UInt
-            { 64,  1, 2, 0, 0, 0, 1, 0, 0, 0, 1 },  // TextureFormat::RG32Float
-            { 96,  1, 3, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGB32SInt
-            { 96,  1, 3, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RGB32UInt
-            { 96,  1, 3, 0, 0, 0, 1, 0, 0, 0, 1 },  // TextureFormat::RGB32Float
-            { 32,  1, 4, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGBA8SInt
-            { 32,  1, 4, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGBA8SIntNorm
-            { 32,  1, 4, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RGBA8UInt
+            { 32,  1, 2, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::RG16Float
+            { 64,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG32SInt
+            { 64,  1, 2, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RG32UInt
+            { 64,  1, 2, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::RG32Float
+            { 96,  1, 3, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGB32SInt
+            { 96,  1, 3, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGB32UInt
+            { 96,  1, 3, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::RGB32Float
+            { 32,  1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA8SInt
+            { 32,  1, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RGBA8SIntNorm
+            { 32,  1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA8UInt
             { 32,  1, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RGBA8UIntNorm
             { 32,  1, 4, 0, 0, 1, 0, 0, 1, 0, 1 },  // TextureFormat::RGBA8UIntNorm_sRGB
-            { 64,  1, 4, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGBA16SInt
-            { 64,  1, 4, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGBA16SIntNorm
-            { 64,  1, 4, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RGBA16UInt
+            { 64,  1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA16SInt
+            { 64,  1, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RGBA16SIntNorm
+            { 64,  1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA16UInt
             { 64,  1, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RGBA16UIntNorm
             { 64,  1, 4, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::RGBA16Float
-            { 128, 1, 4, 0, 0, 0, 0, 0, 1, 1, 1 },  // TextureFormat::RGBA32SInt
-            { 128, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RGBA32UInt
+            { 128, 1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA32SInt
+            { 128, 1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGBA32UInt
             { 128, 1, 4, 0, 0, 0, 1, 0, 0, 1, 1 },  // TextureFormat::RGBA32Float
-            { 32,  1, 4, 0, 0, 0, 0, 0, 0, 0, 1 },  // TextureFormat::RGB10A2UInt
+            { 32,  1, 4, 0, 0, 0, 0, 1, 0, 0, 1 },  // TextureFormat::RGB10A2UInt
             { 32,  1, 4, 0, 0, 0, 0, 0, 1, 0, 1 },  // TextureFormat::RGB10A2UIntNorm
             { 16,  1, 1, 1, 0, 0, 0, 0, 1, 0, 0 },  // TextureFormat::D16UIntNorm
             { 32,  1, 1, 1, 0, 0, 1, 0, 0, 0, 0 },  // TextureFormat::D32Float

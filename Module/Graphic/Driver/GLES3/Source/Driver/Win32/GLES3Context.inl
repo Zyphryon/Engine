@@ -10,69 +10,98 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Mouse.hpp"
+#include <gl/GL.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace Graphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::Begin()
+    GLES3Context::GLES3Context()
+        : mDeviceOutput  { nullptr },
+          mDeviceContext { nullptr },
+          mRenderContext { nullptr }
     {
-        mThisScrollX = 0.0f;
-        mThisScrollY = 0.0f;
-        mLastButtons = mThisButtons;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::Process(ConstRef<Event> Event)
+    GLES3Context::~GLES3Context()
     {
-        switch (Event.Kind)
+        if (mRenderContext)
         {
-        case Event::Type::MouseMove:
-            mThisX = Event.MouseAxis.X;
-            mThisY = Event.MouseAxis.Y;
-            break;
-        case Event::Type::MouseScroll:
-            mThisScrollX += Event.MouseScroll.DeltaX;
-            mThisScrollY += Event.MouseScroll.DeltaY;
-            break;
-        case Event::Type::MouseUp:
-            mThisButtons.Reset(Enum::Cast(Event.MouseAction.Button));
-            break;
-        case Event::Type::MouseDown:
-            mThisButtons.Set(Enum::Cast(Event.MouseAction.Button));
-            break;
-        default:
-            break;
+            ::wglMakeCurrent(nullptr, nullptr);
+            ::wglDeleteContext(mRenderContext);
+        }
+
+        if (mDeviceContext)
+        {
+            ::ReleaseDC(mDeviceOutput, mDeviceContext);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::Reset()
+    Bool GLES3Context::Initialize(Ptr<void> Output, ConstRef<Config> Config)
     {
-        mThisX       = 0.0f;
-        mThisY       = 0.0f;
-        mThisScrollX = 0.0f;
-        mThisScrollY = 0.0f;
-        mLastButtons.Reset();
-        mThisButtons.Reset();
+        const HWND Window = static_cast<HWND>(Output);
+
+        mDeviceContext = ::GetDC(Window);
+
+        if (mDeviceContext == nullptr)
+        {
+            LOG_E("GLES3Context: Failed to get device context");
+            return false;
+        }
+
+        PIXELFORMATDESCRIPTOR Descriptor { };
+        Descriptor.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
+        Descriptor.nVersion     = 1;
+        Descriptor.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+        Descriptor.iPixelType   = PFD_TYPE_RGBA;
+        Descriptor.cColorBits   = 32;
+        Descriptor.cDepthBits   = 24;
+        Descriptor.cStencilBits = 8;
+        Descriptor.iLayerType   = PFD_MAIN_PLANE;
+
+        const int PixelFormat = ::ChoosePixelFormat(mDeviceContext, &Descriptor);
+        if (PixelFormat == 0)
+        {
+            return false;
+        }
+
+        if (!::SetPixelFormat(mDeviceContext, PixelFormat, &Descriptor))
+        {
+            return false;
+        }
+
+        mRenderContext = ::wglCreateContext(mDeviceContext);
+        if (mRenderContext == nullptr)
+        {
+            return false;
+        }
+
+        if (!::wglMakeCurrent(mDeviceContext, mRenderContext))
+        {
+            ::wglDeleteContext(mRenderContext);
+            mRenderContext = nullptr;
+            return false;
+        }
+
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::ReleaseAllButtons()
+    void GLES3Context::Present()
     {
-        mLastButtons.Reset();
-        mThisButtons.Reset();
+        ::SwapBuffers(mDeviceContext);
     }
 }

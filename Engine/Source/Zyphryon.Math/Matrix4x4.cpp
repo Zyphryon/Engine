@@ -137,7 +137,7 @@ inline namespace Math
 
         const Real32 Determinant = Vector4::Dot(Col0, Row2);
 
-     //   ZY_ASSERT(Abs(Determinant) < 1e-8f, "Cannot invert a singular matrix (determinant is zero)");
+        ZY_ASSERT(Abs(Determinant) >= 1e-8f, "Cannot invert a singular matrix (determinant is zero)");
         const Real32 InvDet = 1.0f / Determinant;
         return Matrix4x4(Inv0 * InvDet, Inv1 * InvDet, Inv2 * InvDet, Inv3 * InvDet);
     }
