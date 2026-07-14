@@ -162,7 +162,7 @@ namespace Graphic
                     {
                         for (UInt32 Element = 0; Element < Count; ++Element)
                         {
-                            Str96 Buffer(Name);
+                            Str64 Buffer(Name);
                             Buffer.Append('[');
                             Buffer.AppendInteger(Element, CountDigits<10>(Element), 10, false);
                             Buffer.Append(']');

@@ -710,8 +710,7 @@ inline namespace Base
         /// \return A new string containing the joined text.
         ZY_INLINE static constexpr String Join(Text Left, Char Delimiter, Text Right)
         {
-            String Buffer;
-            Buffer.Reserve(Left.GetSize() + 1 + Right.GetSize());
+            String Buffer(Left.GetSize() + 1 + Right.GetSize());
 
             Buffer.Append(Left);
             Buffer.Append(Delimiter);
@@ -820,6 +819,27 @@ inline namespace Base
     /// \brief A stack-backed string with a fixed capacity of 62 characters.
     using Str64 = String<62>;
 
-    /// \brief A stack-backed string with a fixed capacity of 94 characters.
-    using Str96 = String<94>;
+    /// \brief Allow concatenation of a string with a text literal.
+    template<UInt Capacity>
+    constexpr String<Capacity> operator+(ConstRef<String<Capacity>> Left, Text Right)
+    {
+        String<Capacity> Result(Left.GetSize() + Right.GetSize());
+
+        Result.Append(Left);
+        Result.Append(Right);
+
+        return Result;
+    }
+
+    /// \brief Allow concatenation of a text literal with a string.
+    template<UInt Capacity>
+    constexpr String<Capacity> operator+(Text Left, ConstRef<String<Capacity>> Right)
+    {
+        String<Capacity> Result(Left.GetSize() + Right.GetSize());
+
+        Result.Append(Left);
+        Result.Append(Right);
+
+        return Result;
+    }
 }
