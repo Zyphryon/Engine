@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Base/Lexical/Text.hpp"
+#include "Zyphryon.Base/Memory/Blob.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -28,6 +28,9 @@ inline namespace Base
 
         /// \brief Constructs an empty writer with no allocated storage.
         ZY_INLINE Writer()
+            : mData     { nullptr },
+              mSize     { 0 },
+              mCapacity { 0 }
         {
         }
 
@@ -35,8 +38,39 @@ inline namespace Base
         ///
         /// \param Capacity The initial capacity in bytes to reserve.
         ZY_INLINE explicit Writer(UInt32 Capacity)
+            : Writer { }
         {
-            mBuffer.Reserve(Capacity);
+            Ensure(Capacity);
+        }
+
+        /// \brief Destroys the writer and releases the underlying storage.
+        ZY_INLINE ~Writer()
+        {
+            if (mData)
+            {
+                delete[] mData;
+
+                mData     = nullptr;
+                mSize     = 0;
+                mCapacity = 0;
+            }
+        }
+
+        /// \brief Transfers ownership of the written data to a new blob.
+        ///
+        /// \return A blob containing the written data.
+        ZY_INLINE Blob Detach()
+        {
+            Blob Memory = Blob(mData, mSize, [](Ptr<Byte> Data)
+            {
+                ::operator delete[](Data);
+            });
+
+            mData     = nullptr;
+            mSize     = 0;
+            mCapacity = 0;
+
+            return Memory;
         }
 
         /// \brief Gets a pointer to the contiguous buffer storage.
@@ -44,7 +78,7 @@ inline namespace Base
         /// \return A pointer to the first byte, or \c nullptr when empty.
         ZY_INLINE Ptr<Byte> GetData()
         {
-            return mBuffer.GetData();
+            return mData;
         }
 
         /// \brief Gets a read-only pointer to the contiguous buffer storage.
@@ -52,7 +86,7 @@ inline namespace Base
         /// \return A pointer to the first byte, or \c nullptr when empty.
         ZY_INLINE ConstPtr<Byte> GetData() const
         {
-            return mBuffer.GetData();
+            return mData;
         }
 
         /// \brief Gets the number of bytes currently written to the buffer.
@@ -60,7 +94,7 @@ inline namespace Base
         /// \return The byte count.
         ZY_INLINE UInt32 GetSize() const
         {
-            return mBuffer.GetSize();
+            return mSize;
         }
 
         /// \brief Gets the number of bytes the buffer can hold without reallocating.
@@ -68,7 +102,7 @@ inline namespace Base
         /// \return The current capacity.
         ZY_INLINE UInt32 GetCapacity() const
         {
-            return mBuffer.GetCapacity();
+            return mCapacity;
         }
 
         /// \brief Ensures that the buffer can hold at least \p Length additional bytes without reallocating.
@@ -76,13 +110,27 @@ inline namespace Base
         /// \param Length The number of additional bytes to guarantee space for.
         ZY_INLINE void Ensure(UInt32 Length)
         {
-            mBuffer.Reserve(mBuffer.GetCapacity() + Length);
+            const UInt Capacity = mCapacity + Length;
+
+            if (Capacity > mCapacity)
+            {
+                const Ptr<Byte> Data = static_cast<Ptr<Byte>>(::operator new[](sizeof(Byte) * Capacity));
+                Copy(Data, mSize, mData);
+
+                if (mData)
+                {
+                    ::operator delete[](mData);
+                }
+
+                mData     = Data;
+                mCapacity = Capacity;
+            }
         }
 
         /// \brief Destroys all written bytes without releasing the underlying storage.
         ZY_INLINE void Clear()
         {
-            mBuffer.Clear();
+            mSize = 0;
         }
 
         /// \brief Writes raw bytes to the buffer.
@@ -92,8 +140,8 @@ inline namespace Base
         template<typename Type>
         ZY_INLINE void Write(ConstPtr<Type> Value, UInt32 Size)
         {
-            mBuffer.Advance(Size);
-            Blit(mBuffer.GetData() + mBuffer.GetSize() - Size, Size, Value);
+            Blit(mData + mSize, Size, Value);
+            mSize += Size;
         }
 
         /// \brief Writes a single value of \p Type into the buffer.
@@ -102,8 +150,7 @@ inline namespace Base
         template<typename Type>
         ZY_INLINE void Write(Type Value)
         {
-            mBuffer.Advance(sizeof(Type));
-            Blit(mBuffer.GetData() + mBuffer.GetSize() - sizeof(Type), sizeof(Type), AddressOf(Value));
+            Write(AddressOf(Value), sizeof(Type));
         }
 
         /// \brief Writes a signed integer using variable-length zigzag encoding.
@@ -166,15 +213,15 @@ inline namespace Base
         ZY_INLINE void WriteBlock(AnyRef<Function> Trampoline)
         {
             // Reserve space for the segment length.
-            const UInt32 Offset = mBuffer.GetSize();
+            const UInt32 Offset = mSize;
             Write<Header>(static_cast<Header>(0));
 
             // Invoke the user-defined function to write the segment data.
             Trampoline(* this);
 
             // Calculate and backfill the length of the segment.
-            const UInt32 Length = mBuffer.GetSize() - (Offset + sizeof(Header));
-            Blit(mBuffer.GetData() + Offset, sizeof(Length), AddressOf(Length));
+            const UInt32 Length = mSize - (Offset + sizeof(Header));
+            Blit(mData + Offset, sizeof(Length), AddressOf(Length));
         }
 
     private:
@@ -182,6 +229,8 @@ inline namespace Base
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Sequence<Byte> mBuffer;
+        Ptr<Byte> mData;
+        UInt      mSize;
+        UInt      mCapacity;
     };
 }
