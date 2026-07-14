@@ -148,7 +148,7 @@ namespace Render
         /// \brief Resets the renderer's internal state, clearing any pending commands and bindings.
         void Reset();
 
-        /// TODO_DOC
+        /// \brief Prepares the canvas for rendering by setting up internal state and resources.
         void Prepare();
 
         /// \brief Binds the specified technique and material for subsequent draw calls.
@@ -210,7 +210,7 @@ namespace Render
 
     private:
 
-        /// TODO_DOC
+        /// \brief Maximum number of text effects that can be batched together in a single draw call.
         static constexpr UInt32 kMaxEffectsPerBatch = 64;
 
         /// \brief Defines a type alias for an array of trackers to graphics techniques, indexed by an enumeration type.
@@ -325,37 +325,40 @@ namespace Render
             /// The material to use for rendering the glyph, containing the font atlas and shader parameters.
             ConstPtr<Graphic::Material> Material;
 
-            /// TODO_DOC
+            /// The generation of the glyph, used for tracking updates and changes.
             UInt16                      Generation;
 
             /// The input data for the glyph.
             GlyphLayout                 Layout;
         };
 
-        /// TODO_DOC
+        /// \brief Structure representing a text effect applied to a glyph.
         struct GlyphEffect
         {
-            /// TODO_DOC
+            /// The slot index of the text effect, used for managing multiple effects.
             UInt16 Slot;
 
-            /// TODO_DOC
+            /// The generation of the text effect, used for tracking updates and changes.
             UInt16 Generation;
         };
 
-        /// TODO_DOC
+        /// \brief Structure representing a palette of text effects, containing the stream, lookup table, and sequence of effects.
         struct GlyphEffectPalette
         {
-            /// TODO_DOC
+            /// The stream containing the text effect data.
             Graphic::Stream           Stream;
 
-            /// TODO_DOC
+            /// The lookup table mapping text effects to their corresponding indices.
             Table<TextEffect, UInt32> Lookup;
 
-            /// TODO_DOC
+            /// The sequence of text effects in the palette.
             Sequence<TextEffect>      Effects;
         };
 
-        /// TODO_DOC
+        /// \brief Interns a text effect, returning a glyph effect that can be used for rendering.
+        ///
+        /// \param Effect The text effect to intern.
+        /// \return The interned glyph effect.
         GlyphEffect InternTextEffect(ConstRef<TextEffect> Effect);
 
         /// \brief Writes a batch of shape draw commands to the graphics encoder for rendering.
