@@ -114,6 +114,13 @@ inline namespace Base
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Copy(Text Source, Text Destination);
 
+        /// \brief Recursively copies all files and directories from the source path to the destination path.
+        ///
+        /// \param Source      The path of the directory to be copied.
+        /// \param Destination The path where the directory should be copied to.
+        /// \return `true` if all files and directories were successfully copied, `false` otherwise.
+        static Result CopyAll(Text Source, Text Destination);
+
         /// \brief Renames a file or directory at the specified path.
         ///
         /// \param Source      The path of the file or directory to be renamed.
@@ -126,6 +133,12 @@ inline namespace Base
         /// \param Path The path of the file or directory to be deleted.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Delete(Text Path);
+
+        /// \brief Recursively deletes all files and directories at the specified path.
+        ///
+        /// \param Directory The path of the directory to be deleted.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result DeleteAll(Text Directory);
 
         /// \brief Reads the contents of a file into a binary blob.
         ///
