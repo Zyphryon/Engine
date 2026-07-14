@@ -292,11 +292,9 @@ namespace Graphic
         // Submit all commands recorded since the last render pass was prepared, then commit the current render pass.
         Ref<InFlightPass> InFlightPass = GetInFlightPass();
 
-        const ConstSpan<Command> Commands(mFrames[mProducer].Commands);
-
-        if (const ConstSpan<Command> Slice = Commands.Slice(InFlightPass.Cursor); !Slice.IsEmpty())
+        if (const UInt32 Size = mFrames[mProducer].Commands.GetSize(); Size > InFlightPass.Cursor)
         {
-            Enqueue<& Driver::Submit>(Slice);
+            GetProducer().Record<& Service::SubmitInFlightPass>(this, InFlightPass.Cursor, Size - InFlightPass.Cursor);
         }
         Enqueue<& Driver::Commit>(InFlightPass.Handle);
     }
@@ -384,6 +382,14 @@ namespace Graphic
             mSignal.store(false, std::memory_order_release);
             mSignal.notify_one();
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::SubmitInFlightPass(UInt32 Offset, UInt32 Count)
+    {
+        mDriver->Submit(ConstSpan(mFrames[mConsumer].Commands.GetData() + Offset, Count));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

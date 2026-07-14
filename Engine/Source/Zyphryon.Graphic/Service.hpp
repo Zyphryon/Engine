@@ -402,6 +402,8 @@ namespace Graphic
             return mFrames[mProducer].Pass;
         }
 
+        void SubmitInFlightPass(UInt32 Offset, UInt32 Count);
+
         /// \brief Initializes a single \ref InFlightArena by allocating a CPU writer and a GPU buffer.
         ///
         /// \param Arena    The in-flight arena to initialize.

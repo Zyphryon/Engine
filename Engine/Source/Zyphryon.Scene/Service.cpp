@@ -73,6 +73,10 @@ namespace Scene
 
     void Service::LoadHierarchy(Ref<Reader> Archive, Entity Actor)
     {
+        // Reads the entity's data.
+        Actor.Load(Archive);
+
+        // Reads the entity's hierarchy.
         const ConstSpan<Byte> Data = Archive.ReadBlock<UInt32, Byte>();
 
         for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
