@@ -140,6 +140,8 @@ inline namespace Base
         template<typename Type>
         ZY_INLINE void Write(ConstPtr<Type> Value, UInt32 Size)
         {
+            Ensure(Size);
+
             Blit(mData + mSize, Size, Value);
             mSize += Size;
         }

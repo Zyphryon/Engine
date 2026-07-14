@@ -460,7 +460,7 @@ inline namespace Base
         {
             Clear();
 
-            Format::Processor<String>::Format(*this, Pattern, Parameters...);
+            Format::Processor<String>::Format(* this, Pattern, Parameters...);
 
             Seal();
         }
@@ -476,7 +476,7 @@ inline namespace Base
 
             Clear();
 
-            Format::Processor<String>::Format(*this, kPattern, Parameters...);
+            Format::Processor<String>::Format(* this, kPattern, Parameters...);
 
             Seal();
         }
