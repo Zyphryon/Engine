@@ -94,6 +94,12 @@ inline namespace Base
 #   error "Unsupported Compiler"
 #endif
 
+/// \def ZY_EXTENSION_RESHARPER
+/// \brief Defined when compiling with JetBrains ReSharper C++'s code analysis engine.
+#if   defined(__RESHARPER__)
+#   define ZY_EXTENSION_RESHARPER
+#endif
+
 /// \def ZY_INLINE
 /// \brief Forces the compiler to inline the decorated function unconditionally.
 #if   defined(ZY_COMPILER_MSVC)

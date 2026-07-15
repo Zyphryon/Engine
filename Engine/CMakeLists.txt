@@ -85,18 +85,6 @@ FetchContent_MakeAvailable(External_Flecs)
 LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Enchantum) (MIT) -> TODO: Remove
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-FetchContent_Declare(External_Enchantum
-        GIT_REPOSITORY https://github.com/ZXShady/enchantum
-        GIT_TAG        main
-        GIT_SHALLOW    TRUE)
-FetchContent_MakeAvailable(External_Enchantum)
-
-LIST(APPEND PROJECT_DEPENDENCIES "enchantum")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## DLL
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

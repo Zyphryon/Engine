@@ -134,4 +134,29 @@ inline namespace Base
     {
         using Type = First;
     };
+
+    /// \brief Holds a compile-time pack of integral values of type \p Type.
+    template<typename Type, Type... Values>
+    struct IntegerSequence
+    {
+        static constexpr auto Count = sizeof...(Values);
+    };
+
+    /// \brief Recursively prepends indices to build an \c IntegerSequence of `[0, Count)`.
+    template<typename Type, auto Count, Type... Values>
+    struct MakeIntegerSequenceBuilder
+    {
+        using Result = MakeIntegerSequenceBuilder<Type, Count - 1, static_cast<Type>(Count - 1), Values...>::Result;
+    };
+
+    /// \brief Terminates the recursive expansion once every index has been prepended.
+    template<typename Type, Type... Values>
+    struct MakeIntegerSequenceBuilder<Type, 0, Values...>
+    {
+        using Result = IntegerSequence<Type, Values...>;
+    };
+
+    /// \brief Produces an \c IntegerSequence containing every value in `[0, Count)`, in ascending order.
+    template<typename Type, auto Count>
+    using MakeIntegerSequence = MakeIntegerSequenceBuilder<Type, Count>::Result;
 }
