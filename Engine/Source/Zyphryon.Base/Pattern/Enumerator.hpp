@@ -126,7 +126,7 @@ namespace Enum
             ++EntryCursor;
         }
 
-#ifdef    ZY_EXTENSION_RESHAPER
+#ifdef    ZY_EXTENSION_RESHARPER
 
         /// \brief Measures how many entries are valid, and their combined name length, in one pass.
         template<typename Type, UInt Span>
@@ -170,6 +170,11 @@ namespace Enum
             return Result;
         }
 
+        /// \brief The dense, compile-time reflection data for \p Type.
+        template<IsEnum Type>
+        inline constexpr auto kReflection =
+            BuildReflection<Type, static_cast<UInt>(Range<Type>::Max - Range<Type>::Min + 1)>();
+
 #else
 
         /// \brief Captures the compiler-generated signature of this function.
@@ -186,116 +191,150 @@ namespace Enum
         /// \brief Extracts the comma-separated argument-list portion of a captured \ref ExtractSignature.
         constexpr Text ExtractArguments(Text Signature)
         {
-            const SInt End = StrFindLast(Signature, '>');
+            const ConstPtr<Char> Head = Signature.GetData();
 
-            if (End <= 0)
+            UInt End = Signature.GetSize();
+
+            while (End > 0 && Head[End - 1] != '>')
+            {
+                --End;
+            }
+
+            UInt Start = 0;
+
+            while (Start < End && Head[Start] != '<')
+            {
+                ++Start;
+            }
+
+            if (Start + 2 > End)
             {
                 return Text::Empty();
             }
-
-            const SInt Start = StrFindLast(Signature, '<');
-
-            if (Start < 0 || Start >= End)
-            {
-                return Text::Empty();
-            }
-            return Signature.Slice(static_cast<UInt>(Start) + 1, static_cast<UInt>(End - Start) - 1);
+            return Text(Head + Start + 1, End - Start - 2);
         }
 
-        /// \brief Extracts the bare enumerator name from a single comma-separated argument segment.
-        constexpr Text ExtractName(Text Segment)
-        {
-            Segment = StrTrim(Segment);
-
-            // A valid enumerator is always qualified (`Enum::Name`).
-            SInt SeparatorIndex = -1;
-
-            for (SInt Index = static_cast<SInt>(Segment.GetSize()) - 1; Index > 0; --Index)
-            {
-                if (Segment[static_cast<UInt>(Index)] == ':' && Segment[static_cast<UInt>(Index - 1)] == ':')
-                {
-                    SeparatorIndex = Index;
-                    break;
-                }
-            }
-
-            if (SeparatorIndex < 0)
-            {
-                return Text::Empty();
-            }
-
-            const Text Candidate = Segment.Slice(static_cast<UInt>(SeparatorIndex) + 1);
-
-            if (Candidate.IsEmpty() || !StrIsAlphabetic(Candidate.GetFront()))
-            {
-                return Text::Empty();
-            }
-
-            for (UInt Index = 1; Index < Candidate.GetSize(); ++Index)
-            {
-                if (!StrIsAlphanumeric(Candidate[Index]))
-                {
-                    return Text::Empty();
-                }
-            }
-            return Candidate;
-        }
-
-        /// \brief Measures how many entries are valid, and their combined name length, in one pass.
-        constexpr Measurement Measure(Text Arguments)
+        /// \brief Scans \p Arguments once and invokes \p Emit for every declared enumerator found.
+        template<typename Callable>
+        constexpr Measurement ScanArguments(Text Arguments, AnyRef<Callable> Emit)
         {
             Measurement Result { };
 
-            StrSplit(Arguments, ',', [&](Text Segment)
+            const ConstPtr<Char> Head = Arguments.GetData();
+            const UInt           Size = Arguments.GetSize();
+
+            UInt Cursor   = 0;
+            UInt Position = 0;
+
+            while (Cursor < Size)
             {
-                if (const Text Name = ExtractName(Segment); !Name.IsEmpty())
+                while (Cursor < Size && (Head[Cursor] == ' ' || Head[Cursor] == '\t'))
                 {
-                    ++Result.Entries;
-                    Result.Chars += Name.GetSize();
+                    ++Cursor;
                 }
-                return true;
-            });
+
+                const UInt Begin = Cursor;
+
+                if (Cursor < Size && Head[Cursor] != '(')
+                {
+                    UInt Separator = Begin;
+
+                    while (Cursor < Size && Head[Cursor] != ',')
+                    {
+                        if (Head[Cursor] == ':' && Cursor + 1 < Size && Head[Cursor + 1] == ':')
+                        {
+                            Cursor   += 2;
+                            Separator = Cursor;
+                        }
+                        else
+                        {
+                            ++Cursor;
+                        }
+                    }
+
+                    UInt Last = Cursor;
+
+                    while (Last > Begin && Head[Last - 1] == ' ')
+                    {
+                        --Last;
+                    }
+
+                    if (Separator > Begin && Separator < Last)
+                    {
+                        Bool Identifier = true;
+
+                        for (UInt Index = Separator; Identifier && Index < Last; ++Index)
+                        {
+                            const Char Symbol = Head[Index];
+
+                            Identifier = (Symbol >= 'A' && Symbol <= 'Z')
+                                      || (Symbol >= 'a' && Symbol <= 'z')
+                                      || (Symbol >= '0' && Symbol <= '9' && Index > Separator)
+                                      || (Symbol == '_');
+                        }
+
+                        if (Identifier)
+                        {
+                            ++Result.Entries;
+                            Result.Chars += Last - Separator;
+
+                            Emit(Position, Text(Head + Separator, Last - Separator));
+                        }
+                    }
+                }
+                else
+                {
+                    while (Cursor < Size && Head[Cursor] != ',')
+                    {
+                        ++Cursor;
+                    }
+                }
+
+                ++Cursor;
+                ++Position;
+            }
             return Result;
         }
 
-        /// \brief Builds the reflection data for \p Type, in ascending value order.
+        /// \brief Captures the argument list for every probed value of \p Type.
         template<typename Type, SInt64... Offsets>
-        constexpr auto BuildReflection(IntegerSequence<SInt64, Offsets...>)
+        constexpr Text CaptureArguments(IntegerSequence<SInt64, Offsets...>)
         {
-            constexpr Text        Signature = ExtractSignature<static_cast<Type>(Range<Type>::Min + Offsets)...>();
-            constexpr Text        Arguments = ExtractArguments(Signature);
-            constexpr Measurement Size      = Measure(Arguments);
+            return ExtractArguments(ExtractSignature<static_cast<Type>(Range<Type>::Min + Offsets)...>());
+        }
 
-            Reflection<Type, Size.Entries, Size.Chars> Result;
+        /// \brief The captured argument list for \p Type, evaluated once per translation unit.
+        template<IsEnum Type>
+        inline constexpr Text kArguments =
+            CaptureArguments<Type>(MakeIntegerSequence<SInt64, Range<Type>::Max - Range<Type>::Min + 1>{ });
+
+        /// \brief The measured counts for \p Type, evaluated once per translation unit.
+        template<IsEnum Type>
+        inline constexpr Measurement kMeasurement = ScanArguments(kArguments<Type>, [](UInt, Text) { });
+
+        /// \brief Builds the reflection data for \p Type, in ascending value order.
+        template<IsEnum Type>
+        constexpr auto BuildReflection()
+        {
+            Reflection<Type, kMeasurement<Type>.Entries, kMeasurement<Type>.Chars> Result;
 
             UInt EntryCursor = 0;
             UInt CharCursor  = 0;
-            UInt Position    = 0;
 
-            StrSplit(Arguments, ',', [&](Text Segment)
+            ScanArguments(kArguments<Type>, [&](UInt Position, Text Name)
             {
-                if (const Text Name = ExtractName(Segment); !Name.IsEmpty())
-                {
-                    AppendEntry(Result, EntryCursor, CharCursor,
-                        static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Position)), Name);
-                }
-                ++Position;
-                return true;
+                AppendEntry(Result, EntryCursor, CharCursor,
+                    static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Position)), Name);
             });
 
             return Result;
         }
 
-#endif // ZY_EXTENSION_RESHAPER
-
         /// \brief The dense, compile-time reflection data for \p Type.
         template<IsEnum Type>
-        inline constexpr auto kReflection =
-#ifdef ZY_EXTENSION_RESHAPER
-            BuildReflection<Type, static_cast<UInt>(Range<Type>::Max - Range<Type>::Min + 1)>();
-#else
-            BuildReflection<Type>(MakeIntegerSequence<SInt64, Range<Type>::Max - Range<Type>::Min + 1>{});
-#endif
+        inline constexpr auto kReflection = BuildReflection<Type>();
+
+#endif // ZY_EXTENSION_RESHARPER
     }
 
     /// \brief Converts an enum value to its string representation.
