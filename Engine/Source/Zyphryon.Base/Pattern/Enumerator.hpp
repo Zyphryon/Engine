@@ -67,7 +67,7 @@ namespace Enum
         static constexpr SInt64 Min = 0;
 
         /// The largest underlying value probed while discovering declared enumerators.
-        static constexpr SInt64 Max = 255;
+        static constexpr SInt64 Max = 128;
     };
 
     namespace Detail    // TODO: Untested in GCC/CLang
