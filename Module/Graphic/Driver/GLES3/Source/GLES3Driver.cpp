@@ -787,7 +787,8 @@ namespace Graphic
         glGetIntegerv(GL_MAJOR_VERSION, AddressOf(Major));
         glGetIntegerv(GL_MINOR_VERSION, AddressOf(Minor));
 
-        Ref<Capabilities> Limits = mDescription.Capabilities;
+        Ref<Capabilities> Limits  = mDescription.Capabilities;
+        Limits.IsOriginBottomLeft = true;
 
 #if defined(ZY_PLATFORM_WEB)
         const Bool ExtendedTier = (Major > 3) || (Major == 3 && Minor >= 1);   // OpenGL ES 3.1+

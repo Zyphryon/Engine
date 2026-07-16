@@ -489,6 +489,9 @@ namespace Graphic
         /// Indicates whether the graphics device supports border-clamp texture addressing and border-color sampling.
         Bool   SupportsBorderClamp   = false;
 
+        /// Indicates whether the graphics device uses bottom-left origin.
+        Bool   IsOriginBottomLeft    = false;
+
         /// The maximum level of anisotropy supported by the graphics device.
         UInt8  MaxTextureAnisotropy  = 0;
 
