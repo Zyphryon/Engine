@@ -98,6 +98,7 @@ namespace Graphic
         {
             GLuint Object   = 0;
             GLenum Usage    = 0;
+            GLenum Target   = 0;
             UInt32 Capacity = 0;
         };
 

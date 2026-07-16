@@ -118,7 +118,7 @@ inline namespace Math
 
     Real32 Vector4::GetLength() const
     {
-        return Sqrt(ReduceSum());
+        return Base::Sqrt(ReduceSum());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

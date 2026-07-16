@@ -139,6 +139,24 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
+    /// \brief Converts \ref Usage into the matching GLES 3.0 topology enumeration.
+    constexpr GLenum GLES3Convert(Usage Value)
+    {
+        if (HasBit(Value, Usage::Vertex))
+        {
+            return GL_ARRAY_BUFFER;
+        }
+        if (HasBit(Value, Usage::Index))
+        {
+            return GL_ELEMENT_ARRAY_BUFFER;
+        }
+        if (HasBit(Value, Usage::Uniform))
+        {
+            return GL_UNIFORM_BUFFER;
+        }
+        return 0;
+    }
+
     /// \brief Converts \ref TestCondition into the matching GLES 3.0 comparison enumeration.
     constexpr GLenum GLES3Convert(TestCondition Value)
     {

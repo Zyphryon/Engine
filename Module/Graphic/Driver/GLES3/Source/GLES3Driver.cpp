@@ -22,6 +22,18 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static GLenum GetBufferWriteTarget(GLenum Target)
+    {
+#if defined(ZY_PLATFORM_WEB)
+        return (Target != GL_ELEMENT_ARRAY_BUFFER) ? GL_COPY_WRITE_BUFFER : GL_ELEMENT_ARRAY_BUFFER;
+#else
+        return Target;
+#endif
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     GLES3Driver::~GLES3Driver()
     {
         for (Ref<GLES3Buffer> Buffer : mBuffers)
@@ -156,11 +168,14 @@ namespace Graphic
     {
         Ref<GLES3Buffer> Buffer = mBuffers[ID];
         Buffer.Usage    = GLES3Convert(Storage);
+        Buffer.Target   = GLES3Convert(Usage);
         Buffer.Capacity = (Usage == Usage::Uniform) ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment) : Capacity;
 
+        const GLenum Target = GetBufferWriteTarget(Buffer.Target);
+
         glGenBuffers(1, AddressOf(Buffer.Object));
-        glBindBuffer(GL_COPY_WRITE_BUFFER, Buffer.Object);
-        glBufferData(GL_COPY_WRITE_BUFFER, Buffer.Capacity, Data.IsEmpty() ? nullptr : Data.GetData(), Buffer.Usage);
+        glBindBuffer(Target, Buffer.Object);
+        glBufferData(Target, Buffer.Capacity, Data.IsEmpty() ? nullptr : Data.GetData(), Buffer.Usage);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -168,8 +183,10 @@ namespace Graphic
 
     void GLES3Driver::UpdateBuffer(Object ID, UInt32 Offset, ConstSpan<Byte> Data)
     {
-        glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[ID].Object);
-        glBufferSubData(GL_COPY_WRITE_BUFFER, Offset, Data.GetSizeInBytes(), Data.GetData());
+        const GLenum Target = GetBufferWriteTarget(mBuffers[ID].Target);
+
+        glBindBuffer(Target, mBuffers[ID].Object);
+        glBufferSubData(Target, Offset, Data.GetSizeInBytes(), Data.GetData());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -192,9 +209,11 @@ namespace Graphic
 
     void GLES3Driver::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size)
     {
+        const GLenum Target = GetBufferWriteTarget(mBuffers[DstBuffer].Target);
+
         glBindBuffer(GL_COPY_READ_BUFFER,  mBuffers[SrcBuffer].Object);
-        glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[DstBuffer].Object);
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, SrcOffset, DstOffset, Size);
+        glBindBuffer(Target, mBuffers[DstBuffer].Object);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, Target, SrcOffset, DstOffset, Size);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
