@@ -93,7 +93,7 @@ namespace Enum
             /// The reflected enumerators, in ascending value order.
             Array<Descriptor<Type>, Capacity> Entries;
 
-            /// The concatenated characters of every entry's name.
+            /// The concatenated names of every entry, each followed by a null terminator.
             Array<Char, Chars>                Names;
         };
 
@@ -103,7 +103,7 @@ namespace Enum
             /// The number of valid enumerators found.
             UInt Entries;
 
-            /// The combined length, in characters, of every valid enumerator's name.
+            /// The combined length, in characters, of every valid enumerator's name, including its null terminator.
             UInt Chars;
         };
 
@@ -116,13 +116,14 @@ namespace Enum
             {
                 Result.Names[CharCursor + Offset] = Name[Offset];
             }
+            Result.Names[CharCursor + Name.GetSize()] = '\0';
 
             Result.Entries[EntryCursor] = Descriptor<Type>(
                 Candidate,
                 static_cast<UInt16>(CharCursor),
                 static_cast<UInt16>(Name.GetSize()));
 
-            CharCursor += Name.GetSize();
+            CharCursor += Name.GetSize() + 1;
             ++EntryCursor;
         }
 
@@ -141,7 +142,7 @@ namespace Enum
                 if (const ConstPtr<Char> Name = __rscpp_enumerator_name(Value))
                 {
                     ++Result.Entries;
-                    Result.Chars += StrLength(Name);
+                    Result.Chars += StrLength(Name) + 1;
                 }
             }
             return Result;
@@ -271,7 +272,7 @@ namespace Enum
                         if (Identifier)
                         {
                             ++Result.Entries;
-                            Result.Chars += Last - Separator;
+                            Result.Chars += Last - Separator + 1;
 
                             Emit(Position, Text(Head + Separator, Last - Separator));
                         }
