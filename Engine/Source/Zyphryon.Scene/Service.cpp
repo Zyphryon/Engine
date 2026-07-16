@@ -151,7 +151,7 @@ namespace Scene
 
     void Service::RegisterDefaultComponentsAndSystems()
     {
-#ifdef   FLECS_REST_SERVICE
+#if defined(FLECS_REST_SERVICE)
 
         // Import built-in ECS statistics module.
         mWorld.import<flecs::stats>();
@@ -159,7 +159,7 @@ namespace Scene
         // Enable REST service for remote ECS inspection.
         mWorld.emplace<flecs::Rest>();
 
-#endif // FLECS_REST_SERVICE
+#endif
 
         // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
         CreateObserver("_Archetypes::OnRemove", flecs::OnRemove, [this](Entity Actor)

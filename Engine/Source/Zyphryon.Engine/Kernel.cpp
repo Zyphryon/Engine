@@ -19,9 +19,9 @@
 #include "Zyphryon.Platform/Service.hpp"
 #include "Zyphryon.Scene/Service.hpp"
 
-#ifdef    ZY_PLATFORM_WEB
-#   include <emscripten.h>
-#endif // ZY_PLATFORM_WEB
+#if   defined(ZY_PLATFORM_WEB)
+#include <emscripten.h>
+#endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -54,7 +54,7 @@ namespace Engine
         // Capture the current time in seconds using high-resolution nanosecond timer.
         mTimer.Reset();
 
-#ifndef    ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         while (Tick())
         {
@@ -75,7 +75,7 @@ namespace Engine
         };
         emscripten_set_main_loop_arg(OnLoop, this, 0, true);
 
-#endif // ZY_PLATFORM_WEB
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -91,7 +91,7 @@ namespace Engine
 
     void Kernel::Initialize()
     {
-#ifndef   ZY_MODE_HEADLESS
+#if !defined(ZY_MODE_HEADLESS)
 
         LOG_I("Kernel: Creating platform service");
         ConstRetainer<Platform::Service> Platform = Register<Platform::Service>();
@@ -113,7 +113,7 @@ namespace Engine
         Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
         Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
 
-#endif // ZY_MODE_HEADLESS
+#endif
 
         LOG_I("Kernel: Creating job service");
         Register<Job::Service>();
@@ -124,7 +124,7 @@ namespace Engine
         LOG_I("Kernel: Creating scene service");
         Register<Scene::Service>();
 
-#ifndef   ZY_MODE_HEADLESS
+#if !defined(ZY_MODE_HEADLESS)
 
         LOG_I("Kernel: Creating graphic service");
         ConstRetainer<Graphic::Service> Graphic = Register<Graphic::Service>();
@@ -132,7 +132,7 @@ namespace Engine
         LOG_I("Kernel: Creating audio service");
         ConstRetainer<Audio::Service> Audio = Register<Audio::Service>();
 
-#endif // ZY_MODE_HEADLESS
+#endif
 
         // Attaches external modules to the engine, allowing them to register their own services and systems.
         for (Ref<Unique<Module>> Module : mModules)
@@ -140,7 +140,8 @@ namespace Engine
             Module->OnAttach(* this);
         }
 
-#ifndef   ZY_MODE_HEADLESS
+#if !defined(ZY_MODE_HEADLESS)
+
         Ref<Platform::Window> Window = Platform->GetWindow();
 
         LOG_I("Kernel: Initializing graphic service");
@@ -164,17 +165,17 @@ namespace Engine
         LOG_I("Kernel: Initializing audio service");
         Audio->Initialize(mConfig.GetAudioDriver(), mConfig.GetAudioAdapter());
 
-#endif // ZY_MODE_HEADLESS
+#endif
 
         // Initialize the application after all services are ready.
         mAlive = OnInitialize();
 
-#ifndef   ZY_MODE_HEADLESS
+#if !defined(ZY_MODE_HEADLESS)
 
         // Make sure the display is visible after everything is set up.
         Window.SetVisible(mAlive);
 
-#endif // ZY_MODE_HEADLESS
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -211,12 +212,12 @@ namespace Engine
         // Destroy all registered services and release remaining engine resources.
         Teardown();
 
-#ifdef    ZY_PLATFORM_WEB
+#if defined(ZY_PLATFORM_WEB)
 
         // Unregister the main loop callback to stop the engine from ticking after shutdown.
         emscripten_cancel_main_loop();
 
-#endif // ZY_PLATFORM_WEB
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

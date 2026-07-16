@@ -126,7 +126,7 @@ namespace Enum
             ++EntryCursor;
         }
 
-#ifdef    ZY_EXTENSION_RESHARPER
+#if defined(ZY_EXTENSION_RESHARPER)
 
         /// \brief Measures how many entries are valid, and their combined name length, in one pass.
         template<typename Type, UInt Span>
@@ -265,12 +265,7 @@ namespace Enum
 
                         for (UInt Index = Separator; Identifier && Index < Last; ++Index)
                         {
-                            const Char Symbol = Head[Index];
-
-                            Identifier = (Symbol >= 'A' && Symbol <= 'Z')
-                                      || (Symbol >= 'a' && Symbol <= 'z')
-                                      || (Symbol >= '0' && Symbol <= '9' && Index > Separator)
-                                      || (Symbol == '_');
+                            Identifier = StrIsIdentifier(Head[Index]);
                         }
 
                         if (Identifier)
@@ -334,7 +329,7 @@ namespace Enum
         template<IsEnum Type>
         inline constexpr auto kReflection = BuildReflection<Type>();
 
-#endif // ZY_EXTENSION_RESHARPER
+#endif
     }
 
     /// \brief Converts an enum value to its string representation.

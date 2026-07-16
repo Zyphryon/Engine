@@ -91,7 +91,7 @@ namespace Platform
 
     void Service::Poll()
     {
-#ifdef    ZY_PLATFORM_WINDOWS
+#if defined(ZY_PLATFORM_WINDOWS)
 
         MSG Event = { };
 
@@ -106,7 +106,7 @@ namespace Platform
             }
         }
 
-#endif // ZY_PLATFORM_WINDOWS
+#endif
 
     }
 }

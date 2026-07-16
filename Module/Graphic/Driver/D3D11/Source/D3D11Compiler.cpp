@@ -22,6 +22,8 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     D3D11Compiler::D3D11Compiler()
+        : mModule   { nullptr },
+          mFunction { nullptr }
     {
         for (const LPCWSTR Library : kLibraries)
         {
@@ -49,6 +51,12 @@ namespace Graphic
 
     Ptr<ID3DBlob> D3D11Compiler::Compile(ConstRef<Blob> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros)
     {
+        if (mFunction == nullptr)
+        {
+            LOG_E("Failed to compile shader: no D3DCompiler library is available");
+            return nullptr;
+        }
+
         Ptr<ID3DBlob> Error    = nullptr;
         Ptr<ID3DBlob> Bytecode = nullptr;
 
@@ -65,7 +73,7 @@ namespace Graphic
             AddressOf(Bytecode),
             AddressOf(Error));
 
-        if (FAILED(Result))
+        if (FAILED(Result) && Error)
         {
             LOG_E("Failed to compile shader: {0}", static_cast<Ptr<Char>>(Error->GetBufferPointer()));
         }

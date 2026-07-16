@@ -28,11 +28,11 @@ namespace Graphic
     Service::Service(Ref<Host> Host)
         : Subsystem { Host }
     {
-#ifndef   ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         mWorker = Thread(Capture<& Service::OnWorkerThread>(this));
 
-#endif // ZY_PLATFORM_WEB
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -42,13 +42,13 @@ namespace Graphic
     {
         ZY_PROFILE_SCOPE("Graphic::Teardown");
 
-#ifndef   ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         mWorker.request_stop();
         Flush();
         mWorker.join();
 
-#endif // ZY_PLATFORM_WEB
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -322,18 +322,18 @@ namespace Graphic
 
     void Service::Flush()
     {
-#ifndef   ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         // Wait until the GPU thread signals that the current frame has finished processing.
         mSignal.wait(true, std::memory_order_acquire);
 
-#endif // ZY_PLATFORM_WEB
+#endif
 
         // Rotate the frame queue so that the next frame becomes writable for the CPU while the previous one
         // moves into the GPU submission pipeline.
         Swap(mProducer, mConsumer);
 
-#ifndef   ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         // Mark the service as busy again and notify the GPU thread that a new frame is ready for processing.
         mSignal.exchange(true, std::memory_order_release);
@@ -343,7 +343,7 @@ namespace Graphic
 
         Consume();
 
-#endif // ZY_PLATFORM_WEB
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -422,7 +422,7 @@ namespace Graphic
             else
             {
 
-#ifdef    ZY_PLATFORM_WEB
+#if defined(ZY_PLATFORM_WEB)
 
                 mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
 
@@ -432,7 +432,7 @@ namespace Graphic
                 Blit(Address, Data.GetSize(), Data.GetData());
                 mDriver->UnmapBuffer(Arena.Buffer);
 
-#endif // ZY_PLATFORM_WEB
+#endif
 
             }
 

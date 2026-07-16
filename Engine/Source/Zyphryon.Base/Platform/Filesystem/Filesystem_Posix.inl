@@ -16,9 +16,9 @@
 #include <unistd.h>
 
 #if   defined(ZY_PLATFORM_LINUX)
-#   include <sys/sendfile.h>
+#include <sys/sendfile.h>
 #elif defined(ZY_PLATFORM_MACOS)
-#   include <copyfile.h>
+#include <copyfile.h>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -90,7 +90,7 @@ inline namespace Base
             if (const ConstPtr<Char> Home = getenv("HOME"))
             {
                 Buffer.Append(StrConvert(Home));
-#ifdef ZY_PLATFORM_MACOS
+#if defined(ZY_PLATFORM_MACOS)
                 Buffer.Append("/Library/Application Support/");
 #else
                 Buffer.Append("/.local/share/");

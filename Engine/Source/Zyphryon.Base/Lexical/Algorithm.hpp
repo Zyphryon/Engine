@@ -507,6 +507,15 @@ inline namespace Base
         return StrIsAlphabetic (Character) || StrIsDigit(Character);
     }
 
+    /// \brief Checks whether a character is a valid identifier character (A-Z, a-z, 0-9, _).
+    ///
+    /// \param Character The character to check.
+    /// \return `true` if the character is a valid identifier character, `false` otherwise.
+    constexpr bool StrIsIdentifier(Char Character)
+    {
+        return StrIsAlphabetic (Character) || StrIsDigit(Character) || Character == '_';
+    }
+
     /// \brief Skips characters in \p Content starting at \p Cursor while they match \p Predicate.
     ///
     /// \param Content  The text to scan.

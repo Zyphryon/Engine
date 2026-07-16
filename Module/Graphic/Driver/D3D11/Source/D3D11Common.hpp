@@ -26,10 +26,10 @@ namespace Graphic
     template<typename Type>
     using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
-    /// \brief Converts \ref BlendFactor to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref BlendFactor into the matching Direct3D 11 enumeration.
     constexpr auto D3D11Convert(BlendFactor Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_BLEND_ZERO,                       // BlendFactor::Zero
             D3D11_BLEND_ONE,                        // BlendFactor::One
             D3D11_BLEND_SRC_COLOR,                  // BlendFactor::SrcColor
@@ -48,10 +48,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref BlendFunction to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref BlendFunction into the matching Direct3D 11 enumeration.
     constexpr auto D3D11Convert(BlendFunction Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_BLEND_OP_ADD,                     // BlendFunction::Add
             D3D11_BLEND_OP_SUBTRACT,                // BlendFunction::Subtract
             D3D11_BLEND_OP_REV_SUBTRACT,            // BlendFunction::ReverseSubtract
@@ -61,10 +61,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref Cull to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref Cull into the matching Direct3D 11 face enumeration.
     constexpr auto D3D11Convert(Cull Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_CULL_NONE,                // Cull::None
             D3D11_CULL_BACK,                // Cull::Back
             D3D11_CULL_FRONT,               // Cull::Front
@@ -72,20 +72,20 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref Fill to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref Fill into the matching Direct3D 11 fill-mode enumeration.
     constexpr auto D3D11Convert(Fill Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_FILL_SOLID,               // Fill::Solid
             D3D11_FILL_WIREFRAME,           // Fill::Wireframe
         };
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref Primitive to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref Primitive into the matching Direct3D 11 topology enumeration.
     constexpr auto D3D11Convert(Primitive Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_PRIMITIVE_TOPOLOGY_POINTLIST,        // Primitive::PointList
             D3D11_PRIMITIVE_TOPOLOGY_LINELIST,         // Primitive::LineList
             D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP,        // Primitive::LineStrip
@@ -95,10 +95,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref Storage to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref Storage into the matching Direct3D 11 usage enumeration.
     constexpr auto D3D11Convert(Storage Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_USAGE_IMMUTABLE,           // Storage::Immutable
             D3D11_USAGE_DYNAMIC,             // Storage::Dynamic
             D3D11_USAGE_DEFAULT,             // Storage::Stream
@@ -106,10 +106,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TestAction to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref TestAction into the matching Direct3D 11 stencil operation enumeration.
     constexpr auto D3D11Convert(TestAction Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_STENCIL_OP_KEEP,                  // TestAction::Keep
             D3D11_STENCIL_OP_REPLACE,               // TestAction::Replace
             D3D11_STENCIL_OP_ZERO,                  // TestAction::Zero
@@ -122,10 +122,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TestCondition to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref TestCondition into the matching Direct3D 11 comparison enumeration.
     constexpr auto D3D11Convert(TestCondition Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_COMPARISON_ALWAYS,                // TestCondition::Always
             D3D11_COMPARISON_NEVER,                 // TestCondition::Never
             D3D11_COMPARISON_GREATER,               // TestCondition::Greater
@@ -138,10 +138,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TextureAddress to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref TextureAddress into the matching Direct3D 11 address enumeration.
     constexpr auto D3D11Convert(TextureAddress Value)
     {
-        constexpr Array kMapping = {
+        static constexpr Array kMapping = {
             D3D11_TEXTURE_ADDRESS_CLAMP,            // TextureAddress::Clamp
             D3D11_TEXTURE_ADDRESS_BORDER,           // TextureAddress::Border
             D3D11_TEXTURE_ADDRESS_WRAP,             // TextureAddress::Repeat
@@ -150,7 +150,7 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TextureBorder to the corresponding D3D11 enumeration.
+    /// \brief Resolves the border color (RGBA) associated with a \ref TextureBorder.
     constexpr auto D3D11Convert(TextureBorder Value)
     {
         static constexpr FLOAT kMapping[][4] = {
@@ -162,7 +162,7 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TextureFilter to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref TextureFilter into the matching Direct3D 11 filter enumeration.
     constexpr auto D3D11Convert(TextureFilter Value)
     {
         static constexpr Array kMapping = {
@@ -180,10 +180,10 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TextureFormat to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref TextureFormat into the matching Direct3D 11 (DXGI) format enumeration.
     constexpr auto D3D11Convert(TextureFormat Value)
     {
-        constexpr static Array kMapping = {
+        static constexpr Array kMapping = {
             DXGI_FORMAT_UNKNOWN,                // TextureFormat::Unspecified
             DXGI_FORMAT_BC1_UNORM,              // TextureFormat::BC1UIntNorm
             DXGI_FORMAT_BC1_UNORM_SRGB,         // TextureFormat::BC1UIntNorm_sRGB
@@ -259,7 +259,7 @@ namespace Graphic
         return kMapping[Enum::Cast(Value)];
     }
 
-    /// \brief Converts \ref Usage to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref Usage into the matching Direct3D 11 bind flags.
     constexpr auto D3D11Convert(Usage Value)
     {
         UINT Flags = 0;
@@ -287,7 +287,7 @@ namespace Graphic
         return static_cast<D3D11_BIND_FLAG>(Flags);
     }
 
-    /// \brief Converts \ref VertexFormat to the corresponding D3D11 enumeration.
+    /// \brief Converts \ref VertexFormat into the matching Direct3D 11 (DXGI) format enumeration.
     constexpr auto D3D11Convert(VertexFormat Value)
     {
         static constexpr Array kMapping = {

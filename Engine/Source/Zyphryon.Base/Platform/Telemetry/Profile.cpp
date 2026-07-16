@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#ifdef ZY_PROFILE_BACKEND_TRACY
+#if defined(ZY_PROFILE_BACKEND_TRACY)
 
 Ptr<void> operator new(std::size_t Count)
 {
@@ -27,7 +27,7 @@ Ptr<void> operator new(std::size_t Count)
 
 Ptr<void> operator new(std::size_t Count, std::align_val_t Alignment)
 {
-#ifdef ZY_COMPILER_MSVC
+#if defined(ZY_COMPILER_MSVC)
     Ptr<void> Pointer = _aligned_malloc(static_cast<std::size_t>(Alignment), Count);
 #else
     Ptr<void> Pointer = std::aligned_alloc(static_cast<std::size_t>(Alignment), Count);
@@ -46,7 +46,7 @@ Ptr<void> operator new[](std::size_t Count)
 
 Ptr<void> operator new[](std::size_t Count, std::align_val_t Alignment)
 {
-#ifdef ZY_COMPILER_MSVC
+#if defined(ZY_COMPILER_MSVC)
     Ptr<void> Pointer = _aligned_malloc(static_cast<std::size_t>(Alignment), Count);
 #else
     Ptr<void> Pointer = std::aligned_alloc(static_cast<std::size_t>(Alignment), Count);
@@ -80,4 +80,4 @@ void operator delete[](Ptr<void> Pointer, std::align_val_t) noexcept
     std::free(Pointer);
 }
 
-#endif // ZY_PROFILE_BACKEND_TRACY
+#endif

@@ -197,13 +197,13 @@ namespace Graphic
             mDeviceImmediate->ClearState();
         }
 
-        /// Deletes the current display pass to release associated render targets.
+        // Deletes the current display pass to release associated render targets.
         DeletePass(kDisplay);
 
-        /// Resizes the swap chain buffers with the new resolution and format.
+        // Resizes the swap chain buffers with the new resolution and format.
         D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height,  DXGI_FORMAT_UNKNOWN, 0));
 
-        /// Recreates swap chain resources, including color and depth-stencil attachments.
+        // Recreates swap chain resources, including color and depth-stencil attachments.
         Config Configuration;
         Configuration.Width       = Width;
         Configuration.Height      = Height;
@@ -225,8 +225,8 @@ namespace Graphic
 
     void D3D11Driver::CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
     {
-        const UInt Size   = Usage   ==   Usage::Uniform ? Align(Capacity, 256)   : Capacity;
-        const UInt Access = Storage == Storage::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
+        const UInt Size   = (Usage == Usage::Uniform) ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment) : Capacity;
+        const UInt Access = (Storage == Storage::Dynamic) ? D3D11_CPU_ACCESS_WRITE : 0;
         const CD3D11_BUFFER_DESC Descriptor(Size, D3D11Convert(Usage), D3D11Convert(Storage),Access);
 
         D3D11_SUBRESOURCE_DATA Content {
@@ -254,7 +254,7 @@ namespace Graphic
 
     void D3D11Driver::DeleteBuffer(Object ID)
     {
-        mBuffers[ID]->Release();
+        Destruct(mBuffers[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -286,7 +286,7 @@ namespace Graphic
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-  =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void D3D11Driver::UnmapBuffer(Object ID)
     {
@@ -298,12 +298,12 @@ namespace Graphic
 
     void D3D11Driver::CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth)
     {
-        Ref<D3D11Pass> D3D11Pass = mPasses[ID];
+        Ref<D3D11Pass> Target = mPasses[ID];
 
         // Configure and create render target views (RTVs) for each color attachment.
         for (const ColorAttachment Color : Colors)
         {
-            Ref<D3D11ColorAttachment> Attachment = D3D11Pass.Colors.Append();
+            Ref<D3D11ColorAttachment> Attachment = Target.Colors.Append();
             Attachment.Target      = mTextures[Color.Target].Object;
             Attachment.TargetLevel = Color.TargetLevel;
 
@@ -328,10 +328,10 @@ namespace Graphic
         // Create and assign its depth-stencil view (DSV) if an auxiliary attachment is provided.
         if (Depth.Target > 0)
         {
-            D3D11Pass.DepthStencil.DepthLoadAction    = Depth.DepthLoadAction;
-            D3D11Pass.DepthStencil.DepthStoreAction   = Depth.DepthStoreAction;
-            D3D11Pass.DepthStencil.StencilLoadAction  = Depth.StencilLoadAction;
-            D3D11Pass.DepthStencil.StencilStoreAction = Depth.StencilStoreAction;
+            Target.DepthStencil.DepthLoadAction    = Depth.DepthLoadAction;
+            Target.DepthStencil.DepthStoreAction   = Depth.DepthStoreAction;
+            Target.DepthStencil.StencilLoadAction  = Depth.StencilLoadAction;
+            Target.DepthStencil.StencilStoreAction = Depth.StencilStoreAction;
 
             const Ptr<ID3D11Texture2D> Attachment = mTextures[Depth.Target].Object.Get();
 
@@ -339,7 +339,7 @@ namespace Graphic
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
                 D3D11_DSV_DIMENSION_TEXTURE2D, Format, Depth.TargetLevel);
             D3D11Check(mDevice->CreateDepthStencilView(
-                Attachment, AddressOf(Description), D3D11Pass.DepthStencil.Target.GetAddressOf()));
+                Attachment, AddressOf(Description), Target.DepthStencil.Target.GetAddressOf()));
         }
     }
 
@@ -580,23 +580,23 @@ namespace Graphic
 
     void D3D11Driver::Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
     {
-        Ref<D3D11Pass> D3D11Pass = mPasses[Pass];
+        Ref<D3D11Pass> Target = mPasses[Pass];
 
         Sequence<Ptr<ID3D11RenderTargetView>, kMaxAttachments> ColorAttachments;
-        for (ConstRef<D3D11ColorAttachment> Attachment : D3D11Pass.Colors)
+        for (ConstRef<D3D11ColorAttachment> Attachment : Target.Colors)
         {
             ColorAttachments.Append(Attachment.TargetResource.Get());
         }
 
         // Bind the render targets for the rendering pass.
         const Ptr<ID3D11DepthStencilView> DepthAttachment
-            = (D3D11Pass.DepthStencil.Target ? D3D11Pass.DepthStencil.Target.Get() : nullptr);
+            = (Target.DepthStencil.Target ? Target.DepthStencil.Target.Get() : nullptr);
         mDeviceImmediate->OMSetRenderTargets(ColorAttachments.GetSize(), ColorAttachments.GetData(), DepthAttachment);
 
         // Clear color attachments as specified.
         for (UInt32 Index = 0; Index < ColorAttachments.GetSize(); ++Index)
         {
-            ConstRef<D3D11ColorAttachment> Attachment = D3D11Pass.Colors[Index];
+            ConstRef<D3D11ColorAttachment> Attachment = Target.Colors[Index];
 
             if (Attachment.LoadAction == Action::Clear)
             {
@@ -605,20 +605,23 @@ namespace Graphic
             }
         }
 
-        // Clear depth/stencil attachment as specified.
-        UINT Mode = 0;
-        if (D3D11Pass.DepthStencil.DepthLoadAction == Action::Clear)
+        // Clear the depth/stencil attachment as specified (only when the pass actually has one).
+        if (DepthAttachment)
         {
-            Mode |= D3D11_CLEAR_DEPTH;
-        }
-        if (D3D11Pass.DepthStencil.StencilLoadAction == Action::Clear)
-        {
-            Mode |= D3D11_CLEAR_STENCIL;
-        }
+            UINT Mode = 0;
+            if (Target.DepthStencil.DepthLoadAction == Action::Clear)
+            {
+                Mode |= D3D11_CLEAR_DEPTH;
+            }
+            if (Target.DepthStencil.StencilLoadAction == Action::Clear)
+            {
+                Mode |= D3D11_CLEAR_STENCIL;
+            }
 
-        if (Mode != 0)
-        {
-            mDeviceImmediate->ClearDepthStencilView(D3D11Pass.DepthStencil.Target.Get(), Mode, Depth, Stencil);
+            if (Mode != 0)
+            {
+                mDeviceImmediate->ClearDepthStencilView(DepthAttachment, Mode, Depth, Stencil);
+            }
         }
 
         // Set the viewport for rendering.
@@ -757,7 +760,7 @@ namespace Graphic
 
     void D3D11Driver::Commit(Object Pass)
     {
-        /// Resolve multisample color attachments into their corresponding single-sample targets.
+        // Resolve multisample color attachments into their corresponding single-sample targets.
         for (ConstRef<D3D11ColorAttachment> Attachment : mPasses[Pass].Colors)
         {
             if (Attachment.StoreAction == Action::Store)
@@ -778,13 +781,14 @@ namespace Graphic
             }
         }
 
-        Ref<D3D11DepthStencilAttachment> DepthAttachment = mPasses[Pass].DepthStencil;
-        if (DepthAttachment.StencilStoreAction == Action::Discard || DepthAttachment.DepthStoreAction == Action::Discard)
+        ConstRef<D3D11DepthStencilAttachment> DepthAttachment = mPasses[Pass].DepthStencil;
+        if (DepthAttachment.Target
+            && (DepthAttachment.StencilStoreAction == Action::Discard || DepthAttachment.DepthStoreAction == Action::Discard))
         {
             mDeviceImmediate->DiscardView(DepthAttachment.Target.Get());
         }
 
-        /// Present the swap chain if this is the primary rendering pass.
+        // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
             D3D11Check(mSwapchain->Present(0, 0));
@@ -797,20 +801,21 @@ namespace Graphic
     void D3D11Driver::LoadAdapters(DXGI_FORMAT Format)
     {
         ComPtr<IDXGIAdapter1> DXGIAdapter;
-        for (UInt Index = 0; SUCCEEDED(mDeviceFactory->EnumAdapters1(Index, DXGIAdapter.GetAddressOf())); ++Index)
+        for (UInt Index = 0; SUCCEEDED(mDeviceFactory->EnumAdapters1(Index, DXGIAdapter.ReleaseAndGetAddressOf())); ++Index)
         {
+            // Skip software (WARP) adapters so the enumeration reflects only physical devices.
             DXGI_ADAPTER_DESC1 DXGIDescription;
-            if (SUCCEEDED(DXGIAdapter->GetDesc1(AddressOf(DXGIDescription))))
+            if (FAILED(DXGIAdapter->GetDesc1(AddressOf(DXGIDescription)))
+                || (DXGIDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
             {
-                if ((DXGIDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0)
-                {
-                    Ref<Adapter> AdapterInfo = mDescription.Endpoints.Append();
-
-                    AdapterInfo.Description = Str::ConvertFromUTF16(StrConvert(DXGIDescription.Description));
-                    AdapterInfo.Memory      = DXGIDescription.DedicatedVideoMemory >> 20;
-                }
+                continue;
             }
 
+            Ref<Adapter> AdapterInfo = mDescription.Endpoints.Append();
+            AdapterInfo.Description   = Str::ConvertFromUTF16(StrConvert(DXGIDescription.Description));
+            AdapterInfo.Memory        = DXGIDescription.DedicatedVideoMemory >> 20;
+
+            // Enumerate the supported display modes exposed by the adapter's primary output.
             if (ComPtr<IDXGIOutput> DXGIOutput; SUCCEEDED(DXGIAdapter->EnumOutputs(0, DXGIOutput.GetAddressOf())))
             {
                 UINT Length = 0;
@@ -824,7 +829,7 @@ namespace Graphic
 
                     for (Ref<DXGI_MODE_DESC> Description : Descriptions)
                     {
-                        Ref<Resolution> Resolution = mDescription.Endpoints[Index].Resolutions.Append();
+                        Ref<Resolution> Resolution = AdapterInfo.Resolutions.Append();
                         Resolution.Width     = Description.Width;
                         Resolution.Height    = Description.Height;
                         Resolution.Frequency = Description.RefreshRate.Numerator / Description.RefreshRate.Denominator;
@@ -843,7 +848,10 @@ namespace Graphic
         mDescription.Language = ShaderLanguage::HLSL;
 
         // Determine common supported capabilities.
-        mDescription.Capabilities.SupportsVertexBaseOffset = true;
+        mDescription.Capabilities.SupportsBaseVertex    = true;
+        mDescription.Capabilities.SupportsBorderClamp   = true;
+        mDescription.Capabilities.SupportsFormatS3TC    = true;
+        mDescription.Capabilities.UniformBlockAlignment = 256;
 
         // Determine the supported shader model based on the Direct3D feature level.
         switch (mDevice->GetFeatureLevel())
@@ -853,6 +861,8 @@ namespace Graphic
         case D3D_FEATURE_LEVEL_11_1:
         case D3D_FEATURE_LEVEL_11_0:
             mDescription.Tier                               = Tier::Level3;
+            mDescription.Capabilities.SupportsFormatRGTC    = true;
+            mDescription.Capabilities.SupportsFormatBPTC    = true;
             mDescription.Capabilities.MaxTextureDimension   = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
             mDescription.Capabilities.MaxTextureLayers      = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             mDescription.Capabilities.MaxTextureMipmaps     = D3D11_REQ_MIP_LEVELS;
@@ -861,12 +871,12 @@ namespace Graphic
             mDescription.Capabilities.MaxVertexAttributes   = D3D11_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
             mDescription.Capabilities.MaxVertexStreams      = D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
             mDescription.Capabilities.MaxAnisotropy         = D3D11_REQ_MAXANISOTROPY;
-            mDescription.Capabilities.UniformBlockAlignment = 256;
             mDescription.Capabilities.UniformBlockCapacity  = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
             break;
         case D3D_FEATURE_LEVEL_10_1:
         case D3D_FEATURE_LEVEL_10_0:
             mDescription.Tier                               = Tier::Level2;
+            mDescription.Capabilities.SupportsFormatRGTC    = true;
             mDescription.Capabilities.MaxTextureDimension   = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
             mDescription.Capabilities.MaxTextureLayers      = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
             mDescription.Capabilities.MaxTextureMipmaps     = D3D10_REQ_MIP_LEVELS;
@@ -875,7 +885,6 @@ namespace Graphic
             mDescription.Capabilities.MaxVertexAttributes   = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
             mDescription.Capabilities.MaxVertexStreams      = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
             mDescription.Capabilities.MaxAnisotropy         = D3D10_REQ_MAXANISOTROPY;
-            mDescription.Capabilities.UniformBlockAlignment = 256;
             mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
             break;
         case D3D_FEATURE_LEVEL_9_3:
@@ -888,7 +897,6 @@ namespace Graphic
             mDescription.Capabilities.MaxVertexAttributes   = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
             mDescription.Capabilities.MaxVertexStreams      = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
             mDescription.Capabilities.MaxAnisotropy         = D3D10_REQ_MAXANISOTROPY;
-            mDescription.Capabilities.UniformBlockAlignment = 256;
             mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
             break;
         case D3D_FEATURE_LEVEL_9_2:
@@ -902,7 +910,6 @@ namespace Graphic
             mDescription.Capabilities.MaxVertexAttributes   = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
             mDescription.Capabilities.MaxVertexStreams      = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
             mDescription.Capabilities.MaxAnisotropy         = 2;
-            mDescription.Capabilities.UniformBlockAlignment = 256;
             mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
             break;
         default:

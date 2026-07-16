@@ -471,38 +471,56 @@ namespace Graphic
     /// \brief Describes the capabilities and limits of the graphics device.
     struct Capabilities final
     {
-        /// \brief Indicates whether the graphics device supports vertex base offset.
-        Bool   SupportsVertexBaseOffset = false;
+        /// Indicates whether the graphics device supports S3TC texture compression.
+        Bool   SupportsFormatS3TC    = false;
+
+        /// Indicates whether the graphics device supports RGTC texture compression.
+        Bool   SupportsFormatRGTC    = false;
+
+        /// Indicates whether the graphics device supports BPTC texture compression.
+        Bool   SupportsFormatBPTC    = false;
+
+        /// Indicates whether the graphics device supports ETC2 texture compression.
+        Bool   SupportsFormatETC2    = false;
+
+        /// Indicates whether the graphics device supports vertex base offset.
+        Bool   SupportsBaseVertex    = false;
+
+        /// Indicates whether the graphics device supports border-clamp texture addressing and border-color sampling.
+        Bool   SupportsBorderClamp   = false;
+
+        /// The maximum level of anisotropy supported by the graphics device.
+        UInt8  MaxTextureAnisotropy  = 0;
 
         /// The maximum supported texture dimension (width and height) in pixels.
-        UInt32 MaxTextureDimension      = 0;
+        UInt32 MaxTextureDimension   = 0;
 
         /// The maximum number of texture layers (array slices or cube faces) supported by the device.
-        UInt16 MaxTextureLayers         = 0;
+        UInt16 MaxTextureLayers      = 0;
 
         /// The maximum number of mipmap levels supported for textures.
-        UInt8  MaxTextureMipmaps        = 0;
+        UInt8  MaxTextureMipmaps     = 0;
 
         /// The maximum number of texture units (samplers) available in shader stages.
-        UInt8  MaxTextureSlots          = 0;
+        UInt8  MaxTextureSlots       = 0;
 
         /// The maximum number of render targets that can be bound simultaneously in a render pass.
-        UInt8  MaxRenderTargets         = 0;
+        UInt8  MaxRenderTargets      = 0;
 
         /// The maximum number of vertex attributes that can be used in a vertex buffer and accessed in a vertex shader.
-        UInt8  MaxVertexAttributes      = 0;
+        UInt8  MaxVertexAttributes   = 0;
 
         /// The maximum number of vertex input streams that can be used simultaneously in a draw call.
-        UInt8  MaxVertexStreams         = 0;
+        UInt8  MaxVertexStreams      = 0;
 
         /// The maximum anisotropy level supported for texture sampling.
-        UInt8  MaxAnisotropy            = 0;
+        UInt8  MaxAnisotropy         = 0;
 
         /// The alignment requirement for uniform buffer objects in bytes.
-        UInt16 UniformBlockAlignment    = 0;
+        UInt16 UniformBlockAlignment = 0;
 
         /// The maximum capacity of a uniform buffer block in bytes.
-        UInt32 UniformBlockCapacity     = 0;
+        UInt32 UniformBlockCapacity  = 0;
     };
 
     /// \brief Configuration settings for the graphics device.

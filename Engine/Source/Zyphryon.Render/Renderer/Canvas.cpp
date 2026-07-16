@@ -343,7 +343,7 @@ namespace Render
     {
         for (Ref<GlyphEffectPalette> Palette : mEffectPalettes)
         {
-            Graphic::Transient<TextEffect> Slice = mService->AllocateTransientUniforms<TextEffect>(Palette.Effects.GetSize());
+            Graphic::Transient<TextEffect> Slice = mService->AllocateTransientUniforms<TextEffect>(kMaxEffectsPerBatch);
             Slice.Copy<TextEffect>(Palette.Effects);
 
             Palette.Stream = Slice.GetStream();

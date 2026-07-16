@@ -89,43 +89,46 @@ namespace Graphic
         void Commit(Object Pass) override;
     private:
 
+        /// \brief Maximum multisample count Direct3D 11 supports for a single resource.
+        static constexpr UInt32 kMaxSamples = 8;
+
         /// \brief Internal wrapper for Direct3D 11 buffer resources.
         using  D3D11Buffer  = ComPtr<ID3D11Buffer>;
 
-        /// \brief Internal wrapper for Direct3D 11 color attachment resources.
+        /// \brief Internal wrapper for a single Direct3D 11 color attachment inside a render pass.
         struct D3D11ColorAttachment final
         {
             ComPtr<ID3D11Resource>         Target;
             ComPtr<ID3D11RenderTargetView> TargetResource;
-            UInt32                         TargetLevel;
+            UInt32                         TargetLevel   = 0;
             ComPtr<ID3D11Resource>         Resolve;
-            UInt32                         ResolveLevel;
-            DXGI_FORMAT                    ResolveFormat;
-            Action                         LoadAction;
-            Action                         StoreAction;
+            UInt32                         ResolveLevel  = 0;
+            DXGI_FORMAT                    ResolveFormat = DXGI_FORMAT_UNKNOWN;
+            Action                         LoadAction    = Action::Clear;
+            Action                         StoreAction   = Action::Discard;
         };
 
         /// \brief Internal wrapper for Direct3D 11 depth/stencil attachment resources.
         struct D3D11DepthStencilAttachment final
         {
             ComPtr<ID3D11DepthStencilView> Target;
-            Action                         DepthLoadAction;
-            Action                         DepthStoreAction;
-            Action                         StencilLoadAction;
-            Action                         StencilStoreAction;
+            Action                         DepthLoadAction    = Action::Discard;
+            Action                         DepthStoreAction   = Action::Discard;
+            Action                         StencilLoadAction  = Action::Discard;
+            Action                         StencilStoreAction = Action::Discard;
         };
 
-        /// \brief Internal table for Direct3D 11 multisampling description.
-        using D3D11Multisamples = Array<Array<UInt8, 8 + 1>, Enum::Count<TextureFormat>()>;
+        /// \brief Per-format table of the highest supported quality level for each multisample count.
+        using D3D11Multisamples = Array<Array<UInt8, kMaxSamples + 1>, Enum::Count<TextureFormat>()>;
 
-        /// \brief Internal wrapper for Direct3D 11 pass resources.
+        /// \brief Internal wrapper for Direct3D 11 render pass resources.
         struct D3D11Pass final
         {
             Sequence<D3D11ColorAttachment, kMaxAttachments> Colors;
             D3D11DepthStencilAttachment                     DepthStencil;
         };
 
-        /// \brief Internal wrapper for Direct3D 11 pipeline resources.
+        /// \brief Internal wrapper for Direct3D 11 pipeline resources (compiled shaders plus fixed-function state).
         struct D3D11Pipeline final
         {
             ComPtr<ID3D11VertexShader>      VS;
@@ -134,7 +137,7 @@ namespace Graphic
             ComPtr<ID3D11DepthStencilState> DS;
             ComPtr<ID3D11RasterizerState>   RS;
             ComPtr<ID3D11InputLayout>       IL;
-            D3D11_PRIMITIVE_TOPOLOGY        PT;
+            D3D11_PRIMITIVE_TOPOLOGY        PT = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
         };
 
         /// \brief Internal wrapper for Direct3D 11 sampler resources.
@@ -145,20 +148,15 @@ namespace Graphic
         {
             ComPtr<ID3D11Texture2D>          Object;
             ComPtr<ID3D11ShaderResourceView> Resource;
-            TextureFormat                    Format;
-            UINT                             Samples;
+            TextureFormat                    Format  = TextureFormat::Unspecified;
+            UINT                             Samples = 1;
         };
 
         /// \brief Direct3D 11 device capabilities and feature support.
         struct D3D11Properties final
         {
-            /// Supported multisampling configurations.
             D3D11Multisamples Multisample;
-
-            /// The preferred color format for the device.
             TextureFormat     ColorFormat = TextureFormat::Unspecified;
-
-            /// The preferred depth format for the device.
             TextureFormat     DepthFormat = TextureFormat::Unspecified;
         };
 

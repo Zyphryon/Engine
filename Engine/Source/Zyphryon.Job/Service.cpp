@@ -25,7 +25,7 @@ namespace Job
     Service::Service(Ref<Host> Host)
         : Subsystem { Host }
     {
-#ifdef   ZY_HAS_THREADS
+#if defined(ZY_HAS_THREADS)
 
         mTaskThreads.Reserve(GetConcurrency());
 
@@ -34,7 +34,7 @@ namespace Job
             mTaskThreads.Append(Capture<& Service::OnWorkerThread>(this));
         }
 
-#endif // ZY_HAS_THREADS
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -42,7 +42,7 @@ namespace Job
 
     void Service::OnTick(Real64 Time)
     {
-#ifdef   ZY_HAS_THREADS
+#if defined(ZY_HAS_THREADS)
 
         Sequence<Task> Execution;
 
@@ -64,7 +64,7 @@ namespace Job
         }
         mMainQueue.Clear();
 
-#endif // ZY_HAS_THREADS
+#endif
 
     }
 
@@ -73,7 +73,7 @@ namespace Job
 
     void Service::OnTeardown()
     {
-#ifdef   ZY_HAS_THREADS
+#if defined(ZY_HAS_THREADS)
 
         for (Ref<Thread> Worker : mTaskThreads)
         {
@@ -88,7 +88,7 @@ namespace Job
         }
         mTaskThreads.Clear();
 
-#endif // ZY_HAS_THREADS
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -96,11 +96,11 @@ namespace Job
 
     void Service::SubmitOnMain(AnyRef<Task> Work)
     {
-#ifdef   ZY_HAS_THREADS
+#if defined(ZY_HAS_THREADS)
 
         Guard Guard(mMainMutex);
 
-#endif // ZY_HAS_THREADS
+#endif
 
         mMainQueue.Append(Forward<Task>(Work));
     }
@@ -110,7 +110,7 @@ namespace Job
 
     void Service::SubmitOnBackground(AnyRef<Task> Work)
     {
-#ifdef   ZY_HAS_THREADS
+#if defined(ZY_HAS_THREADS)
 
         {
             Guard Guard(mTaskMutex);
@@ -123,7 +123,7 @@ namespace Job
         // If threads aren't supported, execute the task immediately on the calling thread.
         Work();
 
-#endif // ZY_HAS_THREADS
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

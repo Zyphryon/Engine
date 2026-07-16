@@ -28,6 +28,27 @@ LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Glad) (PUBLIC DOMAIN)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+IF (ZY_GRAPHIC_DRIVER_GLES3 AND NOT ANDROID AND NOT EMSCRIPTEN)
+    FetchContent_Declare(External_Glad
+            GIT_REPOSITORY https://github.com/Dav1dde/glad
+            GIT_TAG        v2.0.8
+            GIT_SHALLOW    TRUE
+            SOURCE_SUBDIR  cmake)
+    FetchContent_MakeAvailable(External_Glad)
+
+    glad_add_library(glad_gles2 STATIC REPRODUCIBLE LOADER API gl:core=3.3 wgl:core=1.0)
+
+    LIST(APPEND PROJECT_DEPENDENCIES "glad_gles2")
+
+    IF (WIN32)
+        LIST(APPEND PROJECT_DEPENDENCIES "opengl32" "gdi32" "user32")
+    ENDIF ()
+ENDIF ()
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## DLL
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
