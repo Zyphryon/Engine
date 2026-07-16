@@ -38,11 +38,9 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::Begin(ConstRef<Matrix4x4> Projection)
+    void Canvas::Begin()
     {
-        Graphic::Transient<Matrix4x4> CbGlobal = mService->AllocateTransientUniforms<Matrix4x4>(1);
-        CbGlobal[0] = Projection;
-        mCbStream = CbGlobal.GetStream();
+        Reset();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -274,12 +272,12 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::End()
+    void Canvas::Flush(Ref<Encoder> Encoder)
     {
-        // Prepare any necessary resources or state before processing the collected rendering commands.
+        // Prepare any necessary resources or state before processing the collected draw calls.
         Prepare();
 
-        // Iterate through each rendering queue in the collector and process the commands for submission to the GPU.
+        // Iterate through each rendering queue in the collector and encode the batched draw calls into commands.
         mCollector.Poll([&](UInt32 Type, ConstSpan<Collector::Command> Commands)
         {
             switch (static_cast<Canvas::Type>(Type))
@@ -289,20 +287,17 @@ namespace Render
             case Type::Line:
             case Type::Rect:
             case Type::RoundedRect:
-                WriteShapes(static_cast<Canvas::Type>(Type), Commands);
+                WriteShapes(Encoder, static_cast<Canvas::Type>(Type), Commands);
                 break;
             case Type::Sprite:
             case Type::SpriteAlpha:
-                WriteSprites(Commands);
+                WriteSprites(Encoder, Commands);
                 break;
             case Type::Glyph:
-                WriteGlyphs(Commands);
+                WriteGlyphs(Encoder, Commands);
                 break;
             }
         });
-
-        // Clear the collector after processing all commands to prepare for the next frame.
-        Reset();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -333,7 +328,6 @@ namespace Render
 
         // Clear the list of glyphs after processing to prepare for the next frame.
         mGlyphs.Clear();
-
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -347,60 +341,6 @@ namespace Render
             Slice.Copy<TextEffect>(Palette.Effects);
 
             Palette.Stream = Slice.GetStream();
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Canvas::Bind(ConstPtr<Graphic::Technique> Pipeline, ConstPtr<Graphic::Material> Material)
-    {
-        mCommand->Pipeline = Pipeline->GetHandle();
-
-        if (Material)
-        {
-            ConstRef<Graphic::Schema> Schema = Pipeline->GetDescription().Schema;
-
-            ConstRef<Graphic::Schema::UniformGroup> Block = Schema.GetUniforms(Graphic::UniformScope::Material);
-
-            if (Block.Size > 0)
-            {
-                Graphic::Transient<Byte> Slice = mService->AllocateTransientUniforms<Byte>(Block.Size);
-
-                for (ConstRef<Graphic::Schema::UniformField> Member : Block.Structure)
-                {
-                    if (const ConstPtr<Graphic::Parameter> Parameter = Material->GetParameter(Member.Hash))
-                    {
-                        if (Parameter->GetSlot() == Enum::Cast(Member.Type))
-                        {
-                            Parameter->Visit([&]<typename T0>(ConstRef<T0> Value)
-                            {
-                                Slice.Copy(ConstSpan(Value), Member.Offset);
-                            });
-                        }
-                        else
-                        {
-                            LOG_W("Material mismatch uniform type {0}", Member.Hash);
-                        }
-                    }
-                }
-
-                mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Slice.GetStream();
-            }
-
-            for (const Graphic::TextureSlot Binding : Schema.GetTextures())
-            {
-                if (ConstRetainer<Graphic::Image> Image = Material->GetImage(Binding))
-                {
-                    mCommand->Textures.Append(Image->GetHandle());
-                    mCommand->Samplers.Append(Material->GetSampler(Binding));
-                }
-                else
-                {
-                    mCommand->Textures.Append();
-                    mCommand->Samplers.Append();
-                }
-            }
         }
     }
 
@@ -436,73 +376,74 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::WriteShapes(Type Shape, ConstSpan<Collector::Command> Commands)
+    void Canvas::WriteShapes(Ref<Encoder> Encoder, Type Shape, ConstSpan<Collector::Command> Commands)
     {
-        // Start another draw command.
-        mCommand = mService->AllocateTransientCommands(1).GetData();
-        mCommand->Pipeline = mTechniques[Enum::Cast(Shape)]->GetHandle();
+        // Gather each shape's per-instance layout into a single transient instance stream.
+        Graphic::Transient<ShapeLayout> Instances = mService->AllocateTransientVertices<ShapeLayout>(Commands.GetSize());
 
-        // Set the global uniform for the shape pipeline, which contains the array of global parameters to be applied.
-        mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mCbStream;
-
-        // Draw all shapes in the batch using a single draw call with a callback to write each instance.
-        Draw<ShapeLayout>(Commands.GetSize(), [&](Graphic::Transient<ShapeLayout> Instances)
+        for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
         {
-            for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
-            {
-                Instances[Element] = mShapes[Commands[Element].Entry.Slot].Layout;
-            }
-        });
+            Instances[Element] = mShapes[Commands[Element].Entry.Slot].Layout;
+        }
+
+        // Draw the batch as a single instanced quad; the encoder binds the pipeline and global uniforms.
+        const Graphic::Invocation Invocation {
+            .Count     = 4,
+            .Base      = 0,
+            .Offset    = 0,
+            .Instances = static_cast<UInt32>(Commands.GetSize())
+        };
+        Encoder.Draw(* mTechniques[Enum::Cast(Shape)], nullptr, Instances.GetStream(), Invocation);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::WriteSprites(ConstSpan<Collector::Command> Commands)
+    void Canvas::WriteSprites(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands)
     {
-        // Start another draw command.
-        mCommand = mService->AllocateTransientCommands(1).GetData();
-
-        // Since all commands in this batch share the same pipeline and material, we bind them once for the entire batch.
+        // Every draw call in this batch shares the same technique and material.
         Ref<SpriteCommand> First = mSprites[Commands.GetFront().Entry.Slot];
-        Bind(First.Technique, First.Material);
 
-        // Set the global uniform for the sprite pipeline, which contains the array of global parameters to be applied.
-        mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mCbStream;
+        // Gather each sprite's per-instance layout into a single transient instance stream.
+        Graphic::Transient<SpriteLayout> Instances = mService->AllocateTransientVertices<SpriteLayout>(Commands.GetSize());
 
-        // Draw all shapes in the batch using a single draw call with a callback to write each instance.
-        Draw<SpriteLayout>(Commands.GetSize(), [&](Graphic::Transient<SpriteLayout> Instances)
+        for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
         {
-            for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
-            {
-                Instances[Element] = mSprites[Commands[Element].Entry.Slot].Layout;
-            }
-        });
+            Instances[Element] = mSprites[Commands[Element].Entry.Slot].Layout;
+        }
+
+        const Graphic::Invocation Invocation {
+            .Count     = 4,
+            .Base      = 0,
+            .Offset    = 0,
+            .Instances = static_cast<UInt32>(Commands.GetSize())
+        };
+        Encoder.Draw(* First.Technique, First.Material, Instances.GetStream(), Invocation);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::WriteGlyphs(ConstSpan<Collector::Command> Commands)
+    void Canvas::WriteGlyphs(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands)
     {
-        // Start another draw command.
-        mCommand = mService->AllocateTransientCommands(1).GetData();
-
-        // Since all commands in this batch share the same pipeline and material, we bind them once for the entire batch.
+        // Every draw call in this batch shares the same font material and effect palette.
         Ref<GlyphCommand> First = mGlyphs[Commands.GetFront().Entry.Slot];
-        Bind(AddressOf(* mTechniques[Enum::Cast(Type::Glyph)]), First.Material);
 
-        // Set the text effects uniform for the glyph pipeline, which contains the array of text effects to be applied.
-        mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mCbStream;
-        mCommand->Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = mEffectPalettes[First.Generation].Stream;
+        // Gather each glyph's per-instance layout into a single transient instance stream.
+        Graphic::Transient<GlyphLayout> Instances = mService->AllocateTransientVertices<GlyphLayout>(Commands.GetSize());
 
-        // Draw all glyphs in the batch using a single draw call with a callback to write each instance.
-        Draw<GlyphLayout>(Commands.GetSize(), [&](Graphic::Transient<GlyphLayout> Instances)
+        for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
         {
-            for (UInt32 Element = 0; Element < Commands.GetSize(); ++Element)
-            {
-                Instances[Element] = mGlyphs[Commands[Element].Entry.Slot].Layout;
-            }
-        });
+            Instances[Element] = mGlyphs[Commands[Element].Entry.Slot].Layout;
+        }
+
+        const Graphic::Stream     Palette  = mEffectPalettes[First.Generation].Stream;
+        const Graphic::Invocation Invocation {
+            .Count     = 4,
+            .Base      = 0,
+            .Offset    = 0,
+            .Instances = static_cast<UInt32>(Commands.GetSize())
+        };
+        Encoder.Draw(* mTechniques[Enum::Cast(Type::Glyph)], First.Material, Instances.GetStream(), Palette, Invocation);
     }
 }

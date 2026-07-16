@@ -35,6 +35,10 @@ out vec2  v_Local;
 out float v_Thickness;
 #endif
 
+#ifdef SHAPE_ROUNDED_RECT
+out vec2  v_Extent;
+#endif
+
 vec2 TessellateRect(int VertexID)
 {
     const vec2 kUnitRectCorners[4] = vec2[4](
@@ -67,6 +71,7 @@ void main()
 
     #ifdef SHAPE_ROUNDED_RECT
         v_Thickness = a_Data.z;
+        v_Extent    = a_Data.xy;
     #endif
 
 #elif defined(SHAPE_LINE)
@@ -75,7 +80,7 @@ void main()
 
     Offset = a_Data.xy * (Local.x * a_Data.z) + vec2(-a_Data.y, a_Data.x) * (Local.y * v_Thickness);
 
-    Local *= 1.0 + v_Thickness;   // TODO: Fix Thickness
+    Local *= 1.0 + v_Thickness;
 
 #endif
 
@@ -105,6 +110,10 @@ in vec2  v_Local;
 in float v_Thickness;
 #endif
 
+#ifdef SHAPE_ROUNDED_RECT
+in vec2  v_Extent;
+#endif
+
 layout(location = 0) out vec4 out_Color;
 
 float sdCircle(vec2 Point, float Radius)
@@ -122,9 +131,9 @@ float sdLine(vec2 Point, float Thickness)
     return abs(Point.y) - Thickness;
 }
 
-float sdRoundedRect(vec2 Point, float Radius)
+float sdRoundedBox(vec2 Point, vec2 HalfSize, float Radius)
 {
-    vec2 q = abs(Point) - 1.0 + Radius;
+    vec2 q = abs(Point) - HalfSize + Radius;
     return length(max(q, 0.0)) - Radius + min(max(q.x, q.y), 0.0);
 }
 
@@ -143,7 +152,7 @@ void main()
     #elif defined(SHAPE_LINE)
         Distance = sdLine(v_Local, v_Thickness);
     #elif defined(SHAPE_ROUNDED_RECT)
-        Distance = sdRoundedRect(v_Local, v_Thickness);
+        Distance = sdRoundedBox(v_Local * v_Extent, v_Extent, v_Thickness);
     #endif
 
     #if defined(USE_AA)

@@ -18,10 +18,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Render
 {
-    /// \brief Module that provides MSDF Artery font support to the engine.
-    class ArteryModule final : public Engine::Module
+    /// \brief Module that provides the 2D deferred-mode \ref Canvas front-end.
+    class CanvasModule final : public Engine::Module
     {
     public:
 

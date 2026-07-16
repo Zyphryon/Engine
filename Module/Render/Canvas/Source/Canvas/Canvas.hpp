@@ -12,14 +12,16 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Collector.hpp"
+#include "Zyphryon.Render/Encoder.hpp"
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Technique.hpp"
+#include "Zyphryon.Math/Color.hpp"
 #include "Zyphryon.Math/Geometry/Circle.hpp"
 #include "Zyphryon.Math/Geometry/Line.hpp"
-#include "Zyphryon.Render/Sprite/Sprite.hpp"
-#include "Zyphryon.Render/Typography/TextStyle.hpp"
-#include "Zyphryon.Render/Typography/TextEffect.hpp"
+#include "Sprite/Sprite.hpp"
+#include "Typography/TextStyle.hpp"
+#include "Typography/TextEffect.hpp"
+#include "Zyphryon.Render/Collector.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,12 +29,12 @@
 
 namespace Render
 {
-    /// \brief A 2D canvas that draws basic shapes, text, and sprites.
+    /// \brief A 2D draw-call generator for basic shapes, text, and sprites.
+    ///
+    /// Emits sorted, batched draw calls into a \ref Collector during a frame, then encodes them through an
+    /// \ref Encoder — it never opens a target nor binds uniforms itself. Intended to be driven from a pass's Run.
     class Canvas final
     {
-        // TODO: Automatic Binding of Global/Pass Data
-        // TODO: Automatic Binding of Static Samplers
-
     public:
 
         /// \brief Enumeration of supported types that can be drawn on the canvas.
@@ -61,10 +63,8 @@ namespace Render
         /// \param Technique The technique to set for subsequent draw calls.
         void SetTechnique(Type Type, ConstRetainer<Graphic::Technique> Technique);
 
-        /// \brief Begins a new drawing session with the specified projection matrix.
-        ///
-        /// \param Projection The projection matrix to use for rendering transformations.
-        void Begin(ConstRef<Matrix4x4> Projection);
+        /// \brief Begins a new frame, binding the collector draw calls are emitted into.
+        void Begin();
 
         /// \brief Issues a draw command for drawing a circle shape with the specified parameters.
         ///
@@ -135,8 +135,10 @@ namespace Render
         /// \param Order     The depth value for rendering order.
         void DrawSpriteAlpha(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order);
 
-        /// \brief Ends the current drawing session, flushing any pending draw commands.
-        void End();
+        /// \brief Drains the collected draw calls, encoding them as batched draw commands.
+        ///
+        /// \param Encoder The encoder that builds and binds the resulting draw commands.
+        void Flush(Ref<Encoder> Encoder);
 
     private:
 
@@ -150,63 +152,6 @@ namespace Render
 
         /// \brief Prepares the canvas for rendering by setting up internal state and resources.
         void Prepare();
-
-        /// \brief Binds the specified technique and material for subsequent draw calls.
-        ///
-        /// \param Technique The graphics technique to bind for rendering.
-        /// \param Material  The material to bind for rendering, containing shader parameters and resources.
-        void Bind(ConstPtr<Graphic::Technique> Technique, ConstPtr<Graphic::Material> Material);
-
-        /// \brief Issues a draw command using the specified vertex and index formats and a callback to write vertex and index data.
-        ///
-        /// \param Vertices The number of vertices to allocate for drawing.
-        /// \param Indices  The number of indices to allocate for drawing.
-        /// \param Callback The callback function that writes vertex and index data into the allocated buffers.
-        template<typename Vertex, typename Index, typename Callable>
-        ZY_INLINE void Draw(UInt32 Vertices, UInt32 Indices, AnyRef<Callable> Callback)
-        {
-            // Allocate transient buffers for vertex and index data.
-            const Graphic::Transient<Vertex> VtxData = mService->AllocateTransientVertices<Vertex>(Vertices);
-            const Graphic::Transient<Index>  IdxData = mService->AllocateTransientIndices<Index>(Indices);
-
-            // Invoke the callback to write vertex and index data into the allocated buffers.
-            Callback(VtxData, IdxData);
-
-            mCommand->Vertices.Append(VtxData.GetDescriptor().Buffer, VtxData.GetDescriptor().Stride, 0);
-            mCommand->Indices = {
-                .Buffer = IdxData.GetDescriptor().Buffer,
-                .Stride = IdxData.GetDescriptor().Stride,
-                .Offset = 0
-            };
-            mCommand->Parameters = {
-                .Count     = Indices,
-                .Base      = VtxData.GetDescriptor().Offset / sizeof(Vertex),
-                .Offset    = VtxData.GetDescriptor().Offset / sizeof(Index),
-                .Instances = 1
-            };
-        }
-
-        /// \brief Issues a draw command using the specified vertex format and a callback to write instances data.
-        ///
-        /// \param Instances The number of instances to allocate for drawing.
-        /// \param Callback  The callback function that writes vertex data into the allocated buffer.
-        template<typename Vertex, typename Callable>
-        ZY_INLINE void Draw(UInt32 Instances, AnyRef<Callable> Callback)
-        {
-            // Allocate transient buffers for vertex data.
-            const Graphic::Transient<Vertex> VtxData = mService->AllocateTransientVertices<Vertex>(Instances);
-
-            // Invoke the callback to write vertex data into the allocated buffers.
-            Callback(VtxData);
-
-            mCommand->Vertices.Append(VtxData.GetStream());
-            mCommand->Parameters = {
-                .Count     = 4,
-                .Base      = 0,
-                .Offset    = 0,
-                .Instances = Instances
-            };
-        }
 
     private:
 
@@ -361,21 +306,24 @@ namespace Render
         /// \return The interned glyph effect.
         GlyphEffect InternTextEffect(ConstRef<TextEffect> Effect);
 
-        /// \brief Writes a batch of shape draw commands to the graphics encoder for rendering.
+        /// \brief Writes a batch of shape draw calls as a single instanced command through the encoder.
         ///
+        /// \param Encoder  The encoder that builds the resulting draw command.
         /// \param Shape    The type of shape being drawn, which determines the rendering pipeline used.
-        /// \param Commands The span of shape draw commands to be processed and encoded for rendering.
-        void WriteShapes(Type Shape, ConstSpan<Collector::Command> Commands);
+        /// \param Commands The span of shape draw calls to be processed and encoded for rendering.
+        void WriteShapes(Ref<Encoder> Encoder, Type Shape, ConstSpan<Collector::Command> Commands);
 
-        /// \brief Writes a batch of sprite draw commands to the graphics encoder for rendering.
+        /// \brief Writes a batch of sprite draw calls as a single instanced command through the encoder.
         ///
-        /// \param Commands The span of sprite draw commands to be processed and encoded for rendering.
-        void WriteSprites(ConstSpan<Collector::Command> Commands);
+        /// \param Encoder  The encoder that builds the resulting draw command.
+        /// \param Commands The span of sprite draw calls to be processed and encoded for rendering.
+        void WriteSprites(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands);
 
-        /// \brief Writes a batch of glyph draw commands to the graphics encoder for rendering.
+        /// \brief Writes a batch of glyph draw calls as a single instanced command through the encoder.
         ///
-        /// \param Commands The span of glyph draw commands to be processed and encoded for rendering.
-        void WriteGlyphs(ConstSpan<Collector::Command> Commands);
+        /// \param Encoder  The encoder that builds the resulting draw command.
+        /// \param Commands The span of glyph draw calls to be processed and encoded for rendering.
+        void WriteGlyphs(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands);
 
     private:
 
@@ -384,7 +332,6 @@ namespace Render
 
         Retainer<Graphic::Service>     mService;
         Collector                      mCollector;
-        Ptr<Graphic::Command>          mCommand;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -397,7 +344,6 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Graphic::Stream                mCbStream;
         Sequence<GlyphEffectPalette>   mEffectPalettes;
         Table<UInt64, GlyphEffect>     mEffectLookup;
     };

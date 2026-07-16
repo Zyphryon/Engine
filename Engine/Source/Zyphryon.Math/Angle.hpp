@@ -238,7 +238,7 @@ inline namespace Math
         {
             constexpr Real32 kTwoPi = 2.0f * kPI<Real32>;
 
-            if (const Real32 Radians = Remainder(Value.GetRadians(), kTwoPi); Radians < 0.0f)
+            if (const Real32 Radians = Mod(Value.GetRadians(), kTwoPi); Radians < 0.0f)
             {
                 return FromRadians(Radians + kTwoPi);
             }

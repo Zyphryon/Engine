@@ -12,7 +12,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(ZyModule_RenderLoaderArtery VERSION 1.0.0 LANGUAGES CXX)
+PROJECT(ZyModule_RenderCanvas VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Code
@@ -55,4 +55,4 @@ ZyApplyCompileOptions(${PROJECT_NAME})
 ## Registration
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "ArteryModule.hpp" CLASS "Content::ArteryModule")
+ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "CanvasModule.hpp" CLASS "Render::CanvasModule")

@@ -10,51 +10,54 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "ArteryModule.hpp"
-#include "ArteryLoader.hpp"
-#include <Zyphryon.Content/Service.hpp>
+#include "Target.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Render
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Text ArteryModule::GetName() const
+    void Target::Realize(Ref<Graphic::Service> Service, UInt16 Width, UInt16 Height)
     {
-        return "Artery Font Format";
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Text ArteryModule::GetVersion() const
-    {
-        return "1.0.0";
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void ArteryModule::OnAttach(Ref<Engine::Subsystem::Host> Host)
-    {
-        if (ConstRetainer<Service> Content = Host.GetService<Service>())
+        switch (mDescription.Sizing)
         {
-            Content->AddLoader(ArteryLoader::kTypes, Retainer<ArteryLoader>::Create());
+        case Scale::Full:
+            mWidth  = Width;
+            mHeight = Height;
+            break;
+        case Scale::Half:
+            mWidth  = Width  / 2;
+            mHeight = Height / 2;
+            break;
+        case Scale::Quarter:
+            mWidth  = Width  / 4;
+            mHeight = Height / 4;
+            break;
+        case Scale::Fixed:
+            mWidth  = mDescription.Width;
+            mHeight = mDescription.Height;
+            break;
         }
+
+        mWidth   = Max(1, mWidth);
+        mHeight  = Max(1, mHeight);
+        mTexture = Service.CreateTexture(mDescription.Format, mWidth, mHeight, 1, mDescription.Samples);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void ArteryModule::OnDetach(Ref<Engine::Subsystem::Host> Host)
+    void Target::Release(Ref<Graphic::Service> Service)
     {
-        if (ConstRetainer<Service> Content = Host.GetService<Service>())
+        if (mTexture)
         {
-            Content->RemoveLoader(ArteryLoader::kTypes);
+            Service.DeleteTexture(mTexture);
+
+            mTexture = 0;
         }
     }
 }

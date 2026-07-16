@@ -458,6 +458,66 @@ inline namespace Math
             return AnyColor(R, G, B, A);
         }
 
+        /// \brief Constructs a fully saturated color from a hue value.
+        ///
+        /// \param Hue   The hue in turns, where one full revolution of the color wheel spans [0, 1).
+        /// \param Alpha The alpha component in the range [0, 255].
+        /// \return The color corresponding to the given hue.
+        ZY_INLINE static constexpr AnyColor FromHue(Real32 Hue, UInt8 Alpha = 255)
+        {
+            const Real32 H = (Hue - Floor(Hue)) * 6.0f;
+            const Real32 X = 1.0f - Abs(Mod(H, 2.0f) - 1.0f);
+
+            Real32 R = 0.0f, G = 0.0f, B = 0.0f;
+
+            switch (static_cast<UInt32>(H))
+            {
+            case 0:
+                R = 1.0f;
+                G = X;
+                break;
+            case 1:
+                R = X;
+                G = 1.0f;
+                break;
+            case 2:
+                G = 1.0f;
+                B = X;
+                break;
+            case 3:
+                G = X;
+                B = 1.0f;
+                break;
+            case 4:
+                R = X;
+                B = 1.0f;
+                break;
+            default:
+                R = 1.0f;
+                B = X;
+                break;
+            }
+
+            if constexpr (IsReal<Type>)
+            {
+                constexpr Real32 kInvLimit = 1.0f / Limit<UInt8>();
+
+                return AnyColor(static_cast<Type>(R),
+                                static_cast<Type>(G),
+                                static_cast<Type>(B),
+                                static_cast<Type>(Alpha * kInvLimit));
+            }
+            else
+            {
+                constexpr Real32 kLimit = static_cast<Real32>(Limit<Type>());
+
+                return AnyColor(static_cast<Type>(R * kLimit),
+                                static_cast<Type>(G * kLimit),
+                                static_cast<Type>(B * kLimit),
+                                static_cast<Type>(Alpha));
+            }
+        }
+
         /// \brief Returns a fully transparent black color.
         ///
         /// \return A color representing transparent black.

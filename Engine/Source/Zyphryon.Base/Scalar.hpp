@@ -92,7 +92,7 @@ inline namespace Base
     /// \param Divisor  The divisor value.
     /// \return The remainder of the division of \a Dividend by \a Divisor.
     template<typename Type>
-    ZY_INLINE Type Remainder(Type Dividend, Type Divisor)
+    ZY_INLINE Type Mod(Type Dividend, Type Divisor)
         requires(IsReal<Type>)
     {
         ZY_ASSERT(Divisor != 0, "Divisor cannot be zero");
