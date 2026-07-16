@@ -174,6 +174,12 @@ namespace Graphic
 
     void GLES3Driver::DeleteBuffer(Object ID)
     {
+        // Deleting a buffer that is bound to GL_ARRAY_BUFFER resets that binding to zero.
+        if (mSnapshot.Vertices == mBuffers[ID].Object)
+        {
+            mSnapshot.Vertices = 0;
+        }
+
         glDeleteBuffers(1, AddressOf(mBuffers[ID].Object));
         mBuffers[ID] = GLES3Buffer();
     }
@@ -643,7 +649,7 @@ namespace Graphic
             }
             if (VerticesChanged)
             {
-                ApplyVertexResources(Pipeline, Newest);
+                ApplyVertexResources(Pipeline, Newest, IsPipelineDirty);
             }
 
             // Index stream (part of the vertex-array element binding).
@@ -1040,7 +1046,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command)
+    void GLES3Driver::ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool IsPipelineDirty)
     {
         UInt32 Enabled = 0;
 
@@ -1054,8 +1060,17 @@ namespace Graphic
             ConstRef<Stream> Stream = Command.Vertices[Attribute.Stream];
             Enabled |= (1u << Attribute.Location);
 
-            glBindBuffer(GL_ARRAY_BUFFER, Stream.Buffer ? mBuffers[Stream.Buffer].Object : 0);
-            glEnableVertexAttribArray(Attribute.Location);
+            if (const GLuint Object = Stream.Buffer ? mBuffers[Stream.Buffer].Object : 0; mSnapshot.Vertices != Object)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, Object);
+                mSnapshot.Vertices = Object;
+            }
+
+            if (IsPipelineDirty)
+            {
+                glEnableVertexAttribArray(Attribute.Location);
+                glVertexAttribDivisor(Attribute.Location, Attribute.Divisor);
+            }
 
             const GLES3Attribute Format = GLES3Convert(Attribute.Format);
             const ConstPtr<void> Cursor = reinterpret_cast<ConstPtr<void>>(
@@ -1069,18 +1084,20 @@ namespace Graphic
             {
                 glVertexAttribPointer(Attribute.Location, Format.Size, Format.Type, Format.Normalized, Stream.Stride, Cursor);
             }
-            glVertexAttribDivisor(Attribute.Location, Attribute.Divisor);
         }
 
-        // Disable attributes left enabled by a previously bound pipeline.
-        for (UInt32 Location = 0, Stale = mSnapshot.Attributes & ~Enabled; Stale; ++Location, Stale >>= 1)
+        // The enable-set changes only with the pipeline; disable whatever a previously bound pipeline left enabled.
+        if (IsPipelineDirty)
         {
-            if (Stale & 1u)
+            for (UInt32 Location = 0, Stale = mSnapshot.Attributes & ~Enabled; Stale; ++Location, Stale >>= 1)
             {
-                glDisableVertexAttribArray(Location);
+                if (Stale & 1u)
+                {
+                    glDisableVertexAttribArray(Location);
+                }
             }
+            mSnapshot.Attributes = Enabled;
         }
-        mSnapshot.Attributes = Enabled;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

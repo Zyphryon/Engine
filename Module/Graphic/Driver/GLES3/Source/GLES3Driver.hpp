@@ -166,6 +166,7 @@ namespace Graphic
             UInt32         Attributes = 0;
             GLES3Pipeline  Pipeline;
             UInt8          Stencil    = 0;
+            GLuint         Vertices   = 0;
         };
 
     private:
@@ -188,9 +189,10 @@ namespace Graphic
 
         /// \brief Applies the vertex stream bindings and attribute layout for a draw item.
         ///
-        /// \param Pipeline The pipeline whose input layout describes the attributes.
-        /// \param Command  The draw item providing the vertex streams.
-        void ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command);
+        /// \param Pipeline        The pipeline whose input layout describes the attributes.
+        /// \param Command         The draw item providing the vertex streams.
+        /// \param IsPipelineDirty Whether the pipeline changed since the previous draw.
+        void ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool IsPipelineDirty);
 
         /// \brief Applies the uniform buffer range bindings for a draw item.
         ///

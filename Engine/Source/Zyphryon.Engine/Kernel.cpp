@@ -137,6 +137,7 @@ namespace Engine
         // Attaches external modules to the engine, allowing them to register their own services and systems.
         for (Ref<Unique<Module>> Module : mModules)
         {
+            LOG_I("Kernel: Attaching module '{0}' v.{1}", Module->GetName(), Module->GetVersion());
             Module->OnAttach(* this);
         }
 
