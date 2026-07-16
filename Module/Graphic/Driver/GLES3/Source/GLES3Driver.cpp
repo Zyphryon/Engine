@@ -200,17 +200,13 @@ namespace Graphic
     Ptr<Byte> GLES3Driver::MapBuffer(Object ID, UInt32 Offset, UInt32 Size)
     {
 #if defined(ZY_PLATFORM_WEB)
-
         ZY_ASSERT(false, "GLES3Driver: MapBuffer is not supported on WebGL");
         return nullptr;
-
 #else
-
         constexpr GLbitfield Access = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
 
         glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[ID].Object);
         return static_cast<Ptr<Byte>>(glMapBufferRange(GL_COPY_WRITE_BUFFER, Offset, Size, Access));
-
 #endif
     }
 
@@ -220,13 +216,10 @@ namespace Graphic
     void GLES3Driver::UnmapBuffer(Object ID)
     {
 #if defined(ZY_PLATFORM_WEB)
-
         ZY_ASSERT(false, "GLES3Driver: UnmapBuffer is not supported on WebGL");
 #else
-
         glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[ID].Object);
         glUnmapBuffer(GL_COPY_WRITE_BUFFER);
-
 #endif
     }
 
@@ -554,13 +547,9 @@ namespace Graphic
             static_cast<GLsizei>(Viewport.Height));
 
 #if defined(ZY_PLATFORM_WEB)
-
         glDepthRangef(Viewport.MinDepth, Viewport.MaxDepth);
-
 #else
-
         glDepthRange(Viewport.MinDepth, Viewport.MaxDepth);
-
 #endif
 
         // Clears must ignore the pipeline scissor and write masks; the subsequent pipeline bind restores them.
@@ -677,31 +666,19 @@ namespace Graphic
 
                 if (Instances > 1)
                 {
-
 #if defined(ZY_PLATFORM_WEB)
-
                     glDrawElementsInstanced(Pipeline.Primitive, Count, Type, Cursor, Instances);
-
 #else
-
                     glDrawElementsInstancedBaseVertex(Pipeline.Primitive, Count, Type, Cursor, Instances, Base);
-
 #endif
-
                 }
                 else
                 {
-
 #if defined(ZY_PLATFORM_WEB)
-
                     glDrawElements(Pipeline.Primitive, Count, Type, Cursor);
-
 #else
-
                     glDrawElementsBaseVertex(Pipeline.Primitive, Count, Type, Cursor, Base);
-
 #endif
-
                 }
             }
             else
@@ -776,7 +753,6 @@ namespace Graphic
         Ref<Capabilities> Limits = mDescription.Capabilities;
 
 #if defined(ZY_PLATFORM_WEB)
-
         const Bool ExtendedTier = (Major > 3) || (Major == 3 && Minor >= 1);   // OpenGL ES 3.1+
 
         Limits.SupportsBaseVertex = HasExtension("GL_OES_draw_elements_base_vertex")
@@ -784,14 +760,11 @@ namespace Graphic
                                  || HasExtension("WEBGL_draw_instanced_base_vertex_base_instance");
 
         Limits.SupportsFormatETC2 = true;                                      // Guaranteed by OpenGL ES 3.0.
-
 #else
-
         const Bool ExtendedTier = (Major > 4) || (Major == 4 && Minor >= 3);   // OpenGL 4.3+
         Limits.SupportsBaseVertex = true;                                      // Core since OpenGL 3.2.
         Limits.SupportsFormatRGTC = true;                                      // Core since OpenGL 3.0.
         Limits.SupportsFormatETC2 = true;                                      // Core since OpenGL 4.3.
-
 #endif
 
         mDescription.Tier = ExtendedTier ? Tier::Level3 : Tier::Level2;
@@ -817,9 +790,7 @@ namespace Graphic
             || HasExtension("GL_ARB_texture_compression_rgtc");
 
 #if !defined(ZY_PLATFORM_WEB)
-
         Limits.SupportsBorderClamp = true; // Core since OpenGL 1.3.
-
 #endif
 
         // Device limits.
@@ -949,13 +920,11 @@ namespace Graphic
         }
 
 #if !defined(ZY_PLATFORM_WEB)
-
         if (State.DepthClip != Pipeline.DepthClip)
         {
             Pipeline.DepthClip ? glDisable(GL_DEPTH_CLAMP) : glEnable(GL_DEPTH_CLAMP);
             State.DepthClip = Pipeline.DepthClip;
         }
-
 #endif
 
         if (State.DepthBias != Pipeline.DepthBias || State.DepthBiasSlope != Pipeline.DepthBiasSlope)
@@ -1033,13 +1002,11 @@ namespace Graphic
         }
 
 #if !defined(ZY_PLATFORM_WEB)
-
         if (State.FillMode != Pipeline.FillMode)
         {
             glPolygonMode(GL_FRONT_AND_BACK, Pipeline.FillMode);
             State.FillMode = Pipeline.FillMode;
         }
-
 #endif
     }
 

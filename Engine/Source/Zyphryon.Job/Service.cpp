@@ -26,14 +26,12 @@ namespace Job
         : Subsystem { Host }
     {
 #if defined(ZY_HAS_THREADS)
-
         mTaskThreads.Reserve(GetConcurrency());
 
         for (UInt32 Worker = 0; Worker < mTaskThreads.GetCapacity(); ++Worker)
         {
             mTaskThreads.Append(Capture<& Service::OnWorkerThread>(this));
         }
-
 #endif
     }
 
@@ -43,7 +41,6 @@ namespace Job
     void Service::OnTick(Real64 Time)
     {
 #if defined(ZY_HAS_THREADS)
-
         Sequence<Task> Execution;
 
         {
@@ -55,15 +52,12 @@ namespace Job
         {
             Work();
         }
-
 #else
-
         for (ConstRef<Task> Work : mMainQueue)
         {
             Work();
         }
         mMainQueue.Clear();
-
 #endif
 
     }
@@ -74,7 +68,6 @@ namespace Job
     void Service::OnTeardown()
     {
 #if defined(ZY_HAS_THREADS)
-
         for (Ref<Thread> Worker : mTaskThreads)
         {
             Worker.request_stop();
@@ -87,7 +80,6 @@ namespace Job
             Worker.join();
         }
         mTaskThreads.Clear();
-
 #endif
     }
 
@@ -97,9 +89,7 @@ namespace Job
     void Service::SubmitOnMain(AnyRef<Task> Work)
     {
 #if defined(ZY_HAS_THREADS)
-
         Guard Guard(mMainMutex);
-
 #endif
 
         mMainQueue.Append(Forward<Task>(Work));
@@ -111,18 +101,14 @@ namespace Job
     void Service::SubmitOnBackground(AnyRef<Task> Work)
     {
 #if defined(ZY_HAS_THREADS)
-
         {
             Guard Guard(mTaskMutex);
             mTaskQueue.Append(Forward<Task>(Work));
         }
         mTaskGate.notify_one();
-
 #else
-
         // If threads aren't supported, execute the task immediately on the calling thread.
         Work();
-
 #endif
     }
 

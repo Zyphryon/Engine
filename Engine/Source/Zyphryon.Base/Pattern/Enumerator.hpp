@@ -359,13 +359,13 @@ namespace Enum
     template<IsEnum Type>
     constexpr auto GetValues()
     {
-        ConstRef<decltype(Detail::kReflection<Type>)> Reflection = Detail::kReflection<Type>;
+        constexpr UInt Size = Detail::kReflection<Type>.Entries.GetSize();
 
-        Array<Type, Reflection.Entries.GetSize()> Result;
+        Array<Type, Size> Result;
 
-        for (UInt Index = 0; Index < Result.GetSize(); ++Index)
+        for (UInt Index = 0; Index < Size; ++Index)
         {
-            Result[Index] = Reflection.Entries[Index].Value;
+            Result[Index] = Detail::kReflection<Type>.Entries[Index].Value;
         }
         return Result;
     }

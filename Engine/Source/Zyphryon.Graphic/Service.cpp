@@ -29,9 +29,7 @@ namespace Graphic
         : Subsystem { Host }
     {
 #if !defined(ZY_PLATFORM_WEB)
-
         mWorker = Thread(Capture<& Service::OnWorkerThread>(this));
-
 #endif
     }
 
@@ -43,11 +41,9 @@ namespace Graphic
         ZY_PROFILE_SCOPE("Graphic::Teardown");
 
 #if !defined(ZY_PLATFORM_WEB)
-
         mWorker.request_stop();
         Flush();
         mWorker.join();
-
 #endif
     }
 
@@ -323,10 +319,8 @@ namespace Graphic
     void Service::Flush()
     {
 #if !defined(ZY_PLATFORM_WEB)
-
         // Wait until the GPU thread signals that the current frame has finished processing.
         mSignal.wait(true, std::memory_order_acquire);
-
 #endif
 
         // Rotate the frame queue so that the next frame becomes writable for the CPU while the previous one
@@ -334,15 +328,11 @@ namespace Graphic
         Swap(mProducer, mConsumer);
 
 #if !defined(ZY_PLATFORM_WEB)
-
         // Mark the service as busy again and notify the GPU thread that a new frame is ready for processing.
         mSignal.exchange(true, std::memory_order_release);
         mSignal.notify_one();
-
 #else
-
         Consume();
-
 #endif
     }
 
@@ -423,17 +413,12 @@ namespace Graphic
             {
 
 #if defined(ZY_PLATFORM_WEB)
-
                 mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
-
 #else
-
                 const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize());
                 Blit(Address, Data.GetSize(), Data.GetData());
                 mDriver->UnmapBuffer(Arena.Buffer);
-
 #endif
-
             }
 
             // Clear the data after uploading to the GPU to free up memory on the CPU side.
