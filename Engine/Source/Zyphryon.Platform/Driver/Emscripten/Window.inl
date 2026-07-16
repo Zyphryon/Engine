@@ -270,11 +270,11 @@ namespace Platform
                     {
                         Canvas->mDispatcher.QueueKeyDown(Key);
                     }
+                }
 
-                    if (const Text Data = StrConvert(Event->key); Data.GetSize() == 1)
-                    {
-                        Canvas->mDispatcher.QueueKeyType(Data);
-                    }
+                if (const Text Data = StrConvert(Event->key); Data.GetSize() == 1)
+                {
+                    Canvas->mDispatcher.QueueKeyType(Data);
                 }
             }
             return EM_TRUE;

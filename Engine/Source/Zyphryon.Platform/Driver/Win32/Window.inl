@@ -510,7 +510,7 @@ namespace Platform
             case WM_MOUSEHWHEEL:
             {
                 const Real32 Delta = static_cast<Real32>(GET_WHEEL_DELTA_WPARAM(Arg0)) / WHEEL_DELTA;
-                Dispatcher.QueueMouseScroll(-Delta, 0.0f);
+                Dispatcher.QueueMouseScroll(Delta, 0.0f);
                 break;
             }
             case WM_ERASEBKGND:
