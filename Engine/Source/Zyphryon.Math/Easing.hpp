@@ -155,7 +155,7 @@ inline namespace Math
     {
         ZY_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return Type(1) - std::cos(static_cast<Real32>(Time) * kPI<Real32> / 2);
+        return Type(1) - Angle::Cosine(Time * kPI<Type> / 2);
     }
 
     /// \brief Sinusoidal easing function (decelerating to zero velocity).

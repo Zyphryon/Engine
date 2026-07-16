@@ -12,6 +12,7 @@
 
 #include "Service.hpp"
 #include "Codec.hpp"
+#include "Zyphryon.Job/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -25,7 +26,7 @@ namespace Scene
     Service::Service(Ref<Host> Host)
         : Subsystem { Host }
     {
-        mWorld.set_threads(std::thread::hardware_concurrency());
+        mWorld.set_threads(Job::Service::GetConcurrency());
 
         // Ensures that handles within this range are exclusively for entities created during runtime,
         // preventing conflicts with internal engine objects like components or archetypes.

@@ -333,17 +333,16 @@ namespace Scene::DSL::_
 
     /// \brief Maps a pair term to the component type of its second element.
     template<typename Term>
-    struct MapTypeFromTerm<Term, std::void_t<typename Term::Second>>
+    struct MapTypeFromTerm<Term, Void<typename Term::Second>>
     {
         using Type = Component<Select<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>;
     };
 
     /// \brief Maps a pair term to the component type of its second element.
     template<typename Term>
-    struct MapTypeFromTerm<Ptr<Term>, std::void_t<typename Term::Second>>
+    struct MapTypeFromTerm<Ptr<Term>, Void<typename Term::Second>>
     {
-        using Type = std::add_pointer_t<
-            Component<Select<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>>;
+        using Type = Pointer<Component<Select<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>>;
     };
 
     /// \brief Convenience alias for the resolved component type of a DSL term.
@@ -357,7 +356,7 @@ namespace Scene::DSL::_
     struct ExtractAndFilterTypes
     {
         template<typename T>
-        using Keep = Select<std::is_empty_v<StripAll<T>>, TypeList<>, TypeList<T>>;
+        using Keep = Select<IsEmpty<StripAll<T>>, TypeList<>, TypeList<T>>;
 
         using Type = decltype((TypeList<>{} + ... + Keep<MapType<Terms>>{ }));
     };

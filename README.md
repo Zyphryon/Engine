@@ -34,7 +34,7 @@ This isn't just another engine wrapper. This is **raw metal programming** with m
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/Zyphryon.git
+git clone [https://github.com/Zyphryon/Engine/Zyphryon.git](https://github.com/Zyphryon/Engine.git)
 cd Zyphryon/Engine
 
 # Generate build files

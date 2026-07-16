@@ -86,7 +86,7 @@ inline namespace Math
         template<Real32 Tolerance = kEpsilon<Real32>>
         ZY_INLINE Bool IsNormalized() const
         {
-            return std::fabsf(GetLengthSquared() - 1.0f) <= Tolerance;
+            return Abs(GetLengthSquared() - 1.0f) <= Tolerance;
         }
 
         /// \brief Checks if this vector is parallel to another vector (based on the XYZ components).

@@ -62,6 +62,14 @@ inline namespace Base
     template<auto Limit>
     using Integer       = Smallest<Limit, uint8_t, Smallest<Limit, uint16_t, Smallest<Limit, uint32_t, uint64_t>>>;
 
+    /// \brief Yields `void` for any well-formed \p Type, used to detect valid types in SFINAE contexts.
+    template<typename Type>
+    using Void          = std::void_t<Type>;
+
+    /// \brief Produces a pointer type for \p Type.
+    template<typename Type>
+    using Pointer       = std::add_pointer_t<Type>;
+
     /// \brief Concept that is satisfied when \p From is implicitly convertible to \p To.
     template<class From, class To>
     concept IsCastable  = std::is_convertible_v<From, To>;
@@ -121,6 +129,10 @@ inline namespace Base
     /// \brief Concept that is satisfied when \p Type is `void`.
     template<class Type>
     concept IsVoid      = std::is_void_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type is empty.
+    template<class Type>
+    concept IsEmpty     = std::is_empty_v<Type>;
 
     /// \brief Identifies the type at the specified index in the parameter pack.
     template<auto Index, typename First, typename... Rest>
