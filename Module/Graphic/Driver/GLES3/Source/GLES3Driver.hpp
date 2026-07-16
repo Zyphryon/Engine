@@ -106,6 +106,8 @@ namespace Graphic
         {
             GLuint                                     Framebuffer = 0;
             GLuint                                     Resolver    = 0;
+            UInt16                                     Width       = 0;
+            UInt16                                     Height      = 0;
             Sequence<ColorAttachment, kMaxAttachments> Colors;
             DepthAttachment                            Depth;
         };
@@ -164,6 +166,7 @@ namespace Graphic
         {
 
             UInt32         Attributes = 0;
+            Ptr<GLES3Pass> Pass       = nullptr;
             GLES3Pipeline  Pipeline;
             UInt8          Stencil    = 0;
             GLuint         Vertices   = 0;

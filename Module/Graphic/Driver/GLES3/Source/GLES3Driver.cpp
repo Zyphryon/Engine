@@ -114,7 +114,9 @@ namespace Graphic
         const Bool HasStencil = GetFormatDescription(Config.DepthFormat).IsStencil;
 
         Ref<GLES3Pass> Display = mPasses[kDisplay];
-        Display.Framebuffer        = 0;
+        Display.Framebuffer              = 0;
+        Display.Width                    = Config.Width;
+        Display.Height                   = Config.Height;
         Display.Depth.DepthLoadAction    = HasDepth   ? Action::Clear : Action::Discard;
         Display.Depth.DepthStoreAction   = Action::Discard;
         Display.Depth.StencilLoadAction  = HasStencil ? Action::Clear : Action::Discard;
@@ -133,9 +135,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::Reset(UInt16, UInt16)
+    void GLES3Driver::Reset(UInt16 Width, UInt16 Height)
     {
-        // Nothing to do here.
+        mPasses[kDisplay].Width  = Width;
+        mPasses[kDisplay].Height = Height;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -229,6 +232,18 @@ namespace Graphic
     void GLES3Driver::CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth)
     {
         Ref<GLES3Pass> Pass = mPasses[ID];
+
+        // All attachments share a common size, the mip-adjusted height of the first one flips window coordinates.
+        if (!Colors.IsEmpty())
+        {
+            Pass.Width  = static_cast<UInt16>(Max(1, mTextures[Colors[0].Target].Width  >> Colors[0].TargetLevel));
+            Pass.Height = static_cast<UInt16>(Max(1, mTextures[Colors[0].Target].Height >> Colors[0].TargetLevel));
+        }
+        else if (Depth.Target)
+        {
+            Pass.Width  = static_cast<UInt16>(Max(1, mTextures[Depth.Target].Width  >> Depth.TargetLevel));
+            Pass.Height = static_cast<UInt16>(Max(1, mTextures[Depth.Target].Height >> Depth.TargetLevel));
+        }
 
         glGenFramebuffers(1, AddressOf(Pass.Framebuffer));
         glBindFramebuffer(GL_FRAMEBUFFER, Pass.Framebuffer);
@@ -540,9 +555,11 @@ namespace Graphic
         Ref<GLES3Pass> Target = mPasses[Pass];
         glBindFramebuffer(GL_FRAMEBUFFER, Target.Framebuffer);
 
+        mSnapshot.Pass = AddressOf(Target);
+
         glViewport(
             static_cast<GLint>(Viewport.X),
-            static_cast<GLint>(Viewport.Y),
+            static_cast<GLint>(Target.Height - (Viewport.Y + Viewport.Height)),
             static_cast<GLsizei>(Viewport.Width),
             static_cast<GLsizei>(Viewport.Height));
 
@@ -622,7 +639,8 @@ namespace Graphic
 
                 if (IsScissorDirty)
                 {
-                    glScissor(Newest.Scissor.X, Newest.Scissor.Y, Newest.Scissor.Width, Newest.Scissor.Height);
+                    const GLint Y = mSnapshot.Pass->Height - (Newest.Scissor.Y + Newest.Scissor.Height);
+                    glScissor(Newest.Scissor.X, Y, Newest.Scissor.Width, Newest.Scissor.Height);
                 }
             }
 
