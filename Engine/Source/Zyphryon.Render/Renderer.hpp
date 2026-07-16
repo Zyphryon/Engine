@@ -42,6 +42,26 @@ namespace Render
             return static_cast<Ref<Type>>(* mPasses.Append(Unique<Type>::Create(Forward<Arguments>(Parameters)...)));
         }
 
+        /// \brief Gets a pass by its position in the execution order.
+        ///
+        /// \param Index The zero-based index of the pass, in execution order.
+        /// \return A reference to the requested pass.
+        template<typename Type = Pass>
+        ZY_INLINE Ref<Type> GetPass(UInt32 Index)
+        {
+            return static_cast<Ref<Type>>(* mPasses[Index]);
+        }
+
+        /// \brief Gets a pass by its position in the execution order.
+        ///
+        /// \param Index The zero-based index of the pass, in execution order.
+        /// \return A read-only reference to the requested pass.
+        template<typename Type>
+        ZY_INLINE ConstRef<Type> GetPass(UInt Index) const
+        {
+            return static_cast<ConstRef<Type>>(* mPasses[Index]);
+        }
+
         /// \brief Creates a renderer-managed target.
         ///
         /// \param Description The target's format and sizing policy.
@@ -49,6 +69,24 @@ namespace Render
         ZY_INLINE Ref<Target> AddTarget(ConstRef<Target::Description> Description)
         {
             return * mTargets.Append(Unique<Target>::Create(Description));
+        }
+
+        /// \brief Gets a managed target by its position in creation order.
+        ///
+        /// \param Index The zero-based index of the target, in creation order.
+        /// \return A reference to the requested target.
+        ZY_INLINE Ref<Target> GetTarget(UInt32 Index)
+        {
+            return * mTargets[Index];
+        }
+
+        /// \brief Gets a managed target by its position in creation order.
+        ///
+        /// \param Index The zero-based index of the target, in creation order.
+        /// \return A read-only reference to the requested target.
+        ZY_INLINE ConstRef<Target> GetTarget(UInt32 Index) const
+        {
+            return * mTargets[Index];
         }
 
         /// \brief Resizes every managed target and rebuilds each pass handle from its declared attachments.
