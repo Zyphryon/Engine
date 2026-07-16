@@ -942,7 +942,7 @@ namespace Graphic
             State.DepthFunction = Pipeline.DepthFunction;
         }
 
-#if       ZY_PLATFORM_WEB
+#if !defined(ZY_PLATFORM_WEB)
 
         if (State.DepthClip != Pipeline.DepthClip)
         {

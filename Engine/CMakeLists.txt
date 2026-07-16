@@ -44,6 +44,8 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
             GIT_TAG        v0.13.1)
     FetchContent_MakeAvailable(External_Tracy)
 
+    ZyApplyCompileOptions("TracyClient")
+
     LIST(APPEND PROJECT_DEFINES      "ZY_PROFILE_BACKEND_TRACY")
     LIST(APPEND PROJECT_DEPENDENCIES "TracyClient")
 
@@ -81,6 +83,8 @@ FetchContent_Declare(External_Flecs
         GIT_REPOSITORY https://github.com/SanderMertens/flecs
         GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_Flecs)
+
+ZyApplyCompileOptions("flecs_static")
 
 LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 

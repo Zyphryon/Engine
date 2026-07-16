@@ -81,6 +81,11 @@ namespace Graphic
         Attributes.powerPreference       = EM_WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE;
         Attributes.failIfMajorPerformanceCaveat = false;
 
+#if defined(ZY_HAS_THREADS)
+        Attributes.proxyContextToMainThread = EMSCRIPTEN_WEBGL_CONTEXT_PROXY_DISALLOW;
+        Attributes.explicitSwapControl      = true;
+#endif
+
         mRenderContext = emscripten_webgl_create_context("!ZyWindowHTML5", AddressOf(Attributes));
 
         if (mRenderContext <= 0)
@@ -105,5 +110,8 @@ namespace Graphic
 
     void GLES3Context::Present()
     {
+#if defined(ZY_HAS_THREADS)
+        emscripten_webgl_commit_frame();
+#endif
     }
 }
