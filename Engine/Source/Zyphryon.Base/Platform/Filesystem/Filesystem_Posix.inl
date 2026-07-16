@@ -120,7 +120,7 @@ inline namespace Base
             {
                 const Text Name = StrConvert(Entry->d_name);
 
-                if (!StrEqualCaseInsensitive(Entry->d_name, ".") && !StrEqualCaseInsensitive(Entry->d_name, ".."))
+                if (!StrStartsWith(Entry->d_name, ".") && !StrStartsWith(Entry->d_name, ".."))
                 {
                     struct stat Statistics { };
 
