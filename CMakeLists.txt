@@ -91,7 +91,7 @@ ENDIF ()
 
 OPTION(ZY_RENDER_CANVAS "Render:  Enable 2D canvas front-end" ON)
 
-IF    (ZY_RENDER_CANVAS2D)
+IF    (ZY_RENDER_CANVAS)
 
     ADD_SUBDIRECTORY(Module/Render/Canvas)
 
