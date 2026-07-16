@@ -110,15 +110,30 @@ namespace Render
             Draw(Technique, Material, Instances, Graphic::Stream(), Parameters);
         }
 
+        /// \brief Emits one (optionally instanced) material-less draw for a pass-level effect.
+        ///
+        /// \param Technique  The technique (pipeline + schema) to draw with.
+        /// \param Textures   The input textures, in the technique's declared slot order.
+        /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
+        /// \param Parameters The draw parameters.
+        void Draw(
+            ConstRef<Graphic::Technique>  Technique,
+            ConstSpan<Graphic::Object>    Textures,
+            ConstRef<Graphic::Stream>     Instances,
+            ConstRef<Graphic::Invocation> Parameters);
+
         /// \brief Emits one material-less draw for a pass-level effect.
         ///
         /// \param Technique  The technique (pipeline + schema) to draw with.
         /// \param Textures   The input textures, in the technique's declared slot order.
         /// \param Parameters The draw parameters.
-        void Draw(
+        ZY_INLINE void Draw(
             ConstRef<Graphic::Technique>  Technique,
             ConstSpan<Graphic::Object>    Textures,
-            ConstRef<Graphic::Invocation> Parameters);
+            ConstRef<Graphic::Invocation> Parameters)
+        {
+            Draw(Technique, Textures, Graphic::Stream(), Parameters);
+        }
 
     private:
 

@@ -98,6 +98,7 @@ namespace Render
     void Encoder::Draw(
         ConstRef<Graphic::Technique>  Technique,
         ConstSpan<Graphic::Object>    Textures,
+        ConstRef<Graphic::Stream>     Instances,
         ConstRef<Graphic::Invocation> Parameters)
     {
         Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
@@ -119,6 +120,12 @@ namespace Render
             Command.Samplers.Append(Schema.GetSampler(Slot));
 
             ++Index;
+        }
+
+        // Bind the per-instance vertex stream.
+        if (Instances.Buffer)
+        {
+            Command.Vertices.Append(Instances);
         }
         Command.Parameters = Parameters;
     }
