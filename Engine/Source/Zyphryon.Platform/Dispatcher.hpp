@@ -182,6 +182,6 @@ namespace Platform
 
         Notification           mNotifications;
         Sequence<Input::Event> mInputEvents;
-        Str                    mInputText;
+        String<512>            mInputText;
     };
 }
