@@ -43,7 +43,14 @@ namespace Content
 
     void Disk::Enumerate(Text Path, AnyRef<OnEnumerate> Callback) const
     {
-        Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), Move(Callback));
+        Sequence<Filesystem::Record> Files;
+
+        Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), [&](ConstRef<Filesystem::Record> Record)
+        {
+            Files.Append(Record);
+            return true;
+        });
+        Callback(Move(Files));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

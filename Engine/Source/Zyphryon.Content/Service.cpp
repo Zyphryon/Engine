@@ -104,7 +104,7 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Enumerate(ConstRef<Uri> Key, AnyRef<Filesystem::OnEnumerate> Callback)
+    void Service::Enumerate(ConstRef<Uri> Key, AnyRef<Mount::OnEnumerate> Callback)
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
         {

@@ -21,8 +21,8 @@ namespace Content
     {
     public:
 
-        /// \see Filesystem::OnEnumerate
-        using OnEnumerate = Filesystem::OnEnumerate;
+        /// \brief A callback invoked when the contents of a directory are enumerated.
+        using OnEnumerate = Delegate<void(AnyRef<Sequence<Filesystem::Record>>)>;
 
         /// \brief A callback invoked when a file is read from the mount.
         using OnRead      = Delegate<void(Filesystem::Result, Blob)>;
