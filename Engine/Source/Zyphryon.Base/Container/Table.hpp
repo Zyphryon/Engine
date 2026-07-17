@@ -155,6 +155,23 @@ inline namespace Base
             }
         }
 
+        /// \brief Rebuilds the hash index for pairs written directly into the dense array.
+        ///
+        /// \param Count The number of pairs present in the dense array.
+        ZY_INLINE void Reindex(UInt Count)
+        {
+            ZY_ASSERT(mSize == 0u, "Reindex requires an empty index");
+            ZY_ASSERT(Count <= GetCapacity(), "Bulk load exceeds reserved capacity");
+
+            mSize = static_cast<UInt32>(Count);
+
+            for (UInt32 Index = 0u; Index < mSize; ++Index)
+            {
+                const UInt64 Digest = Hash(mEntries[Index].First);
+                DoInsert(Compute(Digest), Index, Digest & mMask);
+            }
+        }
+
         /// \brief Removes all key-value pairs from the table without releasing allocated memory.
         ZY_INLINE void Clear()
         {

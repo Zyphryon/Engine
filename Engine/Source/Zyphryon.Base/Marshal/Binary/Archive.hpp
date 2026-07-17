@@ -35,6 +35,17 @@ inline namespace Base
         typename Type::Element;
     };
 
+    /// \brief Concept that checks if a type is an associative key-value container.
+    template<typename Type>
+    concept IsAssociative = requires(Ref<Type> Object, UInt Size)
+    {
+        typename Type::Pair;
+        Object.Reserve(Size);
+        Object.Reindex(Size);
+        Object.GetData();
+        Object.GetSize();
+    };
+
     /// \brief Concept that checks if a type can be resized.
     template<typename Type>
     concept IsResizable = requires(Ref<Type> Object, UInt Size)
@@ -71,7 +82,7 @@ inline namespace Base
         /// \param Value The value to read into or write from.
         template<typename Type>
         ZY_INLINE void Serialize(Ref<Type> Value)
-            requires (!IsContainer<Type>)
+            requires (!IsContainer<Type> && !IsAssociative<Type>)
         {
             if constexpr (IsAnyOf<Type, Bool>)
             {
@@ -161,6 +172,60 @@ inline namespace Base
                 for (Ref<typename Type::Element> Element: Value)
                 {
                     Serialize(Element);
+                }
+            }
+        }
+
+        /// \brief Serializes an associative container by writing its size followed by its key-value pairs.
+        ///
+        /// \param Value The associative container to read into or write from.
+        template<typename Type>
+        ZY_INLINE void Serialize(Ref<Type> Value)
+            requires IsAssociative<Type>
+        {
+            using Pair = Type::Pair;
+
+            if constexpr (IsReader)
+            {
+                Value.Clear();
+
+                const UInt32 Size = mArchive.template ReadUInt<UInt32>();
+                Value.Reserve(Size);
+
+                if constexpr (IsTriviallyCopyable<Pair>)
+                {
+                    SerializeBlock(Value.GetData(), Size);
+                    Value.Reindex(Size);
+                }
+                else
+                {
+                    for (UInt32 Index = 0u; Index < Size; ++Index)
+                    {
+                        Pair Entry { };
+                        Serialize(Entry.First);
+                        Serialize(Entry.Second);
+
+                        Value.Assign(Entry.First, Move(Entry.Second));
+                    }
+                }
+            }
+            else
+            {
+                const UInt32 Size = static_cast<UInt32>(Value.GetSize());
+                mArchive.template WriteUInt<UInt32>(Size);
+
+                if constexpr (IsTriviallyCopyable<Pair>)
+                {
+                    SerializeBlock(Value.GetData(), Size);
+                }
+                else
+                {
+                    for (UInt32 Index = 0u; Index < Size; ++Index)
+                    {
+                        Ref<Pair> Entry = Value.GetData()[Index];
+                        Serialize(Entry.First);
+                        Serialize(Entry.Second);
+                    }
                 }
             }
         }
