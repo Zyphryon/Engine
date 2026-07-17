@@ -22,7 +22,7 @@ namespace Content
     public:
 
         /// \brief A callback invoked when the contents of a directory are enumerated.
-        using OnEnumerate = Delegate<void(AnyRef<Sequence<Filesystem::Record>>)>;
+        using OnEnumerate = Delegate<void(Filesystem::Result, Sequence<Filesystem::Record>)>;
 
         /// \brief A callback invoked when a file is read from the mount.
         using OnRead      = Delegate<void(Filesystem::Result, Blob)>;

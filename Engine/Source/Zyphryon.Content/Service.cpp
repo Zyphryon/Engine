@@ -122,7 +122,7 @@ namespace Content
         }
         else
         {
-            Callback({});
+            Callback(Filesystem::Result::Invalid, {});
         }
     }
 

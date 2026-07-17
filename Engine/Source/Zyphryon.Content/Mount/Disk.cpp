@@ -45,12 +45,13 @@ namespace Content
     {
         Sequence<Filesystem::Record> Files;
 
-        Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), [&](ConstRef<Filesystem::Record> Record)
+        const auto OnEnumerate = [& Files](ConstRef<Filesystem::Record> Record)
         {
             Files.Append(Record);
             return true;
-        });
-        Callback(Move(Files));
+        };
+        const Filesystem::Result Result = Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), OnEnumerate);
+        Callback(Result, Move(Files));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
