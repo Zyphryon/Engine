@@ -79,6 +79,32 @@ namespace Scene::DSL
         }
     };
 
+
+    /// \brief Marks one or more components as input dependencies for a query.
+    template<typename... Types>
+    struct Opt
+    {
+        Entity Expression;
+
+        ZY_INLINE constexpr explicit Opt(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<typename Constructor>
+        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        {
+            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).optional();
+            return Builder;
+        }
+
+        template<typename Constructor>
+        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        {
+            return Builder;
+        }
+    };
+
     /// \brief Marks one or more components as input dependencies for a query.
     template<typename... Types>
     struct In
