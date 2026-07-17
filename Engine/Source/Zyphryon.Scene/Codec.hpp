@@ -45,6 +45,12 @@ namespace Scene
             // Read serialized component payload.
             const ConstSpan<Byte> Bundle = Archive.ReadBlock<UInt32, Byte>();
 
+            if (!Second.IsValid())
+            {
+                LOG_D("Serializer: Skipping unregistered component '{}'", Name);
+                return;
+            }
+
             // Apply payload if present; otherwise attach component without data.
             if (Reader Data(Bundle.GetData(), Bundle.GetSize()); Data.GetAvailable() > 0)
             {
@@ -69,7 +75,7 @@ namespace Scene
                 }
                 else
                 {
-                    LOG_W("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
+                    LOG_D("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
                 }
             }
             else

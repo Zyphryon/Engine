@@ -209,6 +209,9 @@ namespace Scene
             case Trait::Symmetric:
                 mHandle.add(flecs::Symmetric);
                 break;
+            case Trait::Exclusive:
+                mHandle.add(flecs::Exclusive);
+                break;
             }
         }
 
@@ -242,6 +245,9 @@ namespace Scene
                 break;
             case Trait::Symmetric:
                 mHandle.remove(flecs::Symmetric);
+                break;
+            case Trait::Exclusive:
+                mHandle.remove(flecs::Exclusive);
                 break;
             }
         }
