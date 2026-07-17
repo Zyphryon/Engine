@@ -64,7 +64,7 @@ ENDIF ()
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN32})
-OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" $<NOT:$<BOOL:${WIN32}>>)
+OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ON)
 OPTION(ZY_GRAPHIC_LOADER_STB   "Graphic: Enable STB image loader"         OFF)
 
 IF    (ZY_GRAPHIC_DRIVER_D3D11)
