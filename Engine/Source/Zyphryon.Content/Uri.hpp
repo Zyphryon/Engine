@@ -100,8 +100,7 @@ namespace Content
         /// \return The path portion after the schema, or the full URL if no schema.
         ZY_INLINE Text GetPath() const
         {
-            const Text Path = StrAfter(mUrl, "://");
-            return Path.IsEmpty() ? static_cast<Text>(mUrl) : Path;
+            return StrAfter(mUrl, "://");
         }
 
         /// \brief Gets the directory component of the URI.
@@ -164,7 +163,7 @@ namespace Content
         {
             if (!Relative.HasSchema())
             {
-                return Str::Join(Parent.GetDirectory(), '/', Relative.GetPath());
+                return Str::Join(Parent.GetDirectory(), '/', Relative.GetUrl());
             }
             return Relative;
         }
