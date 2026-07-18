@@ -83,7 +83,7 @@ namespace Scene
         for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
         {
             const Entity Children = LoadHierarchy(Hierarchy);
-            Children.SetParent(Actor, Scene::Hierarchy::Open);
+            Children.Attach(Actor, Scene::Hierarchy::Open);
         }
     }
 
@@ -152,7 +152,7 @@ namespace Scene
 
         for (ConstRef<Defer> Entry : Pending)
         {
-            Entry.Source.SetParent(GetEntity(kMinRangeArchetypes + Entry.Parent), Hierarchy::Fixed);
+            Entry.Source.Attach(GetEntity(kMinRangeArchetypes + Entry.Parent), Hierarchy::Open);
         }
     }
 

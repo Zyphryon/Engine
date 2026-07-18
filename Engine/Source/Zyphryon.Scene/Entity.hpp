@@ -123,7 +123,7 @@ namespace Scene
         /// \return `true` if the entity is a pair, `false` otherwise.
         ZY_INLINE Bool IsPair() const
         {
-            return ecs_id_is_pair(mHandle.id());
+            return ecs_id_is_pair(mHandle.id()); // TODO: Until is fixed in Flecs.
         }
 
         /// \brief Destroys this entity and all of its components.
@@ -792,12 +792,12 @@ namespace Scene
             mHandle.each<Relation>(Forward<Callable>(Callback));
         }
 
-        /// \brief Sets the parent of this entity, making it a child in the hierarchy.
+        /// \brief Attaches this entity to a parent, making it a child in the hierarchy.
         ///
         /// \param Parent    The entity to become the parent.
         /// \param Hierarchy The hierarchy type of the parent-child relationship.
         /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity SetParent(Entity Parent, Hierarchy Hierarchy) const
+        ZY_INLINE Entity Attach(Entity Parent, Hierarchy Hierarchy) const
         {
             switch (Hierarchy)
             {
@@ -808,6 +808,18 @@ namespace Scene
                 mHandle.set(flecs::Parent(Parent.GetHandle()));
                 break;
             }
+            return (* this);
+        }
+
+        /// \brief Detaches this entity from its parent, promoting it to a root in the hierarchy.
+        ///
+        /// Clears both open (\ref Hierarchy::Open) and fixed (\ref Hierarchy::Fixed) parent relationships.
+        ///
+        /// \return This entity, allowing for method chaining.
+        ZY_INLINE Entity Detach() const
+        {
+            mHandle.remove(flecs::ChildOf, flecs::Wildcard);
+            mHandle.remove<flecs::Parent>();
             return (* this);
         }
 
@@ -926,6 +938,38 @@ namespace Scene
 
         /// \brief Inequality operator comparing two entities by their unique identifiers.
         ZY_INLINE Bool operator!=(ConstRef<Entity> Other) const = default;
+
+    public:
+
+        /// \brief Recursively attaches a tag to an entity and all of its descendants.
+        ///
+        /// \tparam Tag   The tag type to attach.
+        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
+        template<typename Tag>
+        ZY_INLINE static void AddRecursively(Entity Actor)
+        {
+            Actor.Add<Tag>();
+
+            Actor.Children([](Handle Child)
+            {
+                AddRecursively<Tag>(Entity(Child));
+            });
+        }
+
+        /// \brief Recursively removes a tag from an entity and all of its descendants.
+        ///
+        /// \tparam Tag   The tag type to remove.
+        /// \param  Actor The root entity to remove the tag from, along with its entire subtree.
+        template<typename Tag>
+        ZY_INLINE static void RemoveRecursively(Entity Actor)
+        {
+            Actor.Remove<Tag>();
+
+            Actor.Children([](Handle Child)
+            {
+                RemoveRecursively<Tag>(Entity(Child));
+            });
+        }
 
     protected:
 
