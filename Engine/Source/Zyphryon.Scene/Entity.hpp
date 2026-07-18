@@ -948,12 +948,21 @@ namespace Scene
         template<typename Tag>
         ZY_INLINE static void AddRecursively(Entity Actor)
         {
-            Actor.Add<Tag>();
+            const flecs::world World = Actor.mHandle.world();
 
-            Actor.Children([](Handle Child)
+            const Bool Deferred = !World.is_deferred();
+
+            if (Deferred)
             {
-                AddRecursively<Tag>(Entity(Child));
-            });
+                World.defer_begin();
+            }
+
+            AddRecursivelyDeferred<Tag>(Actor);
+
+            if (Deferred)
+            {
+                World.defer_end();
+            }
         }
 
         /// \brief Recursively removes a tag from an entity and all of its descendants.
@@ -963,15 +972,54 @@ namespace Scene
         template<typename Tag>
         ZY_INLINE static void RemoveRecursively(Entity Actor)
         {
+            const flecs::world World = Actor.mHandle.world();
+
+            const Bool Deferred = !World.is_deferred();
+
+            if (Deferred)
+            {
+                World.defer_begin();
+            }
+
+            RemoveRecursivelyDeferred<Tag>(Actor);
+
+            if (Deferred)
+            {
+                World.defer_end();
+            }
+        }
+
+    private:
+
+        /// \brief Recursive worker for \ref AddRecursively, run inside an already-open defer scope.
+        ///
+        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
+        template<typename Tag>
+        ZY_INLINE static void AddRecursivelyDeferred(Entity Actor)
+        {
+            Actor.Add<Tag>();
+
+            Actor.Children([](Handle Child)
+            {
+                AddRecursivelyDeferred<Tag>(Entity(Child));
+            });
+        }
+
+        /// \brief Recursive worker for \ref RemoveRecursively, run inside an already-open defer scope.
+        ///
+        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
+        template<typename Tag>
+        ZY_INLINE static void RemoveRecursivelyDeferred(Entity Actor)
+        {
             Actor.Remove<Tag>();
 
             Actor.Children([](Handle Child)
             {
-                RemoveRecursively<Tag>(Entity(Child));
+                RemoveRecursivelyDeferred<Tag>(Entity(Child));
             });
         }
 
-    protected:
+    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
