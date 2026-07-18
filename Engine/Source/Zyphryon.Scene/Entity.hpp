@@ -123,7 +123,7 @@ namespace Scene
         /// \return `true` if the entity is a pair, `false` otherwise.
         ZY_INLINE Bool IsPair() const
         {
-            return mHandle.is_pair();
+            return ecs_id_is_pair(mHandle.id());
         }
 
         /// \brief Destroys this entity and all of its components.
