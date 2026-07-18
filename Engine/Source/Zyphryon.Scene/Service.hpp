@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Archetype.hpp"
 #include "Clock.hpp"
 #include "Component.hpp"
 #include "Pipeline.hpp"
@@ -65,7 +66,7 @@ namespace Scene
         ///
         /// \param Source An optional archetype to clone from. Must be a valid archetype if provided.
         /// \return The newly created archetype entity.
-        ZY_INLINE Entity CreateArchetype(Entity Source = Entity())
+        ZY_INLINE Archetype CreateArchetype(Entity Source = Entity())
         {
             const Entity Actor = Allocate<true>();
 

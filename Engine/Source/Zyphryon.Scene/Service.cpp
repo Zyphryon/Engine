@@ -129,18 +129,18 @@ namespace Scene
         struct Defer
         {
             Entity Source;
-            UInt32 Parent;
+            UInt64 Parent;
         };
         Sequence<Defer> Pending(Size);
 
         for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
-            const UInt32 ID     = Archive.ReadUInt<UInt32>();
-            const UInt32 Parent = Archive.ReadUInt<UInt32>();
+            const UInt64 ID     = Archive.Read<UInt64>();
+            const UInt64 Parent = Archive.Read<UInt64>();
 
-            mArchetypes.Acquire(ID);
+            mArchetypes.Acquire(static_cast<UInt32>(ID) - kMinRangeArchetypes);
 
-            Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
+            Entity Archetype = Allocate<true>(ID);
             Archetype.Add(EcsPrefab);
             Archetype.Load(Archive);
 
@@ -152,7 +152,7 @@ namespace Scene
 
         for (ConstRef<Defer> Entry : Pending)
         {
-            Entry.Source.Attach(GetEntity(kMinRangeArchetypes + Entry.Parent), Hierarchy::Open);
+            Entry.Source.Attach(GetEntity(Entry.Parent), Hierarchy::Fixed);
         }
     }
 
@@ -165,12 +165,13 @@ namespace Scene
 
         for (UInt32 Element = 1, Limit = mArchetypes.GetTop(); Element <= Limit; ++Element)
         {
-            if (Entity Archetype = GetEntity(kMinRangeArchetypes + Element); Archetype.IsValid())
+            // Resolve the live handle so `GetID` carries the current generation, then persist the full id.
+            if (const Entity Archetype(mWorld.get_alive(kMinRangeArchetypes + Element)); Archetype.IsValid())
             {
-                Archive.WriteUInt<UInt32>(Archetype.GetID() - kMinRangeArchetypes);
+                Archive.Write<UInt64>(Archetype.GetID());
 
                 const Entity Parent = Archetype.GetParent();
-                Archive.WriteUInt<UInt32>(Parent.IsValid() ? Parent.GetID() - kMinRangeArchetypes : 0);
+                Archive.Write<UInt64>(Parent.IsValid() ? Parent.GetID() : 0);
 
                 Archetype.Save(Archive);
             }
@@ -206,6 +207,9 @@ namespace Scene
 
         // Register Transient component (marks entities as non serializable).
         GetComponent<Transient>("Transient").Grant(Trait::Associative);
+
+        // Register Deprecated tag (marks archetypes for later purge; never propagates to spawned instances).
+        GetComponent<Deprecated>("Deprecated").GetHandle().add(flecs::OnInstantiate, flecs::DontInherit);
 
         // Periodically reclaims memory by removing empty internal storage tables.
         CreateSystem<DSL::Interval<15>>("_Compact", EcsPostFrame, Execution::Immediate,

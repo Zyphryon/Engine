@@ -30,5 +30,8 @@ namespace Scene
     };
 
     /// \brief Tag type that marks transient objects that are not persisted across serialization boundaries.
-    using Transient = Tag<"Transient">;
+    using Transient  = Tag<"Transient">;
+
+    /// \brief Tag type that marks an archetype as slated for removal, hidden from authoring but still resolvable.
+    using Deprecated = Tag<"Deprecated">;
 }

@@ -37,9 +37,19 @@ namespace Scene
         }
 
         // Read the entity's archetype.
-        if (const UInt64 Archetype = Archive.ReadUInt<UInt64>(); Archetype)
+        if (const UInt64 Archetype = Archive.Read<UInt64>(); Archetype)
         {
-            SetArchetype(Archetype);
+            // The link is stored as the full flecs id (generation included).
+            // A slot that was freed and reacquired carries a bumped generation, so a stale link fails `IsAlive`
+            // and is dropped here rather than silently resolving to whatever now occupies the same id.
+            if (const Entity Prefab(mHandle.world().entity(Archetype)); Prefab.IsAlive() && Prefab.IsArchetype())
+            {
+                SetArchetype(Prefab);
+            }
+            else
+            {
+                LOG_W("Entity references a missing or stale archetype '{0}', dropping the link", Archetype);
+            }
         }
 
         // Read the entity's components.
@@ -59,7 +69,7 @@ namespace Scene
 
         // Write the entity's archetype (or '0' if not valid).
         const Entity Archetype = GetArchetype();
-        Archive.WriteUInt<UInt64>(Archetype.IsValid() ? Archetype.GetID() : 0);
+        Archive.Write<UInt64>(Archetype.IsValid() ? Archetype.GetID() : 0);
 
         // Write the entity's components.
         Codec::WriteComponentsOf(Archive, * this);
