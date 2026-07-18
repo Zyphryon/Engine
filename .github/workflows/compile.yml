@@ -2,8 +2,7 @@ name: Compile
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -17,15 +16,37 @@ concurrency:
 jobs:
   msvc2022:
     runs-on: windows-2022
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
-        build_type: [Release]
+        build_type: [Debug, Release]
         architecture: [x64]
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Run CMake
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.architecture }}
-        if: matrix.build_type == 'Release'
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install glad generator dependencies
+        run: pip install "Jinja2>=2.7,<4.0"
+
+      - name: Cache CMake dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: deps-${{ runner.os }}-${{ matrix.architecture }}-${{ hashFiles('**/CMakeLists.txt', 'CMakeModules/**') }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.architecture }}-
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A ${{ matrix.architecture }}
+          -DPython_EXECUTABLE="${{ env.pythonLocation }}\python.exe"
+
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }} --parallel 10
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
