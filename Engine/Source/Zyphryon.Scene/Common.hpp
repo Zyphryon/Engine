@@ -67,6 +67,13 @@ namespace Scene
         Concurrent, ///< Executes concurrently in worker threads.
     };
 
+    /// \brief Defines the hierarchy type of an entity in the scene.
+    enum class Hierarchy : UInt8
+    {
+        Open,   ///< Open-ended child set: many children, created and destroyed at runtime (scenes, regions).
+        Fixed,  ///< Fixed child set: few children, known when authored (prefabs, assemblies).
+    };
+
     /// \brief Enumerates behavioral traits that define component capabilities.
     enum class Trait : UInt8
     {

@@ -83,7 +83,7 @@ namespace Scene
         for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
         {
             const Entity Children = LoadHierarchy(Hierarchy);
-            Children.SetParent(Actor);
+            Children.SetParent(Actor, Scene::Hierarchy::Open);
         }
     }
 
@@ -100,11 +100,20 @@ namespace Scene
         // Writes the entity's data.
         Actor.Save(Archive);
 
+        // The archetype this entity was instantiated from, if any.
+        const Entity Archetype = Actor.GetArchetype();
+
         // Writes the entity's hierarchy.
-        Archive.WriteBlock<UInt32>([this, Actor](Ref<Writer> Output)
+        Archive.WriteBlock<UInt32>([this, Actor, Archetype](Ref<Writer> Output)
         {
             Actor.Children([&](Entity Children)
             {
+                const Entity Source = Children.GetArchetype();
+
+                if (Archetype.IsValid() && Source.IsValid() && Source.GetParent() == Archetype)
+                {
+                    return;
+                }
                 SaveHierarchy(Output, Children);
             });
         });
@@ -117,15 +126,33 @@ namespace Scene
     {
         const UInt32 Size = Archive.Read<UInt32>();
 
+        struct Defer
+        {
+            Entity Source;
+            UInt32 Parent;
+        };
+        Sequence<Defer> Pending(Size);
+
         for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
-            const UInt32 ID = Archive.ReadUInt<UInt32>();
+            const UInt32 ID     = Archive.ReadUInt<UInt32>();
+            const UInt32 Parent = Archive.ReadUInt<UInt32>();
+
             mArchetypes.Acquire(ID);
 
             Entity Archetype = Allocate<true>(kMinRangeArchetypes + ID);
             Archetype.Add(EcsPrefab);
-
             Archetype.Load(Archive);
+
+            if (Parent)
+            {
+                Pending.Append(Defer(Archetype, Parent));
+            }
+        }
+
+        for (ConstRef<Defer> Entry : Pending)
+        {
+            Entry.Source.SetParent(GetEntity(kMinRangeArchetypes + Entry.Parent), Hierarchy::Fixed);
         }
     }
 
@@ -141,6 +168,9 @@ namespace Scene
             if (Entity Archetype = GetEntity(kMinRangeArchetypes + Element); Archetype.IsValid())
             {
                 Archive.WriteUInt<UInt32>(Archetype.GetID() - kMinRangeArchetypes);
+
+                const Entity Parent = Archetype.GetParent();
+                Archive.WriteUInt<UInt32>(Parent.IsValid() ? Parent.GetID() - kMinRangeArchetypes : 0);
 
                 Archetype.Save(Archive);
             }

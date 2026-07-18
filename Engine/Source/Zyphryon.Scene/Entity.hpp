@@ -745,6 +745,15 @@ namespace Scene
             return (* this);
         }
 
+        /// \brief Looks up a child of this entity by its name.
+        ///
+        /// \param Name The name of the child to find.
+        /// \return The child entity, or an invalid entity if not found.
+        ZY_INLINE Entity Lookup(Text Name) const
+        {
+            return Entity(mHandle.lookup(Name.GetData()));
+        }
+
         /// \brief Iterates over all child entities and invokes a callback for each one.
         ///
         /// \param Callback The function to call for each child.
@@ -785,11 +794,20 @@ namespace Scene
 
         /// \brief Sets the parent of this entity, making it a child in the hierarchy.
         ///
-        /// \param Parent The entity to become the parent.
+        /// \param Parent    The entity to become the parent.
+        /// \param Hierarchy The hierarchy type of the parent-child relationship.
         /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity SetParent(Entity Parent) const
+        ZY_INLINE Entity SetParent(Entity Parent, Hierarchy Hierarchy) const
         {
-            mHandle.child_of(Parent.GetHandle());
+            switch (Hierarchy)
+            {
+            case Hierarchy::Open:
+                mHandle.child_of(Parent.GetHandle());
+                break;
+            case Hierarchy::Fixed:
+                mHandle.set(flecs::Parent(Parent.GetHandle()));
+                break;
+            }
             return (* this);
         }
 
