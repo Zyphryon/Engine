@@ -50,11 +50,19 @@ namespace Scene
         template<typename Callable>
         ZY_INLINE void Defer(AnyRef<Callable> Callback)
         {
-            mWorld.defer_begin();
+            const Bool Deferred = !mWorld.is_deferred();
+
+            if (Deferred)
+            {
+                mWorld.defer_begin();
+            }
 
             Callback();
 
-            mWorld.defer_end();
+            if (Deferred)
+            {
+                mWorld.defer_end();
+            }
         }
 
         /// \brief Gets a world handle that provides access to singleton components.

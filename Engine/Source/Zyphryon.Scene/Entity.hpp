@@ -882,6 +882,29 @@ namespace Scene
             return Entity(mHandle.parent());
         }
 
+        /// \brief Gets the immediate parent of this entity within a specific hierarchy type.
+        ///
+        /// Unlike \ref GetParent(), which returns whichever parent exists, this follows only the requested
+        /// relationship and ignores the other.
+        ///
+        /// \param Hierarchy The hierarchy type whose parent to retrieve.
+        /// \return The parent entity for that hierarchy, or an invalid entity if there is none.
+        ZY_INLINE Entity GetParent(Hierarchy Hierarchy) const
+        {
+            switch (Hierarchy)
+            {
+            case Hierarchy::Open:
+                return Entity(mHandle.target(flecs::ChildOf));
+            case Hierarchy::Fixed:
+                if (const ConstPtr<flecs::Parent> Parent = mHandle.try_get<flecs::Parent>())
+                {
+                    return Entity(Handle(mHandle.world(), Parent->value));
+                }
+                break;
+            }
+            return Entity();
+        }
+
         /// \brief Assigns an archetype to this entity, inheriting its components and default values.
         ///
         /// \param Archetype The archetype entity to inherit from.
@@ -1038,6 +1061,22 @@ namespace Scene
             {
                 World.defer_end();
             }
+        }
+
+        /// \brief Resolves the topmost ancestor of an entity within a specific hierarchy type.
+        ///
+        /// \param Actor     The entity to resolve from.
+        /// \param Hierarchy The hierarchy type whose parent chain to follow.
+        /// \return The topmost ancestor in that hierarchy, or the actor itself if it has no such parent.
+        ZY_INLINE static Entity ResolveRecursively(Entity Actor, Hierarchy Hierarchy)
+        {
+            Entity Root = Actor;
+
+            for (Entity Parent = Root.GetParent(Hierarchy); Parent.IsValid(); Parent = Root.GetParent(Hierarchy))
+            {
+                Root = Parent;
+            }
+            return Root;
         }
 
     private:
