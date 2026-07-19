@@ -123,7 +123,7 @@ namespace Scene
         /// \return `true` if the entity is a pair, `false` otherwise.
         ZY_INLINE Bool IsPair() const
         {
-            return ecs_id_is_pair(mHandle.id()); // TODO: Until is fixed in Flecs.
+            return mHandle.is_pair();
         }
 
         /// \brief Destroys this entity and all of its components.
@@ -440,6 +440,57 @@ namespace Scene
         ZY_INLINE Bool Has(Entity Relation, Entity Component) const
         {
             return mHandle.has(Relation.GetID(), Component.GetID());
+        }
+
+        /// \brief Checks if this entity owns a given component or tag directly, rather than inheriting it.
+        ///
+        /// \tparam Component The component or tag type to check.
+        /// \return `true` if the entity owns it directly, `false` otherwise.
+        template<typename Component>
+        ZY_INLINE Bool Owns() const
+        {
+            return mHandle.owns<Component>();
+        }
+
+        /// \brief Checks if this entity owns a given component or tag directly using a runtime entity.
+        ///
+        /// \param Component The component or tag entity to check.
+        /// \return `true` if the entity owns it directly, `false` otherwise.
+        ZY_INLINE Bool Owns(Entity Component) const
+        {
+            return mHandle.owns(Component.GetID());
+        }
+
+        /// \brief Checks if this entity owns a relation pair directly using two compile-time types.
+        ///
+        /// \tparam Relation  The relation type.
+        /// \tparam Component The target type of the relation.
+        /// \return `true` if the entity owns the pair directly, `false` otherwise.
+        template<typename Relation, typename Component>
+        ZY_INLINE Bool Owns() const
+        {
+            return mHandle.owns<Relation, Component>();
+        }
+
+        /// \brief Checks if this entity owns a relation pair directly using a compile-time relation and a runtime target.
+        ///
+        /// \tparam Relation  The relation type.
+        /// \param  Component The target entity to check.
+        /// \return `true` if the entity owns the pair directly, `false` otherwise.
+        template<typename Relation>
+        ZY_INLINE Bool Owns(Entity Component) const
+        {
+            return mHandle.owns<Relation>(Component.GetID());
+        }
+
+        /// \brief Checks if this entity owns a relation pair directly using two runtime entities.
+        ///
+        /// \param Relation  The relation entity.
+        /// \param Component The target entity.
+        /// \return `true` if the entity owns the pair directly, `false` otherwise.
+        ZY_INLINE Bool Owns(Entity Relation, Entity Component) const
+        {
+            return mHandle.owns(Relation.GetID(), Component.GetID());
         }
 
         /// \brief Gets a reference to a component on this entity.
