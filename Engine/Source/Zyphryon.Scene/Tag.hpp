@@ -29,9 +29,12 @@ namespace Scene
         static constexpr Text   kName = Symbol;
     };
 
-    /// \brief Tag type that marks transient objects that are not persisted across serialization boundaries.
-    using Transient  = Tag<"Transient">;
-
     /// \brief Tag type that marks an archetype as slated for removal, hidden from authoring but still resolvable.
     using Deprecated = Tag<"Deprecated">;
+
+    /// \brief Tag type that marks an entity as orphaned.
+    using Orphaned   = Tag<"Orphaned">;
+
+    /// \brief Tag type that marks transient objects that are not persisted across serialization boundaries.
+    using Transient  = Tag<"Transient">;
 }

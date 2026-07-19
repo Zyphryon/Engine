@@ -205,11 +205,14 @@ namespace Scene
         // Register Time component as singleton (tracks global time state).
         GetComponent<Clock>("Clock").Grant(Trait::Final, Trait::Singleton);
 
-        // Register Transient component (marks entities as non serializable).
-        GetComponent<Transient>("Transient").Grant(Trait::Associative);
-
         // Register Deprecated tag (marks archetypes for later purge; never propagates to spawned instances).
         GetComponent<Deprecated>("Deprecated").GetHandle().add(flecs::OnInstantiate, flecs::DontInherit);
+
+        // Register Orphaned tag (marks entity that has an invalid archetype).
+        GetComponent<Orphaned>("Orphaned").GetHandle().add(flecs::OnInstantiate, flecs::DontInherit);
+
+        // Register Transient component (marks entities as non serializable).
+        GetComponent<Transient>("Transient").Grant(Trait::Associative);
 
         // Periodically reclaims memory by removing empty internal storage tables.
         CreateSystem<DSL::Interval<15>>("_Compact", EcsPostFrame, Execution::Immediate,

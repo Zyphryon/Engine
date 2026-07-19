@@ -12,6 +12,7 @@
 
 #include "Entity.hpp"
 #include "Codec.hpp"
+#include "Tag.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -48,6 +49,7 @@ namespace Scene
             }
             else
             {
+                Add<Orphaned>();
                 LOG_W("Entity references a missing or stale archetype '{0}', dropping the link", Archetype);
             }
         }
