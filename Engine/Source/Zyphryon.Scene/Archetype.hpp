@@ -37,6 +37,14 @@ namespace Scene
         {
         }
 
+        /// \brief Gets the unique numeric identifier of this archetype.
+        ///
+        /// \return The archetype's unique identifier.
+        ZY_INLINE UInt64 GetID() const
+        {
+            return mHandle.GetID();
+        }
+
         /// \brief Gets the underlying entity this view refers to.
         ///
         /// \return The archetype entity.
@@ -53,6 +61,14 @@ namespace Scene
             return mHandle.IsAlive() && mHandle.IsArchetype();
         }
 
+        /// \brief Checks whether this archetype's underlying entity is currently alive (not destroyed).
+        ///
+        /// \return `true` if the entity is alive, `false` otherwise.
+        ZY_INLINE Bool IsAlive() const
+        {
+            return mHandle.IsAlive();
+        }
+
         /// \brief Destroys this archetype and its entire fixed-part subtree.
         ///
         /// \note Only the definition is removed, live instances spawned from this archetype are left dangling.
@@ -60,6 +76,55 @@ namespace Scene
         {
             UnlockRecursively();
             mHandle.Destruct();
+        }
+
+        /// \brief Enables this archetype, allowing it to be processed by systems that require it to be awake.
+        ///
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype Awake() const
+        {
+            mHandle.Awake();
+            return (* this);
+        }
+
+        /// \brief Disables this archetype, preventing it from being processed by systems that require it to be awake.
+        ///
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype Sleep() const
+        {
+            mHandle.Sleep();
+            return (* this);
+        }
+
+        /// \brief Checks whether this archetype is currently awake (enabled).
+        ///
+        /// \return `true` if the archetype is awake, `false` otherwise.
+        ZY_INLINE Bool IsAwake() const
+        {
+            return mHandle.IsAwake();
+        }
+
+        /// \brief Looks up a fixed part of this archetype by its name.
+        ///
+        /// \param Name The name of the part to find.
+        /// \return The part as an archetype, or an invalid archetype if not found.
+        ZY_INLINE Archetype Lookup(Text Name) const
+        {
+            return Archetype(mHandle.Lookup(Name));
+        }
+
+        /// \brief Iterates over every live instance spawned from this archetype.
+        ///
+        /// \param Callback The function to call for each instance entity.
+        template<typename Callable>
+        ZY_INLINE void Children(AnyRef<Callable> Callback) const
+        {
+            mHandle.GetHandle().world().query_builder<>()
+                .with(flecs::IsA, mHandle.GetID())
+                .each([& Callback](flecs::entity Instance)
+                {
+                    Callback(Entity(Instance));
+                });
         }
 
         /// \brief Attaches an existing archetype as a fixed part of this one.
@@ -113,37 +178,74 @@ namespace Scene
             return mHandle.Has<Deprecated>();
         }
 
-        /// \brief Iterates over every live instance spawned from this archetype.
+        /// \brief Gets the parent archetype of this archetype in the hierarchy.
         ///
-        /// \param Callback The function to call for each instance entity.
-        template<typename Callable>
-        ZY_INLINE void Children(AnyRef<Callable> Callback) const
+        /// \return The parent as an archetype, or an invalid archetype if there is none.
+        ZY_INLINE Archetype GetParent() const
         {
-            mHandle.GetHandle().world().query_builder<>()
-                .with(flecs::IsA, mHandle.GetID())
-                .each([& Callback](flecs::entity Instance)
-                {
-                    Callback(Entity(Instance));
-                });
+            return Archetype(mHandle.GetParent());
         }
 
-        /// \brief Destroys every live instance spawned from this archetype, leaving the definition intact.
+        /// \brief Gets the archetype this archetype inherits from, if any.
         ///
-        /// \note Only affects instances currently in memory; those unloaded are handled defensively on load.
-        ZY_INLINE void Despawn() const
+        /// \return The inherited archetype, or an invalid archetype if there is none.
+        ZY_INLINE Archetype GetArchetype() const
         {
-            Sequence<Entity> Doomed;
-
-            Children([&](Entity Instance)
-            {
-                Doomed.Append(Instance);
-            });
-
-            for (Entity Instance : Doomed)
-            {
-                Instance.Destruct();
-            }
+            return Archetype(mHandle.GetArchetype());
         }
+
+        /// \brief Sets the internal name of this archetype, used for lookups and identification.
+        ///
+        /// \param Name The name to assign.
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype SetName(Text Name) const
+        {
+            mHandle.SetName(Name);
+            return (* this);
+        }
+
+        /// \brief Gets the internal name of this archetype.
+        ///
+        /// \return The archetype's name, or an empty string if it has none.
+        ZY_INLINE Text GetName() const
+        {
+            return mHandle.GetName();
+        }
+
+        /// \brief Sets a human-readable display name (alias) for this archetype, separate from its internal name.
+        ///
+        /// \param Name The display name to assign.
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype SetAlias(Text Name) const
+        {
+            mHandle.SetAlias(Name);
+            return (* this);
+        }
+
+        /// \brief Gets the human-readable display name (alias) of this archetype.
+        ///
+        /// \return The alias string, or an empty string if none was set.
+        ZY_INLINE Text GetAlias() const
+        {
+            return mHandle.GetAlias();
+        }
+
+        /// \brief Gets a hash value for this archetype based on its unique identifier.
+        ///
+        /// \return The archetype's unique identifier used as its hash.
+        ZY_INLINE UInt64 Hash(UInt64 Seed) const
+        {
+            return mHandle.Hash(Seed);
+        }
+
+        /// \brief Equals operator comparing two archetypes by their unique identifiers.
+        ZY_INLINE Bool operator==(ConstRef<Archetype> Other) const
+        {
+            return mHandle == Other.mHandle;
+        }
+
+        /// \brief Inequality operator comparing two archetypes by their unique identifiers.
+        ZY_INLINE Bool operator!=(ConstRef<Archetype> Other) const = default;
 
     private:
 
