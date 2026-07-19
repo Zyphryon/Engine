@@ -58,7 +58,7 @@ namespace Scene
         /// \return `true` if the entity is alive and marked as an archetype, `false` otherwise.
         ZY_INLINE Bool IsValid() const
         {
-            return mHandle.IsAlive() && mHandle.IsArchetype();
+            return mHandle.IsValid() && mHandle.IsArchetype();
         }
 
         /// \brief Checks whether this archetype's underlying entity is currently alive (not destroyed).
