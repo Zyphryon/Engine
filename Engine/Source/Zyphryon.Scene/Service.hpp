@@ -44,6 +44,19 @@ namespace Scene
         /// \param Delta The elapsed time since the last tick.
         void OnTick(Real64 Delta) override;
 
+        /// \brief Batches all world mutations performed by the callback into a single deferred flush.
+        ///
+        /// \param Callback The function whose world mutations are deferred.
+        template<typename Callable>
+        ZY_INLINE void Defer(AnyRef<Callable> Callback)
+        {
+            mWorld.defer_begin();
+
+            Callback();
+
+            mWorld.defer_end();
+        }
+
         /// \brief Gets a world handle that provides access to singleton components.
         ///
         /// \return The world wrapper for the world.

@@ -62,7 +62,7 @@ inline namespace Base
         /// \return The highest allocated handle (1-based), or 0 if no slots are allocated.
         ZY_INLINE constexpr UInt GetTop() const
         {
-            return mTop + 1;
+            return (mSize == 0 ? 0 : mTop + 1);
         }
 
         /// \brief Gets the maximum number of slots that can be allocated.
@@ -130,7 +130,8 @@ inline namespace Base
 
             if (ID - 1 == mTop)
             {
-                mTop = mMask.FindLastSet();
+                const UInt Last = mMask.FindLastSet();
+                mTop = (Last == Capacity) ? Handle(0) : Last;
             }
             --mSize;
         }
