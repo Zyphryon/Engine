@@ -102,23 +102,26 @@ namespace Render
         {
             Ref<Pass> Stage = (* Holder);
 
-            // Gather the per-attachment clear colors and the depth attachment's clears.
-            Sequence<Color, Graphic::kMaxAttachments> Clears;
-
-            for (ConstRef<Pass::ColorAttachment> Color : Stage.GetColors())
+            if (Stage.IsActive())
             {
-                Clears.Append(Color.Tint);
+                // Gather the per-attachment clear colors and the depth attachment's clears.
+                Sequence<Color, Graphic::kMaxAttachments> Clears;
+
+                for (ConstRef<Pass::ColorAttachment> Color : Stage.GetColors())
+                {
+                    Clears.Append(Color.Tint);
+                }
+
+                ConstRef<Pass::DepthAttachment> Depth = Stage.GetDepth();
+
+                mService->Prepare(Stage.GetTarget(), Stage.GetViewport(), Clears, Depth.Depth, Depth.Stencil);
+                {
+                    mEncoder.Reset();
+
+                    Stage.Run(mEncoder);
+                }
+                mService->Commit();
             }
-
-            ConstRef<Pass::DepthAttachment> Depth = Stage.GetDepth();
-
-            mService->Prepare(Stage.GetTarget(), Stage.GetViewport(), Clears, Depth.Depth, Depth.Stencil);
-            {
-                mEncoder.Reset();
-
-                Stage.Run(mEncoder);
-            }
-            mService->Commit();
         }
     }
 }

@@ -74,12 +74,29 @@ namespace Render
 
         /// \brief Constructs a pass with the display surface as its target.
         ZY_INLINE Pass()
-            : mTarget { Graphic::kDisplay }
+            : mActive { true },
+              mTarget { Graphic::kDisplay }
         {
         }
 
         /// \brief Destroys the pass.
         virtual ~Pass() = default;
+
+        /// \brief Sets the active state of the pass.
+        ///
+        /// \param Active `true` to enable the pass, `false` to skip it during execution.
+        ZY_INLINE void SetActive(Bool Active)
+        {
+            mActive = Active;
+        }
+
+        /// \brief Gets the active state of the pass.
+        ///
+        /// \return `true` if the pass is active, otherwise `false`.
+        ZY_INLINE Bool IsActive() const
+        {
+            return mActive;
+        }
 
         /// \brief Sets the graphic target this pass renders into.
         ///
@@ -164,6 +181,7 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        Bool                                                mActive;
         Graphic::Object                                     mTarget;
         Graphic::Viewport                                   mViewport;
         Sequence<ColorAttachment, Graphic::kMaxAttachments> mColorAttachment;
