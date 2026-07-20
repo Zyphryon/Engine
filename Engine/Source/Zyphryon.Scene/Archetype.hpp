@@ -81,7 +81,7 @@ namespace Scene
         /// \brief Invalidates this archetype's cached tree spawner, forcing it to be rebuilt on next instantiation.
         ZY_INLINE void Invalidate() const
         {
-            Unlock();
+            UnlockRecursively();
         }
 
         /// \brief Enables this archetype, allowing it to be processed by systems that require it to be awake.
