@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Driver.hpp"
+#include "Mixer.hpp"
 #include "Track.hpp"
 #include "Zyphryon.Engine/Subsystem.hpp"
 
@@ -22,8 +23,8 @@
 
 namespace Audio
 {
-    /// \brief High-level audio service that manages the driver lifecycle and exposes the audio playback API.
-    class Service final : public Engine::Subsystem, public Switchable<Driver>
+    /// \brief High-level audio service that owns the mixer and its output device driver.
+    class Service final : public Engine::Subsystem
     {
     public:
 
@@ -42,14 +43,11 @@ namespace Audio
         /// \param Delta The elapsed time since the last tick.
         void OnTick(Real64 Delta) override;
 
-        /// \brief Initializes the audio service by selecting a registered adapter and opening the specified device.
+        /// \brief Initializes the audio service by creating the platform driver and opening the specified device.
         ///
-        /// The driver must have been previously registered via a plugin before calling this method.
-        ///
-        /// \param Adapter The name of the registered audio adapter to use.
-        /// \param Device  The name of the audio output device to open, or an empty string to use the system default.
-        /// \return `true` if the adapter was found and the device was successfully opened, `false` otherwise.
-        Bool Initialize(Text Adapter, Text Device);
+        /// \param Device The name of the audio output device to open, or an empty string to use the system default.
+        /// \return `true` if the device was successfully opened, `false` otherwise.
+        Bool Initialize(Text Device);
 
         /// \brief Queries the driver and fills the provided structure with the backend, adapter, and available endpoints.
         ///
@@ -84,10 +82,10 @@ namespace Audio
         /// \return The volume level for the category (0.0 = silent, 1.0 = full volume).
         Real32 GetSubmixVolume(Category Category) const;
 
-        /// \brief Sets the listener's pose in 3D space.
+        /// \brief Sets the listener's world transform in 3D space.
         ///
-        /// \param Pose The new pose of the listener.
-        void SetListenerPose(ConstRef<Pose> Pose);
+        /// \param Transform The new world transform of the listener.
+        void SetListenerPose(ConstRef<Matrix4x4> Transform);
 
         /// \brief Sets the listener's directional cone parameters.
         ///
@@ -99,22 +97,20 @@ namespace Audio
         /// \brief Plays a track as a non-spatial sound with the specified parameters.
         ///
         /// \param Category The audio category for the playback.
-        /// \param Track    The audio track to play.
+        /// \param Track    The audio track to play; the service retains it for the playback's lifetime.
         /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Pitch    The playback pitch (1.0 = normal pitch).
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRef<Track> Track, Real32 Volume, Real32 Pitch);
+        Object Play(Category Category, ConstRetainer<Track> Track, Real32 Volume);
 
         /// \brief Plays a track as a spatial sound with the specified parameters.
         ///
-        /// \param Category The audio category for the playback.
-        /// \param Track    The audio track to play.
-        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Pitch    The playback pitch (1.0 = normal pitch).
-        /// \param Emitter  The spatial configuration for the audio source.
-        /// \param Pose     The initial pose of the audio source in 3D space.
+        /// \param Category  The audio category for the playback.
+        /// \param Track     The audio track to play; the service retains it for the playback's lifetime.
+        /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Emitter   The spatial configuration for the audio source.
+        /// \param Transform The initial world transform of the audio source in 3D space.
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRef<Track> Track, Real32 Volume, Real32 Pitch, ConstRef<Emitter> Emitter, ConstRef<Pose> Pose);
+        Object Play(Category Category, ConstRetainer<Track> Track, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform);
 
         /// \brief Sets whether a specific playback instance should loop.
         ///
@@ -122,23 +118,17 @@ namespace Audio
         /// \param Looping `true` to enable looping, `false` to disable.
         void SetPlaybackLooping(Object Handle, Bool Looping);
 
-        /// \brief Sets the pitch for a specific playback instance.
-        ///
-        /// \param Handle The handle of the playback instance.
-        /// \param Pitch  The new pitch value (1.0 = normal pitch).
-        void SetPlaybackPitch(Object Handle, Real32 Pitch);
-
         /// \brief Sets the volume for a specific playback instance.
         ///
         /// \param Handle The handle of the playback instance.
         /// \param Volume The new volume value (0.0 = silent, 1.0 = full volume).
         void SetPlaybackVolume(Object Handle, Real32 Volume);
 
-        /// \brief Sets the pose for a specific playback instance.
+        /// \brief Sets the world transform for a specific spatial playback instance.
         ///
-        /// \param Handle The handle of the playback instance.
-        /// \param Pose   The new pose of the audio source in 3D space.
-        void SetPlaybackPose(Object Handle, ConstRef<Pose> Pose);
+        /// \param Handle    The handle of the playback instance.
+        /// \param Transform The new world transform of the audio source in 3D space.
+        void SetPlaybackPose(Object Handle, ConstRef<Matrix4x4> Transform);
 
         /// \brief Subscribes to completion notifications for a playback handle.
         ///
@@ -171,13 +161,15 @@ namespace Audio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Unique<Driver>          mDriver;
-        Driver::Completion      mNotifications;
-        Table<Object, Callback> mSubscriptions;
+        Driver                         mDriver;
+        Mixer                          mMixer;
+        Sequence<Object>               mNotifications;
+        Table<Object, Callback>        mSubscriptions;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Freelist<kMaxInstances> mInstances;
+        Table<Object, Retainer<Track>> mResources;
+        Freelist<kMaxInstances>        mInstances;
     };
 }

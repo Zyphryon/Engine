@@ -164,7 +164,7 @@ namespace Engine
         Graphic->Initialize(mConfig.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
 
         LOG_I("Kernel: Initializing audio service");
-        Audio->Initialize(mConfig.GetAudioDriver(), mConfig.GetAudioAdapter());
+        Audio->Initialize(mConfig.GetAudioAdapter());
 
 #endif
 

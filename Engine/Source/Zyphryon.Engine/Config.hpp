@@ -124,22 +124,6 @@ namespace Engine
             return mWindowBorderless;
         }
 
-        /// \brief Sets the name of the audio API driver.
-        ///
-        /// \param Driver The name of the audio driver backend to use.
-        ZY_INLINE void SetAudioDriver(Text Driver)
-        {
-            mAudioDriver = Driver;
-        }
-
-        /// \brief Gets the active audio driver name.
-        ///
-        /// \return The name of the audio driver backend.
-        ZY_INLINE Text GetAudioDriver() const
-        {
-            return mAudioDriver;
-        }
-
         /// \brief Sets the preferred audio output device.
         ///
         /// \param Adapter The identifier or name of the audio adapter.
@@ -247,7 +231,6 @@ namespace Engine
         UInt32                 mWindowHeight;
         Bool                   mWindowFullscreen;
         Bool                   mWindowBorderless;
-        Str16                  mAudioDriver;
         Str                    mAudioAdapter;
         Bool                   mAudioPauseOnFocusLost;
         Str16                  mGraphicsDriver;

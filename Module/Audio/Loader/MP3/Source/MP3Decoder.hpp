@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Audio/Decoder.hpp"
+#include "Zyphryon.Audio/Resampler.hpp"
 #include <dr_mp3.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -24,6 +25,11 @@ namespace Content
     /// \brief Decoder implementation that streams and decodes MP3-encoded audio on demand from an in-memory blob.
     class MP3Decoder final : public Audio::Decoder
     {
+    public:
+
+        /// \brief Number of source frames decoded from dr_mp3 per refill.
+        static constexpr UInt32 kBlock = 1024;
+
     public:
 
         /// \brief Initializes the MP3 decoder from an in-memory encoded audio blob.
@@ -51,6 +57,14 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        drmp3 mDecoder;
+        drmp3            mDecoder;
+        Audio::Resampler mResampler;
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Real32           mScratch[kBlock * Audio::Resampler::kMaxStride];
+        UInt32           mAvailable;
+        UInt32           mConsumed;
     };
 }

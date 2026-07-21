@@ -23,10 +23,4 @@ inline namespace Base
     /// \brief Alias for thread-safe atomic storage and lock-free operations on values of type `Type`.
     template<typename Type>
     using Atomic    = std::atomic<Type>;
-
-    /// \brief Alias for thread-safe atomic references to existing values of type `Type`.
-    ///
-    /// \note For interop with C-style structs and older C APIs.
-    template<typename Type>
-    using AtomicRef = std::atomic_ref<Type>;
 }

@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "MP3Decoder.hpp"
+#include "Zyphryon.Audio/Types.hpp"
 
 #define DR_MP3_IMPLEMENTATION
 #include <dr_mp3.h>
@@ -25,9 +26,14 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     MP3Decoder::MP3Decoder(ConstSpan<Byte> Samples)
-        : mDecoder { }
+        : mDecoder   { },
+          mAvailable { 0 },
+          mConsumed  { 0 }
     {
         drmp3_init_memory(AddressOf(mDecoder), Samples.GetData(), Samples.GetSizeInBytes(), nullptr);
+
+        // The mixer consumes a single fixed clock, so the decoder streams and resamples to that rate on the fly.
+        mResampler = Audio::Resampler(mDecoder.sampleRate, Audio::kMixerFrequency, static_cast<UInt16>(mDecoder.channels));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,7 +51,7 @@ namespace Content
     {
         if (Frequency)
         {
-            (* Frequency) = mDecoder.sampleRate;
+            (* Frequency) = Audio::kMixerFrequency;
         }
         if (Stride)
         {
@@ -53,7 +59,7 @@ namespace Content
         }
         if (Frames)
         {
-            (*Frames) = mDecoder.totalPCMFrameCount;
+            (* Frames) = Audio::Resampler::Estimate(mDecoder.totalPCMFrameCount, mDecoder.sampleRate, Audio::kMixerFrequency);
         }
     }
 
@@ -62,7 +68,22 @@ namespace Content
 
     Bool MP3Decoder::Seek(UInt64 Frame)
     {
-        return drmp3_seek_to_pcm_frame(AddressOf(mDecoder), Frame);
+        if (mResampler.IsActive())
+        {
+            if (!drmp3_seek_to_pcm_frame(AddressOf(mDecoder), mResampler.GetSource(Frame)))
+            {
+                return false;
+            }
+
+            mAvailable = 0;
+            mConsumed  = 0;
+            mResampler.Reset(Frame);
+            return true;
+        }
+        else
+        {
+            return drmp3_seek_to_pcm_frame(AddressOf(mDecoder), Frame);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -70,7 +91,7 @@ namespace Content
 
     UInt64 MP3Decoder::Tell() const
     {
-        return mDecoder.currentPCMFrame;
+        return mResampler.IsActive() ? mResampler.Tell() : mDecoder.currentPCMFrame;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -78,6 +99,38 @@ namespace Content
 
     UInt64 MP3Decoder::Read(Span<Real32> Output)
     {
-        return drmp3_read_pcm_frames_f32(AddressOf(mDecoder), Output.GetSize(), Output.GetData());
+        if (mResampler.IsActive())
+        {
+            const UInt64 Limit = Audio::Resampler::Estimate(mDecoder.totalPCMFrameCount, mDecoder.sampleRate, Audio::kMixerFrequency);
+
+            // Provide source frames from a decoded block, refilling from dr_mp3 in bulk instead of one frame per call.
+            const auto Provider = [this](Ptr<Real32> Frame) -> Bool
+            {
+                if (mConsumed >= mAvailable)
+                {
+                    mAvailable = static_cast<UInt32>(drmp3_read_pcm_frames_f32(AddressOf(mDecoder), kBlock, mScratch));
+                    mConsumed  = 0;
+
+                    if (mAvailable == 0)
+                    {
+                        return false;
+                    }
+                }
+
+                const ConstPtr<Real32> Source = mScratch + mConsumed * mDecoder.channels;
+
+                for (UInt16 Element = 0; Element < mDecoder.channels; ++Element)
+                {
+                    Frame[Element] = Source[Element];
+                }
+                ++mConsumed;
+                return true;
+            };
+            return mResampler.Generate(Output, Limit, Provider);
+        }
+        else
+        {
+            return drmp3_read_pcm_frames_f32(AddressOf(mDecoder), Output.GetSize(), Output.GetData());
+        }
     }
 }

@@ -12,7 +12,9 @@
 
 #include "WAVLoader.hpp"
 #include "WAVDecoder.hpp"
+#include "Zyphryon.Audio/Resampler.hpp"
 #include "Zyphryon.Audio/Track.hpp"
+#include "Zyphryon.Audio/Types.hpp"
 
 #define DR_WAV_IMPLEMENTATION
 #include <dr_wav.h>
@@ -41,7 +43,7 @@ namespace Content
 
         if (drwav_init_memory(AddressOf(Description), Data.GetData(), Data.GetSize(), nullptr))
         {
-            const UInt64 Frames    = Description.totalPCMFrameCount;
+            UInt64       Frames    = Description.totalPCMFrameCount;
             const UInt32 Frequency = Description.sampleRate;
             const UInt32 Stride    = Description.channels;
 
@@ -50,9 +52,16 @@ namespace Content
             drwav_read_pcm_frames_f32(AddressOf(Description), Frames, Samples.GetData<Real32>());
             drwav_uninit(AddressOf(Description));
 
-            // Load the decoded PCM data into the track resource.
+            // Bake the PCM to the mixer's fixed sample rate, since the mixer consumes every voice at that clock.
+            if (Frequency != Audio::kMixerFrequency)
+            {
+                const ConstSpan Source(Samples.GetData<Real32>(), Frames * Stride);
+                Samples = Audio::Resampler::Convert(Source, Stride, Frames, Frequency, Audio::kMixerFrequency, Frames);
+            }
+
+            // Load the decoded PCM data into the track resource, now clocked at the mixer sample rate.
             const Retainer<Audio::Track> Asset = Retainer<Audio::Track>::Cast(Scope.GetResource());
-            Asset->Load(Frames, Frequency, Stride, Decode, Move(Samples));
+            Asset->Load(Frames, Audio::kMixerFrequency, Stride, Decode, Move(Samples));
             return true;
         }
         return false;

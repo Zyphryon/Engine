@@ -17,8 +17,23 @@ namespace Audio
     /// \brief Specifies the audio configuration constants.
     enum : UInt16
     {
+        /// \brief Number of frames the mixer processes per internal sub-block.
+        kMixerBlock     = 256,
+
+        /// \brief Sample rate, in hertz, at which the mixer runs its internal graph.
+        kMixerFrequency = 48000,
+
+        /// \brief The preferred number of frames per device period (buffer length hint).
+        kMixerPeriod    = 1024,
+
+        /// \brief Number of interleaved samples per frame produced by the mixer (stereo stride).
+        kMixerStride    = 2,
+
+        /// \brief Capacity of the control and completion command queues.
+        kMaxCommands    = 512,
+
         /// \brief Maximum number of active audio instances.
-        kMaxInstances = 256,
+        kMaxInstances   = 256,
     };
 
     /// \brief Specifies the audio distance attenuation models.

@@ -12,7 +12,9 @@
 
 #include "MP3Loader.hpp"
 #include "MP3Decoder.hpp"
+#include "Zyphryon.Audio/Resampler.hpp"
 #include "Zyphryon.Audio/Track.hpp"
+#include "Zyphryon.Audio/Types.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -37,14 +39,14 @@ namespace Content
 
         if (drmp3_init_memory(AddressOf(Description), Data.GetData(), Data.GetSize(), nullptr))
         {
-            const UInt64 Frames    = Description.totalPCMFrameCount;
             const UInt32 Frequency = Description.sampleRate;
             const UInt32 Stride    = Description.channels;
+            const UInt64 Frames    = Audio::Resampler::Estimate(Description.totalPCMFrameCount, Frequency, Audio::kMixerFrequency);
             drmp3_uninit(AddressOf(Description));
 
             // Store the raw encoded MP3 data into the track resource for streaming decoding.
             const Retainer<Audio::Track> Asset = Retainer<Audio::Track>::Cast(Scope.GetResource());
-            Asset->Load(Frames, Frequency, Stride, Decode, Move(Data));
+            Asset->Load(Frames, Audio::kMixerFrequency, Stride, Decode, Move(Data));
             return true;
         }
         return false;

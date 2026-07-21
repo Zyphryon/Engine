@@ -37,15 +37,8 @@ ADD_SUBDIRECTORY(Engine)
 ## Modules (Audio)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_AUDIO_DRIVER_MINIAUDIO "Audio: Enable Miniaudio as audio backend" OFF)
-OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           OFF)
-OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           OFF)
-
-IF    (ZY_AUDIO_DRIVER_MINIAUDIO)
-
-    ADD_SUBDIRECTORY(Module/Audio/Driver/Miniaudio)   ## TODO: Eventually implement my own audio mixin in the core.
-
-ENDIF ()
+OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           ON)
+OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           ON)
 
 IF    (ZY_AUDIO_LOADER_WAV)
 

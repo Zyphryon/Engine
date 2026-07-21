@@ -33,16 +33,17 @@ namespace Audio
     {
         ZY_PROFILE_SCOPE("Audio::Tick");
 
-        // Advances the audio driver and updates active playback state.
-        mDriver->Tick(Delta);
+        // Advances the driver; the silent driver pumps the mixer here so playback still progresses.
+        mDriver.Advance(Delta);
 
-        // Collects playback handles that completed during this tick.
-        mDriver->Drain(mNotifications);
+        // Collects playback handles that completed since the last tick.
+        mMixer.Drain(mNotifications);
 
-        // Dispatches callbacks for completed playback handles.
+        // Dispatches callbacks for completed playback handles and releases their retained tracks (game thread).
         for (const Object Handle : mNotifications)
         {
             mInstances.Free(Handle);
+            mResources.Erase(Handle);
 
             if (Callback Delegate; mSubscriptions.Extract(Handle, Delegate))
             {
@@ -55,38 +56,31 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Service::Initialize(Text Adapter, Text Device)
+    Bool Service::Initialize(Text Device)
     {
         ZY_PROFILE_SCOPE("Audio::Initialize");
 
-        Bool Successful = true;
-
-        if (!mDriver)
+        Driver::Callback Callback = [this](Span<Real32> Output, UInt32 Frames)
         {
-            mDriver = Switch(Adapter);
+            mMixer.Render(Output, Frames);
+        };
 
-            Successful = mDriver && mDriver->Initialize(Device);
-
-            if (!Successful)
-            {
-                mDriver = Unique<Driver>::Create();
-
-                LOG_W("Audio: Failed to initialize driver, using default driver");
-            }
-            else
-            {
-                Description Description;
-                mDriver->Probe(Description);
-
-                LOG_I("Audio: Backend '{0}' with '{1}' selected adapter", Description.Backend, Description.Adapter);
-
-                for (Text Endpoint : Description.Endpoints)
-                {
-                    LOG_I("Audio: Found Endpoint '{0}'", Endpoint);
-                }
-            }
+        if (!mDriver.Open(Device, Move(Callback)))
+        {
+            LOG_E("Audio: Failed to open output device '{0}'", Device);
+            return false;
         }
-        return Successful;
+
+        Description Description;
+        mDriver.Probe(Description);
+
+        LOG_I("Audio: Backend '{0}' on device '{1}'", Description.Backend, Description.Adapter);
+
+        for (Text Endpoint : Description.Endpoints)
+        {
+            LOG_I("Audio: Found Endpoint '{0}'", Endpoint);
+        }
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -94,7 +88,7 @@ namespace Audio
 
     void Service::Probe(Ref<Description> Output) const
     {
-        mDriver->Probe(Output);
+        mDriver.Probe(Output);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -102,7 +96,7 @@ namespace Audio
 
     void Service::Suspend()
     {
-        mDriver->Suspend();
+        mDriver.Suspend();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -110,7 +104,7 @@ namespace Audio
 
     void Service::Restore()
     {
-        mDriver->Restore();
+        mDriver.Restore();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -120,7 +114,7 @@ namespace Audio
     {
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        return mDriver->SetMasterVolume(Volume);
+        mMixer.SetMasterVolume(Volume);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -128,7 +122,7 @@ namespace Audio
 
     Real32 Service::GetMasterVolume() const
     {
-        return mDriver->GetMasterVolume();
+        return mMixer.GetMasterVolume();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -138,7 +132,7 @@ namespace Audio
     {
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        return mDriver->SetSubmixVolume(Category, Volume);
+        mMixer.SetSubmixVolume(Category, Volume);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -146,15 +140,15 @@ namespace Audio
 
     Real32 Service::GetSubmixVolume(Category Category) const
     {
-        return mDriver->GetSubmixVolume(Category);
+        return mMixer.GetSubmixVolume(Category);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SetListenerPose(ConstRef<Pose> Pose)
+    void Service::SetListenerPose(ConstRef<Matrix4x4> Transform)
     {
-        mDriver->SetListenerPose(Pose);
+        mMixer.SetListener(Transform);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -167,26 +161,30 @@ namespace Audio
         ZY_ASSERT(InnerAngle <= OuterAngle, "Inner angle cannot exceed outer angle");
         ZY_ASSERT(IsBetween(OuterGain, 0.0f, 1.0f), "Outer gain must be [0,1]");
 
-        mDriver->SetListenerCone(InnerAngle, OuterAngle, OuterGain);
+        mMixer.SetListenerCone(InnerAngle, OuterAngle, OuterGain);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRef<Track> Track, Real32 Volume, Real32 Pitch)
+    Object Service::Play(Category Category, ConstRetainer<Track> Track, Real32 Volume)
     {
-        ZY_ASSERT(Track.HasCompleted(), "Track must be valid and loaded.");
+        ZY_ASSERT(Track->HasCompleted(), "Track must be valid and loaded.");
+        ZY_ASSERT(Track->GetFrequency() == kMixerFrequency, "Track must be baked to the mixer sample rate");
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
-        ZY_ASSERT(Pitch > 0.0f, "Pitch must be greater than 0.0");
 
-        if (const Object Playback = mInstances.Allocate())
+        if (Unique<Decoder> Decoder = Track->Decode())
         {
-            if (mDriver->Play(Playback, Category, Track.Decode(), Volume, Pitch))
+            if (const Object Playback = mInstances.Allocate())
             {
-                return Playback;
-            }
-            else
-            {
+                if (mMixer.Play(Playback, Category, Decoder.Grab(), Track->GetStride(), Volume))
+                {
+                    Decoder.Release();
+                    mResources.Assign(Playback, Track);
+
+                    return Playback;
+                }
+
                 mInstances.Free(Playback);
             }
         }
@@ -196,20 +194,24 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRef<Track> Track, Real32 Volume, Real32 Pitch, ConstRef<Emitter> Emitter, ConstRef<Pose> Pose)
+    Object Service::Play(Category Category, ConstRetainer<Track> Track, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform)
     {
-        ZY_ASSERT(Track.HasCompleted(), "Track must be valid and loaded.");
+        ZY_ASSERT(Track->HasCompleted(), "Track must be valid and loaded.");
+        ZY_ASSERT(Track->GetFrequency() == kMixerFrequency, "Track must be baked to the mixer sample rate");
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
-        ZY_ASSERT(Pitch > 0.0f, "Pitch must be greater than 0.0");
 
-        if (const Object Playback = mInstances.Allocate())
+        if (Unique<Decoder> Decoder = Track->Decode())
         {
-            if (mDriver->Play(Playback, Category, Track.Decode(), Volume, Pitch, Emitter, Pose))
+            if (const Object Playback = mInstances.Allocate())
             {
-                return Playback;
-            }
-            else
-            {
+                if (mMixer.Play(Playback, Category, Decoder.Grab(), Track->GetStride(), Volume, Emitter, Transform))
+                {
+                    Decoder.Release();
+                    mResources.Assign(Playback, Track);
+
+                    return Playback;
+                }
+
                 mInstances.Free(Playback);
             }
         }
@@ -221,15 +223,7 @@ namespace Audio
 
     void Service::SetPlaybackLooping(Object Handle, Bool Looping)
     {
-        mDriver->SetPlaybackLooping(Handle, Looping);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::SetPlaybackPitch(Object Handle, Real32 Pitch)
-    {
-        mDriver->SetPlaybackPitch(Handle, Pitch);
+        mMixer.SetLooping(Handle, Looping);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -237,15 +231,15 @@ namespace Audio
 
     void Service::SetPlaybackVolume(Object Handle, Real32 Volume)
     {
-        mDriver->SetPlaybackVolume(Handle, Volume);
+        mMixer.SetVolume(Handle, Volume);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SetPlaybackPose(Object Handle, ConstRef<Pose> Pose)
+    void Service::SetPlaybackPose(Object Handle, ConstRef<Matrix4x4> Transform)
     {
-        mDriver->SetPlaybackPose(Handle, Pose);
+        mMixer.SetTransform(Handle, Transform);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -255,7 +249,7 @@ namespace Audio
     {
         ZY_ASSERT(Handle != 0, "Handle must be valid");
 
-       mSubscriptions.Assign(Handle, Callback);
+        mSubscriptions.Assign(Handle, Callback);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -273,7 +267,7 @@ namespace Audio
 
     void Service::Stop(Object Handle)
     {
-        mDriver->Stop(Handle);
+        mMixer.Stop(Handle);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -281,7 +275,7 @@ namespace Audio
 
     void Service::Pause(Object Handle)
     {
-        mDriver->Pause(Handle);
+        mMixer.Pause(Handle);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -289,6 +283,6 @@ namespace Audio
 
     void Service::Resume(Object Handle)
     {
-        mDriver->Resume(Handle);
+        mMixer.Resume(Handle);
     }
 }

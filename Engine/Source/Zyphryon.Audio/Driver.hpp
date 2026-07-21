@@ -12,9 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Decoder.hpp"
-#include "Emitter.hpp"
-#include "Pose.hpp"
+#include "Types.hpp"
+#include "Zyphryon.Base/Memory/Unique.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -22,202 +21,57 @@
 
 namespace Audio
 {
-    /// \brief Abstract interface for low-level audio driver backends.
-    class Driver
+    /// \brief The audio output device backend backend per operating system.
+    class Driver final
     {
     public:
 
-        /// \brief A sequence of playback handles that have completed.
-        using Completion = Sequence<Object>;
+        /// \brief Callback invoked on the audio thread to fill an interleaved 32-bit float output buffer.
+        ///
+        /// \param Output The destination buffer, to fill with interleaved samples.
+        /// \param Frames The number of frames requested by the device for this invocation.
+        using Callback = Delegate<void(Span<Real32> Output, UInt32 Frames)>;
 
     public:
 
-        /// \brief Ensures derived class can be destroyed polymorphically.
-        virtual ~Driver() = default;
+        /// \brief Constructs the driver in a closed state.
+        Driver();
 
-        /// \brief Initializes the audio driver with the specified device.
+        /// \brief Closes the device and destroys the driver.
+        ~Driver();
+
+        /// \brief Opens the output device and starts driving the render callback.
         ///
-        /// \param Device The identifier of the audio device to use.
-        /// \return `true` if initialization was successful, otherwise `false`.
-        virtual Bool Initialize(Text Device)
-        {
-            return true;
-        }
+        /// \param Device The name of the endpoint to open, or empty for the system default.
+        /// \param Render The callback the device invokes to obtain interleaved output frames.
+        /// \return `true` if the device was opened successfully, otherwise `false`.
+        Bool Open(Text Device, AnyRef<Callback> Render);
 
-        /// \brief Queries the driver and fills the provided structure with the backend, adapter, and available endpoints.
+        /// \brief Closes the output device and stops driving the render callback.
+        void Close();
+
+        /// \brief Fills the provided structure with the backend name, device, and available endpoints.
         ///
         /// \param Output The structure to populate with the driver's current device information.
-        virtual void Probe(Ref<Description> Output) const
-        {
+        void Probe(Ref<Description> Output) const;
 
-        }
-
-        /// \brief Advances the audio driver's internal state and processes audio.
+        /// \brief Advances the driver on the main thread.
         ///
         /// \param Delta The time elapsed since the last tick, in seconds.
-        virtual void Tick(Real64 Delta)
-        {
+        void Advance(Real64 Delta);
 
-        }
+        /// \brief Suspends audio output.
+        void Suspend();
 
-        /// \brief Gets all playback operations that completed during the current tick.
-        ///
-        /// \param Output The sequence that receives the completed playback handles.
-        virtual void Drain(Ref<Completion> Output)
-        {
+        /// \brief Restores audio output after a suspension.
+        void Restore();
 
-        }
+    private:
 
-        /// \brief Suspends audio processing.
-        virtual void Suspend()
-        {
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        }
-
-        /// \brief Restores audio processing after being suspended.
-        virtual void Restore()
-        {
-
-        }
-
-        /// \brief Sets the master volume for all audio output.
-        ///
-        /// \param Volume The master volume level (0.0 = silent, 1.0 = full volume).
-        virtual void SetMasterVolume(Real32 Volume)
-        {
-
-        }
-
-        /// \brief Gets the current master volume level.
-        ///
-        /// \return The master volume level (0.0 = silent, 1.0 = full volume).
-        virtual Real32 GetMasterVolume() const
-        {
-            return 0.0f;
-        }
-
-        /// \brief Sets the volume for a specific audio category.
-        ///
-        /// \param Category The audio category to adjust.
-        /// \param Volume   The volume level for the category (0.0 = silent, 1.0 = full volume).
-        virtual void SetSubmixVolume(Category Category, Real32 Volume)
-        {
-
-        }
-
-        /// \brief Gets the current volume level for a specific audio category.
-        ///
-        /// \param Category The audio category to query.
-        /// \return The volume level for the category (0.0 = silent, 1.0 = full volume).
-        virtual Real32 GetSubmixVolume(Category Category) const
-        {
-            return 0.0f;
-        }
-
-        /// \brief Sets the listener's pose in 3D space.
-        ///
-        /// \param Pose The new pose of the listener.
-        virtual void SetListenerPose(ConstRef<Pose> Pose)
-        {
-
-        }
-
-        /// \brief Sets the listener's directional cone parameters.
-        ///
-        /// \param InnerAngle The inner angle of the cone in degrees.
-        /// \param OuterAngle The outer angle of the cone in degrees.
-        /// \param OuterGain  The gain applied outside the outer cone (0.0 = silent, 1.0 = full volume).
-        virtual void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
-        {
-
-        }
-
-        /// \brief Plays audio as a non-spatial sound with the specified parameters.
-        ///
-        /// \param Handle   The handle of the playback instance.
-        /// \param Category The audio category for the playback.
-        /// \param Decoder  The decoder providing PCM frames for playback.
-        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Pitch    The playback pitch (1.0 = normal pitch).
-        /// \return `true` if playback started successfully, otherwise `false`.
-        virtual Bool Play(Object Handle, Category Category, Unique<Decoder> Decoder, Real32 Volume, Real32 Pitch)
-        {
-            return false;
-        }
-
-        /// \brief Plays audio as a spatial sound with the specified parameters.
-        ///
-        /// \param Handle   The handle of the playback instance.
-        /// \param Category The audio category for the playback.
-        /// \param Decoder  The decoder providing PCM frames for playback.
-        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Pitch    The playback pitch (1.0 = normal pitch).
-        /// \param Emitter  The spatial configuration for the audio source.
-        /// \param Pose     The initial pose of the audio source in 3D space.
-        /// \return `true` if playback started successfully, otherwise `false`.
-        virtual Bool Play(Object Handle, Category Category, Unique<Decoder> Decoder, Real32 Volume, Real32 Pitch, ConstRef<Emitter> Emitter, ConstRef<Pose> Pose)
-        {
-            return false;
-        }
-
-        /// \brief Sets whether a specific audio playback instance should loop.
-        ///
-        /// \param Handle  The handle of the playback instance.
-        /// \param Looping `true` to enable looping, `false` to disable.
-        virtual void SetPlaybackLooping(Object Handle, Bool Looping)
-        {
-
-        }
-
-        /// \brief Sets the pitch for a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance.
-        /// \param Pitch  The new pitch value (1.0 = normal pitch).
-        virtual void SetPlaybackPitch(Object Handle, Real32 Pitch)
-        {
-
-        }
-
-        /// \brief Sets the volume for a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance.
-        /// \param Volume The new volume value (0.0 = silent, 1.0 = full volume).
-        virtual void SetPlaybackVolume(Object Handle, Real32 Volume)
-        {
-
-        }
-
-        /// \brief Sets the pose for a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance.
-        /// \param Pose   The new pose of the playback instance.
-        virtual void SetPlaybackPose(Object Handle, ConstRef<Pose> Pose)
-        {
-
-        }
-
-        /// \brief Stops a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance to stop.
-        virtual void Stop(Object Handle)
-        {
-
-        }
-
-        /// \brief Pauses a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance to pause.
-        virtual void Pause(Object Handle)
-        {
-
-        }
-
-        /// \brief Resumes a specific audio playback instance.
-        ///
-        /// \param Handle The handle of the playback instance to resume.
-        virtual void Resume(Object Handle)
-        {
-
-        }
+        struct Backend;
+        Unique<Backend> mBackend;
     };
 }

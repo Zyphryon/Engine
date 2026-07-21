@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Common.hpp"
+#include "Types.hpp"
 #include "Zyphryon.Math/Angle.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -28,13 +28,12 @@ namespace Audio
 
         /// \brief Constructs an emitter with default parameters.
         ZY_INLINE Emitter()
-            : mAttenuation   { Attenuation::Inverse },
-              mInnerRadius   { 1.0f },
-              mInnerAngle    { Angle::FromDegrees(360.0f) },
-              mOuterRadius   { 100.0f },
-              mOuterAngle    { Angle::FromDegrees(360.0f) },
-              mOuterGain     { 0.0f },
-              mDopplerFactor { 1.0f }
+            : mAttenuation { Attenuation::Inverse },
+              mInnerRadius { 1.0f },
+              mInnerAngle  { Angle::FromDegrees(360.0f) },
+              mOuterRadius { 100.0f },
+              mOuterAngle  { Angle::FromDegrees(360.0f) },
+              mOuterGain   { 0.0f }
         {
         }
 
@@ -124,24 +123,6 @@ namespace Audio
             return mOuterGain;
         }
 
-        /// \brief Sets the Doppler effect factor for the emitter.
-        ///
-        /// \param Factor The Doppler factor (non-negative).
-        ZY_INLINE void SetDopplerFactor(Real32 Factor)
-        {
-            ZY_ASSERT(Factor >= 0.0f, "Doppler factor must be non-negative");
-
-            mDopplerFactor = Factor;
-        }
-
-        /// \brief Gets the Doppler effect factor of the emitter.
-        ///
-        /// \return The Doppler factor.
-        ZY_INLINE Real32 GetDopplerFactor() const
-        {
-            return mDopplerFactor;
-        }
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -153,6 +134,5 @@ namespace Audio
         Real32      mOuterRadius;
         Angle       mOuterAngle;
         Real32      mOuterGain;
-        Real32      mDopplerFactor;
     };
 }
