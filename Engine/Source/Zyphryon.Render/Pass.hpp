@@ -171,6 +171,22 @@ namespace Render
             return mDepthAttachment;
         }
 
+        /// \brief Attaches a continuation pass that draws inside this pass's open target.
+        ///
+        /// \param Continuation The pass to run after this one.
+        ZY_INLINE void SetContinuation(Unique<Pass> Continuation)
+        {
+            mContinuation = Move(Continuation);
+        }
+
+        /// \brief Gets the continuation pass attached to this pass.
+        ///
+        /// \return A pointer to the continuation, or `nullptr` if none is attached.
+        ZY_INLINE Ptr<Pass> GetContinuation() const
+        {
+            return mContinuation ? AddressOf(* mContinuation) : nullptr;
+        }
+
         /// \brief Executes the pass, recording its draw commands through the encoder.
         ///
         /// \param Encoder The encoder used to build this pass's draw commands.
@@ -186,5 +202,6 @@ namespace Render
         Graphic::Viewport                                   mViewport;
         Sequence<ColorAttachment, Graphic::kMaxAttachments> mColorAttachment;
         DepthAttachment                                     mDepthAttachment;
+        Unique<Pass>                                        mContinuation;
     };
 }

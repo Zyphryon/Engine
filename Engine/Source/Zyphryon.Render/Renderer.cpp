@@ -119,6 +119,15 @@ namespace Render
                     mEncoder.Reset();
 
                     Stage.Run(mEncoder);
+
+                    // Continuations share this pass's open target: append their draws without re-preparing.
+                    for (Ptr<Pass> Next = Stage.GetContinuation(); Next; Next = Next->GetContinuation())
+                    {
+                        if (Next->IsActive())
+                        {
+                            Next->Run(mEncoder);
+                        }
+                    }
                 }
                 mService->Commit();
             }
