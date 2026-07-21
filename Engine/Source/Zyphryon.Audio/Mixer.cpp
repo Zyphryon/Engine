@@ -81,7 +81,14 @@ namespace Audio
             Offset += Count;
         }
 
-        Reap();
+        /// Frees voices that finished during the current render and reports their handles.
+        mVoices.ForEach([this](Ref<Voice> Voice)
+        {
+            if (Voice.Finished && mCompletions.Push(Voice.Handle))
+            {
+                mVoices.Free(Voice.Handle);
+            }
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -101,13 +108,13 @@ namespace Audio
     Bool Mixer::Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume)
     {
         Command Command { };
-        Command.Kind      = Op::Play;
-        Command.Handle    = Handle;
-        Command.Category  = Category;
-        Command.Spatial   = false;
-        Command.Volume    = Volume;
-        Command.Decoder   = Decoder;
-        Command.Stride  = Stride;
+        Command.Kind     = Op::Play;
+        Command.Handle   = Handle;
+        Command.Category = Category;
+        Command.Spatial  = false;
+        Command.Volume   = Volume;
+        Command.Decoder  = Decoder;
+        Command.Stride   = Stride;
         return Submit(Command);
     }
 
@@ -123,7 +130,7 @@ namespace Audio
         Command.Spatial   = true;
         Command.Volume    = Volume;
         Command.Decoder   = Decoder;
-        Command.Stride  = Stride;
+        Command.Stride    = Stride;
         Command.Emitter   = Emitter;
         Command.Transform = Transform;
         return Submit(Command);
@@ -234,18 +241,18 @@ namespace Audio
             mVoices.Acquire(Command.Handle);
 
             Ref<Voice> Voice = mVoices[Command.Handle];
-            Voice.Handle    = Command.Handle;
-            Voice.Decoder   = Unique(Command.Decoder);
-            Voice.Category  = Command.Category;
-            Voice.Stride  = static_cast<UInt16>(Command.Stride);
-            Voice.Spatial   = Command.Spatial;
-            Voice.Volume    = Command.Volume;
-            Voice.Looping   = false;
-            Voice.Paused    = false;
-            Voice.Finished  = false;
-            Voice.Primed    = false;
-            Voice.GainLeft  = 1.0f;
-            Voice.GainRight = 1.0f;
+            Voice.Handle     = Command.Handle;
+            Voice.Decoder    = Unique(Command.Decoder);
+            Voice.Category   = Command.Category;
+            Voice.Stride     = static_cast<UInt16>(Command.Stride);
+            Voice.Spatial    = Command.Spatial;
+            Voice.Volume     = Command.Volume;
+            Voice.Looping    = false;
+            Voice.Paused     = false;
+            Voice.Finished   = false;
+            Voice.Primed     = false;
+            Voice.Gain.Left  = 1.0f;
+            Voice.Gain.Right = 1.0f;
 
             if (Command.Spatial)
             {
@@ -316,7 +323,7 @@ namespace Audio
 
         if (Voice.Spatial)
         {
-            const Spatializer::Gains Gains = mSpatializer.Compute(Voice.Position, Voice.Forward, Voice.Emitter);
+            const Gains Gains = mSpatializer.Compute(Voice.Position, Voice.Forward, Voice.Emitter);
             TargetLeft  = Gains.Left  * Voice.Volume * Submix;
             TargetRight = Gains.Right * Voice.Volume * Submix;
         }
@@ -329,9 +336,9 @@ namespace Audio
 
         if (!Voice.Primed)
         {
-            Voice.GainLeft  = TargetLeft;
-            Voice.GainRight = TargetRight;
-            Voice.Primed    = true;
+            Voice.Gain.Left  = TargetLeft;
+            Voice.Gain.Right = TargetRight;
+            Voice.Primed     = true;
         }
 
         if (Produced > 0)
@@ -343,17 +350,17 @@ namespace Audio
                 {
                     mScratchLeft[Frame] = 0.5f * (mScratchLeft[Frame] + mScratchRight[Frame]);
                 }
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.GainLeft,  TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.GainRight, TargetRight);
+                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.Left,  TargetLeft);
+                MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.Gain.Right, TargetRight);
             }
             else
             {
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.GainLeft,  TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.GainRight, TargetRight);
+                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.Gain.Left,  TargetLeft);
+                MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.Gain.Right, TargetRight);
             }
 
-            Voice.GainLeft  = TargetLeft;
-            Voice.GainRight = TargetRight;
+            Voice.Gain.Left  = TargetLeft;
+            Voice.Gain.Right = TargetRight;
         }
 
         // A short read with no looping means the stream reached its end.
@@ -368,9 +375,7 @@ namespace Audio
 
     UInt32 Mixer::Read(Ref<Voice> Voice, Ptr<Real32> Left, Ptr<Real32> Right, UInt32 Frames)
     {
-        const UInt32       Stride = Voice.Stride;
-        const UInt32       Capacity = (kMixerBlock * kMixerStride) / Stride;
-        const Ptr<Decoder> Decoder  = Voice.Decoder.Grab();
+        const UInt32 Capacity = (kMixerBlock * kMixerStride) / Voice.Stride;
 
         UInt32 Done = 0;
 
@@ -378,30 +383,40 @@ namespace Audio
         {
             const UInt32 Want = Min(Frames - Done, Capacity);
 
-            UInt32 Got = static_cast<UInt32>(Decoder->Read(Span(mDecode.GetData(), Want)));
+            UInt32 Got = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Want)));
 
             if (Got == 0)
             {
                 // Restart from the top when looping; otherwise the stream has ended.
-                if (!Voice.Looping || !Decoder->Seek(0))
+                if (!Voice.Looping || !Voice.Decoder->Seek(0))
                 {
                     break;
                 }
 
-                Got = static_cast<UInt32>(Decoder->Read(Span(mDecode.GetData(), Want)));
+                Got = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Want)));
                 if (Got == 0)
                 {
                     break;
                 }
             }
 
-            // Deinterleave the source frames into planar stereo (mono is duplicated across both channels).
-            for (UInt32 Frame = 0; Frame < Got; ++Frame)
+            // Deinterleave the source frames into planar stereo.
+            if (Voice.Stride == 1)
             {
-                const UInt32 Base = Frame * Stride;
+                for (UInt32 Frame = 0; Frame < Got; ++Frame)
+                {
+                    Left[Done + Frame] = Right[Done + Frame] = mDecode[Frame];
+                }
+            }
+            else
+            {
+                for (UInt32 Frame = 0; Frame < Got; ++Frame)
+                {
+                    const UInt32 Base = Frame * Voice.Stride;
 
-                Left[Done + Frame]  = mDecode[Base];
-                Right[Done + Frame] = (Stride >= 2 ? mDecode[Base + 1] : mDecode[Base]);
+                    Left[Done + Frame]  = mDecode[Base];
+                    Right[Done + Frame] = mDecode[Base + 1];
+                }
             }
             Done += Got;
         }
@@ -434,19 +449,5 @@ namespace Audio
             Output[Frame * kMixerStride + 0] = Clamp(mMasterLeft[Frame]  * Master, -1.0f, 1.0f);
             Output[Frame * kMixerStride + 1] = Clamp(mMasterRight[Frame] * Master, -1.0f, 1.0f);
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Mixer::Reap()
-    {
-        mVoices.ForEach([this](Ref<Voice> Voice)
-        {
-            if (Voice.Finished && mCompletions.Push(Voice.Handle))
-            {
-                mVoices.Free(Voice.Handle);
-            }
-        });
     }
 }

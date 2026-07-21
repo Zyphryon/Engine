@@ -63,7 +63,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Spatializer::Gains Spatializer::Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const
+    Gains Spatializer::Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const
     {
         Gains Result;
 

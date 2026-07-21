@@ -24,6 +24,9 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 -O0
                 -g
             >
+            $<ZY_WEB_THREAD>:
+                -pthread
+            >
             -fno-exceptions
             -fno-rtti
             -msimd128
@@ -50,7 +53,17 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 -sASSERTIONS=0
                 -sSTACK_OVERFLOW_CHECK=0
             >
+            $<ZY_WEB_THREAD>:
+                -pthread
+                -sWASM_WORKERS=1
+                -sAUDIO_WORKLET=1
+                -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency
+            >
         )
+
+        IF (ZY_WEB_THREAD)
+            TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE ZY_WEB_THREAD)
+        ENDIF  ()
 
     ELSEIF (MSVC)
 

@@ -201,9 +201,6 @@ namespace Audio
         /// \param Frames The number of frames in this sub-block.
         void Block(Ptr<Real32> Output, UInt32 Frames);
 
-        /// \brief Frees voices that finished during the current render and reports their handles.
-        void Reap();
-
         /// \brief Enqueues a command, dropping it if the queue is full.
         ///
         /// \param Command The command to enqueue.
@@ -232,6 +229,6 @@ namespace Audio
         ZY_ALIGN(16) Array<Real32, kMixerBlock>        mMasterRight;
         ZY_ALIGN(16) Array<Real32, kMixerBlock>        mScratchLeft;
         ZY_ALIGN(16) Array<Real32, kMixerBlock>        mScratchRight;
-        Array<Real32, kMixerBlock * kMixerStride>    mDecode;
+        Array<Real32, kMixerBlock * kMixerStride>      mDecode;
     };
 }

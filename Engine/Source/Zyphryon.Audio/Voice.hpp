@@ -40,11 +40,8 @@ namespace Audio
         /// The base linear volume of the voice (range [0, 1]).
         Real32          Volume    = 1.0f;
 
-        /// The current smoothed left-channel gain, used to deramp toward the target and avoid clicks.
-        Real32          GainLeft  = 0.0f;
-
-        /// The current smoothed right-channel gain, used to deramp toward the target and avoid clicks.
-        Real32          GainRight = 0.0f;
+        /// The current smoothed per-channel gains, used to deramp toward the target and avoid clicks.
+        Gains           Gain;
 
         /// The handle that identifies this voice, mirrored here so completed voices can be reaped by handle.
         Object          Handle    = 0;

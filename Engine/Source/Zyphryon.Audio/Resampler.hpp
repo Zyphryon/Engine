@@ -63,23 +63,6 @@ namespace Audio
             return mActive;
         }
 
-        /// \brief Gets the conversion ratio expressed as source frames advanced per output frame.
-        ///
-        /// \return The number of source frames consumed for each output frame produced.
-        ZY_INLINE Real64 GetStep() const
-        {
-            return mStep;
-        }
-
-        /// \brief Maps an output-domain frame index onto the source frame it reads from.
-        ///
-        /// \param Frame The output frame index at the target rate.
-        /// \return The corresponding source frame index at the source rate.
-        ZY_INLINE UInt64 GetSource(UInt64 Frame) const
-        {
-            return static_cast<UInt64>(Frame * mStep);
-        }
-
         /// \brief Gets the index of the next output frame the streaming path will produce.
         ///
         /// \return The current output-domain cursor, in frames.
@@ -88,13 +71,22 @@ namespace Audio
             return mOutput;
         }
 
+        /// \brief Maps an output-domain frame index onto the source frame it reads from.
+        ///
+        /// \param Frame The output frame index at the target rate.
+        /// \return The corresponding source frame index at the source rate.
+        ZY_INLINE UInt64 Source(UInt64 Frame) const
+        {
+            return static_cast<UInt64>(Frame * mStep);
+        }
+
         /// \brief Repositions the streaming cursor so the next \ref Generate resumes at the given output frame.
         ///
         /// \param Frame The output frame index to resume producing from.
         ZY_INLINE void Reset(UInt64 Frame)
         {
             mOutput = Frame;
-            mSource = GetSource(Frame);
+            mSource = Source(Frame);
             mPrimed = false;
         }
 

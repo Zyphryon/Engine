@@ -26,18 +26,6 @@ namespace Audio
     {
     public:
 
-        /// \brief The stereo placement result for a single source.
-        struct Gains final
-        {
-            /// The linear gain applied to the left output channel (range [0, 1]).
-            Real32 Left  = 0.0f;
-
-            /// The linear gain applied to the right output channel (range [0, 1]).
-            Real32 Right = 0.0f;
-        };
-
-    public:
-
         /// \brief Constructs a spatializer with default parameters.
         ZY_INLINE Spatializer()
             : mRight             { Vector3::UnitX() },

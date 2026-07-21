@@ -14,4 +14,6 @@
 
 #if   defined(ZY_PLATFORM_WINDOWS)
 #include "Driver/Win32/Driver.inl"
+#elif defined(ZY_PLATFORM_WEB)
+#include "Driver/Emscripten/Driver.inl"
 #endif

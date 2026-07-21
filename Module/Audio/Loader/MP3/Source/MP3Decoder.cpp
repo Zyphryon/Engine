@@ -70,7 +70,7 @@ namespace Content
     {
         if (mResampler.IsActive())
         {
-            if (!drmp3_seek_to_pcm_frame(AddressOf(mDecoder), mResampler.GetSource(Frame)))
+            if (!drmp3_seek_to_pcm_frame(AddressOf(mDecoder), mResampler.Source(Frame)))
             {
                 return false;
             }

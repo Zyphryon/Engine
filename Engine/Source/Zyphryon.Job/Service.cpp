@@ -30,7 +30,10 @@ namespace Job
 
         for (UInt32 Worker = 0; Worker < mTaskThreads.GetCapacity(); ++Worker)
         {
-            mTaskThreads.Append(Capture<& Service::OnWorkerThread>(this));
+            mTaskThreads.Append([this](std::stop_token Token)
+            {
+                OnWorkerThread(Token);
+            });
         }
 #endif
     }
