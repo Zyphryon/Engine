@@ -13,6 +13,7 @@
 #include "Zyphryon.Base/Concurrency/Atomic.hpp"
 #include "Zyphryon.Base/Concurrency/Gate.hpp"
 #include "Zyphryon.Base/Concurrency/Mutex.hpp"
+#include "Zyphryon.Base/Concurrency/Ring.hpp"
 #include "Zyphryon.Base/Concurrency/Thread.hpp"
 #include "Zyphryon.Base/Container/Adaptor.hpp"
 #include "Zyphryon.Base/Container/Array.hpp"

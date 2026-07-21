@@ -49,6 +49,11 @@ inline namespace Math
         /// \param W The w-component of the vector (default is 0.0f).
         ZY_INLINE Vector4(Real32 X, Real32 Y, Real32 Z, Real32 W = 0.0f);
 
+        /// \brief Constructor initializing the vector with four contiguous 32-bit floats.
+        ///
+        /// \param Values Pointer to four 32-bit floats. Must be 16-byte aligned.
+        ZY_INLINE Vector4(ConstPtr<Real32> Values);
+
         /// \brief Stores the vector components into a float array.
         ///
         /// \param Output Pointer to four 32-bit floats. Must be 16-byte aligned.
