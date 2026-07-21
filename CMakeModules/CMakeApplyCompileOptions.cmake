@@ -24,7 +24,7 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 -O0
                 -g
             >
-            $<ZY_WEB_THREAD>:
+            $<$<BOOL:${ZY_WEB_THREAD}>:
                 -pthread
             >
             -fno-exceptions
@@ -53,7 +53,7 @@ FUNCTION(ZyApplyCompileOptions TARGET)
                 -sASSERTIONS=0
                 -sSTACK_OVERFLOW_CHECK=0
             >
-            $<ZY_WEB_THREAD>:
+            $<$<BOOL:${ZY_WEB_THREAD}>:
                 -pthread
                 -sWASM_WORKERS=1
                 -sAUDIO_WORKLET=1
