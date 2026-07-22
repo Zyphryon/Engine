@@ -194,7 +194,10 @@ namespace Audio
 
     private:
 
-        /// \brief TODO_DOC
+        /// \brief Copies a single interleaved frame (one sample per channel) from one buffer to another.
+        ///
+        /// \param Destination The buffer that receives the frame.
+        /// \param Source      The buffer the frame is read from.
         ZY_INLINE void Copy(Ptr<Real32> Destination, ConstPtr<Real32> Source) const
         {
             for (UInt16 Element = 0; Element < mStride; ++Element)

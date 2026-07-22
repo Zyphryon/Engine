@@ -27,6 +27,25 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Filesystem::Result Filesystem::MakeAll(Text Path)
+    {
+        for (UInt Position = 1, Limit = Path.GetSize(); Position < Limit; ++Position)
+        {
+            if (const Char Character = Path[Position]; Character == '/' || Character == '\\')
+            {
+                if (const Char Previous = Path[Position - 1]; Previous == '/' || Previous == '\\' || Previous == ':')
+                {
+                    continue;
+                }
+                Make(Path.Slice(0, Position));
+            }
+        }
+        return Make(Path);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Filesystem::Result Filesystem::CopyAll(Text Source, Text Destination)
     {
         Result Result = Result::Success;

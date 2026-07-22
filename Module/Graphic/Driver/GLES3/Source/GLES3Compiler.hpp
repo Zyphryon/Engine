@@ -33,7 +33,7 @@ namespace Graphic
 
     private:
 
-        /// \brief TODO_DOC
+        /// \brief Pairs a GLSL binding name (a uniform block or sampler) with its assigned binding point.
         struct GLES3Binding final
         {
             /// The name of the binding.
