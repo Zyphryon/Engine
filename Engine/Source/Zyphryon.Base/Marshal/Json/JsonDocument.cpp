@@ -313,6 +313,11 @@ inline namespace Base
 
     static void WriteNumber(Ref<Str> Output, Real64 Value)
     {
+        if (Value < 0.0)
+        {
+            Output.Append('-');
+        }
+
         if (Value == static_cast<SInt64>(Value))
         {
             const SInt64 IntPart = Value;
