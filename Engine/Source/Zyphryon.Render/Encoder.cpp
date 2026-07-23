@@ -133,6 +133,70 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Encoder::Draw(
+        ConstRef<Graphic::Technique> Technique,
+        ConstRef<Graphic::Model>     Model,
+        ConstRef<Graphic::Stream>    Uniform)
+    {
+        ConstRetainer<Graphic::Mesh> Mesh = Model.GetMesh();
+
+        if (!Mesh || Mesh->GetVertices() == 0)
+        {
+            return;
+        }
+
+        ConstRef<Graphic::Schema>              Schema    = Technique.GetDescription().Schema;
+        ConstSpan<Retainer<Graphic::Material>> Materials = Model.GetMaterials();
+
+        const Graphic::Object VertexBuffer = Mesh->GetVertices();
+        const Graphic::Object IndexBuffer  = Mesh->GetIndices();
+        const UInt16          IndexStride  = Mesh->HasProperty(Graphic::Mesh::Property::Extended)
+            ? sizeof(UInt32) : sizeof(UInt16);
+
+        for (ConstRef<Graphic::Mesh::Primitive> Primitive : Mesh->GetPrimitives())
+        {
+            Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+
+            Command.Pipeline = Technique.GetHandle();
+
+            // Bind the frame-global, per-pass, and per-object (instance) uniform blocks.
+            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)]   = mGlobal;
+            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]     = mPass;
+            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = Uniform;
+
+            // Bind the primitive's material (uniform block, textures, and samplers) when the model provides one.
+            if (Primitive.Material < Materials.GetSize())
+            {
+                ConstRef<Graphic::Material> Material = * Materials[Primitive.Material];
+
+                Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] =
+                    Pack(Graphic::UniformScope::Material, Schema, Material);
+
+                BindTextures(Command, Schema, Material);
+            }
+
+            // Bind every present attribute as a vertex stream, in slot order (matching the technique's layout).
+            for (const Graphic::VertexSlot Slot : Enum::GetValues<Graphic::VertexSlot>())
+            {
+                if (Mesh->HasBinding(Slot))
+                {
+                    const Graphic::Mesh::Binding Binding = Mesh->GetBinding(Slot);
+
+                    Command.Vertices.Append(Graphic::Stream { VertexBuffer, Binding.Stride, Binding.Offset });
+                }
+            }
+
+            if (IndexBuffer)
+            {
+                Command.Indices = Graphic::Stream { IndexBuffer, IndexStride, 0 };
+            }
+            Command.Parameters = Primitive.Range;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Encoder::BindTextures(Ref<Graphic::Command> Command, ConstRef<Graphic::Schema> Schema, ConstRef<Graphic::Material> Material)
     {
         for (const Graphic::TextureSlot Slot : Schema.GetTextures())

@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Graphic/Material.hpp"
+#include "Zyphryon.Graphic/Model.hpp"
 #include "Zyphryon.Graphic/Schema.hpp"
 #include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Graphic/Technique.hpp"
@@ -134,6 +135,20 @@ namespace Render
         {
             Draw(Technique, Textures, Graphic::Stream(), Parameters);
         }
+
+        /// \brief Emits one indexed draw per primitive of a model's mesh, binding its shared vertex/index buffers.
+        ///
+        /// Each present vertex attribute is bound as a vertex stream in `VertexSlot` order, so the technique's
+        /// input layout must declare its streams in that same order. Each primitive binds the model-table material
+        /// referenced by its material slot.
+        ///
+        /// \param Technique The technique (pipeline + schema) to draw with.
+        /// \param Model     The model whose mesh primitives are drawn.
+        /// \param Uniform   The per-object data stream bound to the Instance scope (empty for none).
+        void Draw(
+            ConstRef<Graphic::Technique> Technique,
+            ConstRef<Graphic::Model>     Model,
+            ConstRef<Graphic::Stream>    Uniform);
 
     private:
 

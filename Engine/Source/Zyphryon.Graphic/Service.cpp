@@ -29,7 +29,10 @@ namespace Graphic
         : Subsystem { Host }
     {
 #if !defined(ZY_PLATFORM_WEB)
-        mWorker = Thread(Capture<& Service::OnWorkerThread>(this));
+        mWorker = Thread([this](std::stop_token Token)
+        {
+            OnWorkerThread(Token);
+        });
 #endif
     }
 

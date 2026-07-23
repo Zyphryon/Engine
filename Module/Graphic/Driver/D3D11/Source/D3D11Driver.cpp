@@ -967,6 +967,8 @@ namespace Graphic
         D3D11Check(mDeviceFactory->CreateSwapChain(mDevice.Get(), AddressOf(Description), mSwapchain.GetAddressOf()));
         D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));
 
+        mDeviceProperties.ColorFormat = Config.ColorFormat;
+        mDeviceProperties.DepthFormat = Config.DepthFormat;
         CreateSwapchainResources(Pass, Config);
     }
 

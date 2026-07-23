@@ -117,10 +117,18 @@ namespace Graphic
         glGenVertexArrays(1, AddressOf(mGlobalVAO));
         glBindVertexArray(mGlobalVAO);
 
-        // Tightly-packed uploads, matching the engine's row layout, and the Direct3D winding convention.
+        // Tightly-packed uploads, matching the engine's row layout.
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        // Force the real GL state to match the pipeline snapshot's assumed defaults, keeping the cached
+        // state tracking coherent.
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glFrontFace(GL_CW);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_TRUE);
 
         const Bool HasDepth   = (Config.DepthFormat != TextureFormat::Unspecified);
         const Bool HasStencil = GetFormatDescription(Config.DepthFormat).IsStencil;
