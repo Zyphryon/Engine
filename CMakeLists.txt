@@ -33,7 +33,7 @@ INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          OFF)
+OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          ON)
 
 ADD_SUBDIRECTORY(Engine)
 

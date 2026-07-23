@@ -80,7 +80,7 @@ namespace Log
 
 #elif defined(ZY_PLATFORM_WEB)
 
-        EM_ASM(
+        MAIN_THREAD_EM_ASM(
         {
             const jsMessage = UTF8ToString($0, $1);
             const jsMethod  = (["debug", "info", "warn", "error"])[$2] || "log";
