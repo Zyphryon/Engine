@@ -316,6 +316,7 @@ inline namespace Base
         if (Value < 0.0)
         {
             Output.Append('-');
+            Value = -Value;
         }
 
         if (Value == static_cast<SInt64>(Value))

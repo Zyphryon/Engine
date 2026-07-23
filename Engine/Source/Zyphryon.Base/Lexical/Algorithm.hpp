@@ -717,7 +717,8 @@ inline namespace Base
     {
         Type Result = 0.0f;
 
-        const SInt64 IntPart = StrExtractNumber<10, SInt64>(Content, Cursor);
+        const Bool   IsNegative = (Content.GetSize() > Cursor && Content[Cursor] == '-');
+        const SInt64 IntPart    = StrExtractNumber<10, SInt64>(Content, Cursor);
 
         if (StrConsume(Content, Cursor, '.'))
         {
@@ -725,7 +726,7 @@ inline namespace Base
             const UInt64 IntFrac = StrExtractNumber<10, UInt64>(Content, Cursor);
             Result = static_cast<Type>(IntFrac) / static_cast<Type>(Pow10(Cursor - Start));
         }
-        return static_cast<Type>(IntPart) + (IntPart < 0 ? -Result : Result);
+        return static_cast<Type>(IntPart) + (IsNegative ? -Result : Result);
     }
 
     /// \brief Extracts a UTF-8 codepoint from the text at the current cursor position.
