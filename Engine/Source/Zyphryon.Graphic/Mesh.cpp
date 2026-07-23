@@ -43,7 +43,7 @@ namespace Graphic
 
     void Mesh::SetBinding(VertexSlot Slot, VertexFormat Format, UInt16 Stride, UInt32 Offset)
     {
-        mBindings[Enum::Cast(Slot)] = Binding { Format, Stride, Offset };
+        mBindings[Enum::Cast(Slot)] = Binding(Format, Stride, Offset);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

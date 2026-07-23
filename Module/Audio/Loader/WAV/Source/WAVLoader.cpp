@@ -13,7 +13,7 @@
 #include "WAVLoader.hpp"
 #include "WAVDecoder.hpp"
 #include "Zyphryon.Audio/Resampler.hpp"
-#include "Zyphryon.Audio/Track.hpp"
+#include "Zyphryon.Audio/Sound.hpp"
 #include "Zyphryon.Audio/Types.hpp"
 
 #define DR_WAV_IMPLEMENTATION
@@ -28,10 +28,10 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Unique<Audio::Decoder> Decode(ConstRef<Blob> Data, ConstRef<Audio::Track> Track)
+    static Unique<Audio::Decoder> Decode(ConstRef<Blob> Data, ConstRef<Audio::Sound> Sound)
     {
         ConstSpan Samples(Data.GetData<Real32>(), Data.GetSize() / sizeof(Real32));
-        return Unique<WAVDecoder>::Create(Samples, Track.GetStride(), Track.GetFrequency(), Track.GetFrames());
+        return Unique<WAVDecoder>::Create(Samples, Sound.GetStride(), Sound.GetFrequency(), Sound.GetFrames());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -60,7 +60,7 @@ namespace Content
             }
 
             // Load the decoded PCM data into the track resource, now clocked at the mixer sample rate.
-            const Retainer<Audio::Track> Asset = Retainer<Audio::Track>::Cast(Scope.GetResource());
+            const Retainer<Audio::Sound> Asset = Retainer<Audio::Sound>::Cast(Scope.GetResource());
             Asset->Load(Frames, Audio::kMixerFrequency, Stride, Decode, Move(Samples));
             return true;
         }

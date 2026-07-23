@@ -65,13 +65,12 @@ namespace Graphic
         /// \param Key The unique content key identifying this mesh.
         explicit Mesh(AnyRef<Content::Uri> Key);
 
-        /// \brief Enables or disables a property.
+        /// \brief Sets the mesh's full property mask, replacing any previously set flags.
         ///
-        /// \param Value  The property to modify.
-        /// \param Enable `true` to set the property, `false` to clear it.
-        ZY_INLINE void SetProperty(Property Value, Bool Enable)
+        /// \param Value The complete set of properties to assign.
+        ZY_INLINE void SetProperties(Property Value)
         {
-            mProperties = SetOrClearBit(mProperties, Value, Enable);
+            mProperties = Value;
         }
 
         /// \brief Tests whether a property is enabled.

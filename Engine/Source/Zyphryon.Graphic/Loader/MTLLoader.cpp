@@ -31,6 +31,12 @@ namespace Graphic
         JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject JsonRoot(JsonDocument);
 
+        if (!JsonRoot.IsValid())
+        {
+            LOG_W("'{}' is not a valid material document", Scope.GetResource()->GetKey());
+            return false;
+        }
+
         // Parse 'textures' and 'samplers' section
         const JsonObject JsonImages   = JsonRoot.GetObject("Images");
         const JsonObject JsonSamplers = JsonRoot.GetObject("Samplers");
@@ -255,7 +261,7 @@ namespace Graphic
                 }
                 default:
                 {
-                    LOG_W("Unknown parameter type '{0}' for parameter '{1}'.", Type, Name);
+                    LOG_W("MTLLoader: Unknown parameter type '{0}' for parameter '{1}'.", Type, Name);
                     break;
                 }
                 }

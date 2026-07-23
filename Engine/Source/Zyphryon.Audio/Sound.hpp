@@ -21,31 +21,31 @@
 
 namespace Audio
 {
-    /// \brief Represents an audio track resource containing raw audio data and its associated metadata.
-    class Track final : public Content::AbstractResource<Track>
+    /// \brief Represents an audio sound resource containing raw audio data and its associated metadata.
+    class Sound final : public Content::AbstractResource<Sound>
     {
     public:
 
-        /// \brief The factory codec for creating decoders to process the track's audio data.
-        using Codec = Delegate<Unique<Decoder>(ConstRef<Blob>, ConstRef<Track>), DelegateInlineSize::Smallest>;
+        /// \brief The factory codec for creating decoders to process the sound's audio data.
+        using Codec = Delegate<Unique<Decoder>(ConstRef<Blob>, ConstRef<Sound>), DelegateInlineSize::Smallest>;
 
     public:
 
-        /// \brief Constructs the track resource with a unique key.
+        /// \brief Constructs the sound resource with a unique key.
         ///
-        /// \param Key The unique content key identifying this track.
-        explicit Track(AnyRef<Content::Uri> Key);
+        /// \param Key The unique content key identifying this sound.
+        explicit Sound(AnyRef<Content::Uri> Key);
 
-        /// \brief Populates the track with audio data and its associated metadata.
+        /// \brief Populates the sound with audio data and its associated metadata.
         ///
-        /// \param Frames    The total number of PCM frames in the track.
+        /// \param Frames    The total number of PCM frames in the sound.
         /// \param Frequency The sample rate of the audio data, in Hz.
         /// \param Stride    The number of channels per PCM frame.
-        /// \param Codec     The codec used to create decoders for this track's audio data.
-        /// \param Samples   The raw audio data for the track, either PCM or encoded bytes.
+        /// \param Codec     The codec used to create decoders for this sound's audio data.
+        /// \param Samples   The raw audio data for the sound, either PCM or encoded bytes.
         void Load(UInt64 Frames, UInt32 Frequency, UInt16 Stride, AnyRef<Codec> Codec, AnyRef<Blob> Samples);
 
-        /// \brief Creates a new decoder instance for this track's audio data using the associated codec.
+        /// \brief Creates a new decoder instance for this sound's audio data using the associated codec.
         ///
         /// \return A unique pointer to a new decoder instance, or `nullptr` if the codec fails to create one.
         ZY_INLINE Unique<Decoder> Decode() const
@@ -53,7 +53,7 @@ namespace Audio
             return mCodec(mSamples, * this);
         }
 
-        /// \brief Gets the total number of PCM frames in the track.
+        /// \brief Gets the total number of PCM frames in the sound.
         ///
         /// \return The total frame count.
         ZY_INLINE UInt64 GetFrames() const
@@ -61,7 +61,7 @@ namespace Audio
             return mFrames;
         }
 
-        /// \brief Gets the total duration of the track.
+        /// \brief Gets the total duration of the sound.
         ///
         /// \return The duration in microseconds.
         ZY_INLINE UInt64 GetDuration() const
@@ -69,7 +69,7 @@ namespace Audio
             return mFrames * 1000000ULL / mFrequency;
         }
 
-        /// \brief Gets the sample rate of the track.
+        /// \brief Gets the sample rate of the sound.
         ///
         /// \return The frequency in Hz.
         ZY_INLINE UInt32 GetFrequency() const
@@ -85,7 +85,7 @@ namespace Audio
             return mStride;
         }
 
-        /// \brief Gets the raw audio data held by this track.
+        /// \brief Gets the raw audio data held by this sound.
         ///
         /// \return The span of bytes containing either PCM or encoded audio data.
         template<typename Type>

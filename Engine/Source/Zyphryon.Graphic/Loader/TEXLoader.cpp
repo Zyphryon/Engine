@@ -32,6 +32,12 @@ namespace Graphic
             return false;
         }
 
+        if (Input.Read<UInt16>() != 1)
+        {
+            LOG_W("'{}' has an unsupported ZTEX version", Scope.GetResource()->GetKey());
+            return false;
+        }
+
         const TextureLayout   Layout  = Input.Read<TextureLayout>();
         const TextureFormat   Format  = Input.Read<TextureFormat>();
         const UInt16          Width   = Input.Read<UInt16>();

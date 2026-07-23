@@ -11,6 +11,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
+#include "Loader/MDLLoader.hpp"
+#include "Loader/MSHLoader.hpp"
 #include "Loader/MTLLoader.hpp"
 #include "Loader/SHDLoader.hpp"
 #include "Loader/TEXLoader.hpp"
@@ -457,6 +459,8 @@ namespace Graphic
     {
         ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
 
+        Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
+        Content->AddLoader(MSHLoader::kTypes, Retainer<MSHLoader>::Create());
         Content->AddLoader(MTLLoader::kTypes, Retainer<MTLLoader>::Create());
         Content->AddLoader(SHDLoader::kTypes, Retainer<SHDLoader>::Create());
         Content->AddLoader(TEXLoader::kTypes, Retainer<TEXLoader>::Create());

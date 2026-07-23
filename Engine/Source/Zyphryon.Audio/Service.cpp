@@ -167,20 +167,20 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRetainer<Track> Track, Real32 Volume)
+    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume)
     {
-        ZY_ASSERT(Track->HasCompleted(), "Track must be valid and loaded.");
-        ZY_ASSERT(Track->GetFrequency() == kMixerFrequency, "Track must be baked to the mixer sample rate");
+        ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded.");
+        ZY_ASSERT(Sound->GetFrequency() == kMixerFrequency, "Sound must be baked to the mixer sample rate");
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        if (Unique<Decoder> Decoder = Track->Decode())
+        if (Unique<Decoder> Decoder = Sound->Decode())
         {
             if (const Object Playback = mInstances.Allocate())
             {
-                if (mMixer.Play(Playback, Category, Decoder.Grab(), Track->GetStride(), Volume))
+                if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume))
                 {
                     Decoder.Release();
-                    mResources.Assign(Playback, Track);
+                    mResources.Assign(Playback, Sound);
 
                     return Playback;
                 }
@@ -194,20 +194,20 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRetainer<Track> Track, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform)
+    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform)
     {
-        ZY_ASSERT(Track->HasCompleted(), "Track must be valid and loaded.");
-        ZY_ASSERT(Track->GetFrequency() == kMixerFrequency, "Track must be baked to the mixer sample rate");
+        ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded.");
+        ZY_ASSERT(Sound->GetFrequency() == kMixerFrequency, "Sound must be baked to the mixer sample rate");
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
 
-        if (Unique<Decoder> Decoder = Track->Decode())
+        if (Unique<Decoder> Decoder = Sound->Decode())
         {
             if (const Object Playback = mInstances.Allocate())
             {
-                if (mMixer.Play(Playback, Category, Decoder.Grab(), Track->GetStride(), Volume, Emitter, Transform))
+                if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Transform))
                 {
                     Decoder.Release();
-                    mResources.Assign(Playback, Track);
+                    mResources.Assign(Playback, Sound);
 
                     return Playback;
                 }

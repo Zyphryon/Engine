@@ -38,6 +38,12 @@ namespace Graphic
         JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject JsonRoot(JsonDocument);
 
+        if (!JsonRoot.IsValid())
+        {
+            LOG_W("'{}' is not a valid technique document", Scope.GetResource()->GetKey());
+            return false;
+        }
+
         // Parse 'Properties' section
         if (const JsonObject JsonProperties = JsonRoot.GetObject("Properties"); JsonProperties.IsValid())
         {
@@ -380,7 +386,7 @@ namespace Graphic
         }
         default:
         {
-            LOG_W("Unknown parameter type '{0}'", Type);
+            LOG_W("VFXLoader: Unknown parameter type '{0}'", Type);
             break;
         }
         }

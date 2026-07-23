@@ -14,7 +14,7 @@
 
 #include "Driver.hpp"
 #include "Mixer.hpp"
-#include "Track.hpp"
+#include "Sound.hpp"
 #include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -94,23 +94,23 @@ namespace Audio
         /// \param OuterGain  The gain applied outside the outer cone (0.0 = silent, 1.0 = full volume).
         void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain);
 
-        /// \brief Plays a track as a non-spatial sound with the specified parameters.
+        /// \brief Plays a sound as a non-spatial source with the specified parameters.
         ///
         /// \param Category The audio category for the playback.
-        /// \param Track    The audio track to play; the service retains it for the playback's lifetime.
+        /// \param Sound    The audio sound to play; the service retains it for the playback's lifetime.
         /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRetainer<Track> Track, Real32 Volume);
+        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume);
 
-        /// \brief Plays a track as a spatial sound with the specified parameters.
+        /// \brief Plays a sound as a spatial source with the specified parameters.
         ///
         /// \param Category  The audio category for the playback.
-        /// \param Track     The audio track to play; the service retains it for the playback's lifetime.
+        /// \param Sound     The audio sound to play; the service retains it for the playback's lifetime.
         /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
         /// \param Emitter   The spatial configuration for the audio source.
         /// \param Transform The initial world transform of the audio source in 3D space.
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRetainer<Track> Track, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform);
+        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform);
 
         /// \brief Sets whether a specific playback instance should loop.
         ///
@@ -169,7 +169,7 @@ namespace Audio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Table<Object, Retainer<Track>> mResources;
+        Table<Object, Retainer<Sound>> mResources;
         Freelist<kMaxInstances>        mInstances;
     };
 }
