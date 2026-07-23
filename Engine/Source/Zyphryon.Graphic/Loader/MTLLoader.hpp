@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Content/Loader.hpp"
+#include "Zyphryon.Graphic/Material.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,5 +33,15 @@ namespace Graphic
 
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
         Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+
+    public:
+
+        /// \brief Populates a material resource from a parsed material JSON object.
+        ///
+        /// \param Service The content service used to resolve referenced images.
+        /// \param Scope   The scope that tracks the material's image dependencies.
+        /// \param Root    The material JSON object.
+        /// \param Asset   The material resource to populate.
+        static void Parse(Ref<Content::Service> Service, Ref<Content::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset);
     };
 }

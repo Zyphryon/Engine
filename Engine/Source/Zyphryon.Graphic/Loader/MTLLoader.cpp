@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "MTLLoader.hpp"
-#include "Zyphryon.Graphic/Material.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -37,9 +36,18 @@ namespace Graphic
             return false;
         }
 
-        // Parse 'textures' and 'samplers' section
-        const JsonObject JsonImages   = JsonRoot.GetObject("Images");
-        const JsonObject JsonSamplers = JsonRoot.GetObject("Samplers");
+        Parse(Service, Scope, JsonRoot, * Asset);
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void MTLLoader::Parse(Ref<Content::Service> Service, Ref<Content::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset)
+    {
+        // Parse 'Images' and 'Samplers' section
+        const JsonObject JsonImages   = Root.GetObject("Images");
+        const JsonObject JsonSamplers = Root.GetObject("Samplers");
 
         for (const TextureSlot Slot : Enum::GetValues<TextureSlot>())
         {
@@ -47,7 +55,7 @@ namespace Graphic
             {
                 // Parse image
                 const Text Path = JsonImage.GetString("Path");
-                Asset->SetImage(Slot, Service.Load<Image>(Path, AddressOf(Scope)));
+                Asset.SetImage(Slot, Service.Load<Image>(Path, AddressOf(Scope)));
 
                 // Parse sampler
                 if (JsonSamplers.IsValid())
@@ -64,14 +72,14 @@ namespace Graphic
                         Description.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::Always);
                         Description.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
 
-                        Asset->SetSampler(Slot, Description);
+                        Asset.SetSampler(Slot, Description);
                     }
                 }
             }
         }
 
-        // Parse 'parameters' section
-        if (const JsonObject JsonParameters = JsonRoot.GetObject("Parameters"); JsonParameters.IsValid())
+        // Parse 'Parameters' section
+        if (const JsonObject JsonParameters = Root.GetObject("Parameters"); JsonParameters.IsValid())
         {
             for (ConstRef<JsonValue::Object::Pair> Entry : JsonParameters.GetNode()->GetObject())
             {
@@ -84,7 +92,7 @@ namespace Graphic
                 {
                 case UniformType::Bool:
                 {
-                    Asset->SetParameter(Hash(Name), JsonParameter.GetBool("Value"));
+                    Asset.SetParameter(Hash(Name), JsonParameter.GetBool("Value"));
                     break;
                 }
                 case UniformType::Color:
@@ -108,7 +116,7 @@ namespace Graphic
                         }
                     }
 
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::IntColor8:
@@ -132,12 +140,12 @@ namespace Graphic
                         }
                     }
 
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::Float:
                 {
-                    Asset->SetParameter(Hash(Name), JsonParameter.GetNumber<Real32>("Value"));
+                    Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<Real32>("Value"));
                     break;
                 }
                 case UniformType::Float2:
@@ -148,7 +156,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<Real32>(0), Value.GetNumber<Real32>(1));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::Float3:
@@ -159,7 +167,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<Real32>(0), Value.GetNumber<Real32>(1), Value.GetNumber<Real32>(2));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::Float4:
@@ -173,13 +181,13 @@ namespace Graphic
                         Result[2] = Value.GetNumber<Real32>(2);
                         Result[3] = Value.GetNumber<Real32>(3);
                     }
-                    Asset->SetParameter(Hash(Name), Move(Result));
+                    Asset.SetParameter(Hash(Name), Move(Result));
                     break;
                 }
                 case UniformType::Int:
 
                 {
-                    Asset->SetParameter(Hash(Name), JsonParameter.GetNumber<SInt32>("Value"));
+                    Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<SInt32>("Value"));
                     break;
                 }
                 case UniformType::Int2:
@@ -190,7 +198,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<SInt32>(0), Value.GetNumber<SInt32>(1));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::Int3:
@@ -201,7 +209,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<SInt32>(0), Value.GetNumber<SInt32>(1), Value.GetNumber<SInt32>(2));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::Int4:
@@ -215,12 +223,12 @@ namespace Graphic
                         Result[2] = Value.GetNumber<SInt32>(2);
                         Result[3] = Value.GetNumber<SInt32>(3);
                     }
-                    Asset->SetParameter(Hash(Name), Move(Result));
+                    Asset.SetParameter(Hash(Name), Move(Result));
                     break;
                 }
                 case UniformType::UInt:
                 {
-                    Asset->SetParameter(Hash(Name), JsonParameter.GetNumber<UInt32>("Value"));
+                    Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<UInt32>("Value"));
                     break;
                 }
                 case UniformType::UInt2:
@@ -231,7 +239,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<UInt32>(0), Value.GetNumber<UInt32>(1));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::UInt3:
@@ -242,7 +250,7 @@ namespace Graphic
                     {
                         Result.Set(Value.GetNumber<UInt32>(0), Value.GetNumber<UInt32>(1), Value.GetNumber<UInt32>(2));
                     }
-                    Asset->SetParameter(Hash(Name), Result);
+                    Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
                 case UniformType::UInt4:
@@ -256,17 +264,16 @@ namespace Graphic
                         Result[2] = Value.GetNumber<UInt32>(2);
                         Result[3] = Value.GetNumber<UInt32>(3);
                     }
-                    Asset->SetParameter(Hash(Name), Move(Result));
+                    Asset.SetParameter(Hash(Name), Move(Result));
                     break;
                 }
                 default:
                 {
-                    LOG_W("MTLLoader: Unknown parameter type '{0}' for parameter '{1}'.", Type, Name);
+                    LOG_W("Unknown parameter type '{0}' for parameter '{1}'.", Type, Name);
                     break;
                 }
                 }
             }
         }
-        return true;
     }
 }

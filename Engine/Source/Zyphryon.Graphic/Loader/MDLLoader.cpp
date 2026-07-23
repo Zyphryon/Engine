@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "MDLLoader.hpp"
+#include "MTLLoader.hpp"
 #include "Zyphryon.Graphic/Model.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
@@ -52,7 +53,20 @@ namespace Graphic
         {
             for (UInt Slot = 0, Count = Materials.GetSize(); Slot < Count; ++Slot)
             {
-                Asset->AddMaterial(Service.Load<Material>(Materials.GetString(Slot), AddressOf(Scope)));
+                Retainer<Material> Object;
+
+                if (const JsonObject Definition = Materials.GetObject(Slot); Definition.IsValid())
+                {
+                    Object = Retainer<Graphic::Material>::Create(Asset->GetKey());
+                    Object->SetPolicy(Content::Resource::Policy::Exclusive);
+
+                    MTLLoader::Parse(Service, Scope, Definition, * Object);
+                }
+                else
+                {
+                    Object = Service.Load<Material>(Materials.GetString(Slot), AddressOf(Scope));
+                }
+                Asset->AddMaterial(Object);
             }
         }
         return true;
