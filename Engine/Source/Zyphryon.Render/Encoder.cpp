@@ -140,18 +140,14 @@ namespace Render
     {
         ConstRetainer<Graphic::Mesh> Mesh = Model.GetMesh();
 
-        if (!Mesh || Mesh->GetVertices() == 0)
-        {
-            return;
-        }
-
-        ConstRef<Graphic::Schema>              Schema    = Technique.GetDescription().Schema;
-        ConstSpan<Retainer<Graphic::Material>> Materials = Model.GetMaterials();
+        ConstRef<Graphic::Schema>                    Schema    = Technique.GetDescription().Schema;
+        const ConstSpan<Retainer<Graphic::Material>> Materials = Model.GetMaterials();
 
         const Graphic::Object VertexBuffer = Mesh->GetVertices();
         const Graphic::Object IndexBuffer  = Mesh->GetIndices();
-        const UInt16          IndexStride  = Mesh->HasProperty(Graphic::Mesh::Property::Extended)
-            ? sizeof(UInt32) : sizeof(UInt16);
+
+        const Bool   IsExtended  = Mesh->HasProperty(Graphic::Mesh::Property::Extended);
+        const UInt16 IndexStride = IsExtended ? sizeof(UInt32) : sizeof(UInt16);
 
         for (ConstRef<Graphic::Mesh::Primitive> Primitive : Mesh->GetPrimitives())
         {
@@ -169,8 +165,8 @@ namespace Render
             {
                 ConstRef<Graphic::Material> Material = * Materials[Primitive.Material];
 
-                Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] =
-                    Pack(Graphic::UniformScope::Material, Schema, Material);
+                const Graphic::Stream Data = Pack(Graphic::UniformScope::Material, Schema, Material);
+                Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Data;
 
                 BindTextures(Command, Schema, Material);
             }
@@ -181,14 +177,13 @@ namespace Render
                 if (Mesh->HasBinding(Slot))
                 {
                     const Graphic::Mesh::Binding Binding = Mesh->GetBinding(Slot);
-
-                    Command.Vertices.Append(Graphic::Stream { VertexBuffer, Binding.Stride, Binding.Offset });
+                    Command.Vertices.Append(Graphic::Stream(VertexBuffer, Binding.Stride, Binding.Offset));
                 }
             }
 
             if (IndexBuffer)
             {
-                Command.Indices = Graphic::Stream { IndexBuffer, IndexStride, 0 };
+                Command.Indices = Graphic::Stream(IndexBuffer, IndexStride, 0);
             }
             Command.Parameters = Primitive.Range;
         }

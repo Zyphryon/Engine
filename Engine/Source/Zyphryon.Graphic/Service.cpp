@@ -12,8 +12,9 @@
 
 #include "Service.hpp"
 #include "Loader/MTLLoader.hpp"
-#include "Loader/VFXLoader.hpp"
 #include "Loader/SHDLoader.hpp"
+#include "Loader/TEXLoader.hpp"
+#include "Loader/VFXLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -458,6 +459,7 @@ namespace Graphic
 
         Content->AddLoader(MTLLoader::kTypes, Retainer<MTLLoader>::Create());
         Content->AddLoader(SHDLoader::kTypes, Retainer<SHDLoader>::Create());
+        Content->AddLoader(TEXLoader::kTypes, Retainer<TEXLoader>::Create());
         Content->AddLoader(VFXLoader::kTypes, Retainer<VFXLoader>::Create(mDescription.Language));
     }
 }

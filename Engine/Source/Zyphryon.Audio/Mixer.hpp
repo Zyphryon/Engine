@@ -14,9 +14,6 @@
 
 #include "Spatializer.hpp"
 #include "Voice.hpp"
-#include "Zyphryon.Base/Concurrency/Ring.hpp"
-#include "Zyphryon.Base/Container/Pool.hpp"
-#include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Math/Matrix4x4.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

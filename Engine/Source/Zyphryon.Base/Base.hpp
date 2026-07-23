@@ -10,11 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Concurrency/Atomic.hpp"
-#include "Zyphryon.Base/Concurrency/Gate.hpp"
-#include "Zyphryon.Base/Concurrency/Mutex.hpp"
-#include "Zyphryon.Base/Concurrency/Ring.hpp"
-#include "Zyphryon.Base/Concurrency/Thread.hpp"
+#include "Zyphryon.Base/Compression/LZ4.hpp"
 #include "Zyphryon.Base/Container/Adaptor.hpp"
 #include "Zyphryon.Base/Container/Array.hpp"
 #include "Zyphryon.Base/Container/Bag.hpp"
@@ -43,3 +39,8 @@
 #include "Zyphryon.Base/Platform/Filesystem/Filesystem.hpp"
 #include "Zyphryon.Base/Platform/Telemetry/Log.hpp"
 #include "Zyphryon.Base/Platform/Telemetry/Profile.hpp"
+#include "Zyphryon.Base/Thread/Atomic.hpp"
+#include "Zyphryon.Base/Thread/Gate.hpp"
+#include "Zyphryon.Base/Thread/Mutex.hpp"
+#include "Zyphryon.Base/Thread/Ring.hpp"
+#include "Zyphryon.Base/Thread/Thread.hpp"

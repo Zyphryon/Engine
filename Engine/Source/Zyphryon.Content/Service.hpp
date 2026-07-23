@@ -183,14 +183,17 @@ namespace Content
             }
         }
 
-        /// \brief Prunes the cache of the specified resource type.
+        /// \brief Evicts unreferenced resources from the cache of the specified resource type.
         ///
-        /// \tparam Type   The resource type whose cache to prune.
-        /// \param  Force  If `true`, prunes all eligible resources immediately.
+        /// \tparam Type  The resource type whose cache to prune.
+        /// \param  Force `true` to evict all unreferenced resources, `false` to evict only until the memory limit is met.
         template<typename Type>
         ZY_INLINE void Prune(Bool Force)
         {
-            Type::GetCache().Prune(Force, Capture<& Service::OnAssetDelete>(this));
+            Type::GetCache().Prune(Force, [this](Ref<Type> Asset)
+            {
+                OnAssetDelete(Asset);
+            });
         }
 
         /// \brief Subscribes a callback to be invoked when a resource at the given URI finishes loading.
