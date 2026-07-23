@@ -56,3 +56,4 @@ ZyApplyCompileOptions(${PROJECT_NAME})
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "CanvasModule.hpp" CLASS "Render::CanvasModule")
+ZyEmbedResources(TARGET ${PROJECT_NAME} DIRECTORY "Resources")

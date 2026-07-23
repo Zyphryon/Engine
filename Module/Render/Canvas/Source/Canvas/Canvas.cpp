@@ -305,14 +305,14 @@ namespace Render
 
     void Canvas::CreateDefaultResources(ConstRetainer<Content::Service> Content)
     {
-        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Resources://Technique/Geometry/Circle.vfx");
-        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Resources://Technique/Geometry/Ring.vfx");
-        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Resources://Technique/Geometry/Line.vfx");
-        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Resources://Technique/Geometry/Rect.vfx");
-        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Resources://Technique/Geometry/RoundedRect.vfx");
-        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Resources://Technique/Sprite/Opaque.vfx");
-        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Resources://Technique/Sprite/Alpha.vfx");
-        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Resources://Technique/Typography/MSDF.vfx");
+        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Circle.vfx");
+        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Ring.vfx");
+        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Line.vfx");
+        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Rect.vfx");
+        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/RoundedRect.vfx");
+        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Opaque.vfx");
+        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Alpha.vfx");
+        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Embedded://Technique/Typography/MSDF.vfx");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

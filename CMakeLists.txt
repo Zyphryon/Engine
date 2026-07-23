@@ -26,6 +26,8 @@ INCLUDE(FetchContent)
 INCLUDE(CMakeModules/CMakeApplyCompileOptions.cmake)
 INCLUDE(CMakeModules/CMakeApplyModules.cmake)
 INCLUDE(CMakeModules/CMakeRegisterModule.cmake)
+INCLUDE(CMakeModules/CMakeEmbedResources.cmake)
+INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Options
