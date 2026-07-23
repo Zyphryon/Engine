@@ -11,6 +11,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Canvas.hpp"
+#include "Zyphryon.Render/Typography/FontLoader.hpp"
+#include "Zyphryon.Render/Typography/FontLoader.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -24,7 +26,10 @@ namespace Render
     Canvas::Canvas(Ref<Engine::Subsystem::Host> Host)
         : mService { Host.GetService<Graphic::Service>() }
     {
-        CreateDefaultResources(Host.GetService<Content::Service>());
+        ConstRetainer<Content::Service> Content = Host.GetService<Content::Service>();
+        Content->AddLoader(FontLoader::kTypes, Retainer<FontLoader>::Create());
+
+        CreateDefaultResources(Content);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -160,18 +165,12 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::DrawText(ConstRef<TextStyle> Style, Text Content, ConstRef<Matrix3x2> Transform, Real32 Order, ConstRef<TextEffect> Effect)
+    void Canvas::DrawText(ConstRetainer<Font> Font, Real32 Size, Vector2 Spacing, Text Content, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint, ConstRef<FontEffect> Effect)
     {
-        const GlyphEffect EffectData = InternTextEffect(Effect);
-
-        ConstRetainer<Font> Font = Style.GetFont();
-
-        // Calculate the origin point for the text layout based on the content, size, origin, and padding settings.
-        const Real32 Size     = Style.GetSize();
-        const Vector2 Spacing = Style.GetSpacing();
+        const GlyphEffect EffectData = InternFontEffect(Effect);
 
         // The line height in font units.
-        const Real32 LineHeight = Font->GetLineHeight(Style.GetSize()) + Spacing.GetY() * Style.GetSize();
+        const Real32 LineHeight = Font->GetLineHeight(Size) + Spacing.GetY() * Size;
 
         const ConstPtr<Graphic::Material> Material = &* Font->GetMaterial();
 
@@ -211,7 +210,7 @@ namespace Render
                         Command.Layout.Size      = Vector2(
                             Glyph->LocalBounds.GetWidth()  * Size,
                             Glyph->LocalBounds.GetHeight() * Size);
-                        Command.Layout.Color     = Style.GetTint();
+                        Command.Layout.Color     = Tint;
 
                         mCollector.Push(
                             Collector::Object(Type, mGlyphs.GetSize() - 1),
@@ -305,14 +304,14 @@ namespace Render
 
     void Canvas::CreateDefaultResources(ConstRetainer<Content::Service> Content)
     {
-        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Circle.vfx");
-        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Ring.vfx");
-        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Line.vfx");
-        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Rect.vfx");
-        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/RoundedRect.vfx");
-        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Opaque.vfx");
-        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Alpha.vfx");
-        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Embedded://Technique/Typography/MSDF.vfx");
+        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Circle.vfx");
+        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Ring.vfx");
+        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Line.vfx");
+        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Rect.vfx");
+        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/RoundedRect.vfx");
+        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Sprite/Opaque.vfx");
+        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Sprite/Alpha.vfx");
+        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Typography/MSDF.vfx");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -337,8 +336,8 @@ namespace Render
     {
         for (Ref<GlyphEffectPalette> Palette : mEffectPalettes)
         {
-            Graphic::Transient<TextEffect> Slice = mService->AllocateTransientUniforms<TextEffect>(kMaxEffectsPerBatch);
-            Slice.Copy<TextEffect>(Palette.Effects);
+            Graphic::Transient<FontEffect> Slice = mService->AllocateTransientUniforms<FontEffect>(kMaxEffectsPerBatch);
+            Slice.Copy<FontEffect>(Palette.Effects);
 
             Palette.Stream = Slice.GetStream();
         }
@@ -347,7 +346,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Canvas::GlyphEffect Canvas::InternTextEffect(ConstRef<TextEffect> Effect)
+    Canvas::GlyphEffect Canvas::InternFontEffect(ConstRef<FontEffect> Effect)
     {
         const UInt64 Key = Hash(Effect);
 

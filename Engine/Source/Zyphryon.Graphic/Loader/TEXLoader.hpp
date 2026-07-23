@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Content/Loader.hpp"
+#include "Zyphryon.Graphic/Image.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,5 +33,15 @@ namespace Graphic
 
         /// \see Content::Loader::Load(Ref<Content::Service>, Ref<Content::Scope>, AnyRef<Blob>)
         Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+
+    public:
+
+        /// \brief Decodes a native ZTEX texture block from a binary reader into an image resource.
+        ///
+        /// \param Scope The scope whose resource key is used for diagnostics.
+        /// \param Input The reader positioned at the start of a ZTEX block.
+        /// \param Asset The image resource to populate.
+        /// \return `true` if the texture was decoded successfully, otherwise `false`.
+        static Bool Parse(Ref<Content::Scope> Scope, Ref<Reader> Input, Ref<Image> Asset);
     };
 }

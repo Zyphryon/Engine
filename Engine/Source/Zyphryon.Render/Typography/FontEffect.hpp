@@ -21,12 +21,12 @@
 namespace Render
 {
     /// \brief Defines the effect parameters for text rendering.
-    class ZY_ALIGN(16) TextEffect final
+    class ZY_ALIGN(16) FontEffect final
     {
     public:
 
         /// \brief Constructs a text effect with default parameters.
-        ZY_INLINE constexpr TextEffect()
+        ZY_INLINE constexpr FontEffect()
             : mOutsetOffset   { 0.0f },
               mOutsetWidth    { 0.0f },
               mOutsetBias     { 0.0f },
@@ -45,7 +45,7 @@ namespace Render
         /// \param OutsetBlur     The blur amount of the text outset.
         /// \param InsetRoundness The roundness of the text inset.
         /// \param InsetThreshold The threshold for the text inset.
-        ZY_INLINE constexpr TextEffect(
+        ZY_INLINE constexpr FontEffect(
             Color  OutsetColor,
             Real32 OutsetOffset,
             Real32 OutsetWidth,
@@ -127,9 +127,9 @@ namespace Render
         /// \param Softness The softness of the outline.
         /// \param Tint     The color tint of the outline.
         /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static TextEffect Outline(Real32 Width, Real32 Softness, Color Tint)
+        ZY_INLINE constexpr static FontEffect Outline(Real32 Width, Real32 Softness, Color Tint)
         {
-            return TextEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
+            return FontEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a shadow text effect with specified parameters.
@@ -137,9 +137,9 @@ namespace Render
         /// \param Softness The softness of the shadow.
         /// \param Tint     The color tint of the shadow.
         /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static TextEffect Shadow(Real32 Softness, Color Tint)
+        ZY_INLINE constexpr static FontEffect Shadow(Real32 Softness, Color Tint)
         {
-            return TextEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
+            return FontEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a bold text effect with specified thickness.
@@ -152,9 +152,9 @@ namespace Render
         ///
         /// \param Thickness The thickness of the bold effect.
         /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static TextEffect Bold(Real32 Thickness)
+        ZY_INLINE constexpr static FontEffect Bold(Real32 Thickness)
         {
-            return TextEffect(Color::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
+            return FontEffect(Color::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
         }
 
     private:

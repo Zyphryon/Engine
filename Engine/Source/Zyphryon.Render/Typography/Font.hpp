@@ -138,8 +138,9 @@ namespace Render
         ///
         /// \param Content The text string to measure.
         /// \param Size    The font size in points.
+        /// \param Spacing The horizontal (between characters) and vertical (between lines) spacing adjustments.
         /// \return The bounding rectangle in pixels.
-        Rect Enclose(Text Content, Real32 Size) const;
+        Rect Enclose(Text Content, Real32 Size, Vector2 Spacing = Vector2()) const;
 
     public:
 

@@ -123,3 +123,4 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ZyApplyCompileOptions(${PROJECT_NAME})
+ZyEmbedResources(TARGET ${PROJECT_NAME} DIRECTORY "Resources")

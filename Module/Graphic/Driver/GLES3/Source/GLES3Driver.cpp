@@ -500,12 +500,6 @@ namespace Graphic
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,  Levels - 1);
-
-        // A request for a full chain without explicit level data derives the remaining levels from the base image.
-        if (Mipmaps < 1 && Bytes)
-        {
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

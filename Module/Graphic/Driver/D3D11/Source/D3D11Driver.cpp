@@ -480,7 +480,6 @@ namespace Graphic
         CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, 1, Mipmaps);
         Description.Usage      = D3D11Convert(Storage);
         Description.BindFlags  = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
-        Description.MiscFlags  = Mipmaps < 1 ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
         Description.SampleDesc = {
             .Count = Enum::Cast(Samples),
             .Quality = mDeviceProperties.Multisample[Enum::Cast(Format)][Enum::Cast(Samples)]
@@ -512,21 +511,25 @@ namespace Graphic
 
         if (ConstPtr<Byte> Bytes = Data.GetData(); Bytes)
         {
-            const TextureFormatDescription TextureFormatDescription = GetFormatDescription(Format);
+            const TextureFormatDescription FormatInfo   = GetFormatDescription(Format);
+            const UInt32                   BitsPerPixel = FormatInfo.BitsPerPixel;
+            const UInt32                   BlockSize    = FormatInfo.BlockSize;
 
-            const UInt32 BitsPerPixel = TextureFormatDescription.BitsPerPixel;
-            const UInt32 BlockSize    = TextureFormatDescription.BlockSize;
-            const UInt32 BlockPitch   = (Width + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
+            UInt32 LevelWidth  = Width;
+            UInt32 LevelHeight = Height;
 
             for (UInt32 Level = 0; Level < Mipmaps; ++Level)
             {
-                Content[Level].pSysMem          = Bytes;
-                Content[Level].SysMemPitch      = BlockPitch;
-                Content[Level].SysMemSlicePitch = BlockPitch * ((Height + BlockSize - 1) / BlockSize);
+                const UInt32 Pitch = (LevelWidth + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
+                const UInt32 Rows  = (LevelHeight + BlockSize - 1) / BlockSize;
 
-                Bytes += BlockPitch * ((Height + BlockSize - 1) / BlockSize);
-                Width  = Max(1U, Width  >> 1);
-                Height = Max(1U, Height >> 1);
+                Content[Level].pSysMem          = Bytes;
+                Content[Level].SysMemPitch      = Pitch;
+                Content[Level].SysMemSlicePitch = Pitch * Rows;
+
+                Bytes      += Pitch * Rows;
+                LevelWidth  = Max(1U, LevelWidth  >> 1);
+                LevelHeight = Max(1U, LevelHeight >> 1);
             }
             Memory = Content;
         }

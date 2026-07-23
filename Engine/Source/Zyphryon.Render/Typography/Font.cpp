@@ -42,33 +42,31 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Rect Font::Enclose(Text Content, Real32 Size) const
+    Rect Font::Enclose(Text Content, Real32 Size, Vector2 Spacing) const
     {
-        const Real32 LineHeight = (mMetrics.Ascender - mMetrics.Descender);
+        const Real32 LineHeight = (mMetrics.Ascender - mMetrics.Descender) + Spacing.GetY();
 
+        Real32 PenX     = 0.0f;
         Real32 LineY    = 0.0f;
         Real32 MinimumX = 0.0f;
         Real32 MaximumX = 0.0f;
         Real32 MinimumY = 0.0f;
         Real32 MaximumY = 0.0f;
-        Real32 CurrentX = 0.0f;
-        Real32 CurrentY = 0.0f;
 
         UInt32 Previous = 0;
 
-        // Iterate through each UTF-8 codepoint in the content string and calculate the bounding rectangle.
+        // Iterate through each UTF-8 codepoint in the content string.
         StrIterateUTF8(Content, [&](UInt32 Codepoint)
         {
             switch (Codepoint)
             {
             case '\r':
-                MaximumX = Max(MaximumX, CurrentX);
-                CurrentX = 0.0f;
+                PenX     = 0.0f;
                 Previous = 0;
                 break;
             case '\n':
+                PenX     = 0.0f;
                 LineY   -= LineHeight;
-                CurrentY = 0.0f;
                 Previous = 0;
                 break;
             default:
@@ -77,30 +75,21 @@ namespace Render
                 {
                     if (Previous)
                     {
-                        CurrentX += GetKerning(Previous, Codepoint);
-                    }
-                    else
-                    {
-                        MinimumX = Min(MinimumX, -Glyph->LocalBounds.GetMinimumX());
+                        PenX += GetKerning(Previous, Codepoint) + Spacing.GetX();
                     }
 
-                    CurrentX += Glyph->Advance;
+                    MinimumX = Min(MinimumX, PenX  + Glyph->LocalBounds.GetMinimumX());
+                    MaximumX = Max(MaximumX, PenX  + Glyph->LocalBounds.GetMaximumX());
+                    MinimumY = Min(MinimumY, LineY + Glyph->LocalBounds.GetMinimumY());
+                    MaximumY = Max(MaximumY, LineY + Glyph->LocalBounds.GetMaximumY());
 
-                    if (LineY == 0.0f)
-                    {
-                        MaximumY = Max(MaximumY, Glyph->LocalBounds.GetMaximumY());
-                    }
-
-                    CurrentY = Min(CurrentY, LineY + Glyph->LocalBounds.GetMinimumY());
+                    PenX    += Glyph->Advance;
+                    Previous = Codepoint;
                 }
                 break;
             }
             }
         });
-
-        MaximumX = Max(MaximumX, CurrentX);
-        MinimumY = Min(MinimumY, CurrentY);
-
         return Rect(MinimumX, MinimumY, MaximumX, MaximumY) * Size;
     }
 

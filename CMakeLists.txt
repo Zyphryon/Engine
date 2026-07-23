@@ -30,14 +30,10 @@ INCLUDE(CMakeModules/CMakeEmbedResources.cmake)
 INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Options
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-OPTION(ZY_WEB_THREAD             "Uses thread on Emscripten"                OFF)
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          OFF)
 
 ADD_SUBDIRECTORY(Engine)
 
@@ -65,7 +61,7 @@ ENDIF ()
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN32})
-OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ON)
+OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ${UNIX})
 OPTION(ZY_GRAPHIC_LOADER_STB   "Graphic: Enable STB image loader"         OFF)
 
 IF    (ZY_GRAPHIC_DRIVER_D3D11)
@@ -83,18 +79,6 @@ ENDIF ()
 IF    (ZY_GRAPHIC_LOADER_STB)
 
     ADD_SUBDIRECTORY(Module/Graphic/Loader/STB)
-
-ENDIF ()
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Modules (Render)
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-OPTION(ZY_RENDER_CANVAS "Render:  Enable 2D canvas front-end" ON)
-
-IF    (ZY_RENDER_CANVAS)
-
-    ADD_SUBDIRECTORY(Module/Render/Canvas)
 
 ENDIF ()
 

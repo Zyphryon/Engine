@@ -38,7 +38,7 @@ namespace Platform
             if (GetMonitorInfoW(Handle, AddressOf(Info)))
             {
                 Ref<Monitor> Monitor = Output->Append(Handle);
-                Monitor.SetName(Str::ConvertFromUTF16(Info.szDevice));
+                Monitor.SetName(Str::ConvertFromUTF16(StrConvert(Info.szDevice)));
                 Monitor.SetX(Info.rcMonitor.left);
                 Monitor.SetY(Info.rcMonitor.top);
                 Monitor.SetWidth(Info.rcMonitor.right - Info.rcMonitor.left);
@@ -94,7 +94,7 @@ namespace Platform
                 continue;
             }
 
-            const Str  Name = Str::ConvertFromUTF16(SourceName.viewGdiDeviceName);
+            const Str  Name = Str::ConvertFromUTF16(StrConvert(SourceName.viewGdiDeviceName));
             const SInt Slot = mMonitors.Find([Identity = Hash(Name)](ConstRef<Monitor> Monitor) -> Bool
             {
                 return Hash(Monitor.GetName()) == Identity;
@@ -112,7 +112,7 @@ namespace Platform
 
                 if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(TargetName.header))))
                 {
-                    Entry.SetName(Str::ConvertFromUTF16(TargetName.monitorFriendlyDeviceName));
+                    Entry.SetName(Str::ConvertFromUTF16(StrConvert(TargetName.monitorFriendlyDeviceName)));
                 }
 
                 DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO ColorInfo { };

@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "TEXLoader.hpp"
-#include "Zyphryon.Graphic/Image.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -26,6 +25,14 @@ namespace Graphic
     {
         Reader Input(Data.GetData(), Data.GetSize());
 
+        return Parse(Scope, Input, * Retainer<Image>::Cast(Scope.GetResource()));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool TEXLoader::Parse(Ref<Content::Scope> Scope, Ref<Reader> Input, Ref<Image> Asset)
+    {
         if (Input.Read<UInt32>() != ('Z' | ('T' << 8) | ('E' << 16) | ('X' << 24)))
         {
             LOG_W("'{}' is not a ZTEX file (bad magic)", Scope.GetResource()->GetKey());
@@ -69,8 +76,7 @@ namespace Graphic
             Buffer.Copy<Byte>(Payload.GetData(), Size);
         }
 
-        const Retainer<Image> Asset = Retainer<Image>::Cast(Scope.GetResource());
-        Asset->Setup(Layout, Format, Width, Height, Mipmaps, Move(Buffer));
+        Asset.Setup(Layout, Format, Width, Height, Mipmaps, Move(Buffer));
         return true;
     }
 }

@@ -12,16 +12,16 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Render/Encoder.hpp"
+#include "Sprite.hpp"
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Technique.hpp"
 #include "Zyphryon.Math/Color.hpp"
 #include "Zyphryon.Math/Geometry/Circle.hpp"
 #include "Zyphryon.Math/Geometry/Line.hpp"
-#include "Sprite/Sprite.hpp"
-#include "Typography/TextStyle.hpp"
-#include "Typography/TextEffect.hpp"
 #include "Zyphryon.Render/Collector.hpp"
+#include "Zyphryon.Render/Encoder.hpp"
+#include "Zyphryon.Render/Typography/Font.hpp"
+#include "Zyphryon.Render/Typography/FontEffect.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -114,12 +114,15 @@ namespace Render
 
         /// \brief Issues a draw command for drawing text with the specified parameters.
         ///
-        /// \param Style     The text style to apply, containing font, size, tint, and other style information.
+        /// \param Font      The font resource providing the glyph metrics and atlas used to render the text.
+        /// \param Size      The font size, in points.
+        /// \param Spacing   The horizontal (between characters) and vertical (between lines) spacing adjustments.
         /// \param Content   The UTF-8 encoded string content of the text to draw.
         /// \param Transform The transformation matrix to apply to the text for positioning, scaling, and rotation.
         /// \param Order     The depth value for rendering order.
+        /// \param Tint      The tint color to apply to the glyphs.
         /// \param Effect    The text effect to apply to the text.
-        void DrawText(ConstRef<TextStyle> Style, Text Content, ConstRef<Matrix3x2> Transform, Real32 Order, ConstRef<TextEffect> Effect);
+        void DrawText(ConstRetainer<Font> Font, Real32 Size, Vector2 Spacing, Text Content, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint, ConstRef<FontEffect> Effect);
 
         /// \brief Issues a draw command for drawing a sprite with the specified parameters.
         ///
@@ -139,19 +142,6 @@ namespace Render
         ///
         /// \param Encoder The encoder that builds and binds the resulting draw commands.
         void Flush(Ref<Encoder> Encoder);
-
-    private:
-
-        /// \brief Creates default rendering resources such as pipelines and materials for the renderer.
-        ///
-        /// \param Content The content service used to load necessary resources for rendering.
-        void CreateDefaultResources(ConstRetainer<Content::Service> Content);
-
-        /// \brief Resets the renderer's internal state, clearing any pending commands and bindings.
-        void Reset();
-
-        /// \brief Prepares the canvas for rendering by setting up internal state and resources.
-        void Prepare();
 
     private:
 
@@ -294,17 +284,28 @@ namespace Render
             Graphic::Stream           Stream;
 
             /// The lookup table mapping text effects to their corresponding indices.
-            Table<TextEffect, UInt32> Lookup;
+            Table<FontEffect, UInt32> Lookup;
 
             /// The sequence of text effects in the palette.
-            Sequence<TextEffect>      Effects;
+            Sequence<FontEffect>      Effects;
         };
+
+        /// \brief Creates default rendering resources such as pipelines and materials for the renderer.
+        ///
+        /// \param Content The content service used to load necessary resources for rendering.
+        void CreateDefaultResources(ConstRetainer<Content::Service> Content);
+
+        /// \brief Resets the renderer's internal state, clearing any pending commands and bindings.
+        void Reset();
+
+        /// \brief Prepares the canvas for rendering by setting up internal state and resources.
+        void Prepare();
 
         /// \brief Interns a text effect, returning a glyph effect that can be used for rendering.
         ///
         /// \param Effect The text effect to intern.
         /// \return The interned glyph effect.
-        GlyphEffect InternTextEffect(ConstRef<TextEffect> Effect);
+        GlyphEffect InternFontEffect(ConstRef<FontEffect> Effect);
 
         /// \brief Writes a batch of shape draw calls as a single instanced command through the encoder.
         ///

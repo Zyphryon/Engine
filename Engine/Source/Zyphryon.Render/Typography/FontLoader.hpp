@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <Zyphryon.Engine/Module.hpp>
+#include "Zyphryon.Content/Loader.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,21 +20,17 @@
 
 namespace Render
 {
-    /// \brief Module that provides the 2D deferred-mode \ref Canvas front-end.
-    class CanvasModule final : public Engine::Module
+    /// \brief Content loader for the engine's native, pre-baked binary font format (ZFNT).
+    class FontLoader final : public Content::Loader
     {
     public:
 
-        /// \see Module::GetName()
-        Text GetName() const override;
+        /// \brief An array with the extension supported by this content loader.
+        static constexpr Text kTypes[] = { "fnt" };
 
-        /// \see Module::GetVersion()
-        Text GetVersion() const override;
+    public:
 
-        /// \see Module::OnAttach(Ref<Engine::Subsystem::Host>)
-        void OnAttach(Ref<Engine::Subsystem::Host> Host) override;
-
-        /// \see Module::OnDetach(Ref<Engine::Subsystem::Host>)
-        void OnDetach(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see Content::Loader::Load(Ref<Content::Service>, Ref<Content::Scope>, AnyRef<Blob>)
+        Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
     };
 }
