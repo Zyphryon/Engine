@@ -204,7 +204,7 @@ inline namespace Base
 
             if (!Value.IsEmpty())
             {
-                Write<ConstPtr<Type>>(Value.GetData(), Value.GetSizeInBytes());
+                Write<Type>(Value.GetData(), Value.GetSizeInBytes());
             }
         }
 

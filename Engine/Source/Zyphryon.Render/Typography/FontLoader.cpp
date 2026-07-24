@@ -78,7 +78,7 @@ namespace Render
                 Atlas = Retainer<Graphic::Image>::Create("Atlas");
                 Atlas->SetPolicy(Content::Resource::Policy::Exclusive);
 
-                if (!Graphic::TEXLoader::Parse(Scope, Body, * Atlas))
+                if (!Graphic::TEXLoader::Parse(Body, * Atlas))
                 {
                     return false;
                 }

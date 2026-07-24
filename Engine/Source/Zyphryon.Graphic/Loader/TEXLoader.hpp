@@ -38,10 +38,9 @@ namespace Graphic
 
         /// \brief Decodes a native ZTEX texture block from a binary reader into an image resource.
         ///
-        /// \param Scope The scope whose resource key is used for diagnostics.
         /// \param Input The reader positioned at the start of a ZTEX block.
         /// \param Asset The image resource to populate.
         /// \return `true` if the texture was decoded successfully, otherwise `false`.
-        static Bool Parse(Ref<Content::Scope> Scope, Ref<Reader> Input, Ref<Image> Asset);
+        static Bool Parse(Ref<Reader> Input, Ref<Image> Asset);
     };
 }

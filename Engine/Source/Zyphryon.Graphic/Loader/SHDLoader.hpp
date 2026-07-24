@@ -30,7 +30,6 @@ namespace Graphic
 
     public:
 
-
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
         Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
     };
