@@ -22,6 +22,7 @@
 #include "Zyphryon.Base/Container/Table.hpp"
 #include "Zyphryon.Base/Container/Variant.hpp"
 #include "Zyphryon.Base/Functional/Delegate.hpp"
+#include "Zyphryon.Base/Half.hpp"
 #include "Zyphryon.Base/Functional/Journal.hpp"
 #include "Zyphryon.Base/Lexical/Format/Processor.hpp"
 #include "Zyphryon.Base/Lexical/Algorithm.hpp"
