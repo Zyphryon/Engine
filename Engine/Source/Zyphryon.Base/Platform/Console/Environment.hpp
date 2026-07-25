@@ -70,7 +70,7 @@ inline namespace Base
         {
             const ConstPtr<Switch> Entry = Find(Name);
 
-            if (Entry != nullptr)
+            if (Entry == nullptr)
             {
                 return Default;
             }
