@@ -36,6 +36,7 @@
 #include "Zyphryon.Base/Memory/Unique.hpp"
 #include "Zyphryon.Base/Pattern/Enumerator.hpp"
 #include "Zyphryon.Base/Pattern/Switchable.hpp"
+#include "Zyphryon.Base/Platform/Console/Environment.hpp"
 #include "Zyphryon.Base/Platform/Filesystem/Filesystem.hpp"
 #include "Zyphryon.Base/Platform/Telemetry/Log.hpp"
 #include "Zyphryon.Base/Platform/Telemetry/Profile.hpp"

@@ -28,6 +28,9 @@
         "Textures": [
             "Albedo"
         ],
+        "Samplers": [
+            { "Slot": "Albedo", "Filter": "Linear" }
+        ],
         "Uniforms":
         [
             { "Slot": "Global",   "Name": "Camera", "Type": "Float4", "Count": 4 },
