@@ -32,7 +32,7 @@ namespace Graphic
 
         if (!JsonRoot.IsValid())
         {
-            LOG_W("'{}' is not a valid material document", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid material document", Scope.GetResource()->GetKey());
             return false;
         }
 

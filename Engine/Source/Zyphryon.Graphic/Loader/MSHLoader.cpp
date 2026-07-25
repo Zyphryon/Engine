@@ -52,13 +52,13 @@ namespace Graphic
 
         if (Input.Read<UInt32>() != ('Z' | ('M' << 8) | ('S' << 16) | ('H' << 24)))
         {
-            LOG_W("'{}' is not a ZMSH file (bad magic)", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a ZMSH file (bad magic)", Scope.GetResource()->GetKey());
             return false;
         }
 
         if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{}' has an unsupported ZMSH version", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an unsupported ZMSH version", Scope.GetResource()->GetKey());
             return false;
         }
 
@@ -72,7 +72,7 @@ namespace Graphic
 
             if (Length > Input.GetAvailable())
             {
-                LOG_W("'{}' has a truncated ZMSH chunk", Scope.GetResource()->GetKey());
+                LOG_W("'{0}' has a truncated ZMSH chunk", Scope.GetResource()->GetKey());
                 return false;
             }
 
@@ -110,7 +110,7 @@ namespace Graphic
                 }
                 else
                 {
-                    LOG_W("'{}' has an invalid vertex buffer", Scope.GetResource()->GetKey());
+                    LOG_W("'{0}' has an invalid vertex buffer", Scope.GetResource()->GetKey());
                     return false;
                 }
                 break;
@@ -125,7 +125,7 @@ namespace Graphic
                 }
                 else
                 {
-                    LOG_W("'{}' has an invalid index buffer", Scope.GetResource()->GetKey());
+                    LOG_W("'{0}' has an invalid index buffer", Scope.GetResource()->GetKey());
                     return false;
                 }
                 break;

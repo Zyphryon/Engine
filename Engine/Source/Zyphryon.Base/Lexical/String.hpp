@@ -428,11 +428,11 @@ inline namespace Base
         ZY_INLINE constexpr void Reverse()
         {
             UInt Left  = 0;
-            UInt Right = GetSize() - 1;
+            UInt Right = GetSize();
 
-            while (Left < Right)
+            while (Left + 1 < Right)
             {
-                Swap(mBuffer[Left++], mBuffer[Right--]);
+                Swap(mBuffer[Left++], mBuffer[--Right]);
             }
         }
 

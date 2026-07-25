@@ -782,12 +782,16 @@ inline namespace Base
         }
     }
 
-    /// \brief Converts a UTF-8 text view to a UTF-16 sequence.
+    /// \brief Converts a UTF-8 text view to a null-terminated UTF-16 sequence.
     ///
     /// \note Decodes each UTF-8 codepoint from \p Content and encodes it as one or two UTF-16 code units.
+    ///       A fixed-capacity result spends one slot on the terminator, so at most `Capacity - 1` code units
+    ///       of text fit. Content that would not fit yields an empty sequence rather than a truncated one:
+    ///       a shortened path still names a real, different file, and silently acting on the wrong one is
+    ///       worse than failing.
     ///
     /// \param Content The UTF-8 text to convert.
-    /// \return A sequence of UTF-16 code units representing the converted text.
+    /// \return A sequence of UTF-16 code units, or an empty sequence when \p Content does not fit.
     template<UInt Capacity = 0>
     constexpr Sequence<Wide, Capacity> StrConvertUTF16(Text Content)
     {
@@ -798,9 +802,21 @@ inline namespace Base
             Result.Reserve(Content.GetSize() + 1);
         }
 
-        for (UInt Index = 0; Index < Content.GetSize(); )
+        for (UInt Index = 0; Index < Content.GetSize();)
         {
-            if (UInt32 Codepoint = StrExtractUTF8(Content, Index); Codepoint <= 0xFFFF)
+            UInt32     Codepoint = StrExtractUTF8(Content, Index);
+            const UInt Units     = (Codepoint <= 0xFFFF) ? 1 : 2;
+
+            if constexpr (Capacity > 0)
+            {
+                if (Result.GetSize() + Units >= Capacity)
+                {
+                    Result.Clear();
+                    break;
+                }
+            }
+
+            if (Units == 1)
             {
                 Result.Append(static_cast<Wide>(Codepoint));
             }

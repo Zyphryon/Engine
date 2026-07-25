@@ -647,7 +647,7 @@ inline namespace Math
         /// \brief Normalizes the given vector.
         ///
         /// \param Vector The vector to normalize.
-        /// \return A normalized vector, or the original if its length is too small.
+        /// \return A normalized vector.
         ZY_INLINE static AnyVector2 Normalize(AnyVector2 Vector)
             requires (IsReal<Type>)
         {

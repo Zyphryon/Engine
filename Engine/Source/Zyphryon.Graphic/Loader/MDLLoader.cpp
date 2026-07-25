@@ -33,7 +33,7 @@ namespace Graphic
 
         if (!Root.IsValid())
         {
-            LOG_W("'{}' is not a valid model manifest", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid model manifest", Scope.GetResource()->GetKey());
             return false;
         }
 
@@ -44,7 +44,7 @@ namespace Graphic
         }
         else
         {
-            LOG_W("'{}' model manifest has no mesh", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' model manifest has no mesh", Scope.GetResource()->GetKey());
             return false;
         }
 

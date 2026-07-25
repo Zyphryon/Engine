@@ -30,13 +30,13 @@ namespace Render
 
         if (Input.Read<UInt32>() != ('Z' | ('F' << 8) | ('N' << 16) | ('T' << 24)))
         {
-            LOG_W("'{}' is not a ZFNT file (bad magic)", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a ZFNT file (bad magic)", Scope.GetResource()->GetKey());
             return false;
         }
 
         if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{}' has an unsupported ZFNT version", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an unsupported ZFNT version", Scope.GetResource()->GetKey());
             return false;
         }
 
@@ -61,7 +61,7 @@ namespace Render
 
             if (Length > Input.GetAvailable())
             {
-                LOG_W("'{}' has a truncated ZFNT chunk", Scope.GetResource()->GetKey());
+                LOG_W("'{0}' has a truncated ZFNT chunk", Scope.GetResource()->GetKey());
                 return false;
             }
 
@@ -91,7 +91,7 @@ namespace Render
 
         if (!Atlas)
         {
-            LOG_W("'{}' is missing its atlas chunk", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is missing its atlas chunk", Scope.GetResource()->GetKey());
             return false;
         }
 

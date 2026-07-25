@@ -35,13 +35,13 @@ namespace Graphic
     {
         if (Input.Read<UInt32>() != ('Z' | ('T' << 8) | ('E' << 16) | ('X' << 24)))
         {
-            LOG_W("'{}' is not a ZTEX file (bad magic)", Asset.GetKey());
+            LOG_W("'{0}' is not a ZTEX file (bad magic)", Asset.GetKey());
             return false;
         }
 
         if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{}' has an unsupported ZTEX version", Asset.GetKey());
+            LOG_W("'{0}' has an unsupported ZTEX version", Asset.GetKey());
             return false;
         }
 
@@ -55,7 +55,7 @@ namespace Graphic
 
         if (Size == 0 || Payload.IsEmpty())
         {
-            LOG_W("'{}' has empty texture data", Asset.GetKey());
+            LOG_W("'{0}' has empty texture data", Asset.GetKey());
             return false;
         }
 
@@ -66,7 +66,7 @@ namespace Graphic
         {
             if (LZ4Decode(Payload, Buffer.GetData<Byte>(), Size) != Size)
             {
-                LOG_W("'{}' failed to decompress ({} != {})", Asset.GetKey(), Payload.GetSize(), Size);
+                LOG_W("'{0}' failed to decompress ({1} != {2})", Asset.GetKey(), Payload.GetSize(), Size);
                 return false;
             }
         }

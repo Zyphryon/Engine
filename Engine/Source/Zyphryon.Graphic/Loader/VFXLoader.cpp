@@ -40,7 +40,7 @@ namespace Graphic
 
         if (!JsonRoot.IsValid())
         {
-            LOG_W("'{}' is not a valid technique document", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid technique document", Scope.GetResource()->GetKey());
             return false;
         }
 

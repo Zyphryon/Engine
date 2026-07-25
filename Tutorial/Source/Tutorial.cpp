@@ -71,8 +71,8 @@ namespace Application
         mElapsed += Delta;
         mFps      = (Delta > 0.0) ? static_cast<Real32>(1.0 / Delta) : 0.0f;
 
-        // Screen-space orthographic projection (top-left origin, Y increasing downward).
-        mCamera.SetOrthographic(0, static_cast<Real32>(Width), 0, static_cast<Real32>(Height), -1.0f, 1.0f);
+        // Screen-space orthographic projection (bottom-left origin, Y increasing downward).
+        mCamera.SetOrthographic(0, Width, 0, Height, -1.0f, 1.0f);
         mCamera.Compute();
 
         // Record this frame's 2D content, then submit through the renderer.
@@ -95,14 +95,14 @@ namespace Application
 
     void Host::Compose(Real32 Time)
     {
-        const Real32 Width = static_cast<Real32>(mWidth);
-        const Real32 Pulse = 0.5f + 0.5f * static_cast<Real32>(std::sin(Time * 2.0f));
+        const Real32 Width = mWidth;
+        const Real32 Pulse = 0.5f + 0.5f * Angle::Sine(Time * 2.0f);
 
-        const IntColor8 Ink     = IntColor8(235, 238, 245, 255);
-        const IntColor8 Muted   = IntColor8(150, 160, 180, 255);
-        const IntColor8 Accent  = IntColor8( 90, 170, 255, 255);
-        const IntColor8 Panel   = IntColor8(255, 255, 255,  14);
-        const IntColor8 Outline = IntColor8(255, 255, 255,  32);
+        constexpr IntColor8 Ink     = IntColor8(235, 238, 245, 255);
+        constexpr IntColor8 Muted   = IntColor8(150, 160, 180, 255);
+        constexpr IntColor8 Accent  = IntColor8( 90, 170, 255, 255);
+        constexpr IntColor8 Panel   = IntColor8(255, 255, 255,  14);
+        constexpr IntColor8 Outline = IntColor8(255, 255, 255,  32);
 
         mCanvas->DrawText(mFont, 46.0f, Vector2(), "ZYPHRYON",
             Matrix3x2::FromTranslation(Vector2(48.0f, 40.0f)), 0.95f, Ink,
@@ -116,11 +116,11 @@ namespace Application
         mCanvas->DrawLine(Line(Vector2(50.0f, 114.0f), Vector2(50.0f + RuleWidth, 114.0f)), 0.90f, Accent, 3.0f);
 
         constexpr UInt32 Count  = 5;
-        const     Real32 Margin = 48.0f;
-        const     Real32 Gap    = 20.0f;
+        constexpr Real32 Margin = 48.0f;
+        constexpr Real32 Gap    = 20.0f;
         const     Real32 CardW  = (Width - 2.0f * Margin - (Count - 1) * Gap) / Count;
-        const     Real32 CardH  = 190.0f;
-        const     Real32 CardY  = 152.0f;
+        constexpr Real32 CardH  = 190.0f;
+        constexpr Real32 CardY  = 152.0f;
 
         static constexpr Text kLabels[Count] = { "Circle", "Ring", "Rectangle", "Rounded", "Lines" };
 
@@ -152,7 +152,7 @@ namespace Application
                 for (UInt32 Spoke = 0; Spoke < 8; ++Spoke)
                 {
                     const Real32 Angle = Time + Spoke * 0.7853982f; // 8 spokes, 45 degrees apart.
-                    const Vector2 End(CX + std::cos(Angle) * R, CY + std::sin(Angle) * R);
+                    const Vector2 End(CX + Angle::Cosine(Angle) * R, CY + Angle::Sine(Angle) * R);
                     mCanvas->DrawLine(Line(Vector2(CX, CY), End), 0.70f, IntColor8(240, 220, 120, 255), 2.5f);
                 }
                 break;
@@ -177,10 +177,10 @@ namespace Application
         Ref<Platform::Window>       Window  = PlatformService->GetWindow();
         ConstRef<Platform::Monitor> Monitor = PlatformService->GetDisplay().GetMonitor(Text());
 
-        const Real32 PanelW = 344.0f;
-        const Real32 PanelH = 196.0f;
-        const Real32 PanelX = 48.0f;
-        const Real32 PanelY = static_cast<Real32>(mHeight) - PanelH - 44.0f;
+        constexpr Real32 PanelW = 344.0f;
+        constexpr Real32 PanelH = 196.0f;
+        constexpr Real32 PanelX = 48.0f;
+        const     Real32 PanelY = static_cast<Real32>(mHeight) - PanelH - 44.0f;
 
         mCanvas->DrawRoundedRect(Rect(PanelX, PanelY, PanelX + PanelW, PanelY + PanelH), 0.40f, IntColor8(255, 255, 255, 16), 12.0f);
         mCanvas->DrawStrokeRect (Rect(PanelX, PanelY, PanelX + PanelW, PanelY + PanelH), 0.41f, IntColor8(255, 255, 255, 34), 1.0f);
@@ -188,9 +188,9 @@ namespace Application
         DrawTextCentered("DIAGNOSTICS", PanelX + PanelW * 0.5f, PanelY + 14.0f, 14.0f,
             IntColor8(90, 170, 255, 255), Render::FontEffect::Bold(0.02f));
 
-        const IntColor8 Value = IntColor8(228, 232, 240, 255);
-        const Real32    LabelX = PanelX + 22.0f;
-        Real32          Y      = PanelY + 48.0f;
+        constexpr IntColor8 Value  = IntColor8(228, 232, 240, 255);
+        constexpr Real32    LabelX = PanelX + 22.0f;
+        Real32              Y      = PanelY + 48.0f;
 
         String<160> Line;
         const auto   Row = [&](ConstRef<String<160>> Content)

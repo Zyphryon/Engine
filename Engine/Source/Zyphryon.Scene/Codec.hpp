@@ -47,7 +47,7 @@ namespace Scene
 
             if (!Second.IsValid())
             {
-                LOG_D("Serializer: Skipping unregistered component '{}'", Name);
+                LOG_D("Serializer: Skipping unregistered component '{0}'", Name);
                 return;
             }
 
@@ -75,7 +75,7 @@ namespace Scene
                 }
                 else
                 {
-                    LOG_D("Serializer: Trying to load an unregistered component '{}'", Second.GetName());
+                    LOG_D("Serializer: Trying to load an unregistered component '{0}'", Second.GetName());
                 }
             }
             else

@@ -134,7 +134,7 @@ inline namespace Base
 
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
-        Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
+        Sequence<Wide, kMaxPathLength + 3> InPath = StrConvertUTF16<kMaxPathLength + 3>(Path);
         InPath.Append(L'/');
         InPath.Append(L'*');
         InPath.Append(L'\0');
