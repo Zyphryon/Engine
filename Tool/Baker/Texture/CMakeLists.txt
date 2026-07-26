@@ -12,90 +12,76 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(Zyphryon VERSION 1.0.0)
-
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+PROJECT(ZyTool_BakerTexture VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Plugins
+## Code
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-INCLUDE(FetchContent)
-INCLUDE(CMakeModules/CMakeApplyCompileOptions.cmake)
-INCLUDE(CMakeModules/CMakeApplyModules.cmake)
-INCLUDE(CMakeModules/CMakeRegisterModule.cmake)
-INCLUDE(CMakeModules/CMakeEmbedResources.cmake)
-INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
+FILE(GLOB_RECURSE PROJECT_SOURCE  "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
+LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Engine
+## Dependency (Zyphryon Engine)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          ON)
-
-ADD_SUBDIRECTORY(Engine)
+LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Modules (Audio)
+## Dependency (STB) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           ON)
-OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           ON)
+## Deliberately absent: PNM, PSD, GIF, PIC
+LIST(APPEND PROJECT_DEFINES
+        "STB_IMAGE_STATIC"
+        "STBI_NO_STDIO"
+        "STBI_ONLY_PNG"
+        "STBI_ONLY_JPEG"
+        "STBI_ONLY_TGA"
+        "STBI_ONLY_BMP"
+        "STBI_ONLY_HDR"
+        "STBI_MAX_DIMENSIONS=65535")
 
-IF    (ZY_AUDIO_LOADER_WAV)
+FetchContent_Declare(External_STB
+        GIT_REPOSITORY https://github.com/nothings/stb
+        GIT_SHALLOW    TRUE)
+FetchContent_MakeAvailable(External_STB)
 
-    ADD_SUBDIRECTORY(Module/Audio/Loader/WAV)
+IF (NOT TARGET STB)
+
+    ADD_LIBRARY(STB INTERFACE)
+    TARGET_INCLUDE_DIRECTORIES(STB INTERFACE ${external_stb_SOURCE_DIR})
 
 ENDIF ()
 
-IF    (ZY_AUDIO_LOADER_MP3)
-
-    ADD_SUBDIRECTORY(Module/Audio/Loader/MP3)
-
-ENDIF ()
+LIST(APPEND PROJECT_DEPENDENCIES "STB")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Modules (Graphics)
+## Executable
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN32})
-OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ${UNIX})
-OPTION(ZY_GRAPHIC_LOADER_STB   "Graphic: Enable STB image loader"         OFF)
-
-IF    (ZY_GRAPHIC_DRIVER_D3D11)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Driver/D3D11)
-
-ENDIF ()
-
-IF    (ZY_GRAPHIC_DRIVER_GLES3)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Driver/GLES3)
-
-ENDIF ()
-
-IF    (ZY_GRAPHIC_LOADER_STB)
-
-    ADD_SUBDIRECTORY(Module/Graphic/Loader/STB)
-
-ENDIF ()
+ADD_EXECUTABLE(${PROJECT_NAME} ${PROJECT_SOURCE})
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Tools
+## Libraries
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_BUILD_TOOL_BAKER "Build the offline asset bakers" OFF)
-
-IF    (ZY_BUILD_TOOL_BAKER)
-
-    ADD_SUBDIRECTORY(Tool/Baker)
-
-ENDIF ()
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES})
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Tutorial
+## Definitions
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_SUBDIRECTORY(Tutorial)
+TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${PROJECT_DEFINES})
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Includes
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Properties
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+ZyApplyCompileOptions(${PROJECT_NAME})

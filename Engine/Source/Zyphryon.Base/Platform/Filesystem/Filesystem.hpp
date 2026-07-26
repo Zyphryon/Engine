@@ -113,6 +113,12 @@ inline namespace Base
         /// \return A \p Result indicating the success or failure of the operation.
         static Result MakeAll(Text Path);
 
+        /// \brief Ensures the parent directory of the given path exists, creating it if necessary.
+        ///
+        /// \param Path The file path whose parent directory should exist.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Ensure(Text Path);
+
         /// \brief Copies a file from the source path to the destination path.
         ///
         /// \param Source      The path of the file to be copied.
