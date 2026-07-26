@@ -215,25 +215,25 @@ namespace Graphic
         /// \param Usage   The intended usage of the texture.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
-        /// \param Mipmaps The number of mipmap levels.
+        /// \param Levels  The number of mipmap levels.
         /// \param Samples The multisample count.
         /// \param Data    The optional initial image data to populate the texture with.
         /// \return The identifier of the created texture resource, or zero if creation failed.
-        Object CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data);
+        Object CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, AnyRef<Blob> Data);
 
         /// \brief Creates a 2D texture resource for sampling.
         ///
-        /// \param Layout  The layout of the texture.
-        /// \param Format  The pixel format of the texture.
-        /// \param Width   The width of the texture in pixels.
-        /// \param Height  The height of the texture in pixels.
-        /// \param Mipmaps The number of mipmap levels (defaults to 1).
-        /// \param Data    The optional initial image data to populate the texture with.
+        /// \param Layout The layout of the texture.
+        /// \param Format The pixel format of the texture.
+        /// \param Width  The width of the texture in pixels.
+        /// \param Height The height of the texture in pixels.
+        /// \param Levels The number of mipmap levels (defaults to 1).
+        /// \param Data   The optional initial image data to populate the texture with.
         /// \return The identifier of the created texture resource, or zero if creation failed.
-        ZY_INLINE Object CreateTexture(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Mipmaps, AnyRef<Blob> Data)
+        ZY_INLINE Object CreateTexture(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data)
         {
             constexpr Usage Usage = Usage::Sample;
-            return CreateTexture(Layout, Format, Storage::Immutable, Usage, Width, Height, Mipmaps, Multisample::X1, Move(Data));
+            return CreateTexture(Layout, Format, Storage::Immutable, Usage, Width, Height, Levels, Multisample::X1, Move(Data));
         }
 
         /// \brief Creates a 2D texture resource for sampling and rendering.
@@ -241,13 +241,13 @@ namespace Graphic
         /// \param Format  The pixel format of the texture.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
-        /// \param Mipmaps The number of mipmap levels (defaults to 1).
+        /// \param Levels  The number of mipmap levels (defaults to 1).
         /// \param Samples The multisample count (defaults to \c Multisample::X1).
         /// \return The identifier of the created texture resource, or zero if creation failed.
-        ZY_INLINE Object CreateTexture(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Mipmaps = 1, Multisample Samples = Multisample::X1)
+        ZY_INLINE Object CreateTexture(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels = 1, Multisample Samples = Multisample::X1)
         {
             constexpr Usage Usage = Usage::Target | Usage::Sample;
-            return CreateTexture(TextureLayout::Texture2D, Format, Storage::Stream, Usage, Width, Height, Mipmaps, Samples, {});
+            return CreateTexture(TextureLayout::Texture2D, Format, Storage::Stream, Usage, Width, Height, Levels, Samples, {});
         }
 
         /// \brief Updates a region of an existing texture resource with new data.

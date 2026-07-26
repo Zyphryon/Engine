@@ -121,18 +121,26 @@ inline namespace Math
                 static_cast<UInt8>(Scale<1ULL << 8>(mComponents[3])));
         }
 
-        /// \brief Returns the RGB channels premultiplied by an intensity scalar.
+        /// \brief Converts the color from sRGB into linear space.
         ///
-        /// \param Intensity The intensity scalar to multiply the RGB channels by.
-        /// \param Alpha     The alpha value to use for the resulting color.
-        /// \return A new color with RGB multiplied by intensity and alpha preserved.
-        ZY_INLINE constexpr AnyColor WithIntensity(Type Intensity, Type Alpha) const
+        /// \note Alpha is never gamma-encoded, so it carries over untouched.
+        ///
+        /// \return The color with its channels decoded into linear space.
+        ZY_INLINE AnyColor ToLinear() const
             requires(IsReal<Type>)
         {
-            return AnyColor(mComponents[0] * Intensity,
-                            mComponents[1] * Intensity,
-                            mComponents[2] * Intensity,
-                            Alpha);
+            return AnyColor(Decode(GetRed()), Decode(GetGreen()), Decode(GetBlue()), GetAlpha());
+        }
+
+        /// \brief Converts the color from linear into sRGB space.
+        ///
+        /// \note Alpha is never gamma-encoded, so it carries over untouched.
+        ///
+        /// \return The color with its channels encoded into sRGB space.
+        ZY_INLINE AnyColor ToSRGB() const
+            requires(IsReal<Type>)
+        {
+            return AnyColor(Encode(GetRed()), Encode(GetGreen()), Encode(GetBlue()), GetAlpha());
         }
 
         /// \brief Adds another color to this color (component-wise RGBA).
@@ -416,6 +424,28 @@ inline namespace Math
             }
         }
 
+        /// \brief Decodes an sRGB-encoded channel into linear space.
+        ///
+        /// \param Channel The sRGB-encoded channel value.
+        /// \return The linear channel value.
+        ZY_INLINE static Type Decode(Type Channel)
+        {
+            const Type Value = ::Clamp(Channel, Type(0), Limit());
+
+            return (Value <= Type(0.04045)) ? (Value / Type(12.92)) : Pow((Value + Type(0.055)) / Type(1.055), Type(2.4));
+        }
+
+        /// \brief Encodes a linear channel into sRGB space.
+        ///
+        /// \param Channel The linear channel value.
+        /// \return The sRGB-encoded channel value.
+        ZY_INLINE static Type Encode(Type Channel)
+        {
+            const Type Value = ::Clamp(Channel, Type(0), Limit());
+
+            return (Value <= Type(0.0031308)) ? (Value * Type(12.92)) : (Type(1.055) * Pow(Value, Type(1) / Type(2.4)) - Type(0.055));
+        }
+
     public:
 
         /// \brief Constructs a color from a hexadecimal string in the format "#RRGGBB" or "#RRGGBBAA".
@@ -556,7 +586,16 @@ inline namespace Math
         /// \return A color representing opaque gray.
         ZY_INLINE static constexpr AnyColor Gray()
         {
-            return AnyColor(Limit() / Type(2), Limit() / Type(2), Limit() / Type(2), Limit());
+            return Gray(Limit() / Type(2));
+        }
+
+        /// \brief Returns a grayscale color with the given intensity and alpha.
+        ///
+        /// \param Intensity The value replicated across the red, green, and blue components.
+        /// \param Alpha     The alpha component value.
+        ZY_INLINE static constexpr AnyColor Gray(Type Intensity, Type Alpha = Limit())
+        {
+            return AnyColor(Intensity, Intensity, Intensity, Alpha);
         }
 
         /// \brief Returns an opaque red color.
@@ -599,10 +638,10 @@ inline namespace Math
             return AnyColor(Type(0), Limit(), Limit(), Limit());
         }
 
-        /// \brief Returns an opaque pink color.
+        /// \brief Returns an opaque magenta color.
         ///
         /// \return A color with maximum red and blue, zero green, and full alpha.
-        ZY_INLINE static constexpr AnyColor Pink()
+        ZY_INLINE static constexpr AnyColor Magenta()
         {
             return AnyColor(Limit(), Type(0), Limit(), Limit());
         }

@@ -28,23 +28,23 @@ namespace Graphic
           mFormat          { TextureFormat::RGBA8UIntNorm },
           mWidth           { 0 },
           mHeight          { 0 },
-          mMipmaps         { 0 }
+          mLevels          { 0 }
     {
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Image::Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Mipmaps, AnyRef<Blob> Data)
+    void Image::Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data)
     {
         SetFootprint(Data.GetSize());
 
-        mLayout  = Layout;
-        mFormat  = Format;
-        mWidth   = Width;
-        mHeight  = Height;
-        mMipmaps = Mipmaps;
-        mData    = Move(Data);
+        mLayout = Layout;
+        mFormat = Format;
+        mWidth  = Width;
+        mHeight = Height;
+        mLevels = Levels;
+        mData   = Move(Data);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -54,7 +54,7 @@ namespace Graphic
     {
         ZY_ASSERT(mHandle == 0, "Image has already been created");
 
-        mHandle = Service.CreateTexture(mLayout, mFormat, mWidth, mHeight, mMipmaps, Move(mData));
+        mHandle = Service.CreateTexture(mLayout, mFormat, mWidth, mHeight, mLevels, Move(mData));
         return (mHandle != 0);
     }
 

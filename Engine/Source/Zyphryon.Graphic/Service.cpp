@@ -230,13 +230,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, AnyRef<Blob> Data)
+    Object Service::CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, AnyRef<Blob> Data)
     {
         const Object ID = mTextures.Allocate();
 
         if (ID)
         {
-            Enqueue<& Driver::CreateTexture>(ID, Layout, Format, Storage, Usage, Width, Height, Mipmaps, Samples, Move(Data));
+            Enqueue<& Driver::CreateTexture>(ID, Layout, Format, Storage, Usage, Width, Height, Levels, Samples, Move(Data));
         }
         return ID;
     }

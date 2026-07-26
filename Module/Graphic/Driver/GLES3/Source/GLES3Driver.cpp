@@ -442,7 +442,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
+    void GLES3Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
     {
         Ref<GLES3Texture> Texture = mTextures[ID];
         Texture.Format  = Format;
@@ -468,34 +468,31 @@ namespace Graphic
         glGenTextures(1, AddressOf(Texture.Object));
         glBindTexture(GL_TEXTURE_2D, Texture.Object);
 
-        const TextureFormatDescription FormatDescription = GetFormatDescription(Format);
+        ConstPtr<Byte> Bytes = Data.GetData();
+        const UInt8    Count = Max<UInt8>(1, Levels);
 
-        ConstPtr<Byte> Bytes  = Data.GetData();
-        const UInt8    Levels = Max<UInt8>(1, Mipmaps);
-
-        for (UInt8 Level = 0; Level < Levels; ++Level)
+        for (UInt8 Level = 0; Level < Count; ++Level)
         {
-            const UInt32 BlockWidth  = (Width  + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
-            const UInt32 BlockHeight = (Height + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
-            const UInt32 Size        = BlockWidth
-                * BlockHeight
-                * (FormatDescription.BitsPerPixel * FormatDescription.BlockSize * FormatDescription.BlockSize / 8);
+            const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
+            const UInt16 LevelHeight = GetLevelExtent(Height, Level);
+            const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
 
             if (Description.Compressed)
             {
-                glCompressedTexImage2D(GL_TEXTURE_2D, Level, Description.Internal, Width, Height, 0, Size, Bytes);
+                glCompressedTexImage2D(
+                    GL_TEXTURE_2D, Level, Description.Internal, LevelWidth, LevelHeight, 0, Size, Bytes);
             }
             else
             {
-                glTexImage2D(GL_TEXTURE_2D, Level, Description.Internal, Width, Height, 0, Description.External, Description.Type, Bytes);
+                glTexImage2D(
+                    GL_TEXTURE_2D, Level, Description.Internal, LevelWidth, LevelHeight, 0,
+                    Description.External, Description.Type, Bytes);
             }
 
             if (Bytes)
             {
                 Bytes += Size;
             }
-            Width  = Max<UInt16>(1, Width  >> 1);
-            Height = Max<UInt16>(1, Height >> 1);
         }
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);

@@ -475,9 +475,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
     {
-        CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, 1, Mipmaps);
+        CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, 1, Levels);
         Description.Usage      = D3D11Convert(Storage);
         Description.BindFlags  = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
         Description.SampleDesc = {
@@ -511,25 +511,16 @@ namespace Graphic
 
         if (ConstPtr<Byte> Bytes = Data.GetData(); Bytes)
         {
-            const TextureFormatDescription FormatInfo   = GetFormatDescription(Format);
-            const UInt32                   BitsPerPixel = FormatInfo.BitsPerPixel;
-            const UInt32                   BlockSize    = FormatInfo.BlockSize;
-
-            UInt32 LevelWidth  = Width;
-            UInt32 LevelHeight = Height;
-
-            for (UInt32 Level = 0; Level < Mipmaps; ++Level)
+            for (UInt8 Level = 0; Level < Levels; ++Level)
             {
-                const UInt32 Pitch = (LevelWidth + BlockSize - 1) / BlockSize * (BitsPerPixel * BlockSize * BlockSize / 8);
-                const UInt32 Rows  = (LevelHeight + BlockSize - 1) / BlockSize;
+                const UInt32 Pitch = GetLevelPitch(Format, Width, Level);
+                const UInt32 Rows  = GetLevelRows(Format, Height, Level);
 
                 Content[Level].pSysMem          = Bytes;
                 Content[Level].SysMemPitch      = Pitch;
                 Content[Level].SysMemSlicePitch = Pitch * Rows;
 
-                Bytes      += Pitch * Rows;
-                LevelWidth  = Max(1U, LevelWidth  >> 1);
-                LevelHeight = Max(1U, LevelHeight >> 1);
+                Bytes += Pitch * Rows;
             }
             Memory = Content;
         }
@@ -541,7 +532,7 @@ namespace Graphic
                 ? D3D11_SRV_DIMENSION_TEXTURE2DMS
                 : D3D11_SRV_DIMENSION_TEXTURE2D;
 
-            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Mipmaps);
+            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Levels);
             D3D11Check(mDevice->CreateShaderResourceView(Texture.Object.Get(), AddressOf(View), Texture.Resource.GetAddressOf()));
         }
     }

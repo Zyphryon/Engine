@@ -33,13 +33,13 @@ namespace Graphic
 
         /// \brief Sets up the image with specified parameters and raw data.
         ///
-        /// \param Layout  The memory layout of the image data.
-        /// \param Format  The pixel format of the image data.
-        /// \param Width   The width of the image in pixels.
-        /// \param Height  The height of the image in pixels.
-        /// \param Mipmaps The number of mipmap levels in the image data.
-        /// \param Data    The blob containing the raw image pixel data.
-        void Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Mipmaps, AnyRef<Blob> Data);
+        /// \param Layout The memory layout of the image data.
+        /// \param Format The pixel format of the image data.
+        /// \param Width  The width of the image in pixels.
+        /// \param Height The height of the image in pixels.
+        /// \param Levels The number of mipmap levels in the image data.
+        /// \param Data   The blob containing the raw image pixel data.
+        void Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data);
 
         /// \brief Gets the native GPU handle for this image.
         ///
@@ -84,9 +84,9 @@ namespace Graphic
         /// \brief Gets the number of mipmap levels in this image.
         ///
         /// \return The mipmap count.
-        ZY_INLINE UInt8 GetMipmaps() const
+        ZY_INLINE UInt8 GetLevels() const
         {
-            return mMipmaps;
+            return mLevels;
         }
 
     public:
@@ -124,7 +124,7 @@ namespace Graphic
         TextureFormat mFormat;
         UInt16        mWidth;
         UInt16        mHeight;
-        UInt8         mMipmaps;
+        UInt8         mLevels;
         Blob          mData;
     };
 }

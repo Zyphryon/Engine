@@ -161,10 +161,10 @@ namespace Graphic
         /// \param Usage   The intended usage of the texture.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
-        /// \param Mipmaps The number of mipmap levels.
+        /// \param Levels  The number of mipmap levels.
         /// \param Samples The multisample count.
         /// \param Data    The optional initial image data to populate the texture with.
-        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Mipmaps, Multisample Samples, ConstSpan<Byte> Data)
+        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
         {
 
         }
