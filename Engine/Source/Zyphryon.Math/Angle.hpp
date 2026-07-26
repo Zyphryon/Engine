@@ -195,9 +195,7 @@ inline namespace Math
         /// \return The angle corresponding to the given cosine ratio.
         ZY_INLINE static Angle FromCosine(Real32 Ratio)
         {
-            ZY_ASSERT(Ratio >= -1.0f && Ratio <= 1.0f, "Ratio out of range [-1,1]");
-
-            return Angle(std::acos(Ratio));
+            return InvCosine(Ratio);
         }
 
         /// \brief Creates an angle from the sine ratio.
@@ -206,9 +204,7 @@ inline namespace Math
         /// \return The angle corresponding to the given sine ratio.
         ZY_INLINE static Angle FromSine(Real32 Ratio)
         {
-            ZY_ASSERT(Ratio >= -1.0f && Ratio <= 1.0f, "Ratio out of range [-1,1]");
-
-            return Angle(std::asin(Ratio));
+            return InvSine(Ratio);
         }
 
         /// \brief Creates an angle from the tangent ratio.
@@ -217,7 +213,7 @@ inline namespace Math
         /// \return The angle corresponding to the given tangent ratio.
         ZY_INLINE static Angle FromTangent(Real32 Ratio)
         {
-            return Angle(std::atan(Ratio));
+            return InvTangent(Ratio);
         }
 
         /// \brief Creates an angle from Cartesian coordinates (X, Y).
@@ -227,7 +223,7 @@ inline namespace Math
         /// \return The angle corresponding to the given coordinates.
         ZY_INLINE static Angle FromCartesian(Real32 X, Real32 Y)
         {
-            return Angle(std::atan2(Y, X));
+            return InvTangent(X, Y);
         }
 
         /// \brief Normalizes the given angle to the range [0, 2π).
@@ -254,7 +250,7 @@ inline namespace Math
         /// \return The cosine of the angle.
         ZY_INLINE static Real32 Cosine(Angle Value)
         {
-            return std::cos(Value.GetRadians());
+            return Base::Cosine(Value.GetRadians());
         }
 
         /// \brief Calculates the sine of the given angle.
@@ -263,7 +259,7 @@ inline namespace Math
         /// \return The sine of the angle.
         ZY_INLINE static Real32 Sine(Angle Value)
         {
-            return std::sin(Value.GetRadians());
+            return Base::Sine(Value.GetRadians());
         }
 
         /// \brief Calculates the tangent of the given angle.
@@ -272,7 +268,7 @@ inline namespace Math
         /// \return The tangent of the angle.
         ZY_INLINE static Real32 Tangent(Angle Value)
         {
-            return std::tan(Value.GetRadians());
+            return Base::Tangent(Value.GetRadians());
         }
 
     private:

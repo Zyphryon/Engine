@@ -14,6 +14,7 @@
 
 #include "Keyframe.hpp"
 #include "Tween.hpp"
+#include "Zyphryon.Math/Bezier.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,15 +28,6 @@ inline namespace Math
         Step,    ///< Hold the previous keyframe's value (no interpolation).
         Linear,  ///< Linearly interpolate between adjacent keyframes.
         Cubic,   ///< Smoothly interpolate with a Catmull-Rom spline through the neighboring keyframes.
-    };
-
-    /// \brief Concept satisfied by value types that form a vector space, enabling spline interpolation.
-    template<typename Type>
-    concept IsSplinable = requires (Type Value, Real32 Scalar)
-    {
-        Value + Value;
-        Value - Value;
-        Value * Scalar;
     };
 
     /// \brief A time-ordered sequence of keyframes sampled to produce a value at any point in time.
@@ -58,7 +50,7 @@ inline namespace Math
         {
             ZY_ASSERT(mKeyframes.IsEmpty() || Time >= mKeyframes[mKeyframes.GetSize() - 1].Time, "Keyframes must be added in ascending time order");
 
-            mKeyframes.Append(Keyframe<Type> { Time, Forward<Type>(Value) });
+            mKeyframes.Append(Time, Forward<Type>(Value));
         }
 
         /// \brief Sets the interpolation mode.
@@ -124,7 +116,7 @@ inline namespace Math
                     ConstRef<Type> P0 = mKeyframes[Index >= 2 ? Index - 2 : 0].Value;
                     ConstRef<Type> P3 = mKeyframes[Index + 1 < Count ? Index + 1 : Count - 1].Value;
 
-                    return Catmull(P0, Prev.Value, Next.Value, P3, Delta);
+                    return AnyBezier<Type>::FromCatmullRom(P0, Prev.Value, Next.Value, P3).Point(Delta);
                 }
             }
 
@@ -136,26 +128,6 @@ inline namespace Math
             {
                 return Lerp<Type>(Prev.Value, Next.Value, Delta);
             }
-        }
-
-    private:
-
-        /// \brief Evaluates a uniform Catmull-Rom spline segment.
-        ///
-        /// \param Previous The value before the segment start.
-        /// \param Start    The value at the segment start.
-        /// \param End      The value at the segment end.
-        /// \param Next     The value after the segment end.
-        /// \param Time     The normalized position within the segment, in [0, 1].
-        /// \return The interpolated value.
-        ZY_INLINE static Type Catmull(ConstRef<Type> Previous, ConstRef<Type> Start, ConstRef<Type> End, ConstRef<Type> Next, Real32 Time)
-        {
-            const Real32 TimeSquared = Time * Time;
-
-            return (Start * 2.0f
-                 + (End - Previous) * Time
-                 + (Previous * 2.0f - Start * 5.0f + End * 4.0f - Next) * TimeSquared
-                 + (Start * 3.0f - End * 3.0f + Next - Previous) * (TimeSquared * Time)) * 0.5f;
         }
 
     private:

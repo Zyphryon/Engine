@@ -166,6 +166,16 @@ inline namespace Base
         return std::sqrt(Value);
     }
 
+    /// \brief Computes the cube root of the given number.
+    ///
+    /// \param Value The number to compute the cube root for.
+    /// \return The cube root of \a Value.
+    template<typename Type>
+    ZY_INLINE Type Cbrt(Type Value)
+    {
+        return std::cbrt(Value);
+    }
+
     /// \brief Computes the inverse square root of the given number.
     ///
     /// \param Value The number to compute the inverse square root for.
@@ -207,6 +217,88 @@ inline namespace Base
             ++Result;
         }
         return Result;
+    }
+
+    /// \brief Computes the sine of the given angle.
+    ///
+    /// \param Radians The angle, in radians, to compute the sine for.
+    /// \return The sine of \a Radians.
+    template<typename Type>
+    ZY_INLINE Type Sine(Type Radians)
+        requires IsReal<Type>
+    {
+        return std::sin(Radians);
+    }
+
+    /// \brief Computes the cosine of the given angle.
+    ///
+    /// \param Radians The angle, in radians, to compute the cosine for.
+    /// \return The cosine of \a Radians.
+    template<typename Type>
+    ZY_INLINE Type Cosine(Type Radians)
+        requires IsReal<Type>
+    {
+        return std::cos(Radians);
+    }
+
+    /// \brief Computes the tangent of the given angle.
+    ///
+    /// \param Radians The angle, in radians, to compute the tangent for.
+    /// \return The tangent of \a Radians.
+    template<typename Type>
+    ZY_INLINE Type Tangent(Type Radians)
+        requires IsReal<Type>
+    {
+        return std::tan(Radians);
+    }
+
+    /// \brief Computes the angle whose sine is the given ratio.
+    ///
+    /// \param Ratio The sine ratio, which must lie within the unit range.
+    /// \return The angle, in radians, within [-π/2, π/2].
+    template<typename Type>
+    ZY_INLINE Type InvSine(Type Ratio)
+        requires IsReal<Type>
+    {
+        ZY_ASSERT(Ratio >= Type(-1) && Ratio <= Type(1), "Ratio out of range [-1,1]");
+
+        return std::asin(Ratio);
+    }
+
+    /// \brief Computes the angle whose cosine is the given ratio.
+    ///
+    /// \param Ratio The cosine ratio, which must lie within the unit range.
+    /// \return The angle, in radians, within [0, π].
+    template<typename Type>
+    ZY_INLINE Type InvCosine(Type Ratio)
+        requires IsReal<Type>
+    {
+        ZY_ASSERT(Ratio >= Type(-1) && Ratio <= Type(1), "Ratio out of range [-1,1]");
+
+        return std::acos(Ratio);
+    }
+
+    /// \brief Computes the angle whose tangent is the given ratio.
+    ///
+    /// \param Ratio The tangent ratio.
+    /// \return The angle, in radians, within [-π/2, π/2].
+    template<typename Type>
+    ZY_INLINE Type InvTangent(Type Ratio)
+        requires IsReal<Type>
+    {
+        return std::atan(Ratio);
+    }
+
+    /// \brief Computes the angle of the vector running from the origin to the given coordinates.
+    ///
+    /// \param Y The Y coordinate.
+    /// \param X The X coordinate.
+    /// \return The angle, in radians, within [-π, π].
+    template<typename Type>
+    ZY_INLINE Type InvTangent(Type Y, Type X)
+        requires IsReal<Type>
+    {
+        return std::atan2(Y, X);
     }
 
     /// \brief Returns the smallest of the provided values.
