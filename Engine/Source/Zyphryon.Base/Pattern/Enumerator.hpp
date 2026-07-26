@@ -180,7 +180,7 @@ namespace Enum
 
         /// \brief Captures the compiler-generated signature of this function.
         template<auto... Values>
-        constexpr Text ExtractSignature()
+        consteval Text ExtractSignature()
         {
 #if     defined(ZY_COMPILER_MSVC)
             return __FUNCSIG__;
@@ -294,30 +294,32 @@ namespace Enum
 
         /// \brief Captures the argument list for every probed value of \p Type.
         template<typename Type, SInt64... Offsets>
-        constexpr Text CaptureArguments(IntegerSequence<SInt64, Offsets...>)
+        consteval Text CaptureArguments(IntegerSequence<SInt64, Offsets...>)
         {
             return ExtractArguments(ExtractSignature<static_cast<Type>(Range<Type>::Min + Offsets)...>());
         }
 
-        /// \brief The captured argument list for \p Type, evaluated once per translation unit.
+        /// \brief Captures the argument list for \p Type.
         template<IsEnum Type>
-        inline constexpr Text kArguments =
-            CaptureArguments<Type>(MakeIntegerSequence<SInt64, Range<Type>::Max - Range<Type>::Min + 1>{ });
+        consteval Text GetArguments()
+        {
+            return CaptureArguments<Type>(MakeIntegerSequence<SInt64, Range<Type>::Max - Range<Type>::Min + 1>{ });
+        }
 
         /// \brief The measured counts for \p Type, evaluated once per translation unit.
         template<IsEnum Type>
-        inline constexpr Measurement kMeasurement = ScanArguments(kArguments<Type>, [](UInt, Text) { });
+        inline constexpr Measurement kMeasurement = ScanArguments(GetArguments<Type>(), [](UInt, Text) { });
 
         /// \brief Builds the reflection data for \p Type, in ascending value order.
         template<IsEnum Type>
-        constexpr auto BuildReflection()
+        consteval auto BuildReflection()
         {
             Reflection<Type, kMeasurement<Type>.Entries, kMeasurement<Type>.Chars> Result;
 
             UInt EntryCursor = 0;
             UInt CharCursor  = 0;
 
-            ScanArguments(kArguments<Type>, [&](UInt Position, Text Name)
+            ScanArguments(GetArguments<Type>(), [&](UInt Position, Text Name)
             {
                 AppendEntry(Result, EntryCursor, CharCursor,
                     static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Position)), Name);
