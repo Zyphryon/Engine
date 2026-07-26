@@ -255,8 +255,19 @@ namespace Graphic
             glEnable(GL_FRAMEBUFFER_SRGB);
         }
 
-        wglSwapIntervalEXT(0);
+        SetTearless(Config.Tearless);
         return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void GLES3Context::SetTearless(Bool Tearless)
+    {
+        if (GLAD_WGL_EXT_swap_control)
+        {
+            wglSwapIntervalEXT(Tearless ? 1 : 0);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

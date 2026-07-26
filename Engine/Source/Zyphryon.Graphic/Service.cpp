@@ -75,6 +75,7 @@ namespace Graphic
         if (!mDriver)
         {
             mDriver = Switch(Adapter);
+            mConfig = Config;
 
             if (mDriver)
             {
@@ -113,9 +114,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Reset(UInt16 Width, UInt16 Height)
+    void Service::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        Enqueue<& Driver::Reset>(Width, Height);
+        mConfig.Width    = Width;
+        mConfig.Height   = Height;
+        mConfig.Tearless = Tearless;
+
+        Enqueue<& Driver::Reset>(Width, Height, Tearless);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

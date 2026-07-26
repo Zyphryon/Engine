@@ -188,6 +188,22 @@ namespace Engine
             return mGraphicsAdapter;
         }
 
+        /// \brief Sets whether presentation waits for the vertical blank.
+        ///
+        /// \param Tearless `true` to wait, `false` to present as soon as a frame is ready.
+        ZY_INLINE void SetGraphicsTearless(Bool Tearless)
+        {
+            mGraphicsTearless = Tearless;
+        }
+
+        /// \brief Checks whether presentation waits for the vertical blank.
+        ///
+        /// \return `true` when presentation waits, otherwise `false`.
+        ZY_INLINE Bool IsGraphicsTearless() const
+        {
+            return mGraphicsTearless;
+        }
+
         /// \brief Sets the graphics color format.
         ///
         /// \param Format The desired color format for the graphics.
@@ -235,6 +251,7 @@ namespace Engine
         Bool                   mAudioPauseOnFocusLost;
         Str16                  mGraphicsDriver;
         Str                    mGraphicsAdapter;
+        Bool                   mGraphicsTearless;
         Graphic::TextureFormat mGraphicsColorFormat;
         Graphic::TextureFormat mGraphicsDepthFormat;
     };

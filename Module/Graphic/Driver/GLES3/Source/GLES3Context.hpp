@@ -44,6 +44,11 @@ namespace Graphic
         /// \return `true` when the context was created and made current, `false` otherwise.
         Bool Initialize(Ptr<void> Output, ConstRef<Config> Config);
 
+        /// \brief Sets whether presentation waits for the vertical blank.
+        ///
+        /// \param Tearless `true` to wait for the vertical blank, `false` to present as soon as a frame is ready.
+        void SetTearless(Bool Tearless);
+
         /// \brief Presents the current frame by swapping the surface's buffers.
         void Present();
 

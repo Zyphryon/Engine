@@ -1,4 +1,4 @@
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+﻿// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -11,7 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "D3D11Driver.hpp"
-#include "Zyphryon.Graphic/Format.hpp"
+#include "Zyphryon.Graphic/Metadata.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -190,7 +190,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Reset(UInt16 Width, UInt16 Height)
+    void D3D11Driver::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
         if (mDeviceImmediate)
         {
@@ -204,9 +204,12 @@ namespace Graphic
         D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height,  DXGI_FORMAT_UNKNOWN, 0));
 
         // Recreates swap chain resources, including color and depth-stencil attachments.
+        mDeviceProperties.Tearless = Tearless;
+
         Config Configuration;
         Configuration.Width       = Width;
         Configuration.Height      = Height;
+        Configuration.Tearless    = mDeviceProperties.Tearless;
         Configuration.ColorFormat = mDeviceProperties.ColorFormat;
         Configuration.DepthFormat = mDeviceProperties.DepthFormat;
         CreateSwapchainResources(mPasses[0], Configuration);
@@ -785,7 +788,7 @@ namespace Graphic
         // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
-            D3D11Check(mSwapchain->Present(0, 0));
+            D3D11Check(mSwapchain->Present(mDeviceProperties.Tearless ? 1 : 0, 0));
         }
     }
 
@@ -961,6 +964,7 @@ namespace Graphic
         D3D11Check(mDeviceFactory->CreateSwapChain(mDevice.Get(), AddressOf(Description), mSwapchain.GetAddressOf()));
         D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));
 
+        mDeviceProperties.Tearless    = Config.Tearless;
         mDeviceProperties.ColorFormat = Config.ColorFormat;
         mDeviceProperties.DepthFormat = Config.DepthFormat;
         CreateSwapchainResources(Pass, Config);
@@ -989,15 +993,15 @@ namespace Graphic
         // Create a depth-stencil buffer matching the swapchain dimensions and sample count.
         if (Config.DepthFormat != TextureFormat::Unspecified)
         {
-            D3D11_TEXTURE2D_DESC DepthStencilTextureDescription { };
-            DepthStencilTextureDescription.Width      = Config.Width;
-            DepthStencilTextureDescription.Height     = Config.Height;
-            DepthStencilTextureDescription.MipLevels  = 1;
-            DepthStencilTextureDescription.ArraySize  = 1;
-            DepthStencilTextureDescription.Format     = D3D11Convert(Config.DepthFormat);
-            DepthStencilTextureDescription.SampleDesc = { .Count = 1, .Quality = 0 };
-            DepthStencilTextureDescription.Usage      = D3D11_USAGE_DEFAULT;
-            DepthStencilTextureDescription.BindFlags  = D3D11_BIND_DEPTH_STENCIL;
+            D3D11_TEXTURE2D_DESC DepthStencilTextureMetadata { };
+            DepthStencilTextureMetadata.Width      = Config.Width;
+            DepthStencilTextureMetadata.Height     = Config.Height;
+            DepthStencilTextureMetadata.MipLevels  = 1;
+            DepthStencilTextureMetadata.ArraySize  = 1;
+            DepthStencilTextureMetadata.Format     = D3D11Convert(Config.DepthFormat);
+            DepthStencilTextureMetadata.SampleDesc = { .Count = 1, .Quality = 0 };
+            DepthStencilTextureMetadata.Usage      = D3D11_USAGE_DEFAULT;
+            DepthStencilTextureMetadata.BindFlags  = D3D11_BIND_DEPTH_STENCIL;
 
             Pass.DepthStencil.DepthLoadAction    = Action::Clear;
             Pass.DepthStencil.DepthStoreAction   = Action::Discard;
@@ -1005,7 +1009,7 @@ namespace Graphic
             Pass.DepthStencil.StencilStoreAction = Action::Discard;
 
             ComPtr<ID3D11Texture2D> Depth;
-            D3D11Check(mDevice->CreateTexture2D(AddressOf(DepthStencilTextureDescription), nullptr, Depth.GetAddressOf()));
+            D3D11Check(mDevice->CreateTexture2D(AddressOf(DepthStencilTextureMetadata), nullptr, Depth.GetAddressOf()));
 
             CD3D11_DEPTH_STENCIL_VIEW_DESC DepthViewDescription(D3D11_DSV_DIMENSION_TEXTURE2D, D3D11TranslateDSV(Config.DepthFormat));
             D3D11Check(mDevice->CreateDepthStencilView(Depth.Get(), AddressOf(DepthViewDescription), Pass.DepthStencil.Target.GetAddressOf()));

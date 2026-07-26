@@ -31,8 +31,8 @@ namespace Graphic
         /// \see Driver::Initialize(Ptr<void>, ConstRef<Config>)
         Bool Initialize(Ptr<void> Output, ConstRef<Config> Config) override;
 
-        /// \see Driver::Reset(UInt16, UInt16)
-        void Reset(UInt16 Width, UInt16 Height) override;
+        /// \see Driver::Reset(UInt16, UInt16, Bool)
+        void Reset(UInt16 Width, UInt16 Height, Bool Tearless) override;
 
         /// \see Driver::Probe(Ref<Description>)
         void Probe(Ref<Description> Output) const override;
@@ -156,6 +156,7 @@ namespace Graphic
         struct D3D11Properties final
         {
             D3D11Multisamples Multisample;
+            Bool              Tearless    = true;
             TextureFormat     ColorFormat = TextureFormat::Unspecified;
             TextureFormat     DepthFormat = TextureFormat::Unspecified;
         };

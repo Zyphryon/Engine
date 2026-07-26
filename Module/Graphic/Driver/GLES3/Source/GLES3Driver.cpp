@@ -1,4 +1,4 @@
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+﻿// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -11,7 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "GLES3Driver.hpp"
-#include "Zyphryon.Graphic/Format.hpp"
+#include "Zyphryon.Graphic/Metadata.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -131,7 +131,7 @@ namespace Graphic
         glDepthMask(GL_TRUE);
 
         const Bool HasDepth   = (Config.DepthFormat != TextureFormat::Unspecified);
-        const Bool HasStencil = GetFormatDescription(Config.DepthFormat).IsStencil;
+        const Bool HasStencil = GetTextureMetadata(Config.DepthFormat).IsStencil;
 
         Ref<GLES3Pass> Display = mPasses[kDisplay];
         Display.Framebuffer              = 0;
@@ -155,10 +155,12 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::Reset(UInt16 Width, UInt16 Height)
+    void GLES3Driver::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
         mPasses[kDisplay].Width  = Width;
         mPasses[kDisplay].Height = Height;
+
+        mContext.SetTearless(Tearless);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -304,7 +306,7 @@ namespace Graphic
         if (Depth.Target)
         {
             ConstRef<GLES3Texture> Target = mTextures[Depth.Target];
-            const GLenum           Point  = GetFormatDescription(Target.Format).IsStencil
+            const GLenum           Point  = GetTextureMetadata(Target.Format).IsStencil
                 ? GL_DEPTH_STENCIL_ATTACHMENT
                 : GL_DEPTH_ATTACHMENT;
 
@@ -511,7 +513,7 @@ namespace Graphic
 
         if (Description.Compressed)
         {
-            const TextureFormatDescription FormatDescription = GetFormatDescription(Texture.Format);
+            const TextureMetadata FormatDescription = GetTextureMetadata(Texture.Format);
 
             const UInt32 BlockWidth  = (Width  + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
             const UInt32 BlockHeight = (Height + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
@@ -524,7 +526,7 @@ namespace Graphic
         }
         else
         {
-            const UInt32 BytesPerPixel = GetFormatDescription(Texture.Format).BitsPerPixel / 8;
+            const UInt32 BytesPerPixel = GetTextureMetadata(Texture.Format).BitsPerPixel / 8;
 
             glPixelStorei(GL_UNPACK_ROW_LENGTH, BytesPerPixel ? Pitch / BytesPerPixel : 0);
             glTexSubImage2D(

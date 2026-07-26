@@ -40,9 +40,10 @@ namespace Graphic
 
         /// \brief Resets the rendering surface to the specified resolution.
         ///
-        /// \param Width  The new width of the rendering surface in pixels.
-        /// \param Height The new height of the rendering surface in pixels.
-        virtual void Reset(UInt16 Width, UInt16 Height)
+        /// \param Width    The new width of the rendering surface in pixels.
+        /// \param Height   The new height of the rendering surface in pixels.
+        /// \param Tearless `true` to wait for the vertical blank, `false` to present as soon as a frame is ready.
+        virtual void Reset(UInt16 Width, UInt16 Height, Bool Tearless)
         {
 
         }

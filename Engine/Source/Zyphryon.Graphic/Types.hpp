@@ -535,6 +535,9 @@ namespace Graphic
         /// The height of the graphics device in pixels.
         UInt32        Height;
 
+        /// Whether presentation waits for the vertical blank.
+        Bool          Tearless;
+
         /// The color format used by the graphics device.
         TextureFormat ColorFormat;
 

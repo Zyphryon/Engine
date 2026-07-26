@@ -28,6 +28,7 @@ namespace Engine
           mWindowFullscreen      { false },
           mWindowBorderless      { false },
           mAudioPauseOnFocusLost { false },
+          mGraphicsTearless      { true  },
           mGraphicsColorFormat   { Graphic::TextureFormat::Unspecified },
           mGraphicsDepthFormat   { Graphic::TextureFormat::Unspecified }
     {

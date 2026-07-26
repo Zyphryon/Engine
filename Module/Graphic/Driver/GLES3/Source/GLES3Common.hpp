@@ -1,4 +1,4 @@
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+﻿// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Graphic/Format.hpp"
+#include "Zyphryon.Graphic/Metadata.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
 #include <glad/gl.h>
@@ -418,7 +418,7 @@ namespace Graphic
     /// \brief Converts \ref VertexFormat into its generic vertex attribute description.
     constexpr GLES3Attribute GLES3Convert(VertexFormat Value)
     {
-        const VertexFormatDescription Description = GetFormatDescription(Value);
+        const VertexMetadata Description = GetVertexMetadata(Value);
 
         GLenum Type;
 
@@ -428,11 +428,11 @@ namespace Graphic
         }
         else if (Description.IsFloat)
         {
-            Type = (Description.BytesPerComp == 2) ? GL_HALF_FLOAT : GL_FLOAT;
+            Type = (Description.BytesPerComponent == 2) ? GL_HALF_FLOAT : GL_FLOAT;
         }
         else
         {
-            switch (Description.BytesPerComp)
+            switch (Description.BytesPerComponent)
             {
             case 1:
                 Type = Description.IsSigned ? GL_BYTE : GL_UNSIGNED_BYTE;
@@ -447,7 +447,7 @@ namespace Graphic
         }
 
         const GLboolean Normalized = Description.IsNormalized ? GL_TRUE : GL_FALSE;
-        const Bool      Integer    = Description.IsInteger && !Description.IsNormalized && !Description.IsPacked;
+        const Bool      Integer    = Description.IsInteger() && !Description.IsPacked;
         return GLES3Attribute(static_cast<GLint>(Description.Components), Type, Normalized, Integer);
     }
 

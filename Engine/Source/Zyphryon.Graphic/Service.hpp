@@ -52,9 +52,18 @@ namespace Graphic
 
         /// \brief Resets the rendering surface to the specified resolution.
         ///
-        /// \param Width  The new width of the rendering surface in pixels.
-        /// \param Height The new height of the rendering surface in pixels.
-        void Reset(UInt16 Width, UInt16 Height);
+        /// \param Width    The new width of the rendering surface in pixels.
+        /// \param Height   The new height of the rendering surface in pixels.
+        /// \param Tearless `true` to wait for the vertical blank, `false` to present as soon as a frame is ready.
+        void Reset(UInt16 Width, UInt16 Height, Bool Tearless);
+
+        /// \brief Gets the configuration the rendering surface currently uses.
+        ///
+        /// \return The current graphics device configuration.
+        ZY_INLINE ConstRef<Config> GetConfig() const
+        {
+            return mConfig;
+        }
 
         /// \brief Gets the current description of the graphics service, including backend, adapter, and capabilities.
         ///
@@ -457,6 +466,7 @@ namespace Graphic
 
         Unique<Driver>                   mDriver;
         Description                      mDescription;
+        Config                           mConfig;
         Thread                           mWorker;
         Atomic<Bool>                     mSignal;
         UInt8                            mProducer = 0;

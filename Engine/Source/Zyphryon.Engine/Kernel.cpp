@@ -149,6 +149,7 @@ namespace Engine
         Graphic::Config GraphicsConfig;
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();
+        GraphicsConfig.Tearless    = mConfig.IsGraphicsTearless();
         GraphicsConfig.ColorFormat = mConfig.GetGraphicsColorFormat();
         GraphicsConfig.DepthFormat = mConfig.GetGraphicsDepthFormat();
 
@@ -237,7 +238,7 @@ namespace Engine
     {
         if (ConstRetainer<Graphic::Service> Graphic = GetService<Graphic::Service>())
         {
-            Graphic->Reset(Width, Height);
+            Graphic->Reset(Width, Height, Graphic->GetConfig().Tearless);
         }
         return false;
     }
