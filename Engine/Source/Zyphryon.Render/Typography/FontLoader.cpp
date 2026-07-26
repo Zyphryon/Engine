@@ -34,7 +34,9 @@ namespace Render
             return false;
         }
 
-        if (Input.Read<UInt16>() != 1)
+        const UInt16 Version = Input.Read<UInt16>();
+
+        if (Version != 1)
         {
             LOG_W("'{0}' has an unsupported ZFNT version", Scope.GetResource()->GetKey());
             return false;
@@ -51,8 +53,8 @@ namespace Render
         Serializer.Serialize(Glyphs);
 
         // Optional (KERN) and variable-count (ATLS) sections follow as a tag-length-value chunk stream.
-        Font::Kerning            Kerning;
-        Retainer<Graphic::Image> Atlas;
+        Font::Kerning                      Kerning;
+        Sequence<Retainer<Graphic::Image>> Images;
 
         while (Input.GetAvailable() >= 2 * sizeof(UInt32))
         {
@@ -75,10 +77,10 @@ namespace Render
                 break;
             case ('A' | ('T' << 8) | ('L' << 16) | ('S' << 24)):
             {
-                Atlas = Retainer<Graphic::Image>::Create("Atlas");
-                Atlas->SetPolicy(Content::Resource::Policy::Exclusive);
+                ConstRetainer<Graphic::Image> Page = Images.Append(Retainer<Graphic::Image>::Create("Atlas"));
+                Page->SetPolicy(Content::Resource::Policy::Exclusive);
 
-                if (!Graphic::TEXLoader::Parse(Body, * Atlas))
+                if (!Graphic::TEXLoader::Parse(Body, * Page))
                 {
                     return false;
                 }
@@ -89,22 +91,27 @@ namespace Render
             }
         }
 
-        if (!Atlas)
+        if (Images.IsEmpty())
         {
             LOG_W("'{0}' is missing its atlas chunk", Scope.GetResource()->GetKey());
             return false;
         }
 
-        // The atlas image and material are owned exclusively by the font.
-        const Retainer<Graphic::Material> Material = Retainer<Graphic::Material>::Create("Material");
-        Material->SetPolicy(Content::Resource::Policy::Exclusive);
-        Material->SetImage(Graphic::TextureSlot::Albedo, Atlas);
-        Material->SetParameter("Range"_Hash,
-            Vector2(Metrics.Distance / Atlas->GetWidth(),
-                    Metrics.Distance / Atlas->GetHeight()));
+        // The atlas images and materials are owned exclusively by the font, one material per page.
+        Font::Atlases Atlases(Images.GetSize());
+
+        for (ConstRetainer<Graphic::Image> Page : Images)
+        {
+            ConstRetainer<Graphic::Material> Material = Atlases.Append(Retainer<Graphic::Material>::Create("Material"));
+            Material->SetPolicy(Content::Resource::Policy::Exclusive);
+            Material->SetImage(Graphic::TextureSlot::Albedo, Page);
+            Material->SetParameter("Range"_Hash,
+                Vector2(Metrics.Distance / Page->GetWidth(),
+                        Metrics.Distance / Page->GetHeight()));
+        }
 
         const Retainer<Font> Asset = Retainer<Font>::Cast(Scope.GetResource());
-        Asset->Setup(Move(Metrics), Move(Glyphs), Move(Kerning), Material);
+        Asset->Setup(Move(Metrics), Move(Glyphs), Move(Kerning), Move(Atlases));
         return true;
     }
 }

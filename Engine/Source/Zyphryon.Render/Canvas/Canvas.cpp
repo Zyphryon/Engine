@@ -172,8 +172,6 @@ namespace Render
         // The line height in font units.
         const Real32 LineHeight = Font->GetLineHeight(Size) + Spacing.GetY() * Size;
 
-        const ConstPtr<Graphic::Material> Material = &* Font->GetMaterial();
-
         // Iterate through each character in the text content and generate draw commands for each glyph.
         Real32 CurrentX = 0.0f;
         Real32 CurrentY = 0.0f;
@@ -199,6 +197,8 @@ namespace Render
                 {
                     if (Glyph->LocalBounds.GetWidth() > 0 && Glyph->LocalBounds.GetHeight() > 0)
                     {
+                        const ConstPtr<Graphic::Material> Material = &* Font->GetMaterial(Glyph->Page);
+
                         Ref<GlyphCommand> Command = mGlyphs.Append();
                         Command.Generation       = EffectData.Generation;
                         Command.Material         = Material;

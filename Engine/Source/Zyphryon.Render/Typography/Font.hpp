@@ -32,11 +32,14 @@ namespace Render
             /// Bounds of the glyph in font units (relative to baseline).
             Rect   LocalBounds;
 
-            /// Bounds of the glyph in texture coordinates (within the font atlas).
+            /// Bounds of the glyph in texture coordinates (within the font atlas page).
             Rect   AtlasBounds;
 
             /// Advance width (pen movement in X after drawing this glyph).
             Real32 Advance;
+
+            /// The atlas page the glyph was baked onto, which selects the material to draw it with.
+            UInt32 Page;
         };
 
         /// \brief Metrics describing the font typeface.
@@ -70,6 +73,9 @@ namespace Render
         /// \brief Table mapping character pairs to kerning adjustments.
         using Kerning = Table<UInt64, Real32>;
 
+        /// TODO_DOC
+        using Atlases = Sequence<Retainer<Graphic::Material>>;
+
     public:
 
         /// \brief Constructs a font resource with the given content key.
@@ -79,11 +85,11 @@ namespace Render
 
         /// \brief Initializes the font with metrics, glyph data, kerning pairs, and a material.
         ///
-        /// \param Metrics  The font metrics.
-        /// \param Glyphs   The table of glyphs indexed by Unicode codepoint.
-        /// \param Kerning  The table of kerning adjustments for character pairs.
-        /// \param Material The material used for rendering the font atlas.
-        void Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, ConstRetainer<Graphic::Material> Material);
+        /// \param Metrics The font metrics.
+        /// \param Glyphs  The table of glyphs indexed by Unicode codepoint.
+        /// \param Kerning The table of kerning adjustments for character pairs.
+        /// \param Atlases One material per atlas page, indexed by \c Glyph::Page.
+        void Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, AnyRef<Atlases> Atlases);
 
         /// \brief Gets the font metrics describing ascent, descent, and underline properties.
         ///
@@ -126,12 +132,15 @@ namespace Render
             return mKerning.FindOrDefault(static_cast<UInt64>(First) << 32 | Second);
         }
 
-        /// \brief Gets the material used to render this font's glyph atlas.
+        /// \brief Gets the material that renders one of this font's atlas pages.
         ///
-        /// \return The material containing the font atlas texture.
-        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial() const
+        /// \param Page The atlas page, as carried by \c Glyph::Page.
+        /// \return The material containing that page's atlas texture.
+        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt32 Page = 0) const
         {
-            return mMaterial;
+            ZY_ASSERT(Page < mAtlases.GetSize(), "Font atlas page is out of bounds");
+
+            return mAtlases[Page];
         }
 
         /// \brief Computes the bounding rectangle for the given text when rendered at the specified size.
@@ -155,9 +164,9 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Metrics                     mMetrics;
-        Glyphs                      mGlyphs;
-        Kerning                     mKerning;
-        Retainer<Graphic::Material> mMaterial;
+        Metrics mMetrics;
+        Glyphs  mGlyphs;
+        Kerning mKerning;
+        Atlases mAtlases;
     };
 }

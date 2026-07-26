@@ -29,14 +29,14 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Font::Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, ConstRetainer<Graphic::Material> Material)
+    void Font::Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, AnyRef<Atlases> Atlases)
     {
         SetFootprint(Glyphs.GetSize() * sizeof(Glyph) + Kerning.GetSize() * sizeof(UInt64));
 
-        mMetrics  = Move(Metrics);
-        mGlyphs   = Move(Glyphs);
-        mKerning  = Move(Kerning);
-        mMaterial = Material;
+        mMetrics = Move(Metrics);
+        mGlyphs  = Move(Glyphs);
+        mKerning = Move(Kerning);
+        mAtlases = Move(Atlases);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -98,9 +98,12 @@ namespace Render
 
     Bool Font::OnCreate(Ref<Engine::Subsystem::Host> Host)
     {
-        if (mMaterial && mMaterial->GetPolicy() == Policy::Exclusive)
+        for (ConstRef<Retainer<Graphic::Material>> Material : mAtlases)
         {
-            return mMaterial->OnCreate(Host);
+            if (Material && Material->GetPolicy() == Policy::Exclusive && !Material->OnCreate(Host))
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -110,9 +113,12 @@ namespace Render
 
     void Font::OnDelete(Ref<Engine::Subsystem::Host> Host)
     {
-        if (mMaterial && mMaterial->GetPolicy() == Policy::Exclusive)
+        for (ConstRef<Retainer<Graphic::Material>> Material : mAtlases)
         {
-            mMaterial->OnDelete(Host);
+            if (Material && Material->GetPolicy() == Policy::Exclusive)
+            {
+                Material->OnDelete(Host);
+            }
         }
     }
 }
