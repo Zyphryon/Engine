@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Math/Matrix3x2.hpp"
-#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Matrix4x3.hpp"
 #include "Zyphryon.Math/Pivot2D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -313,24 +313,26 @@ inline namespace Math
             return Circle(::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }
 
-        /// \brief Transform a circle using a 4x4 transformation matrix.
+        /// \brief Transform a circle using an affine transformation matrix.
         ///
         /// \param Source The circle to transform.
-        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \param Matrix The affine transformation matrix to apply.
         /// \return A circle resulting from transforming the circle with the matrix.
-        ZY_INLINE static Circle Transform(Circle Source, ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE static Circle Transform(Circle Source, ConstRef<Matrix4x3> Matrix)
         {
-            const Vector2 Center = Matrix4x4::Project<true>(Matrix, Source.GetCenter());
+            // Transposed once and reused: the two axis lengths and both projections all read the columns.
+            const Matrix4x3::Basis Columns(Matrix);
 
-            const Real32 ScaleX = Matrix.GetColumn(0).GetLength();
-            const Real32 ScaleY = Matrix.GetColumn(1).GetLength();
+            const Vector2 Center = Columns.Project(Source.GetCenter());
+            const Real32  ScaleX = Columns.AxisX.GetXYZ().GetLength();
+            const Real32  ScaleY = Columns.AxisY.GetXYZ().GetLength();
 
             if (IsAlmostEqual(ScaleX, ScaleY))
             {
                 return ::Circle(Center, Source.GetRadius() * ScaleX);
             }
 
-            const Vector2 Edge = Matrix4x4::Project<true>(Matrix, Source.GetCenter() + Vector2(Source.mRadius, 0));
+            const Vector2 Edge = Columns.Project(Source.GetCenter() + Vector2(Source.mRadius, 0));
             return Circle(Center, (Edge - Center).GetLength());
         }
 

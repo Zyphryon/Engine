@@ -20,7 +20,7 @@
 
 inline namespace Math
 {
-    /// \brief Represents an affine 2D transformation matrix (3 rows x 2 columns, column-major).
+    /// \brief Represents an affine 2D transformation matrix, stored as the two non-constant rows of a 2x3.
     class Matrix3x2 final
     {
     public:

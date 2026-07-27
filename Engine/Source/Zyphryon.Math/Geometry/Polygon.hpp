@@ -277,20 +277,16 @@ inline namespace Math
 
     public:
 
-        /// \brief Transform a polygon using a 4x4 transformation matrix.
+        /// \brief Transform a polygon using an affine transformation matrix.
         ///
         /// \param Source The polygon to transform.
-        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \param Matrix The affine transformation matrix to apply.
         /// \return A polygon resulting from transforming every vertex with the matrix.
-        ZY_INLINE static AnyPolygon Transform(ConstRef<AnyPolygon> Source, ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE static AnyPolygon Transform(ConstRef<AnyPolygon> Source, ConstRef<Matrix4x3> Matrix)
         {
-            AnyPolygon Result;
-            Result.Reserve(Source.GetSize());
+            AnyPolygon Result = Source;
+            Matrix4x3::Project(Matrix, Source.GetVertices(), Result.mVertices);
 
-            for (UInt Index = 0; Index < Source.GetSize(); ++Index)
-            {
-                Result.Append(Matrix4x4::Project<true>(Matrix, Source.mVertices[Index]));
-            }
             return Result;
         }
 

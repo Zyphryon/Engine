@@ -66,7 +66,7 @@ namespace Render
         /// \brief Sets the view matrix of the camera directly, bypassing the internal transform.
         ///
         /// \param Matrix The new view matrix.
-        ZY_INLINE void SetView(ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE void SetView(ConstRef<Matrix4x3> Matrix)
         {
             mView = Matrix;
             mMask = SetBit(mMask, kBitMaskView);
@@ -75,7 +75,7 @@ namespace Render
         /// \brief Gets the current view matrix of the camera.
         ///
         /// \return The view matrix.
-        ZY_INLINE ConstRef<Matrix4x4> GetView() const
+        ZY_INLINE ConstRef<Matrix4x3> GetView() const
         {
             return mView;
         }
@@ -188,7 +188,7 @@ namespace Render
         /// \param Up    The upward direction for orientation.
         ZY_INLINE void SetLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
-            const Matrix4x4 Matrix = Matrix4x4::InverseAffine(Matrix4x4::CreateLook(Eye, Focus, Up));
+            const Matrix4x3 Matrix = Matrix4x3::Inverse(Matrix4x3::CreateLook(Eye, Focus, Up));
 
             mTransform.SetTranslation(Matrix.GetTranslation());
             mTransform.SetScale(Matrix.GetScale());
@@ -511,7 +511,7 @@ namespace Render
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
             const Real32 Z = (Position.GetZ() - Viewport.MinDepth) / (Viewport.MaxDepth - Viewport.MinDepth);
 
-            return Matrix4x4::Project<false>(mViewProjectionInverse, Vector3(X, Y, Z));
+            return Matrix4x4::Project(mViewProjectionInverse, Vector3(X, Y, Z));
         }
 
         /// \brief Transforms screen-space coordinates into a world-space position.
@@ -528,7 +528,7 @@ namespace Render
             const Real32 X = (Position.GetX() - Viewport.X) / Viewport.Width * 2.0f - 1.0f;
             const Real32 Y = ScreenYToNormalizedDeviceY<Origin>(Position.GetY(), Viewport);
 
-            return Matrix4x4::Project<false>(mViewProjectionInverse, Vector2(X, Y));
+            return Matrix4x4::Project(mViewProjectionInverse, Vector2(X, Y));
         }
 
         /// \brief Transforms a world-space position into screen-space coordinates.
@@ -542,7 +542,7 @@ namespace Render
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
-            const Vector3 Point = Matrix4x4::Project<false>(mViewProjection, Position);
+            const Vector3 Point = Matrix4x4::Project(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
             const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Point.GetY(), Viewport);
@@ -562,7 +562,7 @@ namespace Render
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
 
-            const Vector2 Point = Matrix4x4::Project<false>(mViewProjection, Position);
+            const Vector2 Point = Matrix4x4::Project(mViewProjection, Position);
 
             const Real32 X = Viewport.Width  * (Point.GetX() + 1.0f) * 0.5f + Viewport.X;
             const Real32 Y = NormalizedDeviceYToScreenY<Origin>(Point.GetY(), Viewport);
@@ -623,7 +623,7 @@ namespace Render
 
         UInt32      mMask;
         Matrix4x4   mProjection;
-        Matrix4x4   mView;
+        Matrix4x3   mView;
         Matrix4x4   mViewProjection;
         Matrix4x4   mViewProjectionInverse;
         Transform3D mTransform;

@@ -100,10 +100,10 @@ inline namespace Math
 
         /// \brief Computes the final transformation matrix.
         ///
-        /// \return A 4x4 transformation matrix that combines translation, scale, and rotation.
-        ZY_INLINE Matrix4x4 Compute() const
+        /// \return A 4x3 transformation matrix that combines translation, scale, and rotation.
+        ZY_INLINE Matrix4x3 Compute() const
         {
-            return Matrix4x4::FromTransform(mTranslation, mScale, mRotation);
+            return Matrix4x3::FromTransform(mTranslation, mScale, mRotation);
         }
 
         /// \brief Sets the translation vector for the transform (Z component set to 0).

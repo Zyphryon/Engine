@@ -104,7 +104,7 @@ inline namespace Math
         ZY_INLINE constexpr Bool IsNormalized() const
             requires(IsReal<Type>)
         {
-            return ::IsAlmostEqual(GetLengthSquared(), Type(1));
+            return ::IsAlmostEqual(GetLengthSquared(), Type(1), kTolerance<Type>);
         }
 
         /// \brief Checks if all components are approximately equal within a tolerance.

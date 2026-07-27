@@ -21,15 +21,6 @@ inline namespace Math
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real32 Matrix4x4::GetDeterminant(ConstRef<Matrix4x4> Matrix)
-    {
-        ZY_ASSERT(false, "Not implemented");
-        return 0.0f;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Matrix4x4 Matrix4x4::Inverse(ConstRef<Matrix4x4> Matrix)
     {
         Vector4 Col0 = Matrix.mColumns[0];
@@ -136,7 +127,9 @@ inline namespace Math
 
         const Real32 Determinant = Vector4::Dot(Col0, Row2);
 
-        ZY_ASSERT(Abs(Determinant) >= 1e-8f, "Cannot invert a singular matrix (determinant is zero)");
+        ZY_ASSERT(Abs(Determinant) > kTolerance<Real32> * Col0.GetLength() * Col1.GetLength() * Col2.GetLength(),
+            "Cannot invert a singular matrix (determinant is negligible beside its scale)");
+
         const Real32 InvDet = 1.0f / Determinant;
         return Matrix4x4(Inv0 * InvDet, Inv1 * InvDet, Inv2 * InvDet, Inv3 * InvDet);
     }
@@ -144,71 +137,13 @@ inline namespace Math
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Matrix4x4 Matrix4x4::InverseAffine(ConstRef<Matrix4x4> Matrix)
-    {
-        const Real32 Len0 = Vector4::Dot3(Matrix.mColumns[0], Matrix.mColumns[0]);
-        const Real32 Len1 = Vector4::Dot3(Matrix.mColumns[1], Matrix.mColumns[1]);
-        const Real32 Len2 = Vector4::Dot3(Matrix.mColumns[2], Matrix.mColumns[2]);
-        ZY_ASSERT(!::IsAlmostZero(Len0) && !::IsAlmostZero(Len1) && !::IsAlmostZero(Len2), "Invalid affine matrix: zero-length basis vector");
-
-        // Divide each basis column by its squared length to obtain the transposed inverse rotation/scale block.
-        const Vector4 Col0 = Matrix.mColumns[0] * (1.0f / Len0);
-        const Vector4 Col1 = Matrix.mColumns[1] * (1.0f / Len1);
-        const Vector4 Col2 = Matrix.mColumns[2] * (1.0f / Len2);
-
-        Vector4 Row0 = Vector4::SplatX(Col0);
-        Row0         = Vector4::Select<0b0010>(Row0, Vector4::SplatX(Col1));
-        Row0         = Vector4::Select<0b0100>(Row0, Vector4::SplatX(Col2));
-        Row0         = Vector4::Select<0b1000>(Row0, Vector4(0.0f));
-
-        Vector4 Row1 = Vector4::SplatY(Col0);
-        Row1         = Vector4::Select<0b0010>(Row1, Vector4::SplatY(Col1));
-        Row1         = Vector4::Select<0b0100>(Row1, Vector4::SplatY(Col2));
-        Row1         = Vector4::Select<0b1000>(Row1, Vector4(0.0f));
-
-        Vector4 Row2 = Vector4::SplatZ(Col0);
-        Row2         = Vector4::Select<0b0010>(Row2, Vector4::SplatZ(Col1));
-        Row2         = Vector4::Select<0b0100>(Row2, Vector4::SplatZ(Col2));
-        Row2         = Vector4::Select<0b1000>(Row2, Vector4(0.0f));
-
-        const Real32 TranslateX = -Vector4::Dot3(Col0, Matrix.mColumns[3]);
-        const Real32 TranslateY = -Vector4::Dot3(Col1, Matrix.mColumns[3]);
-        const Real32 TranslateZ = -Vector4::Dot3(Col2, Matrix.mColumns[3]);
-        return Matrix4x4(Row0, Row1, Row2, Vector4(TranslateX, TranslateY, TranslateZ, 1.0f));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Matrix4x4 Matrix4x4::Lerp(ConstRef<Matrix4x4> From, ConstRef<Matrix4x4> To, Real32 Alpha)
+    Matrix4x4 Matrix4x4::Lerp(ConstRef<Matrix4x4> Start, ConstRef<Matrix4x4> End, Real32 Percentage)
     {
         return Matrix4x4(
-            From.mColumns[0] + (To.mColumns[0] - From.mColumns[0]) * Alpha,
-            From.mColumns[1] + (To.mColumns[1] - From.mColumns[1]) * Alpha,
-            From.mColumns[2] + (To.mColumns[2] - From.mColumns[2]) * Alpha,
-            From.mColumns[3] + (To.mColumns[3] - From.mColumns[3]) * Alpha);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Matrix4x4::Decompose(ConstRef<Matrix4x4> Matrix, Ref<Vector3> Translation, Ref<Vector3> Scale, Ref<Quaternion> Rotation)
-    {
-        Translation = Matrix.GetTranslation();
-        Scale       = Matrix.GetScale();
-
-        // Normalize the basis vectors to isolate the rotation component.
-        const Real32 InvSX = !::IsAlmostZero(Scale.GetX()) ? 1.0f / Scale.GetX() : 0.0f;
-        const Real32 InvSY = !::IsAlmostZero(Scale.GetY()) ? 1.0f / Scale.GetY() : 0.0f;
-        const Real32 InvSZ = !::IsAlmostZero(Scale.GetZ()) ? 1.0f / Scale.GetZ() : 0.0f;
-
-        Matrix4x4 RotMatrix = Matrix;
-        RotMatrix.mColumns[0] = RotMatrix.mColumns[0] * InvSX;
-        RotMatrix.mColumns[1] = RotMatrix.mColumns[1] * InvSY;
-        RotMatrix.mColumns[2] = RotMatrix.mColumns[2] * InvSZ;
-        RotMatrix.mColumns[3] = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-
-        Rotation = RotMatrix.GetRotation();
+            Start.mColumns[0] + (End.mColumns[0] - Start.mColumns[0]) * Percentage,
+            Start.mColumns[1] + (End.mColumns[1] - Start.mColumns[1]) * Percentage,
+            Start.mColumns[2] + (End.mColumns[2] - Start.mColumns[2]) * Percentage,
+            Start.mColumns[3] + (End.mColumns[3] - Start.mColumns[3]) * Percentage);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -248,23 +183,4 @@ inline namespace Math
             -(Right + Left) * InvWidth, -(Top + Bottom) * InvHeight, -ZNear * InvDepth, 1.0f);
     }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Matrix4x4 Matrix4x4::CreateDirection(Vector3 Eye, Vector3 Direction, Vector3 Up)
-    {
-        ZY_ASSERT(Direction.IsNormalized(), "Direction must be normalized");
-        ZY_ASSERT(Up.IsNormalized(), "Up must be normalized");
-        ZY_ASSERT(!Up.IsParallel(Direction), "Up vector is parallel to Direction");
-
-        const Vector3 vForward = -Direction;
-        const Vector3 vRight   = Vector3::Normalize(Vector3::Cross(Up, vForward));
-        const Vector3 vUp      = Vector3::Cross(vForward, vRight);
-
-        return Matrix4x4(
-            vRight.GetX(), vUp.GetX(), vForward.GetX(), 0.0f,
-            vRight.GetY(), vUp.GetY(), vForward.GetY(), 0.0f,
-            vRight.GetZ(), vUp.GetZ(), vForward.GetZ(), 0.0f,
-            -Vector3::Dot(vRight, Eye), -Vector3::Dot(vUp, Eye), -Vector3::Dot(vForward, Eye), 1.0f);
-    }
 }

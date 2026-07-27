@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Matrix3x2.hpp"
+#include "Matrix4x3.hpp"
 #include "Quaternion.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -89,10 +90,10 @@ inline namespace Math
         /// \return `true` if all diagonal elements are approximately 1 and all off-diagonal elements are approximately 0, `false` otherwise.
         ZY_INLINE Bool IsIdentity() const
         {
-            return mColumns[0].IsAlmostEqual(Vector4::UnitX())
-                && mColumns[1].IsAlmostEqual(Vector4::UnitY())
-                && mColumns[2].IsAlmostEqual(Vector4::UnitZ())
-                && mColumns[3].IsAlmostEqual(Vector4::UnitW());
+            return mColumns[0].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitX())
+                && mColumns[1].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitY())
+                && mColumns[2].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitZ())
+                && mColumns[3].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitW());
         }
 
         /// \brief Checks if this matrix is approximately equal to another matrix.
@@ -118,9 +119,9 @@ inline namespace Math
             const Vector3 Y = mColumns[1].GetXYZ();
             const Vector3 Z = mColumns[2].GetXYZ();
 
-            return IsAlmostZero(Vector3::Dot(X, Y)) &&
-                   IsAlmostZero(Vector3::Dot(X, Z)) &&
-                   IsAlmostZero(Vector3::Dot(Y, Z)) &&
+            return IsAlmostZero(Vector3::Dot(X, Y), kTolerance<Real32>) &&
+                   IsAlmostZero(Vector3::Dot(X, Z), kTolerance<Real32>) &&
+                   IsAlmostZero(Vector3::Dot(Y, Z), kTolerance<Real32>) &&
                    X.IsNormalized() &&
                    Y.IsNormalized() &&
                    Z.IsNormalized();
@@ -354,32 +355,7 @@ inline namespace Math
         /// \return A reference to the updated matrix.
         ZY_INLINE Ref<Matrix4x4> operator*=(ConstRef<Matrix4x4> Other)
         {
-            const Vector4 C0 = mColumns[0];
-            const Vector4 C1 = mColumns[1];
-            const Vector4 C2 = mColumns[2];
-            const Vector4 C3 = mColumns[3];
-
-            mColumns[0] = C0 * Vector4::SplatX(Other.mColumns[0]) +
-                          C1 * Vector4::SplatY(Other.mColumns[0]) +
-                          C2 * Vector4::SplatZ(Other.mColumns[0]) +
-                          C3 * Vector4::SplatW(Other.mColumns[0]);
-
-            mColumns[1] = C0 * Vector4::SplatX(Other.mColumns[1]) +
-                          C1 * Vector4::SplatY(Other.mColumns[1]) +
-                          C2 * Vector4::SplatZ(Other.mColumns[1]) +
-                          C3 * Vector4::SplatW(Other.mColumns[1]);
-
-            mColumns[2] = C0 * Vector4::SplatX(Other.mColumns[2]) +
-                          C1 * Vector4::SplatY(Other.mColumns[2]) +
-                          C2 * Vector4::SplatZ(Other.mColumns[2]) +
-                          C3 * Vector4::SplatW(Other.mColumns[2]);
-
-            mColumns[3] = C0 * Vector4::SplatX(Other.mColumns[3]) +
-                          C1 * Vector4::SplatY(Other.mColumns[3]) +
-                          C2 * Vector4::SplatZ(Other.mColumns[3]) +
-                          C3 * Vector4::SplatW(Other.mColumns[3]);
-
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Checks if this matrix is equal to another matrix.
@@ -423,19 +399,11 @@ inline namespace Math
             return Matrix4x4();
         }
 
-        /// \brief Computes the determinant of a 4×4 matrix.
-        ///
-        /// \param Matrix The matrix to compute the determinant for.
-        /// \return The scalar determinant value. A value of 0 indicates a singular matrix.
-        static Real32 GetDeterminant(ConstRef<Matrix4x4> Matrix);
-
         /// \brief Projects a 2D point using a 4×4 transformation matrix.
         ///
-        /// \tparam Affine When `true`, skips the perspective divide and returns the raw XY result.
-        /// \param Matrix  The transformation matrix to apply.
-        /// \param Vector  The 2D point to project.
+        /// \param Matrix The transformation matrix to apply.
+        /// \param Vector The 2D point to project.
         /// \return The projected 2D point.
-        template<Bool Affine>
         ZY_INLINE static Vector2 Project(ConstRef<Matrix4x4> Matrix, Vector2 Vector)
         {
             const Vector4 Result =
@@ -443,27 +411,18 @@ inline namespace Math
                 Matrix.mColumns[1] * Vector4(Vector.GetY()) +
                 Matrix.mColumns[3];
 
-            if constexpr(Affine)
-            {
-                return Result.GetXY();
-            }
-            else
-            {
-                const Real32 W = Result.GetW();
-                ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
+            const Real32 W = Result.GetW();
+            ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
 
-                const Real32 InvW = 1.0f / W;
-                return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
-            }
+            const Real32 InvW = 1.0f / W;
+            return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
         }
 
         /// \brief Projects a 3D point using a 4×4 transformation matrix.
         ///
-        /// \tparam Affine When `true`, skips the perspective divide and returns the raw XYZ result.
-        /// \param Matrix  The transformation matrix to apply.
-        /// \param Vector  The 3D point to project.
+        /// \param Matrix The transformation matrix to apply.
+        /// \param Vector The 3D point to project.
         /// \return The projected 3D point.
-        template<Bool Affine>
         ZY_INLINE static Vector3 Project(ConstRef<Matrix4x4> Matrix, Vector3 Vector)
         {
             const Vector4 Result =
@@ -472,27 +431,18 @@ inline namespace Math
                 Matrix.mColumns[2] * Vector4(Vector.GetZ()) +
                 Matrix.mColumns[3];
 
-            if constexpr(Affine)
-            {
-                return Result.GetXYZ();
-            }
-            else
-            {
-                const Real32 W = Result.GetW();
-                ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
+            const Real32 W = Result.GetW();
+            ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
 
-                const Real32 InvW = 1.0f / W;
-                return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
-            }
+            const Real32 InvW = 1.0f / W;
+            return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
         }
 
         /// \brief Projects a 4D vector using a 4×4 transformation matrix.
         ///
-        /// \tparam Affine When `true`, returns the result without perspective division.
-        /// \param Matrix  The transformation matrix to apply.
-        /// \param Vector  The 4D vector to project.
+        /// \param Matrix The transformation matrix to apply.
+        /// \param Vector The 4D vector to project.
         /// \return The projected 4D vector.
-        template<Bool Affine>
         ZY_INLINE static Vector4 Project(ConstRef<Matrix4x4> Matrix, Vector4 Vector)
         {
             const Vector4 Result =
@@ -501,17 +451,10 @@ inline namespace Math
                 Matrix.mColumns[2] * Vector4::SplatZ(Vector) +
                 Matrix.mColumns[3] * Vector4::SplatW(Vector);
 
-            if constexpr(Affine)
-            {
-                return Result;
-            }
-            else
-            {
-                const Real32 W = Result.GetW();
-                ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
+            const Real32 W = Result.GetW();
+            ZY_ASSERT(!::IsAlmostZero(W), "Division by zero (W)");
 
-                return (W != 0.0f ? Result * (1.0f / W) : Result);
-            }
+            return (W != 0.0f ? Result * (1.0f / W) : Result);
         }
 
         /// \brief Computes the transpose of a 4×4 matrix.
@@ -527,44 +470,24 @@ inline namespace Math
 
             return Matrix4x4(
                 Vector4::MergeLow(Temp0, Temp2),
-                Vector4::MergeHigh(Temp2, Temp0),
+                Vector4::MergeHigh(Temp0, Temp2),
                 Vector4::MergeLow(Temp1, Temp3),
-                Vector4::MergeHigh(Temp3, Temp1));
+                Vector4::MergeHigh(Temp1, Temp3));
         }
 
         /// \brief Computes the inverse of a general 4×4 matrix using cofactor expansion.
-        ///
-        /// For matrices that are known to be affine (no perspective), prefer \ref InverseAffine.
         ///
         /// \param Matrix The matrix to invert.
         /// \return The inverse of the given matrix.
         static Matrix4x4 Inverse(ConstRef<Matrix4x4> Matrix);
 
-        /// \brief Computes the inverse of an affine 4×4 matrix.
-        ///
-        /// \param Matrix The affine matrix to invert.
-        /// \return The inverse of the given affine matrix.
-        static Matrix4x4 InverseAffine(ConstRef<Matrix4x4> Matrix);
-
         /// \brief Performs a component-wise linear interpolation between two matrices.
         ///
-        /// \param From   The starting matrix (returned when \p Alpha is 0).
-        /// \param To     The ending matrix (returned when \p Alpha is 1).
-        /// \param Alpha  The interpolation factor in the range [0, 1].
+        /// \param Start      The starting matrix (returned when \p Alpha is 0).
+        /// \param End        The ending matrix (returned when \p Alpha is 1).
+        /// \param Percentage The interpolation factor in the range [0, 1].
         /// \return The interpolated matrix.
-        static Matrix4x4 Lerp(ConstRef<Matrix4x4> From, ConstRef<Matrix4x4> To, Real32 Alpha);
-
-        /// \brief Decomposes a TRS matrix into its translation, scale, and rotation components.
-        ///
-        /// Assumes the matrix was built as T * R * S (or an equivalent affine combination).
-        /// The result is undefined for matrices that contain a perspective projection or
-        /// non-uniform shear.
-        ///
-        /// \param Matrix      The TRS matrix to decompose.
-        /// \param Translation The extracted translation vector.
-        /// \param Scale       The extracted scale vector (always positive).
-        /// \param Rotation    The extracted rotation quaternion (unit quaternion).
-        static void Decompose(ConstRef<Matrix4x4> Matrix, Ref<Vector3> Translation, Ref<Vector3> Scale, Ref<Quaternion> Rotation);
+        static Matrix4x4 Lerp(ConstRef<Matrix4x4> Start, ConstRef<Matrix4x4> End, Real32 Percentage);
 
         /// \brief Creates a right-handed perspective projection matrix with depth in [0, 1].
         ///
@@ -586,40 +509,6 @@ inline namespace Math
         /// \return An orthographic projection matrix.
         static Matrix4x4 CreateOrthographic(Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar);
 
-        /// \brief Creates a right-handed look-at view matrix given a target position.
-        ///
-        /// \param Eye   The camera position in world space.
-        /// \param Focus The target position the camera looks toward.
-        /// \param Up    The world-space up direction (must be normalized and non-parallel to the view direction).
-        /// \return A look-at view matrix.
-        ZY_INLINE static Matrix4x4 CreateLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
-        {
-            return CreateDirection(Eye, Vector3::Normalize(Eye - Focus), Up);
-        }
-
-        /// \brief Creates a right-handed view matrix from an explicit forward direction.
-        ///
-        /// \param Eye       The camera position in world space.
-        /// \param Direction The normalized forward direction the camera is facing.
-        /// \param Up        The world-space up direction (must be normalized and non-parallel to Direction).
-        /// \return A view matrix oriented along the given direction.
-        static Matrix4x4 CreateDirection(Vector3 Eye, Vector3 Direction, Vector3 Up);
-
-        /// \brief Creates a translation matrix from a 2D vector.
-        ///
-        /// \param Vector The 2D translation offset (Z is set to 0).
-        /// \return A column-major translation matrix.
-        ZY_INLINE static Matrix4x4 FromTranslation(Vector2 Vector)
-        {
-            const Real32 X = Vector.GetX();
-            const Real32 Y = Vector.GetY();
-
-            return Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f,
-                             0.0f, 1.0f, 0.0f, 0.0f,
-                             0.0f, 0.0f, 1.0f, 0.0f,
-                             X,    Y,    0.0f, 1.0f);
-        }
-
         /// \brief Creates a translation matrix from a 3D vector.
         ///
         /// \param Vector The 3D translation offset.
@@ -634,21 +523,6 @@ inline namespace Math
                              0.0f, 1.0f, 0.0f, 0.0f,
                              0.0f, 0.0f, 1.0f, 0.0f,
                              X,    Y,     Z,   1.0f);
-        }
-
-        /// \brief Creates a non-uniform scaling matrix from a 2D vector.
-        ///
-        /// \param Vector The scale factors along X and Y.
-        /// \return A scaling matrix.
-        ZY_INLINE static Matrix4x4 FromScale(Vector2 Vector)
-        {
-            const Real32 X = Vector.GetX();
-            const Real32 Y = Vector.GetY();
-
-            return Matrix4x4(X,    0.0f, 0.0f, 0.0f,
-                             0.0f, Y,    0.0f, 0.0f,
-                             0.0f, 0.0f, 1.0f, 0.0f,
-                             0.0f, 0.0f, 0.0f, 1.0f);
         }
 
         /// \brief Creates a non-uniform scaling matrix from a 3D vector.
@@ -718,24 +592,27 @@ inline namespace Math
         /// \return A 4×4 rotation matrix equivalent to the quaternion.
         ZY_INLINE static Matrix4x4 FromRotation(Quaternion Rotation)
         {
-            ZY_ALIGN(16) Real32 XYZW[4];
-            Rotation.Store(XYZW);
+            const Vector4 Components = Rotation;
+            const Vector4 Doubled    = Components + Components;
+            const Vector4 Squared    = Components * Doubled;
+            const Vector4 Diagonal   = Vector4::One()
+                                     - Vector4::Swizzle<1, 0, 0, 3>(Squared)
+                                     - Vector4::Swizzle<2, 2, 1, 3>(Squared);
 
-            const Real32 XX = 2.0f * XYZW[0] * XYZW[0];
-            const Real32 YY = 2.0f * XYZW[1] * XYZW[1];
-            const Real32 ZZ = 2.0f * XYZW[2] * XYZW[2];
-            const Real32 XY = 2.0f * XYZW[0] * XYZW[1];
-            const Real32 XZ = 2.0f * XYZW[0] * XYZW[2];
-            const Real32 YZ = 2.0f * XYZW[1] * XYZW[2];
-            const Real32 WX = 2.0f * XYZW[3] * XYZW[0];
-            const Real32 WY = 2.0f * XYZW[3] * XYZW[1];
-            const Real32 WZ = 2.0f * XYZW[3] * XYZW[2];
+            const Vector4 Symmetric     = Vector4::Swizzle<0, 1, 0, 3>(Components) * Vector4::Swizzle<1, 2, 2, 3>(Doubled);
+            const Vector4 Antisymmetric = Vector4::SplatW(Components) * Vector4::Swizzle<2, 0, 1, 3>(Doubled);
 
-            const Vector4 C0(1.0f - (YY + ZZ), XY + WZ, XZ - WY, 0.0f);
-            const Vector4 C1(XY - WZ, 1.0f - (XX + ZZ), YZ + WX, 0.0f);
-            const Vector4 C2(XZ + WY, YZ - WX, 1.0f - (XX + YY), 0.0f);
-            const Vector4 C3(0.0f, 0.0f, 0.0f, 1.0f);
-            return Matrix4x4(C0, C1, C2, C3);
+            const Vector4 Sum        = Symmetric + Antisymmetric;
+            const Vector4 Difference = Symmetric - Antisymmetric;
+            const Vector4 Zero       = Vector4::Zero();
+
+            const Vector4 ColumnX = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
+                Vector4::Select<0b0010>(Diagonal, Vector4::SplatX(Sum)), Difference), Zero);
+            const Vector4 ColumnY = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
+                Vector4::Select<0b0010>(Difference, Diagonal), Vector4::SplatY(Sum)), Zero);
+            const Vector4 ColumnZ = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
+                Vector4::Select<0b0001>(Difference, Vector4::SplatZ(Sum)), Diagonal), Zero);
+            return Matrix4x4(ColumnX, ColumnY, ColumnZ, Vector4::UnitW());
         }
 
         /// \brief Promotes a 2D affine Matrix3x2 to a column-major 4×4 matrix.
@@ -751,6 +628,28 @@ inline namespace Math
                              C0.GetY(),  C1.GetY(),  0.0f, 0.0f,
                              0.0f,            0.0f,  1.0f, 0.0f,
                              C0.GetZ(),  C1.GetZ(),  0.0f, 1.0f);
+        }
+
+        /// \brief Promotes a 3D affine Matrix4x3 to a column-major 4×4 matrix.
+        ///
+        /// \param Matrix The 3D affine matrix to promote.
+        /// \return A 4×4 matrix equivalent to the 3D affine transform.
+        ZY_INLINE static Matrix4x4 FromMatrix4x3(ConstRef<Matrix4x3> Matrix)
+        {
+            const Vector4 Row0 = Matrix.GetColumn(0);
+            const Vector4 Row1 = Matrix.GetColumn(1);
+            const Vector4 Row2 = Matrix.GetColumn(2);
+
+            const Vector4 Temp0 = Vector4::ZipLow(Row0, Row1);
+            const Vector4 Temp1 = Vector4::ZipHigh(Row0, Row1);
+            const Vector4 Temp2 = Vector4::ZipLow(Row2, Vector4::UnitW());
+            const Vector4 Temp3 = Vector4::ZipHigh(Row2, Vector4::UnitW());
+
+            return Matrix4x4(
+                Vector4::MergeLow(Temp0, Temp2),
+                Vector4::MergeHigh(Temp0, Temp2),
+                Vector4::MergeLow(Temp1, Temp3),
+                Vector4::MergeHigh(Temp1, Temp3));
         }
 
         /// \brief Creates a combined TRS (translation × rotation × scale) matrix.

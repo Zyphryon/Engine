@@ -29,11 +29,11 @@ namespace Render
             // Recompute the view matrix only if the camera's transform has changed.
             if (HasBit(Mask, kBitMaskTransformation))
             {
-                mView = Matrix4x4::InverseAffine(mTransform.Compute());
+                mView = Matrix4x3::Inverse(mTransform.Compute());
             }
 
             // Recompute the combined view-projection matrix.
-            mViewProjection = mProjection * mView;
+            mViewProjection = mProjection * Matrix4x4::FromMatrix4x3(mView);
 
             // Recompute the inverse of the combined view-projection matrix.
             mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);

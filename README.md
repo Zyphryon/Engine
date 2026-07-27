@@ -1,23 +1,55 @@
 # 🌌 Zyphryon Engine
-*Built from the ground up. Zero compromises.*
+*Built from the ground up.*
 
-**Zyphryon** is a high-performance, cross-platform **game engine** built entirely from scratch — no heavy dependencies, no bloated middleware, no compromises.
-
-Every system, from the foundation library to the rendering pipeline, is custom-engineered for maximum performance and complete control.
+**Zyphryon** is a high-performance, cross-platform **game engine** written from scratch in C++20.
 
 ---
 
 ## 🎯 Philosophy
 
-Zyphryon rejects the "dependency hell" approach of modern game engines. Instead, it embraces:
+- **From-scratch subsystems** — The entire stack is first-party, foundation to renderer.
+- **Minimal standard library surface** — The STL appears only inside `Zyphryon.Base`,
+  and only where the language leaves no alternative:
+  - *compiler and language support* — `<type_traits>`, `<concepts>`, `<bit>`, `<new>`,
+    `<cstdint>`, `<limits>`
+  - *math* — `<cmath>`
+  - *concurrency* — `<atomic>`, `<thread>`, `<mutex>`, `<condition_variable>`
+- **Minimal dependencies** — The runtime carries a single third-party library, the
+  [flecs](https://github.com/SanderMertens/flecs) ECS. Anything else lives in the
+  tools, never ships with the engine.
+- **Data-oriented design** — Cache-friendly layouts, SIMD math, structures shaped by
+  access patterns rather than taxonomy.
+- **Explicit ownership** — No hidden allocations, no surprise virtual calls, no work
+  the caller didn't ask for.
 
-- **From-scratch development** — Complete control over every subsystem
-- **Zero STL dependency** — Custom foundation library optimized for game development
-- **Minimal external dependencies** — Only what's absolutely necessary (platform APIs, OpenGL/D3D)
-- **Data-oriented design** — Cache-friendly, SIMD-accelerated, built for modern hardware
-- **Clear ownership** — Every line of code serves a purpose, nothing is hidden in black boxes
+---
 
-This isn't just another engine wrapper. This is **raw metal programming** with modern C++ elegance.
+## 📦 Dependencies
+
+### What ships in your game
+
+A game built on Zyphryon links **one** third-party library by default. Everything else below arrives only if
+you enable the module that needs it.
+
+| Library | Pulled in by | Used for |
+|---------|--------------|----------|
+| [flecs](https://github.com/SanderMertens/flecs) | always (core) | The ECS behind the `Scene` module |
+| [dr_libs](https://github.com/mackron/dr_libs) | `ZY_AUDIO_LOADER_WAV`, `ZY_AUDIO_LOADER_MP3` *(both ON)* | WAV / MP3 decoding |
+| [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
+| [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |
+| [stb](https://github.com/nothings/stb) | `ZY_GRAPHIC_LOADER_STB` *(OFF)* | Runtime image decode |
+
+### What doesn't
+
+The offline bakers under `Tool/Baker/` are standalone executables you run on your own machine. Nothing links
+against them, and they only build with `ZY_BUILD_TOOL_BAKER` *(OFF)*.
+
+| Library | Used by | Used for |
+|---------|---------|----------|
+| [msdfgen](https://github.com/Chlumsky/msdfgen) | Font baker | MSDF glyph generation |
+| [stb](https://github.com/nothings/stb) | Font, Texture bakers | Image decode |
+
+Ship the baked assets and these stay on your workstation.
 
 ---
 
@@ -26,23 +58,9 @@ This isn't just another engine wrapper. This is **raw metal programming** with m
 ### Prerequisites
 - **CMake** 3.20+
 - **C++20** compliant compiler (MSVC 2019+, GCC 11+, Clang 13+)
-- **Platform SDKs**:
-  - Windows: Windows SDK 10.0+
-  - Web: Emscripten SDK
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone [https://github.com/Zyphryon/Engine/Zyphryon.git](https://github.com/Zyphryon/Engine.git)
-cd Zyphryon/Engine
-
-# Generate build files
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# Build
-cmake --build build --config Release
-```
+- **Platform SDKs**
+    - Windows: Windows SDK 10.0+
+    - Web: Emscripten SDK
 
 ---
 
@@ -56,28 +74,36 @@ cmake --build build --config Release
 
 ---
 
+## 🚧 Status
+
+Zyphryon is under active development and pre-1.0. Expect APIs to move.
+
+Known gaps, so you don't have to discover them:
+
+- **No automated test suite yet.** Correctness is currently verified by hand and by the sample project.
+- **The 3D path is young** — skeletal animation and model rendering are still being built out.
+- **flecs is the one core dependency**, and replacing it with a first-party ECS is an open intention rather
+  than a plan with a date.
+
+---
+
 ## 📄 License
 
-Zyphryon is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
+Zyphryon is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! This is a from-scratch project, so expect:
+Contributions are welcome. Expect:
 
 - **Code reviews** focused on performance and design
-- **Zero external dependencies** unless absolutely justified
+- **New dependencies to need justification** — not forbidden, but each one has to earn its place and gets
+  listed in the table above
 - **Documentation** for all public APIs
-- **Tests** for critical systems
+- **Measurements** rather than assertions when a change is claimed to be faster
 
 Feel free to submit Pull Requests, open Issues, or discuss new features in Discussions.
-
----
-
-## 🌟 Why Zyphryon?
-
-> *"Most engines are built on layers of abstraction that hide complexity. Zyphryon embraces complexity and controls it. This is an engine for developers who want to understand every cycle, every cache miss, every memory allocation."*
 
 ---
 

@@ -24,23 +24,27 @@ inline namespace Base
 {
     /// \brief Mathematical constant representing the value of pi.
     template<typename Type>
-    inline constexpr Type kPI       = Type(3.141592653589793238462643383279502884e+00);
-
-    /// \brief Mathematical constant representing the minimum finite value for the given type.
-    template<typename Type>
-    inline constexpr Type kMinimum  = std::numeric_limits<Type>::min();
-
-    /// \brief Mathematical constant representing the maximum finite value for the given type.
-    template<typename Type>
-    inline constexpr Type kMaximum  = std::numeric_limits<Type>::max();
-
-    /// \brief Mathematical constant representing the machine epsilon (smallest difference from 1.0).
-    template<typename Type>
-    inline constexpr Type kEpsilon  = std::numeric_limits<Type>::epsilon();
+    inline constexpr Type kPI        = Type(3.141592653589793238462643383279502884e+00);
 
     /// \brief Mathematical constant representing positive infinity.
     template<typename Type>
-    inline constexpr Type kInfinity = std::numeric_limits<Type>::infinity();
+    inline constexpr Type kInfinity  = std::numeric_limits<Type>::infinity();
+
+    /// \brief Mathematical constant representing the minimum finite value for the given type.
+    template<typename Type>
+    inline constexpr Type kMinimum   = std::numeric_limits<Type>::min();
+
+    /// \brief Mathematical constant representing the maximum finite value for the given type.
+    template<typename Type>
+    inline constexpr Type kMaximum   = std::numeric_limits<Type>::max();
+
+    /// \brief Mathematical constant representing the machine epsilon (smallest difference from 1.0).
+    template<typename Type>
+    inline constexpr Type kEpsilon   = std::numeric_limits<Type>::epsilon();
+
+    /// \brief The margin a computed value may drift from an exact constant and still be treated as equal to it.
+    template<typename Type>
+    inline constexpr Type kTolerance = kEpsilon<Type> * Type(8);
 
     /// \brief Computes the absolute value of the given number.
     ///

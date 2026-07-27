@@ -301,18 +301,7 @@ inline namespace Math
         /// \return A reference to the updated quaternion.
         ZY_INLINE Ref<Quaternion> operator*=(Quaternion Other)
         {
-            ZY_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
-
-            const Vector4 V1 = Vector4::Select<0b1000>(mData, Vector4::Zero());
-            const Vector4 V2 = Vector4::Select<0b1000>(Other.mData, Vector4::Zero());
-            const Vector4 W1 = Vector4::SplatW(mData);
-            const Vector4 W2 = Vector4::SplatW(Other.mData);
-
-            const Vector4 XYZ = W1 * V2 + W2 * V1 + Vector4::Cross3(V1, V2);
-            const Vector4 W   = W1 * W2 - Vector4(Vector4::Dot3(V1, V2));
-
-            mData = Vector4::Select<0b1000>(XYZ, W * Vector4::UnitW());
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Multiplies all components of this quaternion by a scalar.
@@ -341,6 +330,14 @@ inline namespace Math
         ZY_INLINE Bool operator!=(Quaternion Other) const
         {
             return !(* this == Other);
+        }
+
+        /// \brief Converts the quaternion into a vector laid out as (X, Y, Z, W).
+        ///
+        /// \return The four components, in imaginary-then-real order.
+        ZY_INLINE operator Vector4() const
+        {
+            return mData;
         }
 
         /// \brief Gets a string representation of this object.

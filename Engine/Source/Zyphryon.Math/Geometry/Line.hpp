@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Math/Matrix3x2.hpp"
-#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Matrix4x3.hpp"
 #include "Zyphryon.Math/Pivot2D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -293,12 +293,20 @@ inline namespace Math
         /// \brief Transform a line using a 4x4 transformation matrix.
         ///
         /// \param Source The line to transform.
-        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \param Matrix The affine transformation matrix to apply.
         /// \return A line resulting from transforming the line with the matrix.
-        ZY_INLINE static Line Transform(Line Source, ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE static Line Transform(Line Source, ConstRef<Matrix4x3> Matrix)
         {
-            return Line(Matrix4x4::Project<true>(Matrix, Source.GetStart()),
-                        Matrix4x4::Project<true>(Matrix, Source.GetEnd()));
+            const Vector4 RowX = Matrix.GetColumn(0);
+            const Vector4 RowY = Matrix.GetColumn(1);
+
+            const Vector4 PointX(Source.mStart.GetX(), Source.mEnd.GetX(), 0.0f, 0.0f);
+            const Vector4 PointY(Source.mStart.GetY(), Source.mEnd.GetY(), 0.0f, 0.0f);
+
+            const Vector4 OutX = PointX * Vector4::SplatX(RowX) + PointY * Vector4::SplatY(RowX) + Vector4::SplatW(RowX);
+            const Vector4 OutY = PointX * Vector4::SplatX(RowY) + PointY * Vector4::SplatY(RowY) + Vector4::SplatW(RowY);
+
+            return Line(Vector2(OutX.GetX(), OutY.GetX()), Vector2(OutX.GetY(), OutY.GetY()));
         }
 
         /// \brief Transform a line using a 3x2 transformation matrix.

@@ -268,24 +268,23 @@ inline namespace Math
                         ::Lerp(Start.mCorners[3], End.mCorners[3], Percentage));
         }
 
-        /// \brief Transforms a rectangle into a quadrilateral using a 4x4 transformation matrix.
+        /// \brief Transforms a rectangle into a quadrilateral using an affine transformation matrix.
         ///
         /// \param Source The rectangle to transform.
-        /// \param Matrix The 4x4 transformation matrix to apply.
+        /// \param Matrix The affine transformation matrix to apply.
         /// \return A quadrilateral resulting from transforming the rectangle with the matrix.
-        ZY_INLINE static Quad Transform(AnyRect<Real32> Source, ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE static Quad Transform(AnyRect<Real32> Source, ConstRef<Matrix4x3> Matrix)
         {
             const Vector4 CornerX(Source.GetMinimumX(), Source.GetMaximumX(),
                                   Source.GetMaximumX(), Source.GetMinimumX());
             const Vector4 CornerY(Source.GetMinimumY(), Source.GetMinimumY(),
                                   Source.GetMaximumY(), Source.GetMaximumY());
 
-            const Vector4 C0 = Matrix.GetColumn(0);
-            const Vector4 C1 = Matrix.GetColumn(1);
-            const Vector4 C3 = Matrix.GetColumn(3);
+            const Vector4 RowX = Matrix.GetColumn(0);
+            const Vector4 RowY = Matrix.GetColumn(1);
 
-            const Vector4 PX = CornerX * Vector4::SplatX(C0) + CornerY * Vector4::SplatX(C1) + Vector4::SplatX(C3);
-            const Vector4 PY = CornerX * Vector4::SplatY(C0) + CornerY * Vector4::SplatY(C1) + Vector4::SplatY(C3);
+            const Vector4 PX = CornerX * Vector4::SplatX(RowX) + CornerY * Vector4::SplatY(RowX) + Vector4::SplatW(RowX);
+            const Vector4 PY = CornerX * Vector4::SplatX(RowY) + CornerY * Vector4::SplatY(RowY) + Vector4::SplatW(RowY);
 
             ZY_ALIGN(16) Real32 VectorX[4];
             ZY_ALIGN(16) Real32 VectorY[4];

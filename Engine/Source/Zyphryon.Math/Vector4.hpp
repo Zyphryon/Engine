@@ -88,7 +88,7 @@ inline namespace Math
         /// \brief Checks if the vector is normalized.
         ///
         /// \return `true` if the squared length is approximately 1.0f, `false` otherwise.
-        template<Real32 Tolerance = kEpsilon<Real32>>
+        template<Real32 Tolerance = kTolerance<Real32>>
         ZY_INLINE Bool IsNormalized() const
         {
             return Base::Abs(GetLengthSquared() - 1.0f) <= Tolerance;
@@ -614,12 +614,12 @@ inline namespace Math
 
         /// \brief Shuffles components with another vector using template indices.
         ///
-        /// \tparam X The index for the X component (0-3 are from the first vector, 4-7 from the second).
-        /// \tparam Y The index for the Y component (0-3 are from the first vector, 4-7 from the second).
-        /// \tparam Z The index for the Z component (0-3 are from the first vector, 4-7 from the second).
-        /// \tparam W The index for the W component (0-3 are from the first vector, 4-7 from the second).
-        /// \param P0 The first vector.
-        /// \param P1 The second vector.
+        /// \tparam X The lane of \p P0 to place in the X component (0-3).
+        /// \tparam Y The lane of \p P0 to place in the Y component (0-3).
+        /// \tparam Z The lane of \p P1 to place in the Z component (0-3).
+        /// \tparam W The lane of \p P1 to place in the W component (0-3).
+        /// \param P0 The vector supplying the X and Y components.
+        /// \param P1 The vector supplying the Z and W components.
         /// \return A new vector with shuffled components.
         template<SInt X, SInt Y, SInt Z, SInt W>
         ZY_INLINE static Vector4 Shuffle(Vector4 P0, Vector4 P1);

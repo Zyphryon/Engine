@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Matrix4x3.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -791,28 +791,27 @@ inline namespace Math
         /// \brief Gets the AABB that fully contains the given box after transformation.
         ///
         /// \param Source The box to transform.
-        /// \param Matrix The 4x4 affine transformation matrix to apply.
+        /// \param Matrix The affine transformation matrix to apply.
         /// \return The transformed AABB.
-        ZY_INLINE static AnyBox Transform(AnyBox Source, ConstRef<Matrix4x4> Matrix)
+        ZY_INLINE static AnyBox Transform(AnyBox Source, ConstRef<Matrix4x3> Matrix)
             requires (IsReal<Type>)
         {
             // Transform the center point.
-            const Vector3 Center = Matrix4x4::Project<true>(Matrix, Source.GetCenter());
+            const Vector3 Center = Matrix4x3::Project(Matrix, Source.GetCenter());
 
             // Extract the three rotation/scale columns of the matrix.
-            const Vector4 C0 = Matrix.GetColumn(0);
-            const Vector4 C1 = Matrix.GetColumn(1);
-            const Vector4 C2 = Matrix.GetColumn(2);
+            const Vector3 RowX = Matrix.GetColumn(0).GetXYZ();
+            const Vector3 RowY = Matrix.GetColumn(1).GetXYZ();
+            const Vector3 RowZ = Matrix.GetColumn(2).GetXYZ();
 
-            // New half-extents along each axis = |row_i| · old_half_extents
             const AnyVector3<Type> Extents = Source.GetExtents();
-            const Type Ex = Extents.GetX();
-            const Type Ey = Extents.GetY();
-            const Type Ez = Extents.GetZ();
+            const Type ExtendX = Extents.GetX();
+            const Type ExtendY = Extents.GetY();
+            const Type ExtendZ = Extents.GetZ();
 
-            const Type HalfX = Abs(C0.GetX()) * Ex + Abs(C1.GetX()) * Ey + Abs(C2.GetX()) * Ez;
-            const Type HalfY = Abs(C0.GetY()) * Ex + Abs(C1.GetY()) * Ey + Abs(C2.GetY()) * Ez;
-            const Type HalfZ = Abs(C0.GetZ()) * Ex + Abs(C1.GetZ()) * Ey + Abs(C2.GetZ()) * Ez;
+            const Type HalfX = Abs(RowX.GetX()) * ExtendX + Abs(RowX.GetY()) * ExtendY + Abs(RowX.GetZ()) * ExtendZ;
+            const Type HalfY = Abs(RowY.GetX()) * ExtendX + Abs(RowY.GetY()) * ExtendY + Abs(RowY.GetZ()) * ExtendZ;
+            const Type HalfZ = Abs(RowZ.GetX()) * ExtendX + Abs(RowZ.GetY()) * ExtendY + Abs(RowZ.GetZ()) * ExtendZ;
 
             return AnyBox(
                 AnyVector3<Type>(Center.GetX() - HalfX, Center.GetY() - HalfY, Center.GetZ() - HalfZ),
