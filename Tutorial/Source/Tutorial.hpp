@@ -13,10 +13,10 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <Zyphryon.Engine/Kernel.hpp>
-#include <Zyphryon.Render/Renderer.hpp>
-#include <Zyphryon.Render/Canvas/Canvas.hpp>
-#include <Zyphryon.Render/Typography/Font.hpp>
-#include <Zyphryon.Graphic/Camera.hpp>
+#include <Zyphryon.Render/Graph.hpp>
+#include <Zyphryon.Render/Camera.hpp>
+#include <Zyphryon.Render/Batcher/Canvas.hpp>
+#include <Zyphryon.Render/Resource/Font.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -76,9 +76,9 @@ namespace Application
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Unique<Render::Canvas>   mCanvas;
-        Unique<Render::Renderer> mRenderer;
+        Unique<Render::Graph> mGraph;
         Retainer<Render::Font>   mFont;
-        Graphic::Camera          mCamera;
+        Render::Camera           mCamera;
         Real64                   mElapsed = 0.0;
         Real32                   mFps     = 0.0f;
         UInt16                   mWidth   = 0;

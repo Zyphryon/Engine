@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace Render
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -29,7 +29,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt8 Model::AddMaterial(ConstRetainer<Material> Material)
+    UInt8 Model::AddMaterial(ConstRetainer<Graphic::Material> Material)
     {
         mMaterials.Append(Material);
         return static_cast<UInt8>(mMaterials.GetSize() - 1);
@@ -38,14 +38,14 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Model::Upload(Ref<Service> Service)
+    Bool Model::Upload(Ref<Graphic::Service> Service)
     {
         if (mMesh && mMesh->GetPolicy() == Policy::Exclusive)
         {
             mMesh->Upload(Service);
         }
 
-        for (ConstRetainer<Material> Material : mMaterials)
+        for (ConstRetainer<Graphic::Material> Material : mMaterials)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {
@@ -58,14 +58,14 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Model::Unload(Ref<Service> Service)
+    void Model::Unload(Ref<Graphic::Service> Service)
     {
         if (mMesh && mMesh->GetPolicy() == Policy::Exclusive)
         {
             mMesh->Unload(Service);
         }
 
-        for (ConstRetainer<Material> Material : mMaterials)
+        for (ConstRetainer<Graphic::Material> Material : mMaterials)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {

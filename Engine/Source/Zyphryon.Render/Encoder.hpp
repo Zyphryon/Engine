@@ -12,11 +12,10 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Graphic/Material.hpp"
-#include "Zyphryon.Graphic/Model.hpp"
 #include "Zyphryon.Graphic/Schema.hpp"
 #include "Zyphryon.Graphic/Service.hpp"
-#include "Zyphryon.Graphic/Technique.hpp"
+#include "Zyphryon.Graphic/Resource/Technique.hpp"
+#include "Zyphryon.Render/Resource/Model.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -147,7 +146,7 @@ namespace Render
         /// \param Uniform   The per-object data stream bound to the Instance scope (empty for none).
         void Draw(
             ConstRef<Graphic::Technique> Technique,
-            ConstRef<Graphic::Model>     Model,
+            ConstRef<Model>              Model,
             ConstRef<Graphic::Stream>    Uniform);
 
     private:

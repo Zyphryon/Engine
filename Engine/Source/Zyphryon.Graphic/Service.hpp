@@ -117,7 +117,7 @@ namespace Graphic
             const UInt Offset = Collection.GetSize();
             Collection.Advance(Count);
 
-            return Span(Collection.GetData() + Offset, Count);;
+            return Span(Collection.GetData() + Offset, Count);
         }
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
@@ -456,7 +456,7 @@ namespace Graphic
         /// \param Frame The in-flight frame to update.
         void UploadInFlightFrame(Ref<InFlightFrame> Frame);
 
-        /// \brief Registers built-in resource loaders for shaders, textures, and other assets.
+        /// \brief Registers built-in resource loaders for graphic resources.
         void RegisterBuiltinLoaders();
 
     private:

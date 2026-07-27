@@ -23,14 +23,14 @@
 namespace Render
 {
     /// \brief Executes an ordered set of render passes for a frame.
-    class Renderer final
+    class Graph final
     {
     public:
 
         /// \brief Constructs a renderer bound to the host's graphic service.
         ///
         /// \param Host The service host that provides the graphic service.
-        Renderer(Ref<Engine::Subsystem::Host> Host);
+        Graph(Ref<Engine::Subsystem::Host> Host);
 
         /// \brief Creates a pass of the given type, appends it to the execution order, and returns it.
         ///
@@ -99,6 +99,13 @@ namespace Render
         ///
         /// \param Global The pre-packed frame-global uniform stream.
         void Run(ConstRef<Graphic::Stream> Global);
+
+    private:
+
+        /// \brief Registers built-in resource loaders for the render scene.
+        ///
+        /// \param Host The service host that provides the content service.
+        void RegisterBuiltinLoaders(Ref<Engine::Subsystem::Host> Host);
 
     private:
 

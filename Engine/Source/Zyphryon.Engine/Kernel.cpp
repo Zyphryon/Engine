@@ -17,6 +17,7 @@
 #include "Zyphryon.Input/Service.hpp"
 #include "Zyphryon.Job/Service.hpp"
 #include "Zyphryon.Platform/Service.hpp"
+#include "Zyphryon.Render/Service.hpp"
 #include "Zyphryon.Scene/Service.hpp"
 
 #if   defined(ZY_PLATFORM_WEB)
@@ -131,6 +132,9 @@ namespace Engine
 
         LOG_I("Kernel: Creating audio service");
         ConstRetainer<Audio::Service> Audio = Register<Audio::Service>();
+
+        LOG_I("Kernel: Creating render service");
+        ConstRetainer<Render::Service> Render = Register<Render::Service>();
 
 #endif
 

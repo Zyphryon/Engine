@@ -11,8 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Canvas.hpp"
-#include "Zyphryon.Render/Typography/FontLoader.hpp"
-#include "Zyphryon.Render/Typography/FontLoader.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,8 +25,6 @@ namespace Render
         : mService { Host.GetService<Graphic::Service>() }
     {
         ConstRetainer<Content::Service> Content = Host.GetService<Content::Service>();
-        Content->AddLoader(FontLoader::kTypes, Retainer<FontLoader>::Create());
-
         CreateDefaultResources(Content);
     }
 
@@ -229,43 +225,43 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::DrawSprite(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order)
+    void Canvas::DrawSprite(ConstRetainer<Graphic::Material> Material, Vector2 Size, ConstRef<Rect> Frame, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint)
     {
         Ref<SpriteCommand> Command = mSprites.Append();
         Command.Layout.Transform.SetData(Transform, Order);
-        Command.Layout.Frame     = Sprite.GetFrame();
-        Command.Layout.Size      = Sprite.GetSize();
-        Command.Layout.Color     = Sprite.GetTint();
-        Command.Material         = AddressOf(* Sprite.GetMaterial());
+        Command.Layout.Frame     = Frame;
+        Command.Layout.Size      = Size;
+        Command.Layout.Color     = Tint;
+        Command.Material         = AddressOf(* Material);
         Command.Technique        = AddressOf(* mTechniques[Enum::Cast(Type::Sprite)]);
 
         constexpr UInt32              Type     = Enum::Cast(Type::Sprite);
         constexpr Collector::Priority Priority = Collector::Priority::Opaque;
 
-        const Graphic::Object Material = Command.Material->GetHandle();
+        const Graphic::Object Surface  = Command.Material->GetHandle();
         const Graphic::Object Pipeline = Command.Technique->GetHandle();
-        mCollector.Push(Collector::Object(Type, mSprites.GetSize() - 1), Priority, Order, 0, Pipeline, Material);
+        mCollector.Push(Collector::Object(Type, mSprites.GetSize() - 1), Priority, Order, 0, Pipeline, Surface);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Canvas::DrawSpriteAlpha(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order)
+    void Canvas::DrawSpriteAlpha(ConstRetainer<Graphic::Material> Material, Vector2 Size, ConstRef<Rect> Frame, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint)
     {
         Ref<SpriteCommand> Command = mSprites.Append();
         Command.Layout.Transform.SetData(Transform, Order);
-        Command.Layout.Frame     = Sprite.GetFrame();
-        Command.Layout.Size      = Sprite.GetSize();
-        Command.Layout.Color     = Sprite.GetTint();
-        Command.Material         = AddressOf(* Sprite.GetMaterial());
+        Command.Layout.Frame     = Frame;
+        Command.Layout.Size      = Size;
+        Command.Layout.Color     = Tint;
+        Command.Material         = AddressOf(* Material);
         Command.Technique        = AddressOf(* mTechniques[Enum::Cast(Type::SpriteAlpha)]);
 
         constexpr UInt32              Type     = Enum::Cast(Type::SpriteAlpha);
         constexpr Collector::Priority Priority = Collector::Priority::Transparent;
 
-        const Graphic::Object Material = Command.Material->GetHandle();
+        const Graphic::Object Surface  = Command.Material->GetHandle();
         const Graphic::Object Pipeline = Command.Technique->GetHandle();
-        mCollector.Push(Collector::Object(Type, mSprites.GetSize() - 1), Priority, Order, 0, Pipeline, Material);
+        mCollector.Push(Collector::Object(Type, mSprites.GetSize() - 1), Priority, Order, 0, Pipeline, Surface);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -304,14 +300,14 @@ namespace Render
 
     void Canvas::CreateDefaultResources(ConstRetainer<Content::Service> Content)
     {
-        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Circle.vfx");
-        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Ring.vfx");
-        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Line.vfx");
-        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/Rect.vfx");
-        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Geometry/RoundedRect.vfx");
-        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Sprite/Opaque.vfx");
-        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Sprite/Alpha.vfx");
-        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Embedded://Technique/Canvas/Typography/MSDF.vfx");
+        mTechniques[Enum::Cast(Type::Circle)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Circle.vfx");
+        mTechniques[Enum::Cast(Type::Ring)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Ring.vfx");
+        mTechniques[Enum::Cast(Type::Line)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Line.vfx");
+        mTechniques[Enum::Cast(Type::Rect)]        = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/Rect.vfx");
+        mTechniques[Enum::Cast(Type::RoundedRect)] = Content->Load<Graphic::Technique>("Embedded://Technique/Geometry/RoundedRect.vfx");
+        mTechniques[Enum::Cast(Type::Sprite)]      = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Opaque.vfx");
+        mTechniques[Enum::Cast(Type::SpriteAlpha)] = Content->Load<Graphic::Technique>("Embedded://Technique/Sprite/Alpha.vfx");
+        mTechniques[Enum::Cast(Type::Glyph)]       = Content->Load<Graphic::Technique>("Embedded://Technique/Font/MSDF.vfx");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -20,10 +20,10 @@
 
 namespace Render
 {
-    /// \brief A GPU texture the \ref Renderer owns and resizes automatically.
+    /// \brief A GPU texture the \ref Graph owns and resizes automatically.
     class Target final
     {
-        friend class Renderer;
+        friend class Graph;
 
     public:
 

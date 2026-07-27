@@ -12,16 +12,17 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Sprite.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Graphic/Technique.hpp"
+#include "Zyphryon.Graphic/Resource/Material.hpp"
+#include "Zyphryon.Graphic/Resource/Technique.hpp"
 #include "Zyphryon.Math/Color.hpp"
 #include "Zyphryon.Math/Geometry/Circle.hpp"
 #include "Zyphryon.Math/Geometry/Line.hpp"
+#include "Zyphryon.Math/Geometry/Rect.hpp"
 #include "Zyphryon.Render/Collector.hpp"
 #include "Zyphryon.Render/Encoder.hpp"
-#include "Zyphryon.Render/Typography/Font.hpp"
-#include "Zyphryon.Render/Typography/FontEffect.hpp"
+#include "Zyphryon.Render/Resource/Font.hpp"
+#include "Zyphryon.Render/Resource/FontEffect.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -124,19 +125,25 @@ namespace Render
         /// \param Effect    The text effect to apply to the text.
         void DrawText(ConstRetainer<Font> Font, Real32 Size, Vector2 Spacing, Text Content, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint, ConstRef<FontEffect> Effect);
 
-        /// \brief Issues a draw command for drawing a sprite with the specified parameters.
+        /// \brief Issues a draw command for drawing an opaque sprite with the specified parameters.
         ///
-        /// \param Sprite    The sprite to draw, containing texture and source rectangle information.
+        /// \param Material  The material providing the texture the sprite samples.
+        /// \param Size      The size of the sprite, in pixels.
+        /// \param Frame     The region of the material's texture the sprite samples.
         /// \param Transform The transformation matrix to apply to the sprite for positioning, scaling, and rotation.
         /// \param Order     The depth value for rendering order.
-        void DrawSprite(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order);
+        /// \param Tint      The tint color to apply to the sprite.
+        void DrawSprite(ConstRetainer<Graphic::Material> Material, Vector2 Size, ConstRef<Rect> Frame, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint);
 
-        /// \brief Issues a draw command for drawing an alpha sprite with the specified parameters.
+        /// \brief Issues a draw command for drawing a transparent sprite with the specified parameters.
         ///
-        /// \param Sprite    The sprite to draw, containing texture and source rectangle information.
+        /// \param Material  The material providing the texture the sprite samples.
+        /// \param Size      The size of the sprite, in pixels.
+        /// \param Frame     The region of the material's texture the sprite samples.
         /// \param Transform The transformation matrix to apply to the sprite for positioning, scaling, and rotation.
         /// \param Order     The depth value for rendering order.
-        void DrawSpriteAlpha(ConstRef<Sprite> Sprite, ConstRef<Matrix3x2> Transform, Real32 Order);
+        /// \param Tint      The tint color to apply to the sprite.
+        void DrawSpriteAlpha(ConstRetainer<Graphic::Material> Material, Vector2 Size, ConstRef<Rect> Frame, ConstRef<Matrix3x2> Transform, Real32 Order, IntColor8 Tint);
 
         /// \brief Drains the collected draw calls, encoding them as batched draw commands.
         ///

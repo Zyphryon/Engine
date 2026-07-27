@@ -135,7 +135,7 @@ namespace Render
 
     void Encoder::Draw(
         ConstRef<Graphic::Technique> Technique,
-        ConstRef<Graphic::Model>     Model,
+        ConstRef<Model>              Model,
         ConstRef<Graphic::Stream>    Uniform)
     {
         ConstRetainer<Graphic::Mesh> Mesh = Model.GetMesh();

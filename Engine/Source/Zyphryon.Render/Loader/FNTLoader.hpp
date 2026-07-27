@@ -21,7 +21,7 @@
 namespace Render
 {
     /// \brief Content loader for the engine's native, pre-baked binary font format (ZFNT).
-    class FontLoader final : public Content::Loader
+    class FNTLoader final : public Content::Loader
     {
     public:
 

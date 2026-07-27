@@ -12,14 +12,14 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Mesh.hpp"
-#include "Material.hpp"
+#include "Zyphryon.Graphic/Resource/Mesh.hpp"
+#include "Zyphryon.Graphic/Resource/Material.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace Render
 {
     /// \brief Represents a model resource combining materials, and meshes.
     class Model final : public Content::AbstractResource<Model>
@@ -34,7 +34,7 @@ namespace Graphic
         /// \brief Sets the geometry of this model.
         ///
         /// \param Mesh The mesh resource to reference.
-        ZY_INLINE void SetMesh(ConstRetainer<Mesh> Mesh)
+        ZY_INLINE void SetMesh(ConstRetainer<Graphic::Mesh> Mesh)
         {
             mMesh = Mesh;
         }
@@ -42,30 +42,56 @@ namespace Graphic
         /// \brief Gets the geometry of this model.
         ///
         /// \return The referenced mesh resource, or null if unset.
-        ZY_INLINE ConstRetainer<Mesh> GetMesh() const
+        ZY_INLINE ConstRetainer<Graphic::Mesh> GetMesh() const
         {
             return mMesh;
         }
 
-        /// \brief Gets the local-space axis-aligned bounds of the model's geometry.
+        /// \brief Sets the bounds the model is culled by, overriding the ones its mesh reports.
         ///
-        /// \return The mesh's bounding box, or an invalid box when the model has no mesh.
+        /// Skinned geometry needs this. A mesh only knows the extent of its bind pose, so a model that raises
+        /// an arm or swings a blade reaches outside it and gets culled while still on screen. Give such a model
+        /// bounds wide enough for every pose it can strike, and leave it unset for anything that does not
+        /// deform.
+        ///
+        /// \param Bounds The bounding box to cull by, or an invalid box to fall back on the mesh.
+        ZY_INLINE void SetBounds(ConstRef<Box> Bounds)
+        {
+            mBounds = Bounds;
+        }
+
+        /// \brief Gets the local-space axis-aligned bounds the model is culled by.
+        ///
+        /// \return The overriding bounds when one was set, otherwise the mesh's own bind-pose bounds, or an
+        ///         invalid box when the model has neither.
         ZY_INLINE Box GetBounds() const
         {
+            if (mBounds.IsValid())
+            {
+                return mBounds;
+            }
             return mMesh ? mMesh->GetBounds() : Box::Invalid();
+        }
+
+        /// \brief Checks whether the model carries bounds of its own rather than borrowing its mesh's.
+        ///
+        /// \return `true` when bounds were set explicitly, otherwise `false`.
+        ZY_INLINE Bool HasBounds() const
+        {
+            return mBounds.IsValid();
         }
 
         /// \brief Appends a material to the table, in the order its primitives reference by slot.
         ///
         /// \param Material The material resource to append.
         /// \return The material's slot index, matching `Mesh::Primitive::Material`.
-        UInt8 AddMaterial(ConstRetainer<Material> Material);
+        UInt8 AddMaterial(ConstRetainer<Graphic::Material> Material);
 
         /// \brief Gets the material bound to the given table slot.
         ///
         /// \param Slot The material-table slot to query.
         /// \return The material resource at the slot.
-        ZY_INLINE ConstRetainer<Material> GetMaterial(UInt8 Slot) const
+        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt8 Slot) const
         {
             return mMaterials[Slot];
         }
@@ -73,7 +99,7 @@ namespace Graphic
         /// \brief Gets the model's full material table.
         ///
         /// \return A read-only view over the material table.
-        ZY_INLINE ConstSpan<Retainer<Material>> GetMaterials() const
+        ZY_INLINE ConstSpan<Retainer<Graphic::Material>> GetMaterials() const
         {
             return mMaterials;
         }
@@ -84,23 +110,23 @@ namespace Graphic
         ///
         /// \param Service The graphic service used to create the resources.
         /// \return `true` on success.
-        Bool Upload(Ref<Service> Service);
+        Bool Upload(Ref<Graphic::Service> Service);
 
         /// \brief Unloads the model's exclusively-owned mesh and materials from the GPU.
         ///
         /// \param Service The graphic service used to destroy the resources.
-        void Unload(Ref<Service> Service);
+        void Unload(Ref<Graphic::Service> Service);
 
         /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
         Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
         {
-            return Upload(* Host.GetService<Service>());
+            return Upload(* Host.GetService<Graphic::Service>());
         }
 
         /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
         void OnDelete(Ref<Engine::Subsystem::Host> Host) override
         {
-            Unload(* Host.GetService<Service>());
+            Unload(* Host.GetService<Graphic::Service>());
         }
 
     private:
@@ -108,7 +134,8 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Mesh>               mMesh;
-        Sequence<Retainer<Material>> mMaterials;
+        Retainer<Graphic::Mesh>               mMesh;
+        Box                                   mBounds = Box::Invalid();
+        Sequence<Retainer<Graphic::Material>> mMaterials;
     };
 }

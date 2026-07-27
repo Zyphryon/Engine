@@ -33,10 +33,10 @@ namespace Application
 
         // The canvas registers the font loader and its techniques on construction; the renderer drives passes.
         mCanvas   = Unique<Render::Canvas>::Create(* this);
-        mRenderer = Unique<Render::Renderer>::Create(* this);
+        mGraph = Unique<Render::Graph>::Create(* this);
 
         // A single display pass: clear to a dark background, then flush the canvas into it.
-        Ref<CanvasPass>               Stage = mRenderer->AddPass<CanvasPass>(* mCanvas);
+        Ref<CanvasPass>               Stage = mGraph->AddPass<CanvasPass>(* mCanvas);
         Render::Pass::ColorAttachment Background;
         Background.Target = nullptr;                                 // the display surface
         Background.Load   = Graphic::Action::Clear;
@@ -65,7 +65,7 @@ namespace Application
         {
             mWidth  = Width;
             mHeight = Height;
-            mRenderer->Resize(Width, Height);
+            mGraph->Resize(Width, Height);
         }
 
         mElapsed += Delta;
@@ -87,7 +87,7 @@ namespace Application
         Graphic::Transient<Matrix4x4>   Uniforms = Graphics->AllocateTransientUniforms<Matrix4x4>(1);
         Uniforms[0] = mCamera.GetViewProjection();
 
-        mRenderer->Run(Uniforms.GetStream());
+        mGraph->Run(Uniforms.GetStream());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
