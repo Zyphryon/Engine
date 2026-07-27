@@ -529,14 +529,14 @@ namespace Graphic
     /// \brief Configuration settings for the graphics device.
     struct Config final
     {
+        /// Whether presentation waits for the vertical blank.
+        Bool          Tearless;
+
         /// The width of the graphics device in pixels.
         UInt32        Width;
 
         /// The height of the graphics device in pixels.
         UInt32        Height;
-
-        /// Whether presentation waits for the vertical blank.
-        Bool          Tearless;
 
         /// The color format used by the graphics device.
         TextureFormat ColorFormat;
@@ -834,7 +834,7 @@ namespace Graphic
         /// The base vertex index for non-indexed draw calls or the vertex offset for indexed draw calls.
         SInt32 Base      = 0;
 
-        /// The byte offset within the index buffer for indexed draw calls or the vertex offset for non-indexed draw calls.
+        /// The first index to draw for indexed draw calls, or the first vertex for non-indexed draw calls.
         UInt32 Offset    = 0;
 
         /// The number of instances to draw for instanced rendering (1 for non-instanced draws).

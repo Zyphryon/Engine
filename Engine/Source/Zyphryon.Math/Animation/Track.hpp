@@ -61,6 +61,22 @@ inline namespace Math
             mInterpolation = Mode;
         }
 
+        /// \brief Checks whether the track carries any keyframe at all.
+        ///
+        /// \return `true` when the track is empty, otherwise `false`.
+        ZY_INLINE Bool IsEmpty() const
+        {
+            return mKeyframes.IsEmpty();
+        }
+
+        /// \brief Gets the number of keyframes the track carries.
+        ///
+        /// \return The keyframe count.
+        ZY_INLINE UInt GetSize() const
+        {
+            return mKeyframes.GetSize();
+        }
+
         /// \brief Gets the track's duration (the time of its last keyframe).
         ///
         /// \return The duration in seconds, or `0` when the track is empty.
@@ -108,25 +124,32 @@ inline namespace Math
             ConstRef<Keyframe<Type>> Next  = mKeyframes[Index];
             const Real32             Delta = static_cast<Real32>((Time - Prev.Time) / (Next.Time - Prev.Time));
 
-            if constexpr (IsSplinable<Type>)
+            if constexpr (IsSlerpable<Type>)
             {
-                if (mInterpolation == Interpolation::Cubic)
-                {
-                    // Catmull-Rom through the four keyframes around the segment (endpoints duplicated at the bounds).
-                    ConstRef<Type> P0 = mKeyframes[Index >= 2 ? Index - 2 : 0].Value;
-                    ConstRef<Type> P3 = mKeyframes[Index + 1 < Count ? Index + 1 : Count - 1].Value;
-
-                    return AnyBezier<Type>::FromCatmullRom(P0, Prev.Value, Next.Value, P3).Point(Delta);
-                }
-            }
-
-            if constexpr (IsLerpable<Type>)
-            {
-                return Type::Lerp(Prev.Value, Next.Value, Delta);
+                return Type::Slerp(Prev.Value, Next.Value, Delta);
             }
             else
             {
-                return Lerp<Type>(Prev.Value, Next.Value, Delta);
+                if constexpr (IsSplinable<Type>)
+                {
+                    if (mInterpolation == Interpolation::Cubic)
+                    {
+                        // Catmull-Rom through the four keyframes around the segment (endpoints duplicated at the bounds).
+                        ConstRef<Type> P0 = mKeyframes[Index >= 2 ? Index - 2 : 0].Value;
+                        ConstRef<Type> P3 = mKeyframes[Index + 1 < Count ? Index + 1 : Count - 1].Value;
+
+                        return AnyBezier<Type>::FromCatmullRom(P0, Prev.Value, Next.Value, P3).Point(Delta);
+                    }
+                }
+
+                if constexpr (IsLerpable<Type>)
+                {
+                    return Type::Lerp(Prev.Value, Next.Value, Delta);
+                }
+                else
+                {
+                    return Lerp<Type>(Prev.Value, Next.Value, Delta);
+                }
             }
         }
 

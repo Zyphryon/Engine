@@ -73,7 +73,7 @@ namespace Render
         /// \brief Table mapping character pairs to kerning adjustments.
         using Kerning = Table<UInt64, Real32>;
 
-        /// TODO_DOC
+        /// \brief Sequence holding one material per atlas page, indexed by \c Glyph::Page.
         using Atlases = Sequence<Retainer<Graphic::Material>>;
 
     public:

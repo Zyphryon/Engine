@@ -75,7 +75,6 @@ namespace Graphic
         if (!mDriver)
         {
             mDriver = Switch(Adapter);
-            mConfig = Config;
 
             if (mDriver)
             {
@@ -95,6 +94,8 @@ namespace Graphic
             else
             {
                 mDriver->Probe(mDescription);
+
+                mTearless = Config.Tearless;
 
                 LOG_I("Graphics: Using {0}", mDescription.Backend);
                 LOG_I("Graphics: Detected Tier ({0})", Enum::GetName(mDescription.Tier));
@@ -116,9 +117,7 @@ namespace Graphic
 
     void Service::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        mConfig.Width    = Width;
-        mConfig.Height   = Height;
-        mConfig.Tearless = Tearless;
+        mTearless = Tearless;
 
         Enqueue<& Driver::Reset>(Width, Height, Tearless);
     }

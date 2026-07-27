@@ -29,10 +29,10 @@ namespace Audio
     {
 #if defined(ZY_WEB_THREAD)
         /// The fixed Web Audio render quantum: 128 interleaved frames per worklet process call.
-        static constexpr UInt32 kBlock     = 128;
+        static constexpr UInt32 kBlock = 128;
 #else
         /// Frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
-        static constexpr UInt32 kBlock     = 1024;
+        static constexpr UInt32 kBlock = 1024;
 #endif
 
         /// The render callback the service installs; the mixer fills \c Mix through it each block.

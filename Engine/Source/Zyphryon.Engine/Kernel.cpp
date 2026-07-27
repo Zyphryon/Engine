@@ -147,9 +147,9 @@ namespace Engine
 
         LOG_I("Kernel: Initializing graphic service");
         Graphic::Config GraphicsConfig;
+        GraphicsConfig.Tearless    = mConfig.IsGraphicsTearless();
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();
-        GraphicsConfig.Tearless    = mConfig.IsGraphicsTearless();
         GraphicsConfig.ColorFormat = mConfig.GetGraphicsColorFormat();
         GraphicsConfig.DepthFormat = mConfig.GetGraphicsDepthFormat();
 
@@ -238,7 +238,7 @@ namespace Engine
     {
         if (ConstRetainer<Graphic::Service> Graphic = GetService<Graphic::Service>())
         {
-            Graphic->Reset(Width, Height, Graphic->GetConfig().Tearless);
+            Graphic->Reset(Width, Height, Graphic->IsTearless());
         }
         return false;
     }

@@ -57,12 +57,12 @@ namespace Graphic
         /// \param Tearless `true` to wait for the vertical blank, `false` to present as soon as a frame is ready.
         void Reset(UInt16 Width, UInt16 Height, Bool Tearless);
 
-        /// \brief Gets the configuration the rendering surface currently uses.
+        /// \brief Checks whether presentation waits for the vertical blank.
         ///
-        /// \return The current graphics device configuration.
-        ZY_INLINE ConstRef<Config> GetConfig() const
+        /// \return `true` if a finished frame waits for the vertical blank, `false` otherwise.
+        ZY_INLINE Bool IsTearless() const
         {
-            return mConfig;
+            return mTearless;
         }
 
         /// \brief Gets the current description of the graphics service, including backend, adapter, and capabilities.
@@ -466,12 +466,12 @@ namespace Graphic
 
         Unique<Driver>                   mDriver;
         Description                      mDescription;
-        Config                           mConfig;
         Thread                           mWorker;
         Atomic<Bool>                     mSignal;
         UInt8                            mProducer = 0;
         UInt8                            mConsumer = kMaxFrames - 1;
         Array<InFlightFrame, kMaxFrames> mFrames;
+        Bool                             mTearless;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
