@@ -48,19 +48,21 @@ namespace Render
             return false;
         }
 
-        // Bounds wide enough for every pose the model can strike, which only deforming geometry needs to state;
-        // anything else is culled by the extent its mesh already reports.
-        if (const JsonArray Bounds = Root.GetArray("Bounds"); Bounds.GetSize() >= 6)
+        // Resolve the bone hierarchy, when the model deforms. Absent means static geometry.
+        if (const Text Path = Root.GetString("Skeleton"); !Path.IsEmpty())
         {
-            Asset->SetBounds(Box(
-                Bounds.GetNumber<Real32>(0), Bounds.GetNumber<Real32>(1), Bounds.GetNumber<Real32>(2),
-                Bounds.GetNumber<Real32>(3), Bounds.GetNumber<Real32>(4), Bounds.GetNumber<Real32>(5)));
+            Asset->SetSkeleton(Service.Load<Skeleton>(Path, AddressOf(Scope)));
         }
 
         // Resolve the material table, in the slot order primitives reference by index.
         if (const JsonArray Materials = Root.GetArray("Materials"); !Materials.IsNullOrEmpty())
         {
-            for (UInt Slot = 0, Count = Materials.GetSize(); Slot < Count; ++Slot)
+            const UInt Count = Materials.GetSize();
+
+            Sequence<Retainer<Graphic::Material>> Table;
+            Table.Reserve(Count);
+
+            for (UInt Slot = 0; Slot < Count; ++Slot)
             {
                 Retainer<Graphic::Material> Object;
 
@@ -75,8 +77,9 @@ namespace Render
                 {
                     Object = Service.Load<Graphic::Material>(Materials.GetString(Slot), AddressOf(Scope));
                 }
-                Asset->AddMaterial(Object);
+                Table.Append(Move(Object));
             }
+            Asset->SetMaterials(Move(Table));
         }
         return true;
     }

@@ -20,7 +20,7 @@
 
 namespace Graphic
 {
-    /// \brief Content loader for the engine's native, chunked binary mesh format (`ZMSH`).
+    /// \brief Content loader for the engine's native, chunked binary mesh format.
     class MSHLoader final : public Content::Loader
     {
     public:

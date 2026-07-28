@@ -629,4 +629,3 @@ namespace Render
         Transform3D mTransform;
     };
 }
-

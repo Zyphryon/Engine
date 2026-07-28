@@ -20,13 +20,13 @@
 
 namespace Render
 {
-    /// \brief Content loader for the engine's native, pre-baked binary font format.
-    class FNTLoader final : public Content::Loader
+    /// \brief Content loader for the engine's native, pre-baked binary skeleton format.
+    class SKLLoader final : public Content::Loader
     {
     public:
 
         /// \brief An array with the extension supported by this content loader.
-        static constexpr Text kTypes[] = { "fnt" };
+        static constexpr Text kTypes[] = { "skl" };
 
     public:
 

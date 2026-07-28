@@ -13,6 +13,7 @@
 #include "Service.hpp"
 #include "Loader/MDLLoader.hpp"
 #include "Loader/FNTLoader.hpp"
+#include "Loader/SKLLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -38,5 +39,6 @@ namespace Render
         ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
         Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
         Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
+        Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
     }
 }

@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Skeleton.hpp"
 #include "Zyphryon.Graphic/Resource/Mesh.hpp"
 #include "Zyphryon.Graphic/Resource/Material.hpp"
 
@@ -21,7 +22,7 @@
 
 namespace Render
 {
-    /// \brief Represents a model resource combining materials, and meshes.
+    /// \brief Represents a renderable model combining geometry, materials, and an optional rig to deform on.
     class Model final : public Content::AbstractResource<Model>
     {
     public:
@@ -47,53 +48,36 @@ namespace Render
             return mMesh;
         }
 
-        /// \brief Sets the bounds the model is culled by, overriding the ones its mesh reports.
+        /// \brief Sets the bone hierarchy this model's geometry is skinned to.
         ///
-        /// Skinned geometry needs this. A mesh only knows the extent of its bind pose, so a model that raises
-        /// an arm or swings a blade reaches outside it and gets culled while still on screen. Give such a model
-        /// bounds wide enough for every pose it can strike, and leave it unset for anything that does not
-        /// deform.
-        ///
-        /// \param Bounds The bounding box to cull by, or an invalid box to fall back on the mesh.
-        ZY_INLINE void SetBounds(ConstRef<Box> Bounds)
+        /// \param Skeleton The skeleton resource to reference.
+        ZY_INLINE void SetSkeleton(ConstRetainer<Render::Skeleton> Skeleton)
         {
-            mBounds = Bounds;
+            mSkeleton = Skeleton;
         }
 
-        /// \brief Gets the local-space axis-aligned bounds the model is culled by.
+        /// \brief Gets the bone hierarchy this model's geometry is skinned to.
         ///
-        /// \return The overriding bounds when one was set, otherwise the mesh's own bind-pose bounds, or an
-        ///         invalid box when the model has neither.
+        /// \return The referenced skeleton resource, or null when the model does not deform.
+        ZY_INLINE ConstRetainer<Render::Skeleton> GetSkeleton() const
+        {
+            return mSkeleton;
+        }
+
+        /// \brief Gets the local-space axis-aligned bounds of the model's geometry at rest.
+        ///
+        /// \return The mesh's bind-pose bounds, or an invalid box when the model has no mesh.
         ZY_INLINE Box GetBounds() const
         {
-            if (mBounds.IsValid())
-            {
-                return mBounds;
-            }
             return mMesh ? mMesh->GetBounds() : Box::Invalid();
         }
 
-        /// \brief Checks whether the model carries bounds of its own rather than borrowing its mesh's.
+        /// \brief Replaces the material table.
         ///
-        /// \return `true` when bounds were set explicitly, otherwise `false`.
-        ZY_INLINE Bool HasBounds() const
+        /// \param Table The materials, ordered so each entry sits at the slot its primitives index by.
+        ZY_INLINE void SetMaterials(AnyRef<Sequence<Retainer<Graphic::Material>>> Table)
         {
-            return mBounds.IsValid();
-        }
-
-        /// \brief Appends a material to the table, in the order its primitives reference by slot.
-        ///
-        /// \param Material The material resource to append.
-        /// \return The material's slot index, matching `Mesh::Primitive::Material`.
-        UInt8 AddMaterial(ConstRetainer<Graphic::Material> Material);
-
-        /// \brief Gets the material bound to the given table slot.
-        ///
-        /// \param Slot The material-table slot to query.
-        /// \return The material resource at the slot.
-        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt8 Slot) const
-        {
-            return mMaterials[Slot];
+            mMaterials = Move(Table);
         }
 
         /// \brief Gets the model's full material table.
@@ -102,6 +86,15 @@ namespace Render
         ZY_INLINE ConstSpan<Retainer<Graphic::Material>> GetMaterials() const
         {
             return mMaterials;
+        }
+
+        /// \brief Gets the material bound to the given table slot.
+        ///
+        /// \param Slot The material-table slot to query.
+        /// \return The material resource at the slot.
+        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt8 Slot) const
+        {
+            return mMaterials[Slot];
         }
 
     public:
@@ -135,7 +128,7 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Retainer<Graphic::Mesh>               mMesh;
-        Box                                   mBounds = Box::Invalid();
+        Retainer<Render::Skeleton>            mSkeleton;
         Sequence<Retainer<Graphic::Material>> mMaterials;
     };
 }
