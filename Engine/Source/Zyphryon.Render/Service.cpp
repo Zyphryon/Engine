@@ -14,6 +14,7 @@
 #include "Loader/MDLLoader.hpp"
 #include "Loader/FNTLoader.hpp"
 #include "Loader/SKLLoader.hpp"
+#include "Loader/ANMLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -40,5 +41,6 @@ namespace Render
         Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
         Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
         Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
+        Content->AddLoader(ANMLoader::kTypes, Retainer<ANMLoader>::Create());
     }
 }

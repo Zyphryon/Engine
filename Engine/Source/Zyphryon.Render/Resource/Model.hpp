@@ -67,9 +67,9 @@ namespace Render
         /// \brief Gets the local-space axis-aligned bounds of the model's geometry at rest.
         ///
         /// \return The mesh's bind-pose bounds, or an invalid box when the model has no mesh.
-        ZY_INLINE Box GetBounds() const
+        ZY_INLINE Box GetExtent() const
         {
-            return mMesh ? mMesh->GetBounds() : Box::Invalid();
+            return mMesh ? mMesh->GetExtent() : Box::Invalid();
         }
 
         /// \brief Replaces the material table.

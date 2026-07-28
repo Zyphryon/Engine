@@ -83,7 +83,7 @@ namespace Graphic
             case ('M' | ('E' << 8) | ('S' << 16) | ('H' << 24)):
             {
                 Asset->SetProperties(Body.Read<Mesh::Property>());
-                Asset->SetBounds(Body.Read<Box>());
+                Asset->SetExtent(Body.Read<Box>());
 
                 for (UInt Count = Body.Read<UInt8>(); Count > 0; --Count)
                 {

@@ -26,7 +26,7 @@ namespace Graphic
           mProperties      { Property::None },
           mVertices        { 0 },
           mIndices         { 0 },
-          mBounds          { Box::Invalid() }
+          mExtent          { Box::Invalid() }
     {
     }
 

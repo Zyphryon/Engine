@@ -105,18 +105,18 @@ namespace Graphic
 
         /// \brief Sets the local-space axis-aligned bounds enclosing every vertex position.
         ///
-        /// \param Bounds The bounding box in the mesh's own coordinate space.
-        ZY_INLINE void SetBounds(ConstRef<Box> Bounds)
+        /// \param Extent The bounding box in the mesh's own coordinate space.
+        ZY_INLINE void SetExtent(ConstRef<Box> Extent)
         {
-            mBounds = Bounds;
+            mExtent = Extent;
         }
 
         /// \brief Gets the local-space axis-aligned bounds enclosing every vertex position.
         ///
         /// \return The bounding box in the mesh's own coordinate space.
-        ZY_INLINE ConstRef<Box> GetBounds() const
+        ZY_INLINE ConstRef<Box> GetExtent() const
         {
-            return mBounds;
+            return mExtent;
         }
 
         /// \brief Sets the shared vertex buffer's CPU data, uploaded on the next `Upload`.
@@ -206,7 +206,7 @@ namespace Graphic
         Object                                    mIndices;
         Array<Binding, Enum::Count<VertexSlot>()> mBindings;
         Sequence<Primitive>                       mPrimitives;
-        Box                                       mBounds;
+        Box                                       mExtent;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
