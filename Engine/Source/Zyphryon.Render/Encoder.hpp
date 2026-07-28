@@ -14,8 +14,9 @@
 
 #include "Zyphryon.Graphic/Schema.hpp"
 #include "Zyphryon.Graphic/Service.hpp"
+#include "Zyphryon.Graphic/Resource/Material.hpp"
+#include "Zyphryon.Graphic/Resource/Mesh.hpp"
 #include "Zyphryon.Graphic/Resource/Technique.hpp"
-#include "Zyphryon.Render/Resource/Model.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -135,19 +136,21 @@ namespace Render
             Draw(Technique, Textures, Graphic::Stream(), Parameters);
         }
 
-        /// \brief Emits one indexed draw per primitive of a model's mesh, binding its shared vertex/index buffers.
-        ///
-        /// Each present vertex attribute is bound as a vertex stream in `VertexSlot` order, so the technique's
-        /// input layout must declare its streams in that same order. Each primitive binds the model-table material
-        /// referenced by its material slot.
+        /// \brief Emits one indexed draw over a run of a mesh, drawn with the given material.
         ///
         /// \param Technique The technique (pipeline + schema) to draw with.
-        /// \param Model     The model whose mesh primitives are drawn.
+        /// \param Mesh      The mesh whose buffers the run indexes into.
+        /// \param Material  The material to bind, or `nullptr` for a material-less draw.
+        /// \param Range     The index range to draw, and how many instances of it.
+        /// \param Instances The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Uniform   The per-object data stream bound to the Instance scope (empty for none).
         void Draw(
-            ConstRef<Graphic::Technique> Technique,
-            ConstRef<Model>              Model,
-            ConstRef<Graphic::Stream>    Uniform);
+            ConstRef<Graphic::Technique>  Technique,
+            ConstRef<Graphic::Mesh>       Mesh,
+            ConstPtr<Graphic::Material>   Material,
+            ConstRef<Graphic::Invocation> Range,
+            ConstRef<Graphic::Stream>     Instances,
+            ConstRef<Graphic::Stream>     Uniform);
 
     private:
 

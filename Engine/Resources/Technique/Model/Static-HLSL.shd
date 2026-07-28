@@ -1,0 +1,85 @@
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+//
+// This work is licensed under the terms of the MIT license.
+//
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Uniforms
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+cbuffer cb_Global   : register(b0)
+{
+    float4x4 u_Camera;
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Attributes
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+struct vs_Input
+{
+    float3 Position : SLOT0;
+    float3 Normal   : SLOT1;
+    float2 Texture  : SLOT2;
+    float4 Row0     : SLOT3;
+    float4 Row1     : SLOT4;
+    float4 Row2     : SLOT5;
+};
+
+struct ps_Input
+{
+    float4 Position : SV_POSITION;
+    float3 Normal   : NORMAL0;
+    float2 Texture  : TEXCOORD0;
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Vertex
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#ifdef   VERTEX_SHADER
+
+ps_Input main(vs_Input Input)
+{
+    const float4 Local  = float4(Input.Position, 1.0);
+    const float3 World  = float3(dot(Input.Row0, Local), dot(Input.Row1, Local), dot(Input.Row2, Local));
+
+    // Normalizing each basis row makes the normal transform correct under non-uniform scale.
+    const float3 Normal = float3(
+        dot(normalize(Input.Row0.xyz), Input.Normal),
+        dot(normalize(Input.Row1.xyz), Input.Normal),
+        dot(normalize(Input.Row2.xyz), Input.Normal));
+
+    ps_Input Result;
+    Result.Position = mul(u_Camera, float4(World, 1.0));
+    Result.Normal   = Normal;
+    Result.Texture  = Input.Texture;
+
+    return Result;
+}
+
+#endif // VERTEX_SHADER
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Fragment
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#ifdef FRAGMENT_SHADER
+
+Texture2D    s_Albedo        : register(t0);
+SamplerState s_AlbedoSampler : register(s0);
+
+float4 main(ps_Input Input) : SV_Target
+{
+    const float4 Texel = s_Albedo.Sample(s_AlbedoSampler, Input.Texture);
+
+    // A fixed half-lambert sun so unlit geometry still reads as shaped rather than flat.
+    const float Wrap = saturate(dot(normalize(Input.Normal), normalize(float3(0.4, 0.8, 0.3)))) * 0.75 + 0.25;
+
+    return float4(Texel.rgb * Wrap, Texel.a);
+}
+
+#endif // FRAGMENT_SHADER

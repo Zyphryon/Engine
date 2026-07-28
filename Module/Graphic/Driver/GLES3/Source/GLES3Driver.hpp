@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "GLES3Common.hpp"
 #include "GLES3Compiler.hpp"
 #include "GLES3Context.hpp"
 #include "Zyphryon.Graphic/Driver.hpp"

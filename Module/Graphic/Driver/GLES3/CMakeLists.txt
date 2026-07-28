@@ -31,7 +31,7 @@ LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 ## Dependency (Glad) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-IF (ZY_GRAPHIC_DRIVER_GLES3 AND NOT ANDROID AND NOT EMSCRIPTEN)
+IF (NOT ANDROID AND NOT EMSCRIPTEN)
     FetchContent_Declare(External_Glad
             GIT_REPOSITORY https://github.com/Dav1dde/glad
             GIT_TAG        v2.0.8

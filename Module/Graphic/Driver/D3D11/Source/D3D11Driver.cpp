@@ -964,18 +964,18 @@ namespace Graphic
 
         DXGI_SWAP_CHAIN_DESC Description { };
         Description.BufferUsage       = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        Description.Flags             = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | Flags;
         Description.BufferDesc.Format = Format;
         Description.BufferDesc.Width  = Config.Width;
         Description.BufferDesc.Height = Config.Height;
         Description.SampleDesc        = { .Count = 1, .Quality = 0 };
         Description.OutputWindow      = Window;
         Description.Windowed          = true;
+        Description.Flags             = Flags;
 
         ComPtr<IDXGIFactory4> DXGIFactory4;
         if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory4>(AddressOf(DXGIFactory4))))
         {
-            Description.BufferCount = kMaxFrames;
+            Description.BufferCount = 3;
             Description.SwapEffect  = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         }
         else
@@ -1053,7 +1053,7 @@ namespace Graphic
         const UInt32 OldSize = Oldest.Vertices.GetSize();
         const UInt32 NewSize = Newest.Vertices.GetSize();
 
-        for (UInt32 Element = 0; Element < NewSize; ++Element)
+        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
         {
             const Stream Old = Element < OldSize ? Oldest.Vertices[Element] : Stream {};
             const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream {};
@@ -1082,14 +1082,13 @@ namespace Graphic
 
     void D3D11Driver::ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest)
     {
-        Ptr<ID3D11SamplerState> Array[Command::kMaxTextures];
         UInt32 Min = Command::kMaxTextures;
         UInt32 Max = 0u;
 
         const UInt32 OldSize = Oldest.Samplers.GetSize();
         const UInt32 NewSize = Newest.Samplers.GetSize();
 
-        for (UInt32 Element = 0; Element < NewSize; ++Element)
+        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
         {
             const Sampler Old = Element < OldSize ? Oldest.Samplers[Element] : Sampler {};
             const Sampler New = Element < NewSize ? Newest.Samplers[Element] : Sampler {};
@@ -1099,11 +1098,17 @@ namespace Graphic
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
-            Array[Element] = GetOrCreateSampler(New);
         }
 
         if (Min < Max)
         {
+            Ptr<ID3D11SamplerState> Array[Command::kMaxTextures];
+
+            for (UInt32 Element = Min; Element < Max; ++Element)
+            {
+                Array[Element] = Element < NewSize ? GetOrCreateSampler(Newest.Samplers[Element]) : nullptr;
+            }
+
             const UInt32 Count = Max - Min;
             mDeviceImmediate->VSSetSamplers(Min, Count, Array + Min);
             mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min);
@@ -1122,7 +1127,7 @@ namespace Graphic
         const UInt32 OldSize = Oldest.Textures.GetSize();
         const UInt32 NewSize = Newest.Textures.GetSize();
 
-        for (UInt32 Element = 0; Element < NewSize; ++Element)
+        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
         {
             const Object Old = Element < OldSize ? Oldest.Textures[Element] : Object {};
             const Object New = Element < NewSize ? Newest.Textures[Element] : Object {};

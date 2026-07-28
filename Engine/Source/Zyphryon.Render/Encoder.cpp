@@ -134,59 +134,80 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::Draw(
-        ConstRef<Graphic::Technique> Technique,
-        ConstRef<Model>              Model,
-        ConstRef<Graphic::Stream>    Uniform)
+        ConstRef<Graphic::Technique>  Technique,
+        ConstRef<Graphic::Mesh>       Mesh,
+        ConstPtr<Graphic::Material>   Material,
+        ConstRef<Graphic::Invocation> Range,
+        ConstRef<Graphic::Stream>     Instances,
+        ConstRef<Graphic::Stream>     Uniform)
     {
-        ConstRetainer<Graphic::Mesh> Mesh = Model.GetMesh();
+        ConstRef<Graphic::Schema> Schema = Technique.GetDescription().Schema;
 
-        ConstRef<Graphic::Schema>                    Schema    = Technique.GetDescription().Schema;
-        const ConstSpan<Retainer<Graphic::Material>> Materials = Model.GetMaterials();
-
-        const Graphic::Object VertexBuffer = Mesh->GetVertices();
-        const Graphic::Object IndexBuffer  = Mesh->GetIndices();
-
-        const Bool   IsExtended  = Mesh->HasProperty(Graphic::Mesh::Property::Extended);
+        const Bool   IsExtended  = Mesh.HasProperty(Graphic::Mesh::Property::Extended);
         const UInt16 IndexStride = IsExtended ? sizeof(UInt32) : sizeof(UInt16);
 
-        for (ConstRef<Graphic::Mesh::Primitive> Primitive : Mesh->GetPrimitives())
+        Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+
+        Command.Pipeline = Technique.GetHandle();
+
+        // Bind the frame-global, per-pass, and per-object (instance) uniform blocks.
+        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)]   = mGlobal;
+        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]     = mPass;
+        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = Uniform;
+
+        // Bind the run's material (uniform block, textures, and samplers) when the caller named one.
+        if (Material)
         {
-            Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+            const Graphic::Stream Data = Pack(Graphic::UniformScope::Material, Schema, * Material);
+            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Data;
 
-            Command.Pipeline = Technique.GetHandle();
+            BindTextures(Command, Schema, * Material);
+        }
 
-            // Bind the frame-global, per-pass, and per-object (instance) uniform blocks.
-            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)]   = mGlobal;
-            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]     = mPass;
-            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = Uniform;
+        // Bind one stream per interleaved block, in slot order (matching the technique's layout).
+        const Graphic::Object Vertices = Mesh.GetVertices();
 
-            // Bind the primitive's material (uniform block, textures, and samplers) when the model provides one.
-            if (Primitive.Material < Materials.GetSize())
+        for (const Graphic::VertexSlot Slot : Enum::GetValues<Graphic::VertexSlot>())
+        {
+            if (!Mesh.HasBinding(Slot))
             {
-                ConstRef<Graphic::Material> Material = * Materials[Primitive.Material];
-
-                const Graphic::Stream Data = Pack(Graphic::UniformScope::Material, Schema, Material);
-                Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Data;
-
-                BindTextures(Command, Schema, Material);
+                continue;
             }
 
-            // Bind every present attribute as a vertex stream, in slot order (matching the technique's layout).
-            for (const Graphic::VertexSlot Slot : Enum::GetValues<Graphic::VertexSlot>())
+            const Graphic::Mesh::Binding Binding = Mesh.GetBinding(Slot);
+
+            Bool Bound = false;
+
+            for (ConstRef<Graphic::Stream> Stream : Command.Vertices)
             {
-                if (Mesh->HasBinding(Slot))
+                Bound = Stream.Buffer  == Vertices
+                     && Stream.Stride  == Binding.Stride
+                     && Binding.Offset >= Stream.Offset
+                     && Binding.Offset <  Stream.Offset + Binding.Stride;
+
+                if (Bound)
                 {
-                    const Graphic::Mesh::Binding Binding = Mesh->GetBinding(Slot);
-                    Command.Vertices.Append(Graphic::Stream(VertexBuffer, Binding.Stride, Binding.Offset));
+                    break;
                 }
             }
 
-            if (IndexBuffer)
+            if (!Bound)
             {
-                Command.Indices = Graphic::Stream(IndexBuffer, IndexStride, 0);
+                Command.Vertices.Append(Graphic::Stream(Vertices, Binding.Stride, Binding.Offset));
             }
-            Command.Parameters = Primitive.Range;
         }
+
+        // After the mesh's own, so what the batch varies is read from the stream the technique declares last.
+        if (Instances.Buffer)
+        {
+            Command.Vertices.Append(Instances);
+        }
+
+        if (const Graphic::Object Indices  = Mesh.GetIndices(); Indices)
+        {
+            Command.Indices = Graphic::Stream(Indices, IndexStride, 0);
+        }
+        Command.Parameters = Range;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

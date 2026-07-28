@@ -1,0 +1,48 @@
+{
+  "Properties": {
+    "Blend": {
+      "SrcColor": "One",
+      "DstColor": "Zero",
+      "SrcAlpha": "One",
+      "DstAlpha": "Zero"
+    },
+    "Depth": {
+      "Mask": true,
+      "Condition": "LessEqual"
+    },
+    "Rasterizer": {
+      "Cull": "Back"
+    },
+    "Layout": {
+      "Attributes": [
+        [0, "Float32x3",    0,  0, 0],
+        [1, "Float32x3",    0, 12, 0],
+        [2, "Float32x2",    0, 24, 0],
+        [3, "Float32x4",    1,  0, 1],
+        [4, "Float32x4",    1, 16, 1],
+        [5, "Float32x4",    1, 32, 1]
+      ],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      "Albedo"
+    ],
+    "Uniforms": [
+      { "Slot": "Global", "Name": "Camera", "Type": "Float4", "Count": 4   }
+    ]
+  },
+  "Program": {
+    "Shaders": {
+      "GLSL": [
+        { "Path": "Static-GLSL.shd", "Stage": "Vertex"   },
+        { "Path": "Static-GLSL.shd", "Stage": "Fragment" }
+      ],
+      "HLSL": [
+        { "Path": "Static-HLSL.shd", "Stage": "Vertex"   },
+        { "Path": "Static-HLSL.shd", "Stage": "Fragment" }
+      ]
+    }
+  }
+}
