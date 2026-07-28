@@ -789,8 +789,9 @@ namespace Graphic
         // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
-            const UInt Flag = mDeviceProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
-            D3D11Check(mSwapchain->Present(mDeviceProperties.Tearless ? 1 : 0, Flag));
+            const UInt Interval = mDeviceProperties.Tearless ? 1 : 0;
+            const UInt Flag     = Interval == 0 && mDeviceProperties.Tearing  ? DXGI_PRESENT_ALLOW_TEARING : 0;
+            D3D11Check(mSwapchain->Present(Interval, Flag));
         }
     }
 
@@ -991,6 +992,12 @@ namespace Graphic
         mDeviceProperties.ColorFormat = Config.ColorFormat;
         mDeviceProperties.DepthFormat = Config.DepthFormat;
         CreateSwapchainResources(Pass, Config);
+
+        // Matches the two-slot buffer ring; the CPU can never outrun it.
+        if (ComPtr<IDXGIDevice1> DXGIDevice1; SUCCEEDED(mDevice.As(AddressOf(DXGIDevice1))))
+        {
+            D3D11Check(DXGIDevice1->SetMaximumFrameLatency(2));
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
