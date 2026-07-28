@@ -201,7 +201,8 @@ namespace Graphic
         DeletePass(kDisplay);
 
         // Resizes the swap chain buffers with the new resolution and format.
-        D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height,  DXGI_FORMAT_UNKNOWN, 0));
+        const UINT Flags = mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+        D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height,  DXGI_FORMAT_UNKNOWN, Flags));
 
         // Recreates swap chain resources, including color and depth-stencil attachments.
         mDeviceProperties.Tearless = Tearless;
@@ -788,7 +789,8 @@ namespace Graphic
         // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
-            D3D11Check(mSwapchain->Present(mDeviceProperties.Tearless ? 1 : 0, 0));
+            const UInt Flag = mDeviceProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
+            D3D11Check(mSwapchain->Present(mDeviceProperties.Tearless ? 1 : 0, Flag));
         }
     }
 
@@ -913,6 +915,16 @@ namespace Graphic
             break;
         }
 
+        // Check if we support tearing mode
+        ComPtr<IDXGIFactory5> DXGIFactory5;
+        if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory5>(AddressOf(DXGIFactory5))))
+        {
+            BOOL AllowAdaptive = FALSE;
+            D3D11Check(DXGIFactory5->CheckFeatureSupport(
+                DXGI_FEATURE_PRESENT_ALLOW_TEARING, AddressOf(AllowAdaptive), sizeof(AllowAdaptive)));
+            mDeviceProperties.Tearing = AllowAdaptive;
+        }
+
         // Query supported multisample anti-aliasing (MSAA) levels for each texture format.
         for (const TextureFormat Format : Enum::GetValues<TextureFormat>())
         {
@@ -945,21 +957,32 @@ namespace Graphic
 
     void D3D11Driver::CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Config> Config)
     {
+        const UINT        Flags  = (mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
         const DXGI_FORMAT Format = (Config.ColorFormat == TextureFormat::RGBA8UIntNorm_sRGB)
             ? DXGI_FORMAT_R8G8B8A8_UNORM
             : D3D11Convert(Config.ColorFormat);
 
         DXGI_SWAP_CHAIN_DESC Description { };
-        Description.BufferCount       = 1;
         Description.BufferUsage       = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        Description.Flags             = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+        Description.Flags             = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | Flags;
         Description.BufferDesc.Format = Format;
         Description.BufferDesc.Width  = Config.Width;
         Description.BufferDesc.Height = Config.Height;
         Description.SampleDesc        = { .Count = 1, .Quality = 0 };
         Description.OutputWindow      = Window;
         Description.Windowed          = true;
-        Description.SwapEffect        = DXGI_SWAP_EFFECT_DISCARD;
+
+        ComPtr<IDXGIFactory4> DXGIFactory4;
+        if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory4>(AddressOf(DXGIFactory4))))
+        {
+            Description.BufferCount = kMaxFrames;
+            Description.SwapEffect  = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        }
+        else
+        {
+            Description.BufferCount = 1;
+            Description.SwapEffect  = DXGI_SWAP_EFFECT_DISCARD;
+        }
 
         D3D11Check(mDeviceFactory->CreateSwapChain(mDevice.Get(), AddressOf(Description), mSwapchain.GetAddressOf()));
         D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));

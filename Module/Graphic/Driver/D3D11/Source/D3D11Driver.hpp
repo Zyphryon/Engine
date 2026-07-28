@@ -157,6 +157,7 @@ namespace Graphic
         {
             D3D11Multisamples Multisample;
             Bool              Tearless    = true;
+            Bool              Tearing     = false;
             TextureFormat     ColorFormat = TextureFormat::Unspecified;
             TextureFormat     DepthFormat = TextureFormat::Unspecified;
         };
