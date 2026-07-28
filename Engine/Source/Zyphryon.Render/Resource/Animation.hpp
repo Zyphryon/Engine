@@ -33,6 +33,12 @@ namespace Render
             /// The hash of the driven bone's name, matching \ref Skeleton::Bone::Name.
             UInt64            Name     = 0;
 
+            /// The cadence every component that varies is sampled on, in samples per second.
+            Real32            Rate     = 0.0f;
+
+            /// The number of samples a component that varies carries.
+            UInt32            Count    = 0;
+
             /// The bone's position over time, or empty when the clip does not move it.
             Track<Vector3>    Position;
 
@@ -42,22 +48,38 @@ namespace Render
             /// The bone's rotation over time, or empty when the clip does not turn it.
             Track<Quaternion> Rotation;
 
+            /// \brief Checks whether one cursor can serve every component the lane drives.
+            ///
+            /// \return `true` when \ref Locate's cursor is valid for every track, otherwise `false`.
+            ZY_INLINE Bool IsLockstep() const
+            {
+                if (Count == 0 || Rate <= 0.0f)
+                {
+                    return false;
+                }
+
+                const auto Agrees = [this]<typename Type>(ConstRef<Track<Type>> Value)
+                {
+                    return Value.IsEmpty() || Value.IsConstant() || (Value.GetRate() == Rate && Value.GetSize() == Count);
+                };
+                return Agrees(Position) && Agrees(Scale) && Agrees(Rotation);
+            }
+
             /// \brief Finds where a moment in time falls within the lane.
             ///
             /// \param Time The time to locate, in seconds.
             /// \return The bracketing samples and the fraction between them.
             ZY_INLINE Cursor Locate(Real64 Time) const
             {
-                if (!Rotation.IsEmpty())
-                {
-                    return Rotation.Locate(Time);
-                }
+                const UInt   Last   = Count > 0 ? Count - 1 : 0;
+                const Real64 Scaled = Clamp(Time * static_cast<Real64>(Rate), 0.0, static_cast<Real64>(Last));
+                const UInt   Index  = static_cast<UInt>(Scaled);
 
-                if (!Position.IsEmpty())
-                {
-                    return Position.Locate(Time);
-                }
-                return Scale.Locate(Time);
+                Cursor Result;
+                Result.Lower = Index;
+                Result.Upper = Index < Last ? Index + 1 : Last;
+                Result.Delta = static_cast<Real32>(Scaled - static_cast<Real64>(Index));
+                return Result;
             }
         };
 
@@ -121,12 +143,19 @@ namespace Render
             return mExtent;
         }
 
+        /// \brief Pairs the clip with a skeleton, resolving everything a frame would otherwise rediscover.
+        ///
+        /// \param Skeleton The skeleton to resolve against.
+        /// \param Binding  Receives one bone index per lane, \ref Skeleton::kMissing where there is no such bone.
+        /// \return `true` when the clip writes every component of every bone, so the caller may skip the rest pose.
+        Bool Resolve(ConstRef<Skeleton> Skeleton, Ref<Sequence<SInt32>> Binding) const;
+
         /// \brief Samples every lane at the given time, layering the result over a pose.
         ///
-        /// \param Time     The time to sample at, in seconds, already wrapped into the clip's range.
-        /// \param Skeleton The skeleton whose bones the lanes are resolved against.
-        /// \param Output   Receives the sampled local transforms.
-        void Sample(Real64 Time, ConstRef<Skeleton> Skeleton, ConstRef<Skeleton::Pose> Output) const;
+        /// \param Time    The time to sample at, in seconds, already wrapped into the clip's range.
+        /// \param Binding The lane-to-bone resolution from \ref Resolve.
+        /// \param Output  Receives the sampled local transforms.
+        void Sample(Real64 Time, ConstSpan<SInt32> Binding, ConstRef<Skeleton::Pose> Output) const;
 
     private:
 

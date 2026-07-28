@@ -61,11 +61,12 @@ namespace Render
 
         for (UInt32 Index = 0; Index < Total; ++Index)
         {
-            const UInt64        Name   = Input.Read<UInt64>();
-            const Real32        Rate   = Input.Read<Real32>();
-            const UInt32        Count  = Input.Read<UInt32>();
-            const Component     Mask   = Input.Read<Component>();
-            const Interpolation Mode   = Input.Read<Interpolation>();
+            const UInt64        Name  = Input.Read<UInt64>();
+            const Real32        Rate  = Input.Read<Real32>();
+            const UInt32        Count = Input.Read<UInt32>();
+            const Component     Mask  = Input.Read<Component>();
+            const Component     Fixed = Input.Read<Component>();
+            const Interpolation Mode  = Input.Read<Interpolation>();
 
             if (Rate <= 0.0f || Count == 0)
             {
@@ -73,9 +74,28 @@ namespace Render
                 return false;
             }
 
-            const UInt Length = Count * ((HasBit(Mask,Component::Position) ? sizeof(Vector3)    : 0)
-                                       + (HasBit(Mask,Component::Scale)    ? sizeof(Vector3)    : 0)
-                                       + (HasBit(Mask,Component::Rotation) ? sizeof(Quaternion) : 0));
+            // One lane per bone is a must.
+            const auto IsPresent = [Name](ConstRef<Animation::Lane> Entry)
+            {
+                return Entry.Name == Name;
+            };
+
+            if (Lanes.Contains(IsPresent))
+            {
+                LOG_W("'{0}' has lane {1} repeating a bone", Scope.GetResource()->GetKey(), Index);
+                return false;
+            }
+
+            // A component the baker found unchanging is stored once instead of once per tick.
+            const auto GetRate = [Count, Fixed](Component Which)
+            {
+                return HasBit(Fixed, Which) ? 1u : Count;
+            };
+
+            const UInt Length =
+                  (HasBit(Mask,Component::Position) ? GetRate(Component::Position) * sizeof(Vector3)    : 0)
+                + (HasBit(Mask,Component::Scale)    ? GetRate(Component::Scale)    * sizeof(Vector3)    : 0)
+                + (HasBit(Mask,Component::Rotation) ? GetRate(Component::Rotation) * sizeof(Quaternion) : 0);
 
             if (Input.GetAvailable() < Length)
             {
@@ -84,21 +104,23 @@ namespace Render
             }
 
             Ref<Animation::Lane> Entry = Lanes.Append();
-            Entry.Name = Name;
+            Entry.Name  = Name;
+            Entry.Rate  = Rate;
+            Entry.Count = Count;
 
             if (HasBit(Mask,Component::Position))
             {
-                ReadTrack(Input, Entry.Position, Rate, Count, Mode);
+                ReadTrack(Input, Entry.Position, Rate, GetRate(Component::Position), Mode);
             }
 
             if (HasBit(Mask,Component::Scale))
             {
-                ReadTrack(Input, Entry.Scale, Rate, Count, Mode);
+                ReadTrack(Input, Entry.Scale, Rate, GetRate(Component::Scale), Mode);
             }
 
             if (HasBit(Mask,Component::Rotation))
             {
-                ReadTrack(Input, Entry.Rotation, Rate, Count, Mode);
+                ReadTrack(Input, Entry.Rotation, Rate, GetRate(Component::Rotation), Mode);
             }
         }
 

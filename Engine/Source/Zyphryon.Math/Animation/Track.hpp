@@ -134,6 +134,14 @@ inline namespace Math
             return mRate > 0.0f;
         }
 
+        /// \brief Checks whether the track holds one value for the whole clip.
+        ///
+        /// \return `true` when the track carries exactly one sample, otherwise `false`.
+        ZY_INLINE Bool IsConstant() const
+        {
+            return mValues.GetSize() == 1;
+        }
+
         /// \brief Gets the number of samples the track carries.
         ///
         /// \return The sample count.
@@ -234,12 +242,17 @@ inline namespace Math
         /// \return The interpolated value, or \p Fallback when the track is empty.
         ZY_INLINE Type Sample(ConstRef<Cursor> Where, ConstRef<Type> Fallback) const
         {
-            ZY_ASSERT(Where.Upper < mValues.GetSize() || mValues.IsEmpty(), "Cursor does not belong to this track");
-
             if (mValues.IsEmpty())
             {
                 return Fallback;
             }
+
+            if (IsConstant())
+            {
+                return mValues.GetFront();
+            }
+
+            ZY_ASSERT(Where.Upper < mValues.GetSize(), "Cursor does not belong to this track");
 
             if (mInterpolation == Interpolation::Step || Where.Lower == Where.Upper)
             {

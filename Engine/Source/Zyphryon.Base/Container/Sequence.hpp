@@ -566,6 +566,15 @@ inline namespace Base
             ::Fill(mData + Offset, Size, Element);
         }
 
+        /// \brief Destroys every element, then constructs \p Size new ones, keeping the heap storage.
+        ///
+        /// \param Size The number of elements to hold afterwards.
+        ZY_INLINE void Resize(UInt Size)
+        {
+            Clear();
+            Advance(Size);
+        }
+
         /// \brief Ensures that the sequence can hold at least \p Capacity elements without reallocating.
         ///
         /// \param Capacity The minimum number of elements to reserve space for.
@@ -1140,6 +1149,15 @@ inline namespace Base
                 ::Fill(mStorage.GetAddress(mSize), Size, Element);
             }
             mSize += Size;
+        }
+
+        /// \brief Destroys every element, then constructs \p Size new ones within the fixed-size storage.
+        ///
+        /// \param Size The number of elements to hold afterwards, which must fit the fixed capacity.
+        ZY_INLINE constexpr void Resize(UInt Size)
+        {
+            Clear();
+            Advance(Size);
         }
 
         /// \brief Replaces the contents with a copy of \p Other.
