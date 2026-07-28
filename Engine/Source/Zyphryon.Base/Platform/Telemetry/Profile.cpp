@@ -18,66 +18,76 @@
 
 #if defined(ZY_PROFILE_BACKEND_TRACY)
 
-Ptr<void> operator new(std::size_t Count)
+Ptr<void> operator new(std::size_t _Size)
 {
-    Ptr<void> Pointer = std::malloc(Count);
-    TracyAllocS(Pointer, Count, ZY_PROFILE_CALLSTACK_DEPTH);
+    const Ptr<void> Pointer = std::malloc(_Size);
+    TracyAllocS(Pointer, _Size, ZY_PROFILE_CALLSTACK_DEPTH);
     return Pointer;
 }
 
-Ptr<void> operator new(std::size_t Count, std::align_val_t Alignment)
+Ptr<void> operator new(std::size_t _Size, std::align_val_t _Al)
 {
 #if defined(ZY_COMPILER_MSVC)
-    Ptr<void> Pointer = _aligned_malloc(static_cast<std::size_t>(Alignment), Count);
+    const Ptr<void> Pointer = _aligned_malloc(_Size, static_cast<std::size_t>(_Al));
 #else
-    Ptr<void> Pointer = std::aligned_alloc(static_cast<std::size_t>(Alignment), Count);
+    const Ptr<void> Pointer = std::aligned_alloc(_Size, static_cast<std::size_t>(_Al));
 #endif
 
-    TracyAllocS(Pointer, Count, ZY_PROFILE_CALLSTACK_DEPTH);
+    TracyAllocS(Pointer, _Size, ZY_PROFILE_CALLSTACK_DEPTH);
     return Pointer;
 }
 
-Ptr<void> operator new[](std::size_t Count)
+Ptr<void> operator new[](std::size_t _Size)
 {
-    Ptr<void> Pointer = std::malloc(Count);
-    TracyAllocS(Pointer, Count, ZY_PROFILE_CALLSTACK_DEPTH);
+    const Ptr<void> Pointer = std::malloc(_Size);
+    TracyAllocS(Pointer, _Size, ZY_PROFILE_CALLSTACK_DEPTH);
     return Pointer;
 }
 
-Ptr<void> operator new[](std::size_t Count, std::align_val_t Alignment)
+Ptr<void> operator new[](std::size_t _Size, std::align_val_t _Al)
 {
 #if defined(ZY_COMPILER_MSVC)
-    Ptr<void> Pointer = _aligned_malloc(static_cast<std::size_t>(Alignment), Count);
+    Ptr<void> Pointer = _aligned_malloc(_Size, static_cast<std::size_t>(_Al));
 #else
-    Ptr<void> Pointer = std::aligned_alloc(static_cast<std::size_t>(Alignment), Count);
+    Ptr<void> Pointer = std::aligned_alloc(_Size, static_cast<std::size_t>(_Al));
 #endif
 
-    TracyAllocS(Pointer, Count, ZY_PROFILE_CALLSTACK_DEPTH);
+    TracyAllocS(Pointer, _Size, ZY_PROFILE_CALLSTACK_DEPTH);
     return Pointer;
 }
 
-void operator delete(Ptr<void> Pointer) noexcept
+void operator delete(Ptr<void> _Block) noexcept
 {
-    TracyFreeS(Pointer, ZY_PROFILE_CALLSTACK_DEPTH);
-    std::free(Pointer);
+    TracyFreeS(_Block, ZY_PROFILE_CALLSTACK_DEPTH);
+    std::free(_Block);
 }
 
-void operator delete(Ptr<void> Pointer, std::align_val_t) noexcept
+void operator delete(Ptr<void> _Block, std::align_val_t) noexcept
 {
-    TracyFreeS(Pointer, ZY_PROFILE_CALLSTACK_DEPTH);
-    std::free(Pointer);
+    TracyFreeS(_Block, ZY_PROFILE_CALLSTACK_DEPTH);
+
+#if defined(ZY_COMPILER_MSVC)
+    _aligned_free(_Block);
+#else
+    std::free(_Block);
+#endif
 }
 
-void operator delete[](Ptr<void> Pointer) noexcept
+void operator delete[](Ptr<void> _Block) noexcept
 {
-    TracyFreeS(Pointer, ZY_PROFILE_CALLSTACK_DEPTH);
-    std::free(Pointer);
+    TracyFreeS(_Block, ZY_PROFILE_CALLSTACK_DEPTH);
+    std::free(_Block);
 }
 
-void operator delete[](Ptr<void> Pointer, std::align_val_t) noexcept
+void operator delete[](Ptr<void> _Block, std::align_val_t) noexcept
 {
-    TracyFreeS(Pointer, ZY_PROFILE_CALLSTACK_DEPTH);
-    std::free(Pointer);
+    TracyFreeS(_Block, ZY_PROFILE_CALLSTACK_DEPTH);
+
+#if defined(ZY_COMPILER_MSVC)
+    _aligned_free(_Block);
+#else
+    std::free(_Block);
+#endif
 }
 
 #endif
