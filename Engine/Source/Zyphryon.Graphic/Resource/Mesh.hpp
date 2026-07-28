@@ -27,6 +27,9 @@ namespace Graphic
     {
     public:
 
+        /// \brief The most levels of detail a mesh may carry.
+        static constexpr UInt8 kMaxDetail = 8;
+
         /// \brief Describes one vertex attribute's physical placement in the shared buffer, keyed by `VertexSlot`.
         struct Binding final
         {
@@ -48,6 +51,9 @@ namespace Graphic
 
             /// The slot into the owning model's material table this primitive is drawn with.
             UInt8      Material = 0;
+
+            /// The level of detail this primitive belongs to, `0` being the geometry unreduced.
+            UInt8      Level    = 0;
         };
 
         /// \brief Enumerates optional per-mesh flags.
@@ -95,12 +101,47 @@ namespace Graphic
         /// \param Definition The draw range and material slot.
         void AddPrimitive(ConstRef<Primitive> Definition);
 
-        /// \brief Gets the primitives that compose this mesh.
+        /// \brief Gets the primitives that compose this mesh, across every level.
         ///
         /// \return A read-only view over the mesh's primitives.
         ZY_INLINE ConstSpan<Primitive> GetPrimitives() const
         {
             return mPrimitives;
+        }
+
+        /// \brief Gets the primitives belonging to one level of detail.
+        ///
+        /// \param Level The level to read, clamped to the coarsest the mesh carries.
+        /// \return A read-only view over that level's primitives.
+        ConstSpan<Primitive> GetPrimitives(UInt8 Level) const;
+
+        /// \brief Declares a level of detail and the coverage below which the next one takes over.
+        ///
+        /// \param Coverage The smallest fraction of the viewport's height drawn at this level.
+        void AddDetail(Real32 Coverage);
+
+        /// \brief Picks the level of detail to draw an instance at.
+        ///
+        /// \param Coverage The fraction of the viewport's height the instance spans.
+        /// \return The index of the first level whose threshold the coverage clears, or the coarsest otherwise.
+        ZY_INLINE UInt8 GetDetail(Real32 Coverage) const
+        {
+            for (UInt8 Level = 0, Limit = mDetail.GetSize(); Level < Limit; ++Level)
+            {
+                if (Coverage >= mDetail[Level].Coverage)
+                {
+                    return Level;
+                }
+            }
+            return mDetail.IsEmpty() ? 0 : mDetail.GetSize() - 1;
+        }
+
+        /// \brief Gets the number of levels of detail the mesh carries.
+        ///
+        /// \return The level count.
+        ZY_INLINE UInt8 GetDetailCount() const
+        {
+            return static_cast<UInt8>(mDetail.GetSize());
         }
 
         /// \brief Sets the local-space axis-aligned bounds enclosing every vertex position.
@@ -173,6 +214,19 @@ namespace Graphic
 
     public:
 
+        /// \brief Where one level's primitives sit in the flat list, and the coverage it serves.
+        struct Range final
+        {
+            /// The index of the level's first primitive.
+            UInt16 First;
+
+            /// The number of primitives the level draws.
+            UInt16 Count;
+
+            /// The smallest fraction of the viewport's height drawn at this level.
+            Real32 Coverage;
+        };
+
         /// \brief Uploads the shared vertex/index buffers to the GPU, creating the buffer resources.
         ///
         /// \param Service The graphic service used to create the resources.
@@ -206,6 +260,7 @@ namespace Graphic
         Object                                    mIndices;
         Array<Binding, Enum::Count<VertexSlot>()> mBindings;
         Sequence<Primitive>                       mPrimitives;
+        Sequence<Range, kMaxDetail>               mDetail;
         Box                                       mExtent;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

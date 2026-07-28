@@ -72,7 +72,7 @@ namespace Graphic
 
             if (Length > Input.GetAvailable())
             {
-                LOG_W("'{0}' has a truncated ZMSH chunk", Scope.GetResource()->GetKey());
+                LOG_W("'{0}' has a truncated ZMSH chunk", Asset->GetKey());
                 return false;
             }
 
@@ -94,9 +94,29 @@ namespace Graphic
                     Asset->SetBinding(Slot, Format, Stride, Offset);
                 }
 
+                const UInt8 Detail = Body.Read<UInt8>();
+
+                if (Detail == 0 || Detail > Mesh::kMaxDetail)
+                {
+                    LOG_W("'{0}' declares {1} level(s) of detail", Asset->GetKey(), Detail);
+                    return false;
+                }
+
+                for (UInt Count = Detail; Count > 0; --Count)
+                {
+                    Asset->AddDetail(Body.Read<Real32>());
+                }
+
                 for (UInt Count = Body.Read<UInt16>(); Count > 0; --Count)
                 {
-                    Asset->AddPrimitive(Body.Read<Mesh::Primitive>());
+                    const Mesh::Primitive Primitive = Body.Read<Mesh::Primitive>();
+
+                    if (Primitive.Level >= Detail)
+                    {
+                        LOG_W("'{0}' has a primitive naming a level it never declared", Asset->GetKey());
+                        return false;
+                    }
+                    Asset->AddPrimitive(Primitive);
                 }
                 break;
             }
@@ -110,7 +130,7 @@ namespace Graphic
                 }
                 else
                 {
-                    LOG_W("'{0}' has an invalid vertex buffer", Scope.GetResource()->GetKey());
+                    LOG_W("'{0}' has an invalid vertex buffer", Asset->GetKey());
                     return false;
                 }
                 break;
@@ -125,7 +145,7 @@ namespace Graphic
                 }
                 else
                 {
-                    LOG_W("'{0}' has an invalid index buffer", Scope.GetResource()->GetKey());
+                    LOG_W("'{0}' has an invalid index buffer", Asset->GetKey());
                     return false;
                 }
                 break;

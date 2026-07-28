@@ -59,7 +59,39 @@ namespace Graphic
 
     void Mesh::AddPrimitive(ConstRef<Primitive> Definition)
     {
+        ZY_ASSERT(Definition.Level < mDetail.GetSize(), "Primitive names a level the mesh does not declare");
+
+        Ref<Range> Level = mDetail[Definition.Level];
+
+        if (Level.Count == 0)
+        {
+            Level.First = static_cast<UInt16>(mPrimitives.GetSize());
+        }
+        ++Level.Count;
+
         mPrimitives.Append(Definition);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Mesh::AddDetail(Real32 Coverage)
+    {
+        mDetail.Append(0, 0, Coverage);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ConstSpan<Mesh::Primitive> Mesh::GetPrimitives(UInt8 Level) const
+    {
+        if (mDetail.IsEmpty())
+        {
+            return mPrimitives;
+        }
+
+        ConstRef<Range> Range = mDetail[Min<UInt8>(Level, mDetail.GetSize() - 1)];
+        return ConstSpan(mPrimitives.GetData() + Range.First, Range.Count);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
