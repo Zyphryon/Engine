@@ -114,25 +114,4 @@ inline namespace Math
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Quaternion Quaternion::Slerp(Quaternion Start, Quaternion End, Real32 Percentage)
-    {
-        Real32 Dot = Clamp(Quaternion::Dot(Start, End), -1.0f, +1.0f);
-
-        if (Dot < 0.0f)
-        {
-            End = -End;
-            Dot = -Dot;
-        }
-
-        if (Dot > 0.9995f)
-        {
-            return Normalize(Lerp(Start, End, Percentage));
-        }
-
-        const Real32 Theta        = Angle::FromCosine(Dot).GetRadians();
-        const Real32 SinTheta     = Sqrt(1.0f - Dot * Dot);
-        const Real32 BlendWeightA = Angle::Sine((1 - Percentage) * Theta) / SinTheta;
-        const Real32 BlendWeightB = Angle::Sine(Percentage * Theta) / SinTheta;
-        return Start * BlendWeightA + End * BlendWeightB;
-    }
 }

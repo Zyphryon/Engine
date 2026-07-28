@@ -445,7 +445,24 @@ inline namespace Math
         /// \param End        The ending quaternion.
         /// \param Percentage A value between 0 and 1 representing interpolation amount.
         /// \return The normalized quaternion interpolated between Start and End.
-        static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage);
+        ZY_INLINE static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage)
+        {
+            const Real32 Cosine = Quaternion::Dot(Start, End);
+
+            const Quaternion Nearest = (Cosine < 0.0f ? -End : End);
+            const Real32     Angular = Abs(Cosine);
+
+            if (Angular > 0.9995f)
+            {
+                return Normalize(Lerp(Start, Nearest, Percentage));
+            }
+
+            const Real32 Theta        = Angle::FromCosine(Cosine).GetRadians();
+            const Real32 SinTheta     = Sqrt(1.0f - Cosine * Cosine);
+            const Real32 BlendWeightA = Angle::Sine((1 - Percentage) * Theta) / SinTheta;
+            const Real32 BlendWeightB = Angle::Sine(Percentage * Theta) / SinTheta;
+            return Start * BlendWeightA + End * BlendWeightB;
+        }
 
     private:
 
