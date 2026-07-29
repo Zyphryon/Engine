@@ -33,10 +33,7 @@ inline namespace Base
         {
             if consteval
             {
-                for (UInt Index = 0; Index < Count; ++Index)
-                {
-                    Construct(Index);
-                }
+                ::Construct<Block>(AddressOf(mBlock));
             }
         }
 
@@ -51,7 +48,7 @@ inline namespace Base
         /// \return A non-owning pointer to the first slot.
         ZY_INLINE constexpr Ptr<Type> GetData()
         {
-            return mData;
+            return mBlock.mData;
         }
 
         /// \brief Gets a const pointer to the contiguous element storage.
@@ -59,7 +56,7 @@ inline namespace Base
         /// \return A non-owning const pointer to the first slot.
         ZY_INLINE constexpr ConstPtr<Type> GetData() const
         {
-            return mData;
+            return mBlock.mData;
         }
 
         /// \brief Gets a pointer to the element at the specified index.
@@ -68,7 +65,7 @@ inline namespace Base
         /// \return A non-owning pointer to the slot.
         ZY_INLINE constexpr Ptr<Type> GetAddress(UInt Index)
         {
-            return AddressOf(mData[Index]);
+            return AddressOf(mBlock.mData[Index]);
         }
 
         /// \brief Gets a const pointer to the element at the specified index.
@@ -77,7 +74,7 @@ inline namespace Base
         /// \return A non-owning const pointer to the slot.
         ZY_INLINE constexpr ConstPtr<Type> GetAddress(UInt Index) const
         {
-            return AddressOf(mData[Index]);
+            return AddressOf(mBlock.mData[Index]);
         }
 
         /// \brief Gets a reference to the element at the specified index.
@@ -86,7 +83,7 @@ inline namespace Base
         /// \return A non-owning reference to the slot.
         ZY_INLINE constexpr Ref<Type> GetValue(UInt Index)
         {
-            return mData[Index];
+            return mBlock.mData[Index];
         }
 
         /// \brief Gets a const reference to the element at the specified index.
@@ -95,7 +92,7 @@ inline namespace Base
         /// \return A non-owning const reference to the slot.
         ZY_INLINE constexpr ConstRef<Type> GetValue(UInt Index) const
         {
-            return mData[Index];
+            return mBlock.mData[Index];
         }
 
         /// \brief Constructs the element at the specified index in place.
@@ -114,7 +111,7 @@ inline namespace Base
         /// \param Index The zero-based index of the slot to destruct.
         ZY_INLINE constexpr void Destruct(UInt Index)
         {
-            ::Destruct(mData[Index]);
+            ::Destruct(mBlock.mData[Index]);
         }
 
         /// \brief Destructs a range of elements starting at the specified index.
@@ -127,7 +124,7 @@ inline namespace Base
             {
                 for (UInt Index = 0; Index < Length; ++Index)
                 {
-                    ::Destruct(mData[Offset + Index]);
+                    ::Destruct(mBlock.mData[Offset + Index]);
                 }
             }
         }
@@ -138,7 +135,7 @@ inline namespace Base
         /// \param Destination The zero-based index of the destination element.
         ZY_INLINE constexpr void Swap(UInt Source, UInt Destination)
         {
-            mData[Destination] = ::Move(mData[Source]);
+            mBlock.mData[Destination] = ::Move(mBlock.mData[Source]);
         }
 
         /// \brief Swaps a range of elements starting at the specified indices.
@@ -154,7 +151,7 @@ inline namespace Base
                 {
                     for (UInt Index = 0; Index < Size; ++Index)
                     {
-                        mData[Target + Index] = mData[Offset + Index];
+                        mBlock.mData[Target + Index] = mBlock.mData[Offset + Index];
                     }
                 }
                 else
@@ -166,7 +163,7 @@ inline namespace Base
             {
                 for (UInt Index = 0; Index < Size; ++Index)
                 {
-                    mData[Target + Index] = ::Move(mData[Offset + Index]);
+                    mBlock.mData[Target + Index] = ::Move(mBlock.mData[Offset + Index]);
                 }
             }
         }
@@ -184,7 +181,7 @@ inline namespace Base
                 {
                     for (UInt Index = Size; Index > 0; --Index)
                     {
-                        mData[Target + Index - 1] = mData[Offset + Index - 1];
+                        mBlock.mData[Target + Index - 1] = mBlock.mData[Offset + Index - 1];
                     }
                 }
                 else
@@ -196,7 +193,7 @@ inline namespace Base
             {
                 for (UInt Index = Size; Index > 0; --Index)
                 {
-                    mData[Target + Index - 1] = ::Move(mData[Offset + Index - 1]);
+                    mBlock.mData[Target + Index - 1] = ::Move(mBlock.mData[Offset + Index - 1]);
                 }
             }
         }
@@ -214,7 +211,7 @@ inline namespace Base
                 {
                     for (UInt Index = 0; Index < Length; ++Index)
                     {
-                        mData[Index + Offset] = Source[Index];
+                        mBlock.mData[Index + Offset] = Source[Index];
                     }
                 }
                 else
@@ -245,7 +242,7 @@ inline namespace Base
                 {
                     for (UInt Index = 0; Index < Size; ++Index)
                     {
-                        mData[Target + Index] = Other.mData[Offset + Index];
+                        mBlock.mData[Target + Index] = Other.mBlock.mData[Offset + Index];
                     }
                 }
                 else
@@ -257,7 +254,7 @@ inline namespace Base
             {
                 for (UInt Index = 0; Index < Size; ++Index)
                 {
-                    ::Relocate<Type>(mData[Target + Index], ::Move(Other.GetValue(Offset + Index)));
+                    ::Relocate<Type>(mBlock.mData[Target + Index], ::Move(Other.GetValue(Offset + Index)));
                 }
             }
         }
@@ -268,7 +265,7 @@ inline namespace Base
         /// \return A non-owning reference to the slot.
         ZY_INLINE constexpr Ref<Type> operator[](UInt Index)
         {
-            return mData[Index];
+            return mBlock.mData[Index];
         }
 
         /// \brief Gets the element at the specified index.
@@ -277,8 +274,16 @@ inline namespace Base
         /// \return A non-owning const reference to the slot.
         ZY_INLINE constexpr ConstRef<Type> operator[](UInt Index) const
         {
-            return mData[Index];
+            return mBlock.mData[Index];
         }
+
+    private:
+
+        /// \brief Holds the slots as one object, so the union has a member that can be activated whole.
+        struct Block final
+        {
+            Type mData[Count];
+        };
 
     private:
 
@@ -287,7 +292,7 @@ inline namespace Base
 
         union
         {
-            Type mData[Count];
+            Block mBlock;
         };
     };
 }
