@@ -1117,4 +1117,3 @@ namespace Scene
         Handle mHandle;
     };
 }
-

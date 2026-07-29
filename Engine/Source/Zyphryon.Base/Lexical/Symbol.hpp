@@ -143,4 +143,3 @@ inline namespace Base
         Char _mData[Capacity] = { };
     };
 }
-

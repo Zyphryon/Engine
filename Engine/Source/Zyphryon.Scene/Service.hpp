@@ -419,4 +419,3 @@ namespace Scene
         Freelist<kMaxCountArchetypes> mArchetypes;
     };
 }
-

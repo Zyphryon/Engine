@@ -836,4 +836,3 @@ inline namespace Math
     /// \brief Represents a 3D axis-aligned bounding box (AABB) with unsigned integer coordinates.
     using UIntBox = AnyBox<UInt32>;
 }
-

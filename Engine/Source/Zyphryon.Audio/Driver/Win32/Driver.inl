@@ -135,7 +135,7 @@ namespace Audio
             nullptr,
             CLSCTX_ALL,
             __uuidof(IMMDeviceEnumerator),
-            reinterpret_cast<Ptr<Ptr<void>>>(AddressOf(mBackend->Enumerator)))))
+            reinterpret_cast<Ptr<LPVOID>>(AddressOf(mBackend->Enumerator)))))
         {
             LOG_E("Audio: Failed to create WASAPI device enumerator");
 
@@ -155,7 +155,7 @@ namespace Audio
             __uuidof(IAudioClient),
             CLSCTX_ALL,
             nullptr,
-            reinterpret_cast<Ptr<Ptr<void>>>(AddressOf(mBackend->Client)))))
+            reinterpret_cast<Ptr<LPVOID>>(AddressOf(mBackend->Client)))))
         {
             LOG_E("Audio: Failed to activate WASAPI audio client");
 
@@ -193,7 +193,7 @@ namespace Audio
 
         if (FAILED(mBackend->Client->GetService(
             __uuidof(IAudioRenderClient),
-            reinterpret_cast<Ptr<Ptr<void>>>(AddressOf(mBackend->Renderer)))))
+            reinterpret_cast<Ptr<LPVOID>>(AddressOf(mBackend->Renderer)))))
         {
             Close();
             return false;
