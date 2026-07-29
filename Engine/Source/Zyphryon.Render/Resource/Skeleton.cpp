@@ -132,4 +132,19 @@ namespace Render
             Palette[Index] = Composed[Index] * mBones[Index].Inverse;
         }
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Skeleton::Blend(Ref<Pose> Destination, ConstRef<Pose> Source, Real32 Weight)
+    {
+        ZY_ASSERT(Destination.GetSize() == Source.GetSize(), "Blending needs both poses to cover the same bones");
+
+        for (UInt Index = 0; Index < Destination.GetSize(); ++Index)
+        {
+            Destination.Position[Index] = Lerp(Destination.Position[Index], Source.Position[Index], Weight);
+            Destination.Scale[Index]    = Lerp(Destination.Scale[Index], Source.Scale[Index], Weight);
+            Destination.Rotation[Index] = Quaternion::Slerp(Destination.Rotation[Index], Source.Rotation[Index], Weight);
+        }
+    }
 }

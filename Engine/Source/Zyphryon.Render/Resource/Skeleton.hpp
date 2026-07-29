@@ -151,6 +151,15 @@ namespace Render
         /// \param Palette  Receives the matrix each bone deforms its vertices by; may alias \p Composed.
         void Skin(ConstSpan<Matrix4x3> Composed, Span<Matrix4x3> Palette) const;
 
+    public:
+
+        /// \brief Interpolates a pose toward another, bone by bone, in local space.
+        ///
+        /// \param Destination The pose to blend, receiving the result.
+        /// \param Source      The pose to blend toward.
+        /// \param Weight      The interpolation factor in the `[0, 1]` range.
+        static void Blend(Ref<Pose> Destination, ConstRef<Pose> Source, Real32 Weight);
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
