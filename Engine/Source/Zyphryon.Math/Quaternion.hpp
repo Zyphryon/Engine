@@ -457,11 +457,11 @@ inline namespace Math
                 return Normalize(Lerp(Start, Nearest, Percentage));
             }
 
-            const Real32 Theta        = Angle::FromCosine(Cosine).GetRadians();
-            const Real32 SinTheta     = Sqrt(1.0f - Cosine * Cosine);
+            const Real32 Theta        = Angle::FromCosine(Angular).GetRadians();
+            const Real32 SinTheta     = Sqrt(1.0f - Angular * Angular);
             const Real32 BlendWeightA = Angle::Sine((1 - Percentage) * Theta) / SinTheta;
             const Real32 BlendWeightB = Angle::Sine(Percentage * Theta) / SinTheta;
-            return Start * BlendWeightA + End * BlendWeightB;
+            return Start * BlendWeightA + Nearest * BlendWeightB;
         }
 
     private:

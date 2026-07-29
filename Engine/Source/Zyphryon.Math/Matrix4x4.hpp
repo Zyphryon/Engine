@@ -489,7 +489,9 @@ inline namespace Math
         /// \return The interpolated matrix.
         static Matrix4x4 Lerp(ConstRef<Matrix4x4> Start, ConstRef<Matrix4x4> End, Real32 Percentage);
 
-        /// \brief Creates a right-handed perspective projection matrix with depth in [0, 1].
+        /// \brief Creates a left-handed perspective projection matrix with depth in [0, 1].
+        ///
+        /// \note Left-handed to match \ref Matrix4x3::CreateDirection.
         ///
         /// \param FovY   The vertical field-of-view angle.
         /// \param Aspect The viewport aspect ratio (width / height).
@@ -498,7 +500,9 @@ inline namespace Math
         /// \return A perspective projection matrix.
         static Matrix4x4 CreatePerspective(Angle FovY, Real32 Aspect, Real32 ZNear, Real32 ZFar);
 
-        /// \brief Creates a right-handed orthographic projection matrix with depth in [0, 1].
+        /// \brief Creates a left-handed orthographic projection matrix with depth in [0, 1].
+        ///
+        /// \note Left-handed to match \ref Matrix4x3::CreateDirection.
         ///
         /// \param Left   The left boundary of the view volume.
         /// \param Right  The right boundary of the view volume.

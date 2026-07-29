@@ -159,8 +159,8 @@ inline namespace Math
         return Matrix4x4(
             ScaleX, 0.0f,   0.0f,                              0.0f,
             0.0f,   ScaleY, 0.0f,                              0.0f,
-            0.0f,   0.0f,   ZFar / (ZNear - ZFar),            -1.0f,
-            0.0f,   0.0f,  (ZFar * ZNear) / (ZNear - ZFar),    0.0f);
+            0.0f,   0.0f,   ZFar / (ZFar - ZNear),             1.0f,
+            0.0f,   0.0f, -(ZFar * ZNear) / (ZFar - ZNear),    0.0f);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -182,5 +182,4 @@ inline namespace Math
             0.0f,                       0.0f,                        InvDepth,          0.0f,
             -(Right + Left) * InvWidth, -(Top + Bottom) * InvHeight, -ZNear * InvDepth, 1.0f);
     }
-
 }
