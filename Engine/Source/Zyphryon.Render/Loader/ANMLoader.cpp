@@ -104,9 +104,8 @@ namespace Render
             }
 
             Ref<Animation::Lane> Entry = Lanes.Append();
-            Entry.Name  = Name;
-            Entry.Rate  = Rate;
-            Entry.Count = Count;
+            Entry.Name   = Name;
+            Entry.Timing = Cadence(Rate, Count);
 
             if (HasBit(Mask,Component::Position))
             {

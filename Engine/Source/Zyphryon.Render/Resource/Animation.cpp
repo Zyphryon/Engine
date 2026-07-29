@@ -86,7 +86,7 @@ namespace Render
                 if (const SInt32 Bone = Binding[Index]; Bone != Skeleton::kMissing)
                 {
                     ConstRef<Lane> Entry  = mLanes[Index];
-                    const Cursor   Cursor = Entry.Locate(Time);
+                    const Cursor   Cursor = Entry.Timing.Locate(Time);
 
                     Output.Position[Bone] = Entry.Position.Sample(Cursor, Output.Position[Bone]);
                     Output.Scale[Bone]    = Entry.Scale.Sample(Cursor, Output.Scale[Bone]);

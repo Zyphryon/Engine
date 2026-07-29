@@ -13,10 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <Zyphryon.Engine/Kernel.hpp>
-#include <Zyphryon.Render/Graph.hpp>
 #include <Zyphryon.Render/Camera.hpp>
-#include <Zyphryon.Render/Batcher/Canvas.hpp>
-#include <Zyphryon.Render/Resource/Font.hpp>
+#include <Zyphryon.Render/Graph.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -40,48 +38,24 @@ namespace Application
 
     private:
 
-        class CanvasPass final : public Render::Pass
+        class Pass final : public Render::Pass
         {
         public:
 
-            ZY_INLINE explicit CanvasPass(Ref<Render::Canvas> Canvas)
-                : mCanvas { Canvas }
-            {
-            }
-
-            /// \see Render::Pass::Run(Ref<Render::Encoder>)
             void Run(Ref<Render::Encoder> Encoder) override
             {
-                mCanvas.Flush(Encoder);
+
             }
-
-        private:
-
-            Ref<Render::Canvas> mCanvas;
         };
-
-        /// \brief Records the whole frame (header, shape gallery, and overlay) into the canvas.
-        void Compose(Real32 Time);
-
-        /// \brief Records the live window / monitor / input diagnostics panel.
-        void ComposeOverlay();
-
-        /// \brief Draws a horizontally-centered line of text, measuring its width through Font::Enclose.
-        void DrawTextCentered(Text Content, Real32 CenterX, Real32 Y, Real32 Size, IntColor8 Tint,
-            ConstRef<Render::FontEffect> Effect = Render::FontEffect());
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Unique<Render::Canvas>   mCanvas;
-        Unique<Render::Graph> mGraph;
-        Retainer<Render::Font>   mFont;
+        Unique<Render::Graph>    mGraph;
         Render::Camera           mCamera;
-        Real64                   mElapsed = 0.0;
-        Real32                   mFps     = 0.0f;
-        UInt16                   mWidth   = 0;
-        UInt16                   mHeight  = 0;
+        UInt32                   mWidth   = 0;
+        UInt32                   mHeight  = 0;
     };
 }

@@ -14,6 +14,7 @@
 #include <Zyphryon.Graphic/Service.hpp>
 #include <Zyphryon.Platform/Service.hpp>
 #include <Zyphryon.Input/Service.hpp>
+#include <Zyphryon.Content/Mount/Disk.hpp>
 #include <ZyTutorial.Modules.hpp>           // ${TARGET}.Modules.hpp  (Generated from CMake)
 #include <ZyTutorial.Embedded.hpp>          // ${TARGET}.Embedded.hpp (Generated from CMake)
 
@@ -28,23 +29,22 @@ namespace Application
 
     Bool Host::OnInitialize()
     {
-        // Mount the embedded resource archive (Canvas techniques and the default font live under Embedded://).
-        ZyRegisterEmbedded(* GetService<Content::Service>());
+        Filesystem::Path Root = Filesystem::GetRootFolder();
+        Root.Append("/Resources");
 
-        // The canvas registers the font loader and its techniques on construction; the renderer drives passes.
-        mCanvas   = Unique<Render::Canvas>::Create(* this);
+        ConstRetainer<Content::Service> Content = GetService<Content::Service>();
+        Content->AddMount("Resources", Retainer<Content::Disk>::Create(Root));
+        ZyRegisterEmbedded(* Content);
+
         mGraph = Unique<Render::Graph>::Create(* this);
 
-        // A single display pass: clear to a dark background, then flush the canvas into it.
-        Ref<CanvasPass>               Stage = mGraph->AddPass<CanvasPass>(* mCanvas);
+        Ref<Host::Pass> Scene = mGraph->AddPass<Host::Pass>();
+
         Render::Pass::ColorAttachment Background;
-        Background.Target = nullptr;                                 // the display surface
+        Background.Target = nullptr;
         Background.Load   = Graphic::Action::Clear;
         Background.Tint   = Color(0.055f, 0.06f, 0.09f, 1.0f);
-        Stage.AddColor(Background);
-
-        // Request the embedded font. The load is asynchronous, so text is gated on IsFontReady().
-        mFont = GetService<Content::Service>()->Load<Render::Font>("Embedded://Font/Roboto.fnt");
+        Scene.AddColor(Background);
 
         LOG_D("Host::OnInitialize");
         return true;
@@ -68,161 +68,15 @@ namespace Application
             mGraph->Resize(Width, Height);
         }
 
-        mElapsed += Delta;
-        mFps      = (Delta > 0.0) ? static_cast<Real32>(1.0 / Delta) : 0.0f;
-
         // Screen-space orthographic projection (bottom-left origin, Y increasing downward).
         mCamera.SetOrthographic(0, Width, 0, Height, -1.0f, 1.0f);
         mCamera.Compute();
-
-        // Record this frame's 2D content, then submit through the renderer.
-        mCanvas->Begin();
-
-        if (GetService<Content::Service>()->GetPending() <= 0)
-        {
-            Compose(static_cast<Real32>(mElapsed));
-        }
 
         ConstRetainer<Graphic::Service> Graphics = GetService<Graphic::Service>();
         Graphic::Transient<Matrix4x4>   Uniforms = Graphics->AllocateTransientUniforms<Matrix4x4>(1);
         Uniforms[0] = mCamera.GetViewProjection();
 
         mGraph->Run(Uniforms.GetStream());
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Host::Compose(Real32 Time)
-    {
-        const Real32 Width = mWidth;
-        const Real32 Pulse = 0.5f + 0.5f * Angle::Sine(Time * 2.0f);
-
-        constexpr IntColor8 Ink     = IntColor8(235, 238, 245, 255);
-        constexpr IntColor8 Muted   = IntColor8(150, 160, 180, 255);
-        constexpr IntColor8 Accent  = IntColor8( 90, 170, 255, 255);
-        constexpr IntColor8 Panel   = IntColor8(255, 255, 255,  14);
-        constexpr IntColor8 Outline = IntColor8(255, 255, 255,  32);
-
-        mCanvas->DrawText(mFont, 46.0f, Vector2(), "ZYPHRYON",
-            Matrix3x2::FromTranslation(Vector2(48.0f, 40.0f)), 0.95f, Ink,
-            Render::FontEffect::Outline(0.14f, 0.10f, Color(0.02f, 0.03f, 0.06f, 1.0f)));
-
-        mCanvas->DrawText(mFont, 17.0f, Vector2(3.0f, 0.0f), "2D CANVAS SHOWCASE",
-            Matrix3x2::FromTranslation(Vector2(50.0f, 92.0f)), 0.95f, Accent,
-            Render::FontEffect::Bold(0.03f));
-
-        const Real32 RuleWidth = 60.0f + 200.0f * Pulse;
-        mCanvas->DrawLine(Line(Vector2(50.0f, 114.0f), Vector2(50.0f + RuleWidth, 114.0f)), 0.90f, Accent, 3.0f);
-
-        constexpr UInt32 Count  = 5;
-        constexpr Real32 Margin = 48.0f;
-        constexpr Real32 Gap    = 20.0f;
-        const     Real32 CardW  = (Width - 2.0f * Margin - (Count - 1) * Gap) / Count;
-        constexpr Real32 CardH  = 190.0f;
-        constexpr Real32 CardY  = 152.0f;
-
-        static constexpr Text kLabels[Count] = { "Circle", "Ring", "Rectangle", "Rounded", "Lines" };
-
-        for (UInt32 Index = 0; Index < Count; ++Index)
-        {
-            const Real32 X  = Margin + Index * (CardW + Gap);
-            const Real32 CX = X + CardW * 0.5f;
-            const Real32 CY = CardY + 78.0f;
-            const Real32 R  = 44.0f;
-
-            mCanvas->DrawRoundedRect(Rect(X, CardY, X + CardW, CardY + CardH), 0.60f, Panel, 14.0f);
-            mCanvas->DrawStrokeRect (Rect(X, CardY, X + CardW, CardY + CardH), 0.61f, Outline, 1.0f);
-
-            switch (Index)
-            {
-            case 0:
-                mCanvas->DrawCircle(Circle(CX, CY, R * (0.82f + 0.18f * Pulse)), 0.70f, IntColor8(90, 170, 255, 255));
-                break;
-            case 1:
-                mCanvas->DrawRing(Circle(CX, CY, R), 0.70f, IntColor8(255, 150, 90, 255), 0.22f);
-                break;
-            case 2:
-                mCanvas->DrawRect(Rect(CX - R, CY - R, CX + R, CY + R), 0.70f, IntColor8(120, 205, 140, 255));
-                break;
-            case 3:
-                mCanvas->DrawRoundedRect(Rect(CX - R, CY - R, CX + R, CY + R), 0.70f, IntColor8(198, 150, 255, 255), 18.0f);
-                break;
-            case 4:
-                for (UInt32 Spoke = 0; Spoke < 8; ++Spoke)
-                {
-                    const Real32 Angle = Time + Spoke * 0.7853982f; // 8 spokes, 45 degrees apart.
-                    const Vector2 End(CX + Angle::Cosine(Angle) * R, CY + Angle::Sine(Angle) * R);
-                    mCanvas->DrawLine(Line(Vector2(CX, CY), End), 0.70f, IntColor8(240, 220, 120, 255), 2.5f);
-                }
-                break;
-            default:
-                break;
-            }
-
-            DrawTextCentered(kLabels[Index], CX, CardY + CardH - 30.0f, 15.0f, Muted);
-        }
-
-        ComposeOverlay();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Host::ComposeOverlay()
-    {
-        ConstRetainer<Platform::Service> PlatformService = GetService<Platform::Service>();
-        ConstRetainer<Input::Service>    InputService    = GetService<Input::Service>();
-
-        Ref<Platform::Window>       Window  = PlatformService->GetWindow();
-        ConstRef<Platform::Monitor> Monitor = PlatformService->GetDisplay().GetMonitor(Text());
-
-        constexpr Real32 PanelW = 344.0f;
-        constexpr Real32 PanelH = 196.0f;
-        constexpr Real32 PanelX = 48.0f;
-        const     Real32 PanelY = static_cast<Real32>(mHeight) - PanelH - 44.0f;
-
-        mCanvas->DrawRoundedRect(Rect(PanelX, PanelY, PanelX + PanelW, PanelY + PanelH), 0.40f, IntColor8(255, 255, 255, 16), 12.0f);
-        mCanvas->DrawStrokeRect (Rect(PanelX, PanelY, PanelX + PanelW, PanelY + PanelH), 0.41f, IntColor8(255, 255, 255, 34), 1.0f);
-
-        DrawTextCentered("DIAGNOSTICS", PanelX + PanelW * 0.5f, PanelY + 14.0f, 14.0f,
-            IntColor8(90, 170, 255, 255), Render::FontEffect::Bold(0.02f));
-
-        constexpr IntColor8 Value  = IntColor8(228, 232, 240, 255);
-        constexpr Real32    LabelX = PanelX + 22.0f;
-        Real32              Y      = PanelY + 48.0f;
-
-        String<160> Line;
-        const auto   Row = [&](ConstRef<String<160>> Content)
-        {
-            mCanvas->DrawText(mFont, 15.0f, Vector2(), Content, Matrix3x2::FromTranslation(Vector2(LabelX, Y)), 0.35f, Value, Render::FontEffect());
-            Y += 25.0f;
-        };
-
-        Line.Format<"FPS       {0}">(static_cast<UInt32>(mFps + 0.5f));
-        Row(Line);
-        Line.Format<"Window    {0} x {1}   {2}">(Window.GetWidth(), Window.GetHeight(), Window.IsFocused() ? "focused" : "idle");
-        Row(Line);
-        Line.Format<"Monitor   {0}">(Monitor.GetName());
-        Row(Line);
-        Line.Format<"Display   {0} x {1} @ {2} Hz">(Monitor.GetWidth(), Monitor.GetHeight(), Monitor.GetFrequency());
-        Row(Line);
-        Line.Format<"Mouse     {0}, {1}">(static_cast<SInt32>(InputService->GetMouseX()), static_cast<SInt32>(InputService->GetMouseY()));
-        Row(Line);
-        Line.Format<"[Space]   {0}">(InputService->IsKeyHeld(Input::Key::Space) ? "held"_Text : "released"_Text);
-        Row(Line);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Host::DrawTextCentered(Text Content, Real32 CenterX, Real32 Y, Real32 Size, IntColor8 Tint, ConstRef<Render::FontEffect> Effect)
-    {
-        const Rect   Bounds = mFont->Enclose(Content, Size);
-        const Real32 Width  = Bounds.GetMaximumX() - Bounds.GetMinimumX();
-
-        mCanvas->DrawText(mFont, Size, Vector2(), Content,
-            Matrix3x2::FromTranslation(Vector2(CenterX - Width * 0.5f, Y)), 0.55f, Tint, Effect);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

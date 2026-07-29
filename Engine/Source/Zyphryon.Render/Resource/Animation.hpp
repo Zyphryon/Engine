@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Skeleton.hpp"
-#include "Zyphryon.Math/Animation/Track.hpp"
+#include "Zyphryon.Math/Animation/Cadence.hpp"
 #include "Zyphryon.Math/Geometry/Sphere.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -31,13 +31,10 @@ namespace Render
         struct Lane final
         {
             /// The hash of the driven bone's name, matching \ref Skeleton::Bone::Name.
-            UInt64            Name     = 0;
+            UInt64            Name = 0;
 
-            /// The cadence every component that varies is sampled on, in samples per second.
-            Real32            Rate     = 0.0f;
-
-            /// The number of samples a component that varies carries.
-            UInt32            Count    = 0;
+            /// The cadence every component that varies is sampled on.
+            Cadence           Timing;
 
             /// The bone's position over time, or empty when the clip does not move it.
             Track<Vector3>    Position;
@@ -50,36 +47,10 @@ namespace Render
 
             /// \brief Checks whether one cursor can serve every component the lane drives.
             ///
-            /// \return `true` when \ref Locate's cursor is valid for every track, otherwise `false`.
+            /// \return `true` when \ref Cadence::Locate's cursor is valid for every track, otherwise `false`.
             ZY_INLINE Bool IsLockstep() const
             {
-                if (Count == 0 || Rate <= 0.0f)
-                {
-                    return false;
-                }
-
-                const auto Agrees = [this]<typename Type>(ConstRef<Track<Type>> Value)
-                {
-                    return Value.IsEmpty() || Value.IsConstant() || (Value.GetRate() == Rate && Value.GetSize() == Count);
-                };
-                return Agrees(Position) && Agrees(Scale) && Agrees(Rotation);
-            }
-
-            /// \brief Finds where a moment in time falls within the lane.
-            ///
-            /// \param Time The time to locate, in seconds.
-            /// \return The bracketing samples and the fraction between them.
-            ZY_INLINE Cursor Locate(Real64 Time) const
-            {
-                const UInt   Last   = Count > 0 ? Count - 1 : 0;
-                const Real64 Scaled = Clamp(Time * static_cast<Real64>(Rate), 0.0, static_cast<Real64>(Last));
-                const UInt   Index  = static_cast<UInt>(Scaled);
-
-                Cursor Result;
-                Result.Lower = Index;
-                Result.Upper = Index < Last ? Index + 1 : Last;
-                Result.Delta = static_cast<Real32>(Scaled - static_cast<Real64>(Index));
-                return Result;
+                return Timing.IsValid() && Timing.Agrees(Position) && Timing.Agrees(Scale) && Timing.Agrees(Rotation);
             }
         };
 
