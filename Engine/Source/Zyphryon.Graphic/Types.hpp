@@ -28,7 +28,7 @@ namespace Graphic
         kDisplay        = 0x00000,
 
         /// \brief The maximum number of color attachments in a render pass.
-        kMaxAttachments = 0x0004,
+        kMaxAttachments = 0x0008,
 
         /// \brief The maximum number of vertex attributes in a vertex buffer.
         kMaxAttributes  = 0x0010,
@@ -298,6 +298,8 @@ namespace Graphic
         RGBA32Float,                ///< 4×32-bit floating-point.
         RGB10A2UInt,                ///< 10-bit RGB + 2-bit alpha, unsigned integer.
         RGB10A2UIntNorm,            ///< 10-bit RGB + 2-bit alpha, unsigned normalized.
+        R11G11B10Float,             ///< 11-bit red and green + 10-bit blue, unsigned floating-point.
+        RGB9E5Float,                ///< 9-bit RGB mantissas sharing a 5-bit exponent; sampling only, never renderable.
         D16UIntNorm,                ///< 16-bit unsigned normalized depth.
         D32Float,                   ///< 32-bit floating-point depth.
         D24S8UIntNorm,              ///< 24-bit unsigned normalized depth + 8-bit stencil.
@@ -307,7 +309,9 @@ namespace Graphic
     /// \brief Describes the layout of texture resource.
     enum class TextureLayout : UInt8
     {
-        Texture2D,    ///< 2D texture.
+        Texture2D,      ///< 2D texture.
+        Texture2DArray, ///< Array of 2D slices addressed by an integer layer, never filtered between layers.
+        TextureCube,    ///< Six square faces addressed by a direction vector.
     };
 
     /// \brief Describes logical texture slots for textures in a shader.
@@ -330,10 +334,11 @@ namespace Graphic
     /// \brief Describes the feature tier of the graphics backend, indicating supported capabilities.
     enum class Tier : UInt8
     {
-        Level1, ///< D3D9,   GL2.1, GLES2.0,
-        Level2, ///< D3D10,  GL3.3, GLES3.0
-        Level3, ///< D3D11,  GL4.3, GLES3.1
-        Level4, ///< D3D12,  GL4.6, GLES3.2
+        Level1, ///< D3D9    | GL 2.1  | GLES 2.0 (Unsupported)
+        Level2, ///< D3D10   | GL 3.3  | GLES 3.0 (Uniform blocks, instancing, MRT, transform feedback)
+        Level3, ///< D3D11   | GL 4.3  | GLES 3.1 (Compute, storage buffers, image load/store, indirect)
+        Level4, ///< FL12_0  | VK 1.1  | Metal 2  (Descriptor indexing, typed UAV loads, subgroups)
+        Level5, ///< FL12_2  | VK 1.3  | Metal 3  (Dynamic rendering, enhanced barriers)
     };
 
     /// \brief Specifies the intended usage of a GPU resource.
@@ -489,8 +494,8 @@ namespace Graphic
         /// Indicates whether the graphics device supports border-clamp texture addressing and border-color sampling.
         Bool   SupportsBorderClamp   = false;
 
-        /// Indicates whether the graphics device uses bottom-left origin.
-        Bool   IsOriginBottomLeft    = false;
+        /// Indicates whether the graphics device supports wireframe.
+        Bool   SupportsWireframe     = false;
 
         /// The maximum level of anisotropy supported by the graphics device.
         UInt8  MaxTextureAnisotropy  = 0;
@@ -611,11 +616,17 @@ namespace Graphic
         /// The mipmap level of the render target (if applicable).
         UInt8  TargetLevel  = 0;
 
+        /// The array slice or cube face of the render target.
+        UInt16 TargetLayer  = 0;
+
         /// The texture object used as the resolve target for multisampled render targets (if multisampling is used).
         Object Resolve      = 0;
 
         /// The mipmap level of the resolve target (if multisampling is used).
         UInt8  ResolveLevel = 0;
+
+        /// The array slice or cube face of the resolve target (if multisampling is used).
+        UInt16 ResolveLayer = 0;
 
         /// The operation to perform on the color buffer at the beginning of a render pass.
         Action LoadAction   = Action::Clear;
@@ -632,6 +643,9 @@ namespace Graphic
 
         /// The mipmap level of the render target (if applicable).
         UInt8  TargetLevel        = 0;
+
+        /// The array slice or cube face of the render target.
+        UInt16 TargetLayer        = 0;
 
         /// The operation to perform on the depth buffer at the beginning of a render pass.
         Action DepthLoadAction    = Action::Clear;

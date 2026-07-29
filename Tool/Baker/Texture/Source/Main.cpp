@@ -63,16 +63,19 @@ namespace Tool::Baker::Texture
         LOG_I("  --mipmaps         Generate a full mip chain down to 1x1                      (default: off)");
         LOG_I("  --compressed      LZ4-compress the payload when it shrinks the output        (default: on)");
         LOG_I("  --linear          Treat the source as linear-encoded colour                  (default: on)");
+        LOG_I("  --cube            Cut the source into the six faces of a cube map            (default: off)");
         LOG_I("");
         LOG_I("Every switch may be negated with its '--no-' spelling, as in '--no-mipmaps'.");
         LOG_I("");
+        LOG_I("With '--cube' the source is one image holding all six faces, and its arrangement is recovered");
+        LOG_I("from the proportions: 6x1 or 1x6 strips, a 4x3 or 3x4 cross, or a 3x2 or 2x3 grid.");
+        LOG_I("");
         LOG_I("Pass '--no-linear' for colour art authored in sRGB, such as albedo. Mips are then filtered in");
-        LOG_I("linear space and the result is stored as an sRGB format, so the GPU decodes it on sample. Leave");
-        LOG_I("it on for data maps such as normal, roughness, or masks, where sRGB would corrupt the values.");
+        LOG_I("linear space and the result is stored as an sRGB format, so the GPU decodes it on sample.");
         LOG_I("");
         LOG_I("Without '--format', the source's own depth and channel count are preserved: 8-bit stays 8-bit,");
         LOG_I("16-bit stays 16-bit, floating-point stays floating-point, and a grayscale source stays single");
-        LOG_I("channel. Dropping precision is always an explicit choice, never something inference does.");
+        LOG_I("channel.");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

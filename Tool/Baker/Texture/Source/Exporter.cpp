@@ -54,7 +54,27 @@ namespace Tool::Baker::Texture
 
     Blob Exporter::Export(AnyRef<Bitmap> Source, ConstRef<Profile> Profile)
     {
-        const Graphic::TextureFormat Format = (Profile.Format == Graphic::TextureFormat::Unspecified) ? Source.GetFormat() : Profile.Format;
+        Sequence<Bitmap> Slices;
+        Slices.Append(Move(Source));
+
+        return Export(Move(Slices), Graphic::TextureLayout::Texture2D, Profile);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob Exporter::Export(AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile)
+    {
+        if (Slices.IsEmpty())
+        {
+            return Blob();
+        }
+
+        const UInt16 Width  = Slices[0].GetWidth();
+        const UInt16 Height = Slices[0].GetHeight();
+
+        const Graphic::TextureFormat Format =
+            (Profile.Format == Graphic::TextureFormat::Unspecified) ? Slices[0].GetFormat() : Profile.Format;
 
         if (!IsSupported(Format))
         {
@@ -63,28 +83,61 @@ namespace Tool::Baker::Texture
             return Blob();
         }
 
-        // Filtering runs at the surface's own depth, so the conversion to the target format happens once, last.
-        const UInt8  Levels = Profile.Mipmaps ? Graphic::GetLevelCount(Source.GetWidth(), Source.GetHeight()) : 1;
-        const Bitmap Result = Converter::Convert(Mipmapper::Generate(Move(Source), Levels), Format);
-
-        // TODO: Resizer
-
-        if (Result.GetPixels().IsEmpty())
+        for (ConstRef<Bitmap> Slice : Slices)
         {
-            return Blob();
+            if (Slice.GetWidth() != Width || Slice.GetHeight() != Height)
+            {
+                LOG_E("Texture: every slice must share one extent ({0}x{1} against {2}x{3})",
+                    Slice.GetWidth(), Slice.GetHeight(), Width, Height);
+
+                return Blob();
+            }
         }
 
-        const ConstSpan<Byte> Bytes  = Result.GetPixels();
-        const UInt32          Length = Bytes.GetSize();
+        // Filtering runs at each surface's own depth, so the conversion to the target format happens last.
+        const UInt8 Levels = Profile.Mipmaps ? Graphic::GetLevelCount(Width, Height) : 1;
+
+        Sequence<Bitmap> Baked;
+        Baked.Reserve(Slices.GetSize());
+
+        UInt32 Length = 0;
+
+        for (Ref<Bitmap> Slice : Slices)
+        {
+            Ref<Bitmap> Result = Baked.Append(Converter::Convert(Mipmapper::Generate(Move(Slice), Levels), Format));
+
+            // TODO: Resizer
+
+            if (Result.GetPixels().IsEmpty())
+            {
+                return Blob();
+            }
+            Length += Result.GetPixels().GetSize();
+        }
+
+        // Gathered slice-major, which is the order the loader and both drivers read a sliced payload in.
+        Blob      Payload = Blob::Allocate<Byte>(Length);
+        Ptr<Byte> Cursor  = Payload.GetData<Byte>();
+
+        for (ConstRef<Bitmap> Result : Baked)
+        {
+            const ConstSpan<Byte> Bytes = Result.GetPixels();
+
+            Copy(Cursor, Bytes.GetSize(), Bytes.GetData());
+            Cursor += Bytes.GetSize();
+        }
+
+        const ConstSpan<Byte> Bytes = ConstSpan(Payload.GetData<Byte>(), Length);
 
         Writer Output(Length + 32);
         Output.Write<UInt32>(kMagic);
         Output.Write<UInt16>(kVersion);
-        Output.Write<Graphic::TextureLayout>(Graphic::TextureLayout::Texture2D);
-        Output.Write<Graphic::TextureFormat>(Result.GetFormat());
-        Output.Write<UInt16>(Result.GetWidth());
-        Output.Write<UInt16>(Result.GetHeight());
-        Output.Write<UInt8>(Result.GetLevels());
+        Output.Write<Graphic::TextureLayout>(Layout);
+        Output.Write<Graphic::TextureFormat>(Format);
+        Output.Write<UInt16>(Width);
+        Output.Write<UInt16>(Height);
+        Output.Write<UInt16>(static_cast<UInt16>(Baked.GetSize()));
+        Output.Write<UInt8>(Baked[0].GetLevels());
         Output.Write<UInt32>(Length);
 
         // The loader reads a payload the same size as the raw count as uncompressed, so only a payload that
@@ -92,7 +145,7 @@ namespace Tool::Baker::Texture
         if (Profile.Compress)
         {
             Blob         Scratch = Blob::Allocate<Byte>(LZ4Bound(Length));
-            const UInt32 Size    = LZ4Encode(Result.GetPixels(), Scratch.GetData<Byte>(), LZ4Bound(Length));
+            const UInt32 Size    = LZ4Encode(Bytes, Scratch.GetData<Byte>(), LZ4Bound(Length));
 
             if (Size > 0 && Size < Length)
             {
@@ -101,7 +154,7 @@ namespace Tool::Baker::Texture
             }
         }
 
-        Output.WriteBlock<UInt32, Byte>(Result.GetPixels());
+        Output.WriteBlock<UInt32, Byte>(Bytes);
         return Output.Detach();
     }
 }

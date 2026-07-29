@@ -224,25 +224,27 @@ namespace Graphic
         /// \param Usage   The intended usage of the texture.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
+        /// \param Layers  The number of array slices.
         /// \param Levels  The number of mipmap levels.
         /// \param Samples The multisample count.
-        /// \param Data    The optional initial image data to populate the texture with.
+        /// \param Data    The optional initial image data to populate the texture with, ordered slice-major.
         /// \return The identifier of the created texture resource, or zero if creation failed.
-        Object CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, AnyRef<Blob> Data);
+        Object CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, AnyRef<Blob> Data);
 
-        /// \brief Creates a 2D texture resource for sampling.
+        /// \brief Creates a texture resource for sampling.
         ///
         /// \param Layout The layout of the texture.
         /// \param Format The pixel format of the texture.
         /// \param Width  The width of the texture in pixels.
         /// \param Height The height of the texture in pixels.
+        /// \param Layers The number of array slices.
         /// \param Levels The number of mipmap levels (defaults to 1).
         /// \param Data   The optional initial image data to populate the texture with.
         /// \return The identifier of the created texture resource, or zero if creation failed.
-        ZY_INLINE Object CreateTexture(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data)
+        ZY_INLINE Object CreateTexture(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data)
         {
             constexpr Usage Usage = Usage::Sample;
-            return CreateTexture(Layout, Format, Storage::Immutable, Usage, Width, Height, Levels, Multisample::X1, Move(Data));
+            return CreateTexture(Layout, Format, Storage::Immutable, Usage, Width, Height, Layers, Levels, Multisample::X1, Move(Data));
         }
 
         /// \brief Creates a 2D texture resource for sampling and rendering.
@@ -256,20 +258,21 @@ namespace Graphic
         ZY_INLINE Object CreateTexture(TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels = 1, Multisample Samples = Multisample::X1)
         {
             constexpr Usage Usage = Usage::Target | Usage::Sample;
-            return CreateTexture(TextureLayout::Texture2D, Format, Storage::Stream, Usage, Width, Height, Levels, Samples, {});
+            return CreateTexture(TextureLayout::Texture2D, Format, Storage::Stream, Usage, Width, Height, 1, Levels, Samples, {});
         }
 
         /// \brief Updates a region of an existing texture resource with new data.
         ///
         /// \param ID     The identifier of the texture resource to update.
         /// \param Level  The mipmap level to update.
+        /// \param Layer  The array slice to update; zero for a plain 2D texture, the face index for a cube map.
         /// \param X      The X offset within the texture to start updating.
         /// \param Y      The Y offset within the texture to start updating.
         /// \param Width  The width of the region to update in pixels.
         /// \param Height The height of the region to update in pixels.
         /// \param Pitch  The number of bytes per row of the source data, including any padding.
         /// \param Data   The new texture data to write into the specified region.
-        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data);
+        void UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, AnyRef<Blob> Data);
 
         /// \brief Deletes a texture resource, freeing associated GPU memory.
         ///
@@ -280,15 +283,17 @@ namespace Graphic
         ///
         /// \param SrcTexture The identifier of the source texture to copy from.
         /// \param SrcLevel   The mipmap level of the source texture to copy from.
+        /// \param SrcLayer   The array slice of the source texture to copy from.
         /// \param SrcX       The X offset within the source texture to start copying from.
         /// \param SrcY       The Y offset within the source texture to start copying from.
         /// \param DstTexture The identifier of the destination texture to copy to.
         /// \param DstLevel   The mipmap level of the destination texture to copy to.
+        /// \param DstLayer   The array slice of the destination texture to copy to.
         /// \param DstX       The X offset within the destination texture to start copying to.
         /// \param DstY       The Y offset within the destination texture to start copying to.
         /// \param Width      The width of the region to copy in pixels.
         /// \param Height     The height of the region to copy in pixels.
-        void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height);
+        void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height);
 
         /// \brief Prepares the specified render pass for rendering by setting the viewport and clearing attachments.
         ///

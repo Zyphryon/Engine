@@ -37,9 +37,10 @@ namespace Graphic
         /// \param Format The pixel format of the image data.
         /// \param Width  The width of the image in pixels.
         /// \param Height The height of the image in pixels.
+        /// \param Layers The number of array slices in the image data.
         /// \param Levels The number of mipmap levels in the image data.
-        /// \param Data   The blob containing the raw image pixel data.
-        void Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data);
+        /// \param Data   The blob containing the raw image pixel data, ordered slice-major.
+        void Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data);
 
         /// \brief Gets the native GPU handle for this image.
         ///
@@ -79,6 +80,14 @@ namespace Graphic
         ZY_INLINE UInt16 GetHeight() const
         {
             return mHeight;
+        }
+
+        /// \brief Gets the number of array slices in this image.
+        ///
+        /// \return The slice count.
+        ZY_INLINE UInt16 GetLayers() const
+        {
+            return mLayers;
         }
 
         /// \brief Gets the number of mipmap levels in this image.
@@ -124,6 +133,7 @@ namespace Graphic
         TextureFormat mFormat;
         UInt16        mWidth;
         UInt16        mHeight;
+        UInt16        mLayers;
         UInt8         mLevels;
         Blob          mData;
     };

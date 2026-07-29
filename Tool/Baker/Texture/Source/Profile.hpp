@@ -35,6 +35,9 @@ namespace Tool::Baker::Texture
         /// LZ4-compress the pixel payload.
         Bool                   Compress = true;
 
+        /// Treat the source as an atlas holding the six faces of a cube, cut apart before baking.
+        Bool                   Cube     = false;
+
         /// \brief Reads these settings from a parsed command line.
         ///
         /// \param Environment The parsed command line.
@@ -46,6 +49,7 @@ namespace Tool::Baker::Texture
             Result.Mipmaps  = Environment.GetBool("mipmaps",    Result.Mipmaps);
             Result.Linear   = Environment.GetBool("linear",     Result.Linear);
             Result.Compress = Environment.GetBool("compressed", Result.Compress);
+            Result.Cube     = Environment.GetBool("cube",       Result.Cube);
 
             return Result;
         }

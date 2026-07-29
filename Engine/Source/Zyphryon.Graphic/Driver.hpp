@@ -162,10 +162,11 @@ namespace Graphic
         /// \param Usage   The intended usage of the texture.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
+        /// \param Layers  The number of array slices.
         /// \param Levels  The number of mipmap levels.
         /// \param Samples The multisample count.
-        /// \param Data    The optional initial image data to populate the texture with.
-        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
+        /// \param Data    The optional initial image data to populate the texture with, ordered slice-major.
+        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
         {
 
         }
@@ -174,13 +175,14 @@ namespace Graphic
         ///
         /// \param ID     The identifier of the texture resource to update.
         /// \param Level  The mipmap level to update.
+        /// \param Layer  The array slice to update.
         /// \param X      The X offset within the texture to start updating.
         /// \param Y      The Y offset within the texture to start updating.
         /// \param Width  The width of the region to update in pixels.
         /// \param Height The height of the region to update in pixels.
         /// \param Pitch  The number of bytes per row of the source data, including any padding.
         /// \param Data   The new texture data to write into the specified region.
-        virtual void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
+        virtual void UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
         {
 
         }
@@ -197,15 +199,17 @@ namespace Graphic
         ///
         /// \param SrcTexture The identifier of the source texture to copy from.
         /// \param SrcLevel   The mipmap level of the source texture to copy from.
+        /// \param SrcLayer   The array slice of the source texture to copy from.
         /// \param SrcX       The X offset within the source texture to start copying from.
         /// \param SrcY       The Y offset within the source texture to start copying from.
         /// \param DstTexture The identifier of the destination texture to copy to.
         /// \param DstLevel   The mipmap level of the destination texture to copy to.
+        /// \param DstLayer   The array slice of the destination texture to copy to.
         /// \param DstX       The X offset within the destination texture to start copying to.
         /// \param DstY       The Y offset within the destination texture to start copying to.
         /// \param Width      The width of the region to copy in pixels.
         /// \param Height     The height of the region to copy in pixels.
-        virtual void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
+        virtual void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
         {
 
         }

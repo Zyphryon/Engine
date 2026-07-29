@@ -402,6 +402,10 @@ namespace Graphic
             return { GL_RGB10_A2UI,                   GL_RGBA_INTEGER,    GL_UNSIGNED_INT_2_10_10_10_REV,    false };
         case TextureFormat::RGB10A2UIntNorm:
             return { GL_RGB10_A2,                     GL_RGBA,            GL_UNSIGNED_INT_2_10_10_10_REV,    false };
+        case TextureFormat::R11G11B10Float:
+            return { GL_R11F_G11F_B10F,               GL_RGB,             GL_UNSIGNED_INT_10F_11F_11F_REV,   false };
+        case TextureFormat::RGB9E5Float:
+            return { GL_RGB9_E5,                      GL_RGB,             GL_UNSIGNED_INT_5_9_9_9_REV,       false };
         case TextureFormat::D16UIntNorm:
             return { GL_DEPTH_COMPONENT16,            GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT,                 false };
         case TextureFormat::D32Float:

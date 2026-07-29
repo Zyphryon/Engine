@@ -12,6 +12,7 @@
 
 #include "Baker.hpp"
 #include "Importer/STBImporter.hpp"
+#include "Transform/Slicer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -97,6 +98,17 @@ namespace Tool::Baker::Texture
         if (Surface.GetPixels().IsEmpty())
         {
             return Blob();
+        }
+
+        if (Profile.Cube)
+        {
+            Sequence<Bitmap> Faces = Slicer::Generate(Surface);
+
+            if (Faces.IsEmpty())
+            {
+                return Blob();
+            }
+            return Exporter::Export(Move(Faces), Graphic::TextureLayout::TextureCube, Profile);
         }
         return Exporter::Export(Move(Surface), Profile);
     }

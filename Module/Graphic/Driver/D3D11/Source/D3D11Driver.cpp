@@ -307,23 +307,30 @@ namespace Graphic
         // Configure and create render target views (RTVs) for each color attachment.
         for (const ColorAttachment Color : Colors)
         {
+            ConstRef<D3D11Texture> Source = mTextures[Color.Target];
+
             Ref<D3D11ColorAttachment> Attachment = Target.Colors.Append();
-            Attachment.Target      = mTextures[Color.Target].Object;
-            Attachment.TargetLevel = Color.TargetLevel;
+            Attachment.Target      = Source.Object;
+            Attachment.TargetSlice = D3D11CalcSubresource(Color.TargetLevel, Color.TargetLayer, Source.Levels);
 
             if (Color.Resolve)
             {
-                Attachment.Resolve       = mTextures[Color.Resolve].Object;
-                Attachment.ResolveLevel  = Color.ResolveLevel;
-                Attachment.ResolveFormat = D3D11TranslateSRV(mTextures[Color.Resolve].Format);
+                ConstRef<D3D11Texture> Destination = mTextures[Color.Resolve];
+
+                Attachment.Resolve       = Destination.Object;
+                Attachment.ResolveSlice  = D3D11CalcSubresource(Color.ResolveLevel, Color.ResolveLayer, Destination.Levels);
+                Attachment.ResolveFormat = D3D11TranslateSRV(Destination.Format);
             }
             Attachment.LoadAction    = Color.LoadAction;
             Attachment.StoreAction   = Color.StoreAction;
 
+            const Bool                     IsSliced  = (Source.Layers > 1);
+            const D3D11_RTV_DIMENSION      Dimension = Source.Samples > 1
+                ? (IsSliced ? D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D11_RTV_DIMENSION_TEXTURE2DMS)
+                : (IsSliced ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY   : D3D11_RTV_DIMENSION_TEXTURE2D);
+
             const CD3D11_RENDER_TARGET_VIEW_DESC Description(
-                mTextures[Color.Target].Samples > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D,
-                D3D11TranslateSRV(mTextures[Color.Target].Format),
-                Color.TargetLevel);
+                Dimension, D3D11TranslateSRV(Source.Format), Color.TargetLevel, Color.TargetLayer, 1);
 
             D3D11Check(mDevice->CreateRenderTargetView(
                 Attachment.Target.Get(), AddressOf(Description), Attachment.TargetResource.GetAddressOf()));
@@ -337,13 +344,18 @@ namespace Graphic
             Target.DepthStencil.StencilLoadAction  = Depth.StencilLoadAction;
             Target.DepthStencil.StencilStoreAction = Depth.StencilStoreAction;
 
-            const Ptr<ID3D11Texture2D> Attachment = mTextures[Depth.Target].Object.Get();
+            ConstRef<D3D11Texture> Source = mTextures[Depth.Target];
 
-            const DXGI_FORMAT Format = D3D11TranslateDSV(mTextures[Depth.Target].Format);
+            const Bool                Sliced    = (Source.Layers > 1);
+            const D3D11_DSV_DIMENSION Dimension = Source.Samples > 1
+                ? (Sliced ? D3D11_DSV_DIMENSION_TEXTURE2DMSARRAY : D3D11_DSV_DIMENSION_TEXTURE2DMS)
+                : (Sliced ? D3D11_DSV_DIMENSION_TEXTURE2DARRAY   : D3D11_DSV_DIMENSION_TEXTURE2D);
+
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
-                D3D11_DSV_DIMENSION_TEXTURE2D, Format, Depth.TargetLevel);
+                Dimension, D3D11TranslateDSV(Source.Format), Depth.TargetLevel, Depth.TargetLayer, 1);
+
             D3D11Check(mDevice->CreateDepthStencilView(
-                Attachment, AddressOf(Description), Target.DepthStencil.Target.GetAddressOf()));
+                Source.Object.Get(), AddressOf(Description), Target.DepthStencil.Target.GetAddressOf()));
         }
     }
 
@@ -462,7 +474,10 @@ namespace Graphic
                 Element.InstanceDataStepRate = Attribute.Divisor;
             }
 
-            D3D11Check(mDevice->CreateInputLayout(Description, Count, VS->GetBufferPointer(), VS->GetBufferSize(), Pipeline.IL.GetAddressOf()));
+            if (Count > 0)
+            {
+                D3D11Check(mDevice->CreateInputLayout(Description, Count, VS->GetBufferPointer(), VS->GetBufferSize(), Pipeline.IL.GetAddressOf()));
+            }
         }
 
         Pipeline.PT = D3D11Convert(States.InputPrimitive);
@@ -479,11 +494,15 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
     {
-        CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, 1, Levels);
+        const Bool   IsCube = (Layout == TextureLayout::TextureCube);
+        const UInt16 Slices = IsCube ? 6 : Max<UInt16>(1, Layers);
+
+        CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, Slices, Levels);
         Description.Usage      = D3D11Convert(Storage);
         Description.BindFlags  = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
+        Description.MiscFlags  = IsCube ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
         Description.SampleDesc = {
             .Count = Enum::Cast(Samples),
             .Quality = mDeviceProperties.Multisample[Enum::Cast(Format)][Enum::Cast(Samples)]
@@ -508,35 +527,58 @@ namespace Graphic
         Ref<D3D11Texture> Texture = mTextures[ID];
         Texture.Format  = Format;
         Texture.Samples = Enum::Cast(Samples);
+        Texture.Levels  = Levels;
+        Texture.Layers  = Slices;
 
-        // Fill the data.
-        D3D11_SUBRESOURCE_DATA      Content[kMaxMipmaps];
-        Ptr<D3D11_SUBRESOURCE_DATA> Memory = nullptr;
+        // Fill the data, slice-major so the entry order matches what D3D11CalcSubresource indexes.
+        Sequence<D3D11_SUBRESOURCE_DATA> Content;
+        Ptr<D3D11_SUBRESOURCE_DATA>      Memory = nullptr;
 
         if (ConstPtr<Byte> Bytes = Data.GetData(); Bytes)
         {
-            for (UInt8 Level = 0; Level < Levels; ++Level)
+            Content.Reserve(Slices * Levels);
+
+            for (UInt16 Slice = 0; Slice < Slices; ++Slice)
             {
-                const UInt32 Pitch = GetLevelPitch(Format, Width, Level);
-                const UInt32 Rows  = GetLevelRows(Format, Height, Level);
+                for (UInt8 Level = 0; Level < Levels; ++Level)
+                {
+                    const UInt32 Pitch = GetLevelPitch(Format, Width, Level);
+                    const UInt32 Rows  = GetLevelRows(Format, Height, Level);
 
-                Content[Level].pSysMem          = Bytes;
-                Content[Level].SysMemPitch      = Pitch;
-                Content[Level].SysMemSlicePitch = Pitch * Rows;
+                    Ref<D3D11_SUBRESOURCE_DATA> Entry = Content.Append();
+                    Entry.pSysMem          = Bytes;
+                    Entry.SysMemPitch      = Pitch;
+                    Entry.SysMemSlicePitch = Pitch * Rows;
 
-                Bytes += Pitch * Rows;
+                    Bytes += Pitch * Rows;
+                }
             }
-            Memory = Content;
+            Memory = Content.GetData();
         }
         D3D11Check(mDevice->CreateTexture2D(AddressOf(Description), Memory, Texture.Object.GetAddressOf()));
 
         if (HasBit(Usage, Usage::Sample))
         {
-            const D3D11_SRV_DIMENSION Dimension = (Samples != Multisample::X1)
-                ? D3D11_SRV_DIMENSION_TEXTURE2DMS
-                : D3D11_SRV_DIMENSION_TEXTURE2D;
+            D3D11_SRV_DIMENSION Dimension;
 
-            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Levels);
+            if (IsCube)
+            {
+                Dimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+            }
+            else if (Layout == TextureLayout::Texture2DArray)
+            {
+                Dimension = (Samples != Multisample::X1)
+                    ? D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY
+                    : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+            }
+            else
+            {
+                Dimension = (Samples != Multisample::X1)
+                    ? D3D11_SRV_DIMENSION_TEXTURE2DMS
+                    : D3D11_SRV_DIMENSION_TEXTURE2D;
+            }
+
+            const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Levels, 0, Slices);
             D3D11Check(mDevice->CreateShaderResourceView(Texture.Object.Get(), AddressOf(View), Texture.Resource.GetAddressOf()));
         }
     }
@@ -552,25 +594,33 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
+    void D3D11Driver::UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
     {
         constexpr D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
 
+        ConstRef<D3D11Texture> Texture     = mTextures[ID];
+        const UINT             Subresource = D3D11CalcSubresource(Level, Layer, Texture.Levels);
+
         const CD3D11_BOX Offset(X, Y, 0, X + Width, Y + Height, 1);
-        mDeviceImmediate->UpdateSubresource1(mTextures[ID].Object.Get(), Level, AddressOf(Offset), Data.GetData(), Pitch, 0, Flags);
+        mDeviceImmediate->UpdateSubresource1(Texture.Object.Get(), Subresource, AddressOf(Offset), Data.GetData(), Pitch, 0, Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16  SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
+    void D3D11Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16  SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
     {
         constexpr D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
 
-        const CD3D11_BOX           Offset(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
-        const Ptr<ID3D11Texture2D> Target = mTextures[DstTexture].Object.Get();
-        const Ptr<ID3D11Texture2D> Source = mTextures[SrcTexture].Object.Get();
-        mDeviceImmediate->CopySubresourceRegion1(Target, DstLevel, DstX, DstY, 0, Source, SrcLevel, AddressOf(Offset), Flags);
+        ConstRef<D3D11Texture> Target = mTextures[DstTexture];
+        ConstRef<D3D11Texture> Source = mTextures[SrcTexture];
+
+        const UINT DstSubresource = D3D11CalcSubresource(DstLevel, DstLayer, Target.Levels);
+        const UINT SrcSubresource = D3D11CalcSubresource(SrcLevel, SrcLayer, Source.Levels);
+
+        const CD3D11_BOX Offset(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
+        mDeviceImmediate->CopySubresourceRegion1(
+            Target.Object.Get(), DstSubresource, DstX, DstY, 0, Source.Object.Get(), SrcSubresource, AddressOf(Offset), Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -767,9 +817,9 @@ namespace Graphic
                 {
                     mDeviceImmediate->ResolveSubresource(
                         Attachment.Resolve.Get(),
-                        Attachment.ResolveLevel,
+                        Attachment.ResolveSlice,
                         Attachment.Target.Get(),
-                        Attachment.TargetLevel,
+                        Attachment.TargetSlice,
                         Attachment.ResolveFormat);
                 }
             }
@@ -1012,9 +1062,9 @@ namespace Graphic
 
         Ref<D3D11ColorAttachment> Attachment = Pass.Colors.Append();
         Attachment.Target        = ColorBuffer;
-        Attachment.TargetLevel   = 0;
-        Attachment.ResolveLevel  = 0;
+        Attachment.TargetSlice   = 0;
         Attachment.ResolveFormat = D3D11Convert(Config.ColorFormat);
+        Attachment.ResolveSlice  = 0;
         Attachment.LoadAction    = Action::Clear;
         Attachment.StoreAction   = Action::Store;
 

@@ -67,17 +67,17 @@ namespace Graphic
         /// \see Driver::DeletePipeline(Object)
         void DeletePipeline(Object ID) override;
 
-        /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
-        void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data) override;
+        /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
+        void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data) override;
 
-        /// \see Driver::UpdateTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt32, ConstSpan<Byte>)
-        void UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data) override;
+        /// \see Driver::UpdateTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16, UInt32, ConstSpan<Byte>)
+        void UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data) override;
 
         /// \see Driver::DeleteTexture(Object)
         void DeleteTexture(Object ID) override;
 
-        /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16)
-        void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
+        /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16)
+        void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
 
         /// \see Driver::Prepare(Object, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
         void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
@@ -100,10 +100,10 @@ namespace Graphic
         {
             ComPtr<ID3D11Resource>         Target;
             ComPtr<ID3D11RenderTargetView> TargetResource;
-            UInt32                         TargetLevel   = 0;
+            UINT                           TargetSlice   = 0;
             ComPtr<ID3D11Resource>         Resolve;
-            UInt32                         ResolveLevel  = 0;
             DXGI_FORMAT                    ResolveFormat = DXGI_FORMAT_UNKNOWN;
+            UINT                           ResolveSlice  = 0;
             Action                         LoadAction    = Action::Clear;
             Action                         StoreAction   = Action::Discard;
         };
@@ -150,6 +150,8 @@ namespace Graphic
             ComPtr<ID3D11ShaderResourceView> Resource;
             TextureFormat                    Format  = TextureFormat::Unspecified;
             UINT                             Samples = 1;
+            UINT                             Levels  = 1;
+            UINT                             Layers  = 1;
         };
 
         /// \brief Direct3D 11 device capabilities and feature support.

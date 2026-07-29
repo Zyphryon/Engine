@@ -251,6 +251,8 @@ namespace Graphic
             DXGI_FORMAT_R32G32B32A32_FLOAT,     // TextureFormat::RGBA32Float
             DXGI_FORMAT_R10G10B10A2_UINT,       // TextureFormat::RGB10A2UInt
             DXGI_FORMAT_R10G10B10A2_UNORM,      // TextureFormat::RGB10A2UIntNorm
+            DXGI_FORMAT_R11G11B10_FLOAT,        // TextureFormat::R11G11B10Float
+            DXGI_FORMAT_R9G9B9E5_SHAREDEXP,     // TextureFormat::RGB9E5Float
             DXGI_FORMAT_R16_TYPELESS,           // TextureFormat::D16UIntNorm
             DXGI_FORMAT_R32_TYPELESS,           // TextureFormat::D32Float
             DXGI_FORMAT_R24G8_TYPELESS,         // TextureFormat::D24S8UIntNorm

@@ -28,6 +28,7 @@ namespace Graphic
           mFormat          { TextureFormat::RGBA8UIntNorm },
           mWidth           { 0 },
           mHeight          { 0 },
+          mLayers          { 1 },
           mLevels          { 0 }
     {
     }
@@ -35,7 +36,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Image::Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt8 Levels, AnyRef<Blob> Data)
+    void Image::Setup(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data)
     {
         SetFootprint(Data.GetSize());
 
@@ -43,6 +44,7 @@ namespace Graphic
         mFormat = Format;
         mWidth  = Width;
         mHeight = Height;
+        mLayers = Layers;
         mLevels = Levels;
         mData   = Move(Data);
     }
@@ -54,7 +56,7 @@ namespace Graphic
     {
         ZY_ASSERT(mHandle == 0, "Image has already been created");
 
-        mHandle = Service.CreateTexture(mLayout, mFormat, mWidth, mHeight, mLevels, Move(mData));
+        mHandle = Service.CreateTexture(mLayout, mFormat, mWidth, mHeight, mLayers, mLevels, Move(mData));
         return (mHandle != 0);
     }
 

@@ -49,6 +49,7 @@ namespace Graphic
         const TextureFormat   Format  = Input.Read<TextureFormat>();
         const UInt16          Width   = Input.Read<UInt16>();
         const UInt16          Height  = Input.Read<UInt16>();
+        const UInt16          Layers  = Input.Read<UInt16>();
         const UInt8           Mipmaps = Input.Read<UInt8>();
         const UInt32          Size    = Input.Read<UInt32>();
         const ConstSpan<Byte> Payload = Input.ReadBlock<UInt32, Byte>();
@@ -75,7 +76,7 @@ namespace Graphic
             Buffer.Copy<Byte>(Payload.GetData(), Size);
         }
 
-        Asset.Setup(Layout, Format, Width, Height, Mipmaps, Move(Buffer));
+        Asset.Setup(Layout, Format, Width, Height, Layers, Mipmaps, Move(Buffer));
         return true;
     }
 }

@@ -43,7 +43,7 @@ namespace Content
 
             // Initialize the decoded image data.
             const Retainer<Graphic::Image> Asset = Retainer<Graphic::Image>::Cast(Scope.GetResource());
-            Asset->Setup(Graphic::TextureLayout::Texture2D, Graphic::TextureFormat::RGBA8UIntNorm, Width, Height, 1, Move(Chunk));
+            Asset->Setup(Graphic::TextureLayout::Texture2D, Graphic::TextureFormat::RGBA8UIntNorm, Width, Height, 1, 1, Move(Chunk));
             return true;
         }
         return false;

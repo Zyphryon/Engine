@@ -34,6 +34,33 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static void AttachTexture(GLenum Framebuffer, GLenum Point, GLuint Object, GLuint Target, UInt8 Level, UInt16 Layer)
+    {
+        if (Target == GL_RENDERBUFFER)
+        {
+            glFramebufferRenderbuffer(Framebuffer, Point, GL_RENDERBUFFER, Object);
+        }
+        else if (Target == GL_TEXTURE_2D_ARRAY)
+        {
+            glFramebufferTextureLayer(Framebuffer, Point, Object, Level, Layer);
+        }
+        else
+        {
+            if (Target == GL_TEXTURE_CUBE_MAP)
+            {
+                glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_CUBE_MAP_POSITIVE_X + Layer, Object, Level);
+            }
+            else
+            {
+
+                glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_2D, Object, Level);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     GLES3Driver::~GLES3Driver()
     {
         for (Ref<GLES3Buffer> Buffer : mBuffers)
@@ -288,14 +315,7 @@ namespace Graphic
 
             Pass.Colors.Append(Color);
 
-            if (Target.Target == GL_RENDERBUFFER)
-            {
-                glFramebufferRenderbuffer(GL_FRAMEBUFFER, Point, GL_RENDERBUFFER, Target.Object);
-            }
-            else
-            {
-                glFramebufferTexture2D(GL_FRAMEBUFFER, Point, GL_TEXTURE_2D, Target.Object, Color.TargetLevel);
-            }
+            AttachTexture(GL_FRAMEBUFFER, Point, Target.Object, Target.Target, Color.TargetLevel, Color.TargetLayer);
 
             Buffers.Append(Point);
             NeedsResolve |= (Color.Resolve != 0);
@@ -310,14 +330,7 @@ namespace Graphic
                 ? GL_DEPTH_STENCIL_ATTACHMENT
                 : GL_DEPTH_ATTACHMENT;
 
-            if (Target.Target == GL_RENDERBUFFER)
-            {
-                glFramebufferRenderbuffer(GL_FRAMEBUFFER, Point, GL_RENDERBUFFER, Target.Object);
-            }
-            else
-            {
-                glFramebufferTexture2D(GL_FRAMEBUFFER, Point, GL_TEXTURE_2D, Target.Object, Depth.TargetLevel);
-            }
+            AttachTexture(GL_FRAMEBUFFER, Point, Target.Object, Target.Target, Depth.TargetLevel, Depth.TargetLayer);
 
             Pass.Depth = Depth;                                         // Retain the attachment verbatim.
         }
@@ -333,8 +346,9 @@ namespace Graphic
             {
                 if (Attachment.Resolve)
                 {
-                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + Index, GL_TEXTURE_2D,
-                        mTextures[Attachment.Resolve].Object, Attachment.ResolveLevel);
+                    Ref<GLES3Texture> Target = mTextures[Attachment.Resolve];
+                    AttachTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + Index,
+                        Target.Object, Target.Target, Attachment.ResolveLevel, Attachment.ResolveLayer);
                 }
                 ++Index;
             }
@@ -444,12 +458,17 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
+    void GLES3Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
     {
+        const Bool   IsCube  = (Layout == TextureLayout::TextureCube);
+        const Bool   IsArray = (Layout == TextureLayout::Texture2DArray);
+        const UInt16 Slices  = IsCube ? 6 : Max<UInt16>(1, Layers);
+
         Ref<GLES3Texture> Texture = mTextures[ID];
         Texture.Format  = Format;
         Texture.Width   = Width;
         Texture.Height  = Height;
+        Texture.Layers  = Slices;
         Texture.Samples = Enum::Cast(Samples);
 
         const GLES3Format Description = GLES3Convert(Format);
@@ -466,50 +485,113 @@ namespace Graphic
             return;
         }
 
-        Texture.Target = GL_TEXTURE_2D;
+        Texture.Target = IsCube ? GL_TEXTURE_CUBE_MAP : (IsArray ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D);
+
         glGenTextures(1, AddressOf(Texture.Object));
-        glBindTexture(GL_TEXTURE_2D, Texture.Object);
+        glBindTexture(Texture.Target, Texture.Object);
 
         ConstPtr<Byte> Bytes = Data.GetData();
         const UInt8    Count = Max<UInt8>(1, Levels);
 
-        for (UInt8 Level = 0; Level < Count; ++Level)
+        if (IsArray)
         {
-            const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
-            const UInt16 LevelHeight = GetLevelExtent(Height, Level);
-            const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
+            // Declared empty a level at a time, then filled a slice at a time: the source is ordered
+            // slice-major, while glTexImage3D wants every layer of one level in a single contiguous block.
+            for (UInt8 Level = 0; Level < Count; ++Level)
+            {
+                const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
+                const UInt16 LevelHeight = GetLevelExtent(Height, Level);
 
-            if (Description.Compressed)
-            {
-                glCompressedTexImage2D(
-                    GL_TEXTURE_2D, Level, Description.Internal, LevelWidth, LevelHeight, 0, Size, Bytes);
-            }
-            else
-            {
-                glTexImage2D(
-                    GL_TEXTURE_2D, Level, Description.Internal, LevelWidth, LevelHeight, 0,
-                    Description.External, Description.Type, Bytes);
+                if (Description.Compressed)
+                {
+                    const UInt32 Size = GetLevelSize(Format, Width, Height, Level) * Slices;
+
+                    glCompressedTexImage3D(
+                        GL_TEXTURE_2D_ARRAY, Level, Description.Internal, LevelWidth, LevelHeight, Slices, 0, Size, nullptr);
+                }
+                else
+                {
+                    glTexImage3D(
+                        GL_TEXTURE_2D_ARRAY, Level, Description.Internal, LevelWidth, LevelHeight, Slices, 0,
+                        Description.External, Description.Type, nullptr);
+                }
             }
 
-            if (Bytes)
+            for (UInt16 Slice = 0; Slice < Slices && Bytes; ++Slice)
             {
-                Bytes += Size;
+                for (UInt8 Level = 0; Level < Count; ++Level)
+                {
+                    const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
+                    const UInt16 LevelHeight = GetLevelExtent(Height, Level);
+                    const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
+
+                    if (Description.Compressed)
+                    {
+                        glCompressedTexSubImage3D(
+                            GL_TEXTURE_2D_ARRAY, Level, 0, 0, Slice, LevelWidth, LevelHeight, 1,
+                            Description.Internal, Size, Bytes);
+                    }
+                    else
+                    {
+                        glTexSubImage3D(
+                            GL_TEXTURE_2D_ARRAY, Level, 0, 0, Slice, LevelWidth, LevelHeight, 1,
+                            Description.External, Description.Type, Bytes);
+                    }
+
+                    Bytes += Size;
+                }
+            }
+        }
+        else
+        {
+            for (UInt16 Slice = 0; Slice < Slices; ++Slice)
+            {
+                const GLenum Face = IsCube ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Slice) : GL_TEXTURE_2D;
+
+                for (UInt8 Level = 0; Level < Count; ++Level)
+                {
+                    const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
+                    const UInt16 LevelHeight = GetLevelExtent(Height, Level);
+                    const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
+
+                    if (Description.Compressed)
+                    {
+                        glCompressedTexImage2D(
+                            Face, Level, Description.Internal, LevelWidth, LevelHeight, 0, Size, Bytes);
+                    }
+                    else
+                    {
+                        glTexImage2D(
+                            Face, Level, Description.Internal, LevelWidth, LevelHeight, 0,
+                            Description.External, Description.Type, Bytes);
+                    }
+
+                    if (Bytes)
+                    {
+                        Bytes += Size;
+                    }
+                }
             }
         }
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,  Levels - 1);
+        glTexParameteri(Texture.Target, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(Texture.Target, GL_TEXTURE_MAX_LEVEL,  Count - 1);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::UpdateTexture(Object ID, UInt8 Level, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
+    void GLES3Driver::UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data)
     {
         ConstRef<GLES3Texture> Texture     = mTextures[ID];
         const GLES3Format      Description = GLES3Convert(Texture.Format);
 
-        glBindTexture(GL_TEXTURE_2D, Texture.Object);
+        const Bool   IsArray = (Texture.Target == GL_TEXTURE_2D_ARRAY);
+        const GLenum Face    = (Texture.Target == GL_TEXTURE_CUBE_MAP)
+            ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Layer)
+            : Texture.Target;
+
+        glBindTexture(Texture.Target, Texture.Object);
 
         if (Description.Compressed)
         {
@@ -521,16 +603,34 @@ namespace Graphic
                 * BlockHeight
                 * (FormatDescription.BitsPerPixel * FormatDescription.BlockSize * FormatDescription.BlockSize / 8);
 
-            glCompressedTexSubImage2D(
-                GL_TEXTURE_2D, Level, X, Y, Width, Height, Description.Internal, Size, Data.GetData());
+            if (IsArray)
+            {
+                glCompressedTexSubImage3D(
+                    GL_TEXTURE_2D_ARRAY, Level, X, Y, Layer, Width, Height, 1, Description.Internal, Size, Data.GetData());
+            }
+            else
+            {
+                glCompressedTexSubImage2D(
+                    Face, Level, X, Y, Width, Height, Description.Internal, Size, Data.GetData());
+            }
         }
         else
         {
             const UInt32 BytesPerPixel = GetTextureMetadata(Texture.Format).BitsPerPixel / 8;
 
             glPixelStorei(GL_UNPACK_ROW_LENGTH, BytesPerPixel ? Pitch / BytesPerPixel : 0);
-            glTexSubImage2D(
-                GL_TEXTURE_2D, Level, X, Y, Width, Height, Description.External, Description.Type, Data.GetData());
+
+            if (IsArray)
+            {
+                glTexSubImage3D(
+                    GL_TEXTURE_2D_ARRAY, Level, X, Y, Layer, Width, Height, 1,
+                    Description.External, Description.Type, Data.GetData());
+            }
+            else
+            {
+                glTexSubImage2D(
+                    Face, Level, X, Y, Width, Height, Description.External, Description.Type, Data.GetData());
+            }
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         }
     }
@@ -556,13 +656,16 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
+    void GLES3Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
     {
+        Ref<GLES3Texture> Source = mTextures[SrcTexture];
+        Ref<GLES3Texture> Target = mTextures[DstTexture];
+
         glBindFramebuffer(GL_READ_FRAMEBUFFER, mGlobalReadFramebuffer);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[SrcTexture].Object, SrcLevel);
+        AttachTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Source.Object, Source.Target, SrcLevel, SrcLayer);
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mGlobalDrawFramebuffer);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[DstTexture].Object, DstLevel);
+        AttachTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Target.Object, Target.Target, DstLevel, DstLayer);
 
         glBlitFramebuffer(SrcX, SrcY, SrcX + Width, SrcY + Height, DstX, DstY, DstX + Width, DstY + Height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
@@ -789,7 +892,6 @@ namespace Graphic
         glGetIntegerv(GL_MINOR_VERSION, AddressOf(Minor));
 
         Ref<Capabilities> Limits  = mDescription.Capabilities;
-        Limits.IsOriginBottomLeft = true;
 
 #if defined(ZY_PLATFORM_WEB)
         const Bool ExtendedTier = (Major > 3) || (Major == 3 && Minor >= 1);   // OpenGL ES 3.1+
@@ -804,6 +906,7 @@ namespace Graphic
         Limits.SupportsBaseVertex = true;                                      // Core since OpenGL 3.2.
         Limits.SupportsFormatRGTC = true;                                      // Core since OpenGL 3.0.
         Limits.SupportsFormatETC2 = true;                                      // Core since OpenGL 4.3.
+        Limits.SupportsWireframe  = true;
 #endif
 
         mDescription.Tier = ExtendedTier ? Tier::Level3 : Tier::Level2;

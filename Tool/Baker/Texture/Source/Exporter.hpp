@@ -43,7 +43,15 @@ namespace Tool::Baker::Texture
         /// \return `true` if the format is supported, otherwise `false`.
         static Bool IsSupported(Graphic::TextureFormat Format);
 
-        /// \brief Serializes a decoded bitmap into a native texture blob.
+        /// \brief Serializes one or more decoded bitmaps into a native texture blob.
+        ///
+        /// \param Slices  The decoded bitmaps to write, one per array slice or cube face.
+        /// \param Layout  The layout the slices compose.
+        /// \param Profile The settings controlling format, mip generation, and compression.
+        /// \return A blob holding the texture file bytes, or an empty blob on failure.
+        static Blob Export(AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile);
+
+        /// \brief Serializes a single decoded bitmap into a native texture blob.
         ///
         /// \param Source  The decoded bitmap to write.
         /// \param Profile The settings controlling format, mip generation, and compression.
