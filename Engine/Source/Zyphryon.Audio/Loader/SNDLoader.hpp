@@ -12,25 +12,35 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Content/Loader.hpp"
+#include "Zyphryon.Audio/Sound.hpp"
+#include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Audio
 {
-    /// \brief Content loader for WAV audio tracks.
-    class WAVLoader final : public Loader
+    /// \brief Content loader for the engine's native, mixer-ready binary sound format.
+    class SNDLoader final : public Content::Loader
     {
     public:
 
         /// \brief An array with the extension supported by this content loader.
-        static constexpr Text kTypes[] = { "wav" };
+        static constexpr Text kTypes[] = { "snd" };
 
     public:
 
-        /// \see Loader::Load(Ref<Content::Service>, Ref<Content::Scope>, AnyRef<Blob>)
-        Bool Load(Ref<Service> Service, Ref<Scope> Scope, AnyRef<Blob> Data) override;
+        /// \see Content::Loader::Load(Ref<Content::Service>, Ref<Content::Scope>, AnyRef<Blob>)
+        Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+
+    public:
+
+        /// \brief Decodes a native ZSND sound block from a binary reader into a sound resource.
+        ///
+        /// \param Input The reader positioned at the start of a ZSND block.
+        /// \param Asset The sound resource to populate.
+        /// \return `true` if the sound was decoded successfully, otherwise `false`.
+        static Bool Parse(Ref<Reader> Input, Ref<Sound> Asset);
     };
 }

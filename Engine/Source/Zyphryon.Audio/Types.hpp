@@ -54,6 +54,14 @@ namespace Audio
         Interface,      ///< User interface sounds such as clicks or notifications.
     };
 
+    /// \brief Specifies how a baked sound stores its samples.
+    enum class Encoding : UInt8
+    {
+        Linear,     ///< Signed 16-bit samples, widened on read.
+        Adaptive,   ///< IMA ADPCM, four bits per sample, decoded a block at a time.
+        Opus,       ///< Opus packets, decoded a packet at a time.
+    };
+
     /// \brief Describes all audio hardware and backend information.
     struct Description final
     {

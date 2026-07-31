@@ -381,7 +381,7 @@ namespace Audio
 
         while (Done < Frames)
         {
-            const UInt32 Want = Min(Frames - Done, Capacity);
+            const UInt32 Want = Min(Frames - Done, Capacity) * Voice.Stride;
 
             UInt32 Got = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Want)));
 

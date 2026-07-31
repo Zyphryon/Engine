@@ -18,28 +18,28 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Audio
 {
-    /// \brief Decoder implementation that serves pre-decoded PCM audio from an in-memory buffer.
-    class WAVDecoder final : public Audio::Decoder
+    /// \brief Widens the signed 16-bit samples of a baked sound into the mixer's floating-point frames.
+    class LinearDecoder final : public Decoder
     {
     public:
 
-        /// \brief Initializes the WAV decoder with a view over an in-memory interleaved PCM buffer.
+        /// \brief Constructs a decoder over the samples of a baked sound.
         ///
-        /// \param Samples   The span of 32-bit float samples in interleaved channel order.
-        /// \param Stride    The number of samples per frame, equal to the channel count.
-        /// \param Frequency The sample rate of the audio data, in Hz.
-        /// \param Frames    The total number of PCM frames in the buffer.
-        WAVDecoder(ConstSpan<Real32> Samples, UInt32 Stride, UInt32 Frequency, UInt64 Frames);
+        /// \param Samples   The interleaved samples to read from.
+        /// \param Frequency The rate the samples were baked at, in hertz.
+        /// \param Stride    The number of channels per frame.
+        /// \param Frames    The number of frames the samples hold.
+        LinearDecoder(ConstSpan<SInt16> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames);
 
-        /// \see Decoder::Probe(Ptr<UInt32>, Ptr<UInt32>, Ptr<UInt64>)
+        /// \see Decoder::Probe(Ptr<UInt32>, Ptr<UInt32>, Ptr<UInt64>) const
         void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const override;
 
         /// \see Decoder::Seek(UInt64)
         Bool Seek(UInt64 Frame) override;
 
-        /// \see Decoder::Tell()
+        /// \see Decoder::Tell() const
         UInt64 Tell() const override;
 
         /// \see Decoder::Read(Span<Real32>)
@@ -50,9 +50,9 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ConstSpan<Real32> mSamples;
-        UInt32            mStride;
+        ConstSpan<SInt16> mSamples;
         UInt32            mFrequency;
+        UInt16            mStride;
         UInt64            mFrames;
         UInt64            mCursor;
     };

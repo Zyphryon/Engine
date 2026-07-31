@@ -10,51 +10,74 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "WAVModule.hpp"
-#include "WAVLoader.hpp"
-#include <Zyphryon.Content/Service.hpp>
+#include "LinearDecoder.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Audio
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Text WAVModule::GetName() const
+    LinearDecoder::LinearDecoder(ConstSpan<SInt16> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames)
+        : mSamples   { Samples },
+          mFrequency { Frequency },
+          mStride    { Stride },
+          mFrames    { Frames },
+          mCursor    { 0 }
     {
-        return "WAV Codec";
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Text WAVModule::GetVersion() const
+    void LinearDecoder::Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const
     {
-        return "1.0.0";
+        (* Frequency) = mFrequency;
+        (* Stride)    = mStride;
+        (* Frames)    = mFrames;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void WAVModule::OnAttach(Ref<Engine::Subsystem::Host> Host)
+    Bool LinearDecoder::Seek(UInt64 Frame)
     {
-        if (ConstRetainer<Service> Content = Host.GetService<Service>())
+        if (Frame > mFrames)
         {
-            Content->AddLoader(WAVLoader::kTypes, Retainer<WAVLoader>::Create());
+            return false;
         }
+
+        mCursor = Frame;
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void WAVModule::OnDetach(Ref<Engine::Subsystem::Host> Host)
+    UInt64 LinearDecoder::Tell() const
     {
-        if (ConstRetainer<Service> Content = Host.GetService<Service>())
+        return mCursor;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt64 LinearDecoder::Read(Span<Real32> Output)
+    {
+        const UInt64 Count = Min<UInt64>(Output.GetSize() / mStride, mFrames - mCursor);
+
+        const ConstPtr<SInt16> Source      = mSamples.GetData() + mCursor * mStride;
+        const Ptr<Real32>      Destination = Output.GetData();
+
+        for (UInt64 Index = 0, Limit = Count * mStride; Index < Limit; ++Index)
         {
-            Content->RemoveLoader(WAVLoader::kTypes);
+            Destination[Index] = static_cast<Real32>(Source[Index]) * (1.0f / 32768.0f);
         }
+
+        mCursor += Count;
+        return Count;
     }
 }

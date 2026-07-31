@@ -10,45 +10,59 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "MP3Loader.hpp"
-#include "MP3Decoder.hpp"
-#include "Zyphryon.Audio/Resampler.hpp"
-#include "Zyphryon.Audio/Sound.hpp"
-#include "Zyphryon.Audio/Types.hpp"
+#include "Baker.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Tool::Baker::Audio
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Unique<Audio::Decoder> Decode(ConstRef<Blob> Data, ConstRef<Audio::Sound> Sound)
+    Blob Baker::Bake(ConstRef<Blob> Data, Text Extension, ConstRef<Profile> Profile) const
     {
-        return Unique<MP3Decoder>::Create(Data);
+        const Sample Decoded = Importer::Import(Data, Extension);
+
+        if (Decoded.IsEmpty())
+        {
+            return Blob();
+        }
+        return Exporter::Export(Decoded, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool MP3Loader::Load(Ref<Service> Service, Ref<Scope> Scope, AnyRef<Blob> Data)
+    Bool Baker::Bake(Text Source, Text Destination, ConstRef<Profile> Profile) const
     {
-        drmp3 Description;
+        Blob Input;
 
-        if (drmp3_init_memory(AddressOf(Description), Data.GetData(), Data.GetSize(), nullptr))
+        if (Filesystem::Read(Source, Input) != Filesystem::Result::Success || Input == nullptr)
         {
-            const UInt32 Frequency = Description.sampleRate;
-            const UInt32 Stride    = Description.channels;
-            const UInt64 Frames    = Audio::Resampler::Estimate(Description.totalPCMFrameCount, Frequency, Audio::kMixerFrequency);
-            drmp3_uninit(AddressOf(Description));
+            LOG_E("Audio: failed to read '{0}'", Source);
 
-            // Store the raw encoded MP3 data into the sound resource for streaming decoding.
-            const Retainer<Audio::Sound> Asset = Retainer<Audio::Sound>::Cast(Scope.GetResource());
-            Asset->Load(Frames, Audio::kMixerFrequency, Stride, Decode, Move(Data));
-            return true;
+            return false;
         }
-        return false;
+
+        const Blob Output = Bake(Input, StrAfterLast(Source, '.'), Profile);
+
+        if (Output == nullptr)
+        {
+            return false;
+        }
+
+        Filesystem::Ensure(Destination);
+
+        if (Filesystem::Write(Destination, Output) != Filesystem::Result::Success)
+        {
+            LOG_E("Audio: failed to write '{0}'", Destination);
+
+            return false;
+        }
+
+        LOG_I("Audio: '{0}' -> '{1}' ({2} bytes)", Source, Destination, Output.GetSize());
+        return true;
     }
 }

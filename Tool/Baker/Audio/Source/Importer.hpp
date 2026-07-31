@@ -12,25 +12,29 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Content/Loader.hpp"
+#include "Sample.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace Tool::Baker::Audio
 {
-    /// \brief Content loader for MP3-encoded audio tracks.
-    class MP3Loader final : public Loader
+    /// \brief Decodes a source sound file into interleaved floating-point frames.
+    class Importer final
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
-        static constexpr Text kTypes[] = { "mp3" };
+        /// \brief The source extensions this importer accepts.
+        static constexpr Text kTypes[] = { "wav", "mp3" };
 
     public:
 
-        /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
-        Bool Load(Ref<Service> Service, Ref<Scope> Scope, AnyRef<Blob> Data) override;
+        /// \brief Decodes a source sound and clocks it at the mixer's rate.
+        ///
+        /// \param Data      The encoded bytes of the source file.
+        /// \param Extension The source's extension, which selects the decoder.
+        /// \return The decoded sample, or an empty sample on failure.
+        static Sample Import(ConstRef<Blob> Data, Text Extension);
     };
 }

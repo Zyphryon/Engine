@@ -42,7 +42,7 @@ ELSEIF (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Tracy)
+## Dependency (Tracy) (BSD-3-Clause)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(ZY_PROFILE_BACKEND_TRACY "Use Tracy profiler" OFF)
@@ -66,7 +66,25 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Flecs)
+## Dependency (Opus) (BSD-3-Clause)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+SET(OPUS_BUILD_SHARED_LIBRARY        OFF CACHE BOOL "" FORCE)
+SET(OPUS_BUILD_PROGRAMS              OFF CACHE BOOL "" FORCE)
+SET(OPUS_BUILD_TESTING               OFF CACHE BOOL "" FORCE)
+SET(OPUS_INSTALL_PKG_CONFIG_MODULE   OFF CACHE BOOL "" FORCE)
+SET(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(External_Opus
+        GIT_REPOSITORY https://github.com/xiph/opus
+        GIT_SHALLOW    TRUE
+        GIT_TAG        v1.5.2)
+FetchContent_MakeAvailable(External_Opus)
+
+LIST(APPEND PROJECT_DEPENDENCIES "opus")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (Flecs) (MIT) TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(FLECS_REST_SERVICE "Enable Flecs rest service" OFF)

@@ -38,25 +38,6 @@ OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          OFF)
 ADD_SUBDIRECTORY(Engine)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Modules (Audio)
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           OFF)
-OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           OFF)
-
-IF    (ZY_AUDIO_LOADER_WAV)
-
-    ADD_SUBDIRECTORY(Module/Audio/Loader/WAV)
-
-ENDIF ()
-
-IF    (ZY_AUDIO_LOADER_MP3)
-
-    ADD_SUBDIRECTORY(Module/Audio/Loader/MP3)
-
-ENDIF ()
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Modules (Graphics)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

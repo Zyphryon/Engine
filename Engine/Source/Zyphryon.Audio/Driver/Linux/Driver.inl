@@ -64,6 +64,48 @@ namespace Audio
             }
             return true;
         }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static Str ALSASelect(Text Device)
+        {
+            Str Result;
+
+            Ptr<Ptr<void>> Hints = nullptr;
+
+            if (::snd_device_name_hint(-1, "pcm", AddressOf(Hints)) < 0)
+            {
+                return Result;
+            }
+
+            for (Ptr<Ptr<void>> Hint = Hints; * Hint && Result.IsEmpty(); ++Hint)
+            {
+                const Ptr<Char> Direction = ::snd_device_name_get_hint(* Hint, "IOID");
+
+                // A null direction means the endpoint is bidirectional; anything but playback is skipped.
+                const Bool      Playable  = (Direction == nullptr) || StrConvert(Direction) == Text("Output");
+
+                if (const Ptr<Char> Name = ::snd_device_name_get_hint(* Hint, "NAME"); Name)
+                {
+                    // The description carries the human-readable label, so it is matched alongside the name.
+                    const Ptr<Char> Label = ::snd_device_name_get_hint(* Hint, "DESC");
+
+                    if (Playable && (StrContains(StrConvert(Name), Device) || (Label && StrContains(StrConvert(Label), Device))))
+                    {
+                        Result = Str(StrConvert(Name));
+                    }
+
+                    ::free(Label);
+                    ::free(Name);
+                }
+
+                ::free(Direction);
+            }
+
+            ::snd_device_name_free_hint(Hints);
+            return Result;
+        }
     };
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -90,8 +132,31 @@ namespace Audio
         mBackend->Callback = Move(Render);
         mBackend->Name     = (Device.IsEmpty() ? Str("default") : Str(Device));
 
-        if (const SInt32 Result = ::snd_pcm_open(
-            AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0); Result < 0)
+        // ALSA addresses endpoints by exact name, so the request is honoured verbatim before anything else.
+        SInt32 Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+
+        // A name that does not open verbatim may still be a fragment of one the hint list knows.
+        if (Result < 0 && !Device.IsEmpty())
+        {
+            if (Str Match = Backend::ALSASelect(Device); !Match.IsEmpty())
+            {
+                mBackend->Name = Move(Match);
+
+                Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+            }
+        }
+
+        // The default endpoint is the last resort, so a bad request degrades instead of leaving the app mute.
+        if (Result < 0 && !Device.IsEmpty())
+        {
+            LOG_W("Audio: No ALSA endpoint matches '{0}', falling back to the default", Device);
+
+            mBackend->Name = "default";
+
+            Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+        }
+
+        if (Result < 0)
         {
             LOG_E("Audio: Failed to open ALSA endpoint '{0}' ({1})", mBackend->Name, StrConvert(::snd_strerror(Result)));
 
@@ -103,7 +168,7 @@ namespace Audio
         }
 
         // The mixer always produces 48 kHz interleaved stereo float, buffered four periods deep.
-        const SInt32 Result = ::snd_pcm_set_params(
+        Result = ::snd_pcm_set_params(
             mBackend->Device,
             SND_PCM_FORMAT_FLOAT_LE,
             SND_PCM_ACCESS_RW_INTERLEAVED,

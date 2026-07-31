@@ -14,8 +14,9 @@
     `<cstdint>`, `<limits>`
   - *math* — `<cmath>`
   - *concurrency* — `<atomic>`, `<thread>`, `<mutex>`, `<condition_variable>`
-- **Minimal dependencies** — The runtime carries a single third-party library, the
-  [flecs](https://github.com/SanderMertens/flecs) ECS. Anything else lives in the
+- **Minimal dependencies** — The runtime carries two third-party libraries: the
+  [flecs](https://github.com/SanderMertens/flecs) ECS and
+  [libopus](https://opus-codec.org/) for audio decoding. Anything else lives in the
   tools, never ships with the engine.
 - **Data-oriented design** — Cache-friendly layouts, SIMD math, structures shaped by
   access patterns rather than taxonomy.
@@ -28,13 +29,13 @@
 
 ### What ships in your game
 
-A game built on Zyphryon links **one** third-party library by default. Everything else below arrives only if
+A game built on Zyphryon links **two** third-party libraries by default. Everything else below arrives only if
 you enable the module that needs it.
 
 | Library | Pulled in by | Used for |
 |---------|--------------|----------|
 | [flecs](https://github.com/SanderMertens/flecs) | always (core) | The ECS behind the `Scene` module |
-| [dr_libs](https://github.com/mackron/dr_libs) | `ZY_AUDIO_LOADER_WAV`, `ZY_AUDIO_LOADER_MP3` *(both ON)* | WAV / MP3 decoding |
+| [libopus](https://opus-codec.org/) | always (core) | Opus decoding for the `.snd` container |
 | [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
 | [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |
 | [stb](https://github.com/nothings/stb) | `ZY_GRAPHIC_LOADER_STB` *(OFF)* | Runtime image decode |
@@ -46,6 +47,7 @@ against them, and they only build with `ZY_BUILD_TOOL_BAKER` *(OFF)*.
 
 | Library | Used by | Used for |
 |---------|---------|----------|
+| [dr_libs](https://github.com/mackron/dr_libs) | Audio baker | WAV / MP3 decode |
 | [msdfgen](https://github.com/Chlumsky/msdfgen) | Font baker | MSDF glyph generation |
 | [stb](https://github.com/nothings/stb) | Font, Texture bakers | Image decode |
 
@@ -60,6 +62,7 @@ Ship the baked assets and these stay on your workstation.
 - **C++20** compliant compiler (MSVC 2019+, GCC 11+, Clang 13+)
 - **Platform SDKs**
     - Windows: Windows SDK 10.0+
+    - Linux: `libasound2-dev`, `libx11-dev`, `libxrandr-dev` *(all required)*
     - Web: Emscripten SDK
 
 ---
@@ -82,8 +85,6 @@ Known gaps, so you don't have to discover them:
 
 - **No automated test suite yet.** Correctness is currently verified by hand and by the sample project.
 - **The 3D path is young** — skeletal animation and model rendering are still being built out.
-- **flecs is the one core dependency**, and replacing it with a first-party ECS is an open intention rather
-  than a plan with a date.
 
 ---
 

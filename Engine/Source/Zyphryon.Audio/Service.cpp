@@ -11,6 +11,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
+#include "Loader/SNDLoader.hpp"
+#include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -80,6 +82,8 @@ namespace Audio
         {
             LOG_I("Audio: Found Endpoint '{0}'", Endpoint);
         }
+
+        RegisterBuiltinLoaders();
         return true;
     }
 
@@ -284,5 +288,15 @@ namespace Audio
     void Service::Resume(Object Handle)
     {
         mMixer.Resume(Handle);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::RegisterBuiltinLoaders()
+    {
+        ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
+
+        Content->AddLoader(SNDLoader::kTypes, Retainer<SNDLoader>::Create());
     }
 }

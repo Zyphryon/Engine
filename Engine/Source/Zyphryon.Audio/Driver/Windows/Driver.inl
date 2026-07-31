@@ -27,6 +27,7 @@ namespace Audio
 
     struct Driver::Backend
     {
+        Str                      Name       = "Default";
         Ptr<IMMDeviceEnumerator> Enumerator = nullptr;
         Ptr<IMMDevice>           Endpoint   = nullptr;
         Ptr<IAudioClient>        Client     = nullptr;
@@ -36,7 +37,6 @@ namespace Audio
         Atomic<Bool>             Running    = false;
         UInt32                   Frames     = 0;
         Driver::Callback         Callback;
-        Str                      Name       = "Default";
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -52,6 +52,83 @@ namespace Audio
 
                 Backend.Renderer->ReleaseBuffer(Frames, 0);
             }
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static Str WASAPIName(Ptr<IMMDevice> Device)
+        {
+            Str Name;
+
+            Ptr<IPropertyStore> Store = nullptr;
+
+            if (SUCCEEDED(Device->OpenPropertyStore(STGM_READ, AddressOf(Store))))
+            {
+                PROPVARIANT Variant = { };
+
+                if (SUCCEEDED(Store->GetValue(PKEY_Device_FriendlyName, AddressOf(Variant))) && Variant.vt == VT_LPWSTR)
+                {
+                    Name = Str::ConvertFromUTF16(StrConvert(Variant.pwszVal));
+                }
+                PropVariantClear(AddressOf(Variant));
+
+                Store->Release();
+            }
+            return Name;
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static Ptr<IMMDevice> WASAPISelect(Ptr<IMMDeviceEnumerator> Enumerator, Text Device)
+        {
+            Ptr<IMMDevice> Result = nullptr;
+
+            if (!Device.IsEmpty())
+            {
+                Ptr<IMMDeviceCollection> Collection = nullptr;
+
+                if (SUCCEEDED(Enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, AddressOf(Collection))))
+                {
+                    UINT Count = 0;
+                    Collection->GetCount(AddressOf(Count));
+
+                    for (UINT Element = 0; Element < Count && Result == nullptr; ++Element)
+                    {
+                        Ptr<IMMDevice> Candidate = nullptr;
+
+                        if (FAILED(Collection->Item(Element, AddressOf(Candidate))))
+                        {
+                            continue;
+                        }
+
+                        const Str Name = WASAPIName(Candidate);
+
+                        if (StrContains(Text(Name.GetData(), Name.GetSize()), Device))
+                        {
+                            Result = Candidate;
+                        }
+                        else
+                        {
+                            Candidate->Release();
+                        }
+                    }
+                    Collection->Release();
+                }
+
+                if (Result == nullptr)
+                {
+                    LOG_W("Audio: No endpoint matches '{0}', falling back to the default", Device);
+                }
+            }
+
+            // The default endpoint serves both an empty request and a named one that matched nothing.
+            if (Result == nullptr && FAILED(Enumerator->GetDefaultAudioEndpoint(eRender, eConsole, AddressOf(Result))))
+            {
+                return nullptr;
+            }
+            return Result;
         }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -120,7 +197,6 @@ namespace Audio
     Bool Driver::Open(Text Device, AnyRef<Callback> Render)
     {
         mBackend->Callback = Move(Render);
-        mBackend->Name     = (Device.IsEmpty() ? Str("Default") : Str(Device));
 
         if (FAILED(::CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
         {
@@ -143,12 +219,20 @@ namespace Audio
             return false;
         }
 
-        if (FAILED(mBackend->Enumerator->GetDefaultAudioEndpoint(eRender, eConsole, AddressOf(mBackend->Endpoint))))
+        mBackend->Endpoint = Backend::WASAPISelect(mBackend->Enumerator, Device);
+
+        if (mBackend->Endpoint == nullptr)
         {
-            LOG_E("Audio: Failed to obtain default WASAPI render endpoint");
+            LOG_E("Audio: Failed to obtain a WASAPI render endpoint");
 
             Close();
             return false;
+        }
+
+        // The requested name may be empty or inexact, so report the endpoint that actually carries the audio.
+        if (Str Name = Backend::WASAPIName(mBackend->Endpoint); !Name.IsEmpty())
+        {
+            mBackend->Name = Move(Name);
         }
 
         if (FAILED(mBackend->Endpoint->Activate(
@@ -294,17 +378,9 @@ namespace Audio
                 continue;
             }
 
-            Ptr<IPropertyStore> Store = nullptr;
-            if (SUCCEEDED(Device->OpenPropertyStore(STGM_READ, AddressOf(Store))))
+            if (Str Name = Backend::WASAPIName(Device); !Name.IsEmpty())
             {
-                PROPVARIANT Variant = { };
-                if (SUCCEEDED(Store->GetValue(PKEY_Device_FriendlyName, AddressOf(Variant))) && Variant.vt == VT_LPWSTR)
-                {
-                    Output.Endpoints.Append(Str::ConvertFromUTF16(StrConvert(Variant.pwszVal)));
-                }
-                PropVariantClear(AddressOf(Variant));
-
-                Store->Release();
+                Output.Endpoints.Append(Move(Name));
             }
             Device->Release();
         }
