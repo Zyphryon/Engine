@@ -159,7 +159,7 @@ inline namespace Base
         /// \brief Checks if the blob is empty (i.e., holds no memory).
         ///
         /// \return `true` if the blob is empty, `false` otherwise.
-        ZY_INLINE Bool operator==(nullptr_t) const
+        ZY_INLINE Bool operator==(Null) const
         {
             return mData == nullptr;
         }
@@ -167,7 +167,7 @@ inline namespace Base
         /// \brief Checks if the blob is not empty (i.e., holds memory).
         ///
         /// \return `true` if the blob is not empty, `false` otherwise.
-        ZY_INLINE Bool operator!=(nullptr_t) const
+        ZY_INLINE Bool operator!=(Null) const
         {
             return mData != nullptr;
         }

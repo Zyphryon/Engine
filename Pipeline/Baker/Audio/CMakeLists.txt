@@ -12,7 +12,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(ZyTool_BakerTexture VERSION 1.0.0 LANGUAGES CXX)
+PROJECT(ZyTool_BakerAudio VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Code
@@ -28,33 +28,24 @@ LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (STB) (PUBLIC DOMAIN)
+## Dependency (DrLibs) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-## Deliberately absent: PNM, PSD, GIF, PIC
-LIST(APPEND PROJECT_DEFINES
-        "STB_IMAGE_STATIC"
-        "STBI_NO_STDIO"
-        "STBI_ONLY_PNG"
-        "STBI_ONLY_JPEG"
-        "STBI_ONLY_TGA"
-        "STBI_ONLY_BMP"
-        "STBI_ONLY_HDR"
-        "STBI_MAX_DIMENSIONS=65535")
+LIST(APPEND PROJECT_DEFINES "DR_WAV_NO_STDIO" "DR_MP3_NO_STDIO")
 
-FetchContent_Declare(External_STB
-        GIT_REPOSITORY https://github.com/nothings/stb
+FetchContent_Declare(External_DRLIBS
+        GIT_REPOSITORY https://github.com/mackron/dr_libs
         GIT_SHALLOW    TRUE)
-FetchContent_MakeAvailable(External_STB)
+FetchContent_MakeAvailable(External_DRLIBS)
 
-IF (NOT TARGET STB)
+IF (NOT TARGET DrLibs)
 
-    ADD_LIBRARY(STB INTERFACE)
-    TARGET_INCLUDE_DIRECTORIES(STB INTERFACE ${external_stb_SOURCE_DIR})
+    ADD_LIBRARY(DrLibs INTERFACE)
+    TARGET_INCLUDE_DIRECTORIES(DrLibs INTERFACE ${external_drlibs_SOURCE_DIR})
 
 ENDIF ()
 
-LIST(APPEND PROJECT_DEPENDENCIES "STB")
+LIST(APPEND PROJECT_DEPENDENCIES "DrLibs")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Executable
@@ -84,4 +75,4 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 ## Properties
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyApplyCompileOptions(${PROJECT_NAME})
+ZyApplyOptions(${PROJECT_NAME})

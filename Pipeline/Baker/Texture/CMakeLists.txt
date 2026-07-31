@@ -12,7 +12,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(ZyTool_BakerFont VERSION 1.0.0 LANGUAGES CXX)
+PROJECT(ZyTool_BakerTexture VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Code
@@ -57,27 +57,6 @@ ENDIF ()
 LIST(APPEND PROJECT_DEPENDENCIES "STB")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (MSDFGEN) (MIT)
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-SET(MSDFGEN_CORE_ONLY        ON  CACHE BOOL "" FORCE)
-SET(MSDFGEN_DYNAMIC_RUNTIME  ON  CACHE BOOL "" FORCE)
-SET(MSDFGEN_BUILD_STANDALONE OFF CACHE BOOL "" FORCE)
-SET(MSDFGEN_USE_VCPKG        OFF CACHE BOOL "" FORCE)
-SET(MSDFGEN_USE_SKIA         OFF CACHE BOOL "" FORCE)
-SET(MSDFGEN_INSTALL          OFF CACHE BOOL "" FORCE)
-SET(MSDFGEN_DISABLE_SVG      ON  CACHE BOOL "" FORCE)
-SET(MSDFGEN_DISABLE_PNG      ON  CACHE BOOL "" FORCE)
-
-FetchContent_Declare(External_MSDFGEN
-        GIT_REPOSITORY https://github.com/Chlumsky/msdfgen
-        GIT_SHALLOW    TRUE
-        GIT_TAG        v1.12)
-FetchContent_MakeAvailable(External_MSDFGEN)
-
-LIST(APPEND PROJECT_DEPENDENCIES "msdfgen::msdfgen")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Executable
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -105,4 +84,4 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 ## Properties
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyApplyCompileOptions(${PROJECT_NAME})
+ZyApplyOptions(${PROJECT_NAME})

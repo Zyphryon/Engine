@@ -35,7 +35,7 @@ inline namespace Base
         }
 
         /// \brief Constructs an empty retainer explicitly from a null pointer.
-        ZY_INLINE Retainer(nullptr_t)
+        ZY_INLINE Retainer(Null)
             : mInstance { nullptr }
         {
         }
@@ -162,7 +162,7 @@ inline namespace Base
         /// \brief Checks if the retainer is empty.
         ///
         /// \return `true` if the retainer manages no instance, `false` otherwise.
-        ZY_INLINE Bool operator==(nullptr_t) const
+        ZY_INLINE Bool operator==(Null) const
         {
             return mInstance == nullptr;
         }
@@ -170,7 +170,7 @@ inline namespace Base
         /// \brief Checks if the retainer is not empty.
         ///
         /// \return `true` if the retainer manages an instance, `false` otherwise.
-        ZY_INLINE Bool operator!=(nullptr_t) const
+        ZY_INLINE Bool operator!=(Null) const
         {
             return mInstance != nullptr;
         }

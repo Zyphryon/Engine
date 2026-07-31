@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/_deps
-          key: deps-${{ runner.os }}-${{ matrix.architecture }}-${{ hashFiles('**/CMakeLists.txt', 'CMakeModules/**') }}
+          key: deps-${{ runner.os }}-${{ matrix.architecture }}-${{ hashFiles('**/CMakeLists.txt', 'CMake/**') }}
           restore-keys: |
             deps-${{ runner.os }}-${{ matrix.architecture }}-
 
@@ -50,3 +50,55 @@ jobs:
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        compiler: [gcc, clang]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install glad generator dependencies
+        run: pip install "Jinja2>=2.7,<4.0"
+
+      - name: Install platform dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libasound2-dev libx11-dev libxrandr-dev
+
+      - name: Select compiler
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            echo "CC=gcc"     >> $GITHUB_ENV
+            echo "CXX=g++"    >> $GITHUB_ENV
+          else
+            echo "CC=clang"   >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
+          fi
+
+      - name: Cache CMake dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: deps-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt', 'CMake/**') }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.compiler }}-
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DPython_EXECUTABLE="${{ env.pythonLocation }}/bin/python"
+
+      - name: Build
+        run: cmake --build build --parallel

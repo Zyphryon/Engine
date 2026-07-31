@@ -14,31 +14,44 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 
 PROJECT(Zyphryon VERSION 1.0.0)
 
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+IF    (PROJECT_IS_TOP_LEVEL)
+
+    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+    ## Multi-config generators append the configuration unless each variant is pinned to the same folder.
+    FOREACH(CONFIG IN ITEMS DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+
+        SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
+        SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
+        SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
+
+    ENDFOREACH()
+
+ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Plugins
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 INCLUDE(FetchContent)
-INCLUDE(CMakeModules/CMakeApplyCompileOptions.cmake)
-INCLUDE(CMakeModules/CMakeApplyModules.cmake)
-INCLUDE(CMakeModules/CMakeRegisterModule.cmake)
-INCLUDE(CMakeModules/CMakeEmbedResources.cmake)
-INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
+INCLUDE(CMake/CMakeApplyModules.cmake)
+INCLUDE(CMake/CMakeApplyOptions.cmake)
+INCLUDE(CMake/CMakeApplyResources.cmake)
+INCLUDE(CMake/CMakeRegisterModule.cmake)
+INCLUDE(CMake/CMakeRegisterResources.cmake)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          OFF)
+OPTION(ZY_WEB_THREAD           "Core: Uses thread on Emscripten"          OFF)
 
 ADD_SUBDIRECTORY(Engine)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Modules (Graphics)
+## Modules
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN32})
@@ -64,19 +77,13 @@ IF    (ZY_GRAPHIC_LOADER_STB)
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Tools
+## Pipeline
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_BUILD_TOOL_BAKER "Build the offline asset bakers" OFF)
+OPTION(ZY_BUILD_PIPELINE "Build the offline asset bakers" OFF)
 
-IF    (ZY_BUILD_TOOL_BAKER)
+IF    (ZY_BUILD_PIPELINE)
 
-    ADD_SUBDIRECTORY(Tool/Baker)
+    ADD_SUBDIRECTORY(Pipeline/Baker)
 
 ENDIF ()
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Tutorial
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-ADD_SUBDIRECTORY(Tutorial)

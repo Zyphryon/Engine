@@ -58,7 +58,7 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
             GIT_TAG        v0.13.1)
     FetchContent_MakeAvailable(External_Tracy)
 
-    ZyApplyCompileOptions("TracyClient")
+    ZyApplyOptions("TracyClient")
 
     LIST(APPEND PROJECT_DEFINES      "ZY_PROFILE_BACKEND_TRACY")
     LIST(APPEND PROJECT_DEPENDENCIES "TracyClient")
@@ -123,7 +123,7 @@ FetchContent_Declare(External_Flecs
         GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(External_Flecs)
 
-ZyApplyCompileOptions(flecs_static)
+ZyApplyOptions(flecs_static)
 
 LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 
@@ -161,5 +161,5 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 ## Properties
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyApplyCompileOptions(${PROJECT_NAME})
-ZyEmbedResources(TARGET ${PROJECT_NAME} DIRECTORY "Resources")
+ZyApplyOptions(${PROJECT_NAME})
+ZyRegisterResources(TARGET ${PROJECT_NAME} DIRECTORY "Resources")

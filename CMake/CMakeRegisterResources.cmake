@@ -3,10 +3,10 @@
 # Registers a module/plugin resource directory to be embedded into consumer applications.
 #
 # Usage:
-#   ZyEmbedResources(TARGET <target> DIRECTORY <dir> [PREFIX <prefix>])
+#   ZyRegisterResources(TARGET <target> DIRECTORY <dir> [PREFIX <prefix>])
 #
-# Each registered directory is materialized by ZyApplyEmbedded(<app>)
-FUNCTION(ZyEmbedResources)
+# Each registered directory is materialized by ZyApplyResources(<app>)
+FUNCTION(ZyRegisterResources)
 
     SET(OPTIONS)
     SET(ONE_VALUE_ARGS TARGET DIRECTORY PREFIX)
@@ -16,13 +16,13 @@ FUNCTION(ZyEmbedResources)
 
     IF(NOT ARG_TARGET)
 
-        MESSAGE(FATAL_ERROR "ZyEmbedResources: TARGET is required.")
+        MESSAGE(FATAL_ERROR "ZyRegisterResources: TARGET is required.")
 
     ENDIF()
 
     IF(NOT ARG_DIRECTORY)
 
-        MESSAGE(FATAL_ERROR "ZyEmbedResources: DIRECTORY is required.")
+        MESSAGE(FATAL_ERROR "ZyRegisterResources: DIRECTORY is required.")
 
     ENDIF()
 

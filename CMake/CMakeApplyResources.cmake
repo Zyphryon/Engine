@@ -1,6 +1,6 @@
 # CMakeApplyEmbedded.cmake
 #
-# Materializes every resource directory registered with ZyEmbedResources() into a consumer application,
+# Materializes every resource directory registered with ZyRegisterResources() into a consumer application,
 # generating <target>.Embedded.{hpp,cpp} that exposes:
 #
 #   void ZyRegisterEmbedded(Ref<Content::Service> Service);
@@ -11,8 +11,8 @@
 #   - Web    : each directory is preloaded into MEMFS under /Embedded/<prefix> and served by a Content::Disk mount.
 #
 # Usage:
-#   ZyApplyEmbedded(<target>)
-FUNCTION(ZyApplyEmbedded TARGET)
+#   ZyApplyResources(<target>)
+FUNCTION(ZyApplyResources TARGET)
 
     GET_PROPERTY(EMBEDDED GLOBAL PROPERTY ZY_EMBEDDED)
 

@@ -42,8 +42,8 @@ you enable the module that needs it.
 
 ### What doesn't
 
-The offline bakers under `Tool/Baker/` are standalone executables you run on your own machine. Nothing links
-against them, and they only build with `ZY_BUILD_TOOL_BAKER` *(OFF)*.
+The offline bakers under `Pipeline/Baker/` are standalone executables you run on your own machine. Nothing links
+against them, and they only build with `ZY_BUILD_PIPELINE` *(OFF)*.
 
 | Library | Used by | Used for |
 |---------|---------|----------|

@@ -97,7 +97,7 @@ inline namespace Base
         /// \brief Deletes the currently managed instance and leaves the unique empty.
         ///
         /// \return A reference to this unique.
-        ZY_INLINE Ref<Unique> operator=(nullptr_t)
+        ZY_INLINE Ref<Unique> operator=(Null)
         {
             Reset();
             return (* this);
@@ -137,7 +137,7 @@ inline namespace Base
         /// \brief Checks if the unique is empty.
         ///
         /// \return `true` if the unique manages no instance, `false` otherwise.
-        ZY_INLINE Bool operator==(nullptr_t) const
+        ZY_INLINE Bool operator==(Null) const
         {
             return mInstance == nullptr;
         }
@@ -145,7 +145,7 @@ inline namespace Base
         /// \brief Checks if the unique is not empty.
         ///
         /// \return `true` if the unique manages an instance, `false` otherwise.
-        ZY_INLINE Bool operator!=(nullptr_t) const
+        ZY_INLINE Bool operator!=(Null) const
         {
             return mInstance != nullptr;
         }

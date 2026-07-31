@@ -21,6 +21,9 @@
 
 inline namespace Base
 {
+    /// \brief Type of the `nullptr` literal, for overloads that take it explicitly.
+    using Null     = decltype(nullptr);
+
     /// \brief Boolean value (`true` or `false`).
     using Bool     = bool;
 

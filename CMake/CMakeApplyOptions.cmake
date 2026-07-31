@@ -3,8 +3,8 @@
 # Applies the engine's standard compiler and linker settings to a target.
 #
 # Usage:
-#   ZyApplyCompileOptions(<target>)
-FUNCTION(ZyApplyCompileOptions TARGET)
+#   ZyApplyOptions(<target>)
+FUNCTION(ZyApplyOptions TARGET)
 
     TARGET_COMPILE_FEATURES(${TARGET} PUBLIC cxx_std_23)
 

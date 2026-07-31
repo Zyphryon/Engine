@@ -12,7 +12,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(ZyTool_BakerAudio VERSION 1.0.0 LANGUAGES CXX)
+PROJECT(ZyTool_BakerFont VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Code
@@ -28,24 +28,54 @@ LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (DrLibs) (PUBLIC DOMAIN)
+## Dependency (STB) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-LIST(APPEND PROJECT_DEFINES "DR_WAV_NO_STDIO" "DR_MP3_NO_STDIO")
+## Deliberately absent: PNM, PSD, GIF, PIC
+LIST(APPEND PROJECT_DEFINES
+        "STB_IMAGE_STATIC"
+        "STBI_NO_STDIO"
+        "STBI_ONLY_PNG"
+        "STBI_ONLY_JPEG"
+        "STBI_ONLY_TGA"
+        "STBI_ONLY_BMP"
+        "STBI_ONLY_HDR"
+        "STBI_MAX_DIMENSIONS=65535")
 
-FetchContent_Declare(External_DRLIBS
-        GIT_REPOSITORY https://github.com/mackron/dr_libs
+FetchContent_Declare(External_STB
+        GIT_REPOSITORY https://github.com/nothings/stb
         GIT_SHALLOW    TRUE)
-FetchContent_MakeAvailable(External_DRLIBS)
+FetchContent_MakeAvailable(External_STB)
 
-IF (NOT TARGET DrLibs)
+IF (NOT TARGET STB)
 
-    ADD_LIBRARY(DrLibs INTERFACE)
-    TARGET_INCLUDE_DIRECTORIES(DrLibs INTERFACE ${external_drlibs_SOURCE_DIR})
+    ADD_LIBRARY(STB INTERFACE)
+    TARGET_INCLUDE_DIRECTORIES(STB INTERFACE ${external_stb_SOURCE_DIR})
 
 ENDIF ()
 
-LIST(APPEND PROJECT_DEPENDENCIES "DrLibs")
+LIST(APPEND PROJECT_DEPENDENCIES "STB")
+
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Dependency (MSDFGEN) (MIT)
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+SET(MSDFGEN_CORE_ONLY        ON  CACHE BOOL "" FORCE)
+SET(MSDFGEN_DYNAMIC_RUNTIME  ON  CACHE BOOL "" FORCE)
+SET(MSDFGEN_BUILD_STANDALONE OFF CACHE BOOL "" FORCE)
+SET(MSDFGEN_USE_VCPKG        OFF CACHE BOOL "" FORCE)
+SET(MSDFGEN_USE_SKIA         OFF CACHE BOOL "" FORCE)
+SET(MSDFGEN_INSTALL          OFF CACHE BOOL "" FORCE)
+SET(MSDFGEN_DISABLE_SVG      ON  CACHE BOOL "" FORCE)
+SET(MSDFGEN_DISABLE_PNG      ON  CACHE BOOL "" FORCE)
+
+FetchContent_Declare(External_MSDFGEN
+        GIT_REPOSITORY https://github.com/Chlumsky/msdfgen
+        GIT_SHALLOW    TRUE
+        GIT_TAG        v1.12)
+FetchContent_MakeAvailable(External_MSDFGEN)
+
+LIST(APPEND PROJECT_DEPENDENCIES "msdfgen::msdfgen")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Executable
@@ -75,4 +105,4 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
 ## Properties
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyApplyCompileOptions(${PROJECT_NAME})
+ZyApplyOptions(${PROJECT_NAME})
