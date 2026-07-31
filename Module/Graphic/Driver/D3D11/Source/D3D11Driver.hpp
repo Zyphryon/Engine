@@ -28,8 +28,8 @@ namespace Graphic
     {
     public:
 
-        /// \see Driver::Initialize(Ptr<void>, ConstRef<Config>)
-        Bool Initialize(Ptr<void> Output, ConstRef<Config> Config) override;
+        /// \see Driver::Initialize(Ptr<void>, ConstRef<Configuration>)
+        Bool Initialize(Ptr<void> Output, ConstRef<Configuration> Config) override;
 
         /// \see Driver::Reset(UInt16, UInt16, Bool)
         void Reset(UInt16 Width, UInt16 Height, Bool Tearless) override;
@@ -61,11 +61,17 @@ namespace Graphic
         /// \see Driver::DeletePass(Object)
         void DeletePass(Object ID) override;
 
-        /// \see Driver::CreatePipeline(Object, ConstRef<Program>, ConstRef<States>)
-        void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States) override;
+        /// \see Driver::CreatePipeline(Object, ConstRef<Program>, ConstRef<Signature>, ConstRef<States>)
+        void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States) override;
 
         /// \see Driver::DeletePipeline(Object)
         void DeletePipeline(Object ID) override;
+
+        /// \see Driver::CreateSampler(Object, Sampler)
+        void CreateSampler(Object ID, Sampler Descriptor) override;
+
+        /// \see Driver::DeleteSampler(Object)
+        void DeleteSampler(Object ID) override;
 
         /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
         void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data) override;
@@ -179,13 +185,13 @@ namespace Graphic
         /// \param Pass   The render pass to associate with the swapchain.
         /// \param Window The native window handle to create the swapchain for.
         /// \param Config The configuration settings for the swapchain.
-        void CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Config> Config);
+        void CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Configuration> Config);
 
         /// \brief Creates the render targets and depth resources for a swapchain-backed render pass.
         ///
         /// \param Pass   The render pass to create resources for.
         /// \param Config The configuration settings for the swapchain.
-        void CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Config> Config) const;
+        void CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Configuration> Config) const;
 
         /// \brief Applies the vertex buffer and index buffer resources for a draw item.
         ///
@@ -197,7 +203,7 @@ namespace Graphic
         ///
         /// \param Oldest The oldest draw item that was submitted.
         /// \param Newest The newest draw item that is being submitted.
-        void ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest);
+        void ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
         /// \brief Applies the texture resources for a draw item.
         ///
@@ -210,12 +216,6 @@ namespace Graphic
         /// \param Oldest The oldest draw item that was submitted.
         /// \param Newest The newest draw item that is being submitted.
         void ApplyUniformResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
-
-        /// \brief Gets an existing sampler state with the specified descriptor or creates a new one if it doesn't exist.
-        ///
-        /// \param Descriptor The sampler descriptor defining the desired sampler state configuration.
-        /// \return A sampler state resource that matches the specified descriptor.
-        Ptr<ID3D11SamplerState> GetOrCreateSampler(Sampler Descriptor);
 
     private:
 
@@ -236,7 +236,7 @@ namespace Graphic
         Array<D3D11Buffer, kMaxBuffers>     mBuffers;
         Array<D3D11Pass, kMaxPasses>        mPasses;
         Array<D3D11Pipeline, kMaxPipelines> mPipelines;
-        Table<UInt64, D3D11Sampler>         mSamplers;
+        Array<D3D11Sampler, kMaxSamplers>   mSamplers;
         Array<D3D11Texture, kMaxTextures>   mTextures;
     };
 }

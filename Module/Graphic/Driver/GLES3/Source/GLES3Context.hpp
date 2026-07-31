@@ -42,7 +42,7 @@ namespace Graphic
         /// \param Output The platform window handle the context is bound to (ignored on the web backend).
         /// \param Config The configuration describing the requested color and depth formats.
         /// \return `true` when the context was created and made current, `false` otherwise.
-        Bool Initialize(Ptr<void> Output, ConstRef<Config> Config);
+        Bool Initialize(Ptr<void> Output, ConstRef<Configuration> Config);
 
         /// \brief Sets whether presentation waits for the vertical blank.
         ///

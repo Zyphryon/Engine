@@ -150,7 +150,7 @@ namespace Engine
         Ref<Platform::Window> Window = Platform->GetWindow();
 
         LOG_I("Kernel: Initializing graphic service");
-        Graphic::Config GraphicsConfig;
+        Graphic::Configuration GraphicsConfig;
         GraphicsConfig.Tearless    = mConfig.IsGraphicsTearless();
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();

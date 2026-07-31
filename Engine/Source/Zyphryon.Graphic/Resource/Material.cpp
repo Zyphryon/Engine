@@ -30,18 +30,86 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Material::SetImage(UInt64 Name, ConstRetainer<Image> Image)
+    {
+        for (Ref<TextureEntry> Entry : mTextures)
+        {
+            if (Entry.Hash == Name)
+            {
+                Entry.Image = Image;
+                return;
+            }
+        }
+        mTextures.Append(Name, Image);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Retainer<Image> Material::GetImage(UInt64 Name) const
+    {
+        for (ConstRef<TextureEntry> Entry : mTextures)
+        {
+            if (Entry.Hash == Name)
+            {
+                return Entry.Image;
+            }
+        }
+        return nullptr;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Material::SetSampler(UInt64 Name, Sampler Descriptor)
+    {
+        for (Ref<SamplerEntry> Entry : mSamplers)
+        {
+            if (Entry.Hash == Name)
+            {
+                Entry.Descriptor = Descriptor;
+                Entry.Handle     = 0;
+                return;
+            }
+        }
+        mSamplers.Append(Name, Descriptor, 0);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Material::GetSampler(UInt64 Name) const
+    {
+        for (ConstRef<SamplerEntry> Entry : mSamplers)
+        {
+            if (Entry.Hash == Name)
+            {
+                return Entry.Handle;
+            }
+        }
+        return 0;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Bool Material::Upload(Ref<Service> Service)
     {
         ZY_ASSERT(mHandle == 0, "Material has already been created");
 
         mHandle = Service.CreateMaterial();
 
-        for (ConstRetainer<Image> Image : mTextures)
+        for (Ref<TextureEntry> Entry : mTextures)
         {
-            if (Image && Image->GetPolicy() == Policy::Exclusive)
+            if (Entry.Image && Entry.Image->GetPolicy() == Policy::Exclusive)
             {
-                Image->Upload(Service);
+                Entry.Image->Upload(Service);
             }
+        }
+
+        for (Ref<SamplerEntry> Entry : mSamplers)
+        {
+            Entry.Handle = Service.ObtainSampler(Entry.Descriptor);
         }
         return (mHandle > 0);
     }
@@ -51,11 +119,11 @@ namespace Graphic
 
     void Material::Unload(Ref<Service> Service)
     {
-        for (ConstRetainer<Image> Image : mTextures)
+        for (Ref<TextureEntry> Entry : mTextures)
         {
-            if (Image && Image->GetPolicy() == Policy::Exclusive)
+            if (Entry.Image && Entry.Image->GetPolicy() == Policy::Exclusive)
             {
-                Image->Unload(Service);
+                Entry.Image->Unload(Service);
             }
         }
 

@@ -93,10 +93,10 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Graph::Run(ConstRef<Graphic::Stream> Global)
+    void Graph::Run(Graphic::Stream Frame)
     {
         // Bind the frame-global uniforms shared by every pass and draw this frame.
-        mEncoder.SetGlobal(Global);
+        mEncoder.SetFrame(Frame);
 
         for (ConstRef<Unique<Pass>> Holder : mPasses)
         {

@@ -65,7 +65,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Service::Initialize(Text Adapter, Ptr<void> Output, ConstRef<Config> Config)
+    Bool Service::Initialize(Text Adapter, Ptr<void> Output, ConstRef<Configuration> Config)
     {
         ZY_PROFILE_SCOPE("Graphic::Initialize");
 
@@ -94,12 +94,12 @@ namespace Graphic
             {
                 mDriver->Probe(mDescription);
 
-                mTearless = Config.Tearless;
+                mSnapshot.Tearless = Config.Tearless;
 
                 LOG_I("Graphics: Using {0}", mDescription.Backend);
                 LOG_I("Graphics: Detected Tier ({0})", Enum::GetName(mDescription.Tier));
 
-                for (ConstRef<Graphic::Adapter> Endpoint : mDescription.Endpoints)
+                for (ConstRef<Graphic::Adapter> Endpoint : mDescription.Adapters)
                 {
                     LOG_I("Graphics: Found GPU '{0}'", Endpoint.Description);
                     LOG_I("Graphics:     Memory {0} (video)", Endpoint.Memory);
@@ -116,7 +116,7 @@ namespace Graphic
 
     void Service::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        mTearless = Tearless;
+        mSnapshot.Tearless = Tearless;
 
         Enqueue<& Driver::Reset>(Width, Height, Tearless);
     }
@@ -209,13 +209,13 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreatePipeline(AnyRef<Program> Program, ConstRef<States> States)
+    Object Service::CreatePipeline(AnyRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
     {
         const Object ID = mPipelines.Allocate();
 
         if (ID)
         {
-            Enqueue<& Driver::CreatePipeline>(ID, Move(Program), States);
+            Enqueue<& Driver::CreatePipeline>(ID, Move(Program), Signature, States);
         }
         return ID;
     }
@@ -228,6 +228,25 @@ namespace Graphic
         mPipelines.Free(ID);
 
         Enqueue<& Driver::DeletePipeline>(ID);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Service::ObtainSampler(Sampler Descriptor)
+    {
+        Ref<Object> Handle = mSnapshot.Samplers.FindOrInsert(Hash(Descriptor));
+
+        if (!Handle)
+        {
+            Handle = mSamplers.Allocate();
+
+            if (Handle)
+            {
+                Enqueue<& Driver::CreateSampler>(Handle, Descriptor);
+            }
+        }
+        return Handle;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -309,7 +328,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Setup(Ptr<void> Output, ConstRef<Config> Config)
+    void Service::Setup(Ptr<void> Output, ConstRef<Configuration> Config)
     {
         if (mDriver->Initialize(Output, Config))
         {

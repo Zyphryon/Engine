@@ -30,8 +30,8 @@ namespace Graphic
         /// \brief Releases every OpenGL object still owned by the driver.
         ~GLES3Driver() override;
 
-        /// \see Driver::Initialize(Ptr<void>, ConstRef<Config>)
-        Bool Initialize(Ptr<void> Output, ConstRef<Config> Config) override;
+        /// \see Driver::Initialize(Ptr<void>, ConstRef<Configuration>)
+        Bool Initialize(Ptr<void> Output, ConstRef<Configuration> Config) override;
 
         /// \see Driver::Reset(UInt16, UInt16, Bool)
         void Reset(UInt16 Width, UInt16 Height, Bool Tearless) override;
@@ -63,11 +63,17 @@ namespace Graphic
         /// \see Driver::DeletePass(Object)
         void DeletePass(Object ID) override;
 
-        /// \see Driver::CreatePipeline(Object, ConstRef<Program>, ConstRef<States>)
-        void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States) override;
+        /// \see Driver::CreatePipeline(Object, ConstRef<Program>, ConstRef<Signature>, ConstRef<States>)
+        void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States) override;
 
         /// \see Driver::DeletePipeline(Object)
         void DeletePipeline(Object ID) override;
+
+        /// \see Driver::CreateSampler(Object, Sampler)
+        void CreateSampler(Object ID, Sampler Descriptor) override;
+
+        /// \see Driver::DeleteSampler(Object)
+        void DeleteSampler(Object ID) override;
 
         /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
         void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data) override;
@@ -210,12 +216,6 @@ namespace Graphic
         /// \param Newest The draw item being submitted.
         void ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest);
 
-        /// \brief Gets an existing sampler object matching the descriptor or lazily creates one.
-        ///
-        /// \param Descriptor The sampler descriptor to resolve.
-        /// \return The OpenGL sampler object name.
-        GLuint GetOrCreateSampler(Sampler Descriptor);
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -239,7 +239,7 @@ namespace Graphic
         Array<GLES3Buffer,   kMaxBuffers>   mBuffers;
         Array<GLES3Pass,     kMaxPasses>    mPasses;
         Array<GLES3Pipeline, kMaxPipelines> mPipelines;
+        Array<GLuint,        kMaxSamplers>  mSamplers;
         Array<GLES3Texture,  kMaxTextures>  mTextures;
-        Table<UInt64, GLuint>               mSamplers;
     };
 }

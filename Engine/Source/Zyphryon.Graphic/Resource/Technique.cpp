@@ -30,9 +30,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Technique::Setup(AnyRef<Description> Description)
+    void Technique::Setup(AnyRef<Description> Description, AnyRef<Reflection> Reflection)
     {
         mDescription = Move(Description);
+        mReflection  = Move(Reflection);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -42,7 +43,12 @@ namespace Graphic
     {
         ZY_ASSERT(mHandle == 0, "Technique has already been created");
 
-        mHandle = Service.CreatePipeline(Assemble(), mDescription.States);
+        for (Ref<Reflection::SamplerField> Field : mReflection.Samplers)
+        {
+            Field.Handle = Service.ObtainSampler(Field.Descriptor);
+        }
+
+        mHandle = Service.CreatePipeline(Assemble(), mDescription.Signature, mDescription.States);
 
         return (mHandle > 0);
     }

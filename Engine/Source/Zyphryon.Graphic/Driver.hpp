@@ -33,7 +33,7 @@ namespace Graphic
         /// \param Output The output target to render into.
         /// \param Config The configuration settings for the graphics device.
         /// \return `true` if initialization succeeded, `false` otherwise.
-        virtual Bool Initialize(Ptr<void> Output, ConstRef<Config> Config)
+        virtual Bool Initialize(Ptr<void> Output, ConstRef<Configuration> Config)
         {
             return true;
         }
@@ -135,12 +135,13 @@ namespace Graphic
 
         }
 
-        /// \brief Creates a pipeline resource with the specified shader program and pipeline states.
+        /// \brief Creates a pipeline resource with the specified shader program, resource interface, and states.
         ///
-        /// \param ID      The identifier for the pipeline resource.
-        /// \param Program The shader program to use for the pipeline.
-        /// \param States  The fixed-function pipeline states to configure.
-        virtual void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States)
+        /// \param ID        The identifier for the pipeline resource.
+        /// \param Program   The shader program to use for the pipeline.
+        /// \param Signature The resource bindings the program declares, grouped by update frequency.
+        /// \param States    The fixed-function pipeline states to configure.
+        virtual void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
         {
 
         }
@@ -149,6 +150,23 @@ namespace Graphic
         ///
         /// \param ID The identifier of the pipeline resource to delete.
         virtual void DeletePipeline(Object ID)
+        {
+
+        }
+
+        /// \brief Creates a sampler resource with the specified filtering and addressing state.
+        ///
+        /// \param ID         The identifier for the sampler resource.
+        /// \param Descriptor The filtering, addressing, and comparison state to create.
+        virtual void CreateSampler(Object ID, Sampler Descriptor)
+        {
+
+        }
+
+        /// \brief Deletes a sampler resource, freeing associated GPU memory.
+        ///
+        /// \param ID The identifier of the sampler resource to delete.
+        virtual void DeleteSampler(Object ID)
         {
 
         }
@@ -243,4 +261,3 @@ namespace Graphic
         }
     };
 }
-

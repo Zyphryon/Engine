@@ -25,6 +25,31 @@ namespace Graphic
     {
     public:
 
+        /// \brief Binds an image to the texture a technique declares under the same name.
+        struct TextureEntry final
+        {
+            /// The hash identifying the texture's name.
+            UInt64          Hash = 0;
+
+            /// The image bound to the texture.
+            Retainer<Image> Image;
+        };
+
+        /// \brief Supplies the state for the dynamic sampler a technique declares under the same name.
+        struct SamplerEntry final
+        {
+            /// The hash identifying the sampler's name.
+            UInt64  Hash   = 0;
+
+            /// The state requested in place of the technique's default.
+            Sampler Descriptor;
+
+            /// The sampler resource resolved from the descriptor, or zero until the material is uploaded.
+            Object  Handle = 0;
+        };
+
+    public:
+
         /// \brief Constructs a material resource with the given content key.
         ///
         /// \param Key The unique content key identifying this material.
@@ -38,40 +63,44 @@ namespace Graphic
             return mHandle;
         }
 
-        /// \brief Sets the texture image for the specified texture slot.
+        /// \brief Binds an image to the named texture, replacing any image already bound to it.
         ///
-        /// \param Slot  The texture slot to bind the image to.
+        /// \param Name  The pre-hashed texture name.
         /// \param Image The image resource to bind.
-        ZY_INLINE void SetImage(TextureSlot Slot, ConstRetainer<Image> Image)
+        void SetImage(UInt64 Name, ConstRetainer<Image> Image);
+
+        /// \brief Gets the image bound to the named texture.
+        ///
+        /// \param Name The pre-hashed texture name.
+        /// \return The image resource bound to the texture, or null if none.
+        Retainer<Image> GetImage(UInt64 Name) const;
+
+        /// \brief Gets every texture bound by this material.
+        ///
+        /// \return A span over the material's texture entries.
+        ZY_INLINE ConstSpan<TextureEntry> GetImages() const
         {
-            mTextures[Enum::Cast(Slot)] = Image;
+            return mTextures;
         }
 
-        /// \brief Gets the texture image bound to the specified texture slot.
+        /// \brief Sets the state for the named sampler, replacing the technique's default.
         ///
-        /// \param Slot The texture slot to query.
-        /// \return The image resource bound to the slot, or null if none.
-        ZY_INLINE ConstRetainer<Image> GetImage(TextureSlot Slot) const
-        {
-            return mTextures[Enum::Cast(Slot)];
-        }
+        /// \param Name       The pre-hashed sampler name.
+        /// \param Descriptor The sampler state to apply.
+        void SetSampler(UInt64 Name, Sampler Descriptor);
 
-        /// \brief Sets the sampler state for the specified texture slot.
+        /// \brief Gets the sampler resource bound to the named sampler.
         ///
-        /// \param Slot    The texture slot to configure.
-        /// \param Sampler The sampler state to apply.
-        ZY_INLINE void SetSampler(TextureSlot Slot, Sampler Sampler)
-        {
-            mSamplers[Enum::Cast(Slot)] = Sampler;
-        }
+        /// \param Name The pre-hashed sampler name.
+        /// \return The sampler resource bound to the texture, or null 0 if none.
+        Object GetSampler(UInt64 Name) const;
 
-        /// \brief Gets the sampler state for the specified texture slot.
+        /// \brief Gets every sampler set by this material.
         ///
-        /// \param Slot The texture slot to query.
-        /// \return The sampler state bound to the slot.
-        ZY_INLINE Sampler GetSampler(TextureSlot Slot) const
+        /// \return A span over the material's sampler entries.
+        ZY_INLINE ConstSpan<SamplerEntry> GetSamplers() const
         {
-            return mSamplers[Enum::Cast(Slot)];
+            return mSamplers;
         }
 
         /// \brief Sets a uniform value identified by a pre-hashed name.
@@ -131,9 +160,9 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object                                             mHandle;
-        Array<Retainer<Image>, Enum::Count<TextureSlot>()> mTextures;
-        Array<Sampler, Enum::Count<TextureSlot>()>         mSamplers;
-        Table<UInt64, Parameter>                           mParameters;
+        Object                                        mHandle;
+        Sequence<TextureEntry, Command::kMaxTextures> mTextures;
+        Sequence<SamplerEntry, Command::kMaxSamplers> mSamplers;
+        Table<UInt64, Parameter>                      mParameters;
     };
 }

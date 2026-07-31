@@ -106,10 +106,12 @@ namespace Graphic
             }
         }
 
-        for (Ref<decltype(mSamplers)::Pair> Pair : mSamplers)
+        for (ConstRef<GLuint> Sampler : mSamplers)
         {
-            const GLuint Object = Pair.Second;
-            glDeleteSamplers(1, AddressOf(Object));
+            if (Sampler)
+            {
+                glDeleteSamplers(1, AddressOf(Sampler));
+            }
         }
 
         if (mGlobalReadFramebuffer)
@@ -129,7 +131,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool GLES3Driver::Initialize(Ptr<void> Output, ConstRef<Config> Config)
+    Bool GLES3Driver::Initialize(Ptr<void> Output, ConstRef<Configuration> Config)
     {
         if (!mContext.Initialize(Output, Config))
         {
@@ -376,7 +378,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States)
+    void GLES3Driver::CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
     {
         Ref<GLES3Pipeline> Pipeline = mPipelines[ID];
 
@@ -435,9 +437,9 @@ namespace Graphic
         Pipeline.FillMode      = States.Fill == Fill::Wireframe ? 0x1B01 : 0x1B02;
 
         // Input assembler.
-        Pipeline.Primitive = GLES3Convert(States.InputPrimitive);
+        Pipeline.Primitive = GLES3Convert(States.Topology);
 
-        for (ConstRef<Attribute> Attribute : States.InputAttributes)
+        for (ConstRef<Attribute> Attribute : Signature.Attributes)
         {
             Pipeline.Attributes.Append(Attribute);
         }
@@ -453,6 +455,55 @@ namespace Graphic
             glDeleteProgram(mPipelines[ID].Program);
         }
         mPipelines[ID] = GLES3Pipeline();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void GLES3Driver::CreateSampler(Object ID, Sampler Descriptor)
+    {
+        Ref<GLuint> Object = mSamplers[ID];
+
+        glGenSamplers(1, AddressOf(Object));
+        glSamplerParameteri(Object, GL_TEXTURE_WRAP_S, GLES3Convert(Descriptor.AddressModeU));
+        glSamplerParameteri(Object, GL_TEXTURE_WRAP_T, GLES3Convert(Descriptor.AddressModeV));
+        glSamplerParameteri(Object, GL_TEXTURE_WRAP_R, GLES3Convert(Descriptor.AddressModeW));
+        glSamplerParameteri(Object, GL_TEXTURE_MIN_FILTER, GLES3ConvertMinFilter(Descriptor.Filter));
+        glSamplerParameteri(Object, GL_TEXTURE_MAG_FILTER, GLES3ConvertMagFilter(Descriptor.Filter));
+
+        if (Descriptor.Comparison != TestCondition::None)
+        {
+            glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            glSamplerParameteri(Object, GL_TEXTURE_COMPARE_FUNC, GLES3Convert(Descriptor.Comparison));
+        }
+        else
+        {
+            glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        }
+
+        if (mDescription.Capabilities.SupportsBorderClamp)
+        {
+            glSamplerParameterfv(Object, 0x1004, GLES3Convert(Descriptor.Border));
+        }
+
+        if (mDescription.Capabilities.MaxAnisotropy > 0)
+        {
+            const Real32 Anisotropy = Min(
+                GLES3ConvertAnisotropy(Descriptor.Filter), mDescription.Capabilities.MaxAnisotropy);
+            glSamplerParameterf(Object, 0x84FE, Anisotropy);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void GLES3Driver::DeleteSampler(Object ID)
+    {
+        Ref<GLuint> Object = mSamplers[ID];
+
+        glDeleteSamplers(1, AddressOf(Object));
+
+        Object = 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -962,7 +1013,7 @@ namespace Graphic
         Limits.UniformBlockCapacity  = Value;
 
         // Adapter description.
-        Ref<Adapter> Adapter = mDescription.Endpoints.Append();
+        Ref<Adapter> Adapter = mDescription.Adapters.Append();
         Adapter.Description  = StrConvert(reinterpret_cast<ConstPtr<Char>>(glGetString(GL_RENDERER)));
         Adapter.Memory       = 0;
     }
@@ -1262,54 +1313,14 @@ namespace Graphic
 
         for (UInt32 Slot = 0; Slot < NewSamplers; ++Slot)
         {
-            const Sampler Old = Slot < OldSamplers ? Oldest.Samplers[Slot] : Sampler { };
-            const Sampler New = Newest.Samplers[Slot];
+            const Object Old = Slot < OldSamplers ? Oldest.Samplers[Slot] : Object { };
+            const Object New = Newest.Samplers[Slot];
 
-            if (Slot >= OldSamplers || Hash(Old) != Hash(New))
+            if (Old != New)
             {
-                glBindSampler(Slot, GetOrCreateSampler(New));
+                glBindSampler(Slot, mSamplers[New]);
             }
         }
     }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    GLuint GLES3Driver::GetOrCreateSampler(Sampler Descriptor)
-    {
-        Ref<GLuint> Object = mSamplers.FindOrInsert(Hash(Descriptor));
-
-        if (Object == 0)
-        {
-            glGenSamplers(1, AddressOf(Object));
-            glSamplerParameteri(Object, GL_TEXTURE_WRAP_S, GLES3Convert(Descriptor.AddressModeU));
-            glSamplerParameteri(Object, GL_TEXTURE_WRAP_T, GLES3Convert(Descriptor.AddressModeV));
-            glSamplerParameteri(Object, GL_TEXTURE_WRAP_R, GLES3Convert(Descriptor.AddressModeW));
-            glSamplerParameteri(Object, GL_TEXTURE_MIN_FILTER, GLES3ConvertMinFilter(Descriptor.Filter));
-            glSamplerParameteri(Object, GL_TEXTURE_MAG_FILTER, GLES3ConvertMagFilter(Descriptor.Filter));
-
-            if (Descriptor.Comparison != TestCondition::Always)
-            {
-                glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-                glSamplerParameteri(Object, GL_TEXTURE_COMPARE_FUNC, GLES3Convert(Descriptor.Comparison));
-            }
-            else
-            {
-                glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-            }
-
-            if (mDescription.Capabilities.SupportsBorderClamp)
-            {
-                glSamplerParameterfv(Object, 0x1004, GLES3Convert(Descriptor.Border));
-            }
-
-            if (mDescription.Capabilities.MaxAnisotropy > 0)
-            {
-                const Real32 Anisotropy = Min(
-                    GLES3ConvertAnisotropy(Descriptor.Filter), mDescription.Capabilities.MaxAnisotropy);
-                glSamplerParameterf(Object, 0x84FE, Anisotropy);
-            }
-        }
-        return Object;
-    }
 }

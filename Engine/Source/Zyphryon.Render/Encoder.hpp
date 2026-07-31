@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Graphic/Schema.hpp"
 #include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Graphic/Resource/Material.hpp"
 #include "Zyphryon.Graphic/Resource/Mesh.hpp"
@@ -37,27 +36,30 @@ namespace Render
         /// \brief Resets the per-pass scratch (collector and arena), preserving capacity for reuse.
         void Reset();
 
-        /// \brief Sets the frame-global uniform block bound to every subsequent draw.
+        /// \brief Sets the frame's uniform block bound to every subsequent draw.
         ///
-        /// \param Global The transient stream holding the frame-global uniforms.
-        void SetGlobal(ConstRef<Graphic::Stream> Global);
+        /// \param Stream The transient stream holding the per-frame uniforms.
+        void SetFrame(Graphic::Stream Stream);
 
-        /// \brief Sets the current pass's uniform block and input textures.
+        /// \brief Sets the pass's uniform block and input textures.
         ///
-        /// \param Pass The transient stream holding the per-pass uniforms.
-        void SetPass(ConstRef<Graphic::Stream> Pass);
+        /// \param Stream The transient stream holding the per-pass uniforms.
+        void SetPass(Graphic::Stream Stream);
 
-        /// \brief Packs a uniform block for a scope by resolving each schema field from a provider.
+        /// \brief Packs a uniform block for a frequency by resolving each declared field from a provider.
         ///
-        /// \tparam Provider A type exposing `GetParameter(UInt64 Hash)`.
-        /// \param  Scope    The uniform scope to pack.
-        /// \param  Schema   The technique schema describing the scope's layout.
-        /// \param  Source   The provider supplying field values by hash.
-        /// \return A transient stream holding the packed block, or an empty stream if the scope declares no fields.
+        /// \tparam Provider   A type exposing `GetParameter(UInt64 Hash)`.
+        /// \param  Frequency  The uniform block to pack.
+        /// \param  Technique  The technique describing the block's layout.
+        /// \param  Source     The provider supplying field values by hash.
+        /// \return A transient stream holding the packed block, or an empty stream if the block declares no fields.
         template<typename Provider>
-        ZY_INLINE Graphic::Stream Pack(Graphic::UniformScope Scope, ConstRef<Graphic::Schema> Schema, ConstRef<Provider> Source)
+        ZY_INLINE Graphic::Stream Pack(Graphic::Frequency Frequency, ConstRef<Graphic::Technique> Technique, ConstRef<Provider> Source)
         {
-            ConstRef<Graphic::Schema::UniformGroup> Block = Schema.GetUniforms(Scope);
+            using Reflection = Graphic::Technique::Reflection;
+
+            ConstRef<Reflection>               Data  = Technique.GetReflection();
+            ConstRef<Reflection::UniformGroup> Block = Data.Uniforms[Enum::Cast(Frequency)];
 
             if (Block.Size == 0)
             {
@@ -66,17 +68,22 @@ namespace Render
 
             Graphic::Transient<Byte> Slice = mService.AllocateTransientUniforms<Byte>(Block.Size);
 
-            for (ConstRef<Graphic::Schema::UniformField> Field : Block.Structure)
+            for (ConstRef<Reflection::UniformField> Field : Block.Structure)
             {
-                if (const ConstPtr<Graphic::Parameter> Parameter = Source.GetParameter(Field.Hash))
+                // Fall back to the technique's default when the material does not set the field.
+                ConstPtr<Graphic::Parameter> Parameter = Source.GetParameter(Field.Hash);
+
+                if (Parameter == nullptr)
                 {
-                    if (Parameter->GetSlot() == Enum::Cast(Field.Type))
+                    Parameter = AddressOf(Field.Value);
+                }
+
+                if (Parameter->GetSlot() == Enum::Cast(Field.Type))
+                {
+                    Parameter->Visit([&]<typename Type>(ConstRef<Type> Value)
                     {
-                        Parameter->Visit([&]<typename Type>(ConstRef<Type> Value)
-                        {
-                            Slice.Copy(ConstSpan(Value), Field.Offset);
-                        });
-                    }
+                        Slice.Copy(ConstSpan(Value), Field.Offset);
+                    });
                 }
             }
             return Slice.GetStream();
@@ -154,12 +161,15 @@ namespace Render
 
     private:
 
-        /// \brief Resolves and binds every texture slot the schema declares, with its sampler.
+        /// \brief Binds every texture and sampler the technique declares, sourced from the material.
         ///
-        /// \param Command  The command being assembled.
-        /// \param Schema   The technique's resource schema describing the texture slots.
-        /// \param Material The material to source images and samplers from.
-        void BindTextures(Ref<Graphic::Command> Command, ConstRef<Graphic::Schema> Schema, ConstRef<Graphic::Material> Material);
+        /// \param Command    The command being assembled.
+        /// \param Reflection The technique reflection naming the textures and samplers it declares.
+        /// \param Material   The material to source images and samplers from.
+        void BindTextures(
+            Ref<Graphic::Command>                    Command,
+            ConstRef<Graphic::Technique::Reflection> Reflection,
+            ConstRef<Graphic::Material>              Material);
 
     private:
 
@@ -167,7 +177,7 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ref<Graphic::Service> mService;
-        Graphic::Stream       mGlobal;
+        Graphic::Stream       mFrame;
         Graphic::Stream       mPass;
     };
 }

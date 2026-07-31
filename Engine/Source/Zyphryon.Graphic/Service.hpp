@@ -48,7 +48,7 @@ namespace Graphic
         /// \param Output  The output target to render into.
         /// \param Config  The configuration settings for the graphics device.
         /// \return `true` if initialization succeeded, `false` otherwise.
-        Bool Initialize(Text Adapter, Ptr<void> Output, ConstRef<Config> Config);
+        Bool Initialize(Text Adapter, Ptr<void> Output, ConstRef<Configuration> Config);
 
         /// \brief Resets the rendering surface to the specified resolution.
         ///
@@ -62,7 +62,7 @@ namespace Graphic
         /// \return `true` if a finished frame waits for the vertical blank, `false` otherwise.
         ZY_INLINE Bool IsTearless() const
         {
-            return mTearless;
+            return mSnapshot.Tearless;
         }
 
         /// \brief Gets the current description of the graphics service, including backend, adapter, and capabilities.
@@ -204,17 +204,24 @@ namespace Graphic
         /// \param ID The identifier of the render pass resource to delete.
         void DeletePass(Object ID);
 
-        /// \brief Creates a pipeline resource with the specified shader program and pipeline states.
+        /// \brief Creates a pipeline resource with the specified shader program, resource interface, and states.
         ///
-        /// \param Program The shader program to use for the pipeline.
-        /// \param States  The fixed-function pipeline states to configure.
+        /// \param Program   The shader program to use for the pipeline.
+        /// \param Signature The resource bindings the program declares, grouped by update frequency.
+        /// \param States    The fixed-function pipeline states to configure.
         /// \return The identifier of the created pipeline resource, or zero if creation failed.
-        Object CreatePipeline(AnyRef<Program> Program, ConstRef<States> States);
+        Object CreatePipeline(AnyRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States);
 
         /// \brief Deletes a pipeline resource, freeing associated GPU memory.
         ///
         /// \param ID The identifier of the pipeline resource to delete.
         void DeletePipeline(Object ID);
+
+        /// \brief Resolves a sampler descriptor into the handle that backs it, creating one if needed.
+        ///
+        /// \param Descriptor The filtering, addressing, and comparison state to resolve.
+        /// \return The identifier of the sampler resource, or zero if the pool is exhausted.
+        Object ObtainSampler(Sampler Descriptor);
 
         /// \brief Creates a texture resource with the specified parameters and optional initial data.
         ///
@@ -325,7 +332,7 @@ namespace Graphic
         ///
         /// \param Output The output target to render into.
         /// \param Config The configuration settings for the graphics device.
-        void Setup(Ptr<void> Output, ConstRef<Config> Config);
+        void Setup(Ptr<void> Output, ConstRef<Configuration> Config);
 
         /// \brief Swaps the producer and consumer journals and signals the GPU thread to begin processing the current frame.
         void Flush();
@@ -337,6 +344,16 @@ namespace Graphic
         ///
         /// \param Token The stop token used to request termination of the GPU worker thread.
         void OnWorkerThread(ConstRef<std::stop_token> Token);
+
+        /// \brief Mirrors the driver state the producer side must answer for without reaching the GPU thread.
+        struct Snapshot final
+        {
+            /// Whether presentation waits for the vertical blank.
+            Bool                  Tearless = false;
+
+            /// The sampler resource interned for each distinct descriptor, keyed by its hash.
+            Table<UInt64, Object> Samplers;
+        };
 
         /// \brief Represents an in-flight render pass.
         struct InFlightPass final
@@ -416,6 +433,11 @@ namespace Graphic
             return mFrames[mProducer].Pass;
         }
 
+        /// \brief Submits a run of the consumer frame's accumulated draw commands to the driver.
+        ///
+        /// \param Offset The index of the first command in the consumer frame's submission arena.
+        /// \param Count  The number of commands to submit.
+        /// \note Recorded into the journal, so it runs on the GPU thread once the frame is consumed.
         void SubmitInFlightPass(UInt32 Offset, UInt32 Count);
 
         /// \brief Initializes a single \ref InFlightArena by allocating a CPU writer and a GPU buffer.
@@ -476,7 +498,7 @@ namespace Graphic
         UInt8                            mProducer = 0;
         UInt8                            mConsumer = kMaxFrames - 1;
         Array<InFlightFrame, kMaxFrames> mFrames;
-        Bool                             mTearless;
+        Snapshot                         mSnapshot;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -485,6 +507,7 @@ namespace Graphic
         Freelist<kMaxTextures>           mMaterials;
         Freelist<kMaxPasses>             mPasses;
         Freelist<kMaxPipelines>          mPipelines;
+        Freelist<kMaxSamplers>           mSamplers;
         Freelist<kMaxTextures>           mTextures;
     };
 }

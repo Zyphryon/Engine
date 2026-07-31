@@ -45,36 +45,34 @@ namespace Graphic
 
     void MTLLoader::Parse(Ref<Content::Service> Service, Ref<Content::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset)
     {
-        // Parse 'Images' and 'Samplers' section
-        const JsonObject JsonImages   = Root.GetObject("Images");
-        const JsonObject JsonSamplers = Root.GetObject("Samplers");
-
-        for (const TextureSlot Slot : Enum::GetValues<TextureSlot>())
+        // Parse 'Images' section, keyed by the texture name the technique declares.
+        if (const JsonObject JsonImages = Root.GetObject("Images"); JsonImages.IsValid())
         {
-            if (const JsonObject JsonImage = JsonImages.GetObject(Enum::GetName(Slot)); JsonImage.IsValid())
+            for (ConstRef<JsonValue::Object::Pair> Entry : JsonImages.GetNode()->GetObject())
             {
-                // Parse image
-                const Text Path = JsonImage.GetString("Path");
-                Asset.SetImage(Slot, Service.Load<Image>(Path, AddressOf(Scope)));
+                const JsonObject JsonImage = JsonImages.GetObject(Entry.First);
+                const Text       Path      = JsonImage.GetString("Path");
 
-                // Parse sampler
-                if (JsonSamplers.IsValid())
-                {
-                    const JsonObject JsonSampler = JsonSamplers.GetObject(JsonImage.GetString("Sampler"));
+                Asset.SetImage(Hash(Entry.First), Service.Load<Image>(Path, AddressOf(Scope)));
+            }
+        }
 
-                    if (JsonSampler.IsValid())
-                    {
-                        Sampler Description;
-                        Description.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
-                        Description.AddressModeV = JsonSampler.GetEnum("AddressModeV", TextureAddress::Clamp);
-                        Description.AddressModeW = JsonSampler.GetEnum("AddressModeW", TextureAddress::Clamp);
-                        Description.Filter       = JsonSampler.GetEnum("Filter",       TextureFilter::Point);
-                        Description.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::Always);
-                        Description.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
+        // Parse 'Samplers' section, keyed by the sampler name the technique declares.
+        if (const JsonObject JsonSamplers = Root.GetObject("Samplers"); JsonSamplers.IsValid())
+        {
+            for (ConstRef<JsonValue::Object::Pair> Entry : JsonSamplers.GetNode()->GetObject())
+            {
+                const JsonObject JsonSampler = JsonSamplers.GetObject(Entry.First);
 
-                        Asset.SetSampler(Slot, Description);
-                    }
-                }
+                Sampler Descriptor;
+                Descriptor.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
+                Descriptor.AddressModeV = JsonSampler.GetEnum("AddressModeV", TextureAddress::Clamp);
+                Descriptor.AddressModeW = JsonSampler.GetEnum("AddressModeW", TextureAddress::Clamp);
+                Descriptor.Filter       = JsonSampler.GetEnum("Filter",       TextureFilter::Point);
+                Descriptor.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::None);
+                Descriptor.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
+
+                Asset.SetSampler(Hash(Entry.First), Descriptor);
             }
         }
 
@@ -88,14 +86,14 @@ namespace Graphic
                 const Text Name = Entry.First;
                 const Text Type = JsonParameter.GetString("Type");
 
-                switch (Enum::Cast(Type, UniformType::Float))
+                switch (Enum::Cast(Type, Uniform::Float))
                 {
-                case UniformType::Bool:
+                case Uniform::Bool:
                 {
                     Asset.SetParameter(Hash(Name), JsonParameter.GetBool("Value"));
                     break;
                 }
-                case UniformType::Color:
+                case Uniform::Color:
                 {
                     Color Result = Color::Transparent();
 
@@ -119,7 +117,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::IntColor8:
+                case Uniform::IntColor8:
                 {
                     IntColor8 Result = IntColor8::Transparent();
 
@@ -143,12 +141,12 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::Float:
+                case Uniform::Float:
                 {
                     Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<Real32>("Value"));
                     break;
                 }
-                case UniformType::Float2:
+                case Uniform::Float2:
                 {
                     Vector2 Result;
 
@@ -159,7 +157,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::Float3:
+                case Uniform::Float3:
                 {
                     Vector3 Result;
 
@@ -170,7 +168,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::Float4:
+                case Uniform::Float4:
                 {
                     Array<Real32, 4> Result;
 
@@ -184,13 +182,13 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Move(Result));
                     break;
                 }
-                case UniformType::Int:
+                case Uniform::Int:
 
                 {
                     Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<SInt32>("Value"));
                     break;
                 }
-                case UniformType::Int2:
+                case Uniform::Int2:
                 {
                     IntVector2 Result;
 
@@ -201,7 +199,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::Int3:
+                case Uniform::Int3:
                 {
                     IntVector3 Result;
 
@@ -212,7 +210,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::Int4:
+                case Uniform::Int4:
                 {
                     Array<SInt32, 4> Result;
 
@@ -226,12 +224,12 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Move(Result));
                     break;
                 }
-                case UniformType::UInt:
+                case Uniform::UInt:
                 {
                     Asset.SetParameter(Hash(Name), JsonParameter.GetNumber<UInt32>("Value"));
                     break;
                 }
-                case UniformType::UInt2:
+                case Uniform::UInt2:
                 {
                     UIntVector2 Result;
 
@@ -242,7 +240,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::UInt3:
+                case Uniform::UInt3:
                 {
                     UIntVector3 Result;
 
@@ -253,7 +251,7 @@ namespace Graphic
                     Asset.SetParameter(Hash(Name), Result);
                     break;
                 }
-                case UniformType::UInt4:
+                case Uniform::UInt4:
                 {
                     Array<UInt32, 4> Result;
 

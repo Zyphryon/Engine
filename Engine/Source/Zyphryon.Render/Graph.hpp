@@ -97,8 +97,8 @@ namespace Render
 
         /// \brief Executes every registered pass in order and submits the frame.
         ///
-        /// \param Global The pre-packed frame-global uniform stream.
-        void Run(ConstRef<Graphic::Stream> Global);
+        /// \param Frame The pre-packed frame uniform stream.
+        void Run(Graphic::Stream Frame);
 
     private:
 

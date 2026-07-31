@@ -33,6 +33,9 @@ namespace Graphic
         /// \brief The maximum number of vertex attributes in a vertex buffer.
         kMaxAttributes  = 0x0010,
 
+        /// \brief The maximum number of resource bindings declared within a single frequency group.
+        kMaxBindings    = 0x0010,
+
         /// \brief The maximum number of buffer resources.
         kMaxBuffers     = 0x1000,
 
@@ -47,6 +50,9 @@ namespace Graphic
 
         /// \brief The maximum number of pipeline resources.
         kMaxPipelines   = 0x0200,
+
+        /// \brief The maximum number of sampler resources.
+        kMaxSamplers    = 0x0100,
 
         /// \brief The maximum number of texture resources.
         kMaxTextures    = 0x1000,
@@ -127,6 +133,15 @@ namespace Graphic
         Wireframe, ///< Render triangles as wireframes.
     };
 
+    /// \brief Specifies how often a binding group is rebound.
+    enum class Frequency : UInt8
+    {
+        Frame,    ///< Rebound once per frame and shared by every draw.
+        Pass,     ///< Rebound when a render pass begins and shared by all draws in that pass.
+        Material, ///< Rebound when the bound material changes.
+        Instance, ///< Rebound for every draw call.
+    };
+
     /// \brief Specifies the number of samples for multisampling.
     enum class Multisample : UInt8
     {
@@ -144,6 +159,14 @@ namespace Graphic
         LineStrip,      ///< Connected lines (1 vertex per segment after the first).
         TriangleList,   ///< Independent triangles (3 vertices per triangle).
         TriangleStrip,  ///< Connected triangles (1 triangle per vertex after the first two).
+    };
+
+    /// \brief Specifies the kind of resource a shader binding expects.
+    enum class Resource : UInt8
+    {
+        Texture, ///< Sampled texture image.
+        Sampler, ///< Sampler state, bound independently of the texture it filters.
+        Uniform, ///< Uniform (constant) block.
     };
 
     /// \brief Describes shader source languages used by the shader compiler frontend.
@@ -185,6 +208,7 @@ namespace Graphic
     /// \brief Specifies the comparison condition used in depth or stencil tests.
     enum class TestCondition : UInt8
     {
+        None,         ///< No test.
         Always,       ///< Always passes the test.
         Never,        ///< Never passes the test.
         Greater,      ///< Passes if source > destination.
@@ -210,7 +234,6 @@ namespace Graphic
         OpaqueBlack,        ///< Opaque black border color.
         OpaqueWhite,        ///< Opaque white border color.
         TransparentBlack,   ///< Transparent black border color.
-        TransparentWhite,   ///< Transparent white border color.
     };
 
     /// \brief Specifies the sampling method used when accessing textures.
@@ -314,23 +337,6 @@ namespace Graphic
         TextureCube,    ///< Six square faces addressed by a direction vector.
     };
 
-    /// \brief Describes logical texture slots for textures in a shader.
-    enum class TextureSlot : UInt8
-    {
-        Albedo,       ///< Base color or albedo map.
-        Normal,       ///< Tangent-space normal map.
-        Roughness,    ///< Surface roughness map.
-        Metallic,     ///< Metalness map.
-        Specular,     ///< Specular intensity/color (specular-gloss workflow).
-        Emissive,     ///< Self-illumination map.
-        Displacement, ///< Height/displacement map.
-        Occlusion,    ///< Ambient occlusion map.
-        Opacity,      ///< Alpha/opacity mask.
-        Detail,       ///< Secondary detail overlay.
-        Translucency, ///< Subsurface scattering or translucency mask.
-        None,         ///< No semantic assigned.
-    };
-
     /// \brief Describes the feature tier of the graphics backend, indicating supported capabilities.
     enum class Tier : UInt8
     {
@@ -352,17 +358,8 @@ namespace Graphic
     };
     ZY_DEFINE_BITWISE_ENUM(Usage)
 
-    /// \brief Specifies the scope of a uniform in the rendering pipeline.
-    enum class UniformScope : UInt8
-    {
-        Global,    ///< Frame-global data. Updated once per frame and shared by every draw.
-        Pass,      ///< Render-pass data. Updated when a render pass begins and shared by all draws in that pass.
-        Material,  ///< Material-specific data. Updated when the bound material changes and shared by draws using that material.
-        Instance,  ///< Per-draw data. Updated for every draw call and unique to a single rendered instance.
-    };
-
     /// \brief Specifies the data type of a uniform variable.
-    enum class UniformType : UInt8
+    enum class Uniform : UInt8
     {
         Bool,       ///< Boolean value.
         Color,      ///< Color value (RGBA floating-point components).
@@ -433,8 +430,22 @@ namespace Graphic
         TexCoord5,     ///< Defines the sixth set of texture coordinates.
         TexCoord6,     ///< Defines the seventh set of texture coordinates.
         TexCoord7,     ///< Defines the eighth set of texture coordinates.
+        Custom0,       ///< Defines the first custom vertex.
+        Custom1,       ///< Defines the second custom vertex.
+        Custom2,       ///< Defines the third custom vertex.
+        Custom3,       ///< Defines the fourth custom vertex.
         None,          ///< No semantic assigned.
     };
+
+    /// \brief Specifies which shader stages can reach a binding.
+    enum class Visibility : UInt8
+    {
+        None     = 0,                                       ///< Reached by no stage; the binding is inert.
+        Vertex   = 1 << Enum::Cast(ShaderStage::Vertex),    ///< Reached by the vertex stage.
+        Fragment = 1 << Enum::Cast(ShaderStage::Fragment),  ///< Reached by the fragment stage.
+        All      = Vertex | Fragment,                       ///< Reached by every stage.
+    };
+    ZY_DEFINE_BITWISE_ENUM(Visibility)
 
     /// \brief Represents the value of a shader parameter.
     using Parameter = Variant<
@@ -532,7 +543,7 @@ namespace Graphic
     };
 
     /// \brief Configuration settings for the graphics device.
-    struct Config final
+    struct Configuration final
     {
         /// Whether presentation waits for the vertical blank.
         Bool          Tearless;
@@ -566,7 +577,7 @@ namespace Graphic
         Capabilities      Capabilities;
 
         /// The list of graphics adapters (GPUs) available on the system.
-        Sequence<Adapter> Endpoints;
+        Sequence<Adapter> Adapters;
     };
 
     /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
@@ -708,7 +719,7 @@ namespace Graphic
         TextureFilter  Filter       = TextureFilter::LinearMipLinear;
 
         /// The comparison function used for comparison sampling (shadow/depth maps).
-        TestCondition  Comparison   = TestCondition::Always;
+        TestCondition  Comparison   = TestCondition::None;
 
         /// The border color used when wrap mode border is selected.
         TextureBorder  Border       = TextureBorder::OpaqueBlack;
@@ -722,9 +733,8 @@ namespace Graphic
                    AddressModeV == TextureAddress::Clamp &&
                    AddressModeW == TextureAddress::Clamp &&
                    Filter       == TextureFilter::LinearMipLinear &&
-                   Comparison   == TestCondition::Always &&
+                   Comparison   == TestCondition::None &&
                    Border       == TextureBorder::OpaqueBlack;
-
         }
     };
 
@@ -738,7 +748,7 @@ namespace Graphic
         Str32 Value;
     };
 
-     /// \brief Represents a complete shader program composed of multiple shader modules.
+    /// \brief Represents a complete shader program composed of multiple shader modules.
     struct Program final
     {
         /// The shader modules for each pipeline stage (vertex, fragment, etc.).
@@ -746,6 +756,32 @@ namespace Graphic
 
         /// Preprocessor macros used during shader compilation.
         Sequence<Macro>                         Macros;
+    };
+
+    /// \brief Describes a single resource binding declared by a shader program.
+    struct Binding final
+    {
+        /// The kind of resource expected at this binding.
+        Resource   Resource    = Resource::Uniform;
+
+        /// The register the shader declares within its frequency group.
+        UInt8      Register   = 0;
+
+        /// The number of consecutive registers this binding occupies.
+        UInt8      Count      = 1;
+
+        /// The shader stages that read this binding.
+        Visibility Visibility = Visibility::All;
+    };
+
+    /// \brief Describes the resource interface of a shader program, grouped by update frequency.
+    struct Signature final
+    {
+        /// The vertex attributes consumed by the program's input stage.
+        Sequence<Attribute, kMaxAttributes>                              Attributes;
+
+        /// The resource bindings declared by the program, indexed by the frequency that rebinds them.
+        Array<Sequence<Binding, kMaxBindings>, Enum::Count<Frequency>()> Bindings;
     };
 
     /// \brief Describes the fixed-function GPU state for a rendering pipeline.
@@ -832,11 +868,8 @@ namespace Graphic
         /// Action when both stencil and depth tests pass (back-facing).
         TestAction     StencilBackDepthPass  = TestAction::Keep;
 
-        /// Attributes describing the input layout for vertex data.
-        Sequence<Attribute, kMaxAttributes> InputAttributes;
-
         /// Primitive topology used for vertex interpretation.
-        Primitive      InputPrimitive        = Primitive::TriangleList;
+        Primitive      Topology              = Primitive::TriangleList;
     };
 
     /// \brief Defines the parameters for a draw call.
@@ -858,11 +891,14 @@ namespace Graphic
     /// \brief Defines a complete draw item, encapsulating all state and resources needed for a single draw call.
     struct Command final
     {
+        /// \brief Maximum number of sampler bindings allowed per draw command.
+        static constexpr UInt8 kMaxSamplers = 0x08;
+
         /// \brief Maximum number of texture bindings allowed per draw command.
         static constexpr UInt8 kMaxTextures = 0x10;
 
         /// \brief Maximum number of uniform buffer bindings allowed per draw command.
-        static constexpr UInt8 kMaxUniforms = Enum::Count<UniformScope>();
+        static constexpr UInt8 kMaxUniforms = 0x04;
 
         /// \brief Maximum number of vertex buffer streams allowed per draw command.
         static constexpr UInt8 kMaxVertices = 0x08;
@@ -886,7 +922,7 @@ namespace Graphic
         Array<Stream, kMaxUniforms>     Uniforms;
 
         /// The list of sampler bindings for the shader stages used in the draw call.
-        Sequence<Sampler, kMaxTextures> Samplers;
+        Sequence<Object, kMaxSamplers>  Samplers;
 
         /// The list of texture bindings for the shader stages used in the draw call.
         Sequence<Object,  kMaxTextures> Textures;

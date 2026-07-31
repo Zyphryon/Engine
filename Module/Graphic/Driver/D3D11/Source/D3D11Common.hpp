@@ -126,6 +126,7 @@ namespace Graphic
     constexpr auto D3D11Convert(TestCondition Value)
     {
         static constexpr Array kMapping = {
+            D3D11_COMPARISON_ALWAYS,                // TestCondition::None
             D3D11_COMPARISON_ALWAYS,                // TestCondition::Always
             D3D11_COMPARISON_NEVER,                 // TestCondition::Never
             D3D11_COMPARISON_GREATER,               // TestCondition::Greater

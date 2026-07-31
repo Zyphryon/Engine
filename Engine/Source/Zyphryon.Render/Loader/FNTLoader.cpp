@@ -104,7 +104,7 @@ namespace Render
         {
             ConstRetainer<Graphic::Material> Material = Atlases.Append(Retainer<Graphic::Material>::Create("Material"));
             Material->SetPolicy(Content::Resource::Policy::Exclusive);
-            Material->SetImage(Graphic::TextureSlot::Albedo, Page);
+            Material->SetImage("Albedo"_Hash, Page);
             Material->SetParameter("Range"_Hash,
                 Vector2(Metrics.Distance / Page->GetWidth(),
                         Metrics.Distance / Page->GetHeight()));

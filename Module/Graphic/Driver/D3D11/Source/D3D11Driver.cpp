@@ -80,7 +80,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool D3D11Driver::Initialize(Ptr<void> Output, ConstRef<Config> Config)
+    Bool D3D11Driver::Initialize(Ptr<void> Output, ConstRef<Configuration> Config)
     {
         decltype(& D3D11CreateDevice)  D3D11CreateDevicePtr = nullptr;
         decltype(& CreateDXGIFactory1) CreateDXGIFactoryPtr = nullptr;
@@ -207,13 +207,13 @@ namespace Graphic
         // Recreates swap chain resources, including color and depth-stencil attachments.
         mDeviceProperties.Tearless = Tearless;
 
-        Config Configuration;
-        Configuration.Width       = Width;
-        Configuration.Height      = Height;
-        Configuration.Tearless    = mDeviceProperties.Tearless;
-        Configuration.ColorFormat = mDeviceProperties.ColorFormat;
-        Configuration.DepthFormat = mDeviceProperties.DepthFormat;
-        CreateSwapchainResources(mPasses[0], Configuration);
+        Configuration Config;
+        Config.Width       = Width;
+        Config.Height      = Height;
+        Config.Tearless    = mDeviceProperties.Tearless;
+        Config.ColorFormat = mDeviceProperties.ColorFormat;
+        Config.DepthFormat = mDeviceProperties.DepthFormat;
+        CreateSwapchainResources(mPasses[0], Config);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -370,7 +370,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<States> States)
+    void D3D11Driver::CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
     {
         Ref<D3D11Pipeline> Pipeline = mPipelines[ID];
 
@@ -462,7 +462,7 @@ namespace Graphic
             D3D11_INPUT_ELEMENT_DESC Description[kMaxAttributes];
             UInt                     Count = 0;
 
-            for (ConstRef<Attribute> Attribute : States.InputAttributes)
+            for (ConstRef<Attribute> Attribute : Signature.Attributes)
             {
                 Ref<D3D11_INPUT_ELEMENT_DESC> Element = Description[Count++];
                 Element.SemanticName         = "SLOT";
@@ -480,7 +480,7 @@ namespace Graphic
             }
         }
 
-        Pipeline.PT = D3D11Convert(States.InputPrimitive);
+        Pipeline.PT = D3D11Convert(States.Topology);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -489,6 +489,61 @@ namespace Graphic
     void D3D11Driver::DeletePipeline(Object ID)
     {
         Destruct(mPipelines[ID]);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void D3D11Driver::CreateSampler(Object ID, Sampler Descriptor)
+    {
+        UINT   Anisotropy = 1;
+        Real32 MinLOD     = -FLT_MAX;
+        Real32 MaxLOD     = +FLT_MAX;
+
+        switch (Descriptor.Filter)
+        {
+        case TextureFilter::Point:
+        case TextureFilter::Linear:
+            MinLOD = 0.0f;
+            MaxLOD = 0.0f;
+            break;
+        case TextureFilter::Anisotropic2x:
+            Anisotropy = 2;
+            break;
+        case TextureFilter::Anisotropic4x:
+            Anisotropy = 4;
+            break;
+        case TextureFilter::Anisotropic8x:
+            Anisotropy = 8;
+            break;
+        case TextureFilter::Anisotropic16x:
+            Anisotropy = 16;
+            break;
+        default:
+            break;
+        }
+
+        const CD3D11_SAMPLER_DESC SamplerDescriptor(
+            D3D11Convert(Descriptor.Filter),
+            D3D11Convert(Descriptor.AddressModeU),
+            D3D11Convert(Descriptor.AddressModeV),
+            D3D11Convert(Descriptor.AddressModeW),
+            0,
+            Anisotropy,
+            D3D11Convert(Descriptor.Comparison),
+            D3D11Convert(Descriptor.Border),
+            MinLOD,
+            MaxLOD);
+
+        D3D11Check(mDevice->CreateSamplerState(AddressOf(SamplerDescriptor), mSamplers[ID].GetAddressOf()));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void D3D11Driver::DeleteSampler(Object ID)
+    {
+        Destruct(mSamplers[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -861,7 +916,7 @@ namespace Graphic
                 continue;
             }
 
-            Ref<Adapter> AdapterInfo = mDescription.Endpoints.Append();
+            Ref<Adapter> AdapterInfo = mDescription.Adapters.Append();
             AdapterInfo.Description   = Str::ConvertFromUTF16(StrConvert(DXGIDescription.Description));
             AdapterInfo.Memory        = DXGIDescription.DedicatedVideoMemory >> 20;
 
@@ -1006,7 +1061,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Config> Config)
+    void D3D11Driver::CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Configuration> Config)
     {
         const UINT        Flags  = (mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
         const DXGI_FORMAT Format = (Config.ColorFormat == TextureFormat::RGBA8UIntNorm_sRGB)
@@ -1053,7 +1108,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Config> Config) const
+    void D3D11Driver::CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Configuration> Config) const
     {
         // Acquire the swapchain back-buffer and create a render target view for it.
         ComPtr<ID3D11Resource> ColorBuffer;
@@ -1137,9 +1192,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest)
+    void D3D11Driver::ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        UInt32 Min = Command::kMaxTextures;
+        Ptr<ID3D11SamplerState> Array[Command::kMaxSamplers];
+        UInt32 Min = Command::kMaxSamplers;
         UInt32 Max = 0u;
 
         const UInt32 OldSize = Oldest.Samplers.GetSize();
@@ -1147,26 +1203,21 @@ namespace Graphic
 
         for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
         {
-            const Sampler Old = Element < OldSize ? Oldest.Samplers[Element] : Sampler {};
-            const Sampler New = Element < NewSize ? Newest.Samplers[Element] : Sampler {};
+            const Object Old = Element < OldSize ? Oldest.Samplers[Element] : Object {};
+            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object {};
 
-            if (Hash(Old) != Hash(New))
+            if (Old != New)
             {
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
+            Array[Element] = mSamplers[New].Get();
         }
 
         if (Min < Max)
         {
-            Ptr<ID3D11SamplerState> Array[Command::kMaxTextures];
-
-            for (UInt32 Element = Min; Element < Max; ++Element)
-            {
-                Array[Element] = Element < NewSize ? GetOrCreateSampler(Newest.Samplers[Element]) : nullptr;
-            }
-
             const UInt32 Count = Max - Min;
+
             mDeviceImmediate->VSSetSamplers(Min, Count, Array + Min);
             mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min);
         }
@@ -1239,58 +1290,5 @@ namespace Graphic
             mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
             mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Ptr<ID3D11SamplerState> D3D11Driver::GetOrCreateSampler(Sampler Descriptor)
-    {
-        Ref<D3D11Sampler> Sampler = mSamplers.FindOrInsert(Hash(Descriptor));
-
-        if (Sampler == nullptr)
-        {
-            UINT   Anisotropy = 1;
-            Real32 MinLOD     = -FLT_MAX;
-            Real32 MaxLOD     = +FLT_MAX;
-
-            switch (Descriptor.Filter)
-            {
-            case TextureFilter::Point:
-            case TextureFilter::Linear:
-                MinLOD = 0.0f;
-                MaxLOD = 0.0f;
-                break;
-            case TextureFilter::Anisotropic2x:
-                Anisotropy = 2;
-                break;
-            case TextureFilter::Anisotropic4x:
-                Anisotropy = 4;
-                break;
-            case TextureFilter::Anisotropic8x:
-                Anisotropy = 8;
-                break;
-            case TextureFilter::Anisotropic16x:
-                Anisotropy = 16;
-                break;
-            default:
-                break;
-            }
-
-            const CD3D11_SAMPLER_DESC SamplerDescriptor(
-                D3D11Convert(Descriptor.Filter),
-                D3D11Convert(Descriptor.AddressModeU),
-                D3D11Convert(Descriptor.AddressModeV),
-                D3D11Convert(Descriptor.AddressModeW),
-                0,
-                Anisotropy,
-                D3D11Convert(Descriptor.Comparison),
-                D3D11Convert(Descriptor.Border),
-                MinLOD,
-                MaxLOD);
-
-            D3D11Check(mDevice->CreateSamplerState(AddressOf(SamplerDescriptor), Sampler.GetAddressOf()));
-        }
-        return Sampler.Get();
     }
 }

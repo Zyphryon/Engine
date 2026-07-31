@@ -37,17 +37,17 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::SetGlobal(ConstRef<Graphic::Stream> Global)
+    void Encoder::SetFrame(Graphic::Stream Stream)
     {
-        mGlobal = Global;
+        mFrame = Stream;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::SetPass(ConstRef<Graphic::Stream> Pass)
+    void Encoder::SetPass(Graphic::Stream Stream)
     {
-        mPass = Pass;
+        mPass = Stream;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -64,19 +64,17 @@ namespace Render
 
         Command.Pipeline = Technique.GetHandle();
 
-        // Bind the frame-global and per-pass uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mGlobal;
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]   = mPass;
+        // Bind the per-frame and per-pass uniform blocks.
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
 
         // Bind the material uniform block, textures, and samplers from the schema.
         if (Material)
         {
-            ConstRef<Graphic::Schema> Schema = Technique.GetDescription().Schema;
+            Ref<Graphic::Stream> Stream = Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)];
+            Stream = Pack(Graphic::Frequency::Material, Technique, * Material);
 
-            Ref<Graphic::Stream> Stream = Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)];
-            Stream = Pack(Graphic::UniformScope::Material, Schema, * Material);
-
-            BindTextures(Command, Schema, * Material);
+            BindTextures(Command, Technique.GetReflection(), * Material);
         }
 
         // Bind the per-instance vertex stream and, if present, the per-instance uniform block.
@@ -87,7 +85,7 @@ namespace Render
 
         if (Uniform.Buffer)
         {
-            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = Uniform;
+            Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
         }
         Command.Parameters = Parameters;
     }
@@ -105,21 +103,21 @@ namespace Render
 
         Command.Pipeline = Technique.GetHandle();
 
-        // Bind the frame-global and per-pass uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)] = mGlobal;
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]   = mPass;
+        // Bind the per-frame and per-pass uniform blocks.
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
 
-        // Bind the input textures paired with the technique's default samplers.
-        ConstRef<Graphic::Schema> Schema = Technique.GetDescription().Schema;
+        // Bind the caller's textures in declaration order, paired with the technique's own samplers.
+        ConstRef<Graphic::Technique::Reflection> Reflection = Technique.GetReflection();
 
-        UInt32 Index = 0;
-
-        for (const Graphic::TextureSlot Slot : Schema.GetTextures())
+        for (UInt32 Index = 0, Limit = Reflection.Textures.GetSize(); Index < Limit; ++Index)
         {
             Command.Textures.Append(Index < Textures.GetSize() ? Textures[Index] : 0);
-            Command.Samplers.Append(Schema.GetSampler(Slot));
+        }
 
-            ++Index;
+        for (ConstRef<Graphic::Technique::Reflection::SamplerField> Field : Reflection.Samplers)
+        {
+            Command.Samplers.Append(Field.Handle);
         }
 
         // Bind the per-instance vertex stream.
@@ -141,7 +139,7 @@ namespace Render
         ConstRef<Graphic::Stream>     Instances,
         ConstRef<Graphic::Stream>     Uniform)
     {
-        ConstRef<Graphic::Schema> Schema = Technique.GetDescription().Schema;
+        ConstRef<Graphic::Technique::Reflection> Reflection = Technique.GetReflection();
 
         const Bool   IsExtended  = Mesh.HasProperty(Graphic::Mesh::Property::Extended);
         const UInt16 IndexStride = IsExtended ? sizeof(UInt32) : sizeof(UInt16);
@@ -150,18 +148,18 @@ namespace Render
 
         Command.Pipeline = Technique.GetHandle();
 
-        // Bind the frame-global, per-pass, and per-object (instance) uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Global)]   = mGlobal;
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Pass)]     = mPass;
-        Command.Uniforms[Enum::Cast(Graphic::UniformScope::Instance)] = Uniform;
+        // Bind the per-frame, per-pass, and per-object (instance) uniform blocks.
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)]   = mFrame;
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]     = mPass;
+        Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
 
         // Bind the run's material (uniform block, textures, and samplers) when the caller named one.
         if (Material)
         {
-            const Graphic::Stream Data = Pack(Graphic::UniformScope::Material, Schema, * Material);
-            Command.Uniforms[Enum::Cast(Graphic::UniformScope::Material)] = Data;
+            const Graphic::Stream Data = Pack(Graphic::Frequency::Material, Technique, * Material);
+            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Data;
 
-            BindTextures(Command, Schema, * Material);
+            BindTextures(Command, Reflection, * Material);
         }
 
         // Bind one stream per interleaved block, in slot order (matching the technique's layout).
@@ -213,25 +211,24 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::BindTextures(Ref<Graphic::Command> Command, ConstRef<Graphic::Schema> Schema, ConstRef<Graphic::Material> Material)
+    void Encoder::BindTextures(
+        Ref<Graphic::Command>                    Command,
+        ConstRef<Graphic::Technique::Reflection> Reflection,
+        ConstRef<Graphic::Material>              Material)
     {
-        for (const Graphic::TextureSlot Slot : Schema.GetTextures())
+        for (const UInt64 Name : Reflection.Textures)
         {
-            Graphic::Object  Texture = 0;
-            Graphic::Sampler Sampler = Schema.GetSampler(Slot);
+            ConstRetainer<Graphic::Image> Image = Material.GetImage(Name);
 
-            if (ConstRetainer<Graphic::Image> Image = Material.GetImage(Slot))
-            {
-                Texture = Image->GetHandle();
+            Command.Textures.Append(Image ? Image->GetHandle() : 0);
+        }
 
-                if (Graphic::Sampler Override = Material.GetSampler(Slot); !Override.IsDefault())
-                {
-                    Sampler = Override;
-                }
-            }
+        for (ConstRef<Graphic::Technique::Reflection::SamplerField> Field : Reflection.Samplers)
+        {
+            // Fall back to the technique's own sampler when the material supplies none.
+            const Graphic::Object Handle = Material.GetSampler(Field.Hash);
 
-            Command.Textures.Append(Texture);
-            Command.Samplers.Append(Sampler);
+            Command.Samplers.Append(Handle ? Handle : Field.Handle);
         }
     }
 }

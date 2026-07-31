@@ -34,6 +34,7 @@ namespace Graphic
     Bool VFXLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
         Technique::Description Description;
+        Technique::Reflection  Reflection;
 
         JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject JsonRoot(JsonDocument);
@@ -103,7 +104,7 @@ namespace Graphic
                     {
                         const JsonArray Values = JsonAttributes.GetArray(Index);
 
-                        Ref<Attribute> Attribute = Description.States.InputAttributes.Append();
+                        Ref<Attribute> Attribute = Description.Signature.Attributes.Append();
                         Attribute.Location = Values.GetNumber(0, 0);
                         Attribute.Format   = Values.GetEnum(1, VertexFormat::Float32x4);
                         Attribute.Stream   = Values.GetNumber<UInt32>(2);
@@ -112,7 +113,7 @@ namespace Graphic
                     }
                 }
 
-                Description.States.InputPrimitive = JsonLayout.GetEnum("Primitive", Primitive::TriangleList);
+                Description.States.Topology = JsonLayout.GetEnum("Primitive", Primitive::TriangleList);
             }
         }
 
@@ -124,7 +125,19 @@ namespace Graphic
             {
                 for (UInt Index = 0, Limit = JsonTextures.GetSize(); Index < Limit; ++Index)
                 {
-                    Description.Schema.AddTexture(Enum::Cast(JsonTextures.GetString(Index), TextureSlot::Albedo));
+                    const JsonObject JsonTexture = JsonTextures.GetObject(Index);
+
+                    const Text       Name       = JsonTexture.GetString("Name");
+                    const Frequency  Frequency  = JsonTexture.GetEnum("Frequency", Frequency::Material);
+                    const UInt8      Register   = JsonTexture.GetNumber<UInt8>("Register", Index);
+                    const Visibility Visibility = JsonTexture.GetEnum("Visibility", Visibility::All);
+
+                    // The reflection is ordered so its index is the register, which the encoder relies on.
+                    ZY_ASSERT(Register == Reflection.Textures.GetSize(), "Texture registers must be dense and ordered");
+
+                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
+                        Resource::Texture, Register, 1, Visibility);
+                    Reflection.Textures.Append(Hash(Name));
                 }
             }
 
@@ -135,17 +148,24 @@ namespace Graphic
                 {
                     const JsonObject JsonSampler = JsonSamplers.GetObject(Index);
 
-                    const TextureSlot Slot = JsonSampler.GetEnum("Slot", TextureSlot::Albedo);
+                    const Text       Name       = JsonSampler.GetString("Name");
+                    const Frequency  Frequency  = JsonSampler.GetEnum("Frequency", Frequency::Material);
+                    const UInt8      Register   = JsonSampler.GetNumber<UInt8>("Register", Index);
+                    const Visibility Visibility = JsonSampler.GetEnum("Visibility", Visibility::All);
 
-                    Sampler Sampler;
-                    Sampler.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
-                    Sampler.AddressModeV = JsonSampler.GetEnum("AddressModeV", TextureAddress::Clamp);
-                    Sampler.AddressModeW = JsonSampler.GetEnum("AddressModeW", TextureAddress::Clamp);
-                    Sampler.Filter       = JsonSampler.GetEnum("Filter",       TextureFilter::LinearMipLinear);
-                    Sampler.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::Always);
-                    Sampler.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
+                    Sampler Descriptor;
+                    Descriptor.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
+                    Descriptor.AddressModeV = JsonSampler.GetEnum("AddressModeV", TextureAddress::Clamp);
+                    Descriptor.AddressModeW = JsonSampler.GetEnum("AddressModeW", TextureAddress::Clamp);
+                    Descriptor.Filter       = JsonSampler.GetEnum("Filter",       TextureFilter::LinearMipLinear);
+                    Descriptor.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::None);
+                    Descriptor.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
 
-                    Description.Schema.AddSampler(Slot, Sampler);
+                    ZY_ASSERT(Register == Reflection.Samplers.GetSize(), "Sampler registers must be dense and ordered");
+
+                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
+                        Resource::Sampler, Register, 1, Visibility);
+                    Reflection.Samplers.Append(Hash(Name), Descriptor, 0);
                 }
             }
 
@@ -156,13 +176,13 @@ namespace Graphic
                 {
                     const JsonObject JsonUniform = JsonUniforms.GetObject(Index);
 
-                    const Text         Name = JsonUniform.GetString("Name");
-                    const UniformScope Slot = JsonUniform.GetEnum("Slot", UniformScope::Global);
-                    const UniformType  Type = JsonUniform.GetEnum("Type", UniformType::Float);
+                    const Text      Name      = JsonUniform.GetString("Name");
+                    const Frequency Frequency = JsonUniform.GetEnum("Frequency", Frequency::Frame);
+                    const Uniform   Type      = JsonUniform.GetEnum("Type", Uniform::Float);
 
                     if (const UInt32 Count = JsonUniform.GetNumber<UInt32>("Count", 1); Count == 1)
                     {
-                        Description.Schema.AddUniform(Slot, Name, Type, LoadParameter(JsonUniform));
+                        Reflection.AddUniform(Frequency, Name, Type, LoadParameter(JsonUniform));
                     }
                     else
                     {
@@ -173,9 +193,19 @@ namespace Graphic
                             Buffer.AppendInteger(Element, CountDigits<10>(Element), 10, false);
                             Buffer.Append(']');
 
-                            Description.Schema.AddUniform(Slot, Buffer, Type, Parameter());
+                            Reflection.AddUniform(Frequency, Buffer, Type, Parameter());
                         }
                     }
+                }
+            }
+
+            // Declare one uniform block per frequency that declared any field, at the register matching it.
+            for (const Frequency Frequency : Enum::GetValues<Frequency>())
+            {
+                if (Reflection.Uniforms[Enum::Cast(Frequency)].Size > 0)
+                {
+                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
+                        Resource::Uniform, Enum::Cast(Frequency), 1, Visibility::All);
                 }
             }
         }
@@ -220,7 +250,7 @@ namespace Graphic
         }
 
         const Retainer<Technique> Asset = Retainer<Technique>::Cast(Scope.GetResource());
-        Asset->Setup(Move(Description));
+        Asset->Setup(Move(Description), Move(Reflection));
         return true;
     }
 
@@ -229,13 +259,13 @@ namespace Graphic
 
     Parameter VFXLoader::LoadParameter(JsonObject JsonParameter)
     {
-        switch (const UniformType Type = JsonParameter.GetEnum("Type", UniformType::Float))
+        switch (const Uniform Type = JsonParameter.GetEnum("Type", Uniform::Float))
         {
-        case UniformType::Bool:
+        case Uniform::Bool:
         {
             return JsonParameter.GetBool("Value");
         }
-        case UniformType::Color:
+        case Uniform::Color:
         {
             Color Result = Color::Transparent();
 
@@ -257,7 +287,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::IntColor8:
+        case Uniform::IntColor8:
         {
             IntColor8 Result = IntColor8::Transparent();
 
@@ -279,11 +309,11 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::Float:
+        case Uniform::Float:
         {
             return JsonParameter.GetNumber<Real32>("Value");
         }
-        case UniformType::Float2:
+        case Uniform::Float2:
         {
             Vector2 Result;
 
@@ -293,7 +323,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::Float3:
+        case Uniform::Float3:
         {
             Vector3 Result;
 
@@ -303,7 +333,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::Float4:
+        case Uniform::Float4:
         {
             if (const JsonArray Value = JsonParameter.GetArray("Value"); !Value.IsNullOrEmpty())
             {
@@ -314,11 +344,11 @@ namespace Graphic
             }
             return Array<Real32, 4>();
         }
-        case UniformType::Int:
+        case Uniform::Int:
         {
             return JsonParameter.GetNumber<SInt32>("Value");
         }
-        case UniformType::Int2:
+        case Uniform::Int2:
         {
             IntVector2 Result;
 
@@ -328,7 +358,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::Int3:
+        case Uniform::Int3:
         {
             IntVector3 Result;
 
@@ -338,7 +368,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::Int4:
+        case Uniform::Int4:
         {
             if (const JsonArray Value = JsonParameter.GetArray("Value"); !Value.IsNullOrEmpty())
             {
@@ -349,11 +379,11 @@ namespace Graphic
             }
             return Array<SInt32, 4>();
         }
-        case UniformType::UInt:
+        case Uniform::UInt:
         {
             return JsonParameter.GetNumber<UInt32>("Value");
         }
-        case UniformType::UInt2:
+        case Uniform::UInt2:
         {
             UIntVector2 Result;
 
@@ -363,7 +393,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::UInt3:
+        case Uniform::UInt3:
         {
             UIntVector3 Result;
 
@@ -373,7 +403,7 @@ namespace Graphic
             }
             return Result;
         }
-        case UniformType::UInt4:
+        case Uniform::UInt4:
         {
             if (const JsonArray Value = JsonParameter.GetArray("Value"); !Value.IsNullOrEmpty())
             {
