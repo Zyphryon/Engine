@@ -13,10 +13,6 @@
 #include "Service.hpp"
 #include "Zyphryon.Input/Service.hpp"
 
-#if   defined(ZY_PLATFORM_WINDOWS)
-#include <windows.h>
-#endif
-
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -49,7 +45,7 @@ namespace Platform
     void Service::OnTick(Real64 Delta)
     {
         // Poll system messages (platform-specific).
-        Poll();
+        mWindow.Poll();
 
         // Process system notifications.
         if (mDispatcher.IsNotified(Dispatcher::Notification::Monitor))
@@ -84,29 +80,5 @@ namespace Platform
         const SInt32 PositionX = Monitor.GetX() + (Monitor.GetWidth() - Width) / 2;
         const SInt32 PositionY = Monitor.GetY() + (Monitor.GetHeight() - Height) / 2;
         return mWindow.Initialize(Title, PositionX, PositionY, Width, Height, Borderless, Fullscreen);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::Poll()
-    {
-#if defined(ZY_PLATFORM_WINDOWS)
-
-        MSG Event = { };
-
-        while (::PeekMessageW(AddressOf(Event), nullptr, 0, 0, PM_REMOVE))
-        {
-            ::TranslateMessage(AddressOf(Event));
-            ::DispatchMessageW(AddressOf(Event));
-
-            if (Event.message == WM_QUIT)
-            {
-                break;
-            }
-        }
-
-#endif
-
     }
 }

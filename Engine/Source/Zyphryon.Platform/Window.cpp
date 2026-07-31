@@ -13,7 +13,9 @@
 #include "Window.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Driver/Win32/Window.inl"
+#include "Driver/Windows/Window.inl"
+#elif defined(ZY_PLATFORM_LINUX)
+#include "Driver/Linux/Window.inl"
 #elif defined(ZY_PLATFORM_WEB)
 #include "Driver/Emscripten/Window.inl"
 #endif

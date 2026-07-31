@@ -208,6 +208,9 @@ namespace Platform
         /// \return `true` if the window was successfully initialized, otherwise `false`.
         Bool Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 
+        /// \brief Drains the platform's event queue, translating each event into a dispatcher notification.
+        void Poll();
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

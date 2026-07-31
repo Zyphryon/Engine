@@ -13,7 +13,9 @@
 #include "Driver.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Driver/Win32/Driver.inl"
+#include "Driver/Windows/Driver.inl"
+#elif defined(ZY_PLATFORM_LINUX)
+#include "Driver/Linux/Driver.inl"
 #elif defined(ZY_PLATFORM_WEB)
 #include "Driver/Emscripten/Driver.inl"
 #endif

@@ -13,7 +13,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Compiler.hpp"
+#include "Primitive.hpp"
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -135,13 +137,13 @@ inline namespace Base
     concept IsEmpty     = std::is_empty_v<Type>;
 
     /// \brief Identifies the type at the specified index in the parameter pack.
-    template<auto Index, typename First, typename... Rest>
+    template<UInt Index, typename First, typename... Rest>
     struct Identify
     {
         using Type = Identify<Index - 1, Rest...>::Type;
     };
 
-    /// \brief Identifies the type at the specified index in the parameter pack.
+    /// \brief Identifies the first type in the parameter pack.
     template<typename First, typename... Rest>
     struct Identify<0, First, Rest...>
     {
@@ -152,12 +154,12 @@ inline namespace Base
     template<typename Type, Type... Values>
     struct IntegerSequence
     {
-        static constexpr auto Count = sizeof...(Values);
+        static constexpr UInt Count = sizeof...(Values);
     };
 
     /// \brief Produces an \c IntegerSequence containing every value in `[0, Count)`, in ascending order.
 #if   defined(ZY_COMPILER_MSVC) || defined(ZY_COMPILER_CLANG)
-    template<typename Type, auto Count>
+    template<typename Type, UInt Count>
     using MakeIntegerSequence = __make_integer_seq<IntegerSequence, Type, static_cast<Type>(Count)>;
 #else
     template<typename Type, auto Count>

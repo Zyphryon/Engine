@@ -63,7 +63,7 @@ namespace Platform
         /// \param X The X coordinate of the position.
         /// \param Y The Y coordinate of the position.
         /// \return A reference to the monitor if found, otherwise `nullptr`.
-        ZY_INLINE ConstPtr<Monitor> GetMonitor(UInt32 X, UInt32 Y) const
+        ZY_INLINE ConstPtr<Monitor> GetMonitor(SInt32 X, SInt32 Y) const
         {
             for (ConstRef<Monitor> Monitor : mMonitors)
             {

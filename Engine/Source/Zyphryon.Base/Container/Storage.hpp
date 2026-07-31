@@ -283,6 +283,12 @@ inline namespace Base
         struct Block final
         {
             Type mData[Count];
+
+            ZY_INLINE constexpr Block()
+                : mData { }
+            {
+
+            }
         };
 
     private:

@@ -28,7 +28,7 @@ LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Glad) (PUBLIC DOMAIN)
+## Dependency (Glad)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 IF (NOT ANDROID AND NOT EMSCRIPTEN)
@@ -39,13 +39,25 @@ IF (NOT ANDROID AND NOT EMSCRIPTEN)
             SOURCE_SUBDIR  cmake)
     FetchContent_MakeAvailable(External_Glad)
 
-    glad_add_library(glad_gles2 STATIC REPRODUCIBLE LOADER API gl:core=3.3 wgl:core=1.0)
+    SET(GLAD_APIS gl:core=3.3)
 
-    LIST(APPEND PROJECT_DEPENDENCIES "glad_gles2")
+    IF     (WIN32)
+        LIST(APPEND GLAD_APIS wgl:core=1.0)
+    ELSEIF (UNIX)
+        LIST(APPEND GLAD_APIS glx:core=1.4)
+    ENDIF  ()
 
-    IF (WIN32)
+    glad_add_library(glad_gl STATIC REPRODUCIBLE LOADER API ${GLAD_APIS})
+
+    LIST(APPEND PROJECT_DEPENDENCIES "glad_gl")
+
+    IF     (WIN32)
         LIST(APPEND PROJECT_DEPENDENCIES "opengl32" "gdi32" "user32")
-    ENDIF ()
+    ELSEIF (UNIX)
+        FIND_PACKAGE(X11 REQUIRED)
+
+        LIST(APPEND PROJECT_DEPENDENCIES X11::X11)
+    ENDIF  ()
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

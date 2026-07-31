@@ -13,7 +13,9 @@
 #include "Display.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Driver/Win32/Display.inl"
+#include "Driver/Windows/Display.inl"
+#elif defined(ZY_PLATFORM_LINUX)
+#include "Driver/Linux/Display.inl"
 #elif defined(ZY_PLATFORM_WEB)
 #include "Driver/Emscripten/Display.inl"
 #endif

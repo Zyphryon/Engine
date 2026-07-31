@@ -58,15 +58,15 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-
         HWND                            mDeviceOutput;
         HDC                             mDeviceContext;
         HGLRC                           mRenderContext;
-
+#elif defined(ZY_PLATFORM_LINUX)
+        UInt                            mDeviceOutput;
+        Ptr<void>                       mDeviceContext;
+        Ptr<void>                       mRenderContext;
 #elif defined(ZY_PLATFORM_WEB)
-
         EMSCRIPTEN_WEBGL_CONTEXT_HANDLE mRenderContext;
-
 #endif
     };
 }

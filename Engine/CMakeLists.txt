@@ -25,10 +25,24 @@ IF    (WIN32)
 
     LIST(APPEND PROJECT_DEPENDENCIES "shcore" "avrt" "ole32")
 
+ELSEIF (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+
+    FIND_PACKAGE(X11 REQUIRED)
+
+    IF    (NOT X11_Xrandr_FOUND)
+
+        MESSAGE(FATAL_ERROR "Zyphryon needs the RandR extension for monitor enumeration (install libxrandr-dev)")
+
+    ENDIF ()
+
+    FIND_PACKAGE(ALSA REQUIRED)
+
+    LIST(APPEND PROJECT_DEPENDENCIES ALSA::ALSA X11::X11 X11::Xrandr)
+
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Tracy) (BSD-3-Clause)
+## Dependency (Tracy)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(ZY_PROFILE_BACKEND_TRACY "Use Tracy profiler" OFF)
@@ -52,7 +66,7 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Flecs) (MIT) -> TODO: Remove
+## Dependency (Flecs)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 OPTION(FLECS_REST_SERVICE "Enable Flecs rest service" OFF)
@@ -78,10 +92,10 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 ENDIF ()
 
 IF    (FLECS_REST_SERVICE)
-    SET(FLECS_METRICS                ON CACHE BOOL "" FORCE)
-    SET(FLECS_HTTP                   ON CACHE BOOL "" FORCE)
-    SET(FLECS_REST                   ON CACHE BOOL "" FORCE)
-    SET(FLECS_STATS                  ON CACHE BOOL "" FORCE)
+    SET(FLECS_METRICS               ON CACHE BOOL "" FORCE)
+    SET(FLECS_HTTP                  ON CACHE BOOL "" FORCE)
+    SET(FLECS_REST                  ON CACHE BOOL "" FORCE)
+    SET(FLECS_STATS                 ON CACHE BOOL "" FORCE)
 
     LIST(APPEND PROJECT_DEFINES "FLECS_REST_SERVICE")
 ENDIF ()

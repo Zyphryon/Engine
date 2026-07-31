@@ -70,7 +70,7 @@ namespace Enum
         static constexpr SInt64 Max = 128;
     };
 
-    namespace Detail    // TODO: Untested in GCC/CLang
+    namespace Detail
     {
         /// \brief A single reflected enumerator.
         template<IsEnum Type>
@@ -189,6 +189,15 @@ namespace Enum
 #endif
         }
 
+        /// \brief The delimiters that wrap the argument list within a captured signature.
+#if     defined(ZY_COMPILER_GCC)
+        inline constexpr Char kSignatureOpen  = '{';
+        inline constexpr Char kSignatureClose = '}';
+#else
+        inline constexpr Char kSignatureOpen  = '<';
+        inline constexpr Char kSignatureClose = '>';
+#endif
+
         /// \brief Extracts the comma-separated argument-list portion of a captured \ref ExtractSignature.
         constexpr Text ExtractArguments(Text Signature)
         {
@@ -196,14 +205,14 @@ namespace Enum
 
             UInt End = Signature.GetSize();
 
-            while (End > 0 && Head[End - 1] != '>')
+            while (End > 0 && Head[End - 1] != kSignatureClose)
             {
                 --End;
             }
 
             UInt Start = 0;
 
-            while (Start < End && Head[Start] != '<')
+            while (Start < End && Head[Start] != kSignatureOpen)
             {
                 ++Start;
             }

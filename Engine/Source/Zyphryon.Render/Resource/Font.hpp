@@ -119,7 +119,7 @@ namespace Render
             {
                 return Result;
             }
-            return Fallback != 0 && Codepoint != Fallback ? GetGlyph(Fallback, 0) : nullptr;
+            return Fallback != 0 && Codepoint != Fallback ? mGlyphs.Find(Fallback) : nullptr;
         }
 
         /// \brief Gets the kerning adjustment between two consecutive glyphs.

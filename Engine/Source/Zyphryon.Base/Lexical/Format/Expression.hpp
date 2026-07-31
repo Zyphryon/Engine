@@ -24,10 +24,10 @@ namespace Format
     struct Expression final
     {
         /// The offset of the literal text in the original format string.
-        UInt16      Offset;
+        UInt16      Offset = 0;
 
         /// The length of the literal text.
-        UInt16      Length;
+        UInt16      Length = 0;
 
         /// The parsed placeholder properties, active when this expression is a placeholder.
         Placeholder Properties;

@@ -32,7 +32,7 @@ namespace Audio
         static constexpr UInt32 kBlock = 128;
 #else
         /// Frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
-        static constexpr UInt32 kBlock = 1024;
+        static constexpr UInt32 kBlock = kMixerPeriod;
 #endif
 
         /// The render callback the service installs; the mixer fills \c Mix through it each block.

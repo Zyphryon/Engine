@@ -13,7 +13,9 @@
 #include "GLES3Context.hpp"
 
 #if   defined(ZY_PLATFORM_WINDOWS)
-#include "Driver/Win32/GLES3Context.inl"
+#include "Driver/Windows/GLES3Context.inl"
+#elif defined(ZY_PLATFORM_LINUX)
+#include "Driver/Linux/GLES3Context.inl"
 #elif defined(ZY_PLATFORM_WEB)
 #include "Driver/Emscripten/GLES3Context.inl"
 #endif

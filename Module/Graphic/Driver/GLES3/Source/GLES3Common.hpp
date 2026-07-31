@@ -14,9 +14,9 @@
 
 #include "Zyphryon.Graphic/Metadata.hpp"
 
-#if   defined(ZY_PLATFORM_WINDOWS)
+#if defined(ZY_PLATFORM_WINDOWS) || defined(ZY_PLATFORM_LINUX)
 #include <glad/gl.h>
-#elif defined(ZY_PLATFORM_WEB)
+#elif   defined(ZY_PLATFORM_WEB)
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #endif

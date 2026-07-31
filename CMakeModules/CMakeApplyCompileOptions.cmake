@@ -127,7 +127,7 @@ FUNCTION(ZyApplyCompileOptions TARGET)
 
         IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
-            TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE -fno-fat-lto-objects)
+            TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE -fno-fat-lto-objects -Wno-changes-meaning)
 
         ENDIF()
 

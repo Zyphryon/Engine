@@ -15,6 +15,7 @@
 #include "Concept.hpp"
 #include "Primitive.hpp"
 #include <algorithm>
+#include <cstring>
 #include <new>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

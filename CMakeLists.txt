@@ -33,7 +33,7 @@ INCLUDE(CMakeModules/CMakeApplyEmbedded.cmake)
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          ON)
+OPTION(ZY_WEB_THREAD             "Core: Uses thread on Emscripten"          OFF)
 
 ADD_SUBDIRECTORY(Engine)
 
@@ -41,8 +41,8 @@ ADD_SUBDIRECTORY(Engine)
 ## Modules (Audio)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           ON)
-OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           ON)
+OPTION(ZY_AUDIO_LOADER_WAV       "Audio: Enable WAV audio loader"           OFF)
+OPTION(ZY_AUDIO_LOADER_MP3       "Audio: Enable MP3 audio loader"           OFF)
 
 IF    (ZY_AUDIO_LOADER_WAV)
 
