@@ -244,6 +244,10 @@ inline namespace Base
             {
                 if (mAllocator.IsAllocated(Handle))
                 {
+                    if constexpr (Serializer::IsReader)
+                    {
+                        mStorage.Construct(Handle - 1);
+                    }
                     Archive.Serialize(mStorage[Handle - 1]);
                 }
             }

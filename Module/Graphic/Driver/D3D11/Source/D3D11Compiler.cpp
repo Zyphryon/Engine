@@ -73,9 +73,17 @@ namespace Graphic
             AddressOf(Bytecode),
             AddressOf(Error));
 
-        if (FAILED(Result) && Error)
+        if (FAILED(Result))
         {
-            LOG_E("Failed to compile shader: {0}", static_cast<Ptr<Char>>(Error->GetBufferPointer()));
+            const ConstPtr<Char> Data   = (Error ? static_cast<ConstPtr<Char>>(Error->GetBufferPointer()) : nullptr);
+            UInt                 Length = (Error ? Error->GetBufferSize() : 0);
+
+            while (Length > 0 && (Data[Length - 1] == '\0' || Data[Length - 1] == '\n' || Data[Length - 1] == '\r'))
+            {
+                --Length;
+            }
+
+            LOG_E("Failed to compile {0} shader: {1}", Enum::GetName(Stage), Text(Data, Length));
         }
         return Bytecode;
     }
