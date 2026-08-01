@@ -106,7 +106,9 @@ namespace Graphic
             return RequestInFlightArena<Format>(mFrames[mProducer].Uniforms, Alignment * Count, 1);
         }
 
-        /// TODO_DOC
+        /// \brief Appends an empty command to the current producer frame's journal.
+        ///
+        /// \return The appended command, to be filled in before anything else is allocated on this frame.
         ZY_INLINE Ref<Command> AllocateInFlightCommand()
         {
             Ref<Sequence<Command>> Collection = mFrames[mProducer].Commands;
