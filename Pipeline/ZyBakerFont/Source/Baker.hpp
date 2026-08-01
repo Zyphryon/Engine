@@ -14,6 +14,7 @@
 
 #include "Exporter.hpp"
 #include "Importer.hpp"
+#include <Zyphryon.Job/Service.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -35,7 +36,9 @@ namespace Pipeline::Baker::Font
     public:
 
         /// \brief Constructs a baker with every importer the build enables already registered.
-        Baker();
+        ///
+        /// \param Scheduler The pool the glyphs are rasterized on, which must outlive the baker.
+        explicit Baker(Ref<Job::Service> Scheduler);
 
         /// \brief Registers an importer under each extension it accepts.
         ///
@@ -86,6 +89,7 @@ namespace Pipeline::Baker::Font
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Registry mRegistry;
+        Ref<Job::Service> mScheduler;
+        Registry          mRegistry;
     };
 }

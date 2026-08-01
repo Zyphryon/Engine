@@ -89,27 +89,37 @@ namespace Pipeline::Baker::Font
 
     static SInt32 Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments)
     {
-        const Baker Instance;
+        Engine::Subsystem::Host      Host;
+        const Retainer<Job::Service> Scheduler = Host.Register<Job::Service>();
+
+        const Baker Instance(* Scheduler);
 
         Environment Parsed;
         Parsed.Parse(Count, Arguments);
 
         const ConstSpan<Text> Operands = Parsed.GetOperands();
 
+        SInt32 Result;
+
         if (Operands.IsEmpty() || Parsed.Contains("help"))
         {
             Usage(Instance);
 
-            return Operands.IsEmpty() ? 1 : 0;
+            Result = Operands.IsEmpty() ? 1 : 0;
+        }
+        else
+        {
+            const Text    Source   = Operands[0];
+            const Profile Settings = Profile::From(Parsed);
+
+            const Str  Derived     = Derive(Source, Exporter::kOutput);
+            const Text Destination = (Operands.GetSize() > 1) ? Operands[1] : Text(Derived);
+
+            Result = Instance.Bake(Source, Destination, Settings) ? 0 : 1;
         }
 
-        const Text    Source   = Operands[0];
-        const Profile Settings = Profile::From(Parsed);
-
-        const Str  Derived     = Derive(Source, Exporter::kOutput);
-        const Text Destination = (Operands.GetSize() > 1) ? Operands[1] : Text(Derived);
-
-        return Instance.Bake(Source, Destination, Settings) ? 0 : 1;
+        Host.Teardown();
+        return Result;
     }
 }
 

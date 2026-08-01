@@ -81,13 +81,8 @@ namespace Pipeline::Baker::Image
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static SInt32 Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments)
+    static SInt32 Bake(ConstRef<Baker> Instance, ConstRef<Environment> Parsed)
     {
-        const Baker Instance;
-
-        Environment Parsed;
-        Parsed.Parse(Count, Arguments);
-
         const ConstSpan<Text> Operands = Parsed.GetOperands();
 
         if (Operands.IsEmpty() || Parsed.Contains("help"))
@@ -112,6 +107,23 @@ namespace Pipeline::Baker::Image
         const Text Destination = (Operands.GetSize() > 1) ? Operands[1] : Text(Derived);
 
         return Instance.Bake(Source, Destination, Settings) ? 0 : 1;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static SInt32 Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments)
+    {
+        Engine::Subsystem::Host      Host;
+        const Retainer<Job::Service> Scheduler = Host.Register<Job::Service>();
+
+        Environment Parsed;
+        Parsed.Parse(Count, Arguments);
+
+        const SInt32 Result = Bake(Baker(* Scheduler), Parsed);
+
+        Host.Teardown();
+        return Result;
     }
 }
 

@@ -39,6 +39,15 @@ namespace Job
         /// \brief Shuts down the service and stops all worker threads, discarding any job that has not started.
         void OnTeardown() override;
 
+        /// \brief Gets how many worker threads back the given lane.
+        ///
+        /// \param Target The lane to query.
+        /// \return The number of worker threads, or `0` for \ref Lane::Main and on platforms without threads.
+        ZY_INLINE UInt32 GetConcurrency(Lane Target) const
+        {
+            return mExecutors[Enum::Cast(Target)].GetConcurrency();
+        }
+
         /// \brief Submits a job that nothing will wait on.
         ///
         /// \param Target The lane to execute the job on.
@@ -74,13 +83,45 @@ namespace Job
         /// \return `true` if the job completed or the handle is stale, otherwise `false`.
         Bool IsComplete(Handle Job) const;
 
-        /// \brief Gets how many worker threads back the given lane.
+        /// \brief Splits a range across a lane, returning once every chunk of it has been visited.
         ///
-        /// \param Target The lane to query.
-        /// \return The number of worker threads, or `0` for \ref Lane::Main and on platforms without threads.
-        ZY_INLINE UInt32 GetConcurrency(Lane Target) const
+        /// \param Target    The lane to spread the range over, which cannot be \ref Lane::Main.
+        /// \param Count     The number of indices to visit.
+        /// \param Callback  The callback invoked with one half-open chunk of the range, on whichever worker took it.
+        /// \param Partition How many chunks to cut per worker; raise it when the per-index cost is very uneven.
+        template<typename Callable>
+        void Parallel(Lane Target, UInt32 Count, AnyRef<Callable> Callback, UInt32 Partition = 8)
         {
-            return mExecutors[Enum::Cast(Target)].GetConcurrency();
+            ZY_ASSERT(Target != Lane::Main, "Cannot spread a range over the main lane");
+
+            if (Count == 0)
+            {
+                return;
+            }
+
+            const UInt32 Concurrency = Max(1u, GetConcurrency(Target));
+            const UInt32 Grain       = Max(1u, Count / (Concurrency * Max(1u, Partition)));
+            const UInt32 Workers     = Min(Concurrency, (Count + Grain - 1) / Grain);
+
+            Atomic<UInt32> Cursor { 0 };
+
+            Sequence<Handle> Tasks(Workers);
+
+            for (UInt32 Worker = 0; Worker < Workers; ++Worker)
+            {
+                Tasks.Append(Submit(Target, [&]
+                {
+                    for (UInt32 Start; (Start = Cursor.fetch_add(Grain, std::memory_order_relaxed)) < Count; )
+                    {
+                        Callback(Start, Min(Start + Grain, Count));
+                    }
+                }));
+            }
+
+            for (const Handle Task : Tasks)
+            {
+                Wait(Task);
+            }
         }
 
     private:

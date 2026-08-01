@@ -14,6 +14,7 @@
 
 #include "Bitmap.hpp"
 #include "Profile.hpp"
+#include <Zyphryon.Job/Service.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,13 +28,16 @@ namespace Pipeline::Baker::Image
     public:
 
         /// \brief The file extension a baked texture is written with.
-        static constexpr Text   kOutput  = "tex";
+        static constexpr Text   kOutput      = "tex";
 
         /// \brief The four-character code every baked texture starts with, stored little-endian as `ZTEX`.
-        static constexpr UInt32 kMagic   = 'Z' | ('T' << 8) | ('E' << 16) | ('X' << 24);
+        static constexpr UInt32 kMagic       = 'Z' | ('T' << 8) | ('E' << 16) | ('X' << 24);
 
         /// \brief The layout revision of the header this exporter writes.
-        static constexpr UInt16 kVersion = 1;
+        static constexpr UInt16 kVersion     = 1;
+
+        /// \brief The LZ4 search effort the payload is encoded at.
+        static constexpr UInt32 kCompression = 9;
 
     public:
 
@@ -45,17 +49,19 @@ namespace Pipeline::Baker::Image
 
         /// \brief Serializes one or more decoded bitmaps into a native texture blob.
         ///
-        /// \param Slices  The decoded bitmaps to write, one per array slice or cube face.
-        /// \param Layout  The layout the slices compose.
-        /// \param Profile The settings controlling format, mip generation, and compression.
+        /// \param Scheduler The pool the slices are mipped and transcoded on.
+        /// \param Slices    The decoded bitmaps to write, one per array slice or cube face.
+        /// \param Layout    The layout the slices compose.
+        /// \param Profile   The settings controlling format, mip generation, and compression.
         /// \return A blob holding the texture file bytes, or an empty blob on failure.
-        static Blob Export(AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile);
+        static Blob Export(Ref<Job::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile);
 
         /// \brief Serializes a single decoded bitmap into a native texture blob.
         ///
-        /// \param Source  The decoded bitmap to write.
-        /// \param Profile The settings controlling format, mip generation, and compression.
+        /// \param Scheduler The pool the mip chain is built on.
+        /// \param Source    The decoded bitmap to write.
+        /// \param Profile   The settings controlling format, mip generation, and compression.
         /// \return A blob holding the texture file bytes, or an empty blob on failure.
-        static Blob Export(AnyRef<Bitmap> Source, ConstRef<Profile> Profile);
+        static Blob Export(Ref<Job::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile);
     };
 }

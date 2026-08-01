@@ -13,6 +13,7 @@
 #include "Baker.hpp"
 #include "Importer/STBImporter.hpp"
 #include "Process/Atlas.hpp"
+#include <Zyphryon.Job/Service.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -39,7 +40,8 @@ namespace Pipeline::Baker::Font
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Baker::Baker()
+    Baker::Baker(Ref<Job::Service> Scheduler)
+        : mScheduler { Scheduler }
     {
         Register(Retainer<STBImporter>::Create());
     }
@@ -107,7 +109,7 @@ namespace Pipeline::Baker::Font
             return Blob();
         }
 
-        Typeface Face = Codec->Import(Source, Profile);
+        const Typeface Face = Codec->Import(Source, Profile);
 
         if (Face.IsEmpty())
         {
@@ -116,16 +118,24 @@ namespace Pipeline::Baker::Font
             return Blob();
         }
 
-        Sequence<Cell> Cells;
-        Cells.Reserve(Face.GetGlyphs().GetSize());
+        // The cells are laid out first so the fields can be filled in parallel: every glyph writes only its own
+        // cell, and the sequence must not resize while that is happening.
+        Sequence<Cell> Cells(Face.GetGlyphs().GetSize());
 
         for (ConstRef<Typeface::Glyph> Glyph : Face.GetGlyphs())
         {
-            Ref<Cell> Entry = Cells.Append();
-            Entry.Codepoint = Glyph.Codepoint;
-
-            Generator::Generate(Glyph.Outline, Profile.Range, Profile.Angle, Entry.Data);
+            Cells.Append().Codepoint = Glyph.Codepoint;
         }
+
+        const ConstSpan<Typeface::Glyph> Outlines = Face.GetGlyphs();
+
+        mScheduler.Parallel(Job::Lane::Compute, static_cast<UInt32>(Outlines.GetSize()), [&](UInt32 Start, UInt32 End)
+        {
+            for (UInt32 Index = Start; Index < End; ++Index)
+            {
+                Generator::Generate(Outlines[Index].Outline, Profile.Range, Profile.Angle, Cells[Index].Data);
+            }
+        });
 
         const Atlas::Layout Sheet = Atlas::Arrange(Cells, Profile.Padding, Profile.Limit);
 
@@ -136,8 +146,7 @@ namespace Pipeline::Baker::Font
             return Blob();
         }
 
-        Sequence<Blob> Pages;
-        Pages.Reserve(Sheet.Pages);
+        Sequence<Blob> Pages(Sheet.Pages);
 
         for (UInt32 Page = 0; Page < Sheet.Pages; ++Page)
         {

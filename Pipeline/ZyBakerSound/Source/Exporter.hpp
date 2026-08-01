@@ -35,6 +35,9 @@ namespace Pipeline::Baker::Sound
         /// \brief The layout revision of the header this exporter writes.
         static constexpr UInt16 kVersion = 1;
 
+        /// \brief The LZ4 search effort the payload is encoded at.
+        static constexpr UInt32 kCompression = 6;
+
     public:
 
         /// \brief Serializes decoded samples into a native sound blob.

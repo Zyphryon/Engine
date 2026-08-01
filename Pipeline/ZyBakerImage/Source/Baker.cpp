@@ -39,7 +39,8 @@ namespace Pipeline::Baker::Image
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Baker::Baker()
+    Baker::Baker(Ref<Job::Service> Scheduler)
+        : mScheduler { Scheduler }
     {
         Register(Retainer<STBImporter>::Create());
     }
@@ -116,7 +117,7 @@ namespace Pipeline::Baker::Image
             {
                 return Blob();
             }
-            return Exporter::Export(Move(Faces), Graphic::TextureLayout::TextureCube, Profile);
+            return Exporter::Export(mScheduler, Move(Faces), Graphic::TextureLayout::TextureCube, Profile);
         }
 
         if (Profile.Slice.IsValid())
@@ -129,9 +130,9 @@ namespace Pipeline::Baker::Image
             {
                 return Blob();
             }
-            return Exporter::Export(Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
+            return Exporter::Export(mScheduler, Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
         }
-        return Exporter::Export(Move(Surface), Profile);
+        return Exporter::Export(mScheduler, Move(Surface), Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

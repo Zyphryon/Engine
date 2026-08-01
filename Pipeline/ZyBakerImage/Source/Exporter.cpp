@@ -52,18 +52,18 @@ namespace Pipeline::Baker::Image
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob Exporter::Export(AnyRef<Bitmap> Source, ConstRef<Profile> Profile)
+    Blob Exporter::Export(Ref<Job::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile)
     {
-        Sequence<Bitmap> Slices;
+        Sequence<Bitmap> Slices(1);
         Slices.Append(Move(Source));
 
-        return Export(Move(Slices), Graphic::TextureLayout::Texture2D, Profile);
+        return Export(Scheduler, Move(Slices), Graphic::TextureLayout::Texture2D, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob Exporter::Export(AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile)
+    Blob Exporter::Export(Ref<Job::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile)
     {
         if (Slices.IsEmpty())
         {
@@ -98,16 +98,22 @@ namespace Pipeline::Baker::Image
         const UInt8 Levels = Profile.Mipmaps ? Graphic::GetLevelCount(Width, Height) : 1;
 
         Sequence<Bitmap> Baked;
-        Baked.Reserve(Slices.GetSize());
+        Baked.Resize(Slices.GetSize());
+
+        // TODO: Resizer
+
+        Scheduler.Parallel(Job::Lane::Compute, static_cast<UInt32>(Slices.GetSize()), [&](UInt32 Start, UInt32 End)
+        {
+            for (UInt32 Index = Start; Index < End; ++Index)
+            {
+                Baked[Index] = Transcoder::Transcode(Mipmapper::Generate(Move(Slices[Index]), Levels), Format);
+            }
+        });
 
         UInt32 Length = 0;
 
-        for (Ref<Bitmap> Slice : Slices)
+        for (ConstRef<Bitmap> Result : Baked)
         {
-            Ref<Bitmap> Result = Baked.Append(Transcoder::Transcode(Mipmapper::Generate(Move(Slice), Levels), Format));
-
-            // TODO: Resizer
-
             if (Result.GetPixels().IsEmpty())
             {
                 return Blob();
@@ -145,7 +151,7 @@ namespace Pipeline::Baker::Image
         if (Profile.Compress)
         {
             Blob         Scratch = Blob::Allocate<Byte>(LZ4Bound(Length));
-            const UInt32 Size    = LZ4Encode(Bytes, Scratch.GetData<Byte>(), LZ4Bound(Length), kLZ4LevelMax);
+            const UInt32 Size    = LZ4Encode(Bytes, Scratch.GetData<Byte>(), LZ4Bound(Length), kCompression);
 
             if (Size > 0 && Size < Length)
             {

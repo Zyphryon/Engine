@@ -26,22 +26,25 @@ namespace Pipeline::Baker::Font
     public:
 
         /// \brief The file extension a baked typeface is written with.
-        static constexpr Text   kOutput  = "fnt";
+        static constexpr Text   kOutput      = "fnt";
 
         /// \brief The four-character code every baked typeface starts with, stored little-endian as `ZFNT`.
-        static constexpr UInt32 kMagic   = 'Z' | ('F' << 8) | ('N' << 16) | ('T' << 24);
+        static constexpr UInt32 kMagic       = 'Z' | ('F' << 8) | ('N' << 16) | ('T' << 24);
 
         /// \brief The layout revision of the header this exporter writes.
-        static constexpr UInt16 kVersion = 1;
+        static constexpr UInt16 kVersion     = 1;
 
         /// \brief The tag of the chunk holding the kerning table.
-        static constexpr UInt32 kKerning = 'K' | ('E' << 8) | ('R' << 16) | ('N' << 24);
+        static constexpr UInt32 kKerning     = 'K' | ('E' << 8) | ('R' << 16) | ('N' << 24);
 
         /// \brief The tag of the chunk holding the glyph atlas.
-        static constexpr UInt32 kAtlas   = 'A' | ('T' << 8) | ('L' << 16) | ('S' << 24);
+        static constexpr UInt32 kAtlas       = 'A' | ('T' << 8) | ('L' << 16) | ('S' << 24);
 
         /// \brief The four-character code of the native texture format the atlas chunk carries.
-        static constexpr UInt32 kTexture = 'Z' | ('T' << 8) | ('E' << 16) | ('X' << 24);
+        static constexpr UInt32 kTexture     = 'Z' | ('T' << 8) | ('E' << 16) | ('X' << 24);
+
+        /// \brief The LZ4 search effort the atlas is encoded at.
+        static constexpr UInt32 kCompression = 3;
 
     public:
 

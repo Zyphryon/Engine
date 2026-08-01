@@ -170,8 +170,7 @@ namespace Pipeline::Baker::Image
             }
         }
 
-        Sequence<Bitmap> Slices;
-        Slices.Reserve(Count);
+        Sequence<Bitmap> Slices(Count);
 
         for (UInt32 Index = 0; Index < Count; ++Index)
         {

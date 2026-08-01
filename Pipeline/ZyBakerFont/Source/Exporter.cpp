@@ -80,7 +80,7 @@ namespace Pipeline::Baker::Font
                 // The loader reads a payload the same size as the raw count as uncompressed, so only a payload
                 // that actually shrank is worth keeping.
                 Blob         Scratch = Blob::Allocate<Byte>(LZ4Bound(Texels.GetSize()));
-                const UInt32 Size    = LZ4Encode(Texels, Scratch.GetData<Byte>(), LZ4Bound(Texels.GetSize()), kLZ4LevelMax);
+                const UInt32 Size    = LZ4Encode(Texels, Scratch.GetData<Byte>(), LZ4Bound(Texels.GetSize()), kCompression);
 
                 if (Size > 0 && Size < Texels.GetSize())
                 {
