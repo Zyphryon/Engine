@@ -481,10 +481,9 @@ namespace Graphic
             glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_NONE);
         }
 
-        if (mDescription.Capabilities.SupportsBorderClamp)
-        {
-            glSamplerParameterfv(Object, 0x1004, GLES3Convert(Descriptor.Border));
-        }
+#ifndef ZY_PLATFORM_WEB
+        glSamplerParameterfv(Object, 0x1004, GLES3Convert(Descriptor.Border));
+#endif
 
         if (mDescription.Capabilities.MaxAnisotropy > 0)
         {
