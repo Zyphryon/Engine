@@ -44,9 +44,6 @@ namespace Scene
         /// \param Delta The elapsed time since the last tick.
         void OnTick(Real64 Delta) override;
 
-        /// \brief Returns the world to single-threaded execution before the job service goes away.
-        void OnTeardown() override;
-
         /// \brief Batches all world mutations performed by the callback into a single deferred flush.
         ///
         /// \param Callback The function whose world mutations are deferred.
