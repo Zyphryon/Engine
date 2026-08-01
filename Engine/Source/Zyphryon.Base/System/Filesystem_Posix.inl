@@ -223,92 +223,146 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Read(Text Path, Ref<Blob> Output)
+    Filesystem::Result Filesystem::Open(Text Path, Access Access, Ref<Handle> Output)
     {
-        if (const SInt32 Handle = open(Path.GetData(), O_RDONLY); Handle >= 0)
+        Close(Output);
+
+        const SInt32 Native = (Access == Access::Read)
+            ? open(Path.GetData(), O_RDONLY)
+            : open(Path.GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+        if (Native < 0)
         {
-            const off_t  Size  = lseek(Handle, 0, SEEK_END);
-            SInt32       Error = 0;
-            lseek(Handle, 0, SEEK_SET);
-
-            if (Size > 0)
-            {
-                Output = Blob::Allocate<Byte>(Size);
-
-                Ptr<Byte> Buffer    = Output.GetData();
-                UInt      Remaining = Output.GetSize();
-
-                while (Remaining > 0)
-                {
-                    const ssize_t Consumed = read(Handle, Buffer, Remaining);
-
-                    if (Consumed > 0)
-                    {
-                        Remaining -= Consumed;
-                        Buffer    += Consumed;
-                    }
-                    else
-                    {
-                        if (Consumed == 0)
-                        {
-                            Error = EIO;
-                        }
-                        else
-                        {
-                            Error = errno;
-                        }
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                Error = errno;
-            }
-
-            close(Handle);
-            return GetResult(Error);
+            return GetResult(errno);
         }
-        return GetResult(errno);
+
+        Output.Value = static_cast<SInt>(Native);
+        return Result::Success;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Write(Text Path, ConstSpan<Byte> Data)
+    Filesystem::Result Filesystem::Tell(ConstRef<Handle> Handle, Ref<UInt64> Output)
     {
-        if (const SInt32 Handle = open(Path.GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644); Handle >= 0)
+        Output = 0;
+
+        if (!Handle)
         {
-            ConstPtr<Byte> Buffer    = Data.GetData();
-            UInt           Remaining = Data.GetSize();
-            SInt32         Error     = 0;
+            return Result::Invalid;
+        }
 
-            while (Remaining > 0)
+        struct stat Statistics { };
+
+        if (fstat(static_cast<SInt32>(Handle.Value), AddressOf(Statistics)) != 0)
+        {
+            return GetResult(errno);
+        }
+
+        Output = static_cast<UInt64>(Statistics.st_size);
+        return Result::Success;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Read(ConstRef<Handle> Handle, UInt64 Offset, Span<Byte> Destination)
+    {
+        if (!Handle)
+        {
+            return Result::Invalid;
+        }
+
+        const SInt32 Native    = static_cast<SInt32>(Handle.Value);
+        Ptr<Byte>    Buffer    = Destination.GetData();
+        UInt         Remaining = Destination.GetSize();
+        SInt32       Error     = 0;
+
+        while (Remaining > 0)
+        {
+            const ssize_t Consumed = pread(Native, Buffer, Remaining, static_cast<off_t>(Offset));
+
+            if (Consumed > 0)
             {
-                const ssize_t Written = write(Handle, Buffer, Remaining);
-
-                if (Written > 0)
+                Remaining -= Consumed;
+                Buffer    += Consumed;
+                Offset    += Consumed;
+            }
+            else
+            {
+                if (Consumed == 0)
                 {
-                    Remaining -= Written;
-                    Buffer    += Written;
+                    Error = EIO;
+                }
+                else if (errno == EINTR)
+                {
+                    continue;
                 }
                 else
                 {
-                    if (Written == 0)
-                    {
-                        Error = EIO;
-                    }
-                    else
-                    {
-                        Error = errno;
-                    }
-                    break;
+                    Error = errno;
                 }
+                break;
             }
-
-            close(Handle);
-            return GetResult(Error);
         }
-        return GetResult(errno);
+        return GetResult(Error);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Write(ConstRef<Handle> Handle, UInt64 Offset, ConstSpan<Byte> Source)
+    {
+        if (!Handle)
+        {
+            return Result::Invalid;
+        }
+
+        const SInt32   Native    = static_cast<SInt32>(Handle.Value);
+        ConstPtr<Byte> Buffer    = Source.GetData();
+        UInt           Remaining = Source.GetSize();
+        SInt32         Error     = 0;
+
+        while (Remaining > 0)
+        {
+            const ssize_t Written = pwrite(Native, Buffer, Remaining, static_cast<off_t>(Offset));
+
+            if (Written > 0)
+            {
+                Remaining -= Written;
+                Buffer    += Written;
+                Offset    += Written;
+            }
+            else
+            {
+                if (Written == 0)
+                {
+                    Error = EIO;
+                }
+                else if (errno == EINTR)
+                {
+                    continue;
+                }
+                else
+                {
+                    Error = errno;
+                }
+                break;
+            }
+        }
+        return GetResult(Error);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Filesystem::Close(Ref<Handle> Handle)
+    {
+        if (Handle)
+        {
+            close(static_cast<SInt32>(Handle.Value));
+
+            Handle.Value = Handle::kInvalid;
+        }
     }
 }

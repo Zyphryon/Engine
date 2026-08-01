@@ -287,7 +287,7 @@ namespace Pipeline::Baker::Sound
         if (Profile.Compress)
         {
             Blob         Scratch = Blob::Allocate<Byte>(LZ4Bound(Length));
-            const UInt32 Size    = LZ4Encode(Bytes, Scratch.GetData<Byte>(), LZ4Bound(Length));
+            const UInt32 Size    = LZ4Encode(Bytes, Scratch.GetData<Byte>(), LZ4Bound(Length), kLZ4LevelMax);
 
             if (Size > 0 && Size < Length)
             {

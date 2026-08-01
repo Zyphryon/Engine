@@ -65,7 +65,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool GLES3Context::Initialize([[maybe_unused]] Ptr<void> Output, ConstRef<Config> Config)
+    Bool GLES3Context::Initialize(Ptr<void> Output, ConstRef<Configuration> Config)
     {
         EmscriptenWebGLContextAttributes Attributes;
         emscripten_webgl_init_context_attributes(AddressOf(Attributes));

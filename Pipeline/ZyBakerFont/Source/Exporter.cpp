@@ -63,7 +63,7 @@ namespace Pipeline::Baker::Font
         // One chunk per page, written in page order so the loader can index them by the page a glyph carries.
         for (ConstRef<Blob> Page : Pages)
         {
-            const ConstSpan<Byte> Texels(Page.GetData(), Page.GetSize());
+            const ConstSpan Texels(Page.GetData(), Page.GetSize());
 
             Output.Write<UInt32>(kAtlas);
             Output.WriteBlock<UInt32>([&Texels, Side](Ref<Writer> Body)
@@ -80,7 +80,7 @@ namespace Pipeline::Baker::Font
                 // The loader reads a payload the same size as the raw count as uncompressed, so only a payload
                 // that actually shrank is worth keeping.
                 Blob         Scratch = Blob::Allocate<Byte>(LZ4Bound(Texels.GetSize()));
-                const UInt32 Size    = LZ4Encode(Texels, Scratch.GetData<Byte>(), LZ4Bound(Texels.GetSize()));
+                const UInt32 Size    = LZ4Encode(Texels, Scratch.GetData<Byte>(), LZ4Bound(Texels.GetSize()), kLZ4LevelMax);
 
                 if (Size > 0 && Size < Texels.GetSize())
                 {

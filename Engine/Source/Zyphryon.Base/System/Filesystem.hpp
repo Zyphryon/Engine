@@ -50,6 +50,13 @@ inline namespace Base
             Unknown,        ///< An unknown error occurred.
         };
 
+        /// \brief Describes what an open file may be used for.
+        enum class Access : UInt8
+        {
+            Read,           ///< Open an existing file for reading.
+            Write,          ///< Create the file, or truncate it if it exists, and open it for writing.
+        };
+
         /// \brief Describes the type of a file system entry.
         enum class Type : UInt8
         {
@@ -79,6 +86,24 @@ inline namespace Base
         ///
         /// \return `true` to continue enumeration, `false` to stop early.
         using OnEnumerate = Delegate<Bool(ConstRef<Record>)>;
+
+        /// \brief Identifies an open file, transferred at explicit offsets rather than through a cursor.
+        struct Handle final
+        {
+            /// The value standing for a handle that refers to no file, shared by both backends.
+            static constexpr SInt kInvalid = -1;
+
+            /// The native descriptor the platform layer transfers through.
+            SInt Value = kInvalid;
+
+            /// \brief Checks whether the handle refers to an open file.
+            ///
+            /// \return `true` if a file is open, otherwise `false`.
+            ZY_INLINE explicit operator Bool() const
+            {
+                return Value != kInvalid;
+            }
+        };
 
     public:
 
@@ -165,5 +190,42 @@ inline namespace Base
         /// \param Data The binary data to write to the file.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Write(Text Path, ConstSpan<Byte> Data);
+
+        /// \brief Opens a file and keeps it open for repeated transfers at explicit offsets.
+        ///
+        /// \param Path   The path of the file to be opened.
+        /// \param Access What the file will be used for.
+        /// \param Output The handle receiving the open file, left closed when the file could not be opened.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Open(Text Path, Access Access, Ref<Handle> Output);
+
+        /// \brief Measures how large the file behind a handle currently is.
+        ///
+        /// \param Handle The handle to measure.
+        /// \param Output The size in bytes.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Tell(ConstRef<Handle> Handle, Ref<UInt64> Output);
+
+        /// \brief Reads a range of an open file into the given buffer.
+        ///
+        /// \param Handle      The handle to read from.
+        /// \param Offset      The byte offset within the file at which the read begins.
+        /// \param Destination The buffer receiving the bytes; its size names how many are read.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Read(ConstRef<Handle> Handle, UInt64 Offset, Span<Byte> Destination);
+
+        /// \brief Writes a buffer into an open file at the given offset, extending it as needed.
+        ///
+        /// \param Handle The handle to write to.
+        /// \param Offset The byte offset within the file at which the write begins.
+        /// \param Source The bytes to write.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Write(ConstRef<Handle> Handle, UInt64 Offset, ConstSpan<Byte> Source);
+
+        /// \brief Closes an open file and resets the handle.
+        ///
+        /// \param Handle The handle to close.
+        static void Close(Ref<Handle> Handle);
+
     };
 }

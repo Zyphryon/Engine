@@ -113,4 +113,47 @@ inline namespace Base
         }
         return Result;
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Read(Text Path, Ref<Blob> Output)
+    {
+        Handle File;
+
+        if (const Result Opened = Open(Path, Access::Read, File); Opened != Result::Success)
+        {
+            return Opened;
+        }
+
+        UInt64 Size   = 0;
+        Result Status = Tell(File, Size);
+
+        if (Status == Result::Success)
+        {
+            Output = Blob::Allocate<Byte>(Size);
+            Status = Read(File, 0, Span(Output.GetData(), Output.GetSize()));
+        }
+
+        Close(File);
+        return Status;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Write(Text Path, ConstSpan<Byte> Data)
+    {
+        Handle File;
+
+        if (const Result Opened = Open(Path, Access::Write, File); Opened != Result::Success)
+        {
+            return Opened;
+        }
+
+        const Result Status = Write(File, 0, Data);
+
+        Close(File);
+        return Status;
+    }
 }

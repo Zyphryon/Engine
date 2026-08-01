@@ -243,93 +243,150 @@ inline namespace Base
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Read(Text Path, Ref<Blob> Output)
+    Filesystem::Result Filesystem::Open(Text Path, Access Access, Ref<Handle> Output)
     {
         Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
 
-        const HANDLE Handle = CreateFileW(
-            InPath.GetData(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        Close(Output);
 
-        if (Handle != INVALID_HANDLE_VALUE)
+        const Bool   Reading = (Access == Access::Read);
+        const HANDLE Native  = CreateFileW(
+            InPath.GetData(),
+            Reading ? GENERIC_READ : GENERIC_WRITE,
+            Reading ? FILE_SHARE_READ : 0,
+            nullptr,
+            Reading ? OPEN_EXISTING : CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+
+        if (Native == INVALID_HANDLE_VALUE)
         {
-            LARGE_INTEGER Size;
-
-            if (GetFileSizeEx(Handle, AddressOf(Size)))
-            {
-                Output = Blob::Allocate<Byte>(static_cast<UInt>(Size.QuadPart));
-
-                Ptr<Byte> Buffer    = Output.GetData();
-                DWORD     Remaining = Output.GetSize();
-                DWORD     Error     = ERROR_SUCCESS;
-
-                while (Remaining > 0)
-                {
-                    DWORD Consumed = 0;
-
-                    if (ReadFile(Handle, Buffer, Remaining, AddressOf(Consumed), nullptr))
-                    {
-                        if (Consumed == 0)
-                        {
-                            Error = ERROR_HANDLE_EOF;
-                            break;
-                        }
-                        Remaining -= Consumed;
-                        Buffer    += Consumed;
-                    }
-                    else
-                    {
-                        Error = GetLastError();
-                        break;
-                    }
-                }
-
-                CloseHandle(Handle);
-                return GetResult(Error);
-            }
-            CloseHandle(Handle);
+            return GetResult(GetLastError());
         }
-        return GetResult(GetLastError());
+
+        Output.Value = static_cast<SInt>(reinterpret_cast<UInt>(Native));
+        return Result::Success;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Write(Text Path, ConstSpan<Byte> Data)
+    Filesystem::Result Filesystem::Tell(ConstRef<Handle> Handle, Ref<UInt64> Output)
     {
-        Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
+        Output = 0;
 
-        const HANDLE Handle = CreateFileW(
-            InPath.GetData(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-        if (Handle != INVALID_HANDLE_VALUE)
+        if (!Handle)
         {
-            ConstPtr<Byte> Buffer    = Data.GetData();
-            DWORD          Remaining = static_cast<DWORD>(Data.GetSize());
-            DWORD          Written   = 0;
-            DWORD          Error     = ERROR_SUCCESS;
+            return Result::Invalid;
+        }
 
-            while (Remaining > 0)
+        LARGE_INTEGER Size;
+
+        if (!GetFileSizeEx(reinterpret_cast<HANDLE>(Handle.Value), AddressOf(Size)))
+        {
+            return GetResult(GetLastError());
+        }
+
+        Output = static_cast<UInt64>(Size.QuadPart);
+        return Result::Success;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Read(ConstRef<Handle> Handle, UInt64 Offset, Span<Byte> Destination)
+    {
+        if (!Handle)
+        {
+            return Result::Invalid;
+        }
+
+        const HANDLE Native    = reinterpret_cast<HANDLE>(Handle.Value);
+        Ptr<Byte>    Buffer    = Destination.GetData();
+        DWORD        Remaining = static_cast<DWORD>(Destination.GetSize());
+        DWORD        Error     = ERROR_SUCCESS;
+
+        while (Remaining > 0)
+        {
+            OVERLAPPED Position { };
+            Position.Offset     = static_cast<DWORD>(Offset & 0xFFFFFFFF);
+            Position.OffsetHigh = static_cast<DWORD>(Offset >> 32);
+
+            DWORD Consumed = 0;
+
+            if (ReadFile(Native, Buffer, Remaining, AddressOf(Consumed), AddressOf(Position)))
             {
-                if (WriteFile(Handle, Buffer, Remaining, AddressOf(Written), nullptr))
+                if (Consumed == 0)
                 {
-                    if (Written == 0)
-                    {
-                        Error = ERROR_HANDLE_EOF;
-                        break;
-                    }
-                    Remaining -= Written;
-                    Buffer    += Written;
-                }
-                else
-                {
-                    Error = GetLastError();
+                    Error = ERROR_HANDLE_EOF;
                     break;
                 }
+                Remaining -= Consumed;
+                Buffer    += Consumed;
+                Offset    += Consumed;
             }
-
-            CloseHandle(Handle);
-            return GetResult(Error);
+            else
+            {
+                Error = GetLastError();
+                break;
+            }
         }
-        return GetResult(GetLastError());
+        return GetResult(Error);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Write(ConstRef<Handle> Handle, UInt64 Offset, ConstSpan<Byte> Source)
+    {
+        if (!Handle)
+        {
+            return Result::Invalid;
+        }
+
+        const HANDLE   Native    = reinterpret_cast<HANDLE>(Handle.Value);
+        ConstPtr<Byte> Buffer    = Source.GetData();
+        DWORD          Remaining = static_cast<DWORD>(Source.GetSize());
+        DWORD          Error     = ERROR_SUCCESS;
+
+        while (Remaining > 0)
+        {
+            OVERLAPPED Position { };
+            Position.Offset     = static_cast<DWORD>(Offset & 0xFFFFFFFF);
+            Position.OffsetHigh = static_cast<DWORD>(Offset >> 32);
+
+            DWORD Written = 0;
+
+            if (WriteFile(Native, Buffer, Remaining, AddressOf(Written), AddressOf(Position)))
+            {
+                if (Written == 0)
+                {
+                    Error = ERROR_HANDLE_EOF;
+                    break;
+                }
+                Remaining -= Written;
+                Buffer    += Written;
+                Offset    += Written;
+            }
+            else
+            {
+                Error = GetLastError();
+                break;
+            }
+        }
+        return GetResult(Error);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Filesystem::Close(Ref<Handle> Handle)
+    {
+        if (Handle)
+        {
+            CloseHandle(reinterpret_cast<HANDLE>(Handle.Value));
+
+            Handle.Value = Handle::kInvalid;
+        }
     }
 }
