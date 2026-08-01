@@ -35,6 +35,12 @@ namespace Audio
         /// The render callback the service installs; the mixer fills \c Mix through it each block.
         Driver::Callback Callback;
 
+        /// Raised while output is suspended, so the worker writes silence instead of pulling the mixer.
+        Atomic<Bool>     Suspended { false };
+
+        /// Raised when the worker abandoned the stream, so silence can be told apart from a dead endpoint.
+        Atomic<Bool>     Faulted   { false };
+
         /// Interleaved stereo scratch the mixer fills each block before it is written to \c Device.
         Real32           Mix[kMixerPeriod * kMixerStride];
 
@@ -43,8 +49,18 @@ namespace Audio
 
         static Bool ALSAFill(Ref<Driver::Backend> Backend, UInt32 Frames)
         {
-            const Span Output(Backend.Mix, kMixerPeriod * kMixerStride);
-            Backend.Callback(Output, Frames);
+            const Span Output(Backend.Mix, Frames * static_cast<UInt32>(kMixerStride));
+
+            if (Backend.Suspended.load(std::memory_order_relaxed))
+            {
+                Zero(Output.GetData(), Output.GetSize());
+            }
+            else
+            {
+                Backend.Callback(Output, Frames);
+            }
+
+            UInt32 Faults = 0;
 
             for (snd_pcm_uframes_t Cursor = 0; Cursor < Frames; )
             {
@@ -53,7 +69,14 @@ namespace Audio
 
                 if (Written < 0)
                 {
-                    if (const SInt32 Result = ::snd_pcm_recover(Backend.Device, Written, 1); Result < 0)
+                    SInt32 Result = ::snd_pcm_recover(Backend.Device, Written, 1);
+
+                    if (Result < 0)
+                    {
+                        Result = ::snd_pcm_prepare(Backend.Device);
+                    }
+
+                    if (Result < 0 || ++Faults > 8)
                     {
                         LOG_E("Audio: Unrecoverable ALSA write error ({0})", StrConvert(::snd_strerror(Result)));
                         return false;
@@ -189,8 +212,15 @@ namespace Audio
         {
             ZY_PROFILE_THREAD("Audio Thread");
 
-            while (!Token.stop_requested() && Backend::ALSAFill(* mBackend, kMixerPeriod))
+            while (!Token.stop_requested())
             {
+                if (!Backend::ALSAFill(* mBackend, kMixerPeriod))
+                {
+                    mBackend->Faulted.store(true, std::memory_order_relaxed);
+
+                    LOG_E("Audio: ALSA endpoint '{0}' stopped accepting frames; output is now silent", mBackend->Name);
+                    break;
+                }
             }
         });
 
@@ -210,7 +240,7 @@ namespace Audio
 
         if (mBackend->Device)
         {
-            ::snd_pcm_drain(mBackend->Device);
+            ::snd_pcm_drop(mBackend->Device);
             ::snd_pcm_close(mBackend->Device);
 
             mBackend->Device = nullptr;
@@ -266,7 +296,7 @@ namespace Audio
 
     void Driver::Suspend()
     {
-        snd_pcm_pause(mBackend->Device, 1);
+        mBackend->Suspended.store(true, std::memory_order_relaxed);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -274,6 +304,6 @@ namespace Audio
 
     void Driver::Restore()
     {
-        snd_pcm_pause(mBackend->Device, 0);
+        mBackend->Suspended.store(false, std::memory_order_relaxed);
     }
 }
