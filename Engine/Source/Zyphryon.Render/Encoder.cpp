@@ -60,7 +60,7 @@ namespace Render
         ConstRef<Graphic::Stream>     Uniform,
         ConstRef<Graphic::Invocation> Parameters)
     {
-        Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
         Command.Pipeline = Technique.GetHandle();
 
@@ -99,7 +99,7 @@ namespace Render
         ConstRef<Graphic::Stream>     Instances,
         ConstRef<Graphic::Invocation> Parameters)
     {
-        Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
         Command.Pipeline = Technique.GetHandle();
 
@@ -141,10 +141,7 @@ namespace Render
     {
         ConstRef<Graphic::Technique::Reflection> Reflection = Technique.GetReflection();
 
-        const Bool   IsExtended  = Mesh.HasProperty(Graphic::Mesh::Property::Extended);
-        const UInt16 IndexStride = IsExtended ? sizeof(UInt32) : sizeof(UInt16);
-
-        Ref<Graphic::Command> Command = mService.AllocateTransientCommands(1).GetFront();
+        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
         Command.Pipeline = Technique.GetHandle();
 
@@ -203,7 +200,8 @@ namespace Render
 
         if (const Graphic::Object Indices  = Mesh.GetIndices(); Indices)
         {
-            Command.Indices = Graphic::Stream(Indices, IndexStride, 0);
+            const Bool IsExtended = Mesh.HasProperty(Graphic::Mesh::Property::Extended);
+            Command.Indices = Graphic::Stream(Indices, IsExtended ? sizeof(UInt32) : sizeof(UInt16), 0);
         }
         Command.Parameters = Range;
     }

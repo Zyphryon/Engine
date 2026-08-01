@@ -80,10 +80,4 @@ ENDIF ()
 ## Pipeline
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_BUILD_PIPELINE "Build the offline asset bakers" OFF)
-
-IF    (ZY_BUILD_PIPELINE)
-
-    ADD_SUBDIRECTORY(Pipeline/Baker)
-
-ENDIF ()
+ADD_SUBDIRECTORY(Pipeline)

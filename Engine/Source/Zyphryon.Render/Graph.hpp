@@ -102,13 +102,6 @@ namespace Render
 
     private:
 
-        /// \brief Registers built-in resource loaders for the render scene.
-        ///
-        /// \param Host The service host that provides the content service.
-        void RegisterBuiltinLoaders(Ref<Engine::Subsystem::Host> Host);
-
-    private:
-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

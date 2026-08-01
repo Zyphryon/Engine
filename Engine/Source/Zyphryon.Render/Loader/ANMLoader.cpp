@@ -24,11 +24,18 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     template<typename Type>
-    static void ReadTrack(Ref<Reader> Input, Ref<Track<Type>> Track, Real32 Rate, UInt32 Count, Interpolation Mode)
+    static void ReadTrack(Ref<Reader> Input, Ref<Track<Type>> Track, Real32 Rate, UInt32 Count, Interpolation Mode, Bool Tangents)
     {
         Track.SetRate(Rate);
         Track.SetInterpolation(Mode);
         Track.SetValues(Input.Read<ConstPtr<Type>>(Count * sizeof(Type)), Count);
+
+        if (Tangents)
+        {
+            const ConstPtr<Type> Incoming = Input.Read<ConstPtr<Type>>(Count * sizeof(Type));
+            const ConstPtr<Type> Outgoing = Input.Read<ConstPtr<Type>>(Count * sizeof(Type));
+            Track.SetTangents(Incoming, Outgoing, Count);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -92,10 +99,20 @@ namespace Render
                 return HasBit(Fixed, Which) ? 1u : Count;
             };
 
+            const auto HasTangents = [Mode, Fixed](Component Which)
+            {
+                return Mode == Interpolation::Hermite && !HasBit(Fixed, Which);
+            };
+
+            const auto GetStride = [&](Component Which, UInt Size)
+            {
+                return GetRate(Which) * Size * (HasTangents(Which) ? 3 : 1);
+            };
+
             const UInt Length =
-                  (HasBit(Mask,Component::Position) ? GetRate(Component::Position) * sizeof(Vector3)    : 0)
-                + (HasBit(Mask,Component::Scale)    ? GetRate(Component::Scale)    * sizeof(Vector3)    : 0)
-                + (HasBit(Mask,Component::Rotation) ? GetRate(Component::Rotation) * sizeof(Quaternion) : 0);
+                  (HasBit(Mask,Component::Position) ? GetStride(Component::Position, sizeof(Vector3))    : 0)
+                + (HasBit(Mask,Component::Scale)    ? GetStride(Component::Scale,    sizeof(Vector3))    : 0)
+                + (HasBit(Mask,Component::Rotation) ? GetStride(Component::Rotation, sizeof(Quaternion)) : 0);
 
             if (Input.GetAvailable() < Length)
             {
@@ -109,17 +126,17 @@ namespace Render
 
             if (HasBit(Mask,Component::Position))
             {
-                ReadTrack(Input, Entry.Position, Rate, GetRate(Component::Position), Mode);
+                ReadTrack(Input, Entry.Position, Rate, GetRate(Component::Position), Mode, HasTangents(Component::Position));
             }
 
             if (HasBit(Mask,Component::Scale))
             {
-                ReadTrack(Input, Entry.Scale, Rate, GetRate(Component::Scale), Mode);
+                ReadTrack(Input, Entry.Scale, Rate, GetRate(Component::Scale), Mode, HasTangents(Component::Scale));
             }
 
             if (HasBit(Mask,Component::Rotation))
             {
-                ReadTrack(Input, Entry.Rotation, Rate, GetRate(Component::Rotation), Mode);
+                ReadTrack(Input, Entry.Rotation, Rate, GetRate(Component::Rotation), Mode, HasTangents(Component::Rotation));
             }
         }
 

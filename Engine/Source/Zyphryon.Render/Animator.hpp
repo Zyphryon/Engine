@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Animation/Playback.hpp"
+#include "Zyphryon.Math/Motion/Playback.hpp"
 #include "Zyphryon.Render/Resource/Animation.hpp"
 #include "Zyphryon.Render/Resource/Model.hpp"
 
@@ -149,12 +149,12 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Model>      mModel;
-        Source               mSources[kSources];
-        Sequence<Matrix4x3>  mPalette;
-        Real64               mClock;
-        Real64               mEpoch;
-        Real64               mFade;
-        UInt8                mActive;
+        Retainer<Model>     mModel;
+        Source              mSources[kSources];
+        Sequence<Matrix4x3> mPalette;
+        Real64              mClock;
+        Real64              mEpoch;
+        Real64              mFade;
+        UInt8               mActive;
     };
 }

@@ -66,7 +66,7 @@ namespace Render
                 return Graphic::Stream();
             }
 
-            Graphic::Transient<Byte> Slice = mService.AllocateTransientUniforms<Byte>(Block.Size);
+            Graphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
 
             for (ConstRef<Reflection::UniformField> Field : Block.Structure)
             {

@@ -15,11 +15,11 @@
 #include "Vector3.hpp"
 
 #if defined(ZY_ARCH_X86_64)
-#   include <immintrin.h>
+#include <immintrin.h>
 #elif defined(ZY_ARCH_ARM64)
-#   include <arm_neon.h>
+#include <arm_neon.h>
 #elif defined(ZY_ARCH_WASM32) || defined(ZY_ARCH_WASM64)
-#   include <wasm_simd128.h>
+#include <wasm_simd128.h>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

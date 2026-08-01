@@ -26,7 +26,7 @@ namespace Render
         constexpr UInt32 kRadixBits = 8;
         constexpr UInt32 kRadixSize = 1u << kRadixBits;
         constexpr UInt32 kRadixMask = kRadixSize - 1;
-        constexpr UInt32 kPasses = 64 / kRadixBits;
+        constexpr UInt32 kPasses    = 64 / kRadixBits;
 
         if (Count < 2)
         {

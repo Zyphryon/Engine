@@ -85,7 +85,7 @@ namespace Render
             Stage.SetTarget(mService->CreatePass(Resolved, Depth));
 
             // The pass viewport tracks its first color target's size.
-            ConstPtr<Target> Primary = Colors.GetFront().Target;
+            const ConstPtr<Target> Primary = Colors.GetFront().Target;
             Stage.SetViewport(Graphic::Viewport(0.0f, 0.0f, Primary->GetWidth(), Primary->GetHeight()));
         }
     }

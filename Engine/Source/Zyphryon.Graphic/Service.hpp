@@ -78,7 +78,7 @@ namespace Graphic
         /// \param Count The number of vertices to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated vertices.
         template<typename Format>
-        ZY_INLINE Transient<Format> AllocateTransientVertices(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateInFlightVertices(UInt32 Count)
         {
             return RequestInFlightArena<Format>(mFrames[mProducer].Vertices, sizeof(Format), Count);
         }
@@ -88,7 +88,7 @@ namespace Graphic
         /// \param Count The number of indices to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated indices.
         template<typename Format>
-        ZY_INLINE Transient<Format> AllocateTransientIndices(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateInFlightIndices(UInt32 Count)
         {
             return RequestInFlightArena<Format>(mFrames[mProducer].Indices, sizeof(Format), Count);
         }
@@ -98,7 +98,7 @@ namespace Graphic
         /// \param Count The number of uniform blocks to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated uniforms.
         template<typename Format>
-        ZY_INLINE Transient<Format> AllocateTransientUniforms(UInt32 Count)
+        ZY_INLINE Transient<Format> AllocateInFlightUniforms(UInt32 Count)
         {
             const UInt16 Alignment = mDescription.Capabilities.UniformBlockAlignment;
 
@@ -106,18 +106,11 @@ namespace Graphic
             return RequestInFlightArena<Format>(mFrames[mProducer].Uniforms, Alignment * Count, 1);
         }
 
-        /// \brief Allocates transient command data for the current frame.
-        ///
-        /// \param Count The number of commands to allocate.
-        /// \return A transient span over the allocated command storage.
-        ZY_INLINE Span<Command> AllocateTransientCommands(UInt32 Count)
+        /// TODO_DOC
+        ZY_INLINE Ref<Command> AllocateInFlightCommand()
         {
             Ref<Sequence<Command>> Collection = mFrames[mProducer].Commands;
-
-            const UInt Offset = Collection.GetSize();
-            Collection.Advance(Count);
-
-            return Span(Collection.GetData() + Offset, Count);
+            return Collection.Append();
         }
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
