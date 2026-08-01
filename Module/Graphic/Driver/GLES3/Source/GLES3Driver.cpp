@@ -957,7 +957,6 @@ namespace Graphic
         Limits.SupportsBaseVertex = true;                                      // Core since OpenGL 3.2.
         Limits.SupportsFormatRGTC = true;                                      // Core since OpenGL 3.0.
         Limits.SupportsFormatETC2 = true;                                      // Core since OpenGL 4.3.
-        Limits.SupportsWireframe  = true;
 #endif
 
         mDescription.Tier = ExtendedTier ? Tier::Level3 : Tier::Level2;
@@ -971,9 +970,6 @@ namespace Graphic
             Limits.MaxAnisotropy = static_cast<UInt8>(MaxAnisotropy);
         }
 
-        Limits.SupportsBorderClamp =
-               HasExtension("GL_EXT_texture_border_clamp")
-            || HasExtension("GL_OES_texture_border_clamp");
         Limits.SupportsFormatS3TC  = HasExtension("GL_EXT_texture_compression_s3tc");
         Limits.SupportsFormatBPTC  =
                HasExtension("GL_EXT_texture_compression_bptc")
@@ -981,10 +977,6 @@ namespace Graphic
         Limits.SupportsFormatRGTC  = Limits.SupportsFormatRGTC
             || HasExtension("GL_EXT_texture_compression_rgtc")
             || HasExtension("GL_ARB_texture_compression_rgtc");
-
-#if !defined(ZY_PLATFORM_WEB)
-        Limits.SupportsBorderClamp = true; // Core since OpenGL 1.3.
-#endif
 
         // Device limits.
         GLint Value = 0;

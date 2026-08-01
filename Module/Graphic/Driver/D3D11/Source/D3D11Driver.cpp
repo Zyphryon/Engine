@@ -954,7 +954,6 @@ namespace Graphic
 
         // Determine common supported capabilities.
         mDescription.Capabilities.SupportsBaseVertex    = true;
-        mDescription.Capabilities.SupportsBorderClamp   = true;
         mDescription.Capabilities.SupportsFormatS3TC    = true;
         mDescription.Capabilities.UniformBlockAlignment = 256;
 
