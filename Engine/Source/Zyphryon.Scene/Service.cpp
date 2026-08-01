@@ -23,10 +23,51 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    namespace
+    {
+        /// The scheduler flecs' stage tasks run on; a file-local global because the OS API takes plain C callbacks.
+        Ptr<Job::Service> Scheduler = nullptr;
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        ecs_os_thread_t OnTaskNew(ecs_os_thread_callback_t Callback, Ptr<void> Parameter)
+        {
+            return Scheduler->Submit(Job::Lane::Compute, [Callback, Parameter]
+            {
+                Callback(Parameter);
+            });
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Ptr<void> OnTaskJoin(ecs_os_thread_t Task)
+        {
+            Scheduler->Block(static_cast<Job::Handle>(Task));
+
+            return nullptr;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Service::Service(Ref<Host> Host)
         : Subsystem { Host }
     {
-        mWorld.set_threads(Job::Service::GetConcurrency());
+        // Staged execution is handed to the job service so one pool serves the whole engine, rather than flecs
+        // spawning threads of its own that then compete with the compute lane for the same cores.
+        Scheduler = AddressOf(* Host.GetService<Job::Service>());
+
+        ecs_os_api_t Api = ecs_os_get_api();
+        Api.task_new_    = OnTaskNew;
+        Api.task_join_   = OnTaskJoin;
+        ecs_os_set_api(AddressOf(Api));
+
+        // flecs runs stage 0 on the calling thread and submits one task per remaining stage, so the count is one
+        // greater than the lane's worker count and every task lands on a worker of its own.
+        mWorld.set_task_threads(Scheduler->GetConcurrency(Job::Lane::Compute) + 1);
 
         // Ensures that handles within this range are exclusively for entities created during runtime,
         // preventing conflicts with internal engine objects like components or archetypes.
@@ -34,6 +75,14 @@ namespace Scene
 
         // Register engine’s built-in components and systems.
         RegisterDefaultComponentsAndSystems();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::OnTeardown()
+    {
+        mWorld.set_task_threads(1);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
