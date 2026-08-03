@@ -48,7 +48,7 @@ inline namespace Base
         {
             if (mData)
             {
-                delete[] mData;
+                ::operator delete[](mData);
 
                 mData     = nullptr;
                 mSize     = 0;
@@ -110,10 +110,10 @@ inline namespace Base
         /// \param Length The number of additional bytes to guarantee space for.
         ZY_INLINE void Ensure(UInt32 Length)
         {
-            const UInt Capacity = mCapacity + Length;
-
-            if (Capacity > mCapacity)
+            if (const UInt Required = mSize + Length; Required > mCapacity)
             {
+                const UInt Capacity = mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(static_cast<UInt>(16), Required);
+
                 const Ptr<Byte> Data = static_cast<Ptr<Byte>>(::operator new[](sizeof(Byte) * Capacity));
                 Copy(Data, mSize, mData);
 

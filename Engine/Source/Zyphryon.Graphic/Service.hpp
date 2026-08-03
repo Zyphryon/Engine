@@ -430,9 +430,10 @@ namespace Graphic
 
         /// \brief Submits a run of the consumer frame's accumulated draw commands to the driver.
         ///
+        /// \note Recorded into the journal, so it runs on the GPU thread once the frame is consumed.
+        ///
         /// \param Offset The index of the first command in the consumer frame's submission arena.
         /// \param Count  The number of commands to submit.
-        /// \note Recorded into the journal, so it runs on the GPU thread once the frame is consumed.
         void SubmitInFlightPass(UInt32 Offset, UInt32 Count);
 
         /// \brief Initializes a single \ref InFlightArena by allocating a CPU writer and a GPU buffer.

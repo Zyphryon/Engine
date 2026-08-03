@@ -561,7 +561,19 @@ inline namespace Base
         ZY_INLINE void Fill(ConstRef<Type> Element, UInt Size)
         {
             const UInt Offset = mSize;
-            Advance(Size);
+
+            if constexpr (IsTriviallyConstructible<Type>)
+            {
+                if (const UInt Required = mSize + Size; Required > mCapacity)
+                {
+                    Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(static_cast<UInt>(16), Required));
+                }
+                mSize += Size;
+            }
+            else
+            {
+                Advance(Size);
+            }
 
             ::Fill(mData + Offset, Size, Element);
         }
