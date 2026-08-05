@@ -70,7 +70,7 @@ namespace Content
     {
         for (const Text Extension : Types)
         {
-            mLoaders.Assign(Hash(Extension), Loader);
+            mLoaders.Assign(Digest(Hash(Extension)), Loader);
         }
     }
 
@@ -81,7 +81,7 @@ namespace Content
     {
         for (const Text Extension : Types)
         {
-            mLoaders.Erase(Hash(Extension));
+            mLoaders.Erase(Digest(Hash(Extension)));
         }
     }
 
@@ -90,7 +90,7 @@ namespace Content
 
     void Service::AddMount(Text Schema, ConstRetainer<Mount> Mount)
     {
-        mMounts.Assign(Hash(Schema), Mount);
+        mMounts.Assign(Digest(Hash(Schema)), Mount);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -98,7 +98,7 @@ namespace Content
 
     void Service::RemoveMount(Text Schema)
     {
-        mMounts.Erase(Hash(Schema));
+        mMounts.Erase(Digest(Hash(Schema)));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -106,7 +106,7 @@ namespace Content
 
     void Service::Enumerate(ConstRef<Uri> Key, AnyRef<Mount::OnEnumerate> Callback)
     {
-        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
+        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
             if (Mount->IsAsynchronous())
             {
@@ -131,7 +131,7 @@ namespace Content
 
     void Service::Delete(ConstRef<Uri> Key, AnyRef<Mount::OnResult> Callback)
     {
-        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
+        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
             if (Mount->IsAsynchronous())
             {
@@ -158,7 +158,7 @@ namespace Content
     {
         ZY_ASSERT(Source.GetSchema() == Destination.GetSchema(), "Source and destination schemas must match");
 
-        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Source.GetSchema())))
+        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Source.GetSchema()))))
         {
             if (Mount->IsAsynchronous())
             {
@@ -183,7 +183,7 @@ namespace Content
 
     void Service::Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback)
     {
-        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
+        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
             if (Mount->IsAsynchronous())
             {
@@ -208,7 +208,7 @@ namespace Content
 
     void Service::Write(ConstRef<Uri> Key, AnyRef<Blob> Data, AnyRef<Mount::OnResult> Callback)
     {
-        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Key.GetSchema())))
+        if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
             if (Mount->IsAsynchronous())
             {
@@ -233,7 +233,7 @@ namespace Content
 
     void Service::Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function)
     {
-        mSubscriptions.Assign(Hash(Key.GetPath()), Move(Function));
+        mSubscriptions.Assign(Digest(Hash(Key.GetPath())), Move(Function));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -241,7 +241,7 @@ namespace Content
 
     void Service::Unsubscribe(ConstRef<Uri> Key)
     {
-        mSubscriptions.Erase(Hash(Key.GetPath()));
+        mSubscriptions.Erase(Digest(Hash(Key.GetPath())));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -259,7 +259,7 @@ namespace Content
             // Increment the count of pending parser jobs.
             mParserPending.fetch_add(1, std::memory_order_release);
 
-            if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Hash(Asset->GetKey().GetSchema())))
+            if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Asset->GetKey().GetSchema()))))
             {
                 if (Mount->IsAsynchronous())
                 {
@@ -298,7 +298,7 @@ namespace Content
         {
             const Uri Key = Scope.GetResource()->GetKey();
 
-            if (ConstRetainer<Loader> Loader = mLoaders.FindOrDefault(Hash(Key.GetExtension())))
+            if (ConstRetainer<Loader> Loader = mLoaders.FindOrDefault(Digest(Hash(Key.GetExtension()))))
             {
                 if (Loader->Load(* this, Scope, Move(Data)))
                 {
@@ -363,7 +363,7 @@ namespace Content
         }
 
         // Consume the one-shot subscription delegate if one exists for this asset.
-        if (Callback Delegate; mSubscriptions.Extract(Hash(Asset.GetKey().GetPath()), Delegate))
+        if (Callback Delegate; mSubscriptions.Extract(Digest(Hash(Asset.GetKey().GetPath())), Delegate))
         {
             Delegate(Asset);
         }

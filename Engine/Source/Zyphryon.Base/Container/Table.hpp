@@ -180,7 +180,7 @@ inline namespace Base
                 return;
             }
 
-            if constexpr (!IsTriviallyCopyable<Pair>)
+            if constexpr (!IsTriviallyDestructible<Pair>)
             {
                 for (UInt Index = 0u; Index < mSize; ++Index)
                 {

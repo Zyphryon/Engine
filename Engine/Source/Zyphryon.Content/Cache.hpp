@@ -77,9 +77,9 @@ namespace Content
         {
             Guard Lock(mMutex);
 
-            const UInt64 ID = Hash(Key);
+            const Digest Digest(Hash(Key));
 
-            if (const Ptr<Retainer<Type>> Asset = mRegistry.Find(ID))
+            if (const Ptr<Retainer<Type>> Asset = mRegistry.Find(Digest))
             {
                 return (* Asset);
             }
@@ -87,7 +87,7 @@ namespace Content
             if (CreateIfNeeded)
             {
                 Retainer<Type> Result = Retainer<Type>::Create(Move(Key));
-                mRegistry.Assign(ID, Result);
+                mRegistry.Assign(Digest, Result);
                 return Result;
             }
             return nullptr;
@@ -103,7 +103,7 @@ namespace Content
         {
             Guard Lock(mMutex);
 
-            return mRegistry.EraseIf(Hash(Key), [](ConstRetainer<Type> Asset)
+            return mRegistry.EraseIf(Digest(Hash(Key)), [](ConstRetainer<Type> Asset)
             {
                 return Asset->HasFinished();
             });
@@ -120,7 +120,7 @@ namespace Content
         {
             Guard Lock(mMutex);
 
-            mRegistry.EraseIf([&](ConstRef<Uri>, ConstRetainer<Type> Asset)
+            mRegistry.EraseIf([&](Digest, ConstRetainer<Type> Asset)
             {
                 if (Force || (Asset->IsUnique() && Asset->HasFinished()))
                 {
@@ -136,7 +136,7 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Table<UInt64, Retainer<Type>> mRegistry;
+        Table<Digest, Retainer<Type>> mRegistry;
         mutable Mutex                 mMutex;
         UInt64                        mLimit;
     };

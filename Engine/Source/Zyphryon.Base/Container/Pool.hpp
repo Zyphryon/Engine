@@ -41,7 +41,7 @@ inline namespace Base
         /// \brief Destroys all objects and resets the pool to an empty state.
         ZY_INLINE constexpr void Clear()
         {
-            if constexpr (!IsTriviallyCopyable<Type>)
+            if constexpr (!IsTriviallyDestructible<Type>)
             {
                 for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
                 {
@@ -207,6 +207,27 @@ inline namespace Base
                     Callback(mStorage[Handle - 1]);
                 }
             }
+        }
+
+        /// \brief Frees every allocated object for which \p Predicate returns `true`.
+        ///
+        /// \param Predicate The unary predicate used to identify the objects to free.
+        /// \return The number of objects freed.
+        template<typename Callable>
+        ZY_INLINE constexpr UInt ForEachOrRemove(AnyRef<Callable> Predicate)
+        {
+            UInt Result = 0;
+
+            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            {
+                if (mAllocator.IsAllocated(Handle) && Predicate(mStorage[Handle - 1]))
+                {
+                    Free(Handle);
+
+                    ++Result;
+                }
+            }
+            return Result;
         }
 
         /// \brief Gets a reference to the object at the given handle.

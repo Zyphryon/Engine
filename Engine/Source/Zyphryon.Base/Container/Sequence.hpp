@@ -516,7 +516,7 @@ inline namespace Base
         /// \brief Destroys all elements without releasing the underlying heap storage.
         ZY_INLINE void Clear()
         {
-            if constexpr (!IsTriviallyCopyable<Type>)
+            if constexpr (!IsTriviallyDestructible<Type>)
             {
                 for (UInt Index = 0; Index < mSize; ++Index)
                 {

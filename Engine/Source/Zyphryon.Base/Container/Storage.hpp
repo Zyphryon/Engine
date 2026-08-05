@@ -120,7 +120,7 @@ inline namespace Base
         /// \param Length The number of elements to destruct.
         ZY_INLINE constexpr void Destruct(UInt Offset, UInt Length)
         {
-            if constexpr (!IsTriviallyCopyable<Type>)
+            if constexpr (!IsTriviallyDestructible<Type>)
             {
                 for (UInt Index = 0; Index < Length; ++Index)
                 {

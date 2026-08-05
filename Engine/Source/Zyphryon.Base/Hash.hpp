@@ -253,20 +253,6 @@ inline namespace Base
         return Hash(reinterpret_cast<ConstPtr<Char>>(& Data), sizeof(Type));
     }
 
-    /// \brief Combines the hash values of multiple parameters into a single hash value.
-    ///
-    /// Each parameter is hashed in order, with the previous hash used as the seed for the next.
-    ///
-    /// \param Parameters The parameters to hash and combine.
-    /// \return A combined 64-bit hash of all parameters.
-    template<typename... Arguments>
-    constexpr UInt64 HashCombine(AnyRef<Arguments>... Parameters)
-    {
-        UInt64 Result = 0;
-        (..., (Result ^= Hash(Parameters) + 0x9E3779B97F4A7C15ULL + (Result << 6) + (Result >> 2)));
-        return Result;
-    }
-
     /// \brief Computes a hash for the type \p Type using its name as a string.
     ///
     /// \tparam Type The type to hash.
@@ -287,4 +273,36 @@ inline namespace Base
         }
         return Hash(Name, Length);
     }
+
+    /// \brief A hash carried as a value of its own, so what was hashed cannot be confused with anything else.
+    struct Digest final
+    {
+        /// The hash itself, which is what a table places the digest by.
+        UInt64 Value = 0;
+
+        /// \brief Constructs a digest that hashes to nothing.
+        ZY_INLINE constexpr Digest() = default;
+
+        /// \brief Constructs a digest around a hash something else computed.
+        ///
+        /// \param Value The hash to carry.
+        ZY_INLINE constexpr explicit Digest(UInt64 Value)
+            : Value { Value }
+        {
+        }
+
+        /// \brief Computes a 64-bit hash of the object's state.
+        ///
+        /// \return A 64-bit hash of the object.
+        ZY_INLINE constexpr UInt64 Hash() const
+        {
+            return Value;
+        }
+
+        /// \brief Compares this digest against another for equality.
+        ///
+        /// \param Other The digest to compare against.
+        /// \return `true` if both carry the same hash, otherwise `false`.
+        ZY_INLINE constexpr Bool operator==(ConstRef<Digest> Other) const = default;
+    };
 }
