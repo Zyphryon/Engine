@@ -381,20 +381,28 @@ namespace Audio
 
         while (Done < Frames)
         {
-            const UInt32 Want = Min(Frames - Done, Capacity) * Voice.Stride;
+            const UInt32 Request = Min(Frames - Done, Capacity) * Voice.Stride;
 
-            UInt32 Got = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Want)));
+            UInt32 Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Request)));
 
-            if (Got == 0)
+            if (Decoded == 0)
             {
                 // Restart from the top when looping; otherwise the stream has ended.
-                if (!Voice.Looping || !Voice.Decoder->Seek(0))
+                if (Voice.Looping)
+                {
+                    if (!Voice.Decoder->Seek(0))
+                    {
+                        Voice.Looping = false;
+                        break;
+                    }
+                }
+                else
                 {
                     break;
                 }
 
-                Got = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Want)));
-                if (Got == 0)
+                Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Request)));
+                if (Decoded == 0)
                 {
                     break;
                 }
@@ -403,14 +411,14 @@ namespace Audio
             // Deinterleave the source frames into planar stereo.
             if (Voice.Stride == 1)
             {
-                for (UInt32 Frame = 0; Frame < Got; ++Frame)
+                for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
                 {
                     Left[Done + Frame] = Right[Done + Frame] = mDecode[Frame];
                 }
             }
             else
             {
-                for (UInt32 Frame = 0; Frame < Got; ++Frame)
+                for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
                 {
                     const UInt32 Base = Frame * Voice.Stride;
 
@@ -418,7 +426,7 @@ namespace Audio
                     Right[Done + Frame] = mDecode[Base + 1];
                 }
             }
-            Done += Got;
+            Done += Decoded;
         }
         return Done;
     }
