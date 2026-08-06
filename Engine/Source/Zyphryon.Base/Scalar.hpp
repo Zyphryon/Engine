@@ -144,10 +144,10 @@ inline namespace Base
     /// \param Exponent The exponent value.
     /// \return The result of 10 ^ \p Exponent.
     template<typename Type>
-    constexpr UInt Pow10(Type Exponent)
+    constexpr UInt64 Pow10(Type Exponent)
         requires IsIntegral<Type>
     {
-        static constexpr UInt kPow10Table[20] =
+        static constexpr UInt64 kPow10Table[20] =
         {
             1ull,                   10ull,                  100ull,
             1000ull,                10000ull,               100000ull,
