@@ -69,9 +69,10 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Dispatcher mDispatcher;
-        Window     mWindow;
-        Display    mDisplay;
-        Str        mClipboard;
+        Dispatcher             mDispatcher;
+        Sequence<Input::Event> mEvents;
+        Window                 mWindow;
+        Display                mDisplay;
+        Str                    mClipboard;
     };
 }

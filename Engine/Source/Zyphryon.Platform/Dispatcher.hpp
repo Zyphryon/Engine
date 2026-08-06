@@ -50,6 +50,14 @@ namespace Platform
             mInputText.Clear();
         }
 
+        /// \brief Hands over the events queued so far, leaving the dispatcher with none.
+        ///
+        /// \param Output Receives the events queued since the last reset.
+        ZY_INLINE void Drain(Ref<Sequence<Input::Event> > Output)
+        {
+            Base::Swap(mInputEvents, Output);
+        }
+
         /// \brief Notify that a specific notification has occurred.
         ///
         /// \param Notification The notification type to notify.
@@ -73,6 +81,13 @@ namespace Platform
         ZY_INLINE void QueueKeyType(Text Content)
         {
             const UInt Offset = mInputText.GetSize();
+
+            if (Offset + Content.GetSize() + 1 > mInputText.GetCapacity())
+            {
+                LOG_W("Platform: dropped {0} byte(s) of text input, the frame's buffer is full", Content.GetSize());
+                return;
+            }
+
             mInputText.Append(Content);
 
             Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::KeyType);

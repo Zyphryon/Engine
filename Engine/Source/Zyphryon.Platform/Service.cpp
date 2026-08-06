@@ -56,8 +56,11 @@ namespace Platform
         // Forwards all queued input events to the input service.
         if (ConstRetainer<Input::Service> Input = GetHost().GetService<Input::Service>())
         {
-            const Dispatcher Snapshot = mDispatcher;
-            Input->Process(Snapshot.GetInputEvents());
+            mDispatcher.Drain(mEvents);
+
+            Input->Process(mEvents);
+
+            mEvents.Clear();
         }
         mDispatcher.Reset();
     }
@@ -74,11 +77,11 @@ namespace Platform
             LOG_W("Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
         }
 
-        Width  = static_cast<Real32>(Width)  * Monitor.GetScale();
-        Height = static_cast<Real32>(Height) * Monitor.GetScale();
+        Width  = static_cast<UInt32>(Round(Width * Monitor.GetScale())), Monitor.GetWidth();
+        Height = static_cast<UInt32>(Round(Height * Monitor.GetScale())), Monitor.GetHeight();
 
-        const SInt32 PositionX = Monitor.GetX() + (Monitor.GetWidth() - Width) / 2;
-        const SInt32 PositionY = Monitor.GetY() + (Monitor.GetHeight() - Height) / 2;
+        const SInt32 PositionX = Monitor.GetX() + static_cast<SInt32>(Monitor.GetWidth() - Width) / 2;
+        const SInt32 PositionY = Monitor.GetY() + static_cast<SInt32>(Monitor.GetHeight() - Height) / 2;
         return mWindow.Initialize(Title, PositionX, PositionY, Width, Height, Borderless, Fullscreen);
     }
 }
