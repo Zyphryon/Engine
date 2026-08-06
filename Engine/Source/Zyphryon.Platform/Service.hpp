@@ -73,6 +73,5 @@ namespace Platform
         Sequence<Input::Event> mEvents;
         Window                 mWindow;
         Display                mDisplay;
-        Str                    mClipboard;
     };
 }
