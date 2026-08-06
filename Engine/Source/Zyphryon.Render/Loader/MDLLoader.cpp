@@ -68,7 +68,7 @@ namespace Render
 
                 if (const JsonObject Definition = Materials.GetObject(Slot); Definition.IsValid())
                 {
-                    Object = Retainer<Graphic::Material>::Create(Asset->GetKey());
+                    Object = Retainer<Graphic::Material>::Create(Content::Uri(Asset->GetKey()));
                     Object->SetPolicy(Content::Resource::Policy::Exclusive);
 
                     Graphic::MTLLoader::Parse(Service, Scope, Definition, * Object);

@@ -48,8 +48,10 @@ namespace Input
         /// \brief Clears all stored mouse state.
         void Reset();
 
-        /// \brief Clears all stored mouse button state.
-        void ReleaseAllButtons();
+        /// \brief Marks every button as released, keeping the previous frame so the transition is reported.
+        ///
+        /// \param Output Receives one release event per input that was held.
+        void ReleaseAllButtons(Ref<Sequence<Event>> Output);
 
         /// \brief Gets the current X position of the mouse cursor.
         ///

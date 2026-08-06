@@ -69,6 +69,14 @@ namespace Input
         // Processes high-level input events for each device.
         for (ConstRef<Event> Event : Frame)
         {
+            if (Event.Kind == Event::Type::WindowFocus && !Event.WindowFocus.State)
+            {
+                for (ConstRef<Input::Event> Release: mSynthetic)
+                {
+                    Invoke(Release);
+                }
+                mSynthetic.Clear();
+            }
             Invoke(Event);
         }
     }
@@ -78,7 +86,7 @@ namespace Input
 
     void Service::ResetOnFocusLost()
     {
-        mMouse.ReleaseAllButtons();
-        mKeyboard.Reset();
+        mKeyboard.ReleaseAllKeys(mSynthetic);
+        mMouse.ReleaseAllButtons(mSynthetic);
     }
 }

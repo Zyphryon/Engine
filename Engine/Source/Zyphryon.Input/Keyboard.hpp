@@ -39,6 +39,11 @@ namespace Input
         /// \brief Clears all stored key states for both the current and previous frames.
         void Reset();
 
+        /// \brief Marks every key as released, keeping the previous frame so the transition is reported.
+        ///
+        /// \param Output Receives one release event per input that was held.
+        void ReleaseAllKeys(Ref<Sequence<Event>> Output);
+
         /// \brief Checks if a key was pressed during the current frame.
         ///
         /// \param Key The key to check.

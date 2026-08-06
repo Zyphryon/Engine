@@ -54,4 +54,18 @@ namespace Input
         mLastKeys.Reset();
         mThisKeys.Reset();
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Keyboard::ReleaseAllKeys(Ref<Sequence<Event>> Output)
+    {
+        for (UInt Index = mThisKeys.FindFirstSet(); Index < kMaxKeys; Index = mThisKeys.FindFirstSet())
+        {
+            Ref<Event> Release    = Output.Append(Event::Type::KeyUp);
+            Release.KeyAction.Key = static_cast<Key>(Index);
+
+            mThisKeys.Reset(Index);
+        }
+    }
 }

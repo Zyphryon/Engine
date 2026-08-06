@@ -70,9 +70,14 @@ namespace Input
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::ReleaseAllButtons()
+    void Mouse::ReleaseAllButtons(Ref<Sequence<Event> > Output)
     {
-        mLastButtons.Reset();
-        mThisButtons.Reset();
+        for (UInt Index = mThisButtons.FindFirstSet(); Index < kMaxButtons; Index = mThisButtons.FindFirstSet())
+        {
+            Ref<Event> Release         = Output.Append(Event::Type::MouseUp);
+            Release.MouseAction.Button = static_cast<Button>(Index);
+
+            mThisButtons.Reset(Index);
+        }
     }
 }
