@@ -79,6 +79,9 @@ namespace Network::TCP
         /// \brief Maximum time, in seconds, an attempt to reach a peer may take before it is taken as unreachable.
         static constexpr Real64 kMaxHandshake = 10.0;
 
+        /// \brief Maximum time, in seconds, a queue may hold room it has stopped needing before it gives it back.
+        static constexpr Real64 kMaxHoard     = 5.0;
+
         /// \brief Specifies what a frame carries, which the byte opening every one of them says.
         enum class Tag : UInt8
         {
@@ -129,5 +132,6 @@ namespace Network::TCP
         Statistics mStats;
         Real64     mExpiry;
         Real64     mProbe;
+        Real64     mCompact;
     };
 }

@@ -23,8 +23,9 @@ namespace Network::TCP
 
     Stream::Stream(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener)
         : Channel { Link, Address, Listener },
-          mExpiry { 0.0 },
-          mProbe  { 0.0 }
+          mExpiry  { 0.0 },
+          mProbe   { 0.0 },
+          mCompact { 0.0 }
     {
     }
 
@@ -34,8 +35,9 @@ namespace Network::TCP
     Stream::Stream(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener, ConstRef<Socket> Socket)
         : Channel { Link, Address, Listener },
           mSocket { Socket },
-          mExpiry { 0.0 },
-          mProbe  { 0.0 }
+          mExpiry  { 0.0 },
+          mProbe   { 0.0 },
+          mCompact { 0.0 }
     {
     }
 
@@ -160,6 +162,13 @@ namespace Network::TCP
             }
         }
 
+        // Given back only while nothing is out on it, since a write in flight is reading straight out of it.
+        if (Time >= mCompact && !IsAwaiting(Operation::Send))
+        {
+            mTransmit.Compact();
+            mOutbound.Compact();
+        }
+
         Drain(Watcher);
     }
 
@@ -170,7 +179,7 @@ namespace Network::TCP
     {
         if (mState == State::Pending || mState == State::Live)
         {
-            if (mTransmit.GetSize() + mOutbound.GetSize() + Message.GetSize() > kMaxFrame)
+            if (mTransmit.GetSize() + mOutbound.GetSize() > kMaxBacklog)
             {
                 mCause = Reason::Congested;
                 return;
@@ -288,6 +297,12 @@ namespace Network::TCP
                 Output.Message(mLink, Delivery::Reliable, ConstSpan(Frame.GetData() + 1, Frame.GetSize() - 1));
                 break;
             case Tag::Ping:
+                if (Frame.GetSize() != 1 + sizeof(Real64))
+                {
+                    Retire(Watcher, mLink, Reason::Protocol, Output);
+                    return;
+                }
+
                 mOutbound.Frame(static_cast<UInt32>(Frame.GetSize()));
                 mOutbound.Append(Enum::Cast(Tag::Pong));
                 mOutbound.Append(ConstSpan(Frame.GetData() + 1, Frame.GetSize() - 1));
@@ -317,6 +332,15 @@ namespace Network::TCP
 
             Retire(Watcher, mLink, Reason::Protocol, Output);
             return;
+        }
+
+        // Given back here, in the gap between the read that finished and the one about to be posted, since
+        // the platform holds a pointer into this queue for as long as one is out on it.
+        if (Time >= mCompact)
+        {
+            mInbound.Compact();
+
+            mCompact = Time + kMaxHoard;
         }
 
         Fill(Watcher);
