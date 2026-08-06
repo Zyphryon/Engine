@@ -21,6 +21,15 @@ PROJECT(ZyEngine VERSION 1.0.0 LANGUAGES CXX)
 FILE(GLOB_RECURSE PROJECT_SOURCE  "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
 LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 
+IF    (ZY_MODE_HEADLESS)
+
+    LIST(FILTER PROJECT_SOURCE EXCLUDE REGEX "/Zyphryon\\.(Audio|Graphic|Input|Render)/")
+    LIST(FILTER PROJECT_SOURCE EXCLUDE REGEX "/Zyphryon\\.Platform/(Dispatcher|Display|Monitor|Service|Window)\\.cpp$")
+
+    LIST(APPEND PROJECT_DEFINES "ZY_MODE_HEADLESS")
+
+ENDIF ()
+
 IF    (WIN32)
 
     LIST(APPEND PROJECT_DEPENDENCIES "shcore" "avrt" "ole32" "ws2_32" "bcrypt")
@@ -31,17 +40,21 @@ ELSEIF (EMSCRIPTEN)
 
 ELSEIF (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 
-    FIND_PACKAGE(X11 REQUIRED)
+    IF    (NOT ZY_MODE_HEADLESS)
 
-    IF    (NOT X11_Xrandr_FOUND)
+        FIND_PACKAGE(X11 REQUIRED)
 
-        MESSAGE(FATAL_ERROR "Zyphryon needs the RandR extension for monitor enumeration (install libxrandr-dev)")
+        IF    (NOT X11_Xrandr_FOUND)
+
+            MESSAGE(FATAL_ERROR "Zyphryon needs the RandR extension for monitor enumeration (install libxrandr-dev)")
+
+        ENDIF ()
+
+        FIND_PACKAGE(ALSA REQUIRED)
+
+        LIST(APPEND PROJECT_DEPENDENCIES ALSA::ALSA X11::X11 X11::Xrandr)
 
     ENDIF ()
-
-    FIND_PACKAGE(ALSA REQUIRED)
-
-    LIST(APPEND PROJECT_DEPENDENCIES ALSA::ALSA X11::X11 X11::Xrandr)
 
 ENDIF ()
 
@@ -73,19 +86,23 @@ ENDIF ()
 ## Dependency (Opus) (BSD-3-Clause)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-SET(OPUS_BUILD_SHARED_LIBRARY        OFF CACHE BOOL "" FORCE)
-SET(OPUS_BUILD_PROGRAMS              OFF CACHE BOOL "" FORCE)
-SET(OPUS_BUILD_TESTING               OFF CACHE BOOL "" FORCE)
-SET(OPUS_INSTALL_PKG_CONFIG_MODULE   OFF CACHE BOOL "" FORCE)
-SET(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
+IF    (NOT ZY_MODE_HEADLESS)
 
-FetchContent_Declare(External_Opus
-        GIT_REPOSITORY https://github.com/xiph/opus
-        GIT_SHALLOW    TRUE
-        GIT_TAG        v1.5.2)
-FetchContent_MakeAvailable(External_Opus)
+    SET(OPUS_BUILD_SHARED_LIBRARY        OFF CACHE BOOL "" FORCE)
+    SET(OPUS_BUILD_PROGRAMS              OFF CACHE BOOL "" FORCE)
+    SET(OPUS_BUILD_TESTING               OFF CACHE BOOL "" FORCE)
+    SET(OPUS_INSTALL_PKG_CONFIG_MODULE   OFF CACHE BOOL "" FORCE)
+    SET(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
 
-LIST(APPEND PROJECT_DEPENDENCIES "opus")
+    FetchContent_Declare(External_Opus
+            GIT_REPOSITORY https://github.com/xiph/opus
+            GIT_SHALLOW    TRUE
+            GIT_TAG        v1.5.2)
+    FetchContent_MakeAvailable(External_Opus)
+
+    LIST(APPEND PROJECT_DEPENDENCIES "opus")
+
+ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (Flecs) (MIT) TODO: Remove

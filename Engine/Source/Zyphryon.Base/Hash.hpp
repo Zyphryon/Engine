@@ -274,6 +274,20 @@ inline namespace Base
         return Hash(Name, Length);
     }
 
+    /// \brief Combines the hash values of multiple parameters into a single hash value.
+    ///
+    /// \note Each parameter is hashed in order, with the previous hash used as the seed for the next.
+    ///
+    /// \param Parameters The parameters to hash and combine.
+    /// \return A combined 64-bit hash of all parameters.
+    template<typename... Arguments>
+    constexpr UInt64 HashCombine(AnyRef<Arguments>... Parameters)
+    {
+        UInt64 Result = 0;
+        (..., (Result ^= Hash(Parameters) + 0x9E3779B97F4A7C15ULL + (Result << 6) + (Result >> 2)));
+        return Result;
+    }
+
     /// \brief A hash carried as a value of its own, so what was hashed cannot be confused with anything else.
     struct Digest final
     {

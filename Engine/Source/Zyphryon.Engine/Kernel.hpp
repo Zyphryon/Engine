@@ -81,6 +81,8 @@ namespace Engine
 
     private:
 
+#if !defined(ZY_MODE_HEADLESS)
+
         /// \brief Invoked when the window requests to close.
         ///
         /// \return `true` to allow the window to close, `false` to prevent it.
@@ -98,6 +100,8 @@ namespace Engine
         /// \param Focused `true` if the window gained focus, `false` if it lost focus.
         /// \return `true` if the focus change was handled successfully, `false` otherwise.
         Bool OnWindowFocus(Bool Focused);
+
+#endif
 
     protected:
 

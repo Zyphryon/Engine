@@ -46,8 +46,10 @@ INCLUDE(CMake/CMakeRegisterResources.cmake)
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD           "Core: Uses thread on Emscripten"          OFF)
+OPTION(ZY_WEB_THREAD    "Core: Uses thread on Emscripten"                             OFF)
+OPTION(ZY_MODE_HEADLESS "Core: Runs without window, input, graphic or audio services" OFF)
 
+SET(ZY_MODE_HEADLESS               ON CACHE BOOL "" FORCE)
 ADD_SUBDIRECTORY(Engine)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -58,13 +60,13 @@ OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN3
 OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ${UNIX})
 OPTION(ZY_GRAPHIC_LOADER_STB   "Graphic: Enable STB image loader"         OFF)
 
-IF    (ZY_GRAPHIC_DRIVER_D3D11)
+IF    (ZY_GRAPHIC_DRIVER_D3D11 AND NOT ZY_MODE_HEADLESS)
 
     ADD_SUBDIRECTORY(Module/Graphic/Driver/D3D11)
 
 ENDIF ()
 
-IF    (ZY_GRAPHIC_DRIVER_GLES3)
+IF    (ZY_GRAPHIC_DRIVER_GLES3 AND NOT ZY_MODE_HEADLESS)
 
     ADD_SUBDIRECTORY(Module/Graphic/Driver/GLES3)
 
@@ -81,3 +83,4 @@ ENDIF ()
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ADD_SUBDIRECTORY(Pipeline)
+ADD_SUBDIRECTORY(Tutorial)

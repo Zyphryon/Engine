@@ -11,15 +11,18 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Kernel.hpp"
-#include "Zyphryon.Audio/Service.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Graphic/Service.hpp"
-#include "Zyphryon.Input/Service.hpp"
 #include "Zyphryon.Job/Service.hpp"
 #include "Zyphryon.Network/Service.hpp"
+#include "Zyphryon.Scene/Service.hpp"
+
+#if !defined(ZY_MODE_HEADLESS)
+#include "Zyphryon.Audio/Service.hpp"
+#include "Zyphryon.Graphic/Service.hpp"
+#include "Zyphryon.Input/Service.hpp"
 #include "Zyphryon.Platform/Service.hpp"
 #include "Zyphryon.Render/Service.hpp"
-#include "Zyphryon.Scene/Service.hpp"
+#endif
 
 #if   defined(ZY_PLATFORM_WEB)
 #include <emscripten.h>
@@ -235,6 +238,8 @@ namespace Engine
 #endif
     }
 
+#if !defined(ZY_MODE_HEADLESS)
+
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -277,4 +282,6 @@ namespace Engine
         }
         return false;
     }
+
+#endif
 }
