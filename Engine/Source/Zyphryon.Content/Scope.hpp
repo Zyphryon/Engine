@@ -25,11 +25,6 @@ namespace Content
     {
     public:
 
-        /// \brief The maximum number of dependencies that can be tracked.
-        constexpr static UInt32 kMaxDependencies = 10;
-
-    public:
-
         /// \brief Constructs an empty scope with no associated resource.
         ZY_INLINE Scope()
             : mResource { nullptr }
@@ -77,7 +72,7 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Resource>                             mResource;
-        Sequence<Retainer<Resource>, kMaxDependencies> mDependencies;
+        Retainer<Resource>           mResource;
+        Sequence<Retainer<Resource>> mDependencies;
     };
 }

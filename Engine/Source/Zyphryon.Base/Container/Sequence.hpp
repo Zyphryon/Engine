@@ -461,6 +461,42 @@ inline namespace Base
             Destruct<Type>(mData[--mSize]);
         }
 
+        /// \brief Moves every element the predicate accepts into another container, keeping the rest.
+        ///
+        /// \param Output    Receives the elements the predicate accepted.
+        /// \param Predicate The unary predicate used to identify the elements to move.
+        /// \return The number of elements moved.
+        template<typename Container, typename Callable>
+        ZY_INLINE UInt DrainIf(Ref<Container> Output, AnyRef<Callable> Predicate)
+        {
+            UInt Kept = 0;
+
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                if (Predicate(mData[Index]))
+                {
+                    Output.Append(Move(mData[Index]));
+                }
+                else
+                {
+                    if (Kept != Index)
+                    {
+                        mData[Kept] = Move(mData[Index]);
+                    }
+                    ++Kept;
+                }
+            }
+
+            for (UInt Index = Kept; Index < mSize; ++Index)
+            {
+                Destruct<Type>(mData[Index]);
+            }
+
+            const UInt Result = mSize - Kept;
+            mSize = Kept;
+            return Result;
+        }
+
         /// \brief Finds the first occurrence of the specified element.
         ///
         /// \param Element The element to search for.

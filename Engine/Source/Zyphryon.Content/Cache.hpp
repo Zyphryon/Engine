@@ -26,31 +26,7 @@ namespace Content
     {
     public:
 
-        /// \brief Constructs an empty cache with no memory budget or usage.
-        ZY_INLINE Cache()
-            : mLimit { 0 }
-        {
-        }
-
-        /// \brief Sets the maximum memory budget for stored assets.
-        ///
-        /// \param Limit The asset memory budget in bytes.
-        ZY_INLINE void SetMemoryLimit(UInt64 Limit)
-        {
-            mLimit = Limit;
-        }
-
-        /// \brief Gets the configured memory budget for stored assets.
-        ///
-        /// \return The memory budget in bytes.
-        ZY_INLINE UInt64 GetMemoryLimit() const
-        {
-            return mLimit;
-        }
-
         /// \brief Computes the total memory footprint of all assets currently in the cache.
-        ///
-        /// Thread-safe. Acquires a lock on the internal registry.
         ///
         /// \return The sum of memory footprint for every asset in the registry.
         ZY_INLINE UInt64 GetMemoryUsage() const
@@ -67,8 +43,6 @@ namespace Content
         }
 
         /// \brief Retrieves an existing asset or optionally creates it if not found.
-        ///
-        /// Thread-safe. Acquires a lock on the internal registry.
         ///
         /// \param Key            The URI of the asset.
         /// \param CreateIfNeeded If `true`, a new asset is created when not found.
@@ -95,8 +69,6 @@ namespace Content
 
         /// \brief Removes an asset if it has finished loading.
         ///
-        /// Thread-safe. Acquires a lock on the internal registry.
-        ///
         /// \param Key The URI of the asset to remove.
         /// \return `true` if the asset was found and had finished loading, otherwise `false`.
         ZY_INLINE Bool Remove(ConstRef<Uri> Key)
@@ -110,8 +82,6 @@ namespace Content
         }
 
         /// \brief Removes finished assets that are solely owned by the cache, or all finished assets if forced.
-        ///
-        /// Thread-safe. Acquires a lock on the internal registry.
         ///
         /// \param Force      If `true`, all finished assets are removed regardless of tracking state.
         /// \param Dispatcher The callback to invoke for each asset before it is removed.
@@ -138,6 +108,5 @@ namespace Content
 
         Table<Digest, Retainer<Type>> mRegistry;
         mutable Mutex                 mMutex;
-        UInt64                        mLimit;
     };
 }

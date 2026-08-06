@@ -34,33 +34,29 @@ namespace Content
     {
         ZY_PROFILE_SCOPE("Content::Tick");
 
-        Guard Guard(mParserMutex);
-
-        // Iterates through all pending scopes in the loader list.
-        UInt32 Completed = 0;
-
-        for (UInt Element = 0; Element < mParserList.GetSize();)
+        // A count of zero means nothing has been queued since the last drain, so the lock guarding the queue is
+        // skipped rather than taken to find it empty.
+        if (mParserPending.load(std::memory_order_relaxed) == 0)
         {
-            // If the scope's dependencies are all resolved, finalize the associated resource.
-            if (Ref<Scope> Scope = mParserList[Element]; Scope.Poll())
-            {
-                // Proceed to load the asset.
-                OnAssetCreate(* Scope.GetResource());
-
-                // Remove the completed scope from the list via swap-remove for efficiency.
-                mParserList.RemoveFast(Element);
-
-                // Increment the count of completed parsers.
-                ++Completed;
-            }
-            else
-            {
-                ++Element;
-            }
+            return;
         }
 
-        // Update the count of pending parsers.
-        mParserPending.fetch_sub(Completed, std::memory_order_release);
+        {
+            const Guard Lock(mParserMutex);
+
+            mParserList.DrainIf(mParserReady, [](Ref<Scope> Scope)
+            {
+                return Scope.Poll();
+            });
+        }
+
+        mParserPending.fetch_sub(static_cast<UInt32>(mParserReady.GetSize()), std::memory_order_relaxed);
+
+        for (ConstRef<Scope> Scope : mParserReady)
+        {
+            OnAssetCreate(* Scope.GetResource());
+        }
+        mParserReady.Clear();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -85,7 +81,7 @@ namespace Content
         }
     }
 
-    // -=-=-=-=-=-=-=-=1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Service::AddMount(Text Schema, ConstRetainer<Mount> Mount)
@@ -257,7 +253,7 @@ namespace Content
         if (Asset->Transition(Resource::Status::Idle, Resource::Status::Queued))
         {
             // Increment the count of pending parser jobs.
-            mParserPending.fetch_add(1, std::memory_order_release);
+            mParserPending.fetch_add(1, std::memory_order_relaxed);
 
             if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Asset->GetKey().GetSchema()))))
             {
@@ -296,7 +292,7 @@ namespace Content
 
         if (Result == Filesystem::Result::Success)
         {
-            const Uri Key = Scope.GetResource()->GetKey();
+            ConstRef<Uri> Key = Scope.GetResource()->GetKey();
 
             if (ConstRetainer<Loader> Loader = mLoaders.FindOrDefault(Digest(Hash(Key.GetExtension()))))
             {
@@ -316,7 +312,7 @@ namespace Content
         }
         else
         {
-            LOG_W("Failed to read asset '{0}' = '{1}'", Asset->GetKey().GetPath(), Enum::GetName(Result));
+            LOG_W("Content: Failed to read asset '{0}' = '{1}'", Asset->GetKey().GetPath(), Enum::GetName(Result));
         }
 
         if (!Successful)

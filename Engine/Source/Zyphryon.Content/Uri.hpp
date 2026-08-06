@@ -135,6 +135,14 @@ namespace Content
             return StrAfterLast(GetFilename(), '.');
         }
 
+        /// \brief Computes a 64-bit hash of the object's state.
+        ///
+        /// \return A 64-bit hash of the object.
+        ZY_INLINE UInt64 Hash() const
+        {
+            return Base::Hash(mUrl);
+        }
+
         /// \brief Serializes the state of the object to or from the specified archive.
         ///
         /// \param Archive The archive to serialize the object with.
@@ -142,14 +150,6 @@ namespace Content
         ZY_INLINE void Serialize(Serializer Archive)
         {
             Archive.Serialize(mUrl);
-        }
-
-        /// \brief Computes a 64-bit hash of the object's state.
-        ///
-        /// \return A 64-bit hash of the object.
-        ZY_INLINE UInt64 Hash() const
-        {
-            return Base::Hash(mUrl);
         }
 
     public:

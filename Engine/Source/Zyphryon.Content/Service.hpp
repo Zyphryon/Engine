@@ -73,26 +73,6 @@ namespace Content
         /// \param Schema The URI schema whose mount should be removed.
         void RemoveMount(Text Schema);
 
-        /// \brief Sets the memory limit for the cache of the specified resource type.
-        ///
-        /// \tparam Type  The resource type whose cache limit to set.
-        /// \param  Limit The maximum memory in bytes.
-        template<typename Type>
-        ZY_INLINE void SetMemoryLimit(UInt64 Limit)
-        {
-            Type::GetCache().SetMemoryLimit(Limit);
-        }
-
-        /// \brief Returns the memory limit for the cache of the specified resource type.
-        ///
-        /// \tparam Type The resource type whose cache limit to query.
-        /// \return The maximum memory in bytes.
-        template<typename Type>
-        ZY_INLINE UInt64 GetMemoryLimit()
-        {
-            return Type::GetCache().GetMemoryLimit();
-        }
-
         /// \brief Returns the current memory usage for the cache of the specified resource type.
         ///
         /// \tparam Type The resource type whose cache usage to query.
@@ -185,8 +165,8 @@ namespace Content
 
         /// \brief Evicts unreferenced resources from the cache of the specified resource type.
         ///
-        /// \tparam Type  The resource type whose cache to prune.
-        /// \param  Force `true` to evict all unreferenced resources, `false` to evict only until the memory limit is met.
+        /// \tparam Type The resource type whose cache to prune.
+        /// \param Force If `true`, all finished assets are removed regardless of tracking state.
         template<typename Type>
         ZY_INLINE void Prune(Bool Force)
         {
@@ -264,6 +244,7 @@ namespace Content
 
         Mutex                           mParserMutex;
         Sequence<Scope>                 mParserList;
+        Sequence<Scope>                 mParserReady;
         Atomic<UInt32>                  mParserPending;
     };
 }

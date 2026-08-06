@@ -61,7 +61,7 @@ namespace Content
         /// \brief Gets the URI key that identifies this resource.
         ///
         /// \return The URI key of this resource.
-        ZY_INLINE Uri GetKey() const
+        ZY_INLINE ConstRef<Uri> GetKey() const
         {
             return mKey;
         }
