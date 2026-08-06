@@ -16,6 +16,7 @@
 #include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Input/Service.hpp"
 #include "Zyphryon.Job/Service.hpp"
+#include "Zyphryon.Network/Service.hpp"
 #include "Zyphryon.Platform/Service.hpp"
 #include "Zyphryon.Render/Service.hpp"
 #include "Zyphryon.Scene/Service.hpp"
@@ -119,6 +120,14 @@ namespace Engine
         LOG_I("Kernel: Creating job service");
         Register<Job::Service>();
 
+        LOG_I("Kernel: Creating network service");
+        if (ConstRetainer<Network::Service> Network = Register<Network::Service>(); !Network->Initialize())
+        {
+            Unregister<Network::Service>();
+
+            LOG_W("Kernel: Failed to initialize network service");
+        }
+
         LOG_I("Kernel: Creating content service");
         Register<Content::Service>();
 
@@ -134,7 +143,7 @@ namespace Engine
         ConstRetainer<Audio::Service> Audio = Register<Audio::Service>();
 
         LOG_I("Kernel: Creating render service");
-        ConstRetainer<Render::Service> Render = Register<Render::Service>();
+        Register<Render::Service>();
 
 #endif
 

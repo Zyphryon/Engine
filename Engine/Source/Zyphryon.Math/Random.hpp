@@ -145,6 +145,28 @@ inline namespace Math
             return Result ^ (Result >> 31);
         }
 
+    public:
+
+        /// \brief Constructs a generator seeded unpredictably from the platform's own entropy.
+        ///
+        /// \return A generator seeded from platform entropy, or one seeded from the clock where none was had.
+        ZY_INLINE static Random Seeded()
+        {
+            UInt64 Seed[4];
+
+            const Bool Success = Entropy::Gather(Span(reinterpret_cast<Ptr<Byte>>(Seed), sizeof(Seed)));
+            ZY_ASSERT(Success, "Seed must not be null");
+
+            Random Generator;
+
+            Generator.mState[0] = Seed[0];
+            Generator.mState[1] = Seed[1];
+            Generator.mState[2] = Seed[2];
+            Generator.mState[3] = Seed[3];
+
+            return Generator;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
