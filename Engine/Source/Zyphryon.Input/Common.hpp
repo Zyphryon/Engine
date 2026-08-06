@@ -142,6 +142,15 @@ namespace Input
         RightSuper,     ///< Right Super key (Windows/Command).
     };
 
+    /// \brief Specifies how far along a touch is in the life it has on screen.
+    enum class Phase : UInt8
+    {
+        Began,     ///< The touch arrived this frame.
+        Moved,     ///< The touch was down when the frame opened and is down still.
+        Ended,     ///< The touch lifted this frame.
+        Cancelled, ///< The touch was taken away this frame by the system rather than by whoever made it.
+    };
+
     /// \brief Represents a single input event and its data.
     struct Event final
     {
@@ -155,6 +164,10 @@ namespace Input
             MouseScroll,  ///< Mouse scroll wheel event.
             MouseUp,      ///< Mouse button release event.
             MouseDown,    ///< Mouse button press event.
+            TouchDown,    ///< Touch arrival event.
+            TouchMove,    ///< Touch movement event.
+            TouchUp,      ///< Touch departure event.
+            TouchCancel,  ///< Touch revoked by the system before it was lifted.
             WindowFocus,  ///< Window focus gained or lost.
             WindowResize, ///< Window size change event.
             WindowExit,   ///< Window close request.
@@ -202,6 +215,16 @@ namespace Input
                 Real32 DeltaX; ///< Delta X since last event.
                 Real32 DeltaY; ///< Delta Y since last event.
             } MouseScroll;
+
+            /// \brief Data for \ref Type::TouchDown, \ref Type::TouchMove, \ref Type::TouchUp and \ref Type::TouchCancel.
+            struct
+            {
+                UInt32 ID;     ///< The identity the platform gave this touch, held until it leaves.
+                Real32 X;      ///< Actual X position.
+                Real32 Y;      ///< Actual Y position.
+                Real32 DeltaX; ///< Delta X since last event.
+                Real32 DeltaY; ///< Delta Y since last event.
+            } TouchAction;
 
             /// \brief Data for \ref Type::WindowFocus.
             struct

@@ -370,20 +370,19 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasTouchStart(SInt32 eventType, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
+        static EM_BOOL OnCanvasTouchStart(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                if (Event->numTouches > 0)
+                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
                 {
-                    ConstRef<EmscriptenTouchPoint> Touch = Event->touches[0];
-
-                    Canvas->mDispatcher.QueueMouseMove(
-                        static_cast<Real32>(Touch.targetX),
-                        static_cast<Real32>(Touch.targetY),
-                        0.0f,
-                        0.0f);
-                    Canvas->mDispatcher.QueueMouseButtonDown(Input::Button::Left);
+                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
+                    {
+                        Canvas->mDispatcher.QueueTouchDown(
+                            static_cast<UInt32>(Touch.identifier),
+                            static_cast<Real32>(Touch.targetX),
+                            static_cast<Real32>(Touch.targetY));
+                    }
                 }
             }
             return EM_TRUE;
@@ -392,31 +391,19 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasTouchEnd(SInt32 eventType, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
+        static EM_BOOL OnCanvasTouchMove(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                Canvas->mDispatcher.QueueMouseButtonUp(Input::Button::Left);
-            }
-            return EM_TRUE;
-        }
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        static EM_BOOL OnCanvasTouchMove(SInt32 eventType, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
-        {
-            if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
-            {
-                if (Event->numTouches > 0)
+                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
                 {
-                    ConstRef<EmscriptenTouchPoint> Touch = Event->touches[0];
-
-                    Canvas->mDispatcher.QueueMouseMove(
-                        static_cast<Real32>(Touch.targetX),
-                        static_cast<Real32>(Touch.targetY),
-                        0.0f,
-                        0.0f);
+                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
+                    {
+                        Canvas->mDispatcher.QueueTouchMove(
+                            static_cast<UInt32>(Touch.identifier),
+                            static_cast<Real32>(Touch.targetX),
+                            static_cast<Real32>(Touch.targetY));
+                    }
                 }
             }
             return EM_TRUE;
@@ -425,11 +412,38 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasTouchCancel(SInt32 eventType, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
+        static EM_BOOL OnCanvasTouchEnd(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                Canvas->mDispatcher.QueueMouseButtonUp(Input::Button::Left);
+                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
+                {
+                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
+                    {
+                        Canvas->mDispatcher.QueueTouchUp(
+                            static_cast<UInt32>(Touch.identifier),
+                            static_cast<Real32>(Touch.targetX),
+                            static_cast<Real32>(Touch.targetY));
+                    }
+                }
+            }
+            return EM_TRUE;
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static EM_BOOL OnCanvasTouchCancel(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
+        {
+            if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
+            {
+                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
+                {
+                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
+                    {
+                        Canvas->mDispatcher.QueueTouchCancel(static_cast<UInt32>(Touch.identifier));
+                    }
+                }
             }
             return EM_TRUE;
         }

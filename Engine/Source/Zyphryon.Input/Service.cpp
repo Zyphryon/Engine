@@ -36,6 +36,7 @@ namespace Input
         // Updates the state of each input device for the new frame.
         mMouse.Begin();
         mKeyboard.Begin();
+        mTouch.Begin();
 
         // Processes low-level input events for each device.
         for (ConstRef<Event> Event : Frame)
@@ -52,6 +53,12 @@ namespace Input
             case Event::Type::MouseUp:
             case Event::Type::MouseDown:
                 mMouse.Process(Event);
+                break;
+            case Event::Type::TouchDown:
+            case Event::Type::TouchMove:
+            case Event::Type::TouchUp:
+            case Event::Type::TouchCancel:
+                mTouch.Process(Event);
                 break;
             case Event::Type::WindowFocus:
             {
@@ -88,5 +95,6 @@ namespace Input
     {
         mKeyboard.ReleaseAllKeys(mSynthetic);
         mMouse.ReleaseAllButtons(mSynthetic);
+        mTouch.CancelAllPoints(mSynthetic);
     }
 }

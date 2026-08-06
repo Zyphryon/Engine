@@ -156,6 +156,56 @@ namespace Platform
             Event.MouseAction.Button = Button;
         }
 
+        /// \brief Queues a touch arrival event.
+        ///
+        /// \param ID The identity the platform gave this touch, held until it leaves.
+        /// \param X  The X position the touch landed at.
+        /// \param Y  The Y position the touch landed at.
+        ZY_INLINE void QueueTouchDown(UInt32 ID, Real32 X, Real32 Y)
+        {
+            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchDown);
+            Event.TouchAction.ID    = ID;
+            Event.TouchAction.X     = X;
+            Event.TouchAction.Y     = Y;
+        }
+
+        /// \brief Queues a touch movement event.
+        ///
+        /// \note How far it moved is worked out by the surface, which alone remembers where the touch was.
+        ///
+        /// \param ID The identity of the touch that moved.
+        /// \param X  The absolute X position of the touch.
+        /// \param Y  The absolute Y position of the touch.
+        ZY_INLINE void QueueTouchMove(UInt32 ID, Real32 X, Real32 Y)
+        {
+            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchMove);
+            Event.TouchAction.ID    = ID;
+            Event.TouchAction.X     = X;
+            Event.TouchAction.Y     = Y;
+        }
+
+        /// \brief Queues a touch departure event.
+        ///
+        /// \param ID The identity of the touch that left.
+        /// \param X  The X position the touch left from.
+        /// \param Y  The Y position the touch left from.
+        ZY_INLINE void QueueTouchUp(UInt32 ID, Real32 X, Real32 Y)
+        {
+            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchUp);
+            Event.TouchAction.ID    = ID;
+            Event.TouchAction.X     = X;
+            Event.TouchAction.Y     = Y;
+        }
+
+        /// \brief Queues a touch the system took away before it was lifted.
+        ///
+        /// \param ID The identity of the touch that was taken away.
+        ZY_INLINE void QueueTouchCancel(UInt32 ID)
+        {
+            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchCancel);
+            Event.TouchAction.ID    = ID;
+        }
+
         /// \brief Queues a window focus event.
         ///
         /// \param Focused The focus state (true if gained, false if lost).
