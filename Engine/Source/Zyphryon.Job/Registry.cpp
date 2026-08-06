@@ -23,7 +23,11 @@ namespace Job
 
     Slot Registry::Acquire(AnyRef<Task> Work, Lane Target)
     {
-        ZY_ASSERT(!mAllocator.IsFull(), "Exhausted the job table; too many jobs in flight at once");
+        if (mAllocator.IsFull())
+        {
+            LOG_W("Exhausted the job table; too many jobs in flight at once");
+            return 0;
+        }
 
         const Slot Value = mAllocator.Allocate();
 

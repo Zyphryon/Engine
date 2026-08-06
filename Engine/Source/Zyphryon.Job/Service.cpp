@@ -108,28 +108,41 @@ namespace Job
     {
         const Lane Actual = Reconcile(Target);
 
-        Handle Result;
-        Bool   Queued;
+        Handle Result  = 0;
+        Bool   Queued  = false;
+        Bool   Starved = false;
 
         {
             Guard Guard(mMutex);
 
-            const Slot Value = mRegistry.Acquire(Forward<Task>(Work), Actual);
-
-            Result = mRegistry.Mint(Value);
-
-            // Park the job on its dependency rather than queueing it, and let that job's completion release it.
-            Queued = !mRegistry.Park(Value, Dependency);
-
-            if (Queued)
+            if (const Slot Value = mRegistry.Acquire(Forward<Task>(Work), Actual); Value)
             {
-                GetExecutor(Actual).Push(mRegistry, Value);
+                Result = mRegistry.Mint(Value);
+
+                // Park the job on its dependency rather than queueing it, and let that job's completion release it.
+                Queued = !mRegistry.Park(Value, Dependency);
+
+                if (Queued)
+                {
+                    GetExecutor(Actual).Push(mRegistry, Value);
+                }
+            }
+            else
+            {
+                Starved = true;
             }
         }
 
         if (Queued)
         {
             GetExecutor(Actual).Signal();
+        }
+        else
+        {
+            if (Starved)
+            {
+                Work();
+            }
         }
         return Result;
     }
