@@ -43,7 +43,15 @@ namespace Physics
         /// \return `true` if the manifold represents a collision, `false` otherwise.
         ZY_INLINE Bool IsValid() const
         {
-            return !mContacts.IsEmpty() && mPenetration > static_cast<Type>(0);
+            return !mContacts.IsEmpty();
+        }
+
+        /// \brief Checks if the two bodies overlap rather than merely touch.
+        ///
+        /// \return `true` if the contact has depth, `false` otherwise.
+        ZY_INLINE Bool IsPenetrating() const
+        {
+            return mPenetration > static_cast<Type>(0);
         }
 
         /// \brief Sets the collision normal from a 2D vector.
