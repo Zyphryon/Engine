@@ -109,7 +109,15 @@ inline namespace Base
                 const UInt32 Shift = static_cast<UInt32>(14 - Exponent);
                 const UInt32 Whole = Mantissa | 0x00800000u;
 
-                return static_cast<UInt16>(Sign | ((Whole >> Shift) + ((Whole >> (Shift - 1)) & 1u)));
+                UInt32       Kept      = Whole >> Shift;
+                const UInt32 Remainder = Whole & ((1u << Shift) - 1u);
+                const UInt32 Halfway   = 1u << (Shift - 1);
+
+                if (Remainder > Halfway || (Remainder == Halfway && (Kept & 1u)))
+                {
+                    ++Kept;
+                }
+                return static_cast<UInt16>(Sign | Kept);
             }
 
             if (Exponent >= 31)
