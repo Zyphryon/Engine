@@ -214,16 +214,14 @@ inline namespace Base
         template<typename Header, typename Function>
         ZY_INLINE void WriteBlock(AnyRef<Function> Trampoline)
         {
-            // Reserve space for the segment length.
-            const UInt32 Offset = mSize;
+            const UInt Offset = mSize;
             Write<Header>(static_cast<Header>(0));
 
             // Invoke the user-defined function to write the segment data.
             Trampoline(* this);
 
-            // Calculate and backfill the length of the segment.
-            const UInt32 Length = mSize - (Offset + sizeof(Header));
-            Blit(mData + Offset, sizeof(Length), AddressOf(Length));
+            const Header Length = static_cast<Header>(mSize - (Offset + sizeof(Header)));
+            Blit(mData + Offset, sizeof(Header), AddressOf(Length));
         }
 
     private:

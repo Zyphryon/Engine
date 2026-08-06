@@ -49,7 +49,6 @@ INCLUDE(CMake/CMakeRegisterResources.cmake)
 OPTION(ZY_WEB_THREAD    "Core: Uses thread on Emscripten"                             OFF)
 OPTION(ZY_MODE_HEADLESS "Core: Runs without window, input, graphic or audio services" OFF)
 
-SET(ZY_MODE_HEADLESS               ON CACHE BOOL "" FORCE)
 ADD_SUBDIRECTORY(Engine)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -72,7 +71,7 @@ IF    (ZY_GRAPHIC_DRIVER_GLES3 AND NOT ZY_MODE_HEADLESS)
 
 ENDIF ()
 
-IF    (ZY_GRAPHIC_LOADER_STB)
+IF    (ZY_GRAPHIC_LOADER_STB AND NOT ZY_MODE_HEADLESS)
 
     ADD_SUBDIRECTORY(Module/Graphic/Loader/STB)
 
@@ -83,4 +82,3 @@ ENDIF ()
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ADD_SUBDIRECTORY(Pipeline)
-ADD_SUBDIRECTORY(Tutorial)

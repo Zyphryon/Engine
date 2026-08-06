@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Lexical/Text.hpp"
+#include "Zyphryon.Base/Scalar.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -65,7 +66,7 @@ inline namespace Base
         /// \return The number of available bytes.
         ZY_INLINE UInt32 GetAvailable() const
         {
-            return mSize - mOffset;
+            return (mOffset < mSize) ? mSize - mOffset : 0;
         }
 
         /// \brief Gets the current read offset.
@@ -79,23 +80,22 @@ inline namespace Base
         /// \brief Advances the read offset by the specified length.
         ///
         /// \param Length The number of bytes to skip.
-        ZY_INLINE void Skip(UInt32 Length)
+        ZY_INLINE void Skip(UInt Length)
         {
-            ZY_ASSERT(mOffset + Length <= mSize, "Attempted to access beyond available data");
-
-            mOffset += Length;
+            mOffset += static_cast<UInt32>(Min(Length, static_cast<UInt>(GetAvailable())));
         }
 
         /// \brief Creates a new reader representing a sub‑range of the current buffer.
         ///
         /// \param Length The length of the sub‑range in bytes.
         /// \return A reader positioned at the start of the sub‑range.
-        ZY_INLINE Reader Split(UInt32 Length)
+        ZY_INLINE Reader Split(UInt Length)
         {
             const UInt32 Offset = mOffset;
+            const UInt32 Actual = static_cast<UInt32>(Min(Length, static_cast<UInt>(GetAvailable())));
 
-            Skip(Length);
-            return Reader(mData + Offset, Length);
+            Skip(Actual);
+            return Reader(mData + Offset, Actual);
         }
 
         /// \brief Reads a value of the specified type without advancing the offset.
@@ -103,9 +103,9 @@ inline namespace Base
         /// \param Size The number of bytes to read.
         /// \return The value read, or a default‑constructed instance if out of bounds.
         template<typename Type>
-        ZY_INLINE Type Peek(UInt32 Size = sizeof(Type))
+        ZY_INLINE Type Peek(UInt Size = sizeof(Type))
         {
-            if (mOffset + Size > mSize)
+            if (Size > GetAvailable())
             {
                 return Type { };
             }
@@ -129,10 +129,11 @@ inline namespace Base
         /// \param Size The number of bytes to read.
         /// \return The value read, or a default‑constructed instance if out of bounds.
         template<typename Type>
-        ZY_INLINE Type Read(UInt32 Size = sizeof(Type))
+        ZY_INLINE Type Read(UInt Size = sizeof(Type))
         {
             const Type Result = Peek<Type>(Size);
-            mOffset += Size;
+
+            Skip(Size);
             return Result;
         }
 
@@ -171,23 +172,30 @@ inline namespace Base
 
         /// \brief Reads a UTF‑8 text string prefixed with its length.
         ///
-        /// \return A Text object containing the read string.
+        /// \note The result views the reader's buffer, so it lasts only as long as that buffer does.
+        ///
+        /// \return The string read, or an empty one when the buffer does not hold it whole.
         ZY_INLINE Text ReadText()
         {
-            const UInt32         Size = ReadUInt<UInt32>();
-            const ConstPtr<Char> Data = Read<ConstPtr<Char>>(Size * sizeof(Char));
-            return Text(Data, Size);
+            const UInt           Size = static_cast<UInt>(ReadUInt<UInt32>()) * sizeof(Char);
+            const ConstPtr<Char> Data = Read<ConstPtr<Char>>(Size);
+
+            return Data ? Text(Data, Size / sizeof(Char)) : Text();
         }
 
-        /// \brief Reads a sequence of bytes into the provided buffer.
+        /// \brief Reads a contiguous block of elements prefixed with its count.
         ///
-        /// \return A Span representing the read bytes, or an empty span if out of bounds.
+        /// \note The result views the reader's buffer, so it lasts only as long as that buffer does.
+        ///
+        /// \return The elements read, or an empty span when the buffer does not hold them whole.
         template<typename Header, typename Type>
         ZY_INLINE ConstSpan<Type> ReadBlock()
         {
-            const Header         Size = Read<Header>();
-            const ConstPtr<Type> Data = Read<ConstPtr<Type>>(Size * sizeof(Type));
-            return ConstSpan(Data, Size);
+            const Header         Count = Read<Header>();
+            const UInt           Size  = static_cast<UInt>(Count) * sizeof(Type);
+            const ConstPtr<Type> Data  = Read<ConstPtr<Type>>(Size);
+
+            return Data ? ConstSpan(Data, static_cast<UInt>(Count)) : ConstSpan<Type>();
         }
 
     private:
