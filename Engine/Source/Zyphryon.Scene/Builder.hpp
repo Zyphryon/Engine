@@ -18,20 +18,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::DSL
+namespace Scene::DSL::_
 {
-    /// \brief Resolves a query term to its underlying component type.
+    /// \brief Represents a relationship between two types, matched as a single query term.
     ///
-    /// \tparam Term The query term to resolve.
-    template<class Term>
-    using Component = StripRef<Term>;
-
-    /// \brief Represents a pair relationship between two types.
-    ///
-    /// Used to express relationships such as (Parent, Child) or (Tag, Component) in ECS queries.
-    ///
-    /// \tparam T0 The first type of the pair.
-    /// \tparam T1 The second type of the pair.
+    /// \tparam T0 The first type of the pair, used as the relationship.
+    /// \tparam T1 The second type of the pair, used as the target and as the data the term carries.
     template<typename T0, typename T1>
     struct Pair
     {
@@ -39,296 +31,705 @@ namespace Scene::DSL
         using Second = T1;
     };
 
-    /// \brief Encapsulates a query term requiring the presence of one or more components.
-    template<typename Term>
-    struct With
+    /// \brief Concept that is satisfied when \p Type describes a relationship pair.
+    template<typename Type>
+    concept IsPair = requires { typename Type::First; typename Type::Second; };
+
+    /// \brief Specifies how a term rewrites the mutability of the type it was declared with.
+    enum class Mutability : UInt8
     {
-        template<typename Constructor>
-        ZY_INLINE static constexpr decltype(auto) ApplyRuntime(Ref<Constructor> Builder, flecs::entity Entity)
+        Immutable, ///< Force read-only access regardless of how the type was spelled.
+        Mutable,   ///< Force read-write access regardless of how the type was spelled.
+        Declared,  ///< Keep the mutability the type was spelled with.
+    };
+
+    /// \brief Represents a list of types.
+    template<typename... Types>
+    struct TypeList
+    {
+        template<typename... Others>
+        constexpr auto operator+(TypeList<Others...>) const
         {
-            return Builder.with(Entity);
+            return TypeList<Types..., Others...>{ };
         }
+    };
+
+    /// \brief Splits a declared term into the shape its spelling implies.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    template<typename Declared>
+    struct Decompose
+    {
+        using Reduced   = StripPtr<StripRef<Declared>>;
+        using Component = StripAll<Reduced>;
+
+        /// True when the term was spelled as a pointer, which matches optionally.
+        static constexpr Bool Optional  = IsPointer<StripRef<Declared>>;
+
+        /// True when the term cannot be written through.
+        static constexpr Bool Immutable = IsImmutable<Reduced>;
+
+        /// True when the term was spelled as a mutable reference or pointer.
+        static constexpr Bool Writable  = !Immutable && !IsAnyOf<Declared, Component>;
+    };
+
+    /// \brief Resolves the storage a term maps to and adds it to a builder.
+    ///
+    /// \tparam Component The component the term was declared with.
+    template<typename Component>
+    struct Resolve
+    {
+        using Type = Component;
 
         template<typename Constructor>
-        ZY_INLINE static constexpr decltype(auto) Apply(Ref<Constructor> Builder)
+        ZY_INLINE static void Match(Ref<Constructor> Builder)
         {
-            if constexpr (IsPointer<Term>)
-            {
-                using Unwrapped = StripPtr<Component<Term>>;
+            Builder.template with<Component>();
+        }
+    };
 
-                if constexpr (requires { typename Unwrapped::First; typename Unwrapped::Second; })
-                {
-                    return Builder.template with<typename Unwrapped::First, typename Unwrapped::Second>().optional();
-                }
-                else
-                {
-                    return Builder.template with<Unwrapped>().optional();
-                }
+    /// \brief Resolves a pair term to its target, which is the half that carries the data.
+    template<IsPair Component>
+    struct Resolve<Component>
+    {
+        using Type = typename Component::Second;
+
+        template<typename Constructor>
+        ZY_INLINE static void Match(Ref<Constructor> Builder)
+        {
+            Builder.template with<typename Component::First, typename Component::Second>();
+        }
+    };
+
+    /// \brief Rewrites a declared term so that it carries the requested mutability.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    /// \tparam Access   The mutability the enclosing term imposes.
+    template<typename Declared, Mutability Access>
+    struct Qualify
+    {
+        using Shape = Decompose<Declared>;
+        using Value = Select<Access == Mutability::Declared,
+                             StripPtr<StripRef<Declared>>,
+                             Select<Access == Mutability::Immutable,
+                                    const typename Shape::Component,
+                                    typename Shape::Component>>;
+        using Type  = Select<Shape::Optional, Pointer<Value>, Value>;
+    };
+
+    /// \brief Describes the value a term hands to the iteration callback.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    template<typename Declared>
+    struct Field
+    {
+        using Shape     = Decompose<Declared>;
+        using Value     = typename Resolve<typename Shape::Component>::Type;
+        using Qualified = Select<Shape::Immutable, const Value, Value>;
+        using Type      = Select<Shape::Optional, Pointer<Qualified>, Qualified>;
+
+        /// True when the term has storage to hand to the callback, which tags do not.
+        static constexpr Bool Carries = !IsEmpty<StripAll<Value>>;
+    };
+
+    /// \brief Adds an accessed term, in the pass whose field ordering it belongs to.
+    ///
+    /// \note Tags carry no storage, so they are emitted in the filter pass to keep field indices packed.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    /// \tparam Access   The read/write mode the term declares.
+    /// \tparam Data     `true` while emitting terms that feed the callback, `false` otherwise.
+    /// \param  Builder  The builder to add the term to.
+    template<typename Declared, flecs::inout_kind_t Access, Bool Data, typename Constructor>
+    ZY_INLINE void EmitAccess(Ref<Constructor> Builder)
+    {
+        if constexpr (Field<Declared>::Carries == Data)
+        {
+            Resolve<typename Decompose<Declared>::Component>::Match(Builder);
+
+            Builder.inout(Field<Declared>::Carries ? Access : flecs::InOutNone);
+
+            if constexpr (Decompose<Declared>::Optional)
+            {
+                Builder.optional();
+            }
+        }
+    }
+
+    /// \brief Adds a term that constrains matching without feeding the callback.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    /// \tparam Operator The operator applied to the term.
+    /// \param  Builder  The builder to add the term to.
+    template<typename Declared, flecs::oper_kind_t Operator, typename Constructor>
+    ZY_INLINE void EmitFilter(Ref<Constructor> Builder)
+    {
+        Resolve<typename Decompose<Declared>::Component>::Match(Builder);
+
+        Builder.inout(flecs::InOutNone).oper(Operator);
+    }
+
+    /// \brief Adds a chain of alternatives, which flecs collapses onto a single shared field.
+    ///
+    /// \tparam Declared The alternatives as they were spelled by the caller.
+    /// \param  Builder  The builder to add the terms to.
+    template<typename... Declared, typename Constructor>
+    ZY_INLINE void EmitAlternatives(Ref<Constructor> Builder)
+    {
+        UInt Remaining = sizeof...(Declared);
+
+        ((Resolve<typename Decompose<Declared>::Component>::Match(Builder),
+          Builder.inout(flecs::InOutNone).oper(--Remaining ? flecs::Or : flecs::And)), ...);
+    }
+
+    /// \brief Adds a term that declares an access the callback performs outside the query.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    /// \tparam Access   The read/write mode declared for the scheduler.
+    /// \param  Builder  The builder to add the term to.
+    template<typename Declared, flecs::inout_kind_t Access, typename Constructor>
+    ZY_INLINE void EmitStage(Ref<Constructor> Builder)
+    {
+        Resolve<typename Decompose<Declared>::Component>::Match(Builder);
+
+        Builder.inout_stage(Access);
+    }
+
+    /// \brief Adds a term sourced from an ancestor rather than the matched entity.
+    ///
+    /// \tparam Declared The term as it was spelled by the caller.
+    /// \tparam Data     `true` while emitting terms that feed the callback, `false` otherwise.
+    /// \tparam Descend  `true` to traverse breadth-first, `false` to substitute the nearest ancestor.
+    /// \param  Builder  The builder to add the term to.
+    template<typename Declared, Bool Data, Bool Descend, typename Constructor>
+    ZY_INLINE void EmitTraversal(Ref<Constructor> Builder)
+    {
+        if constexpr (Field<Declared>::Carries == Data)
+        {
+            Resolve<typename Decompose<Declared>::Component>::Match(Builder);
+
+            if constexpr (Descend)
+            {
+                Builder.cascade();
             }
             else
             {
-                if constexpr (requires { typename Term::First; typename Term::Second; })
-                {
-                    return Builder.template with<typename Term::First, typename Term::Second>();
-                }
-                else
-                {
-                    return Builder.template with<Term>();
-                }
+                Builder.up();
+            }
+
+            if constexpr (Field<Declared>::Carries)
+            {
+                Builder.inout(Decompose<Declared>::Immutable ? flecs::In : flecs::InOut);
+            }
+            else
+            {
+                Builder.inout(flecs::InOutNone);
+            }
+
+            if constexpr (Decompose<Declared>::Optional)
+            {
+                Builder.optional();
             }
         }
-    };
+    }
 
-
-    /// \brief Marks one or more components as input dependencies for a query.
-    template<typename... Types>
-    struct Opt
+    /// \brief Collects the callback values contributed by a set of declared terms.
+    ///
+    /// \tparam Access   The mutability the enclosing term imposes.
+    /// \tparam Declared The terms as they were spelled by the caller.
+    template<Mutability Access, typename... Declared>
+    struct Collect
     {
-        Entity Expression;
+        template<typename Type>
+        using Entry = Select<Field<typename Qualify<Type, Access>::Type>::Carries,
+                             TypeList<typename Field<typename Qualify<Type, Access>::Type>::Type>,
+                             TypeList<>>;
 
-        ZY_INLINE constexpr explicit Opt(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
-        {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).optional();
-            return Builder;
-        }
-
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
-        {
-            return Builder;
-        }
+        using Type = decltype((TypeList<> { } + ... + Entry<Declared> { }));
     };
+}
 
-    /// \brief Marks one or more components as input dependencies for a query.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [   CODE   ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+namespace Scene::DSL
+{
+    /// \brief Represents terms matched with read-only access and handed to the callback.
+    ///
+    /// \note A type spelled as a pointer matches optionally; a tag contributes nothing to the callback.
+    ///
+    /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
     struct In
     {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename _::Collect<_::Mutability::Immutable, Types...>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
         Entity Expression;
 
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
         ZY_INLINE constexpr explicit In(Entity Expression)
             : Expression { Expression }
         {
         }
 
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle());
-            return Builder;
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Immutable>::Type, flecs::In, Data>(Builder), ...);
         }
 
         template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
         {
-            (With<Types>::Apply(Builder), ...);
-            return Builder;
+            Builder.with(Expression.GetHandle()).inout(flecs::In);
         }
     };
 
-    /// \brief Marks a cascading input dependency for a query.
-    template<typename Type>
-    struct Cascade
+    /// \brief Represents terms matched with read-write access and handed to the callback.
+    ///
+    /// \note A type spelled as a pointer matches optionally; a tag contributes nothing to the callback.
+    ///
+    /// \tparam Types The components, pairs or tags to match.
+    template<typename... Types>
+    struct InOut
     {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename _::Collect<_::Mutability::Mutable, Types...>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
         Entity Expression;
 
-        ZY_INLINE constexpr explicit Cascade(Entity Expression)
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit InOut(Entity Expression)
             : Expression { Expression }
         {
         }
 
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).cascade();
-            return Builder;
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, flecs::InOut, Data>(Builder), ...);
         }
 
         template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
         {
-            With<Type>::Apply(Builder).cascade();
-            return Builder;
+            Builder.with(Expression.GetHandle()).inout(flecs::InOut);
         }
     };
 
-    /// \brief Marks an upward traversal dependency for a query.
-    template<typename Type>
-    struct Up
-    {
-        Entity Expression;
-
-        ZY_INLINE constexpr explicit Up(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
-        {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).up();
-            return Builder;
-        }
-
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
-        {
-            With<Type>::Apply(Builder).up();
-            return Builder;
-        }
-    };
-
-    /// \brief Marks one or more components as outputs of a query.
+    /// \brief Represents terms matched with write-only access and handed to the callback.
+    ///
+    /// \note The scheduler treats these terms as written but never read, which removes a sync dependency.
+    ///
+    /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
     struct Out
     {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename _::Collect<_::Mutability::Mutable, Types...>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
         Entity Expression;
 
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
         ZY_INLINE constexpr explicit Out(Entity Expression)
             : Expression { Expression }
         {
         }
 
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).inout(flecs::Out);
-            return Builder;
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, flecs::Out, Data>(Builder), ...);
         }
 
         template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
         {
-            (With<Types>::Apply(Builder).inout_stage(flecs::Out), ...);
-            return Builder;
+            Builder.with(Expression.GetHandle()).inout(flecs::Out);
         }
     };
 
-    /// \brief Excludes one or more components from a query.
+    /// \brief Represents terms an entity must carry, without handing them to the callback.
+    ///
+    /// \tparam Types The components, pairs or tags to match.
+    template<typename... Types>
+    struct With
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit With(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (_::EmitFilter<Types, flecs::And>(Builder), ...);
+            }
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone);
+        }
+    };
+
+    /// \brief Represents terms an entity may carry, without handing them to the callback.
+    ///
+    /// \note Use `In<Ptr<Type>>` instead when the optional value has to reach the callback.
+    ///
+    /// \tparam Types The components, pairs or tags to match optionally.
+    template<typename... Types>
+    struct Opt
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Opt(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (_::EmitFilter<Types, flecs::Optional>(Builder), ...);
+            }
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).optional();
+        }
+    };
+
+    /// \brief Represents terms an entity must not carry.
+    ///
+    /// \tparam Types The components, pairs or tags to exclude.
     template<typename... Types>
     struct Not
     {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity excluded when the term is supplied at runtime instead of at compile time.
         Entity Expression;
 
+        /// \brief Constructs a runtime term excluding an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term excludes.
         ZY_INLINE constexpr explicit Not(Entity Expression)
             : Expression { Expression }
         {
         }
 
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-            With<Entity>::ApplyRuntime(Builder, Expression.GetHandle()).oper(flecs::Not);
-            return Builder;
+            if constexpr (!Data)
+            {
+                (_::EmitFilter<Types, flecs::Not>(Builder), ...);
+            }
         }
 
         template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
         {
-            (With<Types>::Apply(Builder).oper(flecs::Not), ...);
-            return Builder;
+            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).oper(flecs::Not);
         }
     };
 
-    /// \brief Orders query results based on a comparison function.
+    /// \brief Represents a term satisfied when an entity carries any one of several types.
+    ///
+    /// \note The alternatives share a single field, so the term hands nothing to the callback.
+    ///
+    /// \tparam Types The alternatives to match, of which at least two are required.
+    template<typename... Types>
+    struct Or
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity matched by the first alternative when the term is supplied at runtime.
+        Entity Left;
+
+        /// The entity matched by the second alternative when the term is supplied at runtime.
+        Entity Right;
+
+        /// \brief Constructs a runtime term matching either of two entities resolved during execution.
+        ///
+        /// \param Left  The entity matched by the first alternative.
+        /// \param Right The entity matched by the second alternative.
+        ZY_INLINE constexpr Or(Entity Left, Entity Right)
+            : Left  { Left },
+              Right { Right }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            static_assert(sizeof...(Types) > 1, "Or requires at least two alternatives");
+
+            if constexpr (!Data)
+            {
+                _::EmitAlternatives<Types...>(Builder);
+            }
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Left.GetHandle()).inout(flecs::InOutNone).oper(flecs::Or);
+            Builder.with(Right.GetHandle()).inout(flecs::InOutNone);
+        }
+    };
+
+    /// \brief Represents a term sourced from the nearest ancestor that carries it.
+    ///
+    /// \tparam Type The component, pair or tag to match on an ancestor.
+    template<typename Type>
+    struct Up
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename _::Collect<_::Mutability::Declared, Type>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Up(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            _::EmitTraversal<Type, Data, false>(Builder);
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).up();
+        }
+    };
+
+    /// \brief Represents a term sourced from an ancestor, ordering results breadth-first.
+    ///
+    /// \tparam Type The component, pair or tag to match on an ancestor.
+    template<typename Type>
+    struct Cascade
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename _::Collect<_::Mutability::Declared, Type>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Cascade(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            _::EmitTraversal<Type, Data, true>(Builder);
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).cascade();
+        }
+    };
+
+    /// \brief Represents components the callback read outside the query, for sync placement only.
+    ///
+    /// \note These terms match nothing and hand nothing to the callback; declare them when using `Entity::Get`.
+    ///
+    /// \tparam Types The components, pairs or tags read outside the query.
+    template<typename... Types>
+    struct Read
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity declared when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime declaration for an entity resolved during execution.
+        ///
+        /// \param Expression The entity the callback read.
+        ZY_INLINE constexpr explicit Read(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (_::EmitStage<Types, flecs::In>(Builder), ...);
+            }
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout_stage(flecs::In);
+        }
+    };
+
+    /// \brief Represents components the callback writes outside the query, for sync placement only.
+    ///
+    /// \note These terms match nothing and hand nothing to the callback; declare them when using `Entity::Set`.
+    ///
+    /// \tparam Types The components, pairs or tags written outside the query.
+    template<typename... Types>
+    struct Write
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        /// The entity declared when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime declaration for an entity resolved during execution.
+        ///
+        /// \param Expression The entity the callback writes.
+        ZY_INLINE constexpr explicit Write(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (_::EmitStage<Types, flecs::Out>(Builder), ...);
+            }
+        }
+
+        template<typename Constructor>
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        {
+            Builder.with(Expression.GetHandle()).inout_stage(flecs::Out);
+        }
+    };
+
+    /// \brief Represents an ordering applied to the results of a query.
+    ///
+    /// \tparam Type       The component the results are sorted by.
+    /// \tparam Comparison The comparison used to order two values of \p Type.
     template<typename Type, auto Comparison>
     struct OrderBy
     {
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
-        {
-            return Builder; // no-op at runtime
-        }
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
 
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-            return Builder.template order_by<Type>(Comparison);
+            if constexpr (!Data)
+            {
+                Builder.template order_by<Type>(Comparison);
+            }
         }
     };
 
-    /// \brief Defines a time interval for query execution.
-    template<auto Time>
+    /// \brief Represents the minimum time that must elapse between two runs of a system.
+    ///
+    /// \tparam Seconds The interval in seconds.
+    template<auto Seconds>
     struct Interval
     {
-        Timer Entity;
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
 
-        ZY_INLINE constexpr explicit Interval(Timer Entity)
-            : Entity { Entity }
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
         {
-        }
-
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
-        {
-            return Builder.tick_source(Entity.GetHandle()).rate(Time);
-        }
-
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
-        {
-            return Builder.interval(Time);
+            if constexpr (!Data)
+            {
+                Builder.interval(Seconds);
+            }
         }
     };
 
-    /// \brief Combines two query terms with a logical OR operation.
-    template<typename First, typename Second>
-    struct Or
+    /// \brief Represents the number of ticks that must elapse between two runs of a system.
+    ///
+    /// \tparam Ticks The number of ticks to skip between runs.
+    template<auto Ticks>
+    struct Rate
     {
-        Entity Left;
-        Entity Right;
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
 
-        ZY_INLINE constexpr explicit Or(Entity Left, Entity Right)
-            : Left  { Left },
-              Right { Right }
+        /// The timer counted when the term is supplied at runtime instead of at compile time.
+        Timer Source;
+
+        /// \brief Constructs a runtime term counting the ticks of an explicit timer.
+        ///
+        /// \param Source The timer whose ticks are counted.
+        ZY_INLINE constexpr explicit Rate(Timer Source)
+            : Source { Source }
         {
+        }
+
+        template<Bool Data, typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                Builder.rate(Ticks);
+            }
         }
 
         template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
+        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
         {
-            With<Entity>::ApplyRuntime(With<Entity>::ApplyRuntime(Builder, Left.GetHandle()).or_(), Right.GetHandle());
-            return Builder;
-        }
-
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
-        {
-            With<Second>::Apply(With<First>::Apply(Builder).or_());
-            return Builder;
-        }
-    };
-
-    /// \brief Combines two query terms with a logical AND operation.
-    template<typename First, typename Second>
-    struct And
-    {
-        Entity Left;
-        Entity Right;
-
-        ZY_INLINE constexpr explicit And(Entity Left, Entity Right)
-            : Left  { Left },
-              Right { Right }
-        {
-        }
-
-        template<typename Constructor>
-        ZY_INLINE decltype(auto) ApplyRuntime(Ref<Constructor> Builder)
-        {
-            With<Entity>::ApplyRuntime(With<Entity>::ApplyRuntime(Builder, Left.GetHandle()).and_(), Right.GetHandle());
-            return Builder;
-        }
-
-        template<typename Constructor>
-        ZY_INLINE static constexpr auto Apply(Ref<Constructor> Builder)
-        {
-            With<Second>::Apply(With<First>::Apply(Builder).and_());
-            return Builder;
+            Builder.rate(Source.GetHandle(), Ticks);
         }
     };
 }
@@ -339,138 +740,133 @@ namespace Scene::DSL
 
 namespace Scene::DSL::_
 {
-    /// \brief Represents a list of types.
-    template<typename... Types>
-    struct TypeList
-    {
-        template<typename... Others>
-        constexpr auto operator+(TypeList<Others...>) const
-        {
-            return TypeList<Types..., Others...>{};
-        }
-    };
-
-    /// \brief Maps a DSL term to its resolved component type.
-    template<typename Term, typename = void>
-    struct MapTypeFromTerm
-    {
-        using Type = Component<Term>;
-    };
-
-    /// \brief Maps a pair term to the component type of its second element.
-    template<typename Term>
-    struct MapTypeFromTerm<Term, Void<typename Term::Second>>
-    {
-        using Type = Component<Select<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>;
-    };
-
-    /// \brief Maps a pair term to the component type of its second element.
-    template<typename Term>
-    struct MapTypeFromTerm<Ptr<Term>, Void<typename Term::Second>>
-    {
-        using Type = Pointer<Component<Select<IsImmutable<Term>, const typename Term::Second, typename Term::Second>>>;
-    };
-
-    /// \brief Convenience alias for the resolved component type of a DSL term.
-    template<typename Term>
-    using MapType = typename MapTypeFromTerm<Term>::Type;
-
-    /// \brief Extracts component types from a list of DSL terms and removes empty marker types.
+    /// \brief Combines the callback values contributed by every expression of a description.
     ///
-    /// \tparam Terms The list of DSL terms to process.
-    template<typename... Terms>
-    struct ExtractAndFilterTypes
-    {
-        template<typename T>
-        using Keep = Select<IsEmpty<StripAll<T>>, TypeList<>, TypeList<T>>;
-
-        using Type = decltype((TypeList<>{} + ... + Keep<MapType<Terms>>{ }));
-    };
-
-    /// \brief Extracts component types from a DSL expression.
-    ///
-    /// \tparam Expression The query expression to analyze.
-    template<typename Expression>
-    struct ExtractTypesFromExpression;
-
-    /// \brief Extracts component types from an \c With expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<With<Types...>>
-    {
-        using Type = TypeList<>;
-    };
-
-    /// \brief Extracts component types from an \c In expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<In<Types...>>
-    {
-        using Type = typename ExtractAndFilterTypes<Types...>::Type;
-    };
-
-    /// \brief Extracts component types from an \c Cascade expression.
-    template<typename Types>
-    struct ExtractTypesFromExpression<Cascade<Types>>
-    {
-        using Type = typename ExtractAndFilterTypes<Types>::Type;
-    };
-
-    /// \brief Extracts component types from an \c Up expression.
-    template<typename Types>
-    struct ExtractTypesFromExpression<Up<Types>>
-    {
-        using Type = typename ExtractAndFilterTypes<Types>::Type;
-    };
-
-    /// \brief Extracts component types from an \c Out expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<Out<Types...>>
-    {
-        using Type = TypeList<>;
-    };
-
-    /// \brief Extracts component types from an \c Out expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<Not<Types...>>
-    {
-        using Type = TypeList<>;
-    };
-
-    /// \brief Extracts component types from an \c OrderBy expression.
-    template<typename Types, auto Comparison>
-    struct ExtractTypesFromExpression<OrderBy<Types, Comparison>>
-    {
-        using Type = TypeList<>;
-    };
-
-    /// \brief Extracts component types from an \c Interval expression.
-    template<auto Time>
-    struct ExtractTypesFromExpression<Interval<Time>>
-    {
-        using Type = TypeList<>;
-    };
-
-    /// \brief Extracts component types from an \c Or expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<Or<Types...>>
-    {
-        using Type = typename ExtractAndFilterTypes<Types...>::Type;
-    };
-
-    /// \brief Extracts component types from an \c And expression.
-    template<typename... Types>
-    struct ExtractTypesFromExpression<And<Types...>>
-    {
-        using Type = typename ExtractAndFilterTypes<Types...>::Type;
-    };
-
-    /// \brief Combines the extracted component types from multiple DSL expressions into a list.
-    ///
-    /// \tparam Expressions The list of expressions to analyze.
+    /// \tparam Expressions The expressions to analyze.
     template<typename... Expressions>
     struct ExtractTypes
     {
-        using Type = decltype((TypeList<>{} + ... + typename ExtractTypesFromExpression<Expressions>::Type{}));
+        using Type = decltype((TypeList<>{ } + ... + typename Expressions::Fields{ }));
     };
+
+    /// \brief Extracts the parameter list of a callable.
+    ///
+    /// \tparam Callable The callable to analyze.
+    template<typename Callable>
+    struct SignatureOf : SignatureOf<decltype(& StripAll<Callable>::operator())>
+    {
+    };
+
+    /// \brief Extracts the parameter list of a free function.
+    template<typename Return, typename... Arguments>
+    struct SignatureOf<Return (*)(Arguments...)>
+    {
+        using Type = TypeList<Arguments...>;
+    };
+
+    /// \brief Extracts the parameter list of a mutable function object.
+    template<typename Class, typename Return, typename... Arguments>
+    struct SignatureOf<Return (Class::*)(Arguments...)>
+    {
+        using Type = TypeList<Arguments...>;
+    };
+
+    /// \brief Extracts the parameter list of an immutable function object.
+    template<typename Class, typename Return, typename... Arguments>
+    struct SignatureOf<Return (Class::*)(Arguments...) const>
+    {
+        using Type = TypeList<Arguments...>;
+    };
+
+    /// \brief Removes the leading iteration context a callback may accept before its components.
+    ///
+    /// \tparam List The parameter list to trim.
+    template<typename List>
+    struct StripContext
+    {
+        using Type = List;
+    };
+
+    /// \brief Removes a leading entity parameter, or keeps the list when the callback declares none.
+    template<typename First, typename... Rest>
+    struct StripContext<TypeList<First, Rest...>>
+    {
+        using Type = Select<IsAnyOf<StripAll<First>, Entity, flecs::entity>, TypeList<Rest...>, TypeList<First, Rest...>>;
+    };
+
+    /// \brief Removes a leading iterator and row pair.
+    template<typename Row, typename... Rest>
+    struct StripContext<TypeList<Ref<flecs::iter>, Row, Rest...>>
+    {
+        using Type = TypeList<Rest...>;
+    };
+
+    /// \brief Derives query terms from the parameters a callback declares.
+    ///
+    /// \tparam List The trimmed parameter list of the callback.
+    template<typename List>
+    struct Infer;
+
+    /// \brief Derives one term per callback parameter, preserving their order.
+    template<typename... Arguments>
+    struct Infer<TypeList<Arguments...>>
+    {
+        using Fields = TypeList<StripRef<Arguments>...>;
+
+        template<typename Constructor>
+        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        {
+            (Emit<Arguments>(Builder), ...);
+        }
+
+    private:
+
+        template<typename Argument, typename Constructor>
+        ZY_INLINE static void Emit(Ref<Constructor> Builder)
+        {
+            constexpr flecs::inout_kind_t Access = Decompose<Argument>::Writable ? flecs::InOut : flecs::In;
+
+            EmitAccess<Argument, Access, Field<Argument>::Carries>(Builder);
+        }
+    };
+
+    /// \brief Applies every expression of a description to a builder and yields its callback values.
+    ///
+    /// Terms that feed the callback are emitted before every other term, because a callback receives
+    /// fields by position and each term consumes a field index whether or not it carries storage.
+    /// When no expression feeds the callback, the terms are derived from the callback's own parameters.
+    ///
+    /// \tparam Constructor       The builder being described.
+    /// \tparam FEach             The callback the description is built for, or `void` when there is none.
+    /// \tparam CompileExpression The expressions known at compile time.
+    /// \param  Builder           The builder to describe.
+    /// \param  Expressions       The expressions resolved at runtime.
+    /// \return The list of values the callback receives, in field order.
+    template<typename Constructor, typename FEach, typename... CompileExpression, typename... RuntimeExpression>
+    ZY_INLINE auto Build(Ref<Constructor> Builder, AnyRef<RuntimeExpression>... Expressions)
+    {
+        using Declared = typename ExtractTypes<CompileExpression...>::Type;
+
+        if constexpr (!IsVoid<FEach> && IsAnyOf<Declared, TypeList<>>)
+        {
+            using Signature = typename StripContext<typename SignatureOf<StripAll<FEach>>::Type>::Type;
+
+            Infer<Signature>::Apply(Builder);
+
+            (CompileExpression::template Apply<false>(Builder), ...);
+            (Expressions.ApplyRuntime(Builder), ...);
+
+            return typename Infer<Signature>::Fields { };
+        }
+        else
+        {
+            (CompileExpression::template Apply<true>(Builder), ...);
+            (CompileExpression::template Apply<false>(Builder), ...);
+            (Expressions.ApplyRuntime(Builder), ...);
+
+            return Declared { };
+        }
+    }
 
     /// \brief Factory for creating query runner functions based on a list of component types and an iteration function.
     template<typename TypeList, typename FEach>
@@ -514,15 +910,4 @@ namespace Scene::DSL::_
             };
         }
     };
-
-    /// \brief Applies compile-time and runtime DSL expressions to the given builder.
-    ///
-    /// \param Builder     The builder object to apply expressions to.
-    /// \param Expressions The list of runtime expressions to apply.
-    template<typename Type, typename... CompileExpression, typename... RuntimeExpression>
-    void ApplyExpressions(Ref<Type> Builder, AnyRef<RuntimeExpression>... Expressions)
-    {
-        (CompileExpression::Apply(Builder), ...);
-        (Expressions.ApplyRuntime(Builder), ...);
-    }
 }

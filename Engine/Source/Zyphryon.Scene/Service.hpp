@@ -1,4 +1,4 @@
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+﻿// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -166,12 +166,14 @@ namespace Scene
         ZY_INLINE Pipeline CreatePipeline(AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::pipeline_builder<> Builder = mWorld.pipeline().with(flecs::System);
-            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+            DSL::_::Build<decltype(Builder), void, CompileExpression...>(Builder, Runtime...);
 
             return Pipeline(Builder.build());
         }
 
         /// \brief Creates a reactive observer that fires a callback when entities match an event.
+        ///
+        /// \note When no expression carries data, the observed components are derived from \p Each itself.
         ///
         /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
         /// \tparam FEach             The callable type invoked for each matching entity.
@@ -185,12 +187,12 @@ namespace Scene
         ZY_INLINE Entity CreateObserver(Text Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::observer_builder<> Builder = mWorld.observer<>(Name.GetData());
-            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
 
             Builder.event(Event.GetHandle());
 
-            using Types = DSL::_::ExtractTypes<CompileExpression...>::Type;
-            return Entity(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
+            using Runner = DSL::_::RunnerFactory<StripAll<decltype(Signature)>, StripAll<FEach>>;
+            return Entity(Builder.run(Runner::Make(Move(Each))));
         }
 
         /// \brief Creates a cached or uncached query over entities matching the given expressions.
@@ -205,7 +207,7 @@ namespace Scene
         ZY_INLINE Query CreateQuery(Text Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::query_builder<> Builder = mWorld.query_builder<>(Name.GetData());
-            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+            DSL::_::Build<decltype(Builder), void, CompileExpression...>(Builder, Runtime...);
 
             switch (Policy)
             {
@@ -233,6 +235,9 @@ namespace Scene
 
         /// \brief Creates a system that runs a callback each tick for all matching entities.
         ///
+        /// \note When no expression carries data, the matched components are derived from \p Each itself,
+        ///       one term per parameter, with `ConstRef` reading, `Ref` writing and `Ptr` matching optionally.
+        ///
         /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
         /// \tparam RuntimeExpression Zero or more runtime expression types.
         /// \param  Name              The optional display name for the system entity.
@@ -245,7 +250,7 @@ namespace Scene
         ZY_INLINE System CreateSystem(Text Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::system_builder<> Builder = mWorld.system<>(Name.GetData());
-            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
 
             switch (Execution)
             {
@@ -260,11 +265,13 @@ namespace Scene
             }
             Builder.kind(Phase.GetHandle());
 
-            using Types = DSL::_::ExtractTypes<CompileExpression...>::Type;
-            return System(Builder.run(DSL::_::RunnerFactory<Types, FEach>::Make(Move(Each))));
+            using Runner = DSL::_::RunnerFactory<StripAll<decltype(Signature)>, StripAll<FEach>>;
+            return System(Builder.run(Runner::Make(Move(Each))));
         }
 
         /// \brief Creates a system with explicit begin, per-entity, and end lifecycle callbacks.
+        ///
+        /// \note When no expression carries data, the matched components are derived from \p Each itself.
         ///
         /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
         /// \tparam RuntimeExpression Zero or more runtime expression types.
@@ -280,7 +287,7 @@ namespace Scene
         ZY_INLINE System CreateSystemWithLifecycle(Text Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
         {
             flecs::system_builder<> Builder = mWorld.system<>(Str(Name).GetData());
-            DSL::_::ApplyExpressions<decltype(Builder), CompileExpression...>(Builder, Runtime...);
+            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
 
             switch (Execution)
             {
@@ -295,8 +302,8 @@ namespace Scene
             }
             Builder.kind(Phase.GetHandle());
 
-            using Types = DSL::_::ExtractTypes<CompileExpression...>::Type;
-            return System(Builder.run(DSL::_::RunnerFactoryLifecycle<Types, FBegin, FEach, FEnd>::Make(Move(Begin), Move(Each), Move(End))));
+            using Runner = DSL::_::RunnerFactoryLifecycle<StripAll<decltype(Signature)>, StripAll<FBegin>, StripAll<FEach>, StripAll<FEnd>>;
+            return System(Builder.run(Runner::Make(Move(Begin), Move(Each), Move(End))));
         }
 
         /// \brief Iterates over all allocated archetype entities and invokes a callback for each one.

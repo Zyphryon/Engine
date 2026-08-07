@@ -77,11 +77,15 @@ namespace Scene
 
         /// \brief Executes the query, invoking a callback for each matching entity.
         ///
+        /// \note Omitting \p Types derives them from the parameters \p Each declares, in order.
+        ///
         /// \param Each The function or functor to execute for every matching entity.
         template<typename... Types, typename FEach>
         ZY_INLINE void Run(AnyRef<FEach> Each) const
         {
-            using Signature = DSL::_::TypeList<Types...>;
+            using Declared  = DSL::_::TypeList<Types...>;
+            using Inferred  = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
+            using Signature = Select<sizeof...(Types) == 0, Inferred, Declared>;
             using Runner    = DSL::_::RunnerFactory<Signature, StripAll<FEach>>;
 
             mHandle.run(Runner::Make(Move(Each)));
