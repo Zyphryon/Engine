@@ -13,7 +13,7 @@
 #include "FNTLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Loader/TEXLoader.hpp"
-#include "Zyphryon.Render/Resource/Font.hpp"
+#include "Zyphryon.Render/2D/Font.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

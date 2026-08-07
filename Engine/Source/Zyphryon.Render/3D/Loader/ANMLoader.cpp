@@ -12,7 +12,7 @@
 
 #include "ANMLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Render/Resource/Animation.hpp"
+#include "Zyphryon.Render/3D/Animation.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

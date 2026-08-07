@@ -11,10 +11,10 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
-#include "Loader/MDLLoader.hpp"
-#include "Loader/FNTLoader.hpp"
-#include "Loader/SKLLoader.hpp"
-#include "Loader/ANMLoader.hpp"
+#include "3D/Loader/MDLLoader.hpp"
+#include "2D/Loader/FNTLoader.hpp"
+#include "3D/Loader/SKLLoader.hpp"
+#include "3D/Loader/ANMLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

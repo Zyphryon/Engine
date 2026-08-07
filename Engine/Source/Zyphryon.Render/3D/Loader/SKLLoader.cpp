@@ -12,7 +12,7 @@
 
 #include "SKLLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Render/Resource/Skeleton.hpp"
+#include "Zyphryon.Render/3D/Skeleton.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
