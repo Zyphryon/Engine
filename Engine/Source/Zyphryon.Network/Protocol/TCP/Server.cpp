@@ -22,7 +22,8 @@ namespace Network::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Server::Server(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener)
-        : Channel { Link, Address, Listener }
+        : Channel  { Link, Address, Listener },
+          mInvited { 0 }
     {
     }
 
@@ -41,7 +42,7 @@ namespace Network::TCP
 
     Bool Server::IsQuiet() const
     {
-        Bool Quiet = Channel::IsQuiet();
+        Bool Quiet = Channel::IsQuiet() && mInvited == 0;
 
         mPeers.ForEach([&](ConstRetainer<Stream> Peer)
         {
@@ -78,7 +79,7 @@ namespace Network::TCP
         mLocal = Address;
 
         Invite(Watcher);
-        return IsAwaiting(Operation::Accept);
+        return mInvited > 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -92,7 +93,10 @@ namespace Network::TCP
         }
         else
         {
-            Settle(Operation::Accept);
+            if (mInvited > 0)
+            {
+                --mInvited;
+            }
 
             if (Event.Cause == Reason::None)
             {
@@ -217,9 +221,19 @@ namespace Network::TCP
 
     void Server::Invite(Ref<Proactor> Watcher)
     {
-        if (mState == State::Live && !IsAwaiting(Operation::Accept))
+        if (mState != State::Live)
         {
-            Await(Operation::Accept, Watcher.Accept(mSocket, mLink, mLocal));
+            return;
+        }
+
+        while (mInvited < kMaxInvites && !mPeers.IsFull())
+        {
+            if (!Watcher.Accept(mSocket, mLink, mLocal))
+            {
+                break;
+            }
+
+            ++mInvited;
         }
     }
 

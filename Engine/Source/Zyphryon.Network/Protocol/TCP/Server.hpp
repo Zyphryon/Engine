@@ -67,15 +67,18 @@ namespace Network::TCP
 
     private:
 
+        /// \brief Number of accepts kept out with the platform at once, so peers arrive in batches.
+        static constexpr UInt32 kMaxInvites = 32;
+
         /// \brief Gets the peer a connection names.
         ///
         /// \param Link The connection naming the peer to find, or this endpoint.
         /// \return A pointer to the peer, or `nullptr` when the connection names none of them.
         Ptr<Stream> Locate(Connection Link) const;
 
-        /// \brief Posts the accept that invites the next peer in, if one is not out already.
+        /// \brief Posts accepts until as many are out as this endpoint keeps, or the platform will take no more.
         ///
-        /// \param Watcher The proactor the accept is posted to.
+        /// \param Watcher The proactor the accepts are posted to.
         void Invite(Ref<Proactor> Watcher);
 
         /// \brief Takes on the peer an accept produced, giving it a slot and a connection of its own.
@@ -100,6 +103,7 @@ namespace Network::TCP
 
         Socket                            mSocket;
         Endpoint                          mLocal;
+        UInt32                            mInvited;
         Pool<Retainer<Stream>, kMaxPeers> mPeers;
     };
 }

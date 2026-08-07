@@ -474,7 +474,7 @@ namespace Network
     {
         const Ptr<io_uring_sqe> Slot = mBackend->Reserve();
 
-        if (Slot != nullptr)
+        if (Slot == nullptr)
         {
             return false;
         }
