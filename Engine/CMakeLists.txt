@@ -100,6 +100,8 @@ IF    (NOT ZY_MODE_HEADLESS)
             GIT_TAG        v1.5.2)
     FetchContent_MakeAvailable(External_Opus)
 
+    ZyApplyOptions("opus")
+
     LIST(APPEND PROJECT_DEPENDENCIES "opus")
 
 ENDIF ()

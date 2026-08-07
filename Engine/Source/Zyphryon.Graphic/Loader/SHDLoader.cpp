@@ -12,7 +12,7 @@
 
 #include "SHDLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Graphic/Resource/Shader.hpp"
+#include "Zyphryon.Graphic/Shader.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

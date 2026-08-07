@@ -11,9 +11,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "SNDLoader.hpp"
-#include "Zyphryon.Audio/Decoder/AdaptiveDecoder.hpp"
-#include "Zyphryon.Audio/Decoder/OpusDecoder.hpp"
-#include "Zyphryon.Audio/Decoder/LinearDecoder.hpp"
+#include "Zyphryon.Audio/Decoder/Adaptive.hpp"
+#include "Zyphryon.Audio/Decoder/Opus.hpp"
+#include "Zyphryon.Audio/Decoder/Linear.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,7 +27,7 @@ namespace Audio
     static Unique<Decoder> DecodeLinear(ConstRef<Blob> Data, ConstRef<Sound> Asset)
     {
         const ConstSpan Samples(Data.GetData<SInt16>(), Data.GetSize() / sizeof(SInt16));
-        return Unique<LinearDecoder>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
+        return Unique<Codec::Linear>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -36,7 +36,7 @@ namespace Audio
     static Unique<Decoder> DecodeAdaptive(ConstRef<Blob> Data, ConstRef<Sound> Asset)
     {
         const ConstSpan Samples(Data.GetData<Byte>(), Data.GetSize());
-        return Unique<AdaptiveDecoder>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
+        return Unique<Codec::Adaptive>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,7 +45,7 @@ namespace Audio
     static Unique<Decoder> DecodeOpus(ConstRef<Blob> Data, ConstRef<Sound> Asset)
     {
         const ConstSpan Samples(Data.GetData<Byte>(), Data.GetSize());
-        return Unique<OpusDecoder>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
+        return Unique<Codec::Opus>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

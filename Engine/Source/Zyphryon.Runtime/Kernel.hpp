@@ -12,18 +12,18 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Config.hpp"
-#include "Module.hpp"
+#include "Startup.hpp"
+#include "Zyphryon.Engine/Module.hpp"
 #include "Zyphryon.Platform/Timer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Engine
+namespace Runtime
 {
     /// \brief Entry point and main coordinator of the application runtime.
-    class Kernel : public Subsystem::Host
+    class Kernel : public Engine::Subsystem::Host
     {
     public:
 
@@ -33,16 +33,35 @@ namespace Engine
         /// \brief Destructs the kernel and releases all associated resources.
         virtual ~Kernel() = default;
 
-        /// \brief Starts the application main loop with the given configuration and modules.
+        /// \brief Parses the command line, configures the application, and runs it to completion.
         ///
-        /// \param Config  The application configuration.
-        /// \param Modules The modules to attach and run.
-        void Run(AnyRef<Config> Config, AnyRef<Modules> Modules);
+        /// \note Invoked by \ref ZY_APPLICATION, so an application never calls this itself.
+        ///
+        /// \param Count     The number of entries in \p Arguments.
+        /// \param Arguments The argument vector, as handed to the platform entry point.
+        /// \param Modules   The modules to attach and run.
+        void Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<Engine::Modules> Modules);
 
         /// \brief Signals the application to exit gracefully.
         void Quit();
 
+        /// \brief Gets the switches the application was launched with.
+        ///
+        /// \return The parsed command line.
+        ZY_INLINE ConstRef<Environment> GetEnvironment() const
+        {
+            return mEnvironment;
+        }
+
     protected:
+
+        /// \brief Called before any service exists, to let applications set their startup parameters.
+        ///
+        /// \param Startup Receives the parameters the engine starts with, pre-filled with defaults.
+        virtual void OnConfigure(Ref<Startup> Startup)
+        {
+
+        }
 
         /// \brief Called during initialization to allow applications to perform custom setup.
         ///
@@ -110,7 +129,8 @@ namespace Engine
 
         Bool            mAlive;
         Platform::Timer mTimer;
-        Config          mConfig;
-        Modules         mModules;
+        Environment     mEnvironment;
+        Startup         mStartup;
+        Engine::Modules mModules;
     };
 }

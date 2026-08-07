@@ -13,9 +13,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Graphic/Service.hpp"
-#include "Zyphryon.Graphic/Resource/Material.hpp"
-#include "Zyphryon.Graphic/Resource/Mesh.hpp"
-#include "Zyphryon.Graphic/Resource/Technique.hpp"
+#include "Zyphryon.Graphic/Material.hpp"
+#include "Zyphryon.Graphic/Mesh.hpp"
+#include "Zyphryon.Graphic/Technique.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

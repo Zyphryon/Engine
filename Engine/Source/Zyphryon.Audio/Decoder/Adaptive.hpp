@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace Audio::Codec
 {
     /// \brief Expands the IMA ADPCM blocks of a baked sound into the mixer's floating-point frames.
-    class AdaptiveDecoder final : public Decoder
+    class Adaptive final : public Decoder
     {
     public:
 
@@ -63,7 +63,7 @@ namespace Audio
         /// \param Frequency The rate the blocks were baked at, in hertz.
         /// \param Stride    The number of channels per frame.
         /// \param Frames    The number of frames the blocks hold.
-        AdaptiveDecoder(ConstSpan<Byte> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames);
+        Adaptive(ConstSpan<Byte> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames);
 
         /// \see Decoder::Probe(Ptr<UInt32>, Ptr<UInt32>, Ptr<UInt64>) const
         void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const override;

@@ -11,7 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Exporter.hpp"
-#include <Zyphryon.Audio/Decoder/AdaptiveDecoder.hpp>
+#include <Zyphryon.Audio/Decoder/Adaptive.hpp>
 #include <opus.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -42,7 +42,7 @@ namespace Pipeline::Baker::Sound
             Delta  = -Delta;
         }
 
-        SInt32 Size  = Audio::AdaptiveDecoder::kStepTable[Step];
+        SInt32 Size  = Audio::Codec::Adaptive::kStepTable[Step];
         SInt32 Total = Size >> 3;
 
         if (Delta >= Size)
@@ -70,7 +70,7 @@ namespace Pipeline::Baker::Sound
         }
 
         Predictor = Clamp<SInt32>(Predictor + ((Nibble & 0x8) ? -Total : Total), -32768, 32767);
-        Step      = Clamp<SInt32>(Step + Audio::AdaptiveDecoder::kStepIndex[Nibble], 0, Audio::AdaptiveDecoder::kStepLimit);
+        Step      = Clamp<SInt32>(Step + Audio::Codec::Adaptive::kStepIndex[Nibble], 0, Audio::Codec::Adaptive::kStepLimit);
         return Nibble;
     }
 
@@ -97,8 +97,8 @@ namespace Pipeline::Baker::Sound
     Blob Exporter::EncodeAdaptive(ConstRef<Sample> Source)
     {
         // The block geometry is the decoder's, so the two stay in step by construction rather than by comment.
-        constexpr UInt32 kBlockFrames = Audio::AdaptiveDecoder::kBlockFrames;
-        constexpr UInt32 kBlockStride = Audio::AdaptiveDecoder::kBlockStride;
+        constexpr UInt32 kBlockFrames = Audio::Codec::Adaptive::kBlockFrames;
+        constexpr UInt32 kBlockStride = Audio::Codec::Adaptive::kBlockStride;
 
         const ConstSpan<Real32> Samples = Source.GetSamples();
         const UInt16            Stride  = Source.GetStride();

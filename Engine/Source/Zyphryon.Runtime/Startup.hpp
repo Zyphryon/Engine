@@ -18,15 +18,15 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Engine
+namespace Runtime
 {
-    /// \brief Configuration parameters used to initialize the engine at startup.
-    class Config final
+    /// \brief Encapsulates the parameters the engine is brought up with, before any service exists.
+    class Startup final
     {
     public:
 
         /// \brief Constructs a new set of engine configuration parameters with default values.
-        Config();
+        Startup();
 
         /// \brief Sets the target monitor for the window.
         ///

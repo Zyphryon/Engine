@@ -32,7 +32,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Engine
+namespace Runtime
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,13 +45,17 @@ namespace Engine
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::Run(AnyRef<Config> Config, AnyRef<Modules> Modules)
+    void Kernel::Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<Engine::Modules> Modules)
     {
         ZY_PROFILE_THREAD("Main Thread");
 
-        // Store the provided configuration for use throughout the engine lifecycle.
-        mConfig  = Move(Config);
         mModules = Move(Modules);
+
+        // Parse the command line first, so the application can consult it while it configures itself.
+        mEnvironment.Parse(Count, Arguments);
+
+        // Let the application overwrite the defaults before any service reads them.
+        OnConfigure(mStartup);
 
         // Initialize all services, modules, and the application before entering the main loop.
         Initialize();
@@ -101,12 +105,12 @@ namespace Engine
         LOG_I("Kernel: Creating platform service");
         ConstRetainer<Platform::Service> Platform = Register<Platform::Service>();
         if (!Platform->Initialize(
-            mConfig.GetWindowMonitor(),
-            mConfig.GetWindowTitle(),
-            mConfig.GetWindowWidth(),
-            mConfig.GetWindowHeight(),
-            mConfig.IsWindowBorderless(),
-            mConfig.IsWindowFullscreen()))
+            mStartup.GetWindowMonitor(),
+            mStartup.GetWindowTitle(),
+            mStartup.GetWindowWidth(),
+            mStartup.GetWindowHeight(),
+            mStartup.IsWindowBorderless(),
+            mStartup.IsWindowFullscreen()))
         {
             LOG_D("Kernel: Failed to initialize platform service");
             return;
@@ -151,7 +155,7 @@ namespace Engine
 #endif
 
         // Attaches external modules to the engine, allowing them to register their own services and systems.
-        for (Ref<Unique<Module>> Module : mModules)
+        for (Ref<Unique<Engine::Module>> Module : mModules)
         {
             LOG_I("Kernel: Attaching module '{0}' v.{1}", Module->GetName(), Module->GetVersion());
             Module->OnAttach(* this);
@@ -163,11 +167,11 @@ namespace Engine
 
         LOG_I("Kernel: Initializing graphic service");
         Graphic::Configuration GraphicsConfig;
-        GraphicsConfig.Tearless    = mConfig.IsGraphicsTearless();
+        GraphicsConfig.Tearless    = mStartup.IsGraphicsTearless();
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();
-        GraphicsConfig.ColorFormat = mConfig.GetGraphicsColorFormat();
-        GraphicsConfig.DepthFormat = mConfig.GetGraphicsDepthFormat();
+        GraphicsConfig.ColorFormat = mStartup.GetGraphicsColorFormat();
+        GraphicsConfig.DepthFormat = mStartup.GetGraphicsDepthFormat();
 
         if (GraphicsConfig.ColorFormat == Graphic::TextureFormat::Unspecified)
         {
@@ -178,10 +182,10 @@ namespace Engine
                 : Graphic::TextureFormat::RGBA8UIntNorm_sRGB;
         }
 
-        Graphic->Initialize(mConfig.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
+        Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
 
         LOG_I("Kernel: Initializing audio service");
-        Audio->Initialize(mConfig.GetAudioAdapter());
+        Audio->Initialize(mStartup.GetAudioAdapter());
 
 #endif
 
@@ -207,7 +211,7 @@ namespace Engine
         OnTick(Delta);
 
         // Update all registered services with the current frame delta.
-        Subsystem::Host::Tick(Delta);
+        Engine::Subsystem::Host::Tick(Delta);
 
         ZY_PROFILE_FRAME;
         return mAlive;
@@ -222,13 +226,16 @@ namespace Engine
         OnTerminate();
 
         // Detaches external modules to the engine, allowing them to clean up any resources they allocated.
-        for (Ref<Unique<Module>> Module : mModules)
+        for (Ref<Unique<Engine::Module>> Module : mModules)
         {
             Module->OnDetach(* this);
         }
 
         // Destroy all registered services and release remaining engine resources.
         Teardown();
+
+        // The application no longer owns `main`, so this is the last place its log tail can be written out.
+        Log::Flush();
 
 #if defined(ZY_PLATFORM_WEB)
 
@@ -266,7 +273,7 @@ namespace Engine
 
     Bool Kernel::OnWindowFocus(Bool Focused)
     {
-        if (mConfig.IsAudioPauseOnFocusLost())
+        if (mStartup.IsAudioPauseOnFocusLost())
         {
             if (ConstRetainer<Audio::Service> Audio = GetService<Audio::Service>())
             {
