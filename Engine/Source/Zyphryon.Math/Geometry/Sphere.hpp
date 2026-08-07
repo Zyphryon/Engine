@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Box.hpp"
+#include "Circle.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -120,6 +121,22 @@ inline namespace Math
         ZY_INLINE constexpr Real32 GetRadius() const
         {
             return mRadius;
+        }
+
+        /// \brief Gets the sphere flattened onto the XY plane.
+        ///
+        /// \return A new circle holding the (x, y) center and the sphere's radius.
+        ZY_INLINE constexpr Circle GetXY() const
+        {
+            return Circle(mCenter.GetXY(), mRadius);
+        }
+
+        /// \brief Gets the sphere flattened onto the XZ plane.
+        ///
+        /// \return A new circle holding the (x, z) center and the sphere's radius.
+        ZY_INLINE constexpr Circle GetXZ() const
+        {
+            return Circle(mCenter.GetXZ(), mRadius);
         }
 
         /// \brief Gets the sphere's diameter.
@@ -251,6 +268,26 @@ inline namespace Math
         ZY_INLINE static constexpr Sphere Unit()
         {
             return Sphere(Vector3(0.0f, 0.0f, 0.0f), 1.0f);
+        }
+
+        /// \brief Creates a sphere from a circle that lies on the XY plane.
+        ///
+        /// \param XY The circle supplying the (x, y) center and the radius.
+        /// \param Z  The depth to place the center at.
+        /// \return A new sphere centered on the circle at the given depth.
+        ZY_INLINE static constexpr Sphere FromXY(Circle XY, Real32 Z = 0.0f)
+        {
+            return Sphere(Vector3::FromXY(XY.GetCenter(), Z), XY.GetRadius());
+        }
+
+        /// \brief Creates a sphere from a circle that lies on the XZ plane.
+        ///
+        /// \param XZ The circle supplying the (x, z) center and the radius.
+        /// \param Y  The height to place the center at.
+        /// \return A new sphere centered on the circle at the given height.
+        ZY_INLINE static constexpr Sphere FromXZ(Circle XZ, Real32 Y = 0.0f)
+        {
+            return Sphere(Vector3::FromXZ(XZ.GetCenter(), Y), XZ.GetRadius());
         }
 
         /// \brief Canonicalizes a sphere by ensuring its radius is non-negative.

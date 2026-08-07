@@ -243,17 +243,21 @@ inline namespace Math
             return mZ;
         }
 
-        /// \brief Gets the (x, y) components as a 2D vector.
+        /// \brief Gets the vector flattened onto the XY plane.
         ///
-        /// \return A new 2D vector containing the x and y components.
+        /// \note Drops the depth, keeping x and y on the 2D vector's own axes.
+        ///
+        /// \return A new 2D vector holding the (x, y) components.
         ZY_INLINE constexpr AnyVector2<Type> GetXY() const
         {
             return AnyVector2(mX, mY);
         }
 
-        /// \brief Gets the (x, z) components as a 2D vector.
+        /// \brief Gets the vector flattened onto the XZ plane.
         ///
-        /// \return A new 2D vector containing the x and z components.
+        /// \note Drops the height, so a y-up vector yields its ground position with z on the 2D vector's y axis.
+        ///
+        /// \return A new 2D vector holding the (x, z) components.
         ZY_INLINE constexpr AnyVector2<Type> GetXZ() const
         {
             return AnyVector2(mX, mZ);
@@ -678,6 +682,26 @@ inline namespace Math
         ZY_INLINE static constexpr AnyVector3 UnitZ()
         {
             return AnyVector3(Type(0), Type(0), Type(1));
+        }
+
+        /// \brief Creates a vector from a point on the XY plane and a depth.
+        ///
+        /// \param XY The 2D vector supplying the x and y components.
+        /// \param Z  The depth to place the point at.
+        /// \return A new 3D vector holding the plane point at the given depth.
+        ZY_INLINE static constexpr AnyVector3 FromXY(AnyVector2<Type> XY, Type Z = Type(0))
+        {
+            return AnyVector3(XY.GetX(), XY.GetY(), Z);
+        }
+
+        /// \brief Creates a vector from a point on the XZ plane and a height.
+        ///
+        /// \param XZ The 2D vector supplying the x and z components, with z on its y axis.
+        /// \param Y  The height to place the point at.
+        /// \return A new 3D vector holding the ground point at the given height.
+        ZY_INLINE static constexpr AnyVector3 FromXZ(AnyVector2<Type> XZ, Type Y = Type(0))
+        {
+            return AnyVector3(XZ.GetX(), Y, XZ.GetY());
         }
 
         /// \brief Projects the source vector onto the target vector.

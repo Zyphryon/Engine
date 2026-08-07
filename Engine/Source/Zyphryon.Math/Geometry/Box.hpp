@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Math/Matrix4x3.hpp"
+#include "Zyphryon.Math/Geometry/Rect.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -203,6 +204,26 @@ inline namespace Math
         ZY_INLINE constexpr AnyVector3<Type> GetMaximum() const
         {
             return mMaximum;
+        }
+
+        /// \brief Gets the box flattened onto the XY plane.
+        ///
+        /// \note Drops the depth extent, keeping x and y on the rect's own axes.
+        ///
+        /// \return A new rect spanning the (x, y) extents of the box.
+        ZY_INLINE constexpr AnyRect<Type> GetXY() const
+        {
+            return AnyRect<Type>(mMinimum.GetXY(), mMaximum.GetXY());
+        }
+
+        /// \brief Gets the box flattened onto the XZ plane.
+        ///
+        /// \note Drops the height extent, so a y-up box yields its ground footprint with z on the rect's y axis.
+        ///
+        /// \return A new rect spanning the (x, z) extents of the box.
+        ZY_INLINE constexpr AnyRect<Type> GetXZ() const
+        {
+            return AnyRect<Type>(mMinimum.GetXZ(), mMaximum.GetXZ());
         }
 
         /// \brief Calculates the width (extent along the X axis) of the box.
@@ -656,6 +677,28 @@ inline namespace Math
         ZY_INLINE static constexpr AnyBox One()
         {
             return AnyBox(Type(0), Type(0), Type(0), Type(1), Type(1), Type(1));
+        }
+
+        /// \brief Creates a box by extruding a rect that lies on the XY plane along the depth axis.
+        ///
+        /// \param XY       The rect supplying the x and y extents.
+        /// \param MinimumZ The minimum depth of the box.
+        /// \param MaximumZ The maximum depth of the box.
+        /// \return A new box spanning the rect over the given depth range.
+        ZY_INLINE static constexpr AnyBox FromXY(AnyRect<Type> XY, Type MinimumZ = Type(0), Type MaximumZ = Type(0))
+        {
+            return AnyBox(XY.GetMinimumX(), XY.GetMinimumY(), MinimumZ, XY.GetMaximumX(), XY.GetMaximumY(), MaximumZ);
+        }
+
+        /// \brief Creates a box by extruding a rect that lies on the XZ plane along the height axis.
+        ///
+        /// \param XZ       The rect supplying the x and z extents, with z on its y axis.
+        /// \param MinimumY The minimum height of the box.
+        /// \param MaximumY The maximum height of the box.
+        /// \return A new box spanning the rect over the given height range.
+        ZY_INLINE static constexpr AnyBox FromXZ(AnyRect<Type> XZ, Type MinimumY = Type(0), Type MaximumY = Type(0))
+        {
+            return AnyBox(XZ.GetMinimumX(), MinimumY, XZ.GetMinimumY(), XZ.GetMaximumX(), MaximumY, XZ.GetMaximumY());
         }
 
         /// \brief Canonicalizes a box by ensuring min <= max on every axis.
