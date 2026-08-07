@@ -570,6 +570,20 @@ namespace Render
             return Vector2(X, Y);
         }
 
+        /// \brief Transforms a world-space offset into the screen-space offset it projects to.
+        ///
+        /// \param Direction The 3D offset in world space to transform.
+        /// \param Viewport  The viewport definition, including dimensions and depth range.
+        /// \return The corresponding offset in screen pixels.
+        template<Origin Origin = Origin::Southwest>
+        ZY_INLINE Vector2 GetScreenDirection(Vector3 Direction, ConstRef<Graphic::Viewport> Viewport) const
+        {
+            const Vector3 Base = GetScreenCoordinates<Origin>(Vector3::Zero(), Viewport);
+            const Vector3 Tip  = GetScreenCoordinates<Origin>(Direction, Viewport);
+
+            return Vector2(Tip.GetX() - Base.GetX(), Tip.GetY() - Base.GetY());
+        }
+
     private:
 
         static constexpr UInt32 kBitMaskTransformation = 1 << 0;
