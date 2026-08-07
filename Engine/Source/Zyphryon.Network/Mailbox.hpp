@@ -63,7 +63,7 @@ namespace Network
         /// \return `true` if nothing is waiting, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
         {
-            return mEntries.IsEmpty();
+            return mEntries.IsEmpty() && mArena.IsEmpty();
         }
 
         /// \brief Gets the notifications recorded so far.

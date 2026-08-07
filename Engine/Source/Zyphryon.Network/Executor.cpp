@@ -179,8 +179,16 @@ namespace Network
         {
             const Guard Lock(mMutex);
 
-            // Added to rather than traded for, since the application may not have drained what an earlier pass left.
-            mIncoming.Absorb(mReport);
+            // Traded for when the application has taken everything, since that hands the report back the drained
+            // buffers and the room they already hold, and copies nothing while the main thread waits on this lock.
+            if (mIncoming.IsEmpty())
+            {
+                mIncoming.Swap(mReport);
+            }
+            else
+            {
+                mIncoming.Absorb(mReport);
+            }
         }
     }
 
