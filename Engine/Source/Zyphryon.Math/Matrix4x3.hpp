@@ -568,6 +568,33 @@ inline namespace Math
                 Vector4::Select<0b1000>(RowZ, Vector4::SplatZ(Offset)) * Factor);
         }
 
+        /// \brief Creates a combined TRS matrix whose rotation and scale pivot around a point.
+        ///
+        /// \param Origin      The point, in local space, that scale and rotation are applied around.
+        /// \param Translation The world-space position the origin ends up at.
+        /// \param Scale       The per-axis scale factors.
+        /// \param Rotation    The rotation quaternion (should be normalized).
+        /// \return The combined TRS transformation matrix built around the given origin.
+        ZY_INLINE static Matrix4x3 FromTransform(Vector3 Origin, Vector3 Translation, Vector3 Scale, Quaternion Rotation)
+        {
+            const Matrix4x3 Matrix = FromTransform(Translation, Scale, Rotation);
+
+            return WithTranslation(Matrix, -ProjectDirection(Matrix, Origin));
+        }
+
+        /// \brief Applies a translation to an existing matrix, returning a new matrix with the translation applied.
+        ///
+        /// \param Matrix The original matrix to apply the translation to.
+        /// \param Offset The 3D offset to apply as a translation to the matrix.
+        /// \return The matrix with the translation applied.
+        ZY_INLINE static Matrix4x3 WithTranslation(ConstRef<Matrix4x3> Matrix, Vector3 Offset)
+        {
+            return Matrix4x3(
+                Matrix.mColumns[0] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetX()),
+                Matrix.mColumns[1] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetY()),
+                Matrix.mColumns[2] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetZ()));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

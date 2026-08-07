@@ -747,6 +747,18 @@ inline namespace Math
                     ::Ceil(Source.mMaximum.GetZ())));
         }
 
+        /// \brief Checks whether two world-space volumes overlap, treating contact as an overlap.
+        ///
+        /// \param First  The first volume.
+        /// \param Second The second volume.
+        /// \return `true` if the volumes overlap or touch, `false` otherwise.
+        ZY_INLINE static constexpr Bool Overlaps(AnyBox First, AnyBox Second)
+        {
+            return First.GetMinimumX() <= Second.GetMaximumX() && First.GetMaximumX() >= Second.GetMinimumX()
+                && First.GetMinimumY() <= Second.GetMaximumY() && First.GetMaximumY() >= Second.GetMinimumY()
+                && First.GetMinimumZ() <= Second.GetMaximumZ() && First.GetMaximumZ() >= Second.GetMinimumZ();
+        }
+        
         /// \brief Gets the intersection of two boxes.
         ///
         /// If the boxes do not overlap, the result may be invalid or zero.
@@ -786,6 +798,25 @@ inline namespace Math
                     ::Max(First.mMaximum.GetX(), Second.mMaximum.GetX()),
                     ::Max(First.mMaximum.GetY(), Second.mMaximum.GetY()),
                     ::Max(First.mMaximum.GetZ(), Second.mMaximum.GetZ())));
+        }
+
+        /// \brief Computes an integer-aligned box that fully encloses the given box.
+        ///
+        /// \param Source The source box with real-valued coordinates.
+        /// \return A box with integer-aligned bounds that fully contains the input.
+        template<typename Target>
+        ZY_INLINE static constexpr AnyBox<Target> Enclose(AnyBox Source)
+            requires(IsReal<Type> && IsIntegral<Target>)
+        {
+            return AnyBox<Target>(
+                AnyVector3<Target>(
+                    static_cast<Target>(::Floor(Source.mMinimum.GetX())),
+                    static_cast<Target>(::Floor(Source.mMinimum.GetY())),
+                    static_cast<Target>(::Floor(Source.mMinimum.GetZ()))),
+                AnyVector3<Target>(
+                    static_cast<Target>(::Ceil(Source.mMaximum.GetX())),
+                    static_cast<Target>(::Ceil(Source.mMaximum.GetY())),
+                    static_cast<Target>(::Ceil(Source.mMaximum.GetZ()))));
         }
 
         /// \brief Gets the AABB that fully contains the given box after transformation.
