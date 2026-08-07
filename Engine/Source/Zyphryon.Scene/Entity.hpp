@@ -126,6 +126,15 @@ namespace Scene
             return mHandle.is_pair();
         }
 
+        /// \brief Checks if this entity represents an overridable component.
+        ///
+        /// \return `true` if the entity is overridable, `false` otherwise.
+        ZY_INLINE Bool IsOverridable() const
+        {
+            return !mHandle.has(flecs::OnInstantiate, flecs::Inherit)
+                && !mHandle.has(flecs::OnInstantiate, flecs::DontInherit);
+        }
+
         /// \brief Destroys this entity and all of its components.
         ///
         /// \note The entity becomes invalid after destruction.
