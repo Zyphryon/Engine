@@ -94,7 +94,13 @@ inline namespace Base
         /// \return A handle to the newly allocated slot.
         ZY_INLINE constexpr Handle Allocate()
         {
-            const Handle Found = mMask.FindFirstClear(mHead);
+            Handle Found = mMask.FindFirstClear(mHead);
+
+            if (Found >= Capacity)
+            {
+                Found = mMask.FindFirstClear(0);
+            }
+
             ZY_ASSERT(Found < Capacity, "Attempted to allocate beyond maximum capacity");
 
             mMask.Set(Found);
@@ -114,7 +120,8 @@ inline namespace Base
             ZY_ASSERT(!IsAllocated(ID), "Attempted to acquire already allocated slot");
 
             mMask.Set(ID - 1);
-            mTop = Max(mTop, ID - 1);
+            mHead = Min(mHead, ID - 1);
+            mTop  = Max(mTop,  ID - 1);
             ++mSize;
         }
 
