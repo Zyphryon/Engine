@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Technique.hpp"
+#include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -63,6 +64,22 @@ namespace Graphic
             Service.DeletePipeline(mHandle);
 
             mHandle = 0;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Technique::OnReload(Ref<Engine::Subsystem::Host> Host)
+    {
+        Ref<Content::Service> Service = * Host.GetService<Content::Service>();
+
+        for (ConstRetainer<Shader> Shader : mDescription.Shaders)
+        {
+            if (Shader)
+            {
+                Service.Reload(Shader);
+            }
         }
     }
 

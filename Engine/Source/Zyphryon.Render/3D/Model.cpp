@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Model.hpp"
+#include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -61,6 +62,39 @@ namespace Render
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {
                 Material->Unload(Service);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Model::OnReload(Ref<Engine::Subsystem::Host> Host)
+    {
+        Ref<Content::Service> Service = * Host.GetService<Content::Service>();
+
+        if (mMesh && mMesh->GetPolicy() != Policy::Exclusive)
+        {
+            Service.Reload(mMesh);
+        }
+
+        if (mSkeleton)
+        {
+            Service.Reload(mSkeleton);
+        }
+
+        for (ConstRetainer<Graphic::Material> Material : mMaterials)
+        {
+            if (Material)
+            {
+                if (Material->GetPolicy() == Policy::Exclusive)
+                {
+                    Material->OnReload(Host);
+                }
+                else
+                {
+                    Service.Reload(Material);
+                }
             }
         }
     }

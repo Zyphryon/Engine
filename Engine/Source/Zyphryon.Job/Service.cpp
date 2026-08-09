@@ -240,10 +240,8 @@ namespace Job
         // call below even though the registry is only serialized inside the guard.
         Ref<Registry::Entry> Job = mRegistry[Value];
 
-        Job.Work();
-
-        // Drop the captures before publishing completion, since a waiter may recycle the slot the instant it observes it.
-        Job.Work = Task();
+        // Consume it, since a waiter may recycle the slot the instant it observes it.
+        Job.Work.Consume();
 
         Array<Bool, kMaxLanes> Woken { };
 

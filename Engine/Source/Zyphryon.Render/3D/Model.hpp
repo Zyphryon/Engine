@@ -122,6 +122,9 @@ namespace Render
             Unload(* Host.GetService<Graphic::Service>());
         }
 
+        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
+        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -142,11 +142,7 @@ namespace Content
         {
             if (Asset->HasFinished())
             {
-                // Prepares the asset for reload by resetting its status to idle.
-                Asset->SetStatus(Resource::Status::Idle);
-
-                // Reschedules the resource for loading through the standard pipeline.
-                OnAssetRequest(Asset, nullptr);
+                OnAssetReload(Asset);
             }
         }
 
@@ -159,7 +155,7 @@ namespace Content
         {
             if (Type::GetCache().Remove(Asset->GetKey()))
             {
-                OnAssetDelete(Asset);
+                OnAssetDelete(* Asset);
             }
         }
 
@@ -212,6 +208,11 @@ namespace Content
         /// \param Asset  The resource to load.
         /// \param Parent The parent scope for dependency tracking, or nullptr.
         void OnAssetRequest(ConstRetainer<Resource> Asset, Ptr<Scope> Parent);
+
+        /// \brief Releases a resource and schedules it through the loading pipeline again.
+        ///
+        /// \param Asset The resource to reload.
+        void OnAssetReload(ConstRetainer<Resource> Asset);
 
         /// \brief Called when a resource's raw data has been parsed from the mount.
         ///

@@ -177,6 +177,9 @@ namespace Graphic
             Unload(* Host.GetService<Service>());
         }
 
+        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
+        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+
     private:
 
         /// \brief Assembles the shader modules into a complete program.

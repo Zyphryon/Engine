@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Material.hpp"
+#include "Zyphryon.Content/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -132,6 +133,22 @@ namespace Graphic
             Service.DeleteMaterial(mHandle);
 
             mHandle = 0;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Material::OnReload(Ref<Engine::Subsystem::Host> Host)
+    {
+        Ref<Content::Service> Service = * Host.GetService<Content::Service>();
+
+        for (ConstRef<TextureEntry> Entry : mTextures)
+        {
+            if (Entry.Image && Entry.Image->GetPolicy() != Policy::Exclusive)
+            {
+                Service.Reload(Entry.Image);
+            }
         }
     }
 }

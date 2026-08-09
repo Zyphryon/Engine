@@ -168,6 +168,14 @@ namespace Content
 
         }
 
+        /// \brief Called before the resource is reloaded, to reload the resources it references.
+        ///
+        /// \param Host The service host providing access to engine services.
+        virtual void OnReload(Ref<Engine::Subsystem::Host> Host)
+        {
+
+        }
+
     private:
 
         // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-

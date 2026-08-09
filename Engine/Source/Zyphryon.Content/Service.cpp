@@ -285,6 +285,21 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::OnAssetReload(ConstRetainer<Resource> Asset)
+    {
+        // Cascade first, so the references the resource still holds are refreshed before it drops them.
+        Asset->OnReload(GetHost());
+
+        // Release what the previous load created, which also resets the status back to idle.
+        OnAssetDelete(* Asset);
+
+        // Reschedule the resource through the standard pipeline.
+        OnAssetRequest(Asset, nullptr);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::OnAssetParse(Filesystem::Result Result, ConstRetainer<Resource> Asset, AnyRef<Blob> Data)
     {
         Scope Scope(Asset);

@@ -155,6 +155,9 @@ namespace Graphic
             Unload(* Host.GetService<Service>());
         }
 
+        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
+        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
