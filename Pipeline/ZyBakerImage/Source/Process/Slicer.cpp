@@ -22,6 +22,32 @@ namespace Pipeline::Baker::Image
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    // Every cut addresses whole texels of one level, whichever shape it takes, so both share this gate.
+    static Bool Accepts(ConstRef<Bitmap> Source)
+    {
+        const Graphic::TextureFormat   Format   = Source.GetFormat();
+        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Format);
+
+        // Cutting addresses whole texels, which a block-compressed or bit-packed surface does not have.
+        if (Metadata.IsCompressed() || Metadata.IsPacked || Metadata.Components == 0)
+        {
+            LOG_E("Texture: '{0}' must have its texels unpacked before it can be cut", Enum::GetName(Format));
+
+            return false;
+        }
+
+        if (Source.GetLevels() != 1)
+        {
+            LOG_E("Texture: a surface must be cut before its mips are filtered");
+
+            return false;
+        }
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     static Bitmap Process(ConstRef<Bitmap> Source, ConstRef<Slicer::Layout::Cell> Cell, UInt32 Width, UInt32 Height, UInt32 Stride)
     {
         const UInt32 Sweep = Source.GetWidth() * Stride;   // One row of the atlas.
@@ -117,21 +143,8 @@ namespace Pipeline::Baker::Image
 
     Sequence<Bitmap> Slicer::Slice(ConstRef<Bitmap> Source, ConstRef<Layout> Layout)
     {
-        const Graphic::TextureFormat   Format   = Source.GetFormat();
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Format);
-
-        // Cutting addresses whole texels, which a block-compressed or bit-packed surface does not have.
-        if (Metadata.IsCompressed() || Metadata.IsPacked || Metadata.Components == 0)
+        if (!Accepts(Source))
         {
-            LOG_E("Texture: '{0}' must have its texels unpacked before it can be cut", Enum::GetName(Format));
-
-            return Sequence<Bitmap>();
-        }
-
-        if (Source.GetLevels() != 1)
-        {
-            LOG_E("Texture: an atlas must be cut before its mips are filtered");
-
             return Sequence<Bitmap>();
         }
 
@@ -150,6 +163,8 @@ namespace Pipeline::Baker::Image
 
             return Sequence<Bitmap>();
         }
+
+        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Source.GetFormat());
 
         const UInt32 Width  = Source.GetWidth()  / Layout.Columns;
         const UInt32 Height = Source.GetHeight() / Layout.Rows;
@@ -177,5 +192,44 @@ namespace Pipeline::Baker::Image
             Slices.Append(Process(Source, Layout.GetCell(Index), Width, Height, Stride));
         }
         return Slices;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bitmap Slicer::Crop(ConstRef<Bitmap> Source, UInt32 X, UInt32 Y, UInt32 Width, UInt32 Height)
+    {
+        if (!Accepts(Source))
+        {
+            return Bitmap();
+        }
+
+        // A rectangle reaching past the surface would read memory the bitmap does not own.
+        if (Width == 0 || Height == 0 || X + Width > Source.GetWidth() || Y + Height > Source.GetHeight())
+        {
+            LOG_E("Texture: a {0}x{1} rectangle at {2},{3} leaves a {4}x{5} surface",
+                Width, Height, X, Y, Source.GetWidth(), Source.GetHeight());
+
+            return Bitmap();
+        }
+
+        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Source.GetFormat());
+
+        const UInt32 Stride = Metadata.BitsPerPixel / 8;
+        const UInt32 Sweep  = Source.GetWidth() * Stride;
+        const UInt32 Line   = Width * Stride;
+
+        Blob            Output = Blob::Allocate<Byte>(static_cast<UInt64>(Line) * Height);
+        const Ptr<Byte> Target = Output.GetData<Byte>();
+
+        ConstPtr<Byte>  Origin = Source.GetPixels().GetData()
+            + static_cast<UInt64>(Y) * Sweep
+            + static_cast<UInt64>(X) * Stride;
+
+        for (UInt32 Row = 0; Row < Height; ++Row, Origin += Sweep)
+        {
+            Copy(Target + static_cast<UInt64>(Row) * Line, Line, Origin);
+        }
+        return Bitmap(Source.GetFormat(), static_cast<UInt16>(Width), static_cast<UInt16>(Height), 1, Move(Output));
     }
 }

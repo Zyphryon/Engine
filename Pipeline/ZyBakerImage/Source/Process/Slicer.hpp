@@ -106,5 +106,15 @@ namespace Pipeline::Baker::Image
         /// \param Layout The division to cut it along.
         /// \return One bitmap per cell, or an empty sequence when the atlas cannot be cut that way.
         static Sequence<Bitmap> Slice(ConstRef<Bitmap> Source, ConstRef<Layout> Layout);
+
+        /// \brief Cuts one bitmap out of a source at an arbitrary texel rectangle.
+        ///
+        /// \param Source The single-level surface to cut from.
+        /// \param X      The left edge of the rectangle, in texels.
+        /// \param Y      The top edge of the rectangle, in texels.
+        /// \param Width  The width of the rectangle, in texels.
+        /// \param Height The height of the rectangle, in texels.
+        /// \return The cut bitmap, or an empty bitmap when the rectangle leaves the surface.
+        static Bitmap Crop(ConstRef<Bitmap> Source, UInt32 X, UInt32 Y, UInt32 Width, UInt32 Height);
     };
 }

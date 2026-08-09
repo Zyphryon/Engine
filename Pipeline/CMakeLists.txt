@@ -18,7 +18,8 @@ PROJECT(ZyPipeline VERSION 1.0.0 LANGUAGES CXX)
 ## Options
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_BUILD_PIPELINE_BAKER "Build the offline asset bakers" OFF)
+OPTION(ZY_BUILD_PIPELINE_BAKER         "Build the offline asset bakers"                               OFF)
+OPTION(ZY_BUILD_PIPELINE_BAKER_LIBRARY "Build the offline asset bakers as libraries, not executables" OFF)
 
 IF    (ZY_BUILD_PIPELINE_BAKER)
 

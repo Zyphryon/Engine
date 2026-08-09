@@ -14,6 +14,7 @@
 
 #include "Exporter.hpp"
 #include "Importer.hpp"
+#include "Manifest.hpp"
 #include <Zyphryon.Job/Service.hpp>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -75,6 +76,13 @@ namespace Pipeline::Baker::Image
         /// \param Profile The settings controlling the bake.
         /// \return A blob holding the native texture bytes, or an empty blob on failure.
         Blob Bake(ConstSpan<Byte> Source, Text Type, ConstRef<Profile> Profile) const;
+
+        /// \brief Bakes the frames a manifest names into one array texture, one slice per frame.
+        ///
+        /// \param Entries The frames to gather, in the order they become slices.
+        /// \param Profile The settings controlling the bake.
+        /// \return A blob holding the native texture bytes, or an empty blob on failure.
+        Blob Assemble(ConstSpan<Manifest::Entry> Entries, ConstRef<Profile> Profile) const;
 
         /// \brief Bakes a source image on disk and writes the native texture to another path.
         ///

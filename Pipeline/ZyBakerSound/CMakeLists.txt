@@ -48,10 +48,20 @@ ENDIF ()
 LIST(APPEND PROJECT_DEPENDENCIES "DrLibs")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Executable
+## Target
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_EXECUTABLE(${PROJECT_NAME} ${PROJECT_SOURCE})
+LIST(REMOVE_ITEM PROJECT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Source/Main.cpp")
+
+IF    (ZY_BUILD_PIPELINE_BAKER_LIBRARY)
+
+    ADD_LIBRARY(${PROJECT_NAME} STATIC ${PROJECT_SOURCE})
+
+ELSE  ()
+
+    ADD_EXECUTABLE(${PROJECT_NAME} ${PROJECT_SOURCE} "${CMAKE_CURRENT_SOURCE_DIR}/Source/Main.cpp")
+
+ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Libraries

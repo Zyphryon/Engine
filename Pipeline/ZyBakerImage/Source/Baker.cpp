@@ -138,6 +138,87 @@ namespace Pipeline::Baker::Image
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Blob Baker::Assemble(ConstSpan<Manifest::Entry> Entries, ConstRef<Profile> Profile) const
+    {
+        if (Entries.IsEmpty())
+        {
+            LOG_E("Texture: the manifest names no frames");
+
+            return Blob();
+        }
+
+        // A manifest already names where every frame sits, so a grid would describe a second, other cut.
+        if (Profile.Cube.IsValid() || Profile.Slice.IsValid())
+        {
+            LOG_E("Texture: a manifest gathers its own frames, so it cannot also be cut along a grid");
+
+            return Blob();
+        }
+
+        // Every slice of an array shares one extent, so the first frame sets what the rest must match.
+        const UInt16 Width  = Entries.GetFront().Width;
+        const UInt16 Height = Entries.GetFront().Height;
+
+        Sequence<Bitmap> Slices(Entries.GetSize());
+
+        // Sheets are decoded once and reused, because a manifest usually cuts many frames out of each.
+        Table<Str, Bitmap> Sheets;
+
+        for (ConstRef<Manifest::Entry> Entry : Entries)
+        {
+            if (Entry.Width != Width || Entry.Height != Height)
+            {
+                LOG_E("Texture: frame '{0}' is {1}x{2}, but the array holds {3}x{4}",
+                    Entry.Source, Entry.Width, Entry.Height, Width, Height);
+
+                return Blob();
+            }
+
+            if (!Sheets.Contains(Entry.Source))
+            {
+                const ConstPtr<Importer> Codec = Find(StrAfterLast(Entry.Source, '.'));
+
+                if (Codec == nullptr)
+                {
+                    LOG_E("Texture: '{0}' is not a source format this baker understands", Entry.Source);
+
+                    return Blob();
+                }
+
+                Blob Input;
+
+                if (Filesystem::Read(Entry.Source, Input) != Filesystem::Result::Success || Input == nullptr)
+                {
+                    LOG_E("Texture: failed to read '{0}'", Entry.Source);
+
+                    return Blob();
+                }
+
+                Sheets.Assign(Entry.Source, Codec->Import(Input, Profile));
+            }
+
+            ConstRef<Bitmap> Sheet = (* Sheets.Find(Entry.Source));
+
+            if (Sheet.GetPixels().IsEmpty())
+            {
+                return Blob();
+            }
+
+            Bitmap Frame = Slicer::Crop(Sheet, Entry.X, Entry.Y, Entry.Width, Entry.Height);
+
+            if (Frame.GetPixels().IsEmpty())
+            {
+                return Blob();
+            }
+
+            Slices.Append(Move(Frame));
+        }
+        return Exporter::Export(mScheduler, Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Bool Baker::Bake(Text Source, Text Destination, ConstRef<Profile> Profile) const
     {
         Blob Input;

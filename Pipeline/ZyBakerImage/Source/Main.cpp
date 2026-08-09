@@ -64,6 +64,7 @@ namespace Pipeline::Baker::Image
         LOG_I("  --linear          Treat the source as linear-encoded colour                  (default: on)");
         LOG_I("  --cube <c>x<r>    Cut the source into cube faces packed in a grid of faces   (default: off)");
         LOG_I("  --array <w>x<h>   Cut the source into array slices of that size in texels    (default: off)");
+        LOG_I("  --manifest <path> Gather array slices from the frames a manifest names      (default: off)");
         LOG_I("");
         LOG_I("Every toggle may be negated with its '--no-' spelling, as in '--no-mipmaps'.");
         LOG_I("");
@@ -71,6 +72,9 @@ namespace Pipeline::Baker::Image
         LOG_I("4x3 or 3x4 for a cross, or 3x2 or 2x3 for a block. Faces come out ordered +X, -X, +Y, -Y, +Z, -Z.");
         LOG_I("");
         LOG_I("'--array' names the size of one slice instead, counted in texels, and the source is walked row by row.");
+        LOG_I("");
+        LOG_I("'--manifest' reads a plain-text file holding one frame per line, '<source> <x> <y> <width> <height>',");
+        LOG_I("cut in that order into an array texture");
         LOG_I("");
         LOG_I("Pass '--no-linear' for colour art authored in sRGB, such as albedo. Mips are then filtered in");
         LOG_I("linear space and the result is stored as an sRGB format, so the GPU decodes it on sample.");
@@ -101,6 +105,37 @@ namespace Pipeline::Baker::Image
         {
             LOG_E("Texture: '{0}' is not a recognized format name", Parsed.GetText("format", Text::Empty()));
             return 1;
+        }
+
+        // A manifest names its own sources, so the sole operand is the destination rather than a source.
+        if (Parsed.Contains("manifest"))
+        {
+            const Sequence<Manifest::Entry> Entries = Manifest::Read(Parsed.GetText("manifest", Text::Empty()));
+
+            if (Entries.IsEmpty())
+            {
+                return 1;
+            }
+
+            const Text Destination = Source;
+            const Blob Output      = Instance.Assemble(Entries, Settings);
+
+            if (Output == nullptr)
+            {
+                return 1;
+            }
+
+            Filesystem::Ensure(Destination);
+
+            if (Filesystem::Write(Destination, Output) != Filesystem::Result::Success)
+            {
+                LOG_E("Texture: failed to write '{0}'", Destination);
+
+                return 1;
+            }
+
+            LOG_I("Texture: {0} frames -> '{1}' ({2} bytes)", Entries.GetSize(), Destination, Output.GetSize());
+            return 0;
         }
 
         const Str  Derived     = Derive(Source, Exporter::kOutput);
