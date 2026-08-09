@@ -243,7 +243,7 @@ inline namespace Base
 
             if constexpr (IsReader)
             {
-                const ConstPtr<Type> Source = mArchive.template Read<ConstPtr<Type> >(Size);
+                const ConstPtr<Byte> Source = mArchive.template Read<ConstPtr<Byte> >(Size);
                 Blit(Data, Size, Source);
             }
             else
