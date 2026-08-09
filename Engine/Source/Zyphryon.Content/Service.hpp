@@ -236,16 +236,16 @@ namespace Content
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Table<Digest, Retainer<Loader>> mLoaders;
-        Table<Digest, Retainer<Mount>>  mMounts;
-        Table<Digest, Callback>         mSubscriptions;
+        Table<Digest, Retainer<Loader>>   mLoaders;
+        Table<Digest, Retainer<Mount>>    mMounts;
+        Table<Digest, Sequence<Callback>> mSubscriptions;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Mutex                           mParserMutex;
-        Sequence<Scope>                 mParserList;
-        Sequence<Scope>                 mParserReady;
-        Atomic<UInt32>                  mParserPending;
+        Mutex                             mParserMutex;
+        Sequence<Scope>                   mParserList;
+        Sequence<Scope>                   mParserReady;
+        Atomic<UInt32>                    mParserPending;
     };
 }

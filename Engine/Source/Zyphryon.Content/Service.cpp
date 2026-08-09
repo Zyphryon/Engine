@@ -229,7 +229,8 @@ namespace Content
 
     void Service::Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function)
     {
-        mSubscriptions.Assign(Digest(Hash(Key.GetPath())), Move(Function));
+        const Digest Needle(Hash(Key.GetPath()));
+        mSubscriptions.FindOrInsert(Needle).Append(Move(Function));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -373,10 +374,13 @@ namespace Content
             OnAssetFailed.Broadcast(Asset);
         }
 
-        // Consume the one-shot subscription delegate if one exists for this asset.
-        if (Callback Delegate; mSubscriptions.Extract(Digest(Hash(Asset.GetKey().GetPath())), Delegate))
+        // Consume the one-shot subscriptions delegate if one exists for this asset.
+        if (Sequence<Callback> Listeners; mSubscriptions.Extract(Digest(Hash(Asset.GetKey().GetPath())), Listeners))
         {
-            Delegate(Asset);
+            for (Ref<Callback> Listener : Listeners)
+            {
+                Listener(Asset);
+            }
         }
     }
 
