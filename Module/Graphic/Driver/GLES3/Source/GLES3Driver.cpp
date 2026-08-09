@@ -1295,7 +1295,7 @@ namespace Graphic
                 ConstRef<GLES3Texture> Texture = mTextures[New];
 
                 glActiveTexture(GL_TEXTURE0 + Slot);
-                glBindTexture(GL_TEXTURE_2D, Texture.Object);
+                glBindTexture(Texture.Target, Texture.Object);
             }
         }
 
