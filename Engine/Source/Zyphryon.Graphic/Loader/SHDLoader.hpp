@@ -26,7 +26,7 @@ namespace Graphic
     public:
 
         /// \brief An array with the extension supported by this content loader.
-        static constexpr Text kTypes[] = { "shd" };
+        static constexpr Text kTypes[] = { "glsl", "hlsl" };
 
     public:
 
