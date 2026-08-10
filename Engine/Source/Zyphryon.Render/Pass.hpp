@@ -55,13 +55,13 @@ namespace Render
             Graphic::Action DepthLoad    = Graphic::Action::Clear;
 
             /// The operation applied to the depth buffer when the pass closes.
-            Graphic::Action DepthStore   = Graphic::Action::Discard;
+            Graphic::Action DepthStore   = Graphic::Action::Store;
 
             /// The operation applied to the stencil buffer when the pass opens.
             Graphic::Action StencilLoad  = Graphic::Action::Clear;
 
             /// The operation applied to the stencil buffer when the pass closes.
-            Graphic::Action StencilStore = Graphic::Action::Discard;
+            Graphic::Action StencilStore = Graphic::Action::Store;
 
             /// The value the depth buffer is cleared to (used when \ref DepthLoad is \ref Graphic::Action::Clear).
             Real32          Depth        = 1.0f;

@@ -637,7 +637,7 @@ namespace Graphic
         Action LoadAction   = Action::Clear;
 
         /// The operation to perform on the color buffer at the end of a render pass.
-        Action StoreAction  = Action::Discard;
+        Action StoreAction  = Action::Store;
     };
 
     /// \brief Defines the configuration for a depth/stencil attachment in a render pass.
@@ -656,13 +656,13 @@ namespace Graphic
         Action DepthLoadAction    = Action::Clear;
 
         /// The operation to perform on the depth buffer at the end of a render pass.
-        Action DepthStoreAction   = Action::Discard;
+        Action DepthStoreAction   = Action::Store;
 
         /// The operation to perform on the stencil buffer at the beginning of a render pass.
         Action StencilLoadAction  = Action::Clear;
 
         /// The operation to perform on the stencil buffer at the end of a render pass.
-        Action StencilStoreAction = Action::Discard;
+        Action StencilStoreAction = Action::Store;
     };
 
     /// \brief Defines the layout of a vertex attribute within a vertex buffer.
