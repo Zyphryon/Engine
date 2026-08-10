@@ -709,6 +709,20 @@ inline namespace Math
             return AnyColor(Red, Green, Blue, First.GetAlpha());
         }
 
+        /// \brief Multiplies the RGB channels of a color by a scalar.
+        ///
+        /// \param Color  The input color.
+        /// \param Scalar The factor applied to the red, green, and blue channels.
+        /// \return A color with modulated RGB and the alpha of \p Color.
+        ZY_INLINE static constexpr AnyColor Modulate(AnyColor Color, Type Scalar)
+            requires(IsReal<Type>)
+        {
+            const Type Red   = (Color.GetRed() * Scalar);
+            const Type Green = (Color.GetGreen() * Scalar);
+            const Type Blue  = (Color.GetBlue() * Scalar);
+            return AnyColor(Red, Green, Blue, Color.GetAlpha());
+        }
+
         /// \brief Returns the inverted color (1 - channel).
         ///
         /// \param Color The input color.
