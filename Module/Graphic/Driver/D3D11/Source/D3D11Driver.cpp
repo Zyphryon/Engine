@@ -1122,7 +1122,9 @@ namespace Graphic
         Attachment.LoadAction    = Action::Clear;
         Attachment.StoreAction   = Action::Store;
 
-        D3D11Check(mDevice->CreateRenderTargetView(Attachment.Target.Get(), nullptr, Attachment.TargetResource.GetAddressOf()));
+        const CD3D11_RENDER_TARGET_VIEW_DESC View(D3D11_RTV_DIMENSION_TEXTURE2D, Attachment.ResolveFormat);
+        D3D11Check(mDevice->CreateRenderTargetView(
+            Attachment.Target.Get(), AddressOf(View), Attachment.TargetResource.GetAddressOf()));
 
         // Create a depth-stencil buffer matching the swapchain dimensions and sample count.
         if (Config.DepthFormat != TextureFormat::Unspecified)
