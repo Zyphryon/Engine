@@ -9,6 +9,12 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [  HEADER  ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#include "Zyphryon.Graphic/Technique.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -151,6 +157,14 @@ namespace Render
         /// \brief Defines a type alias for a queue of rendering commands.
         using Queue = Sequence<Command>;
 
+        /// \brief Sorts rendering commands using an in-place least-significant-digit radix sort.
+        ///
+        /// \param Input  The input buffer containing the commands to sort.
+        /// \param Output The output buffer with space for at least \p Count commands.
+        /// \param Count  The number of commands to sort.
+        /// \return A pointer to the buffer containing the sorted commands.
+        static Ptr<Command> RadixSort64(Ptr<Command> Input, Ptr<Command> Output, UInt32 Count);
+
         /// \brief Generates a sort key for a draw command based on rendering state and priority.
         ///
         /// \param Priority The rendering priority of the draw command, which determines the sorting strategy.
@@ -227,15 +241,19 @@ namespace Render
             return (Raw ^ Mask) >> (32 - Bits);
         }
 
-    private:
+	public:
 
-        /// \brief Sorts rendering commands using an in-place least-significant-digit radix sort.
+        /// \brief Resolves the queue a technique's output belongs to from the blend state it declares.
         ///
-        /// \param Input  The input buffer containing the commands to sort.
-        /// \param Output The output buffer with space for at least \p Count commands.
-        /// \param Count  The number of commands to sort.
-        /// \return A pointer to the buffer containing the sorted commands.
-        static Ptr<Command> RadixSort64(Ptr<Command> Input, Ptr<Command> Output, UInt32 Count);
+        /// \param Technique The technique whose fixed-function blend state decides the queue.
+        /// \return The queue the technique's draws are collected into.
+        ZY_INLINE static Priority GetPriority(ConstRef<Graphic::Technique> Technique)
+        {
+            ConstRef<Graphic::States> States = Technique.GetDescription().States;
+
+            const Bool Opaque = (States.BlendSrcColor == Graphic::BlendFactor::One && States.BlendDstColor == Graphic::BlendFactor::Zero);
+            return Opaque ? Priority::Opaque : Priority::Transparent;
+        }
 
     private:
 
