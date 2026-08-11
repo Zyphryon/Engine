@@ -44,6 +44,22 @@ namespace Scene
         /// \param Delta The elapsed time since the last tick.
         void OnTick(Real64 Delta) override;
 
+        /// \brief Sets the rate the scene simulation advances at.
+        ///
+        /// \param Multiplier The timescale, where \c 1 runs at real time and \c 0 pauses the scene.
+        ZY_INLINE void SetTimescale(Real32 Multiplier)
+        {
+            mClock.SetMultiplier(Multiplier);
+        }
+
+        /// \brief Gets the rate the scene simulation advances at.
+        ///
+        /// \return The timescale, where \c 1 runs at real time and \c 0 means the scene is paused.
+        ZY_INLINE Real32 GetTimescale() const
+        {
+            return mClock.GetMultiplier();
+        }
+
         /// \brief Batches all world mutations performed by the callback into a single deferred flush.
         ///
         /// \param Callback The function whose world mutations are deferred.
