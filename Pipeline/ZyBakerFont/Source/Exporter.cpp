@@ -74,6 +74,7 @@ namespace Pipeline::Baker::Font
                 Body.Write<Graphic::TextureFormat>(Graphic::TextureFormat::RGBA8UIntNorm);
                 Body.Write<UInt16>(Side);
                 Body.Write<UInt16>(Side);
+                Body.Write<UInt16>(1);
                 Body.Write<UInt8>(1);
                 Body.Write<UInt32>(Texels.GetSize());
 
