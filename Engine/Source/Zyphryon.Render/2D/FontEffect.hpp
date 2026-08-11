@@ -46,13 +46,13 @@ namespace Render
         /// \param InsetRoundness The roundness of the text inset.
         /// \param InsetThreshold The threshold for the text inset.
         ZY_INLINE constexpr FontEffect(
-            Color  OutsetColor,
-            Real32 OutsetOffset,
-            Real32 OutsetWidth,
-            Real32 OutsetBias,
-            Real32 OutsetBlur,
-            Real32 InsetRoundness,
-            Real32 InsetThreshold)
+            IntColor8 OutsetColor,
+            Real32    OutsetOffset,
+            Real32    OutsetWidth,
+            Real32    OutsetBias,
+            Real32    OutsetBlur,
+            Real32    InsetRoundness,
+            Real32    InsetThreshold)
             : mOutsetColor    { OutsetColor },
               mOutsetOffset   { OutsetOffset },
               mOutsetWidth    { OutsetWidth },
@@ -66,7 +66,7 @@ namespace Render
         /// \brief Gets the outset color value.
         ///
         /// \return The outset color.
-        ZY_INLINE constexpr Color GetOutsetColor() const
+        ZY_INLINE constexpr IntColor8 GetOutsetColor() const
         {
             return mOutsetColor;
         }
@@ -127,7 +127,7 @@ namespace Render
         /// \param Softness The softness of the outline.
         /// \param Tint     The color tint of the outline.
         /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static FontEffect Outline(Real32 Width, Real32 Softness, Color Tint)
+        ZY_INLINE constexpr static FontEffect Outline(Real32 Width, Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
         }
@@ -137,7 +137,7 @@ namespace Render
         /// \param Softness The softness of the shadow.
         /// \param Tint     The color tint of the shadow.
         /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static FontEffect Shadow(Real32 Softness, Color Tint)
+        ZY_INLINE constexpr static FontEffect Shadow(Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
         }
@@ -154,7 +154,7 @@ namespace Render
         /// \return A text effect with the specified parameters.
         ZY_INLINE constexpr static FontEffect Bold(Real32 Thickness)
         {
-            return FontEffect(Color::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
+            return FontEffect(IntColor8::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
         }
 
     private:
@@ -162,12 +162,12 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Color  mOutsetColor;
-        Real32 mOutsetOffset;
-        Real32 mOutsetWidth;
-        Real32 mOutsetBias;
-        Real32 mOutsetBlur;
-        Real32 mInsetRoundness;
-        Real32 mInsetThreshold;
+        IntColor8 mOutsetColor;
+        Real32    mOutsetOffset;
+        Real32    mOutsetWidth;
+        Real32    mOutsetBias;
+        Real32    mOutsetBlur;
+        Real32    mInsetRoundness;
+        Real32    mInsetThreshold;
     };
 }
