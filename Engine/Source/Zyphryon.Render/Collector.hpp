@@ -62,100 +62,117 @@ namespace Render
         /// \brief Represents a single rendering command with associated state for sorting and batching.
         struct Command final
         {
-            /// The key used for sorting this command within the rendering queue.
+            /// The key used for sorting this command within the rendering queue, whose state bits also batch it.
             UInt64 Order;
-
-            /// The key used for batching this command with others that share the same pipeline, material, and mesh.
-            UInt64 Group;
 
             /// The index of the command's associated resource slot, which may be used for binding during rendering.
             Object Entry;
 
-            /// \brief Constructs an empty command with default order, group, and entry values.
+            /// \brief Constructs an empty command with default order and entry values.
             ZY_INLINE constexpr Command()
-                : Order { 0 },
-                  Group { 0 }
+                : Order { 0 }
             {
             }
 
-            /// \brief Constructs a command with the specified order, group, and entry values.
+            /// \brief Constructs a command with the specified order and entry values.
             ///
             /// \param Order The key used for sorting this command within the rendering queue.
-            /// \param Group The key used for batching this command with others that share the same pipeline, material, and mesh.
             /// \param Entry The index of the command's associated object.
-            ZY_INLINE constexpr Command(UInt64 Order, UInt64 Group, Object Entry)
+            ZY_INLINE constexpr Command(UInt64 Order, Object Entry)
                 : Order { Order },
-                  Group { Group },
                   Entry { Entry }
             {
             }
         };
 
+        /// \brief Constructs a collector with no commands recorded.
+        ZY_INLINE Collector()
+            : mPhase { Priority::Opaque }
+        {
+        }
+
+        /// \brief Opens a recording phase, which every command pushed until the next drain is keyed by.
+        ///
+        /// \param Phase The rendering priority the phase records under.
+        ZY_INLINE void Begin(Priority Phase)
+        {
+            ZY_ASSERT(mQueue.IsEmpty(), "The open phase must be drained before another one begins");
+
+            mPhase = Phase;
+        }
+
         /// \brief Pushes a rendering command into the collector for later sorting and submission.
         ///
         /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
-        /// \param Priority The rendering priority of the command, which determines the sorting strategy.
+        /// \param Priority The rendering priority of the command, which must be the one the open phase records.
         /// \param Depth    The depth value for sorting the command, typically in the range [0, 1].
         /// \param Mesh     The identifier of the mesh to be rendered, used for sorting and batching.
         /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
         /// \param Material The material to use for rendering, which may be null for default material.
         ZY_INLINE void Push(Object Entry, Priority Priority, Real32 Depth, UInt16 Mesh, UInt16 Pipeline, UInt16 Material)
         {
-            const UInt64 OrderKey = GenerateOrderKey(Priority, Pipeline, Material, Mesh, Depth);
-            const UInt64 GroupKey = GenerateGroupKey(Pipeline, Material, Mesh);
+            ZY_ASSERT(Priority == mPhase, "The command's queue is not the one the open phase records");
 
-            mQueues[Enum::Cast(Priority)].Append(OrderKey, GroupKey, Entry);
+            mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Mesh, Depth), Entry);
         }
 
-        /// \brief Polls the collected rendering commands and invokes a callback for each batch of commands.
+        /// \brief Drains the open phase, invoking a callback for each batch of commands it collected.
         ///
         /// \param Callback The function to call for each batch of commands, which receives a span of commands.
         template<typename Function>
         ZY_INLINE void Poll(AnyRef<Function> Callback)
         {
-            for (UInt32 Index = 0, Limit = Enum::Count<Priority>(); Index < Limit; ++Index)
+            if (mQueue.IsEmpty())
             {
-                if (Ref<Queue> Input = mQueues[Index]; !Input.IsEmpty())
+                return;
+            }
+
+            const UInt32 Size = mQueue.GetSize();
+            const UInt64 Mask = kGroupMask[Enum::Cast(mPhase)];
+
+            // The sort overwrites every element it lands on, so the scratch only ever needs raw capacity.
+            if (mScratch.GetSize() < Size * sizeof(Command))
+            {
+                mScratch = Blob::Allocate<Command>(Size);
+            }
+
+            // Sort the queue by the full sort key to ensure correct rendering order.
+            const ConstPtr<Command> Sorted = RadixSort64(mQueue.GetData(), mScratch.GetData<Command>(), Size);
+
+            UInt32            Start = 0;
+            ConstPtr<Command> Base  = Sorted;
+
+            // Iterate through the queue and batch commands with identical pipeline, material, and mesh.
+            for (UInt32 End = 1; End < Size; ++End)
+            {
+                if (ConstRef<Command> Current = Sorted[End]; (Current.Order & Mask) != (Base->Order & Mask))
                 {
-                    const UInt32 Size = Input.GetSize();
-                    Ref<Queue> Output = mScratches[Index];
-                    Output.Reserve(Size);
+                    // Invoke the callback for the current batch of commands.
+                    Callback(Base->Entry.Type, ConstSpan(Base, End - Start));
 
-                    // Sort the queue by the full sort key to ensure correct rendering order.
-                    const ConstPtr<Command> Sorted = RadixSort64(Input.GetData(), Output.GetData(), Size);
-
-                    UInt32            Start = 0;
-                    ConstPtr<Command> Base  = Sorted;
-
-                    // Iterate through the queue and batch commands with identical pipeline, material, and mesh.
-                    for (UInt32 End = 1; End < Input.GetSize(); ++End)
-                    {
-                        if (ConstRef<Command> Current = Sorted[End]; Current.Group != Base->Group)
-                        {
-                            // Invoke the callback for the current batch of commands.
-                            Callback(Base->Entry.Type, ConstSpan(Base, End - Start));
-
-                            Start = End;
-                            Base  = Sorted + End;
-                        }
-                    }
-
-                    // Invoke the callback for the final batch of commands if any remain.
-                    if (Start < Size)
-                    {
-                        Callback(Base->Entry.Type, ConstSpan(Base, Size - Start));
-                    }
-
-                    // Clear the command queue after processing it.
-                    Input.Clear();
+                    Start = End;
+                    Base  = Sorted + End;
                 }
             }
+
+            // Invoke the callback for the final batch, which a non-empty queue always leaves open.
+            Callback(Base->Entry.Type, ConstSpan(Base, Size - Start));
+
+            // Clear the command queue after processing it.
+            mQueue.Clear();
         }
 
     private:
 
         /// \brief Defines a type alias for a queue of rendering commands.
         using Queue = Sequence<Command>;
+
+        /// The bits of an order key that identify a batch, indexed by queue.
+        static constexpr UInt64 kGroupMask[] 
+		{
+            0xFFFFFFFFFF000000ull,  ///< Opaque:      [Pipeline|Material|Mesh] sit in the high 40 bits.
+            0x000000FFFFFFFFFFull,  ///< Transparent: [Pipeline|Material|Mesh] sit in the low 40 bits.
+        };
 
         /// \brief Sorts rendering commands using an in-place least-significant-digit radix sort.
         ///
@@ -198,7 +215,7 @@ namespace Render
             return (static_cast<UInt64>(Pipeline & 0x3FFu)  << 54) |    // [10:Pipeline]
                    (static_cast<UInt64>(Material & 0x3FFFu) << 40) |    // [14:Material]
                    (static_cast<UInt64>(Mesh     & 0xFFFFu) << 24) |    // [16:Mesh]
-                   (static_cast<UInt64>(DepthToBits(Depth)));           // [24:Depth]
+                   (static_cast<UInt64>(OpaqueDepthToBits(Depth)));     // [24:Depth]
         }
 
         /// \brief Generates a sort key for transparent draw commands.
@@ -216,17 +233,21 @@ namespace Render
                    (static_cast<UInt64>(Mesh     & 0xFFFFu));                  // [16:Mesh]
         }
 
-        /// \brief Generates a batch key encoding only the pipeline, material, and mesh.
+        /// \brief Converts a depth value into the depth field of an opaque order key.
         ///
-        /// \param Pipeline The graphics pipeline identifier.
-        /// \param Material The material identifier.
-        /// \param Mesh     The mesh identifier.
-        /// \return A 64-bit key that uniquely identifies a pipeline/material/mesh combination.
-        ZY_INLINE static constexpr UInt64 GenerateGroupKey(UInt16 Pipeline, UInt16 Material, UInt16 Mesh)
+        /// \param Depth The depth value to convert, which may be any finite floating-point value.
+        /// \return The depth field, left-aligned so an unspent budget leaves whole bytes constant.
+        template<UInt32 Bits = 0>
+        ZY_INLINE static constexpr UInt32 OpaqueDepthToBits(Real32 Depth)
         {
-            return (static_cast<UInt64>(Pipeline & 0x3FFu)  << 54) |    // [10:Pipeline]
-                   (static_cast<UInt64>(Material & 0x3FFFu) << 40) |    // [14:Material]
-                   (static_cast<UInt64>(Mesh     & 0xFFFFu) << 24);     // [16:Mesh]
+            if constexpr (Bits == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return DepthToBits<Bits>(Depth) << (24 - Bits);
+            }
         }
 
         /// \brief Converts a floating-point depth value to a sortable integer representation.
@@ -260,7 +281,8 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Queue, Enum::Count<Priority>()> mQueues;
-        Array<Queue, Enum::Count<Priority>()> mScratches;
+        Priority mPhase;
+        Queue    mQueue;
+        Blob     mScratch;
     };
 }
