@@ -2,6 +2,11 @@
 #
 # Applies the engine's standard compiler and linker settings to a target.
 #
+# Configurations:
+#   Debug          Unoptimized, instrumented, sanitized.
+#   RelWithDebInfo Optimized as Release, minus whole-program optimization, plus symbols and frame pointers.
+#   Release        Fully optimized and stripped.
+#
 # Usage:
 #   ZyApplyOptions(<target>)
 FUNCTION(ZyApplyOptions TARGET)
@@ -20,7 +25,11 @@ FUNCTION(ZyApplyOptions TARGET)
             $<$<CONFIG:Release>:
                 -O3
             >
-            $<$<NOT:$<CONFIG:Release>>:
+            $<$<CONFIG:RelWithDebInfo>:
+                -O2
+                -g
+            >
+            $<$<CONFIG:Debug>:
                 -O0
                 -g
             >
@@ -40,13 +49,19 @@ FUNCTION(ZyApplyOptions TARGET)
             -sMIN_WEBGL_VERSION=2
             -sMAX_WEBGL_VERSION=2
             -sUSE_WEBGL2=1
-            $<$<NOT:$<CONFIG:Release>>:
+            $<$<CONFIG:Debug>:
                 -sASSERTIONS=2
                 -sSAFE_HEAP=1
                 -sSTACK_OVERFLOW_CHECK=2
                 -g
                 -gsource-map
                 -sGL_DEBUG=1
+            >
+            $<$<CONFIG:RelWithDebInfo>:
+                -g
+                -gsource-map
+                -sASSERTIONS=0
+                -sSTACK_OVERFLOW_CHECK=0
             >
             $<$<CONFIG:Release>:
                 --closure 1
@@ -68,43 +83,54 @@ FUNCTION(ZyApplyOptions TARGET)
     ELSEIF (MSVC)
 
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
-            $<$<CONFIG:Release>:
+            $<$<CONFIG:Release,RelWithDebInfo>:
                 /O2
                 /Gw
-                /GL
                 /GS-
-                /Zc:inline
                 /Zc:preprocessor
             >
-            $<$<NOT:$<CONFIG:Release>>:
+            $<$<CONFIG:Release>:
+                /GL
+            >
+            $<$<CONFIG:Debug>:
                 /Od
                 /RTC1
                 /sdl
+            >
+            $<$<CONFIG:Debug,RelWithDebInfo>:
                 /Zi
-                /Zc:inline
             >
             /GR-
+            /Zc:inline
             /arch:SSE4.2
         )
 
         TARGET_LINK_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
                 /LTCG
+            >
+            $<$<CONFIG:Release,RelWithDebInfo>:
                 /OPT:REF
                 /OPT:ICF
             >
-            $<$<NOT:$<CONFIG:Release>>: /DEBUG>
+            $<$<CONFIG:Debug,RelWithDebInfo>: /DEBUG>
         )
 
     ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
-            $<$<CONFIG:Release>:
+            $<$<CONFIG:Release,RelWithDebInfo>:
                 -O3
                 -funroll-loops
+            >
+            $<$<CONFIG:Release>:
                 -fomit-frame-pointer
             >
-            $<$<NOT:$<CONFIG:Release>>:
+            $<$<CONFIG:RelWithDebInfo>:
+                -g
+                -fno-omit-frame-pointer
+            >
+            $<$<CONFIG:Debug>:
                 -O0
                 -g3
                 -fsanitize=address
@@ -122,7 +148,10 @@ FUNCTION(ZyApplyOptions TARGET)
                 -Wl,--gc-sections
                 -Wl,--strip-all
             >
-            $<$<NOT:$<CONFIG:Release>>: -fsanitize=address>
+            $<$<CONFIG:RelWithDebInfo>:
+                -Wl,--gc-sections
+            >
+            $<$<CONFIG:Debug>: -fsanitize=address>
         )
 
         IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
