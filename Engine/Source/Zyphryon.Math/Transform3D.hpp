@@ -297,6 +297,17 @@ inline namespace Math
             return Transform3D(Translation, Scale, Rotation);
         }
 
+        /// \brief Serializes the state of the transform to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the transform with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mTranslation);
+            Archive.Serialize(mScale);
+            Archive.Serialize(mRotation);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

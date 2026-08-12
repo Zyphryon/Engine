@@ -237,6 +237,58 @@ inline namespace Base
             }
         }
 
+        /// \brief Serializes the state of the freelist to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the freelist with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            UInt32 Taken = static_cast<UInt32>(mSize);
+            Archive.Serialize(Taken);
+
+            if constexpr (Serializer::IsReader)
+            {
+                Clear();
+
+                for (UInt32 Index = 0; Index < Taken; ++Index)
+                {
+                    UInt32 Occupied = 0;
+                    Archive.Serialize(Occupied);
+
+                    Epoch Stamp = 0;
+
+                    if constexpr (EpochBits > 0)
+                    {
+                        Archive.Serialize(Stamp);
+                    }
+
+                    ZY_ASSERT(Occupied > 0 && Occupied <= Capacity, "Read a slot outside the freelist's capacity");
+
+                    if (Occupied > 0 && Occupied <= Capacity)
+                    {
+                        Adopt(Key(static_cast<Slot>(Occupied), Stamp));
+                    }
+                }
+            }
+            else
+            {
+                for (UInt32 Index = 1; Index <= static_cast<UInt32>(GetTop()); ++Index)
+                {
+                    if (IsOccupied(static_cast<Slot>(Index)))
+                    {
+                        UInt32 Occupied = Index;
+                        Archive.Serialize(Occupied);
+
+                        if constexpr (EpochBits > 0)
+                        {
+                            Epoch Stamp = mEpochs[Index - 1];
+                            Archive.Serialize(Stamp);
+                        }
+                    }
+                }
+            }
+        }
+
     private:
 
         /// \brief Moves a slot on to its next epoch and names it.

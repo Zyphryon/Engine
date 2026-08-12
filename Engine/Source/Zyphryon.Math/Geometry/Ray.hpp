@@ -320,6 +320,21 @@ inline namespace Math
             return false;
         }
 
+        /// \brief Serializes the state of the ray to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the ray with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mOrigin);
+            Archive.Serialize(mDirection);
+
+            if constexpr (Serializer::IsReader)
+            {
+                mInverse = Reciprocal(mDirection);
+            }
+        }
+
     private:
 
         /// \brief The reciprocal standing in for an axis the ray does not travel along.
