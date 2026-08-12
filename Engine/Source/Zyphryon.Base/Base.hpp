@@ -16,6 +16,7 @@
 #include "Zyphryon.Base/Container/Bag.hpp"
 #include "Zyphryon.Base/Container/Bitset.hpp"
 #include "Zyphryon.Base/Container/Freelist.hpp"
+#include "Zyphryon.Base/Container/Key.hpp"
 #include "Zyphryon.Base/Container/Pool.hpp"
 #include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Base/Container/Span.hpp"

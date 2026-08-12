@@ -29,7 +29,7 @@ namespace Job
             return 0;
         }
 
-        const Slot Value = mAllocator.Allocate();
+        const Slot Value = mAllocator.Allocate().GetSlot();
 
         Ref<Entry> Job = mEntries[Index(Value)];
         Job.Work       = Forward<Task>(Work);
@@ -47,13 +47,7 @@ namespace Job
 
     Slot Registry::Resolve(Handle Job) const
     {
-        const UInt32 Index = (Job & 0xFFFF);
-
-        if (Index == 0 || !mAllocator.IsAllocated(Index))
-        {
-            return 0;
-        }
-        return (mEntries[Index - 1].Generation == (Job >> 16) ? static_cast<Slot>(Index) : 0);
+        return mAllocator.IsAllocated(Job) ? static_cast<Slot>(Job.GetSlot()) : 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -72,10 +66,7 @@ namespace Job
 
         if (--Job.References == 0)
         {
-            // Bumping the generation is what makes every handle minted from this slot resolve as stale.
-            ++Job.Generation;
-
-            mAllocator.Free(Value);
+            mAllocator.Release(static_cast<Handle::Slot>(Value));
         }
     }
 
@@ -104,7 +95,7 @@ namespace Job
     {
         for (UInt32 Index = 1; Index <= static_cast<UInt32>(mAllocator.GetTop()); ++Index)
         {
-            if (mAllocator.IsAllocated(Index))
+            if (mAllocator.IsOccupied(static_cast<Handle::Slot>(Index)))
             {
                 mEntries[Index - 1].Work = Task();
             }

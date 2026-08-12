@@ -76,7 +76,7 @@ namespace Audio
     };
 
     /// \brief A handle representing an active audio playback instance.
-    using Object = UInt16;
+    using Object = Key<kMaxInstances>;
 
     /// \brief Holds the per-channel linear output gains for a stereo source.
     struct Gains final

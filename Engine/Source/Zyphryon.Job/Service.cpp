@@ -108,7 +108,7 @@ namespace Job
     {
         const Lane Actual = Reconcile(Target);
 
-        Handle Result  = 0;
+        Handle Result;
         Bool   Queued  = false;
         Bool   Starved = false;
 

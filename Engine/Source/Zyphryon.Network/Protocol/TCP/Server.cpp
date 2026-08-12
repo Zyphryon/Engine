@@ -208,10 +208,11 @@ namespace Network::TCP
 
     Ptr<Stream> Server::Locate(Connection Link) const
     {
-        if (const UInt Slot = Link.GetPeer(); Slot != 0 && Slot <= kMaxPeers)
+        // The key carries the epoch its slot was handed out at, so a handle kept past the peer it named is
+        // turned away here rather than reaching whoever took the slot next.
+        if (const ConstPtr<Retainer<Stream>> Entry = mPeers.TryGet(Link.GetPeer()))
         {
-            const ConstPtr<Retainer<Stream>> Entry = mPeers.TryGet(Slot);
-            return (Entry != nullptr) ? static_cast<Ptr<Stream>>(* Entry) : nullptr;
+            return static_cast<Ptr<Stream>>(* Entry);
         }
         return nullptr;
     }
@@ -255,8 +256,8 @@ namespace Network::TCP
         Address Address;
         Origin.Describe(Address);
 
-        const UInt       Slot = mPeers.Allocate();
-        const Connection Link(mLink.GetChannel(), Slot);
+        const Connection::Peer Slot = mPeers.Allocate();
+        const Connection       Link = mLink.Derive(Slot);
 
         mPeers[Slot] = Retainer<Stream>::Create(Link, Address, mListener, Peer);
         mPeers[Slot]->SetTimeout(Link, mTimeout);

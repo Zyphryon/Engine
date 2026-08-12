@@ -9,6 +9,12 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [  HEADER  ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#include "Common.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -19,24 +25,58 @@ namespace Network
     {
     public:
 
-        /// \brief The number of bits the handle gives to the peer half of its value.
-        static constexpr UInt kPeerBits = 16;
+        /// \brief The key naming an endpoint's slot in the service.
+        using Endpoint = Freelist<kMaxEndpoints>::Key;
+
+        /// \brief The key naming a peer's slot within an endpoint.
+        using Peer     = Freelist<kMaxPeers>::Key;
 
     public:
 
         /// \brief Constructs a handle that names nothing.
-        ZY_INLINE constexpr Connection()
-            : mValue { 0 }
+        ZY_INLINE constexpr Connection() = default;
+
+        /// \brief Constructs a handle naming one endpoint.
+        ///
+        /// \param Endpoint The key naming the endpoint's slot.
+        ZY_INLINE constexpr explicit Connection(Endpoint Endpoint)
+            : mEndpoint { Endpoint }
         {
         }
 
-        /// \brief Constructs a handle naming one endpoint, or one peer of it.
+        /// \brief Derives the handle naming one peer of the endpoint this handle names.
         ///
-        /// \param Channel The endpoint the handle belongs to.
-        /// \param Peer    The peer's slot within it, counted from one, or zero to name the endpoint itself.
-        ZY_INLINE constexpr Connection(UInt16 Channel, UInt16 Peer)
-            : mValue { (static_cast<UInt32>(Channel) << kPeerBits) | Peer }
+        /// \param Peer The key naming the peer's slot within this endpoint.
+        /// \return The handle naming that peer of this endpoint.
+        ZY_INLINE constexpr Connection Derive(Peer Peer) const
         {
+            Connection Result(mEndpoint);
+            Result.mPeer = Peer;
+            return Result;
+        }
+
+        /// \brief Gets the handle naming the endpoint this one belongs to.
+        ///
+        /// \return This handle with its peer half cleared, which is the endpoint's own handle.
+        ZY_INLINE constexpr Connection GetEndpoint() const
+        {
+            return Connection(mEndpoint);
+        }
+
+        /// \brief Gets the endpoint half of the handle.
+        ///
+        /// \return The key naming the endpoint's slot.
+        ZY_INLINE constexpr Endpoint GetChannel() const
+        {
+            return mEndpoint;
+        }
+
+        /// \brief Gets the peer half of the handle.
+        ///
+        /// \return The key naming the peer's slot, which names nothing when the handle is the endpoint's own.
+        ZY_INLINE constexpr Peer GetPeer() const
+        {
+            return mPeer;
         }
 
         /// \brief Checks whether the handle names anything.
@@ -44,29 +84,21 @@ namespace Network
         /// \return `true` if the handle names an endpoint or a peer, otherwise `false`.
         ZY_INLINE constexpr Bool IsValid() const
         {
-            return mValue != 0;
+            return mEndpoint.IsValid();
         }
 
-        /// \brief Gets the endpoint half of the handle.
+        /// \brief Checks whether the handle names a peer rather than the endpoint itself.
         ///
-        /// \return The endpoint the handle belongs to.
-        ZY_INLINE constexpr UInt16 GetChannel() const
+        /// \return `true` if the handle names a peer, otherwise `false`.
+        ZY_INLINE constexpr Bool IsPeer() const
         {
-            return mValue >> kPeerBits;
-        }
-
-        /// \brief Gets the peer half of the handle.
-        ///
-        /// \return The peer's slot within the endpoint, or zero when the handle names the endpoint itself.
-        ZY_INLINE constexpr UInt16 GetPeer() const
-        {
-            return mValue & ((1u << kPeerBits) - 1);
+            return mPeer.IsValid();
         }
 
         /// \brief Compares this handle against another for equality.
         ///
         /// \param Other The handle to compare against.
-        /// \return `true` if both name the same peer of the same endpoint, otherwise `false`.
+        /// \return `true` if both name the same incarnation of the same peer of the same endpoint, otherwise `false`.
         ZY_INLINE constexpr Bool operator==(ConstRef<Connection> Other) const = default;
 
     private:
@@ -74,6 +106,7 @@ namespace Network
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt32 mValue;
+        Endpoint mEndpoint;
+        Peer     mPeer;
     };
 }

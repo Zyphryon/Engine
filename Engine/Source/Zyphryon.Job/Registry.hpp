@@ -37,9 +37,6 @@ namespace Job
             /// Head of the chain of jobs that this one gates.
             Slot   Successor  = 0;
 
-            /// Distinguishes this use of the slot from every previous one, so stale handles resolve as complete.
-            UInt16 Generation = 0;
-
             /// Outstanding claims on the slot: one for the pending execution, plus one if a handle was handed out.
             UInt8  References = 0;
 
@@ -73,7 +70,7 @@ namespace Job
         /// \return A handle that resolves back to \p Value until the slot is recycled.
         ZY_INLINE Handle Mint(Slot Value) const
         {
-            return (static_cast<Handle>(mEntries[Index(Value)].Generation) << 16) | static_cast<Handle>(Value);
+            return mAllocator.GetKey(static_cast<Handle::Slot>(Value));
         }
 
         /// \brief Resolves a handle to the slot it names.

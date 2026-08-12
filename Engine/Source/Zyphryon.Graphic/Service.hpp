@@ -499,11 +499,11 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Freelist<kMaxBuffers>            mBuffers;
-        Freelist<kMaxTextures>           mMaterials;
-        Freelist<kMaxPasses>             mPasses;
-        Freelist<kMaxPipelines>          mPipelines;
-        Freelist<kMaxSamplers>           mSamplers;
-        Freelist<kMaxTextures>           mTextures;
+        Freelist<kMaxBuffers,   0>       mBuffers;
+        Freelist<kMaxTextures,  0>       mMaterials;
+        Freelist<kMaxPasses,    0>       mPasses;
+        Freelist<kMaxPipelines, 0>       mPipelines;
+        Freelist<kMaxSamplers,  0>       mSamplers;
+        Freelist<kMaxTextures,  0>       mTextures;
     };
 }

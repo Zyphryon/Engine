@@ -192,7 +192,7 @@ namespace Audio
                 mInstances.Free(Playback);
             }
         }
-        return 0;
+        return Object();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -219,7 +219,7 @@ namespace Audio
                 mInstances.Free(Playback);
             }
         }
-        return 0;
+        return Object();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -251,7 +251,7 @@ namespace Audio
 
     void Service::Subscribe(Object Handle, Callback Callback)
     {
-        ZY_ASSERT(Handle != 0, "Handle must be valid");
+        ZY_ASSERT(Handle.IsValid(), "Handle must be valid");
 
         mSubscriptions.Assign(Handle, Callback);
     }
@@ -261,7 +261,7 @@ namespace Audio
 
     void Service::Unsubscribe(Object Handle)
     {
-        ZY_ASSERT(Handle != 0, "Handle must be valid");
+        ZY_ASSERT(Handle.IsValid(), "Handle must be valid");
 
         mSubscriptions.Erase(Handle);
     }

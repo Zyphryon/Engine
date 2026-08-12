@@ -113,6 +113,16 @@ inline namespace Base
         return static_cast<Type>(std::bit_ceil(static_cast<Unsigned<Type>>(Value)));
     }
 
+    /// \brief Returns how many bits it takes to hold every value up to \p Limit.
+    ///
+    /// \param Limit The largest value that must fit.
+    /// \return The number of bits needed, or zero when \p Limit is zero.
+    template<typename Type>
+    constexpr Type CountSignificantBits(Type Limit)
+    {
+        return static_cast<Type>(std::bit_width(static_cast<Unsigned<Type>>(Limit)));
+    }
+
     /// \brief Reinterprets the bits of a value as another type.
     ///
     /// This function performs a bitwise cast from one type to another, preserving the underlying bit pattern.

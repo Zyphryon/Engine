@@ -189,9 +189,9 @@ namespace Network::UDP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt Server::Locate(ConstRef<Endpoint> Origin) const
+    Connection::Peer Server::Locate(ConstRef<Endpoint> Origin) const
     {
-        if (const ConstPtr<UInt> Found = mRegistry.Find(Digest(Origin.Hash())))
+        if (const ConstPtr<Connection::Peer> Found = mRegistry.Find(Digest(Origin.Hash())))
         {
             if (ConstRef<Peer> Entry = mPeers[* Found]; Entry.Remote == Origin)
             {
@@ -200,26 +200,26 @@ namespace Network::UDP
 
             LOG_W("Network: two peers hashed alike, so the later one was turned away");
         }
-        return 0;
+        return Connection::Peer();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt Server::Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output)
+    Connection::Peer Server::Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output)
     {
         if (mPeers.IsFull())
         {
-            return 0;
+            return Connection::Peer();
         }
 
         // The slot is the peer half of the connection, since the pool counts from one already, and it is
         // constructed fresh so nothing the peer before it left queued can survive into this one.
-        const UInt Slot = mPeers.Allocate();
+        const Connection::Peer Slot = mPeers.Allocate();
         mRegistry.Assign(Digest(Origin.Hash()), Slot);
 
         Ref<Peer> Entry = mPeers[Slot];
-        Entry.Link      = Connection(mLink.GetChannel(), Slot);
+        Entry.Link      = mLink.Derive(Slot);
         Entry.Remote    = Origin;
         Entry.Freshness = mClock;
         Origin.Describe(Entry.Origin);
@@ -240,15 +240,15 @@ namespace Network::UDP
 
         // Sent out of the endpoint's own room like any other datagram, so an address that never answers costs
         // nothing but the moment it takes to leave and is never written down anywhere.
-        const UInt  Index = mFlights.Allocate();
+        const auto  Index = mFlights.Allocate();
         Ref<Flight> Carry = mFlights[Index];
 
-        Carry.Peer = 0;
+        Carry.Peer = Connection::Peer();
         Carry.Data.Resize(kChallenge);
 
         mSentry.Inscribe(Origin, Span(Carry.Data.GetData(), kChallenge));
 
-        const Connection Link(mLink.GetChannel(), Index);
+        const Connection Link = mLink.Derive(Index.Rebind<kMaxPeers>());
 
         if (!Watcher.Send(mSocket, Link, ConstSpan(Carry.Data.GetData(), kChallenge), Origin))
         {
@@ -283,7 +283,7 @@ namespace Network::UDP
 
             for (UInt Step = 0; Step < Top && !mFlights.IsFull(); ++Step)
             {
-                const UInt Slot = 1 + (mCursor + Step) % Top;
+                const Connection::Peer Slot = mPeers.GetKey(static_cast<Connection::Peer::Slot>(1 + (mCursor + Step) % Top));
 
                 if (const Ptr<Peer> Entry = mPeers.TryGet(Slot))
                 {
@@ -302,7 +302,7 @@ namespace Network::UDP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Server::Push(Ref<Proactor> Watcher, Real64 Time, UInt Slot, Ref<Peer> Entry)
+    Bool Server::Push(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, Ref<Peer> Entry)
     {
         if (mState != State::Live || mFlights.IsFull())
         {
@@ -311,7 +311,7 @@ namespace Network::UDP
 
         // Built into room the endpoint owns rather than the peer's own, so the peer may be let go of while the
         // datagram it asked for is still on its way.
-        const UInt   Index = mFlights.Allocate();
+        const auto   Index = mFlights.Allocate();
         Ref<Flight>  Carry = mFlights[Index];
 
         const Ptr<Byte> Data = Carry.Data.GetData();
@@ -325,11 +325,11 @@ namespace Network::UDP
 
         Data[0]    = Enum::Cast(Envelope::Data);
         Carry.Peer = Slot;
-        mCursor    = Slot;
+        mCursor    = Slot.GetSlot();
 
         // Posted under the room it went out of rather than under the peer, since that is what the answer has to
         // name for the room to be taken back, and a write is reported to nobody else.
-        const Connection Link(mLink.GetChannel(), Index);
+        const Connection Link = mLink.Derive(Index.Rebind<kMaxPeers>());
 
         if (!Watcher.Send(mSocket, Link, ConstSpan(Data, kEnvelope + Size), Entry.Remote))
         {
@@ -353,7 +353,7 @@ namespace Network::UDP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Server::Absorb(Ref<Proactor> Watcher, Real64 Time, UInt Slot, UInt32 Size, Ref<Mailbox> Output)
+    void Server::Absorb(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, UInt32 Size, Ref<Mailbox> Output)
     {
         Ref<Peer>        Entry = mPeers[Slot];
         const Connection Link  = Entry.Link;
@@ -406,7 +406,7 @@ namespace Network::UDP
             const Envelope Kind  = static_cast<Envelope>(mInbound[0]);
             const Bool     Whole = (Size >= kChallenge);
 
-            if (const UInt Slot = Locate(Origin))
+            if (const Connection::Peer Slot = Locate(Origin))
             {
                 if (Kind == Envelope::Data && Whole)
                 {
@@ -434,16 +434,20 @@ namespace Network::UDP
 
     void Server::OnSend(Ref<Proactor> Watcher, Real64 Time, ConstRef<Proactor::Event> Event)
     {
-        const Ptr<Flight> Carry = mFlights.TryGet(Event.Link.GetPeer());
+        const auto Index = Event.Link.GetPeer().Rebind<kMaxFlight>();
+
+        // The pool hands a finished flight's slot straight back out, so the epoch riding in the key is what
+        // keeps a late completion from retiring whichever send took its place.
+        const Ptr<Flight> Carry = mFlights.TryGet(Index);
 
         if (Carry == nullptr)
         {
             return;
         }
 
-        const UInt Slot = Carry->Peer;
+        const Connection::Peer Slot = Carry->Peer;
 
-        mFlights.Free(Event.Link.GetPeer());
+        mFlights.Free(Index);
 
         if (const Ptr<Peer> Entry = mPeers.TryGet(Slot))
         {

@@ -60,7 +60,7 @@ namespace Job
         /// \param Work       The job to execute.
         /// \param Dependency An optional job that must complete before this one is queued.
         /// \return A handle that must be passed to \ref Wait, \ref Block or \ref Discard exactly once.
-        Handle Submit(Lane Target, AnyRef<Task> Work, Handle Dependency = 0);
+        Handle Submit(Lane Target, AnyRef<Task> Work, Handle Dependency = Handle());
 
         /// \brief Blocks until the given job completes, executing other compute jobs meanwhile, then releases it.
         ///

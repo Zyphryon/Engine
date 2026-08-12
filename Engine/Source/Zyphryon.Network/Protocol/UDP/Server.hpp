@@ -76,7 +76,7 @@ namespace Network::UDP
             Sequence<Byte, kMaxDatagram> Data;
 
             /// The peer it went to, kept so what it cost is put against the right one when it lands.
-            UInt                         Peer = 0;
+            Connection::Peer             Peer;
         };
 
         /// \brief Represents one peer this endpoint speaks to, which owns no socket of its own.
@@ -102,14 +102,14 @@ namespace Network::UDP
         ///
         /// \param Origin The address a datagram arrived from.
         /// \return The place the peer sits, or zero when no peer is known at that address.
-        UInt Locate(ConstRef<Endpoint> Origin) const;
+        Connection::Peer Locate(ConstRef<Endpoint> Origin) const;
 
         /// \brief Takes on the peer at an address, which is only ever reached once the address has been shown.
         ///
         /// \param Origin The address to take a peer on at.
         /// \param Output Receives a notice for the peer if it was taken on.
         /// \return The place the peer sits, or zero when there was no room for another.
-        UInt Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output);
+        Connection::Peer Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output);
 
         /// \brief Asks an address to show that it reaches whoever sent from it, writing nothing down either way.
         ///
@@ -124,7 +124,7 @@ namespace Network::UDP
         /// \param Slot    The place the peer sits.
         /// \param Size    The number of bytes the datagram carried.
         /// \param Output  Receives the messages, and a notice should the peer be let go of.
-        void Absorb(Ref<Proactor> Watcher, Real64 Time, UInt Slot, UInt32 Size, Ref<Mailbox> Output);
+        void Absorb(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, UInt32 Size, Ref<Mailbox> Output);
 
         /// \brief Takes a peer out of the table it is found by, leaving its slot to whoever frees it.
         ///
@@ -144,7 +144,7 @@ namespace Network::UDP
         /// \param Slot    The place the peer sits.
         /// \param Entry   The peer to take the packet from.
         /// \return `true` if a packet went out, `false` if the peer had none or there was no room left.
-        Bool Push(Ref<Proactor> Watcher, Real64 Time, UInt Slot, Ref<Peer> Entry);
+        Bool Push(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, Ref<Peer> Entry);
 
         /// \brief Posts the read that takes the next datagram, if one is not out already.
         ///
@@ -179,13 +179,13 @@ namespace Network::UDP
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Socket                       mSocket;
-        Sentry                       mSentry;
-        Pool<Peer, kMaxPeers>        mPeers;
-        Pool<Flight, kMaxFlight>     mFlights;
-        Table<Digest, UInt>          mRegistry;
-        Sequence<Byte, kMaxRead>     mInbound;
-        Real64                       mClock;
-        UInt                         mCursor;
+        Socket                          mSocket;
+        Sentry                          mSentry;
+        Pool<Peer, kMaxPeers>           mPeers;
+        Pool<Flight, kMaxFlight>        mFlights;
+        Table<Digest, Connection::Peer> mRegistry;
+        Sequence<Byte, kMaxRead>        mInbound;
+        Real64                          mClock;
+        UInt                            mCursor;
     };
 }

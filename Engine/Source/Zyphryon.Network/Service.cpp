@@ -142,8 +142,8 @@ namespace Network
             return Connection();
         }
 
-        const Connection Link(mSlots.Allocate(), 0);
-        mHandlers[Link.GetChannel()] = Listener;
+        const Connection Link(mSlots.Allocate());
+        mHandlers[Link.GetChannel().GetSlot()] = Listener;
 
         const Retainer<Service> Self(this);
 
@@ -170,7 +170,7 @@ namespace Network
     {
         for (ConstRef<Mailbox::Entry> Entry : mDrain.GetEntries())
         {
-            const UInt Slot = Entry.Link.GetChannel();
+            const UInt Slot = Entry.Link.GetChannel().GetSlot();
 
             ConstRetainer<Handler> Listener = mHandlers[Slot];
 
@@ -182,11 +182,11 @@ namespace Network
             case Mailbox::Signal::Disconnect:
                 Listener->OnDisconnect(Entry.Link, Entry.Cause);
 
-                if (Entry.Link.GetPeer() == 0)
+                if (!Entry.Link.IsPeer())
                 {
                     mHandlers[Slot] = nullptr;
 
-                    mSlots.Free(Slot);
+                    mSlots.Free(Entry.Link.GetChannel());
                 }
                 break;
             case Mailbox::Signal::Message:

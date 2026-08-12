@@ -28,8 +28,8 @@ namespace Job
     /// \brief Maximum number of jobs that may be in flight at once.
     inline constexpr UInt32 kMaxJobs  = 1024;
 
-    /// \brief Opaque reference to a submitted job, where `0` denotes an invalid job.
-    using Handle = UInt32;
+    /// \brief Opaque reference to a submitted job, where a key naming nothing denotes an invalid job.
+    using Handle = Freelist<kMaxJobs>::Key;
 
     /// \brief A job's place in the registry, where `0` can stand for no job.
     using Slot   = UInt32;

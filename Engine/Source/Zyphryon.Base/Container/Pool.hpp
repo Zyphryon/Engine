@@ -22,13 +22,20 @@
 inline namespace Base
 {
     /// \brief A fixed-capacity object pool that manages allocation and deallocation of objects.
-    template<typename Type, UInt Capacity>
+    ///
+    /// \tparam Type      The object the pool holds.
+    /// \tparam Capacity  The number of objects the pool can hold.
+    /// \tparam EpochBits The number of bits given to each slot's epoch, or zero to track none.
+    template<typename Type, UInt Capacity, UInt EpochBits = 16>
     class Pool final
     {
     public:
 
-        /// \brief The type of handle used to reference allocated objects in the pool.
-        using Handle = Freelist<Capacity>::Handle;
+        /// \brief The key naming one object at the epoch its slot was handed out at.
+        using Key  = typename Freelist<Capacity, EpochBits>::Key;
+
+        /// \brief The integer a slot is counted in.
+        using Slot = typename Freelist<Capacity, EpochBits>::Slot;
 
     public:
 
@@ -43,20 +50,20 @@ inline namespace Base
         {
             if constexpr (!IsTriviallyDestructible<Type>)
             {
-                for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+                for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
                 {
-                    if (mAllocator.IsAllocated(Handle))
+                    if (mAllocator.IsOccupied(static_cast<Slot>(Index)))
                     {
-                        mStorage.Destruct(Handle - 1);
+                        mStorage.Destruct(Index - 1);
                     }
                 }
             }
             mAllocator.Clear();
         }
 
-        /// \brief Gets the highest handle value that has been allocated.
+        /// \brief Gets the highest slot that has been allocated.
         ///
-        /// \return The highest handle value that has been allocated.
+        /// \return The highest slot that has been allocated.
         ZY_INLINE constexpr UInt GetTop() const
         {
             return mAllocator.GetTop();
@@ -97,84 +104,127 @@ inline namespace Base
         /// \brief Allocates a new object in the pool and constructs it with the given arguments.
         ///
         /// \param Parameters The constructor arguments to forward to \p Type.
-        /// \return A handle to the newly allocated object.
+        /// \return A key naming the newly allocated object.
         template<typename... Arguments>
-        ZY_INLINE constexpr Handle Allocate(AnyRef<Arguments>... Parameters)
+        ZY_INLINE constexpr Key Allocate(AnyRef<Arguments>... Parameters)
         {
-            const Handle Handle = mAllocator.Allocate();
+            const Key Handle = mAllocator.Allocate();
 
-            mStorage.Construct(Handle - 1, Forward<Arguments>(Parameters)...);
+            mStorage.Construct(Handle.GetSlot() - 1, Forward<Arguments>(Parameters)...);
 
             return Handle;
         }
 
-        /// \brief Allocates a new object in the pool, passing the handle as the first constructor argument.
+        /// \brief Allocates a new object in the pool, passing its key as the first constructor argument.
         ///
-        /// \param Parameters The constructor arguments to forward to \p Type after the handle.
-        /// \return A handle to the newly allocated object.
+        /// \param Parameters The constructor arguments to forward to \p Type after the key.
+        /// \return A key naming the newly allocated object.
         template<typename... Arguments>
-        ZY_INLINE constexpr Handle AllocateWithHandle(AnyRef<Arguments>... Parameters)
+        ZY_INLINE constexpr Key AllocateWithHandle(AnyRef<Arguments>... Parameters)
         {
-            const Handle Handle = mAllocator.Allocate();
+            const Key Handle = mAllocator.Allocate();
 
-            mStorage.Construct(Handle - 1, Handle, Forward<Arguments>(Parameters)...);
+            mStorage.Construct(Handle.GetSlot() - 1, Handle, Forward<Arguments>(Parameters)...);
 
             return Handle;
         }
 
-        /// \brief Allocates an object at a specific handle and constructs it with the given arguments.
+        /// \brief Allocates an object at a specific slot and constructs it with the given arguments.
         ///
-        /// \param Handle     The handle at which to allocate the object.
+        /// \param Index      The slot at which to allocate the object, counted from one.
+        /// \param Parameters The constructor arguments to forward to \p Type.
+        /// \return A key naming the newly allocated object.
+        template<typename... Arguments>
+        ZY_INLINE constexpr Key Acquire(Slot Index, AnyRef<Arguments>... Parameters)
+        {
+            const Key Handle = mAllocator.Acquire(Index);
+
+            mStorage.Construct(Index - 1, Forward<Arguments>(Parameters)...);
+
+            return Handle;
+        }
+
+        /// \brief Allocates an object at the slot a key names, taking the key's epoch rather than minting one.
+        ///
+        /// \param Handle     The key naming where to allocate the object.
         /// \param Parameters The constructor arguments to forward to \p Type.
         template<typename... Arguments>
-        ZY_INLINE constexpr void Acquire(Handle Handle, AnyRef<Arguments>... Parameters)
+        ZY_INLINE constexpr void Acquire(Key Handle, AnyRef<Arguments>... Parameters)
         {
-            mAllocator.Acquire(Handle);
+            mAllocator.Adopt(Handle);
 
-            mStorage.Construct(Handle - 1, Forward<Arguments>(Parameters)...);
+            mStorage.Construct(Handle.GetSlot() - 1, Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Frees the object at the given handle, destroying it and releasing the slot.
+        /// \brief Frees the object a key names, destroying it and releasing its slot.
         ///
-        /// \param Handle The handle of the object to free.
-        ZY_INLINE constexpr void Free(Handle Handle)
+        /// \param Handle The key naming the object to free.
+        ZY_INLINE constexpr void Free(Key Handle)
         {
             mAllocator.Free(Handle);
 
-            mStorage.Destruct(Handle - 1);
+            mStorage.Destruct(Handle.GetSlot() - 1);
         }
 
-        /// \brief Checks whether the given handle refers to an allocated object.
+        /// \brief Frees whatever occupies a slot, whichever key named it.
         ///
-        /// \param Handle The handle to check.
-        /// \return `true` if the handle is allocated, otherwise `false`.
-        ZY_INLINE constexpr Bool IsAllocated(Handle Handle) const
+        /// \param Index The slot to free, counted from one.
+        ZY_INLINE constexpr void Release(Slot Index)
+        {
+            mAllocator.Release(Index);
+
+            mStorage.Destruct(Index - 1);
+        }
+
+        /// \brief Checks whether a key still names the object in its slot.
+        ///
+        /// \param Handle The key to check.
+        /// \return `true` if the key names an allocated object, otherwise `false`.
+        ZY_INLINE constexpr Bool IsAllocated(Key Handle) const
         {
             return mAllocator.IsAllocated(Handle);
         }
 
-        /// \brief Attempts to get a pointer to the object at the given handle.
+        /// \brief Checks whether a slot holds an object, whichever key names it.
         ///
-        /// \param Handle The handle of the object to get.
-        /// \return A pointer to the object if allocated, otherwise `nullptr`.
-        ZY_INLINE constexpr Ptr<Type> TryGet(Handle Handle)
+        /// \param Index The slot to check, counted from one.
+        /// \return `true` if the slot is allocated, otherwise `false`.
+        ZY_INLINE constexpr Bool IsOccupied(Slot Index) const
+        {
+            return mAllocator.IsOccupied(Index);
+        }
+
+        /// \brief Gets the key naming whatever occupies a slot.
+        ///
+        /// \param Index The slot to name, counted from one.
+        /// \return The key naming that slot at its current epoch.
+        ZY_INLINE constexpr Key GetKey(Slot Index) const
+        {
+            return mAllocator.GetKey(Index);
+        }
+
+        /// \brief Attempts to get a pointer to the object a key names.
+        ///
+        /// \param Handle The key naming the object to get.
+        /// \return A pointer to the object, or `nullptr` when the key no longer names it.
+        ZY_INLINE constexpr Ptr<Type> TryGet(Key Handle)
         {
             if (mAllocator.IsAllocated(Handle))
             {
-                return mStorage.GetAddress(Handle - 1);
+                return mStorage.GetAddress(Handle.GetSlot() - 1);
             }
             return nullptr;
         }
 
-        /// \brief Attempts to get a const pointer to the object at the given handle.
+        /// \brief Attempts to get a const pointer to the object a key names.
         ///
-        /// \param Handle The handle of the object to get.
-        /// \return A const pointer to the object if allocated, otherwise `nullptr`.
-        ZY_INLINE constexpr ConstPtr<Type> TryGet(Handle Handle) const
+        /// \param Handle The key naming the object to get.
+        /// \return A const pointer to the object, or `nullptr` when the key no longer names it.
+        ZY_INLINE constexpr ConstPtr<Type> TryGet(Key Handle) const
         {
             if (mAllocator.IsAllocated(Handle))
             {
-                return mStorage.GetAddress(Handle - 1);
+                return mStorage.GetAddress(Handle.GetSlot() - 1);
             }
             return nullptr;
         }
@@ -185,11 +235,11 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE constexpr void ForEach(AnyRef<Callable> Callback)
         {
-            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
             {
-                if (mAllocator.IsAllocated(Handle))
+                if (mAllocator.IsOccupied(static_cast<Slot>(Index)))
                 {
-                    Callback(mStorage[Handle - 1]);
+                    Callback(mStorage[Index - 1]);
                 }
             }
         }
@@ -200,11 +250,11 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE constexpr void ForEach(AnyRef<Callable> Callback) const
         {
-            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
             {
-                if (mAllocator.IsAllocated(Handle))
+                if (mAllocator.IsOccupied(static_cast<Slot>(Index)))
                 {
-                    Callback(mStorage[Handle - 1]);
+                    Callback(mStorage[Index - 1]);
                 }
             }
         }
@@ -218,11 +268,11 @@ inline namespace Base
         {
             UInt Result = 0;
 
-            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
             {
-                if (mAllocator.IsAllocated(Handle) && Predicate(mStorage[Handle - 1]))
+                if (mAllocator.IsOccupied(static_cast<Slot>(Index)) && Predicate(mStorage[Index - 1]))
                 {
-                    Free(Handle);
+                    Release(static_cast<Slot>(Index));
 
                     ++Result;
                 }
@@ -230,26 +280,26 @@ inline namespace Base
             return Result;
         }
 
-        /// \brief Gets a reference to the object at the given handle.
+        /// \brief Gets a reference to the object a key names.
         ///
-        /// \param Handle The handle of the object to access.
-        /// \return A reference to the object at \p Handle.
-        ZY_INLINE constexpr Ref<Type> operator[](Handle Handle)
+        /// \param Handle The key naming the object to access.
+        /// \return A reference to the object \p Handle names.
+        ZY_INLINE constexpr Ref<Type> operator[](Key Handle)
         {
-            ZY_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range handle");
+            ZY_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range key");
 
-            return mStorage[Handle - 1];
+            return mStorage[Handle.GetSlot() - 1];
         }
 
-        /// \brief Gets a const reference to the object at the given handle.
+        /// \brief Gets a const reference to the object a key names.
         ///
-        /// \param Handle The handle of the object to access.
-        /// \return A const reference to the object at \p Handle.
-        ZY_INLINE constexpr ConstRef<Type> operator[](Handle Handle) const
+        /// \param Handle The key naming the object to access.
+        /// \return A const reference to the object \p Handle names.
+        ZY_INLINE constexpr ConstRef<Type> operator[](Key Handle) const
         {
-            ZY_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range handle");
+            ZY_ASSERT(mAllocator.IsAllocated(Handle), "Attempted to access invalid or out-of-range key");
 
-            return mStorage[Handle - 1];
+            return mStorage[Handle.GetSlot() - 1];
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.
@@ -261,15 +311,15 @@ inline namespace Base
             Archive.Serialize(mAllocator);
 
             // Serialize each element in the storage array.
-            for (Handle Handle = 1; Handle <= mAllocator.GetTop(); ++Handle)
+            for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
             {
-                if (mAllocator.IsAllocated(Handle))
+                if (mAllocator.IsOccupied(static_cast<Slot>(Index)))
                 {
                     if constexpr (Serializer::IsReader)
                     {
-                        mStorage.Construct(Handle - 1);
+                        mStorage.Construct(Index - 1);
                     }
-                    Archive.Serialize(mStorage[Handle - 1]);
+                    Archive.Serialize(mStorage[Index - 1]);
                 }
             }
         }
@@ -279,7 +329,7 @@ inline namespace Base
         // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
         // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
 
-        Freelist<Capacity>      mAllocator;
-        Storage<Type, Capacity> mStorage;
+        Freelist<Capacity, EpochBits> mAllocator;
+        Storage<Type, Capacity>       mStorage;
     };
 }

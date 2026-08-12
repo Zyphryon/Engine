@@ -437,8 +437,8 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        flecs::world                  mWorld;
-        Clock                         mClock;
-        Freelist<kMaxCountArchetypes> mArchetypes;
+        flecs::world                     mWorld;
+        Clock                            mClock;
+        Freelist<kMaxCountArchetypes, 0> mArchetypes;
     };
 }

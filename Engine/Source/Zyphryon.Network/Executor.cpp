@@ -244,7 +244,7 @@ namespace Network
     {
         for (Ref<Request> Entry : Batch)
         {
-            const UInt Slot = Entry.Link.GetChannel();
+            const UInt Slot = Entry.Link.GetChannel().GetSlot();
 
             ZY_ASSERT(Slot > 0 && Slot <= kMaxEndpoints, "An endpoint was admitted under a slot that names none");
 
@@ -273,7 +273,7 @@ namespace Network
             {
                 // Filed at the slot the service already named, rather than at one chosen here, since the
                 // application was handed that slot before this thread ever saw the request.
-                mChannels.Acquire(Slot, Endpoint);
+                mChannels.Acquire(Entry.Link.GetChannel(), Endpoint);
 
                 // An endpoint that accepts is open the moment it is bound, and so is one that carries datagrams, since
                 // neither has an attempt to settle. A stream that reaches announces itself once its attempt has.

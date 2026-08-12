@@ -44,7 +44,7 @@ namespace Audio
         Gains           Gain;
 
         /// The handle that identifies this voice, mirrored here so completed voices can be reaped by handle.
-        Object          Handle    = 0;
+        Object          Handle;
 
         /// The number of interleaved samples the decoder produces per frame (stride).
         UInt16          Stride    = 2;
