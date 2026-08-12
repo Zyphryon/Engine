@@ -12,10 +12,19 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 ## Project
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-PROJECT(ZyPipeline VERSION 1.0.0 LANGUAGES CXX)
+PROJECT(ZyPipelineBaker VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Tool
+## Options
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_SUBDIRECTORY(Baker)
+OPTION(ZY_BUILD_PIPELINE_BAKER         "Build the offline asset bakers"                               OFF)
+OPTION(ZY_BUILD_PIPELINE_BAKER_LIBRARY "Build the offline asset bakers as libraries, not executables" OFF)
+
+IF    (ZY_BUILD_PIPELINE_BAKER)
+
+    ADD_SUBDIRECTORY(Font)
+    ADD_SUBDIRECTORY(Texture)
+    ADD_SUBDIRECTORY(Sound)
+
+ENDIF ()
