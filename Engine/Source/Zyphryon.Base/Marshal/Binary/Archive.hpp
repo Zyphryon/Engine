@@ -154,8 +154,9 @@ inline namespace Base
             {
                 if constexpr (IsReader)
                 {
-                    const UInt32 Size = mArchive.template ReadUInt<UInt32>();
-                    Value.Advance(Size);
+                    using Element = Type::Element;
+
+                    Value.Advance(SerializeCount(IsTriviallyCopyable<Element> ? sizeof(Element) : 1));
                 }
                 else
                 {
@@ -189,7 +190,7 @@ inline namespace Base
             {
                 Value.Clear();
 
-                const UInt32 Size = mArchive.template ReadUInt<UInt32>();
+                const UInt32 Size = SerializeCount(IsTriviallyCopyable<Pair> ? sizeof(Pair) : 1);
                 Value.Reserve(Size);
 
                 if constexpr (IsTriviallyCopyable<Pair>)
@@ -232,6 +233,17 @@ inline namespace Base
 
     private:
 
+        /// \brief Reads an element count the bytes left could actually hold.
+        ///
+        /// \param Stride The fewest bytes one element can occupy.
+        /// \return The count read, or zero when the buffer is too small to hold that many elements.
+        ZY_INLINE UInt SerializeCount(UInt Stride)
+        {
+            const UInt Count = mArchive.template ReadUInt<UInt32>();
+
+            return (Count <= mArchive.GetAvailable() / Max<UInt>(Stride, 1)) ? Count : 0;
+        }
+
         /// \brief Serializes a contiguous block of trivially copyable elements as raw bytes.
         ///
         /// \param Data  The pointer to the first element.
@@ -243,8 +255,17 @@ inline namespace Base
 
             if constexpr (IsReader)
             {
-                const ConstPtr<Byte> Source = mArchive.template Read<ConstPtr<Byte> >(Size);
-                Blit(Data, Size, Source);
+                // The reader yields nothing when the block runs past the end, which would otherwise reach
+                // `Blit` as a copy from address zero. A short read leaves zeroes, the way `Reader::Read`
+                // hands back a default-constructed value rather than a partial one.
+                if (const ConstPtr<Byte> Source = mArchive.template Read<ConstPtr<Byte> >(Size))
+                {
+                    Blit(Data, Size, Source);
+                }
+                else
+                {
+                    Zero(Data, Count);
+                }
             }
             else
             {
