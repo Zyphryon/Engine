@@ -44,6 +44,6 @@ namespace Pipeline::Baker::Texture
         }
 
         /// \see Importer::Import(ConstSpan<Byte>, ConstRef<Profile>)
-        Bitmap Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const override;
+        Surface Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const override;
     };
 }

@@ -104,16 +104,31 @@ namespace Pipeline::Baker::Texture
             return Blob();
         }
 
-        Bitmap Surface = Codec->Import(Source, Profile);
+        Surface Decoded = Codec->Import(Source, Profile);
 
-        if (Surface.GetPixels().IsEmpty())
+        if (!Decoded.IsValid())
         {
             return Blob();
         }
 
+        // A source that carries its own slices is already divided, so a grid would name a second, other cut.
+        if (Decoded.Slices.GetSize() > 1)
+        {
+            if (Profile.Cube.IsValid() || Profile.Slice.IsValid())
+            {
+                LOG_E("Texture: the source already holds {0} slices, so it cannot also be cut along a grid",
+                    Decoded.Slices.GetSize());
+
+                return Blob();
+            }
+            return Exporter::Export(mScheduler, Move(Decoded.Slices), Decoded.Layout, Profile);
+        }
+
+        ConstRef<Bitmap> Atlas = Decoded.Slices.GetFront();
+
         if (Profile.Cube.IsValid())
         {
-            Sequence<Bitmap> Faces = Slicer::Slice(Surface, Slicer::Describe(Profile.Cube.Width, Profile.Cube.Height));
+            Sequence<Bitmap> Faces = Slicer::Slice(Atlas, Slicer::Describe(Profile.Cube.Width, Profile.Cube.Height));
 
             if (Faces.IsEmpty())
             {
@@ -124,9 +139,9 @@ namespace Pipeline::Baker::Texture
 
         if (Profile.Slice.IsValid())
         {
-            const Slicer::Layout Layout = Slicer::Divide(Surface, Profile.Slice.Width, Profile.Slice.Height);
+            const Slicer::Layout Layout = Slicer::Divide(Atlas, Profile.Slice.Width, Profile.Slice.Height);
 
-            Sequence<Bitmap> Slices = Slicer::Slice(Surface, Layout);
+            Sequence<Bitmap> Slices = Slicer::Slice(Atlas, Layout);
 
             if (Slices.IsEmpty())
             {
@@ -134,7 +149,9 @@ namespace Pipeline::Baker::Texture
             }
             return Exporter::Export(mScheduler, Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
         }
-        return Exporter::Export(mScheduler, Move(Surface), Profile);
+
+        // A lone slice keeps the layout it was decoded as, so a one-layer array does not come back as a plain 2D.
+        return Exporter::Export(mScheduler, Move(Decoded.Slices), Decoded.Layout, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -164,7 +181,7 @@ namespace Pipeline::Baker::Texture
         Sequence<Bitmap> Slices(Entries.GetSize());
 
         // Sheets are decoded once and reused, because a manifest usually cuts many frames out of each.
-        Table<Str, Bitmap> Sheets;
+        Table<Str, Surface> Sheets;
 
         for (ConstRef<Manifest::Entry> Entry : Entries)
         {
@@ -196,17 +213,24 @@ namespace Pipeline::Baker::Texture
                     return Blob();
                 }
 
-                Sheets.Assign(Entry.Source, Codec->Import(Input, Profile));
+                Surface Decoded = Codec->Import(Input, Profile);
+
+                if (Decoded.Slices.GetSize() > 1)
+                {
+                    LOG_W("Texture: '{0}' holds {1} slices, of which the manifest cuts only the first",
+                        Entry.Source, Decoded.Slices.GetSize());
+                }
+                Sheets.Assign(Entry.Source, Move(Decoded));
             }
 
-            ConstRef<Bitmap> Sheet = (* Sheets.Find(Entry.Source));
+            ConstRef<Surface> Sheet = (* Sheets.Find(Entry.Source));
 
-            if (Sheet.GetPixels().IsEmpty())
+            if (!Sheet.IsValid())
             {
                 return Blob();
             }
 
-            Bitmap Frame = Slicer::Crop(Sheet, Entry.X, Entry.Y, Entry.Width, Entry.Height);
+            Bitmap Frame = Slicer::Crop(Sheet.Slices.GetFront(), Entry.X, Entry.Y, Entry.Width, Entry.Height);
 
             if (Frame.GetPixels().IsEmpty())
             {

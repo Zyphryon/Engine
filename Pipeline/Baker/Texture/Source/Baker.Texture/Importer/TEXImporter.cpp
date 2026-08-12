@@ -23,13 +23,13 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bitmap TEXImporter::Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const
+    Surface TEXImporter::Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const
     {
         if (Source.IsEmpty())
         {
             LOG_E("Texture: source image is empty");
 
-            return Bitmap();
+            return Surface();
         }
 
         Reader Input(Source.GetData(), static_cast<UInt32>(Source.GetSize()));
@@ -38,7 +38,7 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: source is not a ZTEX file (bad magic)");
 
-            return Bitmap();
+            return Surface();
         }
 
         const UInt16 Version = Input.Read<UInt16>();
@@ -47,11 +47,10 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: ZTEX version {0} is not one this importer reads", Version);
 
-            return Bitmap();
+            return Surface();
         }
 
-        Input.Skip(sizeof(Graphic::TextureLayout));
-
+        const Graphic::TextureLayout Layout  = Input.Read<Graphic::TextureLayout>();
         const Graphic::TextureFormat Format  = Input.Read<Graphic::TextureFormat>();
         const UInt16                 Width   = Input.Read<UInt16>();
         const UInt16                 Height  = Input.Read<UInt16>();
@@ -64,7 +63,7 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: ZTEX header describes no surface to read back");
 
-            return Bitmap();
+            return Surface();
         }
 
         // Cropping, filtering and transcoding each address one texel at a time, which a block-compressed or
@@ -75,7 +74,7 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: '{0}' stores no plain interleaved texels, so it cannot be read back", Enum::GetName(Format));
 
-            return Bitmap();
+            return Surface();
         }
 
         // The payload is gathered slice-major, each slice holding its whole chain, so the two counts in the
@@ -87,38 +86,42 @@ namespace Pipeline::Baker::Texture
             LOG_E("Texture: ZTEX payload is {0} bytes, but {1}x{2} over {3} slice(s) needs {4}",
                 Size, Width, Height, Layers, static_cast<UInt64>(Stride) * Layers);
 
-            return Bitmap();
+            return Surface();
         }
-
-        // An importer hands back one surface and every stage after it takes a single level, so the rest of a
-        // sliced file is dropped rather than folded into the bake.
-        if (Layers > 1)
-        {
-            LOG_W("Texture: the source holds {0} slices, of which only the first is read back", Layers);
-        }
-
-        const UInt32 Length = Graphic::GetLevelSize(Format, Width, Height, 0);
-
-        Blob Data = Blob::Allocate<Byte>(Length);
 
         // `Size` is the uncompressed byte count, so a shorter payload is compressed. LZ4 covers every slice in
-        // one block, which has to be decoded whole before the base level can be cut out of its front.
+        // one block, which has to be decoded whole before any slice can be cut out of it.
+        Blob Scratch;
+
         if (Size != Payload.GetSize())
         {
-            Blob Scratch = Blob::Allocate<Byte>(Size);
+            Scratch = Blob::Allocate<Byte>(Size);
 
             if (LZ4Decode(Payload, Scratch.GetData<Byte>(), Size) != Size)
             {
                 LOG_E("Texture: ZTEX payload failed to decompress ({0} != {1})", Payload.GetSize(), Size);
 
-                return Bitmap();
+                return Surface();
             }
-            Data.Copy<Byte>(Scratch.GetData<Byte>(), Length);
         }
-        else
+
+        const ConstPtr<Byte> Pixels = (Scratch == nullptr ? Payload.GetData() : Scratch.GetData<Byte>());
+
+        // Every stage after an importer takes a single level, so each slice is read back at its base level
+        // alone and the chain above it is filtered again when the bake asks for one.
+        const UInt32 Length = Graphic::GetLevelSize(Format, Width, Height, 0);
+
+        Surface Result;
+        Result.Layout = Layout;
+        Result.Slices.Reserve(Layers);
+
+        for (UInt32 Slice = 0; Slice < Layers; ++Slice)
         {
-            Data.Copy<Byte>(Payload.GetData(), Length);
+            Blob Data = Blob::Allocate<Byte>(Length);
+            Data.Copy<Byte>(Pixels + static_cast<UInt>(Slice) * Stride, Length);
+
+            Result.Slices.Append(Bitmap(Format, Width, Height, 1, Move(Data)));
         }
-        return Bitmap(Format, Width, Height, 1, Move(Data));
+        return Result;
     }
 }

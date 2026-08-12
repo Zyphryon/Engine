@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Bitmap.hpp"
 #include "Profile.hpp"
+#include "Surface.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,7 +21,7 @@
 
 namespace Pipeline::Baker::Texture
 {
-    /// \brief Decodes an encoded source bitmap into a surface the exporter can consume.
+    /// \brief Decodes an encoded source bitmap into the surface the exporter can consume.
     class Importer : public Retainable<Importer>
     {
     public:
@@ -36,9 +36,12 @@ namespace Pipeline::Baker::Texture
 
         /// \brief Decodes an encoded source bitmap.
         ///
+        /// \note A source carrying its own slices hands every one of them back, so the layout it was authored
+        ///       as survives the decode rather than collapsing to its first slice.
+        ///
         /// \param Source  The encoded source bytes.
         /// \param Profile The settings describing how the source should be interpreted.
-        /// \return A decoded bitmap on success, or an invalid bitmap on failure.
-        virtual Bitmap Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const = 0;
+        /// \return The decoded surface on success, or an invalid surface on failure.
+        virtual Surface Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const = 0;
     };
 }

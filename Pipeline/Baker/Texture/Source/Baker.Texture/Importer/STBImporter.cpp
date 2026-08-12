@@ -48,13 +48,13 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bitmap STBImporter::Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const
+    Surface STBImporter::Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const
     {
         if (Source.IsEmpty())
         {
             LOG_E("Texture: source image is empty");
 
-            return Bitmap();
+            return Surface();
         }
 
         const ConstPtr<stbi_uc> Encoded = Source.GetData();
@@ -68,7 +68,7 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: failed to read source image header ({0})", StrConvert(stbi_failure_reason()));
 
-            return Bitmap();
+            return Surface();
         }
 
         // Decode at the source's own precision. Routing a floating-point or 16-bit source through the 8-bit
@@ -115,7 +115,7 @@ namespace Pipeline::Baker::Texture
         {
             LOG_E("Texture: failed to decode source image ({0})", StrConvert(stbi_failure_reason()));
 
-            return Bitmap();
+            return Surface();
         }
 
         if (Width > kMaximum<UInt16> || Height > kMaximum<UInt16>)
@@ -123,7 +123,7 @@ namespace Pipeline::Baker::Texture
             LOG_E("Texture: source image is {0}x{1}, which exceeds the {2} pixel limit", Width, Height, kMaximum<UInt16>);
 
             stbi_image_free(Pixels);
-            return Bitmap();
+            return Surface();
         }
 
         const Graphic::TextureFormat Format = Resolve(Request, Real, Wide, sRGB);
@@ -135,6 +135,6 @@ namespace Pipeline::Baker::Texture
         {
             stbi_image_free(Address);
         }));
-        return Bitmap(Format, static_cast<UInt16>(Width), static_cast<UInt16>(Height), 1, Move(Data));
+        return Surface::From(Bitmap(Format, static_cast<UInt16>(Width), static_cast<UInt16>(Height), 1, Move(Data)));
     }
 }

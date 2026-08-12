@@ -20,7 +20,7 @@
 
 namespace Pipeline::Baker::Texture
 {
-    /// \brief Represents an \ref Importer that reads a baked texture back into the bitmap it was written from.
+    /// \brief Represents an \ref Importer that reads a baked texture back into the slices it was written from.
     class TEXImporter final : public Importer
     {
     public:
@@ -40,6 +40,6 @@ namespace Pipeline::Baker::Texture
         }
 
         /// \see Importer::Import(ConstSpan<Byte>, ConstRef<Profile>)
-        Bitmap Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const override;
+        Surface Import(ConstSpan<Byte> Source, ConstRef<Profile> Profile) const override;
     };
 }
