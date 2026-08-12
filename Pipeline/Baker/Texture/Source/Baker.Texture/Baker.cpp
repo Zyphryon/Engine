@@ -12,6 +12,7 @@
 
 #include "Baker.hpp"
 #include "Importer/STBImporter.hpp"
+#include "Importer/TEXImporter.hpp"
 #include "Process/Slicer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -43,6 +44,7 @@ namespace Pipeline::Baker::Texture
         : mScheduler { Scheduler }
     {
         Register(Retainer<STBImporter>::Create());
+        Register(Retainer<TEXImporter>::Create());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -221,6 +223,14 @@ namespace Pipeline::Baker::Texture
 
     Bool Baker::Bake(Text Source, Text Destination, ConstRef<Profile> Profile) const
     {
+        // A baked texture is a source now, so a bake can be handed the very path it is about to write over.
+        if (StrEqualCase(Source, Destination))
+        {
+            LOG_E("Texture: '{0}' is both the source and the destination", Source);
+
+            return false;
+        }
+
         Blob Input;
 
         if (Filesystem::Read(Source, Input) != Filesystem::Result::Success || Input == nullptr)
