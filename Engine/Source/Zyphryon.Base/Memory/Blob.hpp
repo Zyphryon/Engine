@@ -193,7 +193,7 @@ inline namespace Base
 
             return Blob(new Byte[Size], Size, [](Ptr<Byte> Data)
             {
-                ::delete[] reinterpret_cast<Ptr<Type>>(Data);
+                ::delete[] Data;
             });
         }
 

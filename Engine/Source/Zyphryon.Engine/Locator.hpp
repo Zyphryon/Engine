@@ -34,7 +34,7 @@ namespace Engine
         {
         }
 
-    protected:
+    public:
 
         /// \brief Gets the resolved instance of the specified service type.
         ///

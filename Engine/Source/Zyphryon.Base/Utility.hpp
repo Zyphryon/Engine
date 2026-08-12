@@ -250,4 +250,25 @@ inline namespace Base
     {
         return static_cast<UInt>(std::count(Data, Data + Size, Value));
     }
+
+    /// \brief Orders the elements in [\p Data, \p Data + \p Size) by ascending value.
+    ///
+    /// \param Data The pointer to the beginning of the range.
+    /// \param Size The number of elements to order.
+    template<typename Input>
+    constexpr void Sort(Ptr<Input> Data, UInt Size)
+    {
+        std::sort(Data, Data + Size);
+    }
+
+    /// \brief Orders the elements in [\p Data, \p Data + \p Size) by a comparison of your own.
+    ///
+    /// \param Data       The pointer to the beginning of the range.
+    /// \param Size       The number of elements to order.
+    /// \param Comparator The binary predicate returning `true` when its first argument sorts first.
+    template<typename Input, typename Callable>
+    constexpr void Sort(Ptr<Input> Data, UInt Size, AnyRef<Callable> Comparator)
+    {
+        std::sort(Data, Data + Size, Forward<Callable>(Comparator));
+    }
 }

@@ -539,6 +539,21 @@ inline namespace Base
             return Find(Element) != -1;
         }
 
+        /// \brief Orders the elements in place by ascending value.
+        ZY_INLINE void Sort()
+        {
+            Base::Sort(GetData(), GetSize());
+        }
+
+        /// \brief Orders the elements in place by a comparison of your own.
+        ///
+        /// \param Comparator The binary predicate returning `true` when its first argument sorts first.
+        template<typename Callable>
+        ZY_INLINE void Sort(AnyRef<Callable> Comparator)
+        {
+            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
+        }
+
         /// \brief Checks whether the sequence contains an element matching the specified predicate.
         ///
         /// \param Predicate The unary predicate used to identify the element.
@@ -1124,6 +1139,21 @@ inline namespace Base
         ZY_INLINE constexpr Bool Contains(ConstRef<Type> Element) const
         {
             return Find(Element) != -1;
+        }
+
+        /// \brief Orders the elements in place by ascending value.
+        ZY_INLINE constexpr void Sort()
+        {
+            Base::Sort(GetData(), GetSize());
+        }
+
+        /// \brief Orders the elements in place by a comparison of your own.
+        ///
+        /// \param Comparator The binary predicate returning `true` when its first argument sorts first.
+        template<typename Callable>
+        ZY_INLINE constexpr void Sort(AnyRef<Callable> Comparator)
+        {
+            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
         }
 
         /// \brief Checks whether the sequence contains an element matching the specified predicate.

@@ -138,6 +138,21 @@ inline namespace Base
             return Find(Element) != Count;
         }
 
+        /// \brief Orders the elements in place by ascending value.
+        ZY_INLINE constexpr void Sort()
+        {
+            Base::Sort(GetData(), GetSize());
+        }
+
+        /// \brief Orders the elements in place by a comparison of your own.
+        ///
+        /// \param Comparator The binary predicate returning `true` when its first argument sorts first.
+        template<typename Callable>
+        ZY_INLINE constexpr void Sort(AnyRef<Callable> Comparator)
+        {
+            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
+        }
+
         /// \brief Gets the element at the specified index.
         ///
         /// \param Index The zero-based index of the element to access.

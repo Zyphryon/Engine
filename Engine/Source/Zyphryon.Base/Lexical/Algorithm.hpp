@@ -419,11 +419,11 @@ inline namespace Base
 
     /// \brief Invokes \p Callback with a `Text` view for each token in \p Value delimited by \p Delimiter.
     ///
-    /// \note Tokens are yielded left to right without allocation. If \p Callback returns `false` iteration stops early.
+    /// \note A callback returning `false` stops the walk; one returning nothing is read as asking for every token.
     ///
     /// \param Value     The text to split.
     /// \param Delimiter The character used as the token boundary.
-    /// \param Callback  The callable invoked with each token. Must be invocable with a single `Text` argument and return a value convertible to `Bool`.
+    /// \param Callback  The callable invoked with each token, taking a single `Text` and returning `Bool` or nothing.
     template<typename Callable>
     constexpr void StrSplit(Text Value, Char Delimiter, AnyRef<Callable> Callback)
     {
@@ -432,14 +432,20 @@ inline namespace Base
         while (!Remaining.IsEmpty())
         {
             const SInt Index = StrFind(Remaining, Delimiter);
+            const Text Token = (Index == -1) ? Remaining
+                             : (Index ==  0) ? Text()
+                                             : Remaining.Slice(0, static_cast<UInt>(Index));
 
-            if (Index == -1)
+            if constexpr (IsVoid<decltype(Callback(Token))>)
             {
-                Callback(Remaining);
+                Callback(Token);
+            }
+            else if (!Callback(Token))
+            {
                 break;
             }
 
-            if (!Callback(Remaining.Slice(0, static_cast<UInt>(Index))))
+            if (Index == -1)
             {
                 break;
             }
