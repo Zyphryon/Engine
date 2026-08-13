@@ -31,6 +31,9 @@ namespace Pipeline::Baker::Texture
             /// The path of the sheet the frame is cut from.
             Str    Source;
 
+            /// The slice of the sheet the frame is cut from, which is zero for anything but an array.
+            UInt16 Slice  = 0;
+
             /// The left edge of the frame on its sheet, in texels.
             UInt16 X      = 0;
 

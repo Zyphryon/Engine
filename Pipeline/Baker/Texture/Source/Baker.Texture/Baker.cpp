@@ -213,14 +213,7 @@ namespace Pipeline::Baker::Texture
                     return Blob();
                 }
 
-                Surface Decoded = Codec->Import(Input, Profile);
-
-                if (Decoded.Slices.GetSize() > 1)
-                {
-                    LOG_W("Texture: '{0}' holds {1} slices, of which the manifest cuts only the first",
-                        Entry.Source, Decoded.Slices.GetSize());
-                }
-                Sheets.Assign(Entry.Source, Move(Decoded));
+                Sheets.Assign(Entry.Source, Codec->Import(Input, Profile));
             }
 
             ConstRef<Surface> Sheet = (* Sheets.Find(Entry.Source));
@@ -230,7 +223,15 @@ namespace Pipeline::Baker::Texture
                 return Blob();
             }
 
-            Bitmap Frame = Slicer::Crop(Sheet.Slices.GetFront(), Entry.X, Entry.Y, Entry.Width, Entry.Height);
+            if (Entry.Slice >= Sheet.Slices.GetSize())
+            {
+                LOG_E("Texture: '{0}' holds {1} slice(s), so slice {2} does not exist",
+                    Entry.Source, Sheet.Slices.GetSize(), Entry.Slice);
+
+                return Blob();
+            }
+
+            Bitmap Frame = Slicer::Crop(Sheet.Slices[Entry.Slice], Entry.X, Entry.Y, Entry.Width, Entry.Height);
 
             if (Frame.GetPixels().IsEmpty())
             {
