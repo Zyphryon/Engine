@@ -403,4 +403,63 @@ namespace Graphic
         }
         return Offset;
     }
+
+    /// \brief The properties of a uniform that the engine has to state rather than derive.
+    struct UniformMetadata final
+    {
+        UInt8 Components : 3;   ///< The number of components the value carries.
+        UInt8 IsFloat    : 1;   ///< The value stores floating-point components.
+        UInt8 IsSigned   : 1;   ///< The value can represent negative components.
+        UInt8 IsBoolean  : 1;   ///< The value is a single true or false rather than a number.
+        UInt8 IsColour   : 1;   ///< The components are the channels of a colour.
+
+        /// \brief Checks whether the value carries whole numbers rather than real ones.
+        ///
+        /// \return `true` when the components are integral, otherwise `false`.
+        constexpr Bool IsInteger() const
+        {
+            return !IsFloat && !IsBoolean;
+        }
+    };
+
+    /// \brief Gets the metadata of a uniform.
+    ///
+    /// \param Type The uniform to query.
+    /// \return The metadata of the uniform.
+    constexpr UniformMetadata GetUniformMetadata(Uniform Type)
+    {
+        static constexpr UniformMetadata kMetadata[] = {
+            // Uniform::Bool
+            { .Components = 1, .IsBoolean = 1 },
+            // Uniform::Color
+            { .Components = 4, .IsFloat = 1, .IsSigned = 1, .IsColour = 1 },
+            // Uniform::IntColor8
+            { .Components = 4, .IsColour = 1 },
+            // Uniform::Float
+            { .Components = 1, .IsFloat = 1, .IsSigned = 1 },
+            // Uniform::Float2
+            { .Components = 2, .IsFloat = 1, .IsSigned = 1 },
+            // Uniform::Float3
+            { .Components = 3, .IsFloat = 1, .IsSigned = 1 },
+            // Uniform::Float4
+            { .Components = 4, .IsFloat = 1, .IsSigned = 1 },
+            // Uniform::Int
+            { .Components = 1, .IsSigned = 1 },
+            // Uniform::Int2
+            { .Components = 2, .IsSigned = 1 },
+            // Uniform::Int3
+            { .Components = 3, .IsSigned = 1 },
+            // Uniform::Int4
+            { .Components = 4, .IsSigned = 1 },
+            // Uniform::UInt
+            { .Components = 1 },
+            // Uniform::UInt2
+            { .Components = 2 },
+            // Uniform::UInt3
+            { .Components = 3 },
+            // Uniform::UInt4
+            { .Components = 4 },
+        };
+        return kMetadata[Enum::Cast(Type)];
+    }
 }
