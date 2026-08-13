@@ -191,6 +191,16 @@ inline namespace Base
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Write(Text Path, ConstSpan<Byte> Data);
 
+        /// \brief Writes text to a file at the specified path.
+        ///
+        /// \param Path The path of the file to be written.
+        /// \param Data The text to write to the file, whose bytes are written as they are.
+        /// \return A \p Result indicating the success or failure of the operation.
+        ZY_INLINE static Result Write(Text Path, Text Data)
+        {
+            return Write(Path, ConstSpan<Byte>(reinterpret_cast<ConstPtr<Byte>>(Data.GetData()), Data.GetSize()));
+        }
+
         /// \brief Opens a file and keeps it open for repeated transfers at explicit offsets.
         ///
         /// \param Path   The path of the file to be opened.
