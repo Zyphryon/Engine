@@ -150,6 +150,16 @@ namespace Scene
             return Component<Type>(mWorld.component<Type>(ID.GetData()));
         }
 
+        /// \brief Registers every component a set of declarations describes.
+        ///
+        /// \param List The descriptions, as built by \ref DSL::Declare.
+        template<typename... Declarations>
+        ZY_INLINE void Register(Declarations... List)
+        {
+            (List.Reserve(mWorld), ...);
+            (List.Apply(mWorld), ...);
+        }
+
         /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.
         ///
         /// \tparam Name       The compile-time symbol used as the tag name and identifier.

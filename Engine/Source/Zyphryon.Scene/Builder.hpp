@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Component.hpp"
 #include "Timer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -732,6 +733,174 @@ namespace Scene::DSL
             Builder.rate(Source.GetHandle(), Ticks);
         }
     };
+
+    /// \brief Represents a set of traits granted together, so several may travel as one term.
+    ///
+    /// \tparam Values The traits to grant.
+    template<Trait... Values>
+    struct Traits final
+    {
+    };
+
+    /// \brief Grants a component the ability to be written to and read from an archive.
+    inline constexpr Traits<Trait::Serializable> Serializable { };
+
+    /// \brief Grants a component the ability to be supplied by an archetype.
+    inline constexpr Traits<Trait::Inheritable>  Inheritable  { };
+
+    /// \brief Grants a component the ability to be switched off without being removed.
+    inline constexpr Traits<Trait::Toggleable>   Toggleable   { };
+
+    /// \brief Grants a component storage that keeps it out of the table its entity is filed under.
+    inline constexpr Traits<Trait::Sparse>       Sparse       { };
+
+    /// \brief Grants a component the behaviour of a key-value association.
+    inline constexpr Traits<Trait::Associative>  Associative  { };
+
+    /// \brief Grants a component a single instance for the whole world, rather than one per entity.
+    inline constexpr Traits<Trait::Singleton>    Singleton    { };
+
+    /// \brief Grants a component the refusal to be extended or overridden.
+    inline constexpr Traits<Trait::Final>        Final        { };
+
+    /// \brief Grants a relationship the same meaning read in either direction.
+    inline constexpr Traits<Trait::Symmetric>    Symmetric    { };
+
+    /// \brief Grants a relationship at most one target per entity.
+    inline constexpr Traits<Trait::Exclusive>    Exclusive    { };
+
+    /// \brief Grants what an archetype-authored component needs: an instance inherits it, and it persists.
+    inline constexpr Traits<Trait::Serializable, Trait::Inheritable> Authored { };
+
+    /// \brief Represents the components a component brings along whenever it is attached.
+    ///
+    /// \tparam Types The components attached alongside.
+    template<typename... Types>
+    struct Implication final
+    {
+    };
+
+    /// \brief Names the components a declaration brings along with it.
+    ///
+    /// \tparam Types The components attached alongside.
+    template<typename... Types>
+    inline constexpr Implication<Types...> Implies { };
+
+    /// \brief Concept satisfied when \p Type states the name it should register under.
+    template<typename Type>
+    concept IsNamed = requires { { Type::kName } -> IsCastable<Text>; };
+
+    /// \brief Describes one or more components that share the same traits and implications.
+    ///
+    /// \tparam Types The components being described.
+    template<typename... Types>
+    struct Declaration final
+    {
+        /// \brief Carries the terms describing the components, so registration can apply them in two passes.
+        ///
+        /// \tparam Parts The traits and implications the components share.
+        template<typename... Parts>
+        struct Description final
+        {
+            /// \brief The identifier the component registers under, or null to take it from the type.
+            ConstPtr<Char> Name;
+
+            /// \brief Registers every component named, so its name resolves before anything refers to it.
+            ///
+            /// \param World The world the components belong to.
+            ZY_INLINE void Reserve(Ref<flecs::world> World) const
+            {
+                (ReserveEach<Types>(World), ...);
+            }
+
+            /// \brief Applies every term to every component described.
+            ///
+            /// \param World The world the components belong to.
+            ZY_INLINE void Apply(Ref<flecs::world> World) const
+            {
+                (ApplyEach<Types>(World), ...);
+            }
+
+        private:
+
+            /// \brief Registers one component under the name it should answer to.
+            ///
+            /// \param World The world the component belongs to.
+            template<typename Type>
+            ZY_INLINE void ReserveEach(Ref<flecs::world> World) const
+            {
+                if (Name)
+                {
+                    World.template component<Type>(Name);
+                }
+                else if constexpr (IsNamed<Type>)
+                {
+                    World.template component<Type>(Text(Type::kName).GetData());
+                }
+                else
+                {
+                    const Text Path = StrConvert(flecs::_::type_name<Type>());
+                    const Text Name = StrAfterLast(Path, "::");
+
+                    World.template component<Type>(Name.IsEmpty() ? Path.GetData() : Name.GetData());
+                }
+            }
+
+            /// \brief Applies every term to one component.
+            ///
+            /// \param World The world the component belongs to.
+            template<typename Type>
+            ZY_INLINE static void ApplyEach(Ref<flecs::world> World)
+            {
+                (ApplyTerm<Type>(World, Parts { }), ...);
+            }
+
+            /// \brief Grants one set of traits to one component.
+            ///
+            /// \param World The world the component belongs to.
+            template<typename Type, Trait... Values>
+            ZY_INLINE static void ApplyTerm(Ref<flecs::world> World, Traits<Values...>)
+            {
+                Component<Type>(World.template component<Type>()).Grant(Values...);
+            }
+
+            /// \brief Attaches one set of implications to one component.
+            ///
+            /// \param World The world the component belongs to.
+            template<typename Type, typename... Targets>
+            ZY_INLINE static void ApplyTerm(Ref<flecs::world> World, Implication<Targets...>)
+            {
+                const Component<Type> Handle(World.template component<Type>());
+
+                (Handle.template With<Targets>(), ...);
+            }
+        };
+    };
+
+    /// \brief Describes one or more components, to be handed to \ref Service::Register.
+    ///
+    /// \tparam Types       The components being described, which share everything stated about them.
+    /// \param  Description The traits and implications they share, in any order.
+    /// \return The description, which registration applies in two passes.
+    template<typename... Types, typename... Parts> requires (!(IsCastable<Parts, ConstPtr<Char>> || ...))
+    ZY_INLINE constexpr auto Declare(Parts... Description)
+    {
+        return typename Declaration<Types...>::template Description<Parts...> { };
+    }
+
+    /// \brief Describes one component under a name of its own, rather than the one its type carries.
+    ///
+    /// \tparam Types       The component being described.
+    /// \param  Name        The identifier the component registers under.
+    /// \param  Description The traits and implications it carries, in any order.
+    /// \return The description, which registration applies in two passes.
+    template<typename... Types, typename... Parts>
+    ZY_INLINE constexpr auto Declare(ConstPtr<Char> Name, Parts... Description)
+    {
+        static_assert(sizeof...(Types) == 1, "Only one component can be declared under a name");
+
+        return typename Declaration<Types...>::template Description<Parts...> { Name };
+    }
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

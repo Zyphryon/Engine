@@ -199,23 +199,26 @@ inline namespace Base
             return -1;
         }
 
-        const ConstPtr<Char> Head  = Search.GetData();
-        const UInt           Size  = Search.GetSize();
+        const ConstPtr<Char> Base = Value.GetData();
+        const ConstPtr<Char> Head = Search.GetData();
+        const UInt           Size = Search.GetSize();
 
-        ConstPtr<Char> Cursor = Value.GetData() + Value.GetSize() - Size;
+        UInt Limit = Value.GetSize() - Size + 1;
 
-        while ((Cursor = FindLast(Cursor, static_cast<UInt>(Cursor - Value.GetData() + 1), Head[0])) != nullptr)
+        while (Limit > 0)
         {
+            const ConstPtr<Char> Cursor = FindLast(Base, Limit, Head[0]);
+
+            if (Cursor == nullptr)
+            {
+                return -1;
+            }
             if (Compare(Cursor, Head, Size))
             {
-                return Cursor - Value.GetData();
+                return Cursor - Base;
             }
 
-            if (Cursor == Value.GetData())
-            {
-                break;
-            }
-            --Cursor;
+            Limit = static_cast<UInt>(Cursor - Base);
         }
         return -1;
     }
@@ -373,6 +376,24 @@ inline namespace Base
         return (Index != -1) ? Value.Slice(static_cast<UInt>(Index) + Search.GetSize()) : Text::Empty();
     }
 
+    /// \brief Converts a character to lowercase.
+    ///
+    /// \param Character The character to convert.
+    /// \return The lowercase equivalent of the character, or the character unchanged if not an uppercase letter.
+    constexpr Char StrLowercase(Char Character)
+    {
+        return (Character >= 'A' && Character <= 'Z') ? static_cast<Char>(Character | 0x20) : Character;
+    }
+
+    /// \brief Converts a character to uppercase.
+    ///
+    /// \param Character The character to convert.
+    /// \return The uppercase equivalent of the character, or the character unchanged if not a lowercase letter.
+    constexpr Char StrUppercase(Char Character)
+    {
+        return (Character >= 'a' && Character <= 'z') ? static_cast<Char>(Character & ~0x20) : Character;
+    }
+
     /// \brief Checks whether two text views are equal.
     ///
     /// \param Left  The first text to compare.
@@ -409,7 +430,7 @@ inline namespace Base
 
         for (UInt Index = 0; Index < Left.GetSize(); ++Index)
         {
-            if ((Left[Index] | 0x20) != (Right[Index] | 0x20))
+			if (StrLowercase(Left[Index]) != StrLowercase(Right[Index]))
             {
                 return false;
             }
@@ -452,24 +473,6 @@ inline namespace Base
 
             Remaining = Remaining.Slice(static_cast<UInt>(Index) + 1);
         }
-    }
-
-    /// \brief Converts a character to lowercase.
-    ///
-    /// \param Character The character to convert.
-    /// \return The lowercase equivalent of the character, or the character unchanged if not an uppercase letter.
-    constexpr Char StrLowercase(Char Character)
-    {
-        return (Character >= 'A' && Character <= 'Z') ? static_cast<Char>(Character | 0x20) : Character;
-    }
-
-    /// \brief Converts a character to uppercase.
-    ///
-    /// \param Character The character to convert.
-    /// \return The uppercase equivalent of the character, or the character unchanged if not a lowercase letter.
-    constexpr Char StrUppercase(Char Character)
-    {
-        return (Character >= 'a' && Character <= 'z') ? static_cast<Char>(Character & ~0x20) : Character;
     }
 
     /// \brief Checks whether a character is a digit (0-9).
