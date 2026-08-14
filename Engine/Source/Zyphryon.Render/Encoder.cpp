@@ -74,7 +74,7 @@ namespace Render
             Ref<Graphic::Stream> Stream = Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)];
             Stream = Pack(Graphic::Frequency::Material, Technique, * Material);
 
-            BindTextures(Command, Technique.GetReflection(), * Material);
+            BindTextures(Command, Technique.GetSchema(), * Material);
         }
 
         // Bind the per-instance vertex stream and, if present, the per-instance uniform block.
@@ -108,14 +108,14 @@ namespace Render
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
 
         // Bind the caller's textures in declaration order, paired with the technique's own samplers.
-        ConstRef<Graphic::Technique::Reflection> Reflection = Technique.GetReflection();
+        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
 
-        for (UInt32 Index = 0, Limit = Reflection.Textures.GetSize(); Index < Limit; ++Index)
+        for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
         {
             Command.Textures.Append(Index < Textures.GetSize() ? Textures[Index] : 0);
         }
 
-        for (ConstRef<Graphic::Technique::Reflection::SamplerField> Field : Reflection.Samplers)
+        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
         {
             Command.Samplers.Append(Field.Handle);
         }
@@ -139,7 +139,7 @@ namespace Render
         ConstRef<Graphic::Stream>     Instances,
         ConstRef<Graphic::Stream>     Uniform)
     {
-        ConstRef<Graphic::Technique::Reflection> Reflection = Technique.GetReflection();
+        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
 
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
@@ -156,7 +156,7 @@ namespace Render
             const Graphic::Stream Data = Pack(Graphic::Frequency::Material, Technique, * Material);
             Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Data;
 
-            BindTextures(Command, Reflection, * Material);
+            BindTextures(Command, Schema, * Material);
         }
 
         // Bind one stream per interleaved block, in slot order (matching the technique's layout).
@@ -210,18 +210,18 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::BindTextures(
-        Ref<Graphic::Command>                    Command,
-        ConstRef<Graphic::Technique::Reflection> Reflection,
-        ConstRef<Graphic::Material>              Material)
+        Ref<Graphic::Command>       Command,
+        ConstRef<Graphic::Schema>   Schema,
+        ConstRef<Graphic::Material> Material)
     {
-        for (const UInt64 Name : Reflection.Textures)
+        for (const UInt64 Name : Schema.GetTextures())
         {
             ConstRetainer<Graphic::Image> Image = Material.GetImage(Name);
 
             Command.Textures.Append(Image ? Image->GetHandle() : 0);
         }
 
-        for (ConstRef<Graphic::Technique::Reflection::SamplerField> Field : Reflection.Samplers)
+        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
         {
             // Fall back to the technique's own sampler when the material supplies none.
             const Graphic::Object Handle = Material.GetSampler(Field.Hash);

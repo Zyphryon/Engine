@@ -56,10 +56,7 @@ namespace Render
         template<typename Provider>
         ZY_INLINE Graphic::Stream Pack(Graphic::Frequency Frequency, ConstRef<Graphic::Technique> Technique, ConstRef<Provider> Source)
         {
-            using Reflection = Graphic::Technique::Reflection;
-
-            ConstRef<Reflection>               Data  = Technique.GetReflection();
-            ConstRef<Reflection::UniformGroup> Block = Data.Uniforms[Enum::Cast(Frequency)];
+            ConstRef<Graphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
 
             if (Block.Size == 0)
             {
@@ -68,7 +65,7 @@ namespace Render
 
             Graphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
 
-            for (ConstRef<Reflection::UniformField> Field : Block.Structure)
+            for (ConstRef<Graphic::Schema::Uniform> Field : Block.Uniforms)
             {
                 // Fall back to the technique's default when the material does not set the field.
                 ConstPtr<Graphic::Parameter> Parameter = Source.GetParameter(Field.Hash);
@@ -163,13 +160,13 @@ namespace Render
 
         /// \brief Binds every texture and sampler the technique declares, sourced from the material.
         ///
-        /// \param Command    The command being assembled.
-        /// \param Reflection The technique reflection naming the textures and samplers it declares.
-        /// \param Material   The material to source images and samplers from.
+        /// \param Command  The command being assembled.
+        /// \param Schema   The schema naming the textures and samplers the technique declares.
+        /// \param Material The material to source images and samplers from.
         void BindTextures(
-            Ref<Graphic::Command>                    Command,
-            ConstRef<Graphic::Technique::Reflection> Reflection,
-            ConstRef<Graphic::Material>              Material);
+            Ref<Graphic::Command>       Command,
+            ConstRef<Graphic::Schema>   Schema,
+            ConstRef<Graphic::Material> Material);
 
     private:
 

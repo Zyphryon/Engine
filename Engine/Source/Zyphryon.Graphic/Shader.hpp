@@ -51,8 +51,6 @@ namespace Graphic
             return ConstSpan(mSource.GetData<Byte>(), mSource.GetSize());
         }
 
-    public:
-
         /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
         Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
         {

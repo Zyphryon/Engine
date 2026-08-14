@@ -108,7 +108,7 @@ inline namespace Base
         template<typename KeyType = Key>
         ZY_INLINE Bool Insert(AnyRef<KeyType> Needle)
         {
-            return mTable.Assign(Needle, { });
+            return mTable.Assign(Needle, Empty());
         }
 
         /// \brief Removes a key from the bag.

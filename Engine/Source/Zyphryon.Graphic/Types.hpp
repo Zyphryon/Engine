@@ -684,6 +684,9 @@ namespace Graphic
         UInt8        Divisor  = 0;
     };
 
+    /// \brief Type alias for the vertex attributes a program's input stage consumes.
+    using Attributes = Sequence<Attribute, kMaxAttributes>;
+
     /// \brief Defines a buffer stream used for vertex, index, or uniform input.
     struct Stream final
     {
@@ -768,14 +771,17 @@ namespace Graphic
         Visibility Visibility = Visibility::All;
     };
 
+    /// \brief Type alias for the resource bindings a program declares at one frequency.
+    using Bindings = Sequence<Binding, kMaxBindings>;
+
     /// \brief Describes the resource interface of a shader program, grouped by update frequency.
     struct Signature final
     {
         /// The vertex attributes consumed by the program's input stage.
-        Sequence<Attribute, kMaxAttributes>                              Attributes;
+        Attributes                               Attributes;
 
         /// The resource bindings declared by the program, indexed by the frequency that rebinds them.
-        Array<Sequence<Binding, kMaxBindings>, Enum::Count<Frequency>()> Bindings;
+        Array<Bindings, Enum::Count<Frequency>()> Bindings;
     };
 
     /// \brief Describes the fixed-function GPU state for a rendering pipeline.

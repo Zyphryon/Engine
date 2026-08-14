@@ -270,7 +270,7 @@ namespace Render
         /// \return The queue the technique's draws are collected into.
         ZY_INLINE static Priority GetPriority(ConstRef<Graphic::Technique> Technique)
         {
-            ConstRef<Graphic::States> States = Technique.GetDescription().States;
+            ConstRef<Graphic::States> States = Technique.GetDescription().Base.States;
 
             const Bool Opaque = (States.BlendSrcColor == Graphic::BlendFactor::One && States.BlendDstColor == Graphic::BlendFactor::Zero);
             return Opaque ? Priority::Opaque : Priority::Transparent;

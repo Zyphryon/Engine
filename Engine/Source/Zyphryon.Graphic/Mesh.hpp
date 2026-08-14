@@ -30,6 +30,19 @@ namespace Graphic
         /// \brief The most levels of detail a mesh may carry.
         static constexpr UInt8 kMaxDetail = 8;
 
+        /// \brief Where one level's primitives sit in the flat list, and the coverage it serves.
+        struct Range final
+        {
+            /// The index of the level's first primitive.
+            UInt16 First;
+
+            /// The number of primitives the level draws.
+            UInt16 Count;
+
+            /// The smallest fraction of the viewport's height drawn at this level.
+            Real32 Coverage;
+        };
+
         /// \brief Describes one vertex attribute's physical placement in the shared buffer, keyed by `VertexSlot`.
         struct Binding final
         {
@@ -211,21 +224,6 @@ namespace Graphic
         {
             return mIndices;
         }
-
-    public:
-
-        /// \brief Where one level's primitives sit in the flat list, and the coverage it serves.
-        struct Range final
-        {
-            /// The index of the level's first primitive.
-            UInt16 First;
-
-            /// The number of primitives the level draws.
-            UInt16 Count;
-
-            /// The smallest fraction of the viewport's height drawn at this level.
-            Real32 Coverage;
-        };
 
         /// \brief Uploads the shared vertex/index buffers to the GPU, creating the buffer resources.
         ///

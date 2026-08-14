@@ -34,7 +34,7 @@ namespace Graphic
     Bool VFXLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
         Technique::Description Description;
-        Technique::Reflection  Reflection;
+        Graphic::Schema        Schema;
 
         JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject JsonRoot(JsonDocument);
@@ -48,73 +48,7 @@ namespace Graphic
         // Parse 'Properties' section
         if (const JsonObject JsonProperties = JsonRoot.GetObject("Properties"); JsonProperties.IsValid())
         {
-            // Parse 'Blend' section
-            if (const JsonObject JsonBlend = JsonProperties.GetObject("Blend"); JsonBlend.IsValid())
-            {
-                Description.States.AlphaToCoverage     = JsonBlend.GetBool("AlphaToCoverage", false);
-                Description.States.Channel             = JsonBlend.GetEnum("Channel", Channel::RGBA);
-                Description.States.BlendSrcColor       = JsonBlend.GetEnum("SrcColor", BlendFactor::One);
-                Description.States.BlendDstColor       = JsonBlend.GetEnum("DstColor", BlendFactor::Zero);
-                Description.States.BlendEquationColor  = JsonBlend.GetEnum("EquationColor", BlendFunction::Add);
-                Description.States.BlendSrcAlpha       = JsonBlend.GetEnum("SrcAlpha", BlendFactor::One);
-                Description.States.BlendDstAlpha       = JsonBlend.GetEnum("DstAlpha", BlendFactor::Zero);
-                Description.States.BlendEquationAlpha  = JsonBlend.GetEnum("EquationAlpha", BlendFunction::Add);
-            }
-
-            // Parse 'Depth' section
-            if (const JsonObject JsonDepth = JsonProperties.GetObject("Depth"); JsonDepth.IsValid())
-            {
-                Description.States.DepthClip      = JsonDepth.GetBool("Clip", true);
-                Description.States.DepthMask      = JsonDepth.GetBool("Mask", true);
-                Description.States.DepthTest      = JsonDepth.GetEnum("Condition", TestCondition::LessEqual);
-                Description.States.DepthBias      = JsonDepth.GetNumber<Real32>("Bias", 0.0f);
-                Description.States.DepthBiasClamp = JsonDepth.GetNumber<Real32>("BiasClamp", 0.0f);
-                Description.States.DepthBiasSlope = JsonDepth.GetNumber<Real32>("BiasSlope", 0.0f);
-            }
-
-            // Parse 'Stencil' section
-            if (const JsonObject JsonStencil = JsonProperties.GetObject("Stencil"); JsonStencil.IsValid())
-            {
-                Description.States.StencilReadMask       = JsonStencil.GetNumber<UInt8>("ReadMask", 0);
-                Description.States.StencilWriteMask      = JsonStencil.GetNumber<UInt8>("WriteMask", 0);
-                Description.States.StencilBackTest       = JsonStencil.GetEnum("BackTest", TestCondition::Always);
-                Description.States.StencilBackFail       = JsonStencil.GetEnum("BackFail", TestAction::Keep);
-                Description.States.StencilBackDepthFail  = JsonStencil.GetEnum("BackDepthFail", TestAction::Keep);
-                Description.States.StencilBackDepthPass  = JsonStencil.GetEnum("BackDepthPass", TestAction::Keep);
-                Description.States.StencilFrontTest      = JsonStencil.GetEnum("FrontTest", TestCondition::Always);
-                Description.States.StencilFrontFail      = JsonStencil.GetEnum("FrontFail", TestAction::Keep);
-                Description.States.StencilFrontDepthFail = JsonStencil.GetEnum("FrontDepthFail", TestAction::Keep);
-                Description.States.StencilFrontDepthPass = JsonStencil.GetEnum("FrontDepthPass", TestAction::Keep);
-            }
-
-            // Parse 'Rasterizer' section
-            if (const JsonObject JsonRasterizer = JsonProperties.GetObject("Rasterizer"); JsonRasterizer.IsValid())
-            {
-                Description.States.Fill    = JsonRasterizer.GetEnum("Fill", Fill::Solid);
-                Description.States.Cull    = JsonRasterizer.GetEnum("Cull", Cull::Back);
-                Description.States.Scissor = JsonRasterizer.GetBool("Scissor", false);
-            }
-
-            // Parse 'Layout' section
-            if (const JsonObject JsonLayout = JsonProperties.GetObject("Layout"); JsonLayout.IsValid())
-            {
-                if (const JsonArray JsonAttributes = JsonLayout.GetArray("Attributes"); !JsonAttributes.IsNullOrEmpty())
-                {
-                    for (UInt Index = 0, Size = JsonAttributes.GetSize(); Index < Size; ++Index)
-                    {
-                        const JsonArray Values = JsonAttributes.GetArray(Index);
-
-                        Ref<Attribute> Attribute = Description.Signature.Attributes.Append();
-                        Attribute.Location = Values.GetNumber(0, 0);
-                        Attribute.Format   = Values.GetEnum(1, VertexFormat::Float32x4);
-                        Attribute.Stream   = Values.GetNumber<UInt32>(2);
-                        Attribute.Offset   = Values.GetNumber<UInt32>(3);
-                        Attribute.Divisor  = Values.GetNumber<UInt32>(4);
-                    }
-                }
-
-                Description.States.Topology = JsonLayout.GetEnum("Primitive", Primitive::TriangleList);
-            }
+            LoadProperties(JsonProperties, Description.Base.States, Description.Base.Attributes);
         }
 
         // Parse 'Signature' section
@@ -129,15 +63,16 @@ namespace Graphic
 
                     const Text       Name       = JsonTexture.GetString("Name");
                     const Frequency  Frequency  = JsonTexture.GetEnum("Frequency", Frequency::Material);
-                    const UInt8      Register   = JsonTexture.GetNumber<UInt8>("Register", Index);
                     const Visibility Visibility = JsonTexture.GetEnum("Visibility", Visibility::All);
 
-                    // The reflection is ordered so its index is the register, which the encoder relies on.
-                    ZY_ASSERT(Register == Reflection.Textures.GetSize(), "Texture registers must be dense and ordered");
+                    // The schema hands back the register it took, which the authored one only has to agree with.
+                    const UInt8 Register = Schema.AddTexture(Name);
+
+                    ZY_ASSERT(JsonTexture.GetNumber<UInt8>("Register", Index) == Register,
+                        "Texture registers must be dense and ordered");
 
                     Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
                         Resource::Texture, Register, 1, Visibility);
-                    Reflection.Textures.Append(Hash(Name));
                 }
             }
 
@@ -150,7 +85,6 @@ namespace Graphic
 
                     const Text       Name       = JsonSampler.GetString("Name");
                     const Frequency  Frequency  = JsonSampler.GetEnum("Frequency", Frequency::Material);
-                    const UInt8      Register   = JsonSampler.GetNumber<UInt8>("Register", Index);
                     const Visibility Visibility = JsonSampler.GetEnum("Visibility", Visibility::All);
 
                     Sampler Descriptor;
@@ -161,11 +95,13 @@ namespace Graphic
                     Descriptor.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::None);
                     Descriptor.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
 
-                    ZY_ASSERT(Register == Reflection.Samplers.GetSize(), "Sampler registers must be dense and ordered");
+                    const UInt8 Register = Schema.AddSampler(Name, Descriptor);
+
+                    ZY_ASSERT(JsonSampler.GetNumber<UInt8>("Register", Index) == Register,
+                        "Sampler registers must be dense and ordered");
 
                     Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
                         Resource::Sampler, Register, 1, Visibility);
-                    Reflection.Samplers.Append(Hash(Name), Descriptor, 0);
                 }
             }
 
@@ -182,7 +118,7 @@ namespace Graphic
 
                     if (const UInt32 Count = JsonUniform.GetNumber<UInt32>("Count", 1); Count == 1)
                     {
-                        Reflection.AddUniform(Frequency, Name, Type, LoadParameter(JsonUniform));
+                        Schema.AddUniform(Frequency, Name, Type, LoadParameter(JsonUniform));
                     }
                     else
                     {
@@ -193,7 +129,7 @@ namespace Graphic
                             Buffer.AppendInteger(Element, CountDigits<10>(Element), 10, false);
                             Buffer.Append(']');
 
-                            Reflection.AddUniform(Frequency, Buffer, Type, Parameter());
+                            Schema.AddUniform(Frequency, Buffer, Type, Parameter());
                         }
                     }
                 }
@@ -202,7 +138,7 @@ namespace Graphic
             // Declare one uniform block per frequency that declared any field, at the register matching it.
             for (const Frequency Frequency : Enum::GetValues<Frequency>())
             {
-                if (Reflection.Uniforms[Enum::Cast(Frequency)].Size > 0)
+                if (Schema.GetUniforms(Frequency).Size > 0)
                 {
                     Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
                         Resource::Uniform, Enum::Cast(Frequency), 1, Visibility::All);
@@ -213,45 +149,243 @@ namespace Graphic
         // Parse 'Program' section
         if (const JsonObject JsonProgram = JsonRoot.GetObject("Program"); JsonProgram.IsValid())
         {
-            // Parse 'Defines' section
-            if (const JsonArray JsonDefines = JsonProgram.GetArray("Defines"); !JsonDefines.IsNullOrEmpty())
-            {
-                for (UInt Index = 0, Limit = JsonDefines.GetSize(); Index < Limit; ++Index)
-                {
-                    const Text Definition = JsonDefines.GetString(Index);
+            LoadProgram(Service, Scope, JsonProgram, Description.Base.Macros, Description.Base.Shaders);
+        }
 
+        // Parse 'Features' section, ordered so each entry's index is the bit it occupies in a key.
+        if (const JsonArray JsonFeatures = JsonRoot.GetArray("Features"); !JsonFeatures.IsNullOrEmpty())
+        {
+            for (UInt Index = 0, Limit = JsonFeatures.GetSize(); Index < Limit; ++Index)
+            {
+                const JsonObject JsonFeature = JsonFeatures.GetObject(Index);
+
+                Ref<Technique::Feature> Feature = Description.Features.Append();
+                Feature.Name = JsonFeature.GetString("Name");
+
+                if (const Text Definition = JsonFeature.GetString("Define"); !Definition.IsEmpty())
+                {
                     if (const SInt32 Position = StrFind(Definition, '='); Position != -1)
                     {
-                        Description.Macros.Append(Definition.Slice(0, Position), Definition.Slice(Position + 1));
+                        Feature.Patch.Macros.Append(Definition.Slice(0, Position), Definition.Slice(Position + 1));
                     }
                     else
                     {
-                        Description.Macros.Append(Definition, Text::Empty());
+                        Feature.Patch.Macros.Append(Definition, Text::Empty());
                     }
                 }
-            }
 
-            // Parse 'Shaders' section
-            if (const JsonObject JsonShaders = JsonProgram.GetObject("Shaders"); JsonShaders.IsValid())
-            {
-                if (const JsonArray JsonStages = JsonShaders.GetArray(mLanguage); !JsonStages.IsNullOrEmpty())
+                // Parse 'Enable' section, naming what turns the feature on without the caller asking for it.
+                if (const JsonObject JsonEnable = JsonFeature.GetObject("Enable"); JsonEnable.IsValid())
                 {
-                    for (UInt Index = 0, Limit = JsonStages.GetSize(); Index < Limit; ++Index)
+                    if (const Text Texture = JsonEnable.GetString("Texture"); !Texture.IsEmpty())
                     {
-                        const JsonObject JsonShader = JsonStages.GetObject(Index);
-
-                        const Text        Path  = JsonShader.GetString("Path");
-                        const ShaderStage Stage = JsonShader.GetEnum("Stage", ShaderStage::Vertex);
-
-                        Description.Shaders[Enum::Cast(Stage)] = Service.Load<Shader>(Path, AddressOf(Scope));
+                        Feature.Texture = Hash(Texture);
                     }
+
+                    if (const Text Parameter = JsonEnable.GetString("Parameter"); !Parameter.IsEmpty())
+                    {
+                        Feature.Parameter = Hash(Parameter);
+                    }
+                }
+
+                // Parsing the patch over the base leaves every block it declares complete rather than partial.
+                Feature.Patch.States = Description.Base.States;
+
+                if (const JsonObject JsonProperties = JsonFeature.GetObject("Properties"); JsonProperties.IsValid())
+                {
+                    Feature.Blocks = LoadProperties(JsonProperties, Feature.Patch.States, Feature.Patch.Attributes);
+                }
+
+                if (JsonFeature.GetObject("Signature").IsValid())
+                {
+                    LOG_W("'{0}' has feature '{1}' patching the signature, which every variant shares",
+                          Scope.GetResource()->GetKey(), Feature.Name);
+                }
+
+                if (const JsonObject JsonProgram = JsonFeature.GetObject("Program"); JsonProgram.IsValid())
+                {
+                    LoadProgram(Service, Scope, JsonProgram, Feature.Patch.Macros, Feature.Patch.Shaders);
                 }
             }
         }
 
+        // Parse 'Preload' section, resolving each combination of feature names into the key selecting them.
+        if (const JsonArray JsonPreload = JsonRoot.GetArray("Preload"); !JsonPreload.IsNullOrEmpty())
+        {
+            const auto GetFeatureKey = [&Description](Text Name)
+            {
+                for (UInt Index = 0, Limit = Description.Features.GetSize(); Index < Limit; ++Index)
+                {
+                    if (Description.Features[Index].Name == Name)
+                    {
+                        return static_cast<Technique::Key>(1u << Index);
+                    }
+                }
+                return static_cast<Technique::Key>(0);
+            };
+
+            for (UInt Index = 0, Limit = JsonPreload.GetSize(); Index < Limit; ++Index)
+            {
+                const JsonArray JsonVariant = JsonPreload.GetArray(Index);
+
+                Technique::Key Key = 0;
+
+                for (UInt Slot = 0, Count = JsonVariant.GetSize(); Slot < Count; ++Slot)
+                {
+                    const Text Name = JsonVariant.GetString(Slot);
+
+                    if (const Technique::Key Bit = GetFeatureKey(Name))
+                    {
+                        Key = SetBit(Key, Bit);
+                    }
+                    else
+                    {
+                        LOG_W("'{0}' preloads unknown feature '{1}'", Scope.GetResource()->GetKey(), Name);
+                    }
+                }
+
+                Description.Preload.Append(Key);
+            }
+        }
+
         const Retainer<Technique> Asset = Retainer<Technique>::Cast(Scope.GetResource());
-        Asset->Setup(Move(Description), Move(Reflection));
+        Asset->Setup(Move(Description), Move(Schema));
         return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt8 VFXLoader::LoadProperties(JsonObject Section, Ref<States> States, Ref<Attributes> Attributes)
+    {
+        UInt8 Blocks = 0;
+
+        // Parse 'Blend' section
+        if (const JsonObject JsonBlend = Section.GetObject("Blend"); JsonBlend.IsValid())
+        {
+            States.AlphaToCoverage     = JsonBlend.GetBool("AlphaToCoverage", States.AlphaToCoverage);
+            States.Channel             = JsonBlend.GetEnum("Channel", States.Channel);
+            States.BlendSrcColor       = JsonBlend.GetEnum("SrcColor", States.BlendSrcColor);
+            States.BlendDstColor       = JsonBlend.GetEnum("DstColor", States.BlendDstColor);
+            States.BlendEquationColor  = JsonBlend.GetEnum("EquationColor", States.BlendEquationColor);
+            States.BlendSrcAlpha       = JsonBlend.GetEnum("SrcAlpha", States.BlendSrcAlpha);
+            States.BlendDstAlpha       = JsonBlend.GetEnum("DstAlpha", States.BlendDstAlpha);
+            States.BlendEquationAlpha  = JsonBlend.GetEnum("EquationAlpha", States.BlendEquationAlpha);
+
+            Blocks = SetBit(Blocks, Technique::GetBlockMask(Technique::Block::Blend));
+        }
+
+        // Parse 'Depth' section
+        if (const JsonObject JsonDepth = Section.GetObject("Depth"); JsonDepth.IsValid())
+        {
+            States.DepthClip      = JsonDepth.GetBool("Clip", States.DepthClip);
+            States.DepthMask      = JsonDepth.GetBool("Mask", States.DepthMask);
+            States.DepthTest      = JsonDepth.GetEnum("Condition", States.DepthTest);
+            States.DepthBias      = JsonDepth.GetNumber<Real32>("Bias", States.DepthBias);
+            States.DepthBiasClamp = JsonDepth.GetNumber<Real32>("BiasClamp", States.DepthBiasClamp);
+            States.DepthBiasSlope = JsonDepth.GetNumber<Real32>("BiasSlope", States.DepthBiasSlope);
+
+            Blocks = SetBit(Blocks, Technique::GetBlockMask(Technique::Block::Depth));
+        }
+
+        // Parse 'Stencil' section
+        if (const JsonObject JsonStencil = Section.GetObject("Stencil"); JsonStencil.IsValid())
+        {
+            States.StencilReadMask       = JsonStencil.GetNumber<UInt8>("ReadMask", States.StencilReadMask);
+            States.StencilWriteMask      = JsonStencil.GetNumber<UInt8>("WriteMask", States.StencilWriteMask);
+            States.StencilBackTest       = JsonStencil.GetEnum("BackTest", States.StencilBackTest);
+            States.StencilBackFail       = JsonStencil.GetEnum("BackFail", States.StencilBackFail);
+            States.StencilBackDepthFail  = JsonStencil.GetEnum("BackDepthFail", States.StencilBackDepthFail);
+            States.StencilBackDepthPass  = JsonStencil.GetEnum("BackDepthPass", States.StencilBackDepthPass);
+            States.StencilFrontTest      = JsonStencil.GetEnum("FrontTest", States.StencilFrontTest);
+            States.StencilFrontFail      = JsonStencil.GetEnum("FrontFail", States.StencilFrontFail);
+            States.StencilFrontDepthFail = JsonStencil.GetEnum("FrontDepthFail", States.StencilFrontDepthFail);
+            States.StencilFrontDepthPass = JsonStencil.GetEnum("FrontDepthPass", States.StencilFrontDepthPass);
+
+            Blocks = SetBit(Blocks, Technique::GetBlockMask(Technique::Block::Stencil));
+        }
+
+        // Parse 'Rasterizer' section
+        if (const JsonObject JsonRasterizer = Section.GetObject("Rasterizer"); JsonRasterizer.IsValid())
+        {
+            States.Fill    = JsonRasterizer.GetEnum("Fill", States.Fill);
+            States.Cull    = JsonRasterizer.GetEnum("Cull", States.Cull);
+            States.Scissor = JsonRasterizer.GetBool("Scissor", States.Scissor);
+
+            Blocks = SetBit(Blocks, Technique::GetBlockMask(Technique::Block::Rasterizer));
+        }
+
+        // Parse 'Layout' section
+        if (const JsonObject JsonLayout = Section.GetObject("Layout"); JsonLayout.IsValid())
+        {
+            if (const JsonArray JsonAttributes = JsonLayout.GetArray("Attributes"); !JsonAttributes.IsNullOrEmpty())
+            {
+                Attributes.Clear();
+
+                for (UInt Index = 0, Size = JsonAttributes.GetSize(); Index < Size; ++Index)
+                {
+                    const JsonArray Values = JsonAttributes.GetArray(Index);
+
+                    Ref<Attribute> Attribute = Attributes.Append();
+                    Attribute.Location = Values.GetNumber(0, 0);
+                    Attribute.Format   = Values.GetEnum(1, VertexFormat::Float32x4);
+                    Attribute.Stream   = Values.GetNumber<UInt32>(2);
+                    Attribute.Offset   = Values.GetNumber<UInt32>(3);
+                    Attribute.Divisor  = Values.GetNumber<UInt32>(4);
+                }
+            }
+
+            States.Topology = JsonLayout.GetEnum("Primitive", States.Topology);
+
+            Blocks = SetBit(Blocks, Technique::GetBlockMask(Technique::Block::Layout));
+        }
+        return Blocks;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void VFXLoader::LoadProgram(
+        Ref<Content::Service>   Service,
+        Ref<Content::Scope>     Scope,
+        JsonObject              Section,
+        Ref<Sequence<Macro>>    Macros,
+        Ref<Technique::Shaders> Shaders)
+    {
+        // Parse 'Defines' section
+        if (const JsonArray JsonDefines = Section.GetArray("Defines"); !JsonDefines.IsNullOrEmpty())
+        {
+            for (UInt Index = 0, Limit = JsonDefines.GetSize(); Index < Limit; ++Index)
+            {
+                const Text Definition = JsonDefines.GetString(Index);
+
+                if (const SInt32 Position = StrFind(Definition, '='); Position != -1)
+                {
+                    Macros.Append(Definition.Slice(0, Position), Definition.Slice(Position + 1));
+                }
+                else
+                {
+                    Macros.Append(Definition, Text::Empty());
+                }
+            }
+        }
+
+        // Parse 'Shaders' section
+        if (const JsonObject JsonShaders = Section.GetObject("Shaders"); JsonShaders.IsValid())
+        {
+            if (const JsonArray JsonStages = JsonShaders.GetArray(mLanguage); !JsonStages.IsNullOrEmpty())
+            {
+                for (UInt Index = 0, Limit = JsonStages.GetSize(); Index < Limit; ++Index)
+                {
+                    const JsonObject JsonShader = JsonStages.GetObject(Index);
+
+                    const Text        Path  = JsonShader.GetString("Path");
+                    const ShaderStage Stage = JsonShader.GetEnum("Stage", ShaderStage::Vertex);
+
+                    Shaders[Enum::Cast(Stage)] = Service.Load<Shader>(Path, AddressOf(Scope));
+                }
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

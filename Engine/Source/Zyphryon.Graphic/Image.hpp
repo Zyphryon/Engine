@@ -98,8 +98,6 @@ namespace Graphic
             return mLevels;
         }
 
-    public:
-
         /// \brief Uploads the image data to the GPU, creating the texture resource.
         ///
         /// \param Service The graphic service used to create the resource.

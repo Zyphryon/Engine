@@ -12,6 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Material.hpp"
+#include "Schema.hpp"
 #include "Service.hpp"
 #include "Shader.hpp"
 
@@ -26,93 +28,71 @@ namespace Graphic
     {
     public:
 
+        /// \brief Type alias for the bitmask selecting which features a variant compiles with.
+        using Key = UInt32;
+
         /// \brief Type alias for an array of shader modules indexed by pipeline stage.
         using Shaders = Array<Retainer<Shader>, Enum::Count<ShaderStage>()>;
 
-        /// \brief Describes the shader-side data needed to fill the pipeline's bindings.
-        struct Reflection final
+        /// \brief Specifies the groups of fixed-function state a feature replaces as a whole.
+        enum class Block : UInt8
         {
-            /// \brief Describes a single field within a uniform block.
-            struct UniformField final
-            {
-                /// The hash identifying this field's name.
-                UInt64    Hash   = 0;
+            Blend,          ///< The blend factors, equations, write mask and alpha-to-coverage flag.
+            Depth,          ///< The depth clip, write mask, comparison and bias.
+            Stencil,        ///< The stencil read and write masks, comparisons and actions.
+            Rasterizer,     ///< The fill mode, cull mode and scissor test.
+            Layout,         ///< The vertex attributes and primitive topology.
+        };
 
-                /// The data type of the field.
-                Uniform   Type   = Uniform::Float;
+        /// \brief Holds every part of a pipeline a feature is allowed to replace.
+        struct Layer final
+        {
+            /// The preprocessor macros used when compiling the shaders.
+            Sequence<Macro> Macros;
 
-                /// The size of the field, in bytes.
-                UInt16    Size   = 0;
+            /// The fixed-function states.
+            States          States;
 
-                /// The byte offset of the field within its owning uniform block.
-                UInt16    Offset = 0;
+            /// The vertex attributes the input stage consumes.
+            Attributes      Attributes;
 
-                /// The value packed when a material does not set the field.
-                Parameter Value;
-            };
+            /// The shader modules for each pipeline stage.
+            Shaders         Shaders;
+        };
 
-            /// \brief Describes the layout of the uniform block declared for one frequency.
-            struct UniformGroup final
-            {
-                /// The total size of the block, in bytes.
-                UInt32                 Size = 0;
+        /// \brief Describes an optional capability that patches the base layer while it is enabled.
+        struct Feature final
+        {
+            /// The name identifying this feature, which a key is resolved from.
+            Str32  Name;
 
-                /// The fields contained within the block, in declaration order.
-                Sequence<UniformField> Structure;
-            };
+            /// The hash of the texture whose presence enables the feature, or zero if the caller enables it.
+            UInt64 Texture   = 0;
 
-            /// \brief Names a sampler a material may supply, with the state bound when it does not.
-            struct SamplerField final
-            {
-                /// The hash identifying this sampler's name.
-                UInt64  Hash   = 0;
+            /// The hash of the parameter whose presence enables the feature, or zero if the caller enables it.
+            UInt64 Parameter = 0;
 
-                /// The state bound when a material does not supply its own.
-                Sampler Descriptor;
+            /// The bitmask of the state blocks this feature replaces, built from \ref Block.
+            UInt8  Blocks    = 0;
 
-                /// The sampler resource resolved from the descriptor, or zero until the technique is uploaded.
-                Object  Handle = 0;
-            };
-
-            /// \brief Appends a field to a uniform block, assigning its offset and growing the block.
-            ///
-            /// \param Frequency The block the field belongs to.
-            /// \param Name      The name of the field.
-            /// \param Type      The data type of the field.
-            /// \param Value     The value packed when a material does not set the field.
-            ZY_INLINE void AddUniform(Frequency Frequency, Text Name, Uniform Type, AnyRef<Parameter> Value)
-            {
-                const UInt16 Size = Parameter::GetSize(Enum::Cast(Type));
-
-                Ref<UniformGroup> Group = Uniforms[Enum::Cast(Frequency)];
-                Group.Structure.Append(Hash(Name), Type, Size, Group.Size, Move(Value));
-                Group.Size += Size;
-            }
-
-            /// The uniform block layout declared for each frequency.
-            Array<UniformGroup, Enum::Count<Frequency>()> Uniforms;
-
-            /// The names of the textures the program samples, ordered so the index is the register.
-            Sequence<UInt64, Command::kMaxTextures>       Textures;
-
-            /// The named samplers a material may supply, ordered so the index is the register.
-            Sequence<SamplerField, Command::kMaxSamplers> Samplers;
+            /// The parts replacing the base ones, each left empty at whatever the base keeps.
+            Layer  Patch;
         };
 
         /// \brief Describes the configuration for a rendering technique.
         struct Description final
         {
-            /// Preprocessor macros used when compiling the technique's shaders.
-            Sequence<Macro> Macros;
+            /// The resource interface the pipeline exposes to the driver, whose bindings no variant changes.
+            Signature         Signature;
 
-            /// The resource interface the pipeline exposes to the driver.
-            Signature       Signature;
+            /// The parts every variant starts from, before any enabled feature patches them.
+            Layer             Base;
 
-            /// The fixed-function pipeline states.
-            States          States;
+            /// The optional features, ordered so the index is the bit each one occupies in a key.
+            Sequence<Feature> Features;
 
-            /// The shader modules for each pipeline stage.
-            Shaders         Shaders;
+            /// The variants compiled up front, so drawing with one of them never waits on a shader compile.
+            Sequence<Key>     Preload;
         };
 
     public:
@@ -122,19 +102,57 @@ namespace Graphic
         /// \param Key The unique content key identifying this pipeline.
         explicit Technique(AnyRef<Content::Uri> Key);
 
-        /// \brief Sets up the technique with the given description and reflection.
+        /// \brief Sets up the technique with the given description and schema.
         ///
         /// \param Description The description containing the technique's configuration.
-        /// \param Reflection  The shader-side data the encoder needs to fill the pipeline's bindings.
-        void Setup(AnyRef<Description> Description, AnyRef<Reflection> Reflection);
+        /// \param Schema      The named resources the encoder fills the pipeline's bindings with.
+        void Setup(AnyRef<Description> Description, AnyRef<Schema> Schema);
 
-        /// \brief Gets the GPU pipeline handle for this technique.
+        /// \brief Gets the GPU pipeline handle for the technique's base variant.
         ///
-        /// \return The technique's GPU pipeline object handle.
+        /// \return The base variant's GPU pipeline object handle.
         ZY_INLINE Object GetHandle() const
         {
             return mHandle;
         }
+
+        /// \brief Gets the GPU pipeline handle for the given variant.
+        ///
+        /// \note Yields zero for a variant that has not been compiled yet, which \ref Obtain compiles.
+        ///
+        /// \param Key The bitmask of the features the variant compiles with.
+        /// \return The variant's GPU pipeline object handle, or zero if it has not been compiled.
+        ZY_INLINE Object GetHandle(Key Key) const
+        {
+            if (Key == 0)
+            {
+                return mHandle;
+            }
+
+            const ConstPtr<Object> Handle = mVariants.Find(Key);
+            return (Handle ? * Handle : 0);
+        }
+
+        /// \brief Gets the GPU pipeline handle for the given variant, compiling it when it does not exist.
+        ///
+        /// \param Service The graphic service used to create the resource.
+        /// \param Key     The bitmask of the features the variant compiles with.
+        /// \return The variant's GPU pipeline object handle, falling back to the base one if it failed.
+        Object Obtain(Ref<Service> Service, Key Key);
+
+        /// \brief Resolves the key of the features the given material enables.
+        ///
+        /// \param Material The material whose textures and parameters decide which features turn on.
+        /// \return The bitmask of the features the material enables.
+        Key Resolve(ConstRef<Material> Material) const;
+
+        /// \brief Resolves the key holding the bit of the feature declared under the given name.
+        ///
+        /// \note This walks the feature list, so callers resolve the keys they need once and keep them.
+        ///
+        /// \param Name The name of the feature to look up.
+        /// \return The bitmask holding the feature's bit, or zero if the technique declares no such feature.
+        Key Resolve(Text Name) const;
 
         /// \brief Gets the technique's configuration description.
         ///
@@ -144,23 +162,21 @@ namespace Graphic
             return mDescription;
         }
 
-        /// \brief Gets the technique's shader-side reflection data.
+        /// \brief Gets the schema every one of the technique's variants declares.
         ///
-        /// \return The technique reflection.
-        ZY_INLINE ConstRef<Reflection> GetReflection() const
+        /// \return The technique schema.
+        ZY_INLINE ConstRef<Schema> GetSchema() const
         {
-            return mReflection;
+            return mSchema;
         }
 
-    public:
-
-        /// \brief Uploads the technique to the GPU, creating the pipeline resource.
+        /// \brief Uploads the technique to the GPU, creating the base pipeline and every preloaded variant.
         ///
         /// \param Service The graphic service used to create the resource.
         /// \return `true` if the upload succeeded, `false` otherwise.
         Bool Upload(Ref<Service> Service);
 
-        /// \brief Unloads the technique from the GPU, destroying the pipeline resource.
+        /// \brief Unloads the technique from the GPU, destroying every pipeline resource it compiled.
         ///
         /// \param Service The graphic service used to destroy the resource.
         void Unload(Ref<Service> Service);
@@ -182,18 +198,47 @@ namespace Graphic
 
     private:
 
-        /// \brief Assembles the shader modules into a complete program.
+        /// \brief Assembles everything the driver needs to create a variant's pipeline.
         ///
-        /// \return The assembled shader program.
-        Program Assemble() const;
+        /// \param Key       The bitmask of the features the variant compiles with.
+        /// \param Program   Receives the shader program the variant compiles.
+        /// \param Signature Receives the resource interface the variant exposes.
+        /// \param States    Receives the fixed-function states the variant is created with.
+        void Assemble(Key Key, Ref<Program> Program, Ref<Signature> Signature, Ref<States> States) const;
+
+        /// \brief Copies the state blocks a feature replaces over the ones being assembled.
+        ///
+        /// \param Destination The states each replaced block is written into.
+        /// \param Source      The feature's states, which every block it replaces is complete in.
+        /// \param Blocks      The bitmask of the blocks to copy, built from \ref Block.
+        void Converge(Ref<States> Destination, ConstRef<States> Source, UInt8 Blocks) const;
+
+        /// \brief Creates the pipeline backing a variant.
+        ///
+        /// \param Service The graphic service used to create the resource.
+        /// \param Key     The bitmask of the features the variant compiles with.
+        /// \return The variant's GPU pipeline object handle, or zero if it failed to compile.
+        Object Compile(Ref<Service> Service, Key Key);
+
+    public:
+
+        /// \brief Gets the bitmask selecting a single state block.
+        ///
+        /// \param Block The state block to select.
+        /// \return The bitmask holding the block's bit.
+        ZY_INLINE static constexpr UInt8 GetBlockMask(Block Block)
+        {
+            return (1u << Enum::Cast(Block));
+        }
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object      mHandle;
-        Description mDescription;
-        Reflection  mReflection;
+        Object             mHandle;
+        Description        mDescription;
+        Schema             mSchema;
+        Table<Key, Object> mVariants;
     };
 }

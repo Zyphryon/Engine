@@ -130,8 +130,6 @@ namespace Graphic
             return mParameters.Find(Key);
         }
 
-    public:
-
         /// \brief Uploads the material to the GPU, creating the material resource.
         ///
         /// \param Service The graphic service used to create the resource.

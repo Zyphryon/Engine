@@ -153,7 +153,7 @@ namespace Graphic
             Bool          ScissorEnable         = false;
             GLenum        FillMode              = 0x1B02;
             GLenum        Primitive             = GL_TRIANGLES;
-            Sequence<Attribute, kMaxAttributes> Attributes;
+            Attributes    Attributes;
         };
 
         /// \brief Internal wrapper for OpenGL texture (or renderbuffer) resources.
