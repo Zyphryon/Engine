@@ -56,6 +56,38 @@ inline namespace Math
         {
         }
 
+        /// \brief Checks whether the track carries any sample at all.
+        ///
+        /// \return `true` when the track is empty, otherwise `false`.
+        ZY_INLINE Bool IsEmpty() const
+        {
+            return mValues.IsEmpty();
+        }
+
+        /// \brief Checks whether the track's samples fall on a fixed cadence.
+        ///
+        /// \return `true` when the track stores a rate instead of per-sample times, otherwise `false`.
+        ZY_INLINE Bool IsUniform() const
+        {
+            return mRate > 0.0f;
+        }
+
+        /// \brief Checks whether the track holds one value for the whole clip.
+        ///
+        /// \return `true` when the track carries exactly one sample, otherwise `false`.
+        ZY_INLINE Bool IsConstant() const
+        {
+            return mValues.GetSize() == 1;
+        }
+
+        /// \brief Gets the number of samples the track carries.
+        ///
+        /// \return The sample count.
+        ZY_INLINE UInt GetSize() const
+        {
+            return mValues.GetSize();
+        }
+
         /// \brief Appends a sample at an explicit time; samples must be added in ascending time order.
         ///
         /// \param Time  The sample's time, in seconds.
@@ -91,12 +123,28 @@ inline namespace Math
             mTimes.Clear();
         }
 
+        /// \brief Gets the track's cadence.
+        ///
+        /// \return The samples per second, or `0` when the track stores explicit times.
+        ZY_INLINE Real32 GetRate() const
+        {
+            return mRate;
+        }
+
         /// \brief Sets the interpolation mode.
         ///
         /// \param Mode The interpolation mode to apply when sampling.
         ZY_INLINE void SetInterpolation(Interpolation Mode)
         {
             mInterpolation = Mode;
+        }
+
+        /// \brief Gets the interpolation mode applied when sampling.
+        ///
+        /// \return The interpolation mode.
+        ZY_INLINE Interpolation GetInterpolation() const
+        {
+            return mInterpolation;
         }
 
         /// \brief Replaces the track's samples with a block already laid out in ascending order.
@@ -117,6 +165,14 @@ inline namespace Math
             {
                 Blit(mValues.GetData(), Count * sizeof(Type), Values);
             }
+        }
+
+        /// \brief Gets the track's values.
+        ///
+        /// \return A read-only view over the values, in ascending time order.
+        ZY_INLINE ConstSpan<Type> GetValues() const
+        {
+            return mValues;
         }
 
         /// \brief Replaces the track's tangents with blocks already laid out in ascending order.
@@ -162,68 +218,12 @@ inline namespace Math
             return mOutgoing;
         }
 
-        /// \brief Checks whether the track carries any sample at all.
-        ///
-        /// \return `true` when the track is empty, otherwise `false`.
-        ZY_INLINE Bool IsEmpty() const
-        {
-            return mValues.IsEmpty();
-        }
-
-        /// \brief Checks whether the track's samples fall on a fixed cadence.
-        ///
-        /// \return `true` when the track stores a rate instead of per-sample times, otherwise `false`.
-        ZY_INLINE Bool IsUniform() const
-        {
-            return mRate > 0.0f;
-        }
-
-        /// \brief Checks whether the track holds one value for the whole clip.
-        ///
-        /// \return `true` when the track carries exactly one sample, otherwise `false`.
-        ZY_INLINE Bool IsConstant() const
-        {
-            return mValues.GetSize() == 1;
-        }
-
-        /// \brief Gets the number of samples the track carries.
-        ///
-        /// \return The sample count.
-        ZY_INLINE UInt GetSize() const
-        {
-            return mValues.GetSize();
-        }
-
-        /// \brief Gets the track's cadence.
-        ///
-        /// \return The samples per second, or `0` when the track stores explicit times.
-        ZY_INLINE Real32 GetRate() const
-        {
-            return mRate;
-        }
-
-        /// \brief Gets the track's values.
-        ///
-        /// \return A read-only view over the values, in ascending time order.
-        ZY_INLINE ConstSpan<Type> GetValues() const
-        {
-            return mValues;
-        }
-
         /// \brief Gets the track's sample times.
         ///
         /// \return A read-only view over the times, or an empty view when the track is on a cadence.
         ZY_INLINE ConstSpan<Real64> GetTimes() const
         {
             return mTimes;
-        }
-
-        /// \brief Gets the interpolation mode applied when sampling.
-        ///
-        /// \return The interpolation mode.
-        ZY_INLINE Interpolation GetInterpolation() const
-        {
-            return mInterpolation;
         }
 
         /// \brief Gets the track's duration (the time of its last sample).

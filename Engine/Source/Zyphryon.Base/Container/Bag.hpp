@@ -50,7 +50,7 @@ inline namespace Base
         /// \return A pointer to the internal storage array containing all keys.
         ZY_INLINE Ptr<Key> GetData()
         {
-            const Ptr<typename Table<Key, Unit>::Pair> Entries = mTable.GetData();
+            const Ptr<typename Table<Key, Empty>::Pair> Entries = mTable.GetData();
             return AddressOf(Entries[0].First);
         }
 
@@ -59,7 +59,7 @@ inline namespace Base
         /// \return A const pointer to the internal storage array containing all keys.
         ZY_INLINE ConstPtr<Key> GetData() const
         {
-            const ConstPtr<typename Table<Key, Unit>::Pair> Entries = mTable.GetData();
+            const ConstPtr<typename Table<Key, Empty>::Pair> Entries = mTable.GetData();
             return AddressOf(Entries[0].First);
         }
 
@@ -108,7 +108,7 @@ inline namespace Base
         template<typename KeyType = Key>
         ZY_INLINE Bool Insert(AnyRef<KeyType> Needle)
         {
-            return mTable.Assign(Needle, Unit {});
+            return mTable.Assign(Needle, { });
         }
 
         /// \brief Removes a key from the bag.
@@ -164,17 +164,9 @@ inline namespace Base
 
     private:
 
-        /// \brief Empty type used as dummy value in the underlying table.
-        struct Unit
-        {
-
-        };
-
-    private:
-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Table<Key, Unit> mTable;
+        Table<Key, Empty> mTable;
     };
 }

@@ -136,6 +136,11 @@ inline namespace Base
     template<class Type>
     concept IsEmpty     = std::is_empty_v<Type>;
 
+    /// \brief Empty type used as dummy value.
+    struct Empty
+    {
+    };
+
     /// \brief Identifies the type at the specified index in the parameter pack.
     template<UInt Index, typename First, typename... Rest>
     struct Identify
