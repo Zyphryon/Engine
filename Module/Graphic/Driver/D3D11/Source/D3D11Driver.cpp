@@ -1096,7 +1096,7 @@ namespace Graphic
         }
 
         D3D11Check(mDeviceFactory->CreateSwapChain(mDevice.Get(), AddressOf(Description), mSwapchain.GetAddressOf()));
-        D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES));
+        D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER));
 
         mDeviceProperties.Tearless    = Config.Tearless;
         mDeviceProperties.ColorFormat = Config.ColorFormat;
