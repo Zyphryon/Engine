@@ -45,6 +45,35 @@ namespace Runtime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Kernel::Save(JsonObject Root)
+    {
+#if !defined(ZY_MODE_HEADLESS)
+        if (ConstRetainer<Platform::Service> Platform = GetService<Platform::Service>())
+        {
+            ConstRef<Platform::Window> Window = Platform->GetWindow();
+
+            mStartup.SetWindowWidth(Window.GetWidth());
+            mStartup.SetWindowHeight(Window.GetHeight());
+            mStartup.SetWindowFullscreen(Window.IsFullscreen());
+
+            if (const ConstPtr<Platform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY()))
+            {
+                mStartup.SetWindowMonitor(Monitor->GetName());
+            }
+        }
+
+        if (ConstRetainer<Graphic::Service> Graphics = GetService<Graphic::Service>())
+        {
+            mStartup.SetGraphicsTearless(Graphics->IsTearless());
+        }
+#endif
+
+        mStartup.Save(Root);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Kernel::Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<Engine::Modules> Modules)
     {
         ZY_PROFILE_THREAD("Main Thread");

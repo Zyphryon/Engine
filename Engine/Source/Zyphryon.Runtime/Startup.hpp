@@ -28,6 +28,16 @@ namespace Runtime
         /// \brief Constructs a new set of engine configuration parameters with default values.
         Startup();
 
+        /// \brief Reads the parameters a user is allowed to change from a document.
+        ///
+        /// \param Root The object the parameters were written under.
+        void Load(JsonObject Root);
+
+        /// \brief Writes the parameters a user is allowed to change into a document.
+        ///
+        /// \param Root The object to write the parameters under.
+        void Save(JsonObject Root) const;
+
         /// \brief Sets the target monitor for the window.
         ///
         /// \param Name The name of the monitor to use for window placement.

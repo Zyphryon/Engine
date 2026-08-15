@@ -33,6 +33,11 @@ namespace Runtime
         /// \brief Destructs the kernel and releases all associated resources.
         virtual ~Kernel() = default;
 
+        /// \brief Writes the parameters a user is allowed to change, as they currently stand.
+        ///
+        /// \param Root The object to write the parameters under.
+        void Save(JsonObject Root);
+
         /// \brief Parses the command line, configures the application, and runs it to completion.
         ///
         /// \note Invoked by \ref ZY_APPLICATION, so an application never calls this itself.
