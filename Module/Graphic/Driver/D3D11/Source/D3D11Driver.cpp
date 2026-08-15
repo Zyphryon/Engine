@@ -1096,7 +1096,11 @@ namespace Graphic
         }
 
         D3D11Check(mDeviceFactory->CreateSwapChain(mDevice.Get(), AddressOf(Description), mSwapchain.GetAddressOf()));
-        D3D11Check(mDeviceFactory->MakeWindowAssociation(Description.OutputWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER));
+
+        if (ComPtr<IDXGIFactory> DXGIParent; SUCCEEDED(mSwapchain->GetParent(IID_PPV_ARGS(DXGIParent.GetAddressOf()))))
+        {
+            D3D11Check(DXGIParent->MakeWindowAssociation(Window, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER));
+        }
 
         mDeviceProperties.Tearless    = Config.Tearless;
         mDeviceProperties.ColorFormat = Config.ColorFormat;
