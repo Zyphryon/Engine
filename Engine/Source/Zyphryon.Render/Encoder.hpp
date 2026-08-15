@@ -121,23 +121,27 @@ namespace Render
         /// \param Textures   The input textures, in the technique's declared slot order.
         /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Parameters The draw parameters.
+        /// \param Variant    The bitmask of the features the variant to draw with was compiled from.
         void Draw(
             ConstRef<Graphic::Technique>  Technique,
             ConstSpan<Graphic::Object>    Textures,
             ConstRef<Graphic::Stream>     Instances,
-            ConstRef<Graphic::Invocation> Parameters);
+            ConstRef<Graphic::Invocation> Parameters,
+            Graphic::Technique::Key       Variant = 0);
 
         /// \brief Emits one material-less draw for a pass-level effect.
         ///
         /// \param Technique  The technique (pipeline + schema) to draw with.
         /// \param Textures   The input textures, in the technique's declared slot order.
         /// \param Parameters The draw parameters.
+        /// \param Variant    The bitmask of the features the variant to draw with was compiled from.
         ZY_INLINE void Draw(
             ConstRef<Graphic::Technique>  Technique,
             ConstSpan<Graphic::Object>    Textures,
-            ConstRef<Graphic::Invocation> Parameters)
+            ConstRef<Graphic::Invocation> Parameters,
+            Graphic::Technique::Key       Variant = 0)
         {
-            Draw(Technique, Textures, Graphic::Stream(), Parameters);
+            Draw(Technique, Textures, Graphic::Stream(), Parameters, Variant);
         }
 
         /// \brief Emits one indexed draw over a run of a mesh, drawn with the given material.

@@ -62,7 +62,8 @@ namespace Render
     {
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
-        Command.Pipeline = Technique.GetHandle();
+        // The material decides which features turn on, so it selects the variant the draw is compiled for.
+        Command.Pipeline = Technique.GetHandle(Material ? Technique.Resolve(* Material) : 0);
 
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
@@ -97,11 +98,12 @@ namespace Render
         ConstRef<Graphic::Technique>  Technique,
         ConstSpan<Graphic::Object>    Textures,
         ConstRef<Graphic::Stream>     Instances,
-        ConstRef<Graphic::Invocation> Parameters)
+        ConstRef<Graphic::Invocation> Parameters,
+        Graphic::Technique::Key       Variant)
     {
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
-        Command.Pipeline = Technique.GetHandle();
+        Command.Pipeline = Technique.GetHandle(Variant);
 
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
@@ -143,7 +145,8 @@ namespace Render
 
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
-        Command.Pipeline = Technique.GetHandle();
+        // The material decides which features turn on, so it selects the variant the draw is compiled for.
+        Command.Pipeline = Technique.GetHandle(Material ? Technique.Resolve(* Material) : 0);
 
         // Bind the per-frame, per-pass, and per-object (instance) uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)]   = mFrame;
