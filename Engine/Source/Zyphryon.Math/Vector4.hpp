@@ -436,7 +436,7 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            Array<Real32, 4> Result;
+            ZY_ALIGN(16) Array<Real32, 4> Result;
             Store(Result.GetData());
 
             static constexpr Format::Pattern<9> kPattern("({0}, {1}, {2}, {3})");

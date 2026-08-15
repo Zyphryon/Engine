@@ -152,7 +152,35 @@ namespace Graphic
         ///
         /// \param Name The name of the feature to look up.
         /// \return The bitmask holding the feature's bit, or zero if the technique declares no such feature.
-        Key Resolve(Text Name) const;
+        ZY_INLINE Key ResolveByName(Text Name) const
+        {
+            for (UInt Index = 0, Limit = mDescription.Features.GetSize(); Index < Limit; ++Index)
+            {
+                if (mDescription.Features[Index].Name == Name)
+                {
+                    return (1u << Index);
+                }
+            }
+
+            LOG_W("'{0}' declares no feature named '{1}'", GetKey(), Name);
+            return 0;
+        }
+
+        /// \brief Resolves the key holding the bit of the feature the given texture enables.
+        ///
+        /// \param Name The hash of the texture's name.
+        /// \return The bitmask holding the feature's bit, or zero if no feature is gated on that texture.
+        ZY_INLINE Key ResolveByTexture(UInt64 Name) const
+        {
+            for (UInt Index = 0, Limit = mDescription.Features.GetSize(); Name && Index < Limit; ++Index)
+            {
+                if (mDescription.Features[Index].Texture == Name)
+                {
+                    return (1u << Index);
+                }
+            }
+            return 0;
+        }
 
         /// \brief Gets the technique's configuration description.
         ///

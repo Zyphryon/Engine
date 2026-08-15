@@ -21,6 +21,96 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Encoder::Binder::Binder(Ref<Encoder> Encoder, ConstRef<Graphic::Technique> Technique)
+        : mEncoder   { Encoder },
+          mTechnique { Technique },
+          mCommand   { Encoder.mService.AllocateInFlightCommand() },
+          mVariant   { 0 }
+    {
+        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+
+        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = Encoder.mFrame;
+        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = Encoder.mPass;
+
+        // Every texture the signature declares holds its slot, so one left unbound still reads as zero.
+        for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
+        {
+            mCommand.Textures.Append(0);
+        }
+
+        // Samplers start at the technique's own, which a caller replaces only where it wants to.
+        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
+        {
+            mCommand.Samplers.Append(Field.Handle);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<Encoder::Binder> Encoder::Binder::Apply(ConstRef<Graphic::Material> Material)
+    {
+        ConstRef<Graphic::Schema> Schema = mTechnique.GetSchema();
+
+        // The material answers by name, so each image lands in the slot the signature declared it under.
+        const ConstSpan<UInt64> Textures = Schema.GetTextures();
+
+        for (UInt32 Index = 0, Limit = Textures.GetSize(); Index < Limit; ++Index)
+        {
+            if (ConstRetainer<Graphic::Image> Image = Material.GetImage(Textures[Index]))
+            {
+                mCommand.Textures[Index] = Image->GetHandle();
+            }
+        }
+
+        // A material overrides a sampler only where it sets one, leaving the technique's own everywhere else.
+        for (UInt32 Index = 0, Limit = Schema.GetSamplers().GetSize(); Index < Limit; ++Index)
+        {
+            if (const Graphic::Object Handle = Material.GetSampler(Schema.GetSamplers()[Index].Hash))
+            {
+                mCommand.Samplers[Index] = Handle;
+            }
+        }
+
+        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Material)]
+            = mEncoder.Pack(Graphic::Frequency::Material, mTechnique, Material);
+
+        mVariant |= mTechnique.Resolve(Material);
+        return * this;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Encoder::Binder::Draw(
+        ConstRef<Graphic::Stream>     Instances,
+        ConstRef<Graphic::Stream>     Uniform,
+        ConstRef<Graphic::Invocation> Parameters)
+    {
+        mCommand.Pipeline = mTechnique.GetHandle(mVariant);
+
+        // A variant nothing compiled leaves the pipeline unbound, which draws nothing and says nothing.
+        if (mVariant != 0 && mCommand.Pipeline == 0)
+        {
+            LOG_W("'{0}' has no variant {1} compiled, so the draw binds nothing",
+                mTechnique.GetKey().GetUrl(), mVariant);
+        }
+
+        if (Instances.Buffer)
+        {
+            mCommand.Vertices.Append(Instances);
+        }
+
+        if (Uniform.Buffer)
+        {
+            mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
+        }
+        mCommand.Parameters = Parameters;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Encoder::Encoder(Ref<Graphic::Service> Service)
         : mService { Service }
     {

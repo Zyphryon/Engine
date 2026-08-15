@@ -172,7 +172,7 @@ namespace Pipeline::Baker::Font
                 ConstRef<Rect> Bounds = Entry.Data.Bounds;
 
                 // Everything the engine stores is in em units, which is what lets one bake serve every size.
-                Glyph.LocalBounds = Rect(
+                Glyph.Local = Rect(
                     Bounds.GetMinimumX() / Profile.Size,
                     Bounds.GetMinimumY() / Profile.Size,
                     Bounds.GetMaximumX() / Profile.Size,
@@ -180,7 +180,7 @@ namespace Pipeline::Baker::Font
 
                 // The quad's corners land on the centres of the outermost texels rather than on their outer
                 // edges, which is the half-texel inset the field was generated against.
-                Glyph.AtlasBounds = Rect(
+                Glyph.Atlas = Rect(
                     (static_cast<Real32>(Entry.X) + 0.5f) / Extent,
                     (static_cast<Real32>(Entry.Y) + 0.5f) / Extent,
                     (static_cast<Real32>(Entry.X + Entry.Data.Width)  - 0.5f) / Extent,

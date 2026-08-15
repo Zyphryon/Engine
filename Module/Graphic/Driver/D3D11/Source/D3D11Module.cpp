@@ -46,7 +46,7 @@ namespace Graphic
             Service->Register(GetName(), []() -> Unique<Driver>
             {
                 return Unique<D3D11Driver>::Create();
-            });
+            }, Service::Priority::High);
         }
     }
 

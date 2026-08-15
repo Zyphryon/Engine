@@ -28,6 +28,118 @@ namespace Render
     {
     public:
 
+        /// \brief Fills the bindings a technique's signature declares, then emits the draw that reads them.
+        class Binder final
+        {
+        public:
+
+            /// \brief Opens a draw against a technique, with every declared texture unbound.
+            ///
+            /// \param Encoder   The encoder the draw is emitted through.
+            /// \param Technique The technique whose signature the draw fills.
+            Binder(Ref<Encoder> Encoder, ConstRef<Graphic::Technique> Technique);
+
+            /// \brief Binds an image to the texture the signature declares under the given name.
+            ///
+            /// \param Name  The hash of the texture's name.
+            /// \param Image The image to bind, or zero to leave the texture unbound.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetImage(UInt64 Name, Graphic::Object Image)
+            {
+                const ConstSpan<UInt64> Textures = mTechnique.GetSchema().GetTextures();
+
+                for (UInt32 Index = 0, Limit = Textures.GetSize(); Index < Limit; ++Index)
+                {
+                    if (Textures[Index] == Name)
+                    {
+                        mCommand.Textures[Index] = Image;
+                        break;
+                    }
+                }
+
+                if (Image)
+                {
+                    mVariant |= mTechnique.ResolveByTexture(Name);
+                }
+                return * this;
+            }
+
+            /// \brief Binds a sampler to the one the signature declares under the given name.
+            ///
+            /// \param Name    The hash of the sampler's name.
+            /// \param Sampler The sampler to read the texture through, replacing the technique's own.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetSampler(UInt64 Name, Graphic::Object Sampler)
+            {
+                const ConstSpan<Graphic::Schema::Sampler> Samplers = mTechnique.GetSchema().GetSamplers();
+
+                for (UInt32 Index = 0, Limit = Samplers.GetSize(); Sampler && Index < Limit; ++Index)
+                {
+                    if (Samplers[Index].Hash == Name)
+                    {
+                        mCommand.Samplers[Index] = Sampler;
+                        break;
+                    }
+                }
+                return * this;
+            }
+
+            /// \brief Turns on the features a caller enables itself, beyond the ones its bindings imply.
+            ///
+            /// \param Variant The bitmask of the features to add.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetVariant(Graphic::Technique::Key Variant)
+            {
+                mVariant |= Variant;
+                return * this;
+            }
+
+            /// \brief Applies everything a material binds, in one go.
+            ///
+            /// \param Material The material supplying images, samplers and the block of its own parameters.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            Ref<Binder> Apply(ConstRef<Graphic::Material> Material);
+
+            /// \brief Emits the draw the bindings were gathered for.
+            ///
+            /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
+            /// \param Uniform    The per-instance uniform stream bound to scope #Instance (empty stream if unused).
+            /// \param Parameters The draw parameters.
+            void Draw(
+                ConstRef<Graphic::Stream>     Instances,
+                ConstRef<Graphic::Stream>     Uniform,
+                ConstRef<Graphic::Invocation> Parameters);
+
+            /// \brief Emits the draw the bindings were gathered for, with no per-instance uniform stream.
+            ///
+            /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
+            /// \param Parameters The draw parameters.
+            ZY_INLINE void Draw(ConstRef<Graphic::Stream> Instances, ConstRef<Graphic::Invocation> Parameters)
+            {
+                Draw(Instances, Graphic::Stream(), Parameters);
+            }
+
+            /// \brief Emits the single triangle that covers the whole target, for a pass-level effect.
+            ZY_INLINE void DrawFullscreen()
+            {
+                constexpr Graphic::Invocation Parameters { .Count = 3 };
+
+                Draw(Graphic::Stream(), Graphic::Stream(), Parameters);
+            }
+
+        private:
+
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+            Ref<Encoder>                 mEncoder;
+            ConstRef<Graphic::Technique> mTechnique;
+            Ref<Graphic::Command>        mCommand;
+            Graphic::Technique::Key      mVariant;
+        };
+
+    public:
+
         /// \brief Constructs an encoder bound to a graphic service.
         ///
         /// \param Service The graphic service used to allocate transient commands and uniforms.
@@ -41,10 +153,36 @@ namespace Render
         /// \param Stream The transient stream holding the per-frame uniforms.
         void SetFrame(Graphic::Stream Stream);
 
+        /// \brief Packs a value into a transient uniform block and binds it as the frame's.
+        ///
+        /// \param Block The value laid out as the technique declares the frame's block.
+        template<typename Type>
+        ZY_INLINE void SetFrame(ConstRef<Type> Block)
+            requires (!IsAnyOf<Type, Graphic::Stream>)
+        {
+            Graphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
+            Slice[0] = Block;
+
+            SetFrame(Slice.GetStream());
+        }
+
         /// \brief Sets the pass's uniform block and input textures.
         ///
         /// \param Stream The transient stream holding the per-pass uniforms.
         void SetPass(Graphic::Stream Stream);
+
+        /// \brief Packs a value into a transient uniform block and binds it as the pass's.
+        ///
+        /// \param Block The value laid out as the technique declares the pass's block.
+        template<typename Type>
+        ZY_INLINE void SetPass(ConstRef<Type> Block)
+            requires (!IsAnyOf<Type, Graphic::Stream>)
+        {
+            Graphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
+            Slice[0] = Block;
+
+            SetPass(Slice.GetStream());
+        }
 
         /// \brief Packs a uniform block for a frequency by resolving each declared field from a provider.
         ///
@@ -54,7 +192,8 @@ namespace Render
         /// \param  Source     The provider supplying field values by hash.
         /// \return A transient stream holding the packed block, or an empty stream if the block declares no fields.
         template<typename Provider>
-        ZY_INLINE Graphic::Stream Pack(Graphic::Frequency Frequency, ConstRef<Graphic::Technique> Technique, ConstRef<Provider> Source)
+        ZY_INLINE Graphic::Stream Pack(
+            Graphic::Frequency Frequency, ConstRef<Graphic::Technique> Technique, ConstRef<Provider> Source)
         {
             ConstRef<Graphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
 
@@ -84,6 +223,15 @@ namespace Render
                 }
             }
             return Slice.GetStream();
+        }
+
+        /// \brief Opens a draw against a technique, to be filled with the bindings its signature declares.
+        ///
+        /// \param Technique The technique whose signature the draw fills.
+        /// \return The binder gathering the draw's bindings.
+        ZY_INLINE Binder Begin(ConstRef<Graphic::Technique> Technique)
+        {
+            return Binder(* this, Technique);
         }
 
         /// \brief Emits one (optionally instanced) draw, auto-binding all uniform scopes and samplers.
@@ -141,6 +289,22 @@ namespace Render
             ConstRef<Graphic::Invocation> Parameters,
             Graphic::Technique::Key       Variant = 0)
         {
+            Draw(Technique, Textures, Graphic::Stream(), Parameters, Variant);
+        }
+
+        /// \brief Emits the single triangle that covers the whole target, for a pass-level effect.
+        ///
+        /// \param Technique The technique (pipeline + schema) to draw with.
+        /// \param Textures  The input textures, in the technique's declared slot order.
+        /// \param Variant   The bitmask of the features the variant to draw with was compiled from.
+        ZY_INLINE void DrawFullscreen(
+            ConstRef<Graphic::Technique> Technique,
+            ConstSpan<Graphic::Object>   Textures = { },
+            Graphic::Technique::Key      Variant  = 0)
+        {
+            constexpr Graphic::Invocation Parameters {
+                .Count = 3
+            };
             Draw(Technique, Textures, Graphic::Stream(), Parameters, Variant);
         }
 

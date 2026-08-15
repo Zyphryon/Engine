@@ -497,6 +497,21 @@ inline namespace Math
         /// \return The interpolated matrix.
         static Matrix4x3 Lerp(ConstRef<Matrix4x3> Start, ConstRef<Matrix4x3> End, Real32 Percentage);
 
+        /// \brief Packs a matrix into the twelve loose floats a shader reads a `float4x3` from.
+        ///
+        /// \param Matrix The matrix to pack, whose stored columns are its rows.
+        /// \return Each row of the basis followed by its translation, three times over.
+        ZY_INLINE static Array<Real32, 12> Pack(ConstRef<Matrix4x3> Matrix)
+        {
+            ZY_ALIGN(16) Array<Real32, 12> Result;
+
+            for (UInt32 Element = 0; Element < 3; ++Element)
+            {
+                Matrix.mColumns[Element].Store(Result.GetData() + Element * 4);
+            }
+            return Result;
+        }
+
         /// \brief Creates a translation matrix.
         ///
         /// \param Vector The translation to apply along each axis.
@@ -593,6 +608,20 @@ inline namespace Math
                 Matrix.mColumns[0] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetX()),
                 Matrix.mColumns[1] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetY()),
                 Matrix.mColumns[2] + Vector4(0.0f, 0.0f, 0.0f, Offset.GetZ()));
+        }
+
+        /// \brief Scales the basis of an existing matrix, leaving the translation where the transform put it.
+        ///
+        /// \param Matrix The original matrix to scale the basis of.
+        /// \param Vector The per-axis factors the basis is scaled by.
+        /// \return The matrix with its basis scaled.
+        ZY_INLINE static Matrix4x3 WithScale(ConstRef<Matrix4x3> Matrix, Vector3 Vector)
+        {
+            const Vector4 Factor(Vector.GetX(), Vector.GetY(), Vector.GetZ(), 1.0f);
+
+            return Matrix4x3(Matrix.mColumns[0] * Factor,
+                             Matrix.mColumns[1] * Factor,
+                             Matrix.mColumns[2] * Factor);
         }
 
     private:

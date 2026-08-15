@@ -25,16 +25,6 @@ namespace Graphic
     {
     public:
 
-        /// \brief Binds an image to the texture a technique declares under the same name.
-        struct TextureEntry final
-        {
-            /// The hash identifying the texture's name.
-            UInt64          Hash = 0;
-
-            /// The image bound to the texture.
-            Retainer<Image> Image;
-        };
-
         /// \brief Supplies the state for the dynamic sampler a technique declares under the same name.
         struct SamplerEntry final
         {
@@ -46,6 +36,16 @@ namespace Graphic
 
             /// The sampler resource resolved from the descriptor, or zero until the material is uploaded.
             Object  Handle = 0;
+        };
+
+        /// \brief Binds an image to the texture a technique declares under the same name.
+        struct TextureEntry final
+        {
+            /// The hash identifying the texture's name.
+            UInt64          Hash = 0;
+
+            /// The image bound to the texture.
+            Retainer<Image> Image;
         };
 
     public:

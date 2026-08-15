@@ -83,6 +83,21 @@ namespace Graphic
             return RequestInFlightArena<Format>(mFrames[mProducer].Vertices, sizeof(Format), Count);
         }
 
+        /// \brief Allocates transient vertex data for the current producer frame and fills it with the given data.
+        ///
+        /// \note The allocation is written whole here, so the stream is handed back rather than the mapping.
+        ///
+        /// \param Data The vertices to copy into the allocation, which is sized to hold exactly them.
+        /// \return The GPU stream for the allocated vertices.
+        template<typename Format>
+        ZY_INLINE Stream AllocateInFlightVertices(ConstSpan<Format> Data)
+        {
+            Transient<Format> Slice = AllocateInFlightVertices<Format>(Data.GetSize());
+            Slice.Copy(Data);
+
+            return Slice.GetStream();
+        }
+
         /// \brief Allocates transient index data for the current producer frame.
         ///
         /// \param Count The number of indices to allocate.
@@ -91,6 +106,21 @@ namespace Graphic
         ZY_INLINE Transient<Format> AllocateInFlightIndices(UInt32 Count)
         {
             return RequestInFlightArena<Format>(mFrames[mProducer].Indices, sizeof(Format), Count);
+        }
+
+        /// \brief Allocates transient index data for the current producer frame and fills it with the given data.
+        ///
+        /// \note The allocation is written whole here, so the stream is handed back rather than the mapping.
+        ///
+        /// \param Data The indices to copy into the allocation, which is sized to hold exactly them.
+        /// \return The GPU stream for the allocated indices.
+        template<typename Format>
+        ZY_INLINE Stream AllocateInFlightIndices(ConstSpan<Format> Data)
+        {
+            Transient<Format> Slice = AllocateInFlightIndices<Format>(Data.GetSize());
+            Slice.Copy(Data);
+
+            return Slice.GetStream();
         }
 
         /// \brief Allocates transient uniform data for the current producer frame.
@@ -104,6 +134,21 @@ namespace Graphic
 
             Count = AlignPowTwo<UInt32>(Count * sizeof(Format), Alignment) / Alignment;
             return RequestInFlightArena<Format>(mFrames[mProducer].Uniforms, Alignment * Count, 1);
+        }
+
+        /// \brief Allocates transient uniform data for the current producer frame and fills it with the given data.
+        ///
+        /// \note The allocation is written whole here, so the stream is handed back rather than the mapping.
+        ///
+        /// \param Data The uniform blocks to copy into the allocation, which is sized to hold exactly them.
+        /// \return The GPU stream for the allocated uniforms.
+        template<typename Format>
+        ZY_INLINE Stream AllocateInFlightUniforms(ConstSpan<Format> Data)
+        {
+            Transient<Format> Slice = AllocateInFlightUniforms<Format>(Data.GetSize());
+            Slice.Copy(Data);
+
+            return Slice.GetStream();
         }
 
         /// \brief Appends an empty command to the current producer frame's journal.
