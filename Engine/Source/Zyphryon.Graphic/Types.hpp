@@ -337,6 +337,22 @@ namespace Graphic
         TextureCube,    ///< Six square faces addressed by a direction vector.
     };
 
+    /// \brief Names the textures a technique's signature declares, shared by every material and asset.
+    enum class TextureSlot : UInt8
+    {
+        Albedo,       ///< Base color map, sampled by every technique that puts art on the target.
+        Normal,       ///< Tangent-space normal map, which gives a flat surface the relief it lacks.
+        Roughness,    ///< How scattered the surface reflects, spreading a highlight or sharpening it.
+        Metallic,     ///< Whether the surface reflects as a metal or as a dielectric.
+        Specular,     ///< How much a dielectric surface reflects where it faces the viewer head on.
+        Emissive,     ///< The light the surface gives off on its own, which no lamp has to reach.
+        Displacement, ///< The height the surface stands at, which offsets where a texel is sampled from.
+        Occlusion,    ///< How much of the ambient light reaches the surface, darkening what is enclosed.
+        Opacity,      ///< How much of the surface covers what is behind it, cut out or faded through.
+        Detail,       ///< A finer map laid over the base one, which holds up where the camera comes close.
+        Translucency, ///< How much light carries through the surface from the side facing away.
+    };
+
     /// \brief Describes the feature tier of the graphics backend, indicating supported capabilities.
     enum class Tier : UInt8
     {
