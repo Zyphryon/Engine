@@ -192,28 +192,34 @@ namespace Graphic
 
     void D3D11Driver::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        if (mDeviceImmediate)
-        {
-            mDeviceImmediate->ClearState();
-        }
-
-        // Deletes the current display pass to release associated render targets.
-        DeletePass(kDisplay);
-
-        // Resizes the swap chain buffers with the new resolution and format.
-        const UINT Flags = mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-        D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height,  DXGI_FORMAT_UNKNOWN, Flags));
-
-        // Recreates swap chain resources, including color and depth-stencil attachments.
         mDeviceProperties.Tearless = Tearless;
 
-        Configuration Config;
-        Config.Width       = Width;
-        Config.Height      = Height;
-        Config.Tearless    = mDeviceProperties.Tearless;
-        Config.ColorFormat = mDeviceProperties.ColorFormat;
-        Config.DepthFormat = mDeviceProperties.DepthFormat;
-        CreateSwapchainResources(mPasses[0], Config);
+        DXGI_SWAP_CHAIN_DESC Description{};
+        D3D11Check(mSwapchain->GetDesc(AddressOf(Description)));
+
+        if (Description.BufferDesc.Width != Width || Description.BufferDesc.Height != Height)
+        {
+            if (mDeviceImmediate)
+            {
+                mDeviceImmediate->ClearState();
+            }
+
+            // Deletes the current display pass to release associated render targets.
+            DeletePass(kDisplay);
+
+            // Resizes the swap chain buffers with the new resolution and format.
+            const UINT Flags = mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+            D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height, DXGI_FORMAT_UNKNOWN, Flags));
+
+            // Recreates swap chain resources, including color and depth-stencil attachments.
+            Configuration Config;
+            Config.Width = Width;
+            Config.Height = Height;
+            Config.Tearless = mDeviceProperties.Tearless;
+            Config.ColorFormat = mDeviceProperties.ColorFormat;
+            Config.DepthFormat = mDeviceProperties.DepthFormat;
+            CreateSwapchainResources(mPasses[0], Config);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
