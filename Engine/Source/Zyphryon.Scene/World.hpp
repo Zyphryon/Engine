@@ -21,9 +21,6 @@
 namespace Scene
 {
     /// \brief Represents the world entity within the ECS, acting as a bridge to singleton components.
-    ///
-    /// A singleton is stored on the entity that represents the component itself, which is what every
-    /// operation here resolves to before delegating to the entity API.
     class World final
     {
     public:

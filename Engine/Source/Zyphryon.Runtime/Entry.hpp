@@ -55,7 +55,8 @@ namespace Runtime
 
 #else
 
-#define ZY_APPLICATION(Type)                                                \
+#define ZY_APPLICATION(Type)                                                   \
+                                                                               \
         int main(int Count, char * Arguments[])                                \
         {                                                                      \
             return Runtime::Launch<Type>(static_cast<UInt>(Count), Arguments); \

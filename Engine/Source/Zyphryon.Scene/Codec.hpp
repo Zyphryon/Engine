@@ -35,8 +35,8 @@ namespace Scene
         ZY_INLINE static void ReadComponent(Ptr<ecs_world_t> World, Ref<Reader> Archive, Owner Actor)
         {
             // Read first element of the pair (tag/relationship); empty means single component.
-            const Str64  Pair  = Archive.ReadText();
-            const Entity First = Pair.IsEmpty() ? Entity() : Resolve(World, Pair);
+            const Str64  Pair    = Archive.ReadText();
+            const Entity First   = !Pair.IsEmpty() ? Resolve(World, Pair) : Entity();
 
             // Read component name and resolve the component entity.
             const Str64  Name   = Archive.ReadText();
@@ -45,9 +45,10 @@ namespace Scene
             // Read serialized component payload.
             const ConstSpan<Byte> Bundle = Archive.ReadBlock<UInt32, Byte>();
 
-            if (!Second.IsValid())
+            // A relation that named a target it can no longer resolve is skipped the same way, because
+            // attaching the component alone would grant the entity something it never had.
+            if (!Second.IsValid() || (!Pair.IsEmpty() && !First.IsValid()))
             {
-                LOG_D("Serializer: Skipping unregistered component '{0}'", Name);
                 return;
             }
 
@@ -72,10 +73,6 @@ namespace Scene
                         }
                         Actor.Notify(Second);
                     }
-                }
-                else
-                {
-                    LOG_D("Serializer: Trying to load an unregistered component '{0}'", Second.GetName());
                 }
             }
             else

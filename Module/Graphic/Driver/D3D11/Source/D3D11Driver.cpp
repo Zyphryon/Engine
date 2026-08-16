@@ -101,46 +101,27 @@ namespace Graphic
             ComPtr<ID3D11Device>        Device;
             ComPtr<ID3D11DeviceContext> DeviceImmediate;
 
-            UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+            constexpr UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 
             constexpr D3D_FEATURE_LEVEL Direct3DFeatureLevels[] = {
                 D3D_FEATURE_LEVEL_11_1,
                 D3D_FEATURE_LEVEL_11_0,
                 D3D_FEATURE_LEVEL_10_1,
                 D3D_FEATURE_LEVEL_10_0,
-                D3D_FEATURE_LEVEL_9_3,
-                D3D_FEATURE_LEVEL_9_2,
-                D3D_FEATURE_LEVEL_9_1,
             };
 
-            // Tries Direct3D 11.1
+            // Tries hardware, which selects the highest level the adapter reaches.
             HRESULT Result = D3D11CreateDevicePtr(
                 nullptr,
                 D3D_DRIVER_TYPE_HARDWARE,
                 nullptr,
                 Flags,
                 Direct3DFeatureLevels,
-                _countof(Direct3DFeatureLevels) - 3, // 11.1 ... 10.0
+                _countof(Direct3DFeatureLevels),
                 D3D11_SDK_VERSION,
                 Device.GetAddressOf(),
                 nullptr,
                 DeviceImmediate.GetAddressOf());
-
-            // Tries Direct3D 10.0 and below.
-            if (FAILED(Result))
-            {
-                Result = D3D11CreateDevicePtr(
-                    nullptr,
-                    D3D_DRIVER_TYPE_HARDWARE,
-                    nullptr,
-                    Flags,
-                    Direct3DFeatureLevels + 1,
-                    _countof(Direct3DFeatureLevels) - 1, // 11.0 ... 9.1
-                    D3D11_SDK_VERSION,
-                    Device.GetAddressOf(),
-                    nullptr,
-                    DeviceImmediate.GetAddressOf());
-            }
 
             // Tries Direct3D WARP mode.
             if (FAILED(Result))
@@ -167,9 +148,9 @@ namespace Graphic
 
             if (Successful)
             {
-                Successful = D3D11Check(Device.As<ID3D11Device1>(AddressOf(mDevice)));
-                Successful = Successful && D3D11Check(DeviceImmediate.As<ID3D11DeviceContext1>(AddressOf(mDeviceImmediate)));
-                Successful = Successful && D3D11Check(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory)));
+                Successful = D3D11Check(Device.As<ID3D11Device1>(AddressOf(mDevice)))
+                          && D3D11Check(DeviceImmediate.As<ID3D11DeviceContext1>(AddressOf(mDeviceImmediate)))
+                          && D3D11Check(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory)));
 
                 if (Successful)
                 {
@@ -592,12 +573,11 @@ namespace Graphic
         Texture.Layers  = Slices;
 
         // Fill the data, slice-major so the entry order matches what D3D11CalcSubresource indexes.
-        Sequence<D3D11_SUBRESOURCE_DATA> Content;
         Ptr<D3D11_SUBRESOURCE_DATA>      Memory = nullptr;
 
         if (ConstPtr<Byte> Bytes = Data.GetData(); Bytes)
         {
-            Content.Reserve(Slices * Levels);
+            Sequence<D3D11_SUBRESOURCE_DATA> Content(Slices * Levels);
 
             for (UInt16 Slice = 0; Slice < Slices; ++Slice)
             {
@@ -997,31 +977,6 @@ namespace Graphic
             mDescription.Capabilities.MaxAnisotropy         = D3D10_REQ_MAXANISOTROPY;
             mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
             break;
-        case D3D_FEATURE_LEVEL_9_3:
-            mDescription.Tier                               = Tier::Level1;
-            mDescription.Capabilities.MaxTextureDimension   = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-            mDescription.Capabilities.MaxTextureLayers      = 0;
-            mDescription.Capabilities.MaxTextureMipmaps     = D3D10_REQ_MIP_LEVELS;
-            mDescription.Capabilities.MaxTextureSlots       = 16;
-            mDescription.Capabilities.MaxRenderTargets      = 4;
-            mDescription.Capabilities.MaxVertexAttributes   = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
-            mDescription.Capabilities.MaxVertexStreams      = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
-            mDescription.Capabilities.MaxAnisotropy         = D3D10_REQ_MAXANISOTROPY;
-            mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
-            break;
-        case D3D_FEATURE_LEVEL_9_2:
-        case D3D_FEATURE_LEVEL_9_1:
-            mDescription.Tier                               = Tier::Level1;
-            mDescription.Capabilities.MaxTextureDimension   = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-            mDescription.Capabilities.MaxTextureLayers      = 0;
-            mDescription.Capabilities.MaxTextureMipmaps     = 12;
-            mDescription.Capabilities.MaxTextureSlots       = 16;
-            mDescription.Capabilities.MaxRenderTargets      = 1;
-            mDescription.Capabilities.MaxVertexAttributes   = D3D10_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT;
-            mDescription.Capabilities.MaxVertexStreams      = D3D10_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT;
-            mDescription.Capabilities.MaxAnisotropy         = 2;
-            mDescription.Capabilities.UniformBlockCapacity  = D3D10_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
-            break;
         default:
             break;
         }
@@ -1167,37 +1122,46 @@ namespace Graphic
 
     void D3D11Driver::ApplyVertexResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        Ptr<ID3D11Buffer> Array[Command::kMaxVertices];
-        UINT ArrayOffset[Command::kMaxVertices];
-        UINT ArrayStride[Command::kMaxVertices];
-        UInt32 Min = Command::kMaxVertices;
-        UInt32 Max = 0u;
-
         const UInt32 OldSize = Oldest.Vertices.GetSize();
         const UInt32 NewSize = Newest.Vertices.GetSize();
+        const UInt32 Limit   = ::Max(OldSize, NewSize);
 
-        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
+        // The first pass only compares, so a draw that rebinds nothing touches no pool and writes no array.
+        UInt32 Min = Limit;
+        UInt32 Max = 0;
+
+        for (UInt32 Element = 0; Element < Limit; ++Element)
         {
-            const Stream Old = Element < OldSize ? Oldest.Vertices[Element] : Stream {};
-            const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream {};
+            const Stream Old = Element < OldSize ? Oldest.Vertices[Element] : Stream { };
+            const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream { };
 
             if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
             {
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
+        }
+
+        if (Min >= Max)
+        {
+            return;
+        }
+
+        // The second pass gathers the dirty span alone, which is also the span handed to the device.
+        Ptr<ID3D11Buffer> Array[Command::kMaxVertices];
+        UINT              ArrayOffset[Command::kMaxVertices];
+        UINT              ArrayStride[Command::kMaxVertices];
+
+        for (UInt32 Element = Min; Element < Max; ++Element)
+        {
+            const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream { };
 
             Array[Element]       = mBuffers[New.Buffer].Get();
             ArrayOffset[Element] = New.Offset;
             ArrayStride[Element] = New.Stride;
         }
 
-        if (Min < Max)
-        {
-            const UInt32 Count = Max - Min;
-
-            mDeviceImmediate->IASetVertexBuffers(Min, Count, Array + Min, ArrayStride + Min, ArrayOffset + Min);
-        }
+        mDeviceImmediate->IASetVertexBuffers(Min, Max - Min, Array + Min, ArrayStride + Min, ArrayOffset + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1205,33 +1169,42 @@ namespace Graphic
 
     void D3D11Driver::ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        Ptr<ID3D11SamplerState> Array[Command::kMaxSamplers];
-        UInt32 Min = Command::kMaxSamplers;
-        UInt32 Max = 0u;
-
         const UInt32 OldSize = Oldest.Samplers.GetSize();
         const UInt32 NewSize = Newest.Samplers.GetSize();
+        const UInt32 Limit   = ::Max(OldSize, NewSize);
 
-        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
+        UInt32 Min = Limit;
+        UInt32 Max = 0;
+
+        for (UInt32 Element = 0; Element < Limit; ++Element)
         {
-            const Object Old = Element < OldSize ? Oldest.Samplers[Element] : Object {};
-            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object {};
+            const Object Old = Element < OldSize ? Oldest.Samplers[Element] : Object { };
+            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object { };
 
             if (Old != New)
             {
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
+        }
+
+        if (Min >= Max)
+        {
+            return;
+        }
+
+        Ptr<ID3D11SamplerState> Array[Command::kMaxSamplers];
+
+        for (UInt32 Element = Min; Element < Max; ++Element)
+        {
+            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object { };
+
             Array[Element] = mSamplers[New].Get();
         }
 
-        if (Min < Max)
-        {
-            const UInt32 Count = Max - Min;
-
-            mDeviceImmediate->VSSetSamplers(Min, Count, Array + Min);
-            mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min);
-        }
+        const UInt32 Count = Max - Min;
+        mDeviceImmediate->VSSetSamplers(Min, Count, Array + Min);
+        mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1239,32 +1212,42 @@ namespace Graphic
 
     void D3D11Driver::ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        Ptr<ID3D11ShaderResourceView> Array[Command::kMaxTextures];
-        UInt32 Min = Command::kMaxTextures;
-        UInt32 Max = 0u;
-
         const UInt32 OldSize = Oldest.Textures.GetSize();
         const UInt32 NewSize = Newest.Textures.GetSize();
+        const UInt32 Limit   = ::Max(OldSize, NewSize);
 
-        for (UInt32 Element = 0, Limit = ::Max(OldSize, NewSize); Element < Limit; ++Element)
+        UInt32 Min = Limit;
+        UInt32 Max = 0;
+
+        for (UInt32 Element = 0; Element < Limit; ++Element)
         {
-            const Object Old = Element < OldSize ? Oldest.Textures[Element] : Object {};
-            const Object New = Element < NewSize ? Newest.Textures[Element] : Object {};
+            const Object Old = Element < OldSize ? Oldest.Textures[Element] : Object { };
+            const Object New = Element < NewSize ? Newest.Textures[Element] : Object { };
 
             if (Old != New)
             {
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
+        }
+
+        if (Min >= Max)
+        {
+            return;
+        }
+
+        Ptr<ID3D11ShaderResourceView> Array[Command::kMaxTextures];
+
+        for (UInt32 Element = Min; Element < Max; ++Element)
+        {
+            const Object New = Element < NewSize ? Newest.Textures[Element] : Object { };
+
             Array[Element] = mTextures[New].Resource.Get();
         }
 
-        if (Min < Max)
-        {
-            const UInt32 Count = Max - Min;
-            mDeviceImmediate->VSSetShaderResources(Min, Count, Array + Min);
-            mDeviceImmediate->PSSetShaderResources(Min, Count, Array + Min);
-        }
+        const UInt32 Count = Max - Min;
+        mDeviceImmediate->VSSetShaderResources(Min, Count, Array + Min);
+        mDeviceImmediate->PSSetShaderResources(Min, Count, Array + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1272,34 +1255,41 @@ namespace Graphic
 
     void D3D11Driver::ApplyUniformResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        Ptr<ID3D11Buffer> Array[Command::kMaxUniforms];
-        UINT ArrayOffset[Command::kMaxUniforms];
-        UINT ArrayLength[Command::kMaxUniforms];
         UInt32 Min = Command::kMaxUniforms;
-        UInt32 Max = 0u;
+        UInt32 Max = 0;
 
         for (UInt32 Element = 0; Element < Command::kMaxUniforms; ++Element)
         {
-            const Stream Old = Oldest.Uniforms[Element];
-            const Stream New = Newest.Uniforms[Element];
+            ConstRef<Stream> Old = Oldest.Uniforms[Element];
+            ConstRef<Stream> New = Newest.Uniforms[Element];
 
             if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
             {
                 Min = ::Min(Element, Min);
                 Max = ::Max(Element + 1, Max);
             }
+        }
+
+        if (Min >= Max)
+        {
+            return;
+        }
+
+        Ptr<ID3D11Buffer> Array[Command::kMaxUniforms];
+        UINT              ArrayOffset[Command::kMaxUniforms];
+        UINT              ArrayLength[Command::kMaxUniforms];
+
+        for (UInt32 Element = Min; Element < Max; ++Element)
+        {
+            ConstRef<Stream> New = Newest.Uniforms[Element];
 
             Array[Element]       = mBuffers[New.Buffer].Get();
             ArrayOffset[Element] = New.Offset / sizeof(Vector4);
             ArrayLength[Element] = New.Stride / sizeof(Vector4);
         }
 
-        if (Min < Max)
-        {
-            const UInt32 Count = Max - Min;
-
-            mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
-            mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
-        }
+        const UInt32 Count = Max - Min;
+        mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
+        mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
     }
 }
