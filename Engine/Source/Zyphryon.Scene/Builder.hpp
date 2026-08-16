@@ -1433,16 +1433,6 @@ namespace Scene::DSL::_
         }
     }
 
-    /// \brief Specifies how the fields of one iteration result are addressed while its rows are walked.
-    ///
-    /// Which one applies holds for a whole result, so it is decided once rather than tested per row.
-    enum class Access : UInt8
-    {
-        Direct,  ///< Every field is owned and present, so a row indexes straight into the table's array.
-        Strided, ///< Some field is shared or absent, which a stride of zero addresses without a branch.
-        Sparse,  ///< Some field lives outside the table and has to be fetched one row at a time.
-    };
-
     /// \brief Holds where one term's data lives for the span of a single iteration result.
     struct Column final
     {
@@ -1478,9 +1468,8 @@ namespace Scene::DSL::_
         {
             const Ptr<ecs_iter_t> Handle = Cursor.GetHandle();
 
-            Bool   Uniform = true;
             Column Columns[sizeof...(Types) + 1] { };
-            Bind(Handle, Columns, Uniform, MakeIntegerSequence<UInt, sizeof...(Types)> { });
+            Bind(Handle, Columns, MakeIntegerSequence<UInt, sizeof...(Types)> { });
 
             // A query matching no entity of its own still reports one result, whose fields all come from elsewhere.
             const SInt32 Count = (Handle->count == 0 && !Handle->table) ? 1 : Handle->count;
@@ -1493,23 +1482,15 @@ namespace Scene::DSL::_
                     "A batched callback cannot take a component that is stored outside the table");
 
                 Sweep(Each, Columns, Count, MakeIntegerSequence<UInt, sizeof...(Types)> { });
-
-                return;
             }
-
-            // A term that is shared, absent or sparse is that way for the whole result, so the addressing it
-            // needs is chosen once here. The row loop is then free of branches the optimizer could not hoist.
-            if (Handle->row_fields)
+            else if (Handle->row_fields)
             {
-                Walk<Access::Sparse>(Cursor, Each, Columns, Count);
-            }
-            else if (Uniform)
-            {
-                Walk<Access::Direct>(Cursor, Each, Columns, Count);
+                Walk(Cursor, Each, Columns, Count);
             }
             else
             {
-                Walk<Access::Strided>(Cursor, Each, Columns, Count);
+                Select(Measure(Columns, MakeIntegerSequence<UInt, sizeof...(Types)> { }),
+                    Cursor, Each, Columns, Count, MakeIntegerSequence<UInt, kPatterns> { });
             }
         }
 
@@ -1567,25 +1548,173 @@ namespace Scene::DSL::_
             return Batch<Type>(static_cast<Ptr<Storage>>(Slot.Data), Length);
         }
 
+        /// True for each term spelled as optional, which are the only ones a result can be missing.
+        static constexpr Bool kOptional[sizeof...(Types) + 1] { IsPointer<StripRef<Types>>..., false };
+
+        /// \brief Gets the bit a term takes in the absence pattern, which only optional terms hold one of.
+        ///
+        /// \param Index The position of the term within the result.
+        /// \return The bit the term is described by.
+        static constexpr UInt BitOf(UInt Index)
+        {
+            UInt Bit = 0;
+
+            for (UInt Position = 0; Position < Index; ++Position)
+            {
+                Bit += (kOptional[Position] ? 1 : 0);
+            }
+            return Bit;
+        }
+
+        /// \brief Checks whether a term is missing from the result an absence pattern describes.
+        ///
+        /// \param Index   The position of the term within the result.
+        /// \param Pattern The absence pattern to read.
+        /// \return `true` while the term matched nothing.
+        static constexpr Bool IsAbsent(UInt Index, UInt Pattern)
+        {
+            return kOptional[Index] && ((Pattern >> BitOf(Index)) & 1u);
+        }
+
+        /// The number of terms whose absence a loop can be specialized on.
+        static constexpr UInt kOptionals = BitOf(sizeof...(Types));
+
+        /// The number of absence patterns a loop is written for, capped so a query with many optional terms
+        /// does not multiply the code its callback compiles to. The unspecialized loop is correct for all of
+        /// them, and only leaves the null checks to run per row.
+        static constexpr UInt kPatterns  = (kOptionals <= 4 ? (1u << kOptionals) : 1u);
+
+        /// \brief Holds the address one term is read at, and what a row advances it by.
+        struct Track final
+        {
+            /// The address the term is read at, or null when the term matched nothing.
+            Ptr<UInt8> Data;
+
+            /// The number of bytes a row advances by, which is zero for a value the whole result shares.
+            SInt32     Step;
+        };
+
+        /// The number of bytes one row of a term occupies, which a tag never advances by.
+        template<typename Type>
+        static constexpr SInt32 kWidth = IsEmpty<StripAll<StripPtr<Type>>> ? 0 : static_cast<SInt32>(sizeof(StripAll<StripPtr<Type>>));
+
+        /// \brief Gets the absence pattern of the current result.
+        ///
+        /// \param Columns The slots describing where each term's data lives.
+        /// \return The pattern, or zero when the result holds more optional terms than are specialized for.
+        template<UInt... Indices>
+        ZY_INLINE static UInt Measure(Ptr<Column> Columns, IntegerSequence<UInt, Indices...>)
+        {
+            UInt Pattern = 0;
+
+            ((kOptional[Indices] && !Columns[Indices].Data ? (Pattern |= (1u << BitOf(Indices))) : 0u), ...);
+
+            return (Pattern < kPatterns ? Pattern : 0u);
+        }
+
+        /// \brief Walks the result with the loop its absence pattern selects.
+        ///
+        /// \param Pattern The pattern the result matched.
+        /// \param Cursor  The result being walked.
+        /// \param Each    The callback invoked for each row.
+        /// \param Columns The slots describing where each term's data lives.
+        /// \param Count   The number of rows the result holds.
+        template<UInt... Patterns>
+        ZY_INLINE static void Select(UInt Pattern, ConstRef<Iterator> Cursor, ConstRef<FEach> Each,
+            Ptr<Column> Columns, SInt32 Count, IntegerSequence<UInt, Patterns...>)
+        {
+            ((Pattern == Patterns
+                ? Stream<Patterns>(Cursor, Each, Columns, Count, MakeIntegerSequence<UInt, sizeof...(Types)> { })
+                : void()), ...);
+        }
+
+        /// \brief Walks every row of the current result, each term through a cursor of its own.
+        ///
+        /// \note A cursor advances by one row for a term the entity owns and by nothing for one the whole
+        ///       result shares, so a row costs an add rather than a multiply and the loop carries no
+        ///       dependency on the index it is at.
+        ///
+        /// \tparam Pattern The absence pattern the result matched.
+        /// \param  Cursor  The result being walked.
+        /// \param  Each    The callback invoked for each row.
+        /// \param  Columns The slots describing where each term's data lives.
+        /// \param  Count   The number of rows the result holds.
+        template<UInt Pattern, UInt... Indices>
+        ZY_INLINE static void Stream(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, Ptr<Column> Columns,
+            SInt32 Count, IntegerSequence<UInt, Indices...> Order)
+        {
+            Chase<Pattern>(Cursor, Each, Count, Order,
+                Track { static_cast<Ptr<UInt8>>(Columns[Indices].Data),
+                        Columns[Indices].Stride * kWidth<Value<Indices>> }...);
+        }
+
+        /// \brief Walks every row of the current result, each term through a cursor of its own.
+        ///
+        /// \note The cursors arrive as parameters rather than as a table so that each one is a local the loop
+        ///       can hold in a register.
+        ///
+        /// \tparam Pattern The absence pattern the result matched.
+        /// \param  Cursor  The result being walked.
+        /// \param  Each    The callback invoked for each row.
+        /// \param  Count   The number of rows the result holds.
+        /// \param  Heads   The cursor of every term, in field order.
+        template<UInt Pattern, UInt... Indices, typename... Cursors>
+        ZY_INLINE static void Chase(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, SInt32 Count,
+            IntegerSequence<UInt, Indices...>, Cursors... Heads)
+        {
+            for (SInt32 Row = 0; Row < Count; ++Row)
+            {
+                Apply(Cursor, Each, Row, Fetch<Value<Indices>, IsAbsent(Indices, Pattern)>(Heads.Data)...);
+
+                ((Heads.Data += Heads.Step), ...);
+            }
+        }
+
+        /// \brief Reads the value one term contributes at the row its cursor sits on.
+        ///
+        /// \tparam Absent `true` when the term matched nothing, which the callback is handed null for.
+        /// \param  Head   The cursor of the term.
+        /// \return The value the term contributes at that row.
+        template<typename Type, Bool Absent>
+        ZY_INLINE static decltype(auto) Fetch(Ptr<UInt8> Head)
+        {
+            using Storage = StripAll<StripPtr<Type>>;
+
+            if constexpr (IsEmpty<Storage>)
+            {
+                return Storage();
+            }
+            else if constexpr (Absent)
+            {
+                return static_cast<Type>(nullptr);
+            }
+            else if constexpr (IsPointer<Type>)
+            {
+                return static_cast<Type>(reinterpret_cast<Ptr<Storage>>(Head));
+            }
+            else
+            {
+                return static_cast<Ref<Type>>(* reinterpret_cast<Ptr<Storage>>(Head));
+            }
+        }
+
         /// \brief Resolves where every term's data lives for the current result.
         ///
         /// \param Handle  The result being walked.
         /// \param Columns The slots to fill, one per term.
         template<UInt... Indices>
-        ZY_INLINE static void Bind(Ptr<ecs_iter_t> Handle, Ptr<Column> Columns, Ref<Bool> Uniform,
-            IntegerSequence<UInt, Indices...>)
+        ZY_INLINE static void Bind(Ptr<ecs_iter_t> Handle, Ptr<Column> Columns, IntegerSequence<UInt, Indices...>)
         {
-            (BindOne<Value<Indices>>(Handle, Columns[Indices], Uniform, static_cast<SInt8>(Indices)), ...);
+            (BindOne<Value<Indices>>(Handle, Columns[Indices], static_cast<SInt8>(Indices)), ...);
         }
 
         /// \brief Resolves where one term's data lives for the current result.
         ///
-        /// \param Handle  The result being walked.
-        /// \param Slot    The slot to fill.
-        /// \param Uniform Cleared when the term does not advance one element per row.
-        /// \param Index   The position of the term within the result.
+        /// \param Handle The result being walked.
+        /// \param Slot   The slot to fill.
+        /// \param Index  The position of the term within the result.
         template<typename Type>
-        ZY_INLINE static void BindOne(Ptr<ecs_iter_t> Handle, Ref<Column> Slot, Ref<Bool> Uniform, SInt8 Index)
+        ZY_INLINE static void BindOne(Ptr<ecs_iter_t> Handle, Ref<Column> Slot, SInt8 Index)
         {
             using Storage = StripAll<StripPtr<Type>>;
 
@@ -1602,24 +1731,20 @@ namespace Scene::DSL::_
                     Slot.Data   = ecs_field_w_size(Handle, sizeof(Storage), Index);
                     Slot.Stride = (Slot.Data && !Handle->sources[Index]) ? 1 : 0;
                 }
-
-                Uniform = Uniform && Slot.Stride == 1;
             }
         }
 
-        /// \brief Walks every row of the current result, handing each one to the callback.
+        /// \brief Walks every row of the current result, fetching each term one row at a time.
         ///
-        /// \tparam Mode   The addressing every field of this result needs.
-        /// \param  Cursor The result being walked.
-        /// \param  Each   The callback invoked for each row.
-        /// \param  Slots  The slots describing where each term's data lives.
-        /// \param  Count  The number of rows the result holds.
-        template<Access Mode>
+        /// \param Cursor The result being walked.
+        /// \param Each   The callback invoked for each row.
+        /// \param Slots  The slots describing where each term's data lives.
+        /// \param Count  The number of rows the result holds.
         ZY_INLINE static void Walk(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, Ptr<Column> Slots, SInt32 Count)
         {
             for (SInt32 Row = 0; Row < Count; ++Row)
             {
-                Emit<Mode>(Cursor, Each, Slots, Row, MakeIntegerSequence<UInt, sizeof...(Types)> { });
+                Emit(Cursor, Each, Slots, Row, MakeIntegerSequence<UInt, sizeof...(Types)> { });
             }
         }
 
@@ -1629,21 +1754,20 @@ namespace Scene::DSL::_
         /// \param Each    The callback invoked for the row.
         /// \param Columns The slots describing where each term's data lives.
         /// \param Row     The row to read.
-        template<Access Mode, UInt... Indices>
+        template<UInt... Indices>
         ZY_INLINE static void Emit(ConstRef<Iterator> Cursor, ConstRef<FEach> Each,
             Ptr<Column> Columns, SInt32 Row, IntegerSequence<UInt, Indices...>)
         {
-            Apply(Cursor, Each, Row, Read<Value<Indices>, Mode>(Cursor.GetHandle(), Columns[Indices], Row)...);
+            Apply(Cursor, Each, Row, Read<Value<Indices>>(Cursor.GetHandle(), Columns[Indices], Row)...);
         }
 
         /// \brief Reads one term at one row.
         ///
-        /// \tparam Mode   The addressing every field of this result needs.
-        /// \param  Handle The result being walked.
-        /// \param  Slot   The slot describing where the term's data lives.
-        /// \param  Row    The row to read.
+        /// \param Handle The result being walked.
+        /// \param Slot   The slot describing where the term's data lives.
+        /// \param Row    The row to read.
         /// \return The value the term contributes at that row.
-        template<typename Type, Access Mode>
+        template<typename Type>
         ZY_INLINE static decltype(auto) Read(Ptr<ecs_iter_t> Handle, Ref<Column> Slot, SInt32 Row)
         {
             using Storage = StripAll<StripPtr<Type>>;
@@ -1655,24 +1779,14 @@ namespace Scene::DSL::_
             }
             else
             {
-                if constexpr (Mode == Access::Sparse)
+                // A term outside the table holds one row at a time, which leaves its stride at zero.
+                if (Slot.Sparse)
                 {
-                    if (Slot.Sparse)
-                    {
-                        Slot.Data = ecs_field_at_w_size(Handle, sizeof(Storage), Slot.Index, Row);
-                    }
+                    Slot.Data = ecs_field_at_w_size(Handle, sizeof(Storage), Slot.Index, Row);
                 }
 
                 Ptr<Storage> Data = static_cast<Ptr<Storage>>(Slot.Data);
-
-                if constexpr (Mode == Access::Direct)
-                {
-                    Data += Row;
-                }
-                else
-                {
-                    Data += Row * Slot.Stride;
-                }
+                Data += Row * Slot.Stride;
 
                 if constexpr (IsPointer<Type>)
                 {
@@ -1700,15 +1814,15 @@ namespace Scene::DSL::_
 
                 ZY_ASSERT(Handle->entities, "Callback asks for an entity the query does not produce");
 
-                Each(Entity(Handle->world, Handle->entities[Row]), Forward<Values>(Data)...);
+                ZY_INLINE_CALL Each(Entity(Handle->world, Handle->entities[Row]), Forward<Values>(Data)...);
             }
             else if constexpr (requires { Each(Cursor, UInt(), Forward<Values>(Data)...); })
             {
-                Each(Cursor, static_cast<UInt>(Row), Forward<Values>(Data)...);
+                ZY_INLINE_CALL Each(Cursor, static_cast<UInt>(Row), Forward<Values>(Data)...);
             }
             else
             {
-                Each(Forward<Values>(Data)...);
+                ZY_INLINE_CALL Each(Forward<Values>(Data)...);
             }
         }
     };

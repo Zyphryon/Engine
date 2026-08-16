@@ -110,6 +110,16 @@ inline namespace Base
 #   define ZY_INLINE inline
 #endif
 
+/// \def ZY_INLINE_CALL
+/// \brief Forces every call the following statement makes to be inlined into it.
+#if   defined(ZY_COMPILER_MSVC)
+#   define ZY_INLINE_CALL [[msvc::forceinline_calls]]
+#elif defined(ZY_COMPILER_CLANG)
+#   define ZY_INLINE_CALL [[clang::always_inline]]
+#else
+#   define ZY_INLINE_CALL
+#endif
+
 /// \def ZY_COMPRESSED
 /// \brief Allows a member to share its address with another member, enabling zero-size optimization for empty types.
 #if   defined(ZY_COMPILER_MSVC)
