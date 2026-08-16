@@ -110,17 +110,12 @@ inline namespace Base
         /// \return A unique pointer to the new instance, or empty if no factory was found.
         ZY_INLINE Unique<Interface> Switch(Text Name)
         {
-            while (!Name.IsEmpty())
-            {
-                if (const auto Iterator = mRegistry.Find(Name); Iterator != mRegistry.end())
-                {
-                    return Iterator->second();
-				}
+            // Nothing was asked for, so whichever implementation ranks highest stands in for it.
+            const Str16 Fallback = (Name.IsEmpty() ? GetDefault() : Str16());
+            const Text  Wanted   = (Name.IsEmpty() ? Fallback.Slice(0) : Name);
 
-                Name     = Fallback;
-                Fallback = Text::Empty();
-            }
-            return Unique<Interface>();
+            const Ptr<Entry> Candidate = mRegistry.Find(Wanted);
+            return Candidate ? Candidate->Build() : Unique<Interface>();
         }
 
     private:
