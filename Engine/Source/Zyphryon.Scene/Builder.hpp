@@ -13,7 +13,403 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Component.hpp"
+#include "Iterator.hpp"
 #include "Timer.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [   CODE   ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+namespace Scene::DSL::_
+{
+    /// \brief Holds the callable a system or observer runs, so flecs can invoke and release it by plain pointer.
+    ///
+    /// \tparam Callable The callable invoked once per iteration result.
+    template<typename Callable>
+    class Runner final
+    {
+    public:
+
+        /// \brief Constructs a runner taking ownership of a callable.
+        ///
+        /// \param Callback The callable the system or observer runs.
+        ZY_INLINE explicit Runner(AnyRef<Callable> Callback)
+            : mCallback { Move(Callback) }
+        {
+        }
+
+        /// \brief Invokes the callable the result was created for.
+        ///
+        /// \param Handle The result flecs hands to the system or observer.
+        ZY_INLINE static void OnInvoke(Ptr<ecs_iter_t> Handle)
+        {
+            ConstRef<Runner> Self = (* static_cast<ConstPtr<Runner>>(Handle->run_ctx));
+
+            const Iterator Cursor(Handle);
+            Cursor.Reset();
+
+            Self.mCallback(Cursor);
+        }
+
+        /// \brief Releases the runner once flecs is done with the system or observer that owns it.
+        ///
+        /// \param Context The runner to release.
+        ZY_INLINE static void OnRelease(Ptr<void> Context)
+        {
+            delete static_cast<Ptr<Runner>>(Context);
+        }
+
+    private:
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Callable mCallback;
+    };
+
+    /// \brief Represents the description a query, system, observer or pipeline is assembled into.
+    ///
+    /// Terms accumulate one at a time, and every modifier applies to the term that was added last.
+    class Descriptor final
+    {
+    public:
+
+        /// \brief Constructs an empty description bound to a world.
+        ///
+        /// \param World The world the description is built against.
+        ZY_INLINE explicit Descriptor(Ptr<ecs_world_t> World)
+            : mWorld { World }
+        {
+        }
+
+        /// \brief Adds a term matching a component type.
+        ///
+        /// \return This description, allowing for method chaining.
+        template<typename Component>
+        ZY_INLINE Ref<Descriptor> With()
+        {
+            return With(Scene::_::Identify<Component>());
+        }
+
+        /// \brief Adds a term matching a relation pair formed by two component types.
+        ///
+        /// \return This description, allowing for method chaining.
+        template<typename Relation, typename Component>
+        ZY_INLINE Ref<Descriptor> With()
+        {
+            return With(Scene::_::Identify<Relation>(), Scene::_::Identify<Component>());
+        }
+
+        /// \brief Adds a term matching an identifier resolved at runtime.
+        ///
+        /// \param Identifier The identifier the term matches.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> With(ecs_id_t Identifier)
+        {
+            Ref<ecs_term_t> Term = Advance();
+
+            // A pair arrives with its flags already set, while a plain identifier names the first element.
+            if (Identifier & ECS_ID_FLAGS_MASK)
+            {
+                Term.id = Identifier;
+            }
+            else
+            {
+                Term.first.id = Identifier;
+            }
+            return (* this);
+        }
+
+        /// \brief Adds a term matching a relation pair formed by two identifiers resolved at runtime.
+        ///
+        /// \param Relation  The relation the term matches.
+        /// \param Component The target the term matches.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> With(ecs_entity_t Relation, ecs_entity_t Component)
+        {
+            Ref<ecs_term_t> Term = Advance();
+            Term.first.id  = Relation;
+            Term.second.id = Component;
+            return (* this);
+        }
+
+        /// \brief Declares the read/write access the last term performs on the data it matches.
+        ///
+        /// \param Access The access mode to declare.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> InOut(ecs_inout_kind_t Access)
+        {
+            Current().inout = static_cast<SInt16>(Access);
+            return (* this);
+        }
+
+        /// \brief Declares an access the callback performs outside the query, for sync placement only.
+        ///
+        /// \param Access The access mode to declare.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> InOutStage(ecs_inout_kind_t Access)
+        {
+            Ref<ecs_term_t> Term = Current();
+            Term.inout = static_cast<SInt16>(Access);
+
+            // The term states an intent rather than a match, so it is detached from the entity being iterated.
+            if (Term.oper != EcsNot)
+            {
+                Term.src.id = EcsIsEntity;
+            }
+            return (* this);
+        }
+
+        /// \brief Applies an operator to the last term.
+        ///
+        /// \param Operator The operator to apply.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Oper(ecs_oper_kind_t Operator)
+        {
+            Current().oper = static_cast<SInt16>(Operator);
+            return (* this);
+        }
+
+        /// \brief Makes the last term match even when the entity does not carry it.
+        ///
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Optional()
+        {
+            return Oper(EcsOptional);
+        }
+
+        /// \brief Sources the last term from the nearest ancestor that carries it.
+        ///
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Up()
+        {
+            Current().src.id |= EcsUp;
+            return (* this);
+        }
+
+        /// \brief Sources the last term from an ancestor, ordering results breadth-first.
+        ///
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Cascade()
+        {
+            Up();
+            Current().src.id |= EcsCascade;
+            return (* this);
+        }
+
+        /// \brief Orders the results by the value of a component.
+        ///
+        /// \param Comparison The comparison used to order two values of \p Type.
+        /// \return This description, allowing for method chaining.
+        template<typename Type, typename Comparator>
+        ZY_INLINE Ref<Descriptor> OrderBy(Comparator Comparison)
+        {
+            mQuery.order_by          = Scene::_::Identify<Type>();
+            mQuery.order_by_callback = reinterpret_cast<ecs_order_by_action_t>(Comparison);
+            return (* this);
+        }
+
+        /// \brief Sets the minimum time that must elapse between two runs of a system.
+        ///
+        /// \param Seconds The interval in seconds.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Interval(Real32 Seconds)
+        {
+            mInterval = Seconds;
+            return (* this);
+        }
+
+        /// \brief Sets the number of ticks that must elapse between two runs of a system.
+        ///
+        /// \param Ticks The number of ticks to skip between runs.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Rate(SInt32 Ticks)
+        {
+            mRate = Ticks;
+            return (* this);
+        }
+
+        /// \brief Sets the number of ticks of an explicit timer that must elapse between two runs of a system.
+        ///
+        /// \param Source The timer whose ticks are counted.
+        /// \param Ticks  The number of ticks to skip between runs.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Rate(ecs_entity_t Source, SInt32 Ticks)
+        {
+            mSource = Source;
+            mRate   = Ticks;
+            return (* this);
+        }
+
+        /// \brief Sets the phase that determines when a system runs.
+        ///
+        /// \param Phase The phase entity the system belongs to.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Phase(ecs_entity_t Phase)
+        {
+            mPhase = Phase;
+            return (* this);
+        }
+
+        /// \brief Sets the event that triggers an observer.
+        ///
+        /// \param Event The event entity the observer listens for.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Event(ecs_entity_t Event)
+        {
+            mEvent = Event;
+            return (* this);
+        }
+
+        /// \brief Runs the system outside the staged context, so its mutations take effect at once.
+        ///
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Immediate()
+        {
+            mImmediate = true;
+            return (* this);
+        }
+
+        /// \brief Spreads the system across the worker threads the world was given.
+        ///
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> Concurrent()
+        {
+            mConcurrent = true;
+            return (* this);
+        }
+
+        /// \brief Builds the query this description assembled.
+        ///
+        /// \param Name  The optional name the query registers under.
+        /// \param Cache The caching strategy to apply.
+        /// \return The query, which the caller owns.
+        ZY_INLINE Ptr<ecs_query_t> BuildQuery(Text Name, ecs_query_cache_kind_t Cache)
+        {
+            mQuery.cache_kind = Cache;
+            mQuery.entity     = Reserve(Name);
+
+            return ecs_query_init(mWorld, AddressOf(mQuery));
+        }
+
+        /// \brief Builds the system this description assembled.
+        ///
+        /// \param Name     The optional name the system registers under.
+        /// \param Callback The callable invoked once per iteration result.
+        /// \return The entity representing the system.
+        template<typename Callable>
+        ZY_INLINE ecs_entity_t BuildSystem(Text Name, AnyRef<Callable> Callback)
+        {
+            using Delegate = Runner<StripAll<Callable>>;
+
+            ecs_system_desc_t Description { };
+            Description.entity         = Reserve(Name);
+            Description.query          = mQuery;
+            Description.phase          = mPhase;
+            Description.interval       = mInterval;
+            Description.rate           = mRate;
+            Description.tick_source    = mSource;
+            Description.multi_threaded = mConcurrent;
+            Description.immediate      = mImmediate;
+            Description.run            = Delegate::OnInvoke;
+            Description.run_ctx        = new Delegate(Forward<Callable>(Callback));
+            Description.run_ctx_free   = Delegate::OnRelease;
+
+            return ecs_system_init(mWorld, AddressOf(Description));
+        }
+
+        /// \brief Builds the observer this description assembled.
+        ///
+        /// \param Name     The optional name the observer registers under.
+        /// \param Callback The callable invoked once per iteration result.
+        /// \return The entity representing the observer.
+        template<typename Callable>
+        ZY_INLINE ecs_entity_t BuildObserver(Text Name, AnyRef<Callable> Callback)
+        {
+            using Delegate = Runner<StripAll<Callable>>;
+
+            ecs_observer_desc_t Description { };
+            Description.entity       = Reserve(Name);
+            Description.query        = mQuery;
+            Description.events[0]    = mEvent;
+            Description.run          = Delegate::OnInvoke;
+            Description.run_ctx      = new Delegate(Forward<Callable>(Callback));
+            Description.run_ctx_free = Delegate::OnRelease;
+
+            return ecs_observer_init(mWorld, AddressOf(Description));
+        }
+
+        /// \brief Builds the pipeline this description assembled.
+        ///
+        /// \return The entity representing the pipeline.
+        ZY_INLINE ecs_entity_t BuildPipeline()
+        {
+            ecs_pipeline_desc_t Description { };
+            Description.query = mQuery;
+
+            return ecs_pipeline_init(mWorld, AddressOf(Description));
+        }
+
+    private:
+
+        /// \brief Opens the next term and makes it the one every modifier applies to.
+        ///
+        /// \return The term that was opened.
+        ZY_INLINE Ref<ecs_term_t> Advance()
+        {
+            ZY_ASSERT(mCount < FLECS_TERM_COUNT_MAX, "Exceeded the number of terms a query can carry");
+
+            mTerm = AddressOf(mQuery.terms[mCount++]);
+            return (* mTerm);
+        }
+
+        /// \brief Gets the term every modifier applies to.
+        ///
+        /// \return The term that was opened last.
+        ZY_INLINE Ref<ecs_term_t> Current()
+        {
+            ZY_ASSERT(mTerm, "No term is open, so there is nothing to describe");
+
+            return (* mTerm);
+        }
+
+        /// \brief Reserves the entity a named query, system or observer answers to.
+        ///
+        /// \param Name The name to register under, or empty to leave the result anonymous.
+        /// \return The reserved entity, or `0` when there is no name to register.
+        ZY_INLINE ecs_entity_t Reserve(Text Name) const
+        {
+            if (Name.IsEmpty())
+            {
+                return 0;
+            }
+
+            ecs_entity_desc_t Description { };
+            Description.name     = Name.GetData();
+            Description.sep      = "::";
+            Description.root_sep = "::";
+
+            return ecs_entity_init(mWorld, AddressOf(Description));
+        }
+
+    private:
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        Ptr<ecs_world_t> mWorld;
+        ecs_query_desc_t mQuery      { };
+        Ptr<ecs_term_t>  mTerm       { nullptr };
+        SInt8            mCount      { 0 };
+        ecs_entity_t     mPhase      { 0 };
+        ecs_entity_t     mEvent      { 0 };
+        ecs_entity_t     mSource     { 0 };
+        Real32           mInterval   { 0.0f };
+        SInt32           mRate       { 0 };
+        Bool             mImmediate  { false };
+        Bool             mConcurrent { false };
+    };
+}
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -74,7 +470,26 @@ namespace Scene::DSL::_
         static constexpr Bool Writable  = !Immutable && !IsAnyOf<Declared, Component>;
     };
 
-    /// \brief Resolves the storage a term maps to and adds it to a builder.
+    /// \brief Reduces a callback parameter to the term it stands for.
+    ///
+    /// A parameter spelled as a view asks for the whole batch at once, and names the same term a parameter
+    /// spelled as a single value would.
+    ///
+    /// \tparam Declared The parameter as it was spelled by the caller.
+    template<typename Declared>
+    struct Unbatch
+    {
+        using Type = Declared;
+    };
+
+    /// \brief Reduces a view parameter to the element it is a view over.
+    template<typename Declared>
+    struct Unbatch<Span<Declared>>
+    {
+        using Type = Declared;
+    };
+
+    /// \brief Resolves the storage a term maps to and adds it to a description.
     ///
     /// \tparam Component The component the term was declared with.
     template<typename Component>
@@ -82,10 +497,9 @@ namespace Scene::DSL::_
     {
         using Type = Component;
 
-        template<typename Constructor>
-        ZY_INLINE static void Match(Ref<Constructor> Builder)
+        ZY_INLINE static void Match(Ref<Descriptor> Builder)
         {
-            Builder.template with<Component>();
+            Builder.template With<Component>();
         }
     };
 
@@ -95,10 +509,9 @@ namespace Scene::DSL::_
     {
         using Type = typename Component::Second;
 
-        template<typename Constructor>
-        ZY_INLINE static void Match(Ref<Constructor> Builder)
+        ZY_INLINE static void Match(Ref<Descriptor> Builder)
         {
-            Builder.template with<typename Component::First, typename Component::Second>();
+            Builder.template With<typename Component::First, typename Component::Second>();
         }
     };
 
@@ -140,19 +553,19 @@ namespace Scene::DSL::_
     /// \tparam Declared The term as it was spelled by the caller.
     /// \tparam Access   The read/write mode the term declares.
     /// \tparam Data     `true` while emitting terms that feed the callback, `false` otherwise.
-    /// \param  Builder  The builder to add the term to.
-    template<typename Declared, flecs::inout_kind_t Access, Bool Data, typename Constructor>
-    ZY_INLINE void EmitAccess(Ref<Constructor> Builder)
+    /// \param  Builder  The description to add the term to.
+    template<typename Declared, ecs_inout_kind_t Access, Bool Data>
+    ZY_INLINE void EmitAccess(Ref<Descriptor> Builder)
     {
         if constexpr (Field<Declared>::Carries == Data)
         {
             Resolve<typename Decompose<Declared>::Component>::Match(Builder);
 
-            Builder.inout(Field<Declared>::Carries ? Access : flecs::InOutNone);
+            Builder.InOut(Field<Declared>::Carries ? Access : EcsInOutNone);
 
             if constexpr (Decompose<Declared>::Optional)
             {
-                Builder.optional();
+                Builder.Optional();
             }
         }
     }
@@ -161,39 +574,39 @@ namespace Scene::DSL::_
     ///
     /// \tparam Declared The term as it was spelled by the caller.
     /// \tparam Operator The operator applied to the term.
-    /// \param  Builder  The builder to add the term to.
-    template<typename Declared, flecs::oper_kind_t Operator, typename Constructor>
-    ZY_INLINE void EmitFilter(Ref<Constructor> Builder)
+    /// \param  Builder  The description to add the term to.
+    template<typename Declared, ecs_oper_kind_t Operator>
+    ZY_INLINE void EmitFilter(Ref<Descriptor> Builder)
     {
         Resolve<typename Decompose<Declared>::Component>::Match(Builder);
 
-        Builder.inout(flecs::InOutNone).oper(Operator);
+        Builder.InOut(EcsInOutNone).Oper(Operator);
     }
 
     /// \brief Adds a chain of alternatives, which flecs collapses onto a single shared field.
     ///
     /// \tparam Declared The alternatives as they were spelled by the caller.
-    /// \param  Builder  The builder to add the terms to.
-    template<typename... Declared, typename Constructor>
-    ZY_INLINE void EmitAlternatives(Ref<Constructor> Builder)
+    /// \param  Builder  The description to add the terms to.
+    template<typename... Declared>
+    ZY_INLINE void EmitAlternatives(Ref<Descriptor> Builder)
     {
         UInt Remaining = sizeof...(Declared);
 
         ((Resolve<typename Decompose<Declared>::Component>::Match(Builder),
-          Builder.inout(flecs::InOutNone).oper(--Remaining ? flecs::Or : flecs::And)), ...);
+          Builder.InOut(EcsInOutNone).Oper(--Remaining ? EcsOr : EcsAnd)), ...);
     }
 
     /// \brief Adds a term that declares an access the callback performs outside the query.
     ///
     /// \tparam Declared The term as it was spelled by the caller.
     /// \tparam Access   The read/write mode declared for the scheduler.
-    /// \param  Builder  The builder to add the term to.
-    template<typename Declared, flecs::inout_kind_t Access, typename Constructor>
-    ZY_INLINE void EmitStage(Ref<Constructor> Builder)
+    /// \param  Builder  The description to add the term to.
+    template<typename Declared, ecs_inout_kind_t Access>
+    ZY_INLINE void EmitStage(Ref<Descriptor> Builder)
     {
         Resolve<typename Decompose<Declared>::Component>::Match(Builder);
 
-        Builder.inout_stage(Access);
+        Builder.InOutStage(Access);
     }
 
     /// \brief Adds a term sourced from an ancestor rather than the matched entity.
@@ -201,9 +614,9 @@ namespace Scene::DSL::_
     /// \tparam Declared The term as it was spelled by the caller.
     /// \tparam Data     `true` while emitting terms that feed the callback, `false` otherwise.
     /// \tparam Descend  `true` to traverse breadth-first, `false` to substitute the nearest ancestor.
-    /// \param  Builder  The builder to add the term to.
-    template<typename Declared, Bool Data, Bool Descend, typename Constructor>
-    ZY_INLINE void EmitTraversal(Ref<Constructor> Builder)
+    /// \param  Builder  The description to add the term to.
+    template<typename Declared, Bool Data, Bool Descend>
+    ZY_INLINE void EmitTraversal(Ref<Descriptor> Builder)
     {
         if constexpr (Field<Declared>::Carries == Data)
         {
@@ -211,25 +624,25 @@ namespace Scene::DSL::_
 
             if constexpr (Descend)
             {
-                Builder.cascade();
+                Builder.Cascade();
             }
             else
             {
-                Builder.up();
+                Builder.Up();
             }
 
             if constexpr (Field<Declared>::Carries)
             {
-                Builder.inout(Decompose<Declared>::Immutable ? flecs::In : flecs::InOut);
+                Builder.InOut(Decompose<Declared>::Immutable ? EcsIn : EcsInOut);
             }
             else
             {
-                Builder.inout(flecs::InOutNone);
+                Builder.InOut(EcsInOutNone);
             }
 
             if constexpr (Decompose<Declared>::Optional)
             {
-                Builder.optional();
+                Builder.Optional();
             }
         }
     }
@@ -278,16 +691,15 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Immutable>::Type, flecs::In, Data>(Builder), ...);
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Immutable>::Type, EcsIn, Data>(Builder), ...);
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::In);
+            Builder.With(Expression.GetHandle()).InOut(EcsIn);
         }
     };
 
@@ -313,16 +725,15 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, flecs::InOut, Data>(Builder), ...);
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, EcsInOut, Data>(Builder), ...);
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOut);
+            Builder.With(Expression.GetHandle()).InOut(EcsInOut);
         }
     };
 
@@ -348,16 +759,15 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, flecs::Out, Data>(Builder), ...);
+            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, EcsOut, Data>(Builder), ...);
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::Out);
+            Builder.With(Expression.GetHandle()).InOut(EcsOut);
         }
     };
 
@@ -381,19 +791,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                (_::EmitFilter<Types, flecs::And>(Builder), ...);
+                (_::EmitFilter<Types, EcsAnd>(Builder), ...);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone);
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone);
         }
     };
 
@@ -419,19 +828,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                (_::EmitFilter<Types, flecs::Optional>(Builder), ...);
+                (_::EmitFilter<Types, EcsOptional>(Builder), ...);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).optional();
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Optional();
         }
     };
 
@@ -455,19 +863,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                (_::EmitFilter<Types, flecs::Not>(Builder), ...);
+                (_::EmitFilter<Types, EcsNot>(Builder), ...);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).oper(flecs::Not);
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Oper(EcsNot);
         }
     };
 
@@ -498,8 +905,8 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             static_assert(sizeof...(Types) > 1, "Or requires at least two alternatives");
 
@@ -509,11 +916,10 @@ namespace Scene::DSL
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Left.GetHandle()).inout(flecs::InOutNone).oper(flecs::Or);
-            Builder.with(Right.GetHandle()).inout(flecs::InOutNone);
+            Builder.With(Left.GetHandle()).InOut(EcsInOutNone).Oper(EcsOr);
+            Builder.With(Right.GetHandle()).InOut(EcsInOutNone);
         }
     };
 
@@ -537,16 +943,15 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             _::EmitTraversal<Type, Data, false>(Builder);
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).up();
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Up();
         }
     };
 
@@ -570,16 +975,15 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             _::EmitTraversal<Type, Data, true>(Builder);
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout(flecs::InOutNone).cascade();
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Cascade();
         }
     };
 
@@ -605,19 +1009,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                (_::EmitStage<Types, flecs::In>(Builder), ...);
+                (_::EmitStage<Types, EcsIn>(Builder), ...);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout_stage(flecs::In);
+            Builder.With(Expression.GetHandle()).InOutStage(EcsIn);
         }
     };
 
@@ -643,19 +1046,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                (_::EmitStage<Types, flecs::Out>(Builder), ...);
+                (_::EmitStage<Types, EcsOut>(Builder), ...);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.with(Expression.GetHandle()).inout_stage(flecs::Out);
+            Builder.With(Expression.GetHandle()).InOutStage(EcsOut);
         }
     };
 
@@ -669,12 +1071,12 @@ namespace Scene::DSL
         /// The values this term contributes to the callback, in order.
         using Fields = _::TypeList<>;
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                Builder.template order_by<Type>(Comparison);
+                Builder.template OrderBy<Type>(Comparison);
             }
         }
     };
@@ -688,12 +1090,12 @@ namespace Scene::DSL
         /// The values this term contributes to the callback, in order.
         using Fields = _::TypeList<>;
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                Builder.interval(Seconds);
+                Builder.Interval(Seconds);
             }
         }
     };
@@ -718,19 +1120,18 @@ namespace Scene::DSL
         {
         }
 
-        template<Bool Data, typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
         {
             if constexpr (!Data)
             {
-                Builder.rate(Ticks);
+                Builder.Rate(Ticks);
             }
         }
 
-        template<typename Constructor>
-        ZY_INLINE void ApplyRuntime(Ref<Constructor> Builder) const
+        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
         {
-            Builder.rate(Source.GetHandle(), Ticks);
+            Builder.Rate(Source.GetHandle(), Ticks);
         }
     };
 
@@ -747,6 +1148,9 @@ namespace Scene::DSL
 
     /// \brief Grants a component the ability to be supplied by an archetype.
     inline constexpr Traits<Trait::Inheritable>  Inheritable  { };
+
+    /// \brief Grants a component the refusal to travel to an instance spawned from an archetype.
+    inline constexpr Traits<Trait::Local>        Local        { };
 
     /// \brief Grants a component the ability to be switched off without being removed.
     inline constexpr Traits<Trait::Toggleable>   Toggleable   { };
@@ -808,7 +1212,7 @@ namespace Scene::DSL
             /// \brief Registers every component named, so its name resolves before anything refers to it.
             ///
             /// \param World The world the components belong to.
-            ZY_INLINE void Reserve(Ref<flecs::world> World) const
+            ZY_INLINE void Reserve(Ptr<ecs_world_t> World) const
             {
                 (ReserveEach<Types>(World), ...);
             }
@@ -816,7 +1220,7 @@ namespace Scene::DSL
             /// \brief Applies every term to every component described.
             ///
             /// \param World The world the components belong to.
-            ZY_INLINE void Apply(Ref<flecs::world> World) const
+            ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
             {
                 (ApplyEach<Types>(World), ...);
             }
@@ -827,22 +1231,20 @@ namespace Scene::DSL
             ///
             /// \param World The world the component belongs to.
             template<typename Type>
-            ZY_INLINE void ReserveEach(Ref<flecs::world> World) const
+            ZY_INLINE void ReserveEach(Ptr<ecs_world_t> World) const
             {
                 if (Name)
                 {
-                    World.template component<Type>(Name);
+                    Scene::_::Register<Type>(World, StrConvert(Name));
                 }
                 else if constexpr (IsNamed<Type>)
                 {
-                    World.template component<Type>(Text(Type::kName).GetData());
+                    Scene::_::Register<Type>(World, Text(Type::kName));
                 }
                 else
                 {
-                    const Text Path = StrConvert(flecs::_::type_name<Type>());
-                    const Text Name = StrAfterLast(Path, "::");
-
-                    World.template component<Type>(Name.IsEmpty() ? Path.GetData() : Name.GetData());
+                    // An empty name asks the registry to take the one the compiler records for the type.
+                    Scene::_::Register<Type>(World, Text::Empty());
                 }
             }
 
@@ -850,7 +1252,7 @@ namespace Scene::DSL
             ///
             /// \param World The world the component belongs to.
             template<typename Type>
-            ZY_INLINE static void ApplyEach(Ref<flecs::world> World)
+            ZY_INLINE static void ApplyEach(Ptr<ecs_world_t> World)
             {
                 (ApplyTerm<Type>(World, Parts { }), ...);
             }
@@ -859,18 +1261,18 @@ namespace Scene::DSL
             ///
             /// \param World The world the component belongs to.
             template<typename Type, Trait... Values>
-            ZY_INLINE static void ApplyTerm(Ref<flecs::world> World, Traits<Values...>)
+            ZY_INLINE static void ApplyTerm(Ptr<ecs_world_t> World, Traits<Values...>)
             {
-                Component<Type>(World.template component<Type>()).Grant(Values...);
+                Component<Type>(World, Scene::_::Identify<Type>()).Grant(Values...);
             }
 
             /// \brief Attaches one set of implications to one component.
             ///
             /// \param World The world the component belongs to.
             template<typename Type, typename... Targets>
-            ZY_INLINE static void ApplyTerm(Ref<flecs::world> World, Implication<Targets...>)
+            ZY_INLINE static void ApplyTerm(Ptr<ecs_world_t> World, Implication<Targets...>)
             {
-                const Component<Type> Handle(World.template component<Type>());
+                const Component<Type> Handle(World, Scene::_::Identify<Type>());
 
                 (Handle.template With<Targets>(), ...);
             }
@@ -960,12 +1362,12 @@ namespace Scene::DSL::_
     template<typename First, typename... Rest>
     struct StripContext<TypeList<First, Rest...>>
     {
-        using Type = Select<IsAnyOf<StripAll<First>, Entity, flecs::entity>, TypeList<Rest...>, TypeList<First, Rest...>>;
+        using Type = Select<IsAnyOf<StripAll<First>, Entity>, TypeList<Rest...>, TypeList<First, Rest...>>;
     };
 
     /// \brief Removes a leading iterator and row pair.
     template<typename Row, typename... Rest>
-    struct StripContext<TypeList<Ref<flecs::iter>, Row, Rest...>>
+    struct StripContext<TypeList<ConstRef<Iterator>, Row, Rest...>>
     {
         using Type = TypeList<Rest...>;
     };
@@ -980,20 +1382,19 @@ namespace Scene::DSL::_
     template<typename... Arguments>
     struct Infer<TypeList<Arguments...>>
     {
-        using Fields = TypeList<StripRef<Arguments>...>;
+        using Fields = TypeList<typename Unbatch<StripRef<Arguments>>::Type...>;
 
-        template<typename Constructor>
-        ZY_INLINE static void Apply(Ref<Constructor> Builder)
+        ZY_INLINE static void Apply(Ref<Descriptor> Builder)
         {
-            (Emit<Arguments>(Builder), ...);
+            (Emit<typename Unbatch<StripRef<Arguments>>::Type>(Builder), ...);
         }
 
     private:
 
-        template<typename Argument, typename Constructor>
-        ZY_INLINE static void Emit(Ref<Constructor> Builder)
+        template<typename Argument>
+        ZY_INLINE static void Emit(Ref<Descriptor> Builder)
         {
-            constexpr flecs::inout_kind_t Access = Decompose<Argument>::Writable ? flecs::InOut : flecs::In;
+            constexpr ecs_inout_kind_t Access = Decompose<Argument>::Writable ? EcsInOut : EcsIn;
 
             EmitAccess<Argument, Access, Field<Argument>::Carries>(Builder);
         }
@@ -1001,18 +1402,13 @@ namespace Scene::DSL::_
 
     /// \brief Applies every expression of a description to a builder and yields its callback values.
     ///
-    /// Terms that feed the callback are emitted before every other term, because a callback receives
-    /// fields by position and each term consumes a field index whether or not it carries storage.
-    /// When no expression feeds the callback, the terms are derived from the callback's own parameters.
-    ///
-    /// \tparam Constructor       The builder being described.
     /// \tparam FEach             The callback the description is built for, or `void` when there is none.
     /// \tparam CompileExpression The expressions known at compile time.
-    /// \param  Builder           The builder to describe.
+    /// \param  Builder           The description to describe.
     /// \param  Expressions       The expressions resolved at runtime.
     /// \return The list of values the callback receives, in field order.
-    template<typename Constructor, typename FEach, typename... CompileExpression, typename... RuntimeExpression>
-    ZY_INLINE auto Build(Ref<Constructor> Builder, AnyRef<RuntimeExpression>... Expressions)
+    template<typename FEach, typename... CompileExpression, typename... RuntimeExpression>
+    ZY_INLINE auto Build(Ref<Descriptor> Builder, AnyRef<RuntimeExpression>... Expressions)
     {
         using Declared = typename ExtractTypes<CompileExpression...>::Type;
 
@@ -1037,8 +1433,288 @@ namespace Scene::DSL::_
         }
     }
 
+    /// \brief Specifies how the fields of one iteration result are addressed while its rows are walked.
+    ///
+    /// Which one applies holds for a whole result, so it is decided once rather than tested per row.
+    enum class Access : UInt8
+    {
+        Direct,  ///< Every field is owned and present, so a row indexes straight into the table's array.
+        Strided, ///< Some field is shared or absent, which a stride of zero addresses without a branch.
+        Sparse,  ///< Some field lives outside the table and has to be fetched one row at a time.
+    };
+
+    /// \brief Holds where one term's data lives for the span of a single iteration result.
+    struct Column final
+    {
+        /// The base address of the term's data, or null when the term matched nothing.
+        Ptr<void> Data   = nullptr;
+
+        /// The number of elements a row advances by, which is zero for a value the whole batch shares.
+        SInt32    Stride = 0;
+
+        /// The position of the term within the result, needed when its value is fetched one row at a time.
+        SInt8     Index  = 0;
+
+        /// True when the term's value lives outside the table and has to be fetched one row at a time.
+        Bool      Sparse = false;
+    };
+
+    /// \brief Unpacks the fields of an iteration result and hands them to a callback, one entity at a time.
+    ///
+    /// \tparam List  The values the callback receives, in field order.
+    /// \tparam FEach The callback invoked for each matching entity.
+    template<typename List, typename FEach>
+    struct Dispatcher;
+
+    /// \brief Unpacks a known set of fields and hands them to a callback, one entity at a time.
+    template<typename... Types, typename FEach>
+    struct Dispatcher<TypeList<Types...>, FEach>
+    {
+        /// \brief Invokes the callback for every entity of the current result.
+        ///
+        /// \param Cursor The result being walked.
+        /// \param Each   The callback invoked for each matching entity.
+        ZY_INLINE static void Invoke(ConstRef<Iterator> Cursor, ConstRef<FEach> Each)
+        {
+            const Ptr<ecs_iter_t> Handle = Cursor.GetHandle();
+
+            Bool   Uniform = true;
+            Column Columns[sizeof...(Types) + 1] { };
+            Bind(Handle, Columns, Uniform, MakeIntegerSequence<UInt, sizeof...(Types)> { });
+
+            // A query matching no entity of its own still reports one result, whose fields all come from elsewhere.
+            const SInt32 Count = (Handle->count == 0 && !Handle->table) ? 1 : Handle->count;
+
+            // A callback spelled with views is handed the whole result at once, so it decides for itself what
+            // holds for the batch and then runs a loop of its own with nothing left to test per row.
+            if constexpr (IsBatched(MakeIntegerSequence<UInt, sizeof...(Types)> { }))
+            {
+                ZY_ASSERT(!Handle->row_fields,
+                    "A batched callback cannot take a component that is stored outside the table");
+
+                Sweep(Each, Columns, Count, MakeIntegerSequence<UInt, sizeof...(Types)> { });
+
+                return;
+            }
+
+            // A term that is shared, absent or sparse is that way for the whole result, so the addressing it
+            // needs is chosen once here. The row loop is then free of branches the optimizer could not hoist.
+            if (Handle->row_fields)
+            {
+                Walk<Access::Sparse>(Cursor, Each, Columns, Count);
+            }
+            else if (Uniform)
+            {
+                Walk<Access::Direct>(Cursor, Each, Columns, Count);
+            }
+            else
+            {
+                Walk<Access::Strided>(Cursor, Each, Columns, Count);
+            }
+        }
+
+    private:
+
+        /// The value the term at a given position contributes to the callback, padded so an empty set still names one.
+        ///
+        /// A list inferred from a callback keeps the references the parameters were spelled with, which are
+        /// dropped here so a field is described by its value type alone.
+        template<UInt Index>
+        using Value = StripRef<typename Identify<Index, Types..., Empty>::Type>;
+
+        /// The view a term hands a batched callback, which is read-only whenever the term is.
+        template<typename Type>
+        using Batch = Select<IsImmutable<StripPtr<Type>>,
+                             ConstSpan<StripAll<StripPtr<Type>>>,
+                             Span<StripAll<StripPtr<Type>>>>;
+
+        /// \brief Checks whether the callback takes the whole batch as views rather than one row at a time.
+        ///
+        /// \return `true` when the callback is spelled with a view per term.
+        template<UInt... Indices>
+        ZY_INLINE static consteval Bool IsBatched(IntegerSequence<UInt, Indices...>)
+        {
+            return requires (ConstRef<FEach> Callback) { Callback(Batch<Value<Indices>> { }...); };
+        }
+
+        /// \brief Hands the whole result to a batched callback, one view per term.
+        ///
+        /// \param Each    The callback invoked for the batch.
+        /// \param Columns The slots describing where each term's data lives.
+        /// \param Count   The number of rows the result holds.
+        template<UInt... Indices>
+        ZY_INLINE static void Sweep(ConstRef<FEach> Each, Ptr<Column> Columns, SInt32 Count, IntegerSequence<UInt, Indices...>)
+        {
+            Each(Wrap<Value<Indices>>(Columns[Indices], Count)...);
+        }
+
+        /// \brief Builds the view one term hands a batched callback.
+        ///
+        /// \note The length carries what the row loop would otherwise have to test: a term that matched
+        ///       nothing is empty, one the batch shares holds a single element, and an owned one holds a row
+        ///       per entity.
+        ///
+        /// \param Slot  The slot describing where the term's data lives.
+        /// \param Count The number of rows the result holds.
+        /// \return The view over the term's data.
+        template<typename Type>
+        ZY_INLINE static Batch<Type> Wrap(ConstRef<Column> Slot, SInt32 Count)
+        {
+            using Storage = StripAll<StripPtr<Type>>;
+
+            const UInt Length = Slot.Data ? (Slot.Stride ? static_cast<UInt>(Count) : 1u) : 0u;
+
+            return Batch<Type>(static_cast<Ptr<Storage>>(Slot.Data), Length);
+        }
+
+        /// \brief Resolves where every term's data lives for the current result.
+        ///
+        /// \param Handle  The result being walked.
+        /// \param Columns The slots to fill, one per term.
+        template<UInt... Indices>
+        ZY_INLINE static void Bind(Ptr<ecs_iter_t> Handle, Ptr<Column> Columns, Ref<Bool> Uniform,
+            IntegerSequence<UInt, Indices...>)
+        {
+            (BindOne<Value<Indices>>(Handle, Columns[Indices], Uniform, static_cast<SInt8>(Indices)), ...);
+        }
+
+        /// \brief Resolves where one term's data lives for the current result.
+        ///
+        /// \param Handle  The result being walked.
+        /// \param Slot    The slot to fill.
+        /// \param Uniform Cleared when the term does not advance one element per row.
+        /// \param Index   The position of the term within the result.
+        template<typename Type>
+        ZY_INLINE static void BindOne(Ptr<ecs_iter_t> Handle, Ref<Column> Slot, Ref<Bool> Uniform, SInt8 Index)
+        {
+            using Storage = StripAll<StripPtr<Type>>;
+
+            if constexpr (!IsEmpty<Storage>)
+            {
+                Slot.Index = Index;
+
+                if (Handle->row_fields & (1ull << Index))
+                {
+                    Slot.Sparse = true;
+                }
+                else
+                {
+                    Slot.Data   = ecs_field_w_size(Handle, sizeof(Storage), Index);
+                    Slot.Stride = (Slot.Data && !Handle->sources[Index]) ? 1 : 0;
+                }
+
+                Uniform = Uniform && Slot.Stride == 1;
+            }
+        }
+
+        /// \brief Walks every row of the current result, handing each one to the callback.
+        ///
+        /// \tparam Mode   The addressing every field of this result needs.
+        /// \param  Cursor The result being walked.
+        /// \param  Each   The callback invoked for each row.
+        /// \param  Slots  The slots describing where each term's data lives.
+        /// \param  Count  The number of rows the result holds.
+        template<Access Mode>
+        ZY_INLINE static void Walk(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, Ptr<Column> Slots, SInt32 Count)
+        {
+            for (SInt32 Row = 0; Row < Count; ++Row)
+            {
+                Emit<Mode>(Cursor, Each, Slots, Row, MakeIntegerSequence<UInt, sizeof...(Types)> { });
+            }
+        }
+
+        /// \brief Reads every term at one row and hands the values to the callback.
+        ///
+        /// \param Cursor  The result being walked.
+        /// \param Each    The callback invoked for the row.
+        /// \param Columns The slots describing where each term's data lives.
+        /// \param Row     The row to read.
+        template<Access Mode, UInt... Indices>
+        ZY_INLINE static void Emit(ConstRef<Iterator> Cursor, ConstRef<FEach> Each,
+            Ptr<Column> Columns, SInt32 Row, IntegerSequence<UInt, Indices...>)
+        {
+            Apply(Cursor, Each, Row, Read<Value<Indices>, Mode>(Cursor.GetHandle(), Columns[Indices], Row)...);
+        }
+
+        /// \brief Reads one term at one row.
+        ///
+        /// \tparam Mode   The addressing every field of this result needs.
+        /// \param  Handle The result being walked.
+        /// \param  Slot   The slot describing where the term's data lives.
+        /// \param  Row    The row to read.
+        /// \return The value the term contributes at that row.
+        template<typename Type, Access Mode>
+        ZY_INLINE static decltype(auto) Read(Ptr<ecs_iter_t> Handle, Ref<Column> Slot, SInt32 Row)
+        {
+            using Storage = StripAll<StripPtr<Type>>;
+
+            if constexpr (IsEmpty<Storage>)
+            {
+                // A tag carries no storage, so the callback receives a value of its own.
+                return Storage();
+            }
+            else
+            {
+                if constexpr (Mode == Access::Sparse)
+                {
+                    if (Slot.Sparse)
+                    {
+                        Slot.Data = ecs_field_at_w_size(Handle, sizeof(Storage), Slot.Index, Row);
+                    }
+                }
+
+                Ptr<Storage> Data = static_cast<Ptr<Storage>>(Slot.Data);
+
+                if constexpr (Mode == Access::Direct)
+                {
+                    Data += Row;
+                }
+                else
+                {
+                    Data += Row * Slot.Stride;
+                }
+
+                if constexpr (IsPointer<Type>)
+                {
+                    return static_cast<Type>(Data);
+                }
+                else
+                {
+                    return static_cast<Ref<Type>>(* Data);
+                }
+            }
+        }
+
+        /// \brief Hands the values of one row to the callback, in the shape the callback declares.
+        ///
+        /// \param Cursor The result being walked.
+        /// \param Each   The callback invoked for the row.
+        /// \param Row    The row being handed over.
+        /// \param Data   The values the terms contributed at that row.
+        template<typename... Values>
+        ZY_INLINE static void Apply(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, SInt32 Row, AnyRef<Values>... Data)
+        {
+            if constexpr (requires { Each(Entity(), Forward<Values>(Data)...); })
+            {
+                const Ptr<ecs_iter_t> Handle = Cursor.GetHandle();
+
+                ZY_ASSERT(Handle->entities, "Callback asks for an entity the query does not produce");
+
+                Each(Entity(Handle->world, Handle->entities[Row]), Forward<Values>(Data)...);
+            }
+            else if constexpr (requires { Each(Cursor, UInt(), Forward<Values>(Data)...); })
+            {
+                Each(Cursor, static_cast<UInt>(Row), Forward<Values>(Data)...);
+            }
+            else
+            {
+                Each(Forward<Values>(Data)...);
+            }
+        }
+    };
+
     /// \brief Factory for creating query runner functions based on a list of component types and an iteration function.
-    template<typename TypeList, typename FEach>
+    template<typename List, typename FEach>
     struct RunnerFactory;
 
     /// \brief Factory specialization for creating a runner function that invokes a callback for each query result.
@@ -1047,35 +1723,12 @@ namespace Scene::DSL::_
     {
         ZY_INLINE static auto Make(AnyRef<FEach> Each)
         {
-            return [Each = Move(Each)](Ref<flecs::iter> Iterator)
+            return [Each = Move(Each)](ConstRef<Iterator> Cursor)
             {
-                while (Iterator.next())
+                while (Cursor.Next())
                 {
-                    flecs::_::each_delegate<FEach, Types...>(Each).invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
+                    Dispatcher<TypeList<Types...>, FEach>::Invoke(Cursor, Each);
                 }
-            };
-        }
-    };
-
-    /// \brief Factory specialization for creating a runner function that invokes callbacks for the beginning, each iteration, and the end of a query execution.
-    template<typename TypeList, typename FBegin, typename FEach, typename FEnd>
-    struct RunnerFactoryLifecycle;
-
-    /// \brief Factory specialization for creating a runner function that invokes callbacks for the beginning, each iteration, and the end of a query execution.
-    template<typename... Types, typename FBegin, typename FEach, typename FEnd>
-    struct RunnerFactoryLifecycle<TypeList<Types...>, FBegin, FEach, FEnd>
-    {
-        ZY_INLINE static auto Make(AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End)
-        {
-            return [Begin = Move(Begin), Each = Move(Each), End = Move(End)](Ref<flecs::iter> Iterator)
-            {
-                Begin();
-                while (Iterator.next())
-                {
-                    flecs::_::each_delegate<FEach, Types...>(Each)
-                        .invoke(const_cast<Ptr<ecs_iter_t>>(Iterator.c_ptr()));
-                }
-                End();
             };
         }
     };

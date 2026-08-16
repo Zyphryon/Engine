@@ -26,21 +26,24 @@ namespace Scene
     public:
 
         /// \brief Underlying handle type used to represent the timer internally.
-        using Handle = flecs::timer;
+        using Handle = ecs_entity_t;
 
     public:
 
         /// \brief Constructs an invalid timer.
         ZY_INLINE Timer()
-            : mHandle { Handle::null() }
+            : mWorld  { nullptr },
+              mHandle { 0 }
         {
         }
 
         /// \brief Constructs a timer from an existing handle.
         ///
+        /// \param World  The world the timer belongs to.
         /// \param Handle The handle of this timer.
-        ZY_INLINE Timer(Handle Handle)
-            : mHandle { Handle }
+        ZY_INLINE Timer(Ptr<ecs_world_t> World, Handle Handle)
+            : mWorld  { World },
+              mHandle { Handle }
         {
         }
 
@@ -57,7 +60,7 @@ namespace Scene
         /// \return This timer, allowing for method chaining.
         ZY_INLINE Timer Resume()
         {
-            mHandle.start();
+            ecs_start_timer(mWorld, mHandle);
             return (* this);
         }
 
@@ -66,7 +69,7 @@ namespace Scene
         /// \return This timer, allowing for method chaining.
         ZY_INLINE Timer Pause()
         {
-            mHandle.stop();
+            ecs_stop_timer(mWorld, mHandle);
             return (* this);
         }
 
@@ -76,7 +79,7 @@ namespace Scene
         /// \return This timer, allowing for method chaining.
         ZY_INLINE Timer SetInterval(Real32 Interval)
         {
-            mHandle.interval(Interval);
+            ecs_set_interval(mWorld, mHandle, Interval);
             return (* this);
         }
 
@@ -85,7 +88,7 @@ namespace Scene
         /// \return The interval of the timer in seconds.
         ZY_INLINE Real32 GetInterval() const
         {
-            return mHandle.interval();
+            return ecs_get_interval(mWorld, mHandle);
         }
 
         /// \brief Sets the timeout of the timer in seconds.
@@ -94,7 +97,7 @@ namespace Scene
         /// \return This timer, allowing for method chaining.
         ZY_INLINE Timer SetTimeout(Real32 Timeout)
         {
-            mHandle.timeout(Timeout);
+            ecs_set_timeout(mWorld, mHandle, Timeout);
             return (* this);
         }
 
@@ -103,7 +106,7 @@ namespace Scene
         /// \return The timeout of the timer in seconds.
         ZY_INLINE Real32 GetTimeout() const
         {
-            return mHandle.timeout();
+            return ecs_get_timeout(mWorld, mHandle);
         }
 
     private:
@@ -111,6 +114,7 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        mutable Handle mHandle;
+        Ptr<ecs_world_t> mWorld;
+        Handle           mHandle;
     };
 }

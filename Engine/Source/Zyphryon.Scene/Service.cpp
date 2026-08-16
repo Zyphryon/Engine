@@ -24,17 +24,26 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem { Host }
+        : Subsystem { Host },
+          mWorld    { ecs_init() }
     {
         // Flecs runs stage 0 on the calling thread, so the count is one greater than the lane's worker count.
-        mWorld.set_threads(Host.GetService<Job::Service>()->GetConcurrency(Job::Lane::Compute) + 1);
+        ecs_set_threads(mWorld, Host.GetService<Job::Service>()->GetConcurrency(Job::Lane::Compute) + 1);
 
         // Ensures that handles within this range are exclusively for entities created during runtime,
         // preventing conflicts with internal engine objects like components or archetypes.
-        mWorld.range_set(mWorld.range_new(kMinRangeEntities, kMaxRangeEntities));
+        ecs_entity_range_set(mWorld, ecs_entity_range_new(mWorld, kMinRangeEntities, kMaxRangeEntities));
 
         // Register engine’s built-in components and systems.
         RegisterDefaultComponentsAndSystems();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Service::~Service()
+    {
+        ecs_fini(mWorld);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -48,10 +57,10 @@ namespace Scene
         mClock.Tick(Delta);
 
         // Update the world time component.
-        mWorld.set<Clock>(mClock);
+        GetWorld().Set(Clock(mClock));
 
         // Advance the ECS world simulation by the frame delta.
-        mWorld.progress(static_cast<Real32>(mClock.GetDelta()));
+        ecs_progress(mWorld, static_cast<Real32>(mClock.GetDelta()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -167,7 +176,7 @@ namespace Scene
         for (UInt32 Element = 1, Limit = mArchetypes.GetTop(); Element <= Limit; ++Element)
         {
             // Resolve the live handle so `GetID` carries the current generation, then persist the full id.
-            if (const Entity Archetype(mWorld.get_alive(kMinRangeArchetypes + Element)); Archetype.IsValid())
+            if (const Entity Archetype(mWorld, ecs_get_alive(mWorld, kMinRangeArchetypes + Element)); Archetype.IsValid())
             {
                 Archive.Write<UInt64>(Archetype.GetID());
 
@@ -187,33 +196,36 @@ namespace Scene
 #if defined(FLECS_REST_SERVICE)
 
         // Import built-in ECS statistics module.
-        mWorld.import<flecs::stats>();
+        ECS_IMPORT(mWorld, FlecsStats);
 
         // Enable REST service for remote ECS inspection.
-        mWorld.emplace<flecs::Rest>();
+        const EcsRest Rest { };
+        ecs_set_id(mWorld, ecs_id(EcsRest), ecs_id(EcsRest), sizeof(EcsRest), AddressOf(Rest));
 
 #endif
 
         // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
-        CreateObserver("_Archetypes::OnRemove", flecs::OnRemove, [this](Entity Actor)
+        CreateObserver("_Archetypes::OnRemove", EcsOnRemove, [this](Entity Actor)
         {
             mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
-        }, DSL::In(flecs::Prefab));
+        }, DSL::In(EcsPrefab));
 
-        // Register Factory component (serialization).
-        GetComponent<Factory>("Factory").Grant(Trait::Final);
+        // Register the built-in components in one pass, so a trait may name any of the others.
+        Register(
+            // Factory carries the reader and writer a serializable component is saved and loaded through.
+            DSL::Declare<Factory>("Factory", DSL::Final),
 
-        // Register Time component as singleton (tracks global time state).
-        GetComponent<Clock>("Clock").Grant(Trait::Final, Trait::Singleton);
+            // Clock tracks global time state, of which the world holds a single instance.
+            DSL::Declare<Clock>("Clock", DSL::Final, DSL::Singleton),
 
-        // Register Deprecated tag (marks archetypes for later purge; never propagates to spawned instances).
-        GetComponent<Deprecated>("Deprecated").GetHandle().add(flecs::OnInstantiate, flecs::DontInherit);
+            // Deprecated marks archetypes for a later purge, and never propagates to spawned instances.
+            DSL::Declare<Deprecated>("Deprecated", DSL::Local),
 
-        // Register Orphaned tag (marks entity that has an invalid archetype).
-        GetComponent<Orphaned>("Orphaned").GetHandle().add(flecs::OnInstantiate, flecs::DontInherit);
+            // Orphaned marks an entity whose archetype no longer resolves.
+            DSL::Declare<Orphaned>("Orphaned", DSL::Local),
 
-        // Register Transient component (marks entities as non serializable).
-        GetComponent<Transient>("Transient").Grant(Trait::Associative);
+            // Transient marks entities that are left out of serialization.
+            DSL::Declare<Transient>("Transient", DSL::Associative));
 
         // Periodically reclaims memory by removing empty internal storage tables.
         CreateSystem<DSL::Interval<15>>("_Compact", EcsPostFrame, Execution::Immediate,

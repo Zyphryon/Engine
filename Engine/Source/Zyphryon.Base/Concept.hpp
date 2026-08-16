@@ -120,6 +120,34 @@ inline namespace Base
     template<class Type>
     concept IsTriviallyDestructible = std::is_trivially_destructible_v<Type>;
 
+    /// \brief Concept that is satisfied when \p Type can be constructed without arguments.
+    template<class Type>
+    concept IsDefaultConstructible = std::is_default_constructible_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type can be constructed from another instance of itself.
+    template<class Type>
+    concept IsCopyConstructible = std::is_copy_constructible_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type can be assigned from another instance of itself.
+    template<class Type>
+    concept IsCopyAssignable = std::is_copy_assignable_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type can be constructed by taking over another instance.
+    template<class Type>
+    concept IsMoveConstructible = std::is_move_constructible_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type can be assigned by taking over another instance.
+    template<class Type>
+    concept IsMoveAssignable = std::is_move_assignable_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type is trivially move constructible.
+    template<class Type>
+    concept IsTriviallyMoveConstructible = std::is_trivially_move_constructible_v<Type>;
+
+    /// \brief Concept that is satisfied when \p Type is trivially move assignable.
+    template<class Type>
+    concept IsTriviallyMoveAssignable = std::is_trivially_move_assignable_v<Type>;
+
     /// \brief Concept that is satisfied when \p Type is an signed arithmetic type.
     template<class Type>
     concept IsSigned    = std::is_signed_v<Type>;

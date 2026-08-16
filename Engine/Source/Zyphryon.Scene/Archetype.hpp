@@ -125,12 +125,16 @@ namespace Scene
         template<typename Callable>
         ZY_INLINE void Children(AnyRef<Callable> Callback) const
         {
-            mHandle.GetHandle().world().query_builder<>()
-                .with(flecs::IsA, mHandle.GetID())
-                .each([& Callback](flecs::entity Instance)
+            const Ptr<ecs_world_t> World = mHandle.GetWorld();
+
+            for (ecs_iter_t Iterator = ecs_each_id(World, ecs_pair(EcsIsA, mHandle.GetID()));
+                 ecs_each_next(& Iterator);)
+            {
+                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
                 {
-                    Callback(Entity(Instance));
-                });
+                    Callback(Entity(World, Iterator.entities[Element]));
+                }
+            }
         }
 
         /// \brief Attaches an existing archetype as a fixed part of this one.
@@ -260,9 +264,9 @@ namespace Scene
         /// A no-op when the archetype was never instantiated (no cache exists).
         ZY_INLINE void Unlock() const
         {
-            if (const Entity::Handle Handle = mHandle.GetHandle(); Handle.has(ecs_id(EcsTreeSpawner)))
+            if (const Entity Spawner(ecs_id(EcsTreeSpawner)); mHandle.Has(Spawner))
             {
-                Handle.remove(ecs_id(EcsTreeSpawner));
+                mHandle.Remove(Spawner);
             }
         }
 

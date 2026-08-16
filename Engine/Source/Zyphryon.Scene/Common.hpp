@@ -79,6 +79,7 @@ namespace Scene
     {
         Serializable, ///< Component can be serialized to or from an archive.
         Inheritable,  ///< Component values can be inherited across entities.
+        Local,        ///< Component never reaches an instance spawned from an archetype.
         Toggleable,   ///< Component can be toggled on/off without removal.
         Sparse,       ///< Component is stored sparsely for memory efficiency.
         Associative,  ///< Component behaves like a key-value association.

@@ -39,6 +39,9 @@ namespace Scene
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
+        /// \brief Releases the world and everything it still holds.
+        ~Service() override;
+
         /// \brief Advances the ECS world state, executing all registered systems for the current frame.
         ///
         /// \param Delta The elapsed time since the last tick.
@@ -66,18 +69,18 @@ namespace Scene
         template<typename Callable>
         ZY_INLINE void Defer(AnyRef<Callable> Callback)
         {
-            const Bool Deferred = !mWorld.is_deferred();
+            const Bool Deferred = !ecs_is_deferred(mWorld);
 
             if (Deferred)
             {
-                mWorld.defer_begin();
+                ecs_defer_begin(mWorld);
             }
 
             Callback();
 
             if (Deferred)
             {
-                mWorld.defer_end();
+                ecs_defer_end(mWorld);
             }
         }
 
@@ -95,7 +98,7 @@ namespace Scene
         ZY_INLINE Entity CreateEntity()
         {
             const Entity Actor = Allocate<false>();
-            Actor.Add(flecs::Final);
+            Actor.Add(EcsFinal);
             return Actor;
         }
 
@@ -115,7 +118,7 @@ namespace Scene
             }
             else
             {
-                Actor.Add(flecs::Prefab);
+                Actor.Add(EcsPrefab);
             }
             return Actor;
         }
@@ -126,8 +129,7 @@ namespace Scene
         /// \return The entity corresponding to the given ID, or an invalid entity if not found.
         ZY_INLINE Entity GetEntity(UInt64 ID) const
         {
-            const Entity::Handle Handle = mWorld.entity(ID);
-            return Entity(Handle);
+            return Entity(mWorld, ID);
         }
 
         /// \brief Looks up a live entity by its registered name.
@@ -136,25 +138,28 @@ namespace Scene
         /// \return The entity with the given name, or an invalid entity if not found.
         ZY_INLINE Entity GetEntity(Text Name) const
         {
-            const Entity::Handle Handle = mWorld.lookup(Name.GetData());
-            return Entity(Handle);
+            return Entity(mWorld, ecs_lookup_path_w_sep(mWorld, 0, Name.GetData(), "::", "::", true));
         }
 
-        /// \brief Registers or retrieves a typed component in the world under the given identifier.
+        /// \brief Looks up a typed component that was already registered in the world.
         ///
-        /// \param ID The string identifier used to register or look up the component.
+        /// \note Registration belongs to \ref Register, so a type this never saw is a programming error.
+        ///
         /// \return A typed component handle for \p Type.
         template<typename Type>
-        ZY_INLINE Component<Type> GetComponent(Text ID) const
+        ZY_INLINE Component<Type> GetComponent() const
         {
-            return Component<Type>(mWorld.component<Type>(ID.GetData()));
+            return Component<Type>(mWorld, _::Identify<Type>());
         }
 
         /// \brief Registers every component a set of declarations describes.
         ///
+        /// \note Every name is reserved before any trait is applied, so a trait may name a component
+        ///       declared alongside it without the two having to be ordered by hand.
+        ///
         /// \param List The descriptions, as built by \ref DSL::Declare.
         template<typename... Declarations>
-        ZY_INLINE void Register(Declarations... List)
+        ZY_INLINE void Register(Declarations... List) const
         {
             (List.Reserve(mWorld), ...);
             (List.Apply(mWorld), ...);
@@ -169,14 +174,16 @@ namespace Scene
         template<Symbol Name>
         ZY_INLINE Entity CreatePhase(Entity Type, Entity Dependency = Entity()) const
         {
-            const auto Component = GetComponent<Tag<Name>>();
-            Component.Add(Type);
+            Register(DSL::Declare<Tag<Name>>());
+
+            const Component<Tag<Name>> Phase = GetComponent<Tag<Name>>();
+            Phase.Add(Type);
 
             if (Dependency.IsValid())
             {
-                Component.DependsOn(Dependency);
+                Phase.DependsOn(Dependency);
             }
-            return Component;
+            return Phase;
         }
 
         /// \brief Creates a pipeline that controls which systems run and in what order.
@@ -191,10 +198,12 @@ namespace Scene
         template<typename... CompileExpression, typename... RuntimeExpression>
         ZY_INLINE Pipeline CreatePipeline(AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::pipeline_builder<> Builder = mWorld.pipeline().with(flecs::System);
-            DSL::_::Build<decltype(Builder), void, CompileExpression...>(Builder, Runtime...);
+            DSL::_::Descriptor Builder(mWorld);
+            Builder.With(EcsSystem);
 
-            return Pipeline(Builder.build());
+            DSL::_::Build<void, CompileExpression...>(Builder, Runtime...);
+
+            return Pipeline(mWorld, Builder.BuildPipeline());
         }
 
         /// \brief Creates a reactive observer that fires a callback when entities match an event.
@@ -212,13 +221,13 @@ namespace Scene
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
         ZY_INLINE Entity CreateObserver(Text Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::observer_builder<> Builder = mWorld.observer<>(Name.GetData());
-            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
+            DSL::_::Descriptor Builder(mWorld);
+            const auto Signature = DSL::_::Build<FEach, CompileExpression...>(Builder, Runtime...);
 
-            Builder.event(Event.GetHandle());
+            Builder.Event(Event.GetHandle());
 
             using Runner = DSL::_::RunnerFactory<StripAll<decltype(Signature)>, StripAll<FEach>>;
-            return Entity(Builder.run(Runner::Make(Move(Each))));
+            return Entity(mWorld, Builder.BuildObserver(Name, Runner::Make(Move(Each))));
         }
 
         /// \brief Creates a cached or uncached query over entities matching the given expressions.
@@ -232,22 +241,24 @@ namespace Scene
         template<typename... CompileExpression, typename... RuntimeExpression>
         ZY_INLINE Query CreateQuery(Text Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::query_builder<> Builder = mWorld.query_builder<>(Name.GetData());
-            DSL::_::Build<decltype(Builder), void, CompileExpression...>(Builder, Runtime...);
+            DSL::_::Descriptor Builder(mWorld);
+            DSL::_::Build<void, CompileExpression...>(Builder, Runtime...);
+
+            ecs_query_cache_kind_t Kind = EcsQueryCacheDefault;
 
             switch (Policy)
             {
             case Cache::Default:
-                Builder.cache_kind(flecs::QueryCacheDefault);
+                Kind = EcsQueryCacheDefault;
                 break;
             case Cache::Auto:
-                Builder.cache_kind(flecs::QueryCacheAuto);
+                Kind = EcsQueryCacheAuto;
                 break;
             case Cache::None:
-                Builder.cache_kind(flecs::QueryCacheNone);
+                Kind = EcsQueryCacheNone;
                 break;
             }
-            return Query(Builder.build());
+            return Query(Builder.BuildQuery(Name, Kind));
         }
 
         /// \brief Creates a timer entity that can be used to rate-limit or schedule systems.
@@ -255,8 +266,7 @@ namespace Scene
         /// \return The newly created timer.
         ZY_INLINE Timer CreateTimer()
         {
-            const Timer::Handle Handle = mWorld.timer();
-            return Timer(Handle);
+            return Timer(mWorld, ecs_new(mWorld));
         }
 
         /// \brief Creates a system that runs a callback each tick for all matching entities.
@@ -273,63 +283,31 @@ namespace Scene
         /// \param  Runtime           The runtime expression values to append to the system filter.
         /// \return The created system.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
-        ZY_INLINE System CreateSystem(Text Name, Entity Phase, Execution Execution, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
+        ZY_INLINE System CreateSystem(
+            Text                         Name,
+            Entity                       Phase,
+            Execution                    Execution,
+            AnyRef<FEach>                Each,
+            AnyRef<RuntimeExpression>... Runtime) const
         {
-            flecs::system_builder<> Builder = mWorld.system<>(Name.GetData());
-            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
+            DSL::_::Descriptor Builder(mWorld);
+            const auto Signature = DSL::_::Build<FEach, CompileExpression...>(Builder, Runtime...);
 
             switch (Execution)
             {
             case Execution::Default:
                 break;
             case Execution::Immediate:
-                Builder.immediate();
+                Builder.Immediate();
                 break;
             case Execution::Concurrent:
-                Builder.multi_threaded();
+                Builder.Concurrent();
                 break;
             }
-            Builder.kind(Phase.GetHandle());
+            Builder.Phase(Phase.GetHandle());
 
             using Runner = DSL::_::RunnerFactory<StripAll<decltype(Signature)>, StripAll<FEach>>;
-            return System(Builder.run(Runner::Make(Move(Each))));
-        }
-
-        /// \brief Creates a system with explicit begin, per-entity, and end lifecycle callbacks.
-        ///
-        /// \note When no expression carries data, the matched components are derived from \p Each itself.
-        ///
-        /// \tparam CompileExpression Zero or more compile-time DSL filter expressions.
-        /// \tparam RuntimeExpression Zero or more runtime expression types.
-        /// \param  Name              The optional display name for the system entity.
-        /// \param  Phase             The phase entity that determines when this system runs.
-        /// \param  Execution         The threading mode for this system.
-        /// \param  Begin             The callback invoked before the per-entity loop.
-        /// \param  Each              The callback invoked for each matching entity.
-        /// \param  End               The callback invoked after the per-entity loop.
-        /// \param  Runtime           The runtime expression values to append to the system filter.
-        /// \return The created system.
-        template<typename... CompileExpression, typename FBegin, typename FEach, typename FEnd, typename... RuntimeExpression>
-        ZY_INLINE System CreateSystemWithLifecycle(Text Name, Entity Phase, Execution Execution, AnyRef<FBegin> Begin, AnyRef<FEach> Each, AnyRef<FEnd> End, AnyRef<RuntimeExpression>... Runtime) const
-        {
-            flecs::system_builder<> Builder = mWorld.system<>(Str(Name).GetData());
-            const auto Signature = DSL::_::Build<decltype(Builder), FEach, CompileExpression...>(Builder, Runtime...);
-
-            switch (Execution)
-            {
-            case Execution::Default:
-                break;
-            case Execution::Immediate:
-                Builder.immediate();
-                break;
-            case Execution::Concurrent:
-                Builder.multi_threaded();
-                break;
-            }
-            Builder.kind(Phase.GetHandle());
-
-            using Runner = DSL::_::RunnerFactoryLifecycle<StripAll<decltype(Signature)>, StripAll<FBegin>, StripAll<FEach>, StripAll<FEnd>>;
-            return System(Builder.run(Runner::Make(Move(Begin), Move(Each), Move(End))));
+            return System(mWorld, Builder.BuildSystem(Name, Runner::Make(Move(Each))));
         }
 
         /// \brief Iterates over all allocated archetype entities and invokes a callback for each one.
@@ -420,26 +398,26 @@ namespace Scene
         template<Bool Archetype>
         ZY_INLINE Entity Allocate(UInt64 ID = 0)
         {
-            flecs::entity Handle;
+            Entity::Handle Handle;
 
             if constexpr (Archetype)
             {
-                Handle = mWorld.entity(ID ? ID : kMinRangeArchetypes + mArchetypes.Allocate());
+                Handle = (ID ? ID : kMinRangeArchetypes + mArchetypes.Allocate());
             }
             else
             {
-                Handle = (ID ? mWorld.entity(ID) : mWorld.entity());
+                Handle = (ID ? ID : ecs_new(mWorld));
             }
 
-            if (const Entity::Handle Generation = mWorld.get_alive(Handle); ID > 0 && Generation)
+            if (ID > 0 && ecs_get_alive(mWorld, Handle))
             {
-                mWorld.set_version(Handle);
+                ecs_set_version(mWorld, Handle);
             }
             else
             {
-                mWorld.make_alive(Handle);
+                ecs_make_alive(mWorld, Handle);
             }
-            return Handle;
+            return Entity(mWorld, Handle);
         }
 
     private:
@@ -447,7 +425,7 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        flecs::world                     mWorld;
+        Ptr<ecs_world_t>                 mWorld;
         Clock                            mClock;
         Freelist<kMaxCountArchetypes, 0> mArchetypes;
     };

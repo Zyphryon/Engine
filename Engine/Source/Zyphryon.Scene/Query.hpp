@@ -26,18 +26,21 @@ namespace Scene
     public:
 
         /// \brief Underlying handle to the ECS query object.
-        using Handle  = flecs::query<>;
+        using Handle  = Ptr<ecs_query_t>;
 
     public:
 
         /// \brief Constructs an invalid query with no associated world or filters.
-        ZY_INLINE Query() = default;
+        ZY_INLINE Query()
+            : mHandle { nullptr }
+        {
+        }
 
         /// \brief Constructs a query from an existing handle.
         ///
         /// \param Handle The handle of this query.
-        ZY_INLINE Query(AnyRef<Handle> Handle) noexcept
-            : mHandle { Move(Handle) }
+        ZY_INLINE Query(Handle Handle) noexcept
+            : mHandle { Handle }
         {
         }
 
@@ -52,7 +55,13 @@ namespace Scene
         /// \brief Destroys the query and releases its underlying resources.
         ZY_INLINE ~Query()
         {
-            Destruct();
+            // An anonymous query belongs to whoever built it, so nothing else would ever release it.
+            if (mHandle && !mHandle->entity)
+            {
+                ecs_query_fini(mHandle);
+
+                mHandle = Handle();
+            }
         }
 
         /// \brief Explicitly destroys the query and resets its handle.
@@ -60,9 +69,9 @@ namespace Scene
         /// \note The query becomes invalid after destruction.
         ZY_INLINE void Destruct() const
         {
-            if (mHandle && mHandle.entity())
+            if (mHandle && mHandle->entity)
             {
-                mHandle.destruct();
+                ecs_query_fini(mHandle);
                 mHandle = Handle();
             }
         }
@@ -72,7 +81,7 @@ namespace Scene
         /// \return The count of matching entities.
         ZY_INLINE UInt Matches() const
         {
-            return mHandle.count();
+            return mHandle ? static_cast<UInt>(ecs_query_count(mHandle).entities) : 0;
         }
 
         /// \brief Executes the query, invoking a callback for each matching entity.
@@ -84,11 +93,17 @@ namespace Scene
         ZY_INLINE void Run(AnyRef<FEach> Each) const
         {
             using Declared  = DSL::_::TypeList<Types...>;
-            using Inferred  = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
+            using Trimmed   = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
+            using Inferred  = typename DSL::_::Infer<Trimmed>::Fields;
             using Signature = Select<sizeof...(Types) == 0, Inferred, Declared>;
             using Runner    = DSL::_::RunnerFactory<Signature, StripAll<FEach>>;
 
-            mHandle.run(Runner::Make(Move(Each)));
+            ecs_iter_t     Handle = ecs_query_iter(mHandle->world, mHandle);
+            const Iterator Cursor(AddressOf(Handle));
+
+            Cursor.Reset();
+
+            Runner::Make(Move(Each))(Cursor);
         }
 
         /// \brief Move-assigns a query from another query instance, transferring ownership.

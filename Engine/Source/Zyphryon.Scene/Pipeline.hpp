@@ -30,9 +30,10 @@ namespace Scene
 
         /// \brief Constructs a pipeline from an existing handle.
         ///
+        /// \param World  The world the pipeline belongs to.
         /// \param Handle The handle of this pipeline.
-        ZY_INLINE Pipeline(Handle Handle)
-            : Entity { Handle }
+        ZY_INLINE Pipeline(Ptr<ecs_world_t> World, Handle Handle)
+            : Entity { World, Handle }
         {
         }
 
@@ -41,7 +42,7 @@ namespace Scene
         /// \param Delta The delta time to pass to the systems during execution.
         ZY_INLINE void Run(Real32 Delta) const
         {
-            mHandle.world().run_pipeline(mHandle, Delta);
+            ecs_run_pipeline(mWorld, mHandle, Delta);
         }
     };
 }

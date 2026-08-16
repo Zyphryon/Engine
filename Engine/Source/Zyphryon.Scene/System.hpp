@@ -28,18 +28,24 @@ namespace Scene
     public:
 
         /// \brief Underlying handle type for the ECS system.
-        using Handle = flecs::system;
+        using Handle = ecs_entity_t;
 
     public:
 
         /// \brief Constructs an empty system with no associated handle.
-        ZY_INLINE System() = default;
+        ZY_INLINE System()
+            : mWorld  { nullptr },
+              mHandle { 0 }
+        {
+        }
 
         /// \brief Constructs a system from an existing handle.
         ///
+        /// \param World  The world the system belongs to.
         /// \param Handle The handle of this system.
-        ZY_INLINE System(Handle Handle)
-            : mHandle { Handle }
+        ZY_INLINE System(Ptr<ecs_world_t> World, Handle Handle)
+            : mWorld  { World },
+              mHandle { Handle }
         {
         }
 
@@ -50,8 +56,8 @@ namespace Scene
         {
             if (mHandle)
             {
-                mHandle.destruct();
-                mHandle = Handle();
+                ecs_delete(mWorld, mHandle);
+                mHandle = 0;
             }
         }
 
@@ -60,7 +66,7 @@ namespace Scene
         /// \return `true` if the system is enabled and can be executed, `false` otherwise.
         ZY_INLINE Bool IsEnabled() const
         {
-            return !mHandle.has(EcsDisabled);
+            return !ecs_has_id(mWorld, mHandle, EcsDisabled);
         }
 
         /// \brief Executes the system logic.
@@ -68,7 +74,7 @@ namespace Scene
         /// \param Delta The time step to pass to the system.
         ZY_INLINE void Run(Real32 Delta) const
         {
-            mHandle.run(Delta);
+            ecs_run(mWorld, mHandle, Delta, nullptr);
         }
 
         /// \brief Enables the system, allowing it to be executed.
@@ -76,7 +82,7 @@ namespace Scene
         /// \return This system, allowing for method chaining.
         ZY_INLINE System Enable() const
         {
-            mHandle.enable();
+            ecs_enable(mWorld, mHandle, true);
             return (* this);
         }
 
@@ -85,7 +91,7 @@ namespace Scene
         /// \return This system, allowing for method chaining.
         ZY_INLINE System Disable() const
         {
-            mHandle.disable();
+            ecs_enable(mWorld, mHandle, false);
             return (* this);
         }
 
@@ -94,6 +100,7 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Handle mHandle;
+        Ptr<ecs_world_t> mWorld;
+        Handle           mHandle;
     };
 }

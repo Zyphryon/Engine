@@ -43,7 +43,7 @@ namespace Scene
             // The link is stored as the full flecs id (generation included).
             // A slot that was freed and reacquired carries a bumped generation, so a stale link fails `IsAlive`
             // and is dropped here rather than silently resolving to whatever now occupies the same id.
-            if (const Entity Prefab(mHandle.world().entity(Archetype)); Prefab.IsAlive() && Prefab.IsArchetype())
+            if (const Entity Prefab(mWorld, Archetype); Prefab.IsAlive() && Prefab.IsArchetype())
             {
                 SetArchetype(Prefab);
             }
@@ -55,7 +55,7 @@ namespace Scene
         }
 
         // Read the entity's components.
-        Codec::ReadComponentsOf(mHandle.world(), Archive, * this);
+        Codec::ReadComponentsOf(mWorld, Archive, * this);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

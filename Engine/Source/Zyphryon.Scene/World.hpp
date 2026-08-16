@@ -21,21 +21,32 @@
 namespace Scene
 {
     /// \brief Represents the world entity within the ECS, acting as a bridge to singleton components.
+    ///
+    /// A singleton is stored on the entity that represents the component itself, which is what every
+    /// operation here resolves to before delegating to the entity API.
     class World final
     {
     public:
 
         /// \brief Underlying handle type used to represent the world internally.
-        using Handle = flecs::world;
+        using Handle = Ptr<ecs_world_t>;
 
     public:
 
         /// \brief Constructs a world from an existing handle.
         ///
         /// \param Handle The handle of this world.
-        ZY_INLINE World(Ref<Handle> Handle)
+        ZY_INLINE World(Handle Handle)
             : mHandle { Handle }
         {
+        }
+
+        /// \brief Gets the internal handle representing this world.
+        ///
+        /// \return The world internal handle.
+        ZY_INLINE Handle GetHandle() const
+        {
+            return mHandle;
         }
 
         /// \brief Attaches a singleton component or tag to the world.
@@ -45,7 +56,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Add() const
         {
-            mHandle.add<Component>();
+            Singleton<Component>().template Add<Component>();
             return (* this);
         }
 
@@ -67,7 +78,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Add() const
         {
-            mHandle.add<Relation, Component>();
+            Singleton<Relation>().template Add<Relation, Component>();
             return (* this);
         }
 
@@ -79,7 +90,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE World Add(Entity Component) const
         {
-            mHandle.add<Relation>(Component.GetHandle());
+            Singleton<Relation>().template Add<Relation>(Component);
             return (* this);
         }
 
@@ -90,7 +101,7 @@ namespace Scene
         /// \return This world, allowing for method chaining.
         ZY_INLINE World Add(Entity Relation, Entity Component) const
         {
-            mHandle.add(Relation.GetHandle(), Component.GetHandle());
+            Relation.Add(Relation, Component);
             return (* this);
         }
 
@@ -102,7 +113,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Set(AnyRef<Component> Data) const
         {
-            mHandle.set<Component>(Move(Data));
+            Singleton<Component>().Set(Forward<Component>(Data));
             return (* this);
         }
 
@@ -115,7 +126,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Set(AnyRef<Component> Data) const
         {
-            mHandle.set<Relation, Component>(Move(Data));
+            Singleton<Relation>().template Set<Relation, Component>(Forward<Component>(Data));
             return (* this);
         }
 
@@ -128,7 +139,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Set(Entity Relation, AnyRef<Component> Data) const
         {
-            mHandle.set<Component>(Relation.GetHandle(), Move(Data));
+            Singleton<Component>().template Set<Component>(Relation, Forward<Component>(Data));
             return (* this);
         }
 
@@ -141,7 +152,7 @@ namespace Scene
         ZY_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
             requires (!IsAnyOf<StripAll<Arguments>, Entity> && ...)
         {
-            mHandle.emplace<Component>(Forward<Arguments>(Parameters)...);
+            Singleton<Component>().template Emplace<Component>(Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -154,7 +165,7 @@ namespace Scene
         template<typename Relation, typename Component, typename... Arguments>
         ZY_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
         {
-            mHandle.component<Component>().template emplace<Relation, Component>(Forward<Arguments>(Parameters)...);
+            Singleton<Component>().template Emplace<Relation, Component>(Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -167,7 +178,7 @@ namespace Scene
         template<typename Component, typename... Arguments>
         ZY_INLINE World Emplace(Entity Relation, AnyRef<Arguments>... Parameters) const
         {
-            mHandle.component<Component>().template emplace_second<Component>(Relation.GetHandle(), Forward<Arguments>(Parameters)...);
+            Singleton<Component>().template Emplace<Component>(Relation, Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -178,7 +189,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE Ptr<void> Ensure() const
         {
-            return mHandle.ensure<Component>();
+            return Singleton<Component>().template Ensure<Component>();
         }
 
         /// \brief Gets a writable pointer to a singleton component by runtime entity, creating it if it does not exist.
@@ -198,7 +209,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            return Component.Ensure<Relation>(Component);
+            return Component.template Ensure<Relation>(Component);
         }
 
         /// \brief Gets a writable pointer to a singleton component on a relation pair using two runtime entities.
@@ -218,7 +229,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE Bool Has() const
         {
-            return mHandle.has<Component>();
+            return Singleton<Component>().template Has<Component>();
         }
 
         /// \brief Checks if the world has a given singleton component using a runtime entity.
@@ -238,7 +249,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE Bool Has() const
         {
-            return mHandle.has<Relation, Component>();
+            return Singleton<Relation>().template Has<Relation, Component>();
         }
 
         /// \brief Checks if the world has a singleton relation pair using a compile-time relation and a runtime target.
@@ -249,7 +260,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE Bool Has(Entity Component) const
         {
-            return mHandle.has<Relation>(Component.GetHandle());
+            return Singleton<Relation>().template Has<Relation>(Component);
         }
 
         /// \brief Checks if the world has a singleton relation pair using two runtime entities.
@@ -259,7 +270,7 @@ namespace Scene
         /// \return `true` if the pair exists, `false` otherwise.
         ZY_INLINE Bool Has(Entity Relation, Entity Component) const
         {
-            return mHandle.has(Relation.GetHandle(), Component.GetHandle());
+            return Relation.Has(Relation, Component);
         }
 
         /// \brief Removes a singleton component or tag from the world.
@@ -269,7 +280,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Remove() const
         {
-            mHandle.remove<Component>();
+            Singleton<Component>().template Remove<Component>();
             return (* this);
         }
 
@@ -291,7 +302,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Remove() const
         {
-            mHandle.remove<Relation, Component>();
+            Singleton<Relation>().template Remove<Relation, Component>();
             return (* this);
         }
 
@@ -303,7 +314,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE World Remove(Entity Component) const
         {
-            mHandle.remove<Relation>(Component.GetHandle());
+            Singleton<Relation>().template Remove<Relation>(Component);
             return (* this);
         }
 
@@ -314,7 +325,7 @@ namespace Scene
         /// \return This world, allowing for method chaining.
         ZY_INLINE World Remove(Entity Relation, Entity Component) const
         {
-            mHandle.remove(Relation.GetHandle(), Component.GetHandle());
+            Relation.Remove(Relation, Component);
             return (* this);
         }
 
@@ -325,7 +336,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Purge() const
         {
-            mHandle.remove_all<Component>();
+            ecs_remove_all(mHandle, _::Identify<Component>());
             return (* this);
         }
 
@@ -335,7 +346,7 @@ namespace Scene
         /// \return This world, allowing for method chaining.
         ZY_INLINE World Purge(Entity Component) const
         {
-            mHandle.remove_all(Component.GetID());
+            ecs_remove_all(mHandle, Component.GetID());
             return (* this);
         }
 
@@ -347,7 +358,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Purge() const
         {
-            mHandle.remove_all<Relation, Component>();
+            ecs_remove_all(mHandle, (_::Identify<Relation, Component>()));
             return (* this);
         }
 
@@ -359,7 +370,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE World Purge(Entity Component) const
         {
-            mHandle.remove_all<Relation>(Component.GetHandle());
+            ecs_remove_all(mHandle, _::Identify<Relation>(Component.GetID()));
             return (* this);
         }
 
@@ -370,7 +381,7 @@ namespace Scene
         /// \return This world, allowing for method chaining.
         ZY_INLINE World Purge(Entity Relation, Entity Component) const
         {
-            mHandle.remove_all(Relation.GetHandle(), Component.GetHandle());
+            ecs_remove_all(mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
             return (* this);
         }
 
@@ -381,14 +392,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE Ref<Component> Get() const
         {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mHandle.get<Component>();
-            }
-            else
-            {
-                return mHandle.get_mut<Component>();
-            }
+            return Singleton<Component>().template Get<Component>();
         }
 
         /// \brief Gets a reference to a singleton component on a relation pair using two compile-time types.
@@ -399,14 +403,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE Ref<Component> Get() const
         {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mHandle.get<Relation, Component>();
-            }
-            else
-            {
-                return mHandle.get_mut<Relation, Component>();
-            }
+            return Singleton<Relation>().template Get<Relation, Component>();
         }
 
         /// \brief Gets a pointer to a singleton component, or null if it does not exist.
@@ -416,14 +413,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE Ptr<Component> TryGet() const
         {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mHandle.try_get<Component>();
-            }
-            else
-            {
-                return mHandle.try_get_mut<Component>();
-            }
+            return Singleton<Component>().template TryGet<Component>();
         }
 
         /// \brief Gets a raw pointer to a singleton component by runtime entity, or null if not found.
@@ -432,7 +422,7 @@ namespace Scene
         /// \return A pointer to the component data, or null if not found.
         ZY_INLINE Ptr<void> TryGet(Entity Component) const
         {
-            return mHandle.try_get_mut(Component.GetID());
+            return Component.TryGet(Component);
         }
 
         /// \brief Gets a pointer to a singleton component on a relation pair, or null if not found.
@@ -443,14 +433,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE Ptr<Component> TryGet() const
         {
-            if constexpr (IsImmutable<Component>)
-            {
-                return mHandle.try_get<Relation, Component>();
-            }
-            else
-            {
-                return mHandle.try_get_mut<Relation, Component>();
-            }
+            return Singleton<Relation>().template TryGet<Relation, Component>();
         }
 
         /// \brief Gets a raw pointer to a singleton component on a relation pair using a runtime target, or null if not found.
@@ -461,7 +444,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE Ptr<void> TryGet(Entity Component) const
         {
-            return mHandle.try_get_mut<Relation>(Component.GetID());
+            return Singleton<Relation>().template TryGet<Relation>(Component);
         }
 
         /// \brief Gets a raw pointer to a singleton component on a relation pair using two runtime entities, or null if not found.
@@ -471,7 +454,7 @@ namespace Scene
         /// \return A pointer to the component data, or null if not found.
         ZY_INLINE Ptr<void> TryGet(Entity Relation, Entity Component) const
         {
-            return mHandle.try_get_mut(Relation.GetID(), Component.GetID());
+            return Relation.TryGet(Relation, Component);
         }
 
         /// \brief Notifies systems that a singleton component on the world has changed.
@@ -481,7 +464,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Notify() const
         {
-            mHandle.modified<Component>();
+            Singleton<Component>().template Notify<Component>();
             return (* this);
         }
 
@@ -503,7 +486,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Notify() const
         {
-            mHandle.modified<Relation, Component>();
+            Singleton<Relation>().template Notify<Relation, Component>();
             return (* this);
         }
 
@@ -515,7 +498,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE World Notify(Entity Component) const
         {
-            mHandle.modified<Relation>(Component.GetID());
+            Singleton<Relation>().template Notify<Relation>(Component);
             return (* this);
         }
 
@@ -536,7 +519,7 @@ namespace Scene
         template<typename Callable>
         ZY_INLINE void Children(AnyRef<Callable> Callback) const
         {
-            mHandle.children(Forward<Callable>(Callback));
+            Root().Children(Forward<Callable>(Callback));
         }
 
         /// \brief Iterates over all child entities related via a specific relation and invokes a callback for each one.
@@ -546,7 +529,7 @@ namespace Scene
         template<typename Relation, typename Callable>
         ZY_INLINE void Children(AnyRef<Callable> Callback) const
         {
-            mHandle.children<Relation>(Forward<Callable>(Callback));
+            Root().template Children<Relation>(Forward<Callable>(Callback));
         }
 
         /// \brief Iterates over all singleton components and tags on the world and invokes a callback for each one.
@@ -555,14 +538,36 @@ namespace Scene
         template<typename Callable>
         ZY_INLINE void Each(AnyRef<Callable> Callback) const
         {
-            const auto OnCallback = [&](Entity Component)
+            for (ecs_iter_t Iterator = ecs_each_id(mHandle, EcsSingleton); ecs_each_next(& Iterator);)
             {
-                if (Has(Component))
+                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
                 {
-                    Callback(Component);
+                    // A component may declare itself a singleton without the world ever storing a value for it.
+                    if (const Entity Component(mHandle, Iterator.entities[Element]); Has(Component))
+                    {
+                        Callback(Component);
+                    }
                 }
-            };
-            mHandle.query_builder<>().with(flecs::Singleton).each(OnCallback);
+            }
+        }
+
+    private:
+
+        /// \brief Gets the entity a singleton component of a given type is stored on.
+        ///
+        /// \return The entity that represents the component.
+        template<typename Component>
+        ZY_INLINE Entity Singleton() const
+        {
+            return Entity(mHandle, _::Identify<Component>());
+        }
+
+        /// \brief Gets the entity that stands for the root of the hierarchy.
+        ///
+        /// \return The root entity.
+        ZY_INLINE Entity Root() const
+        {
+            return Entity(mHandle, 0);
         }
 
     private:
@@ -570,6 +575,6 @@ namespace Scene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Handle> mHandle;
+        Handle mHandle;
     };
 }

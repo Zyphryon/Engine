@@ -32,19 +32,20 @@ namespace Scene
         /// \brief Constructs an invalid component with no associated world or type.
         ZY_INLINE Component() = default;
 
-        /// \brief Constructs a component from an existing entity handle.
+        /// \brief Constructs a component from the entity that carries it.
         ///
-        /// \param Handle The handle of this component.
-        ZY_INLINE Component(Handle Handle)
-            : Entity { Handle }
+        /// \param Actor The entity that represents this component.
+        ZY_INLINE Component(Entity Actor)
+            : Entity { Actor }
         {
         }
 
-        /// \brief Constructs a component from an identifier.
+        /// \brief Constructs a component from an identifier bound to the world that issued it.
         ///
-        /// \param Id The identifier that defines this component.
-        ZY_INLINE Component(flecs::id Id)
-            : Entity { Id }
+        /// \param World  The world the component belongs to.
+        /// \param Handle The identifier that defines this component.
+        ZY_INLINE Component(Ptr<ecs_world_t> World, Handle Handle)
+            : Entity { World, Handle }
         {
         }
 
@@ -53,7 +54,7 @@ namespace Scene
         /// \return The size of the component in bytes.
         ZY_INLINE UInt32 GetSize() const
         {
-            return Get<flecs::Component>().size;
+            return static_cast<UInt32>(Describe().size);
         }
 
         /// \brief Gets the alignment requirement of the component type.
@@ -61,7 +62,7 @@ namespace Scene
         /// \return The alignment of the component in bytes.
         ZY_INLINE UInt32 GetAlignment() const
         {
-            return Get<flecs::Component>().alignment;
+            return static_cast<UInt32>(Describe().alignment);
         }
 
         /// \brief Grants one or more behavioral traits to this component.
@@ -88,15 +89,12 @@ namespace Scene
 
         /// \brief Establishes a "with" context between this component and another component type.
         ///
-        /// When set, entities created while this component is in scope will also
-        /// automatically include the specified component type.
-        ///
         /// \tparam Target The component type to associate with this component.
         /// \return This component, allowing for method chaining.
         template<typename Target>
         ZY_INLINE Component With() const
         {
-            mHandle.add(EcsWith, mHandle.world().template component<Target>());
+            ecs_add_id(mWorld, mHandle, ecs_pair(EcsWith, _::Identify<Target>()));
             return (* this);
         }
 
@@ -106,7 +104,7 @@ namespace Scene
         /// \return This component, allowing for method chaining.
         ZY_INLINE Component With(Component Target) const
         {
-            mHandle.add(EcsWith, Target.GetHandle());
+            ecs_add_id(mWorld, mHandle, ecs_pair(EcsWith, Target.GetHandle()));
             return (* this);
         }
 
@@ -116,67 +114,24 @@ namespace Scene
         /// \return This component, allowing for method chaining.
         ZY_INLINE Component DependsOn(Entity Target) const
         {
-            mHandle.add(EcsDependsOn, Target.GetHandle());
-            return (* this);
-        }
-
-        /// \brief Overrides the add behavior of this component with a custom function.
-        ///
-        /// \param Action The function to execute when this component is added to an entity.
-        /// \return This component, allowing for method chaining.
-        template<typename Callable>
-        ZY_INLINE Component OnAdd(AnyRef<Callable> Action) const
-        {
-            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
-
-            Handle.on_add(Forward<Callable>(Action));
-
-            return (* this);
-        }
-
-        /// \brief Overrides the set behavior of this component with a custom function.
-        ///
-        /// \param Action The function to execute when this component is set on an entity.
-        /// \return This component, allowing for method chaining.
-        template<typename Callable>
-        ZY_INLINE Component OnSet(AnyRef<Callable> Action) const
-        {
-            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
-
-            Handle.on_set(Forward<Callable>(Action));
-
-            return (* this);
-        }
-
-        /// \brief Overrides the remove behavior of this component with a custom function.
-        ///
-        /// \param Action The function to execute when this component is removed from an entity.
-        /// \return This component, allowing for method chaining.
-        template<typename Callable>
-        ZY_INLINE Component OnRemove(AnyRef<Callable> Action) const
-        {
-            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
-
-            Handle.on_remove(Forward<Callable>(Action));
-
-            return (* this);
-        }
-
-        /// \brief Overrides the replace behavior of this component with a custom function.
-        ///
-        /// \param Action The function to execute when this component is replaced on an entity.
-        /// \return This component, allowing for method chaining.
-        template<typename Callable>
-        ZY_INLINE Component OnReplace(AnyRef<Callable> Action) const
-        {
-            flecs::component<Type> Handle(mHandle.world(), mHandle.name(), true, mHandle.id());
-
-            Handle.on_replace(Forward<Callable>(Action));
-
+            ecs_add_id(mWorld, mHandle, ecs_pair(EcsDependsOn, Target.GetHandle()));
             return (* this);
         }
 
     private:
+
+        /// \brief Gets the record describing how much storage one instance of this component occupies.
+        ///
+        /// \return The storage record of this component.
+        ZY_INLINE ConstRef<EcsComponent> Describe() const
+        {
+            const ConstPtr<EcsComponent> Record
+                = static_cast<ConstPtr<EcsComponent>>(ecs_get_id(mWorld, mHandle, ecs_id(EcsComponent)));
+
+            ZY_ASSERT(Record, "Entity does not describe a component");
+
+            return (* Record);
+        }
 
         /// \brief Grants a specific trait to this component.
         ///
@@ -186,31 +141,34 @@ namespace Scene
             switch (Trait)
             {
             case Trait::Serializable:
-                mHandle.set<Factory>(Factory::Create<Type>());
+                Set(Factory::Create<Type>());
                 break;
             case Trait::Inheritable:
-                mHandle.add(flecs::OnInstantiate, flecs::Inherit);
+                ecs_add_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit));
+                break;
+            case Trait::Local:
+                ecs_add_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsDontInherit));
                 break;
             case Trait::Toggleable:
-                mHandle.add(flecs::CanToggle);
+                ecs_add_id(mWorld, mHandle, EcsCanToggle);
                 break;
             case Trait::Sparse:
-                mHandle.add(flecs::Sparse);
+                ecs_add_id(mWorld, mHandle, EcsSparse);
                 break;
             case Trait::Associative:
-                mHandle.add(flecs::PairIsTag);
+                ecs_add_id(mWorld, mHandle, EcsPairIsTag);
                 break;
             case Trait::Singleton:
-                mHandle.add(flecs::Singleton);
+                ecs_add_id(mWorld, mHandle, EcsSingleton);
                 break;
             case Trait::Final:
-                mHandle.add(flecs::Final);
+                ecs_add_id(mWorld, mHandle, EcsFinal);
                 break;
             case Trait::Symmetric:
-                mHandle.add(flecs::Symmetric);
+                ecs_add_id(mWorld, mHandle, EcsSymmetric);
                 break;
             case Trait::Exclusive:
-                mHandle.add(flecs::Exclusive);
+                ecs_add_id(mWorld, mHandle, EcsExclusive);
                 break;
             }
         }
@@ -223,31 +181,34 @@ namespace Scene
             switch (Trait)
             {
             case Trait::Serializable:
-                mHandle.remove<Factory>();
+                Remove<Factory>();
                 break;
             case Trait::Inheritable:
-                mHandle.remove(flecs::OnInstantiate, flecs::Inherit);
+                ecs_remove_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit));
+                break;
+            case Trait::Local:
+                ecs_remove_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsDontInherit));
                 break;
             case Trait::Toggleable:
-                mHandle.remove(flecs::CanToggle);
+                ecs_remove_id(mWorld, mHandle, EcsCanToggle);
                 break;
             case Trait::Sparse:
-                mHandle.remove(flecs::Sparse);
+                ecs_remove_id(mWorld, mHandle, EcsSparse);
                 break;
             case Trait::Associative:
-                mHandle.remove(flecs::PairIsTag);
+                ecs_remove_id(mWorld, mHandle, EcsPairIsTag);
                 break;
             case Trait::Singleton:
-                mHandle.remove(flecs::Singleton);
+                ecs_remove_id(mWorld, mHandle, EcsSingleton);
                 break;
             case Trait::Final:
-                mHandle.remove(flecs::Final);
+                ecs_remove_id(mWorld, mHandle, EcsFinal);
                 break;
             case Trait::Symmetric:
-                mHandle.remove(flecs::Symmetric);
+                ecs_remove_id(mWorld, mHandle, EcsSymmetric);
                 break;
             case Trait::Exclusive:
-                mHandle.remove(flecs::Exclusive);
+                ecs_remove_id(mWorld, mHandle, EcsExclusive);
                 break;
             }
         }
