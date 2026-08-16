@@ -573,11 +573,12 @@ namespace Graphic
         Texture.Layers  = Slices;
 
         // Fill the data, slice-major so the entry order matches what D3D11CalcSubresource indexes.
+        Sequence<D3D11_SUBRESOURCE_DATA> Content;
         Ptr<D3D11_SUBRESOURCE_DATA>      Memory = nullptr;
 
         if (ConstPtr<Byte> Bytes = Data.GetData(); Bytes)
         {
-            Sequence<D3D11_SUBRESOURCE_DATA> Content(Slices * Levels);
+            Content.Reserve(Slices * Levels);
 
             for (UInt16 Slice = 0; Slice < Slices; ++Slice)
             {
