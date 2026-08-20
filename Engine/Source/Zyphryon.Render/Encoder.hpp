@@ -94,6 +94,16 @@ namespace Render
                 return * this;
             }
 
+            /// \brief Turns on the feature the technique declares under the given name.
+            ///
+            /// \param Name The name of the feature to add.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetVariant(Text Name)
+            {
+                mVariant |= mTechnique.ResolveByName(Name);
+                return * this;
+            }
+
             /// \brief Applies everything a material binds, in one go.
             ///
             /// \param Material The material supplying images, samplers and the block of its own parameters.
