@@ -13,6 +13,7 @@
 #include "Baker.hpp"
 #include "Importer/STBImporter.hpp"
 #include "Importer/TEXImporter.hpp"
+#include "Process/Resampler.hpp"
 #include "Process/Slicer.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -174,7 +175,7 @@ namespace Pipeline::Baker::Texture
             return Blob();
         }
 
-        // Every slice of an array shares one extent, so the first frame sets what the rest must match.
+        // Every slice of an array shares one extent, so the first frame sets the one the rest are filtered into.
         const UInt16 Width  = Entries.GetFront().Width;
         const UInt16 Height = Entries.GetFront().Height;
 
@@ -185,14 +186,6 @@ namespace Pipeline::Baker::Texture
 
         for (ConstRef<Manifest::Entry> Entry : Entries)
         {
-            if (Entry.Width != Width || Entry.Height != Height)
-            {
-                LOG_E("Texture: frame '{0}' is {1}x{2}, but the array holds {3}x{4}",
-                    Entry.Source, Entry.Width, Entry.Height, Width, Height);
-
-                return Blob();
-            }
-
             if (!Sheets.Contains(Entry.Source))
             {
                 const ConstPtr<Importer> Codec = Find(StrAfterLast(Entry.Source, '.'));
@@ -236,6 +229,17 @@ namespace Pipeline::Baker::Texture
             if (Frame.GetPixels().IsEmpty())
             {
                 return Blob();
+            }
+
+            // A frame cut at its own size is filtered into the one the array stands at.
+            if (Entry.Width != Width || Entry.Height != Height)
+            {
+                Frame = Resampler::Resize(Frame, Width, Height);
+
+                if (Frame.GetPixels().IsEmpty())
+                {
+                    return Blob();
+                }
             }
 
             Slices.Append(Move(Frame));
