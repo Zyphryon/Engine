@@ -104,15 +104,12 @@ namespace Render
         /// \brief Pushes a rendering command into the collector for later sorting and submission.
         ///
         /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
-        /// \param Priority The rendering priority of the command, which must be the one the open phase records.
         /// \param Depth    The depth value for sorting the command, typically in the range [0, 1].
         /// \param Mesh     The identifier of the mesh to be rendered, used for sorting and batching.
         /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
         /// \param Material The material to use for rendering, which may be null for default material.
-        ZY_INLINE void Push(Object Entry, Priority Priority, Real32 Depth, UInt16 Mesh, UInt16 Pipeline, UInt16 Material)
+        ZY_INLINE void Push(Object Entry, Real32 Depth, UInt16 Mesh, UInt16 Pipeline, UInt16 Material)
         {
-            ZY_ASSERT(Priority == mPhase, "The command's queue is not the one the open phase records");
-
             mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Mesh, Depth), Entry);
         }
 
