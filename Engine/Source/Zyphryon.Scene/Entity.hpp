@@ -327,7 +327,7 @@ namespace Scene
         /// \return A pointer to the component data.
         ZY_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            return ecs_ensure_id(mWorld, mHandle, Component.GetID(), 0);
+            return ecs_ensure_id(mWorld, mHandle, Component.GetID(), Measure(Component.GetID()));
         }
 
         /// \brief Gets a writable pointer to a component on a relation pair using a runtime target.
@@ -338,7 +338,8 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            return ecs_ensure_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()), 0);
+            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
+            return ecs_ensure_id(mWorld, mHandle, Pair, Measure(Pair));
         }
 
         /// \brief Gets a writable pointer to a component on a relation pair using two runtime entities.
@@ -348,7 +349,8 @@ namespace Scene
         /// \return A pointer to the component data.
         ZY_INLINE Ptr<void> Ensure(Entity Relation, Entity Component) const
         {
-            return ecs_ensure_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()), 0);
+            const ecs_id_t Pair = ecs_pair(Relation.GetID(), Component.GetID());
+            return ecs_ensure_id(mWorld, mHandle, Pair, Measure(Pair));
         }
 
         /// \brief Removes a component or tag from this entity.
@@ -1121,6 +1123,16 @@ namespace Scene
         }
 
     private:
+
+        /// \brief Gets the size a component was registered with.
+        ///
+        /// \param Component The component to measure.
+        /// \return The size of the component in bytes, or zero when it carries none.
+        ZY_INLINE UInt32 Measure(ecs_id_t Component) const
+        {
+            const ConstPtr<ecs_type_info_t> Info = ecs_get_type_info(mWorld, Component);
+            return Info ? static_cast<UInt32>(Info->size) : 0;
+        }
 
         /// \brief Holds the callback an observer created by \ref Subscribe owns.
         template<typename Callable>
