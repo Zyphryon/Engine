@@ -57,6 +57,14 @@ namespace Graphic
             return nullptr;
         }
 
+        const LPCSTR Profile = kProfiles[Enum::Cast(Tier)][Enum::Cast(Stage)];
+
+        if (Profile == nullptr)
+        {
+            LOG_E("Failed to compile shader: '{0}' carries no profile", Enum::GetName(Tier));
+            return nullptr;
+        }
+
         Ptr<ID3DBlob> Error    = nullptr;
         Ptr<ID3DBlob> Bytecode = nullptr;
 
@@ -67,7 +75,7 @@ namespace Graphic
             Macros,
             nullptr,
             "main",
-            kProfiles[Enum::Cast(Tier)][Enum::Cast(Stage)],
+            Profile,
             D3DCOMPILE_OPTIMIZATION_LEVEL3,
             0,
             AddressOf(Bytecode),

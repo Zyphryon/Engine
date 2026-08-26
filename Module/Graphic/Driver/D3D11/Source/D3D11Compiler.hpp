@@ -57,11 +57,11 @@ namespace Graphic
         /// \brief List of available D3DCompiler profiles, indexed by \ref Tier.
         static constexpr LPCSTR  kProfiles[][2] =
         {
-            { "vs_4_0_level_9_3", "ps_4_0_level_9_3" },  ///< Level1.
-            { "vs_4_0",           "ps_4_0"           },  ///< Level2.
-            { "vs_5_0",           "ps_5_0"           },  ///< Level3.
-            { "vs_5_0",           "ps_5_0"           },  ///< Level4.
-            { "vs_5_0",           "ps_5_0"           },  ///< Level5.
+            { nullptr,  nullptr  },  ///< Level1.
+            { "vs_4_0", "ps_4_0" },  ///< Level2.
+            { "vs_5_0", "ps_5_0" },  ///< Level3.
+            { "vs_5_0", "ps_5_0" },  ///< Level4.
+            { "vs_5_0", "ps_5_0" },  ///< Level5.
         };
 
     private:
