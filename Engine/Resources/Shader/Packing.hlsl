@@ -62,6 +62,16 @@ float3 ZyDecodeOctahedral(float2 Encoded)
     return normalize(Normal);
 }
 
+/// \brief Writes a direction back the way a normal map stores it, over zero through one.
+///
+/// \param Normal The direction in tangent space, over negative one through one on every axis.
+///
+/// \return The texel the normal map holds.
+float3 ZyEncodeNormalMap(float3 Normal)
+{
+    return Normal * 0.5 + 0.5;
+}
+
 /// \brief Reads the direction a normal map stores over zero through one.
 ///
 /// \param Texel The texel the normal map holds.
