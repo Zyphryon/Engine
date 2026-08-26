@@ -84,6 +84,16 @@ namespace Render
                 return * this;
             }
 
+            /// \brief Sets the value the technique's stencil test compares each fragment against.
+            ///
+            /// \param Reference The reference value, read through the mask the technique declares.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetStencil(UInt8 Reference)
+            {
+                mCommand.Stencil = Reference;
+                return * this;
+            }
+
             /// \brief Turns on the features a caller enables itself, beyond the ones its bindings imply.
             ///
             /// \param Variant The bitmask of the features to add.
