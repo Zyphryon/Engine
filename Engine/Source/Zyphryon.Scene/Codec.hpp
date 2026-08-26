@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Context.hpp"
 #include "Entity.hpp"
-#include "Factory.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -55,7 +55,7 @@ namespace Scene
             // Apply payload if present; otherwise attach component without data.
             if (Reader Data(Bundle.GetData(), Bundle.GetSize()); Data.GetAvailable() > 0)
             {
-                if (const ConstPtr<Factory> Serializer = Second.TryGet<const Factory>())
+                if (const ConstPtr<Factory> Serializer = Context::Get(World).GetFactory(Second.GetID()))
                 {
                     if (First.IsValid())
                     {
@@ -125,9 +125,11 @@ namespace Scene
                 Second = Component;
             }
 
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Second.TryGet<const Factory>() : nullptr;
+            ConstRef<Context> Scope = Context::Get(Component.GetWorld());
 
-            if (Serializer && (!First.IsValid() || First.Has<Factory>()))
+            const ConstPtr<Factory> Serializer = Second.IsValid() ? Scope.GetFactory(Second.GetID()) : nullptr;
+
+            if (Serializer && (!First.IsValid() || Scope.GetFactory(First.GetID())))
             {
                 // Write the name of the relation tag if valid, otherwise an empty string.
                 Archive.WriteText(First.IsValid() ? First.GetName() : "");

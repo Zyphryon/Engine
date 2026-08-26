@@ -27,6 +27,8 @@ namespace Scene
         : Subsystem { Host },
           mWorld    { ecs_init() }
     {
+        Context::Attach(mWorld);
+
         // Flecs runs stage 0 on the calling thread, so the count is one greater than the lane's worker count.
         ecs_set_threads(mWorld, Host.GetService<Job::Service>()->GetConcurrency(Job::Lane::Compute) + 1);
 
@@ -212,9 +214,6 @@ namespace Scene
 
         // Register the built-in components in one pass, so a trait may name any of the others.
         Register(
-            // Factory carries the reader and writer a serializable component is saved and loaded through.
-            DSL::Declare<Factory>("Factory", DSL::Final),
-
             // Clock tracks global time state, of which the world holds a single instance.
             DSL::Declare<Clock>("Clock", DSL::Final, DSL::Singleton),
 

@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Context.hpp"
 #include "Entity.hpp"
-#include "Factory.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -141,7 +141,7 @@ namespace Scene
             switch (Trait)
             {
             case Trait::Serializable:
-                Set(Factory::Create<Type>());
+                Context::Get(mWorld).AddFactory(mHandle, Factory::Create<Type>());
                 break;
             case Trait::Inheritable:
                 ecs_add_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit));
@@ -181,7 +181,7 @@ namespace Scene
             switch (Trait)
             {
             case Trait::Serializable:
-                Remove<Factory>();
+                Context::Get(mWorld).RemoveFactory(mHandle);
                 break;
             case Trait::Inheritable:
                 ecs_remove_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit));
