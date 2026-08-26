@@ -54,6 +54,29 @@ float2 ZyEmitRectOutline(uint VertexID)
     return kCorners[VertexID];
 }
 
+/// \brief Traces the four edges of a rectangle centred on the origin, drawn as a line list of eight.
+///
+/// \note This is the flat counterpart of \ref ZyEmitBox, for the same line list a box outline is drawn as.
+///
+/// \param VertexID The endpoint to trace, as `SV_VertexID` counts them.
+///
+/// \return The endpoint, over negative one through one on both axes.
+float2 ZyEmitQuadEdges(uint VertexID)
+{
+    const float2 kEdges[8] = {
+        float2(-1.0, -1.0),
+        float2( 1.0, -1.0),
+        float2( 1.0, -1.0),
+        float2( 1.0,  1.0),
+        float2( 1.0,  1.0),
+        float2(-1.0,  1.0),
+        float2(-1.0,  1.0),
+        float2(-1.0, -1.0)
+    };
+
+    return kEdges[VertexID];
+}
+
 /// \brief Places one corner of the triangle that covers the screen, drawn as three vertices and no buffer.
 ///
 /// \param VertexID The corner to place, as `SV_VertexID` counts them.
