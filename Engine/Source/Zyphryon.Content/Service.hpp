@@ -124,7 +124,9 @@ namespace Content
         template<typename Type>
         ZY_INLINE Retainer<Type> Load(ConstRef<Uri> Key, Ptr<Scope> Parent = nullptr)
         {
-            Retainer<Type> Asset = Type::GetCache().GetOrCreate(Resolve(Key, Parent), true);
+            Retainer<Type> Asset = Parent
+                ? Type::GetCache().GetOrCreate(Uri::Expand(Key, Parent->GetResource()->GetKey()), true)
+                : Type::GetCache().GetOrCreate(Key, true);
 
             if (Asset)
             {
@@ -192,16 +194,6 @@ namespace Content
         }
 
     private:
-
-        /// \brief Resolves a URI key, expanding it against a parent scope if provided.
-        ///
-        /// \param Key    The URI key to resolve.
-        /// \param Parent The parent scope for relative URI resolution, or nullptr.
-        /// \return The resolved URI.
-        ZY_INLINE static Uri Resolve(ConstRef<Uri> Key, ConstPtr<Scope> Parent)
-        {
-            return (Parent ? Uri::Expand(Key, Parent->GetResource()->GetKey()) : Key);
-        }
 
         /// \brief Initializes the loading process for a resource, scheduling it for asynchronous loading.
         ///

@@ -47,7 +47,8 @@ namespace Content
         /// \param Key            The URI of the asset.
         /// \param CreateIfNeeded If `true`, a new asset is created when not found.
         /// \return A Retainer to the asset, or `nullptr` if not found and not created.
-        ZY_INLINE Retainer<Type> GetOrCreate(AnyRef<Uri> Key, Bool CreateIfNeeded)
+        template<typename Source>
+        ZY_INLINE Retainer<Type> GetOrCreate(AnyRef<Source> Key, Bool CreateIfNeeded)
         {
             Guard Lock(mMutex);
 
@@ -60,7 +61,7 @@ namespace Content
 
             if (CreateIfNeeded)
             {
-                Retainer<Type> Result = Retainer<Type>::Create(Move(Key));
+                Retainer<Type> Result = Retainer<Type>::Create(Forward<Source>(Key));
                 mRegistry.Assign(Digest, Result);
                 return Result;
             }
