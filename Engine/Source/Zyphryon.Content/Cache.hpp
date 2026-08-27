@@ -61,7 +61,7 @@ namespace Content
 
             if (CreateIfNeeded)
             {
-                Retainer<Type> Result = Retainer<Type>::Create(Forward<Source>(Key));
+                Retainer<Type> Result = Retainer<Type>::Create(Uri(Forward<Source>(Key)));
                 mRegistry.Assign(Digest, Result);
                 return Result;
             }

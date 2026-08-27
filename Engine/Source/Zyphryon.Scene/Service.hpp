@@ -239,7 +239,7 @@ namespace Scene
         /// \param  Runtime           The runtime expression values to append to the query filter.
         /// \return The constructed query.
         template<typename... CompileExpression, typename... RuntimeExpression>
-        ZY_INLINE Query CreateQuery(Text Name, Cache Policy, AnyRef<RuntimeExpression>... Runtime) const
+        ZY_INLINE Query CreateQuery(Text Name = "", Cache Policy = Cache::None, AnyRef<RuntimeExpression>... Runtime) const
         {
             DSL::_::Descriptor Builder(mWorld);
             DSL::_::Build<void, CompileExpression...>(Builder, Runtime...);
