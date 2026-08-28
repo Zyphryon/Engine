@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Base/Compression/LZ4.hpp"
 #include "Zyphryon.Base/Lexical/Text.hpp"
 #include "Zyphryon.Base/Memory/Blob.hpp"
 
@@ -206,6 +207,23 @@ inline namespace Base
             {
                 Write<Type>(Value.GetData(), Value.GetSizeInBytes());
             }
+        }
+
+        /// \brief Writes a block of bytes packed into a single LZ4 block.
+        ///
+        /// \param Value The bytes to pack.
+        /// \param Level How far to search for matches, or `0` to take the fast encoder.
+        template<typename Header>
+        ZY_INLINE void WriteBlockCompressed(ConstSpan<Byte> Value, UInt32 Level = 0)
+        {
+            Blob Packed = Blob::Allocate<Byte>(LZ4Bound(Value.GetSize()));
+
+            const UInt32 Size = Level > 0
+                ? LZ4Encode(Value, Packed.GetData<Byte>(), Packed.GetSize(), Level)
+                : LZ4Encode(Value, Packed.GetData<Byte>(), Packed.GetSize());
+
+            Write<Header>(Value.GetSize());
+            WriteBlock<Header>(Size < Value.GetSize() ? ConstSpan<Byte>(Packed.GetData<Byte>(), Size) : Value);
         }
 
         /// \brief Writes a data block with a length prefix, using a user-defined function to populate the contents.

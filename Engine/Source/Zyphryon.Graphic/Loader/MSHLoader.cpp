@@ -22,30 +22,6 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Bool ReadCompressedBuffer(Ref<Reader> Body, Ref<Blob> Result)
-    {
-        const UInt32          Size    = Body.Read<UInt32>();
-        const ConstSpan<Byte> Payload = Body.ReadBlock<UInt32, Byte>();
-
-        if (Size == 0 || Payload.IsEmpty())
-        {
-            return false;
-        }
-
-        Result = Blob::Allocate<Byte>(Size);
-
-        if (Size != Payload.GetSize())
-        {
-            return LZ4Decode(Payload, Result.GetData<Byte>(), Size) == Size;
-        }
-
-        Result.Copy<Byte>(Payload.GetData(), Size);
-        return true;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Bool MSHLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
         Reader Input(Data.GetData(), Data.GetSize());
@@ -122,9 +98,9 @@ namespace Graphic
             }
             case ('V' | ('B' << 8) | ('U' << 16) | ('F' << 24)):
             {
-                Blob Vertices;
+                Blob Vertices = Body.ReadBlockCompressed<UInt32>();
 
-                if (ReadCompressedBuffer(Body, Vertices))
+                if (Vertices)
                 {
                     Asset->SetVertices(Move(Vertices));
                 }
@@ -137,9 +113,9 @@ namespace Graphic
             }
             case ('I' | ('B' << 8) | ('U' << 16) | ('F' << 24)):
             {
-                Blob Indices;
+                Blob Indices = Body.ReadBlockCompressed<UInt32>();
 
-                if (ReadCompressedBuffer(Body, Indices))
+                if (Indices)
                 {
                     Asset->SetIndices(Move(Indices));
                 }

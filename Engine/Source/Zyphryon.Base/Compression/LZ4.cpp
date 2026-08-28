@@ -555,4 +555,27 @@ inline namespace Base
         }
         return static_cast<UInt32>(Output - Destination);
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob LZ4Expand(ConstSpan<Byte> Source, UInt32 Size)
+    {
+        if (Size == 0 || Source.IsEmpty())
+        {
+            return Blob();
+        }
+
+        Blob Result = Blob::Allocate<Byte>(Size);
+
+        if (Size == Source.GetSize())
+        {
+            Result.Copy<Byte>(Source.GetData(), Size);
+        }
+        else if (LZ4Decode(Source, Result.GetData<Byte>(), Size) != Size)
+        {
+            return Blob();
+        }
+        return Result;
+    }
 }

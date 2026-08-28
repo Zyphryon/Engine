@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Container/Span.hpp"
+#include "Zyphryon.Base/Memory/Blob.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -63,4 +64,11 @@ inline namespace Base
     /// \param Capacity    The capacity of the output buffer, in bytes.
     /// \return The number of bytes written, or `0` on malformed input or overflow.
     UInt32 LZ4Decode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
+
+    /// \brief Expands a payload into a buffer of its own, copying it when it was stored uncompressed.
+    ///
+    /// \param Source The payload to expand.
+    /// \param Size   The uncompressed byte count the payload expands to.
+    /// \return The expanded bytes, or an empty blob when the payload is malformed.
+    Blob LZ4Expand(ConstSpan<Byte> Source, UInt32 Size);
 }

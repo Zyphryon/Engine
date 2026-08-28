@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Base/Compression/LZ4.hpp"
 #include "Zyphryon.Base/Lexical/Text.hpp"
 #include "Zyphryon.Base/Scalar.hpp"
 
@@ -196,6 +197,19 @@ inline namespace Base
             const ConstPtr<Type> Data  = Read<ConstPtr<Type>>(Size);
 
             return Data ? ConstSpan(Data, static_cast<UInt>(Count)) : ConstSpan<Type>();
+        }
+
+        /// \brief Reads a block that was written with `Writer::WriteBlockCompressed`.
+        ///
+        /// \note Unlike \ref ReadBlock, the result owns its bytes, because they are not in the reader's buffer.
+        ///
+        /// \return The expanded bytes, or an empty blob when the block is malformed.
+        template<typename Header>
+        ZY_INLINE Blob ReadBlockCompressed()
+        {
+            const Header Size = Read<Header>();
+
+            return LZ4Expand(ReadBlock<Header, Byte>(), static_cast<UInt32>(Size));
         }
 
     private:

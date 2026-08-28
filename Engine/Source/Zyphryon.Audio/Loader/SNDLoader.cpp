@@ -94,20 +94,12 @@ namespace Audio
             return false;
         }
 
-        // `Size` is the uncompressed byte count, so a payload smaller than `Size` is decompressed.
-        Blob Buffer = Blob::Allocate<Byte>(Size);
+        Blob Buffer = LZ4Expand(Payload, Size);
 
-        if (Size != Payload.GetSize())
+        if (!Buffer)
         {
-            if (LZ4Decode(Payload, Buffer.GetData<Byte>(), Size) != Size)
-            {
-                LOG_W("'{0}' failed to decompress ({1} != {2})", Asset.GetKey(), Payload.GetSize(), Size);
-                return false;
-            }
-        }
-        else
-        {
-            Buffer.Copy<Byte>(Payload.GetData(), Size);
+            LOG_W("'{0}' failed to decompress ({1} != {2})", Asset.GetKey(), Payload.GetSize(), Size);
+            return false;
         }
 
         // The baker resamples to the mixer's clock, so the decoder is a reader rather than a converter.
