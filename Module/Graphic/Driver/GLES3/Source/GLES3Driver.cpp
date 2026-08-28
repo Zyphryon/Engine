@@ -264,7 +264,7 @@ namespace Graphic
         ZY_ASSERT(false, "GLES3Driver: MapBuffer is not supported on WebGL");
         return nullptr;
 #else
-        constexpr GLbitfield Access = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
+        constexpr GLbitfield Access = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT;
 
         glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[ID].Object);
         return static_cast<Ptr<Byte>>(glMapBufferRange(GL_COPY_WRITE_BUFFER, Offset, Size, Access));

@@ -266,7 +266,7 @@ namespace Graphic
 
     Ptr<Byte> D3D11Driver::MapBuffer(Object ID, UInt32 Offset, UInt32 Size)
     {
-        constexpr D3D11_MAP      Mapping = D3D11_MAP_WRITE_NO_OVERWRITE;
+        constexpr D3D11_MAP      Mapping = D3D11_MAP_WRITE_DISCARD;
         D3D11_MAPPED_SUBRESOURCE Memory;
 
         if (D3D11Check(mDeviceImmediate->Map(mBuffers[ID].Get(), 0, Mapping, 0, AddressOf(Memory))))
