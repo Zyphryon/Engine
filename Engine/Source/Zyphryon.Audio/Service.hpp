@@ -156,6 +156,11 @@ namespace Audio
         /// \param Handle The handle of the playback instance to resume.
         void Resume(Object Handle);
 
+        /// \brief Stops every playback that is letting the given sound go.
+        ///
+        /// \param Asset The sound to silence every playback of.
+        void Silence(ConstRef<Sound> Asset);
+
     private:
 
         /// \brief Registers built-in resource loaders for audio resources.
