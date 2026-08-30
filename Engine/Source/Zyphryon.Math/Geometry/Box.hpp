@@ -290,6 +290,16 @@ inline namespace Math
             return GetSize() * Type(0.5);
         }
 
+        /// \brief Measures how far the box reaches from its middle along an axis.
+        ///
+        /// \param Axis The axis to measure along, normalized.
+        /// \return The half-width of the box along the axis, which is never negative.
+        ZY_INLINE constexpr Type Reach(AnyVector3<Type> Axis) const
+            requires (IsReal<Type>)
+        {
+            return AnyVector3<Type>::Dot(AnyVector3<Type>::Abs(Axis), GetExtents());
+        }
+
         /// \brief Gets the volume of the box.
         ///
         /// \return The volume of the box.

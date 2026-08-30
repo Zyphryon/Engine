@@ -788,6 +788,15 @@ inline namespace Math
             return AnyVector3(::Max(P0.mX, P1.mX), ::Max(P0.mY, P1.mY), ::Max(P0.mZ, P1.mZ));
         }
 
+        /// \brief Gets the component-wise absolute value of a vector.
+        ///
+        /// \param Vector The vector to take the absolute value of.
+        /// \return A vector with the absolute value of each component.
+        ZY_INLINE static constexpr AnyVector3 Abs(AnyVector3 Vector)
+        {
+            return AnyVector3(::Abs(Vector.mX), ::Abs(Vector.mY), ::Abs(Vector.mZ));
+        }
+
         /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
         ///
         /// \param Vector The source vector to clamp.
