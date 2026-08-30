@@ -14,7 +14,7 @@
 
 #include "Spatializer.hpp"
 #include "Voice.hpp"
-#include "Zyphryon.Math/Matrix4x4.hpp"
+#include "Zyphryon.Math/Matrix4x3.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -61,7 +61,7 @@ namespace Audio
         /// \param Emitter   The spatial configuration of the source.
         /// \param Transform The source's world transform.
         /// \return `true` if the command was enqueued, `false` if the queue was full.
-        Bool Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform);
+        Bool Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform);
 
         /// \brief Enqueues a command to set whether a voice loops.
         ///
@@ -85,7 +85,7 @@ namespace Audio
         ///
         /// \param Handle    The playback handle.
         /// \param Transform The new world transform.
-        void SetTransform(Object Handle, ConstRef<Matrix4x4> Transform);
+        void SetTransform(Object Handle, ConstRef<Matrix4x3> Transform);
 
         /// \brief Enqueues a command to stop a voice.
         ///
@@ -105,7 +105,7 @@ namespace Audio
         /// \brief Enqueues a command to set the listener's world transform.
         ///
         /// \param Transform The listener's new world transform.
-        void SetListener(ConstRef<Matrix4x4> Transform);
+        void SetListener(ConstRef<Matrix4x3> Transform);
 
         /// \brief Enqueues a command to set the listener's directional cone.
         ///

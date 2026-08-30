@@ -85,7 +85,7 @@ namespace Audio
         /// \brief Sets the listener's world transform in 3D space.
         ///
         /// \param Transform The new world transform of the listener.
-        void SetListenerPose(ConstRef<Matrix4x4> Transform);
+        void SetListenerPose(ConstRef<Matrix4x3> Transform);
 
         /// \brief Sets the listener's directional cone parameters.
         ///
@@ -110,7 +110,7 @@ namespace Audio
         /// \param Emitter   The spatial configuration for the audio source.
         /// \param Transform The initial world transform of the audio source in 3D space.
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform);
+        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform);
 
         /// \brief Sets whether a specific playback instance should loop.
         ///
@@ -128,7 +128,7 @@ namespace Audio
         ///
         /// \param Handle    The handle of the playback instance.
         /// \param Transform The new world transform of the audio source in 3D space.
-        void SetPlaybackPose(Object Handle, ConstRef<Matrix4x4> Transform);
+        void SetPlaybackPose(Object Handle, ConstRef<Matrix4x3> Transform);
 
         /// \brief Sets the low-pass cutoff for a specific playback instance.
         ///

@@ -156,7 +156,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SetListenerPose(ConstRef<Matrix4x4> Transform)
+    void Service::SetListenerPose(ConstRef<Matrix4x3> Transform)
     {
         // The service keeps its own listener so a newcomer can be placed without reading the audio thread's copy.
         mListener.SetListener(
@@ -212,7 +212,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x4> Transform)
+    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform)
     {
         ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded.");
         ZY_ASSERT(Sound->GetFrequency() == kMixerFrequency, "Sound must be baked to the mixer sample rate");
@@ -259,7 +259,7 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::SetPlaybackPose(Object Handle, ConstRef<Matrix4x4> Transform)
+    void Service::SetPlaybackPose(Object Handle, ConstRef<Matrix4x3> Transform)
     {
         mMixer.SetTransform(Handle, Transform);
     }

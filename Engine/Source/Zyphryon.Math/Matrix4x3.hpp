@@ -536,6 +536,51 @@ inline namespace Math
                 Vector4(0.0f, 0.0f, Vector.GetZ(), 0.0f));
         }
 
+        /// \brief Creates a rotation matrix around the world X axis (pitch).
+        ///
+        /// \param Rotation The rotation angle.
+        /// \return A rotation matrix.
+        ZY_INLINE static Matrix4x3 FromRotationX(Angle Rotation)
+        {
+            const Real32 C = Angle::Cosine(Rotation);
+            const Real32 S = Angle::Sine(Rotation);
+
+            return Matrix4x3(
+                Vector4(1.0f, 0.0f, 0.0f, 0.0f),
+                Vector4(0.0f, C,    -S,   0.0f),
+                Vector4(0.0f, S,    C,    0.0f));
+        }
+
+        /// \brief Creates a rotation matrix around the world Y axis (yaw).
+        ///
+        /// \param Rotation The rotation angle.
+        /// \return A rotation matrix.
+        ZY_INLINE static Matrix4x3 FromRotationY(Angle Rotation)
+        {
+            const Real32 C = Angle::Cosine(Rotation);
+            const Real32 S = Angle::Sine(Rotation);
+
+            return Matrix4x3(
+                Vector4(C,    0.0f, S,    0.0f),
+                Vector4(0.0f, 1.0f, 0.0f, 0.0f),
+                Vector4(-S,   0.0f, C,    0.0f));
+        }
+
+        /// \brief Creates a rotation matrix around the world Z axis (roll).
+        ///
+        /// \param Rotation The rotation angle.
+        /// \return A rotation matrix.
+        ZY_INLINE static Matrix4x3 FromRotationZ(Angle Rotation)
+        {
+            const Real32 C = Angle::Cosine(Rotation);
+            const Real32 S = Angle::Sine(Rotation);
+
+            return Matrix4x3(
+                Vector4(C,    -S,   0.0f, 0.0f),
+                Vector4(S,    C,    0.0f, 0.0f),
+                Vector4(0.0f, 0.0f, 1.0f, 0.0f));
+        }
+
         /// \brief Creates a rotation matrix from a quaternion.
         ///
         /// \param Rotation The unit quaternion representing the desired rotation.
