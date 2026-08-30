@@ -136,7 +136,7 @@ namespace Audio
                 for (UInt16 Element = 0; Element < mStride; ++Element)
                 {
                     const Real32 Source = mPrevious[Element];
-                    Target[Produced * mStride + Element] = Source + (mNext[Element] - Source) * Fraction;
+                    Target[Produced * mStride + Element] = Lerp(Source, mNext[Element], Fraction);
                 }
                 ++Produced;
                 ++mOutput;

@@ -36,7 +36,7 @@ namespace Audio
         switch (Model)
         {
         case Attenuation::Linear:
-            Value = (Outer - Clamped) / Max(Outer - Inner, kEpsilon<Real32>);
+            Value = InverseLerp(Outer, Inner, Clamped);
             break;
         case Attenuation::Inverse:
             Value = Inner / Clamped;
@@ -47,7 +47,7 @@ namespace Audio
             Floor = (Inner / Outer) * (Inner / Outer);
             break;
         }
-        return (Value - Floor) / Max(1.0f - Floor, kEpsilon<Real32>);
+        return InverseLerp(Floor, 1.0f, Value);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -64,25 +64,21 @@ namespace Audio
             return OuterGain;
         }
 
-        const Real32 Factor = (Angle - HalfInner) / Max(HalfOuter - HalfInner, kEpsilon<Real32>);
-        return 1.0f + (OuterGain - 1.0f) * Factor;
+        return Lerp(1.0f, OuterGain, InverseLerp(HalfInner, HalfOuter, Angle));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Gains Spatializer::Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const
+    Vector2 Spatializer::Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const
     {
-        Gains Result;
-
         const Vector3 Delta    = Position - mPosition;
         const Real32  Distance = Delta.GetLength();
 
         // Sources at the listener's position collapse to an equal-power centered image.
         if (Distance < kEpsilon<Real32>)
         {
-            Result.Left = Result.Right = 0.70710678f;
-            return Result;
+            return Vector2(0.70710678f, 0.70710678f);
         }
 
         const Vector3 Normal = Delta / Distance;
@@ -107,9 +103,6 @@ namespace Audio
 
         // Constant-power stereo pan from the source's position along the listener's right axis.
         const Real32 Pan = Clamp((Vector3::Dot(Normal, mRight) + 1.0f) * 0.5f, 0.0f, 1.0f);
-        Result.Left  = Sqrt(1.0f - Pan) * Attenuation;
-        Result.Right = Sqrt(Pan) * Attenuation;
-
-        return Result;
+        return Vector2(Sqrt(1.0f - Pan) * Attenuation, Sqrt(Pan) * Attenuation);
     }
 }

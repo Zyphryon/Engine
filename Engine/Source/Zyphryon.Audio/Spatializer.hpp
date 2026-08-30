@@ -66,7 +66,7 @@ namespace Audio
         /// \param Forward  The source's normalized forward axis (used by the emitter cone).
         /// \param Emitter  The spatial configuration of the source.
         /// \return The channel gains for the source.
-        Gains Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const;
+        Vector2 Compute(Vector3 Position, Vector3 Forward, ConstRef<Emitter> Emitter) const;
 
     private:
 

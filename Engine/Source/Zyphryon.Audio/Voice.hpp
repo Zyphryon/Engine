@@ -42,7 +42,7 @@ namespace Audio
         Real32          Volume       = 1.0f;
 
         /// The current smoothed per-channel gains, used to deramp toward the target and avoid clicks.
-        Gains           Gain;
+        Vector2         Gain;
 
         /// The low-pass memory the left channel carries, or the mono image of a spatial voice.
         Filter::State   FilterLeft   = { };

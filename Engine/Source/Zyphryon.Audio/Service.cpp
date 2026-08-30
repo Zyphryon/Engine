@@ -220,9 +220,9 @@ namespace Audio
 
         if (Unique<Decoder> Decoder = Sound->Decode())
         {
-            const Gains  Placement = mListener.Compute(
+            const Vector2 Placement = mListener.Compute(
                 Transform.GetTranslation(), Vector3::Normalize(Transform.GetForward()), Emitter);
-            const Real32 Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.Left, Placement.Right);
+            const Real32 Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.GetX(), Placement.GetY());
 
             if (const Object Playback = Reserve(Category, Gain))
             {

@@ -99,13 +99,4 @@ namespace Audio
         Reason Reason = Reason::Completed;
     };
 
-    /// \brief Holds the per-channel linear output gains for a stereo source.
-    struct Gains final
-    {
-        /// The linear gain applied to the left output channel (range [0, 1]).
-        Real32 Left  = 0.0f;
-
-        /// The linear gain applied to the right output channel (range [0, 1]).
-        Real32 Right = 0.0f;
-    };
 }

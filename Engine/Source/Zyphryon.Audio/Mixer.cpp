@@ -290,8 +290,7 @@ namespace Audio
 
             // A voice ranks at nothing until it has mixed once, so a sound is never stolen before it is heard.
             mRanks[Command.Handle.GetSlot() - 1].store(0.0f, std::memory_order_relaxed);
-            Voice.Gain.Left    = 1.0f;
-            Voice.Gain.Right   = 1.0f;
+            Voice.Gain         = Vector2(1.0f, 1.0f);
 
             if (Command.Spatial)
             {
@@ -369,7 +368,7 @@ namespace Audio
         const Real32 Count  = static_cast<Real32>(Frames);
         const Real32 Factor = Count / (Count + 0.03f * static_cast<Real32>(kMixerFrequency));
 
-        Voice.Cutoff += (Voice.CutoffTarget - Voice.Cutoff) * Factor;
+        Voice.Cutoff = Lerp(Voice.Cutoff, Voice.CutoffTarget, Factor);
 
         if (Abs(Voice.CutoffTarget - Voice.Cutoff) < 1.0f)
         {
@@ -389,9 +388,9 @@ namespace Audio
 
         if (Voice.Spatial)
         {
-            const Gains Gains = mSpatializer.Compute(Voice.Position, Voice.Forward, Voice.Emitter);
-            TargetLeft  = Gains.Left  * Voice.Volume * Submix;
-            TargetRight = Gains.Right * Voice.Volume * Submix;
+            const Vector2 Placement = mSpatializer.Compute(Voice.Position, Voice.Forward, Voice.Emitter);
+            TargetLeft  = Placement.GetX() * Voice.Volume * Submix;
+            TargetRight = Placement.GetY() * Voice.Volume * Submix;
         }
         else
         {
@@ -404,8 +403,7 @@ namespace Audio
 
         if (!Voice.Primed)
         {
-            Voice.Gain.Left  = TargetLeft;
-            Voice.Gain.Right = TargetRight;
+            Voice.Gain = Vector2(TargetLeft, TargetRight);
             Voice.Primed     = true;
         }
 
@@ -414,12 +412,11 @@ namespace Audio
         // Under a sixteen-bit step the voice cannot move the output, and it is not still ramping down into one.
         constexpr Real32 kSilent = 1.0f / 32768.0f;
 
-        if (Max(TargetLeft, TargetRight) <= kSilent && Max(Voice.Gain.Left, Voice.Gain.Right) <= kSilent)
+        if (Max(TargetLeft, TargetRight) <= kSilent && Max(Voice.Gain.GetX(), Voice.Gain.GetY()) <= kSilent)
         {
             const UInt32 Skipped = Silence(Voice, Frames);
 
-            Voice.Gain.Left  = TargetLeft;
-            Voice.Gain.Right = TargetRight;
+            Voice.Gain = Vector2(TargetLeft, TargetRight);
 
             if (Skipped < Frames && !Voice.Looping)
             {
@@ -443,8 +440,8 @@ namespace Audio
                     Filter(Voice.Cutoff).Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
                 }
 
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.Left,  TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.Gain.Right, TargetRight);
+                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.GetX(), TargetLeft);
+                MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.Gain.GetY(), TargetRight);
             }
             else
             {
@@ -456,12 +453,11 @@ namespace Audio
                     Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
                 }
 
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.Gain.Left,  TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.Gain.Right, TargetRight);
+                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.Gain.GetX(), TargetLeft);
+                MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.Gain.GetY(), TargetRight);
             }
 
-            Voice.Gain.Left  = TargetLeft;
-            Voice.Gain.Right = TargetRight;
+            Voice.Gain = Vector2(TargetLeft, TargetRight);
         }
 
         // A short read with no looping means the stream reached its end.
