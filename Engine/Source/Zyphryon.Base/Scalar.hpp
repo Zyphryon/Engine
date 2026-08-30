@@ -377,6 +377,21 @@ inline namespace Base
         }
     }
 
+    /// \brief Finds where a scalar value falls between two others.
+    ///
+    /// \param Start The scalar value the range begins at.
+    /// \param End   The scalar value the range ends at.
+    /// \param Value The scalar value to place within the range.
+    /// \return The fraction of the range the value falls at, or `0` when the range is empty.
+    template<typename Value>
+    constexpr Value InverseLerp(Value Start, Value End, Value Position)
+        requires IsReal<Value>
+    {
+        const Value Range = End - Start;
+
+        return Abs(Range) < kEpsilon<Value> ? Value(0) : (Position - Start) / Range;
+    }
+
     /// \brief Checks if a floating-point number is approximately zero within a specified tolerance.
     ///
     /// \param Value     The floating-point number to check.
