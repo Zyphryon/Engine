@@ -21,6 +21,14 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static Real32 ResolveCutoff(Real32 Cutoff)
+    {
+        return (Cutoff > 0.0f ? Cutoff : static_cast<Real32>(kMixerCutoff));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     static void MixAccumulate(Ptr<Real32> Dst, ConstPtr<Real32> Src, UInt32 Count, Real32 Start, Real32 End)
     {
         if (Count == 0)
@@ -163,6 +171,18 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Mixer::SetCutoff(Object Handle, Real32 Cutoff)
+    {
+        Command Command { };
+        Command.Kind   = Op::Cutoff;
+        Command.Handle = Handle;
+        Command.Cutoff = Cutoff;
+        Submit(Command);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Mixer::SetTransform(Object Handle, ConstRef<Matrix4x4> Transform)
     {
         Command Command { };
@@ -240,25 +260,27 @@ namespace Audio
         {
             mVoices.Acquire(Command.Handle);
 
-            Ref<Voice> Voice = mVoices[Command.Handle];
-            Voice.Handle     = Command.Handle;
-            Voice.Decoder    = Unique(Command.Decoder);
-            Voice.Category   = Command.Category;
-            Voice.Stride     = static_cast<UInt16>(Command.Stride);
-            Voice.Spatial    = Command.Spatial;
-            Voice.Volume     = Command.Volume;
-            Voice.Looping    = false;
-            Voice.Paused     = false;
-            Voice.Finished   = false;
-            Voice.Primed     = false;
-            Voice.Gain.Left  = 1.0f;
-            Voice.Gain.Right = 1.0f;
+            Ref<Voice> Voice   = mVoices[Command.Handle];
+            Voice.Handle       = Command.Handle;
+            Voice.Decoder      = Unique(Command.Decoder);
+            Voice.Category     = Command.Category;
+            Voice.Stride       = static_cast<UInt16>(Command.Stride);
+            Voice.Spatial      = Command.Spatial;
+            Voice.Volume       = Command.Volume;
+            Voice.Looping      = false;
+            Voice.Paused       = false;
+            Voice.Finished     = false;
+            Voice.Primed       = false;
+            Voice.Gain.Left    = 1.0f;
+            Voice.Gain.Right   = 1.0f;
 
             if (Command.Spatial)
             {
-                Voice.Emitter  = Command.Emitter;
-                Voice.Position = Command.Transform.GetTranslation();
-                Voice.Forward  = Vector3::Normalize(Command.Transform.GetForward());
+                Voice.Emitter      = Command.Emitter;
+                Voice.Position     = Command.Transform.GetTranslation();
+                Voice.Forward      = Vector3::Normalize(Command.Transform.GetForward());
+                Voice.Cutoff       = ResolveCutoff(Command.Emitter.GetCutoff());
+                Voice.CutoffTarget = Voice.Cutoff;
             }
             break;
         }
@@ -292,6 +314,12 @@ namespace Audio
                 Voice->Volume = Command.Volume;
             }
             break;
+        case Op::Cutoff:
+            if (const Ptr<Voice> Voice = mVoices.TryGet(Command.Handle))
+            {
+                Voice->CutoffTarget = ResolveCutoff(Command.Cutoff);
+            }
+            break;
         case Op::Move:
             if (const Ptr<Voice> Voice = mVoices.TryGet(Command.Handle))
             {
@@ -308,6 +336,27 @@ namespace Audio
         case Op::Cone:
             mSpatializer.SetListenerCone(Command.InnerAngle, Command.OuterAngle, Command.OuterGain);
             break;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Mixer::Glide(Ref<Voice> Voice, UInt32 Frames)
+    {
+        if (Voice.Cutoff == Voice.CutoffTarget)
+        {
+            return;
+        }
+
+        const Real32 Count  = static_cast<Real32>(Frames);
+        const Real32 Factor = Count / (Count + 0.03f * static_cast<Real32>(kMixerFrequency));
+
+        Voice.Cutoff += (Voice.CutoffTarget - Voice.Cutoff) * Factor;
+
+        if (Abs(Voice.CutoffTarget - Voice.Cutoff) < 1.0f)
+        {
+            Voice.Cutoff = Voice.CutoffTarget;
         }
     }
 
@@ -341,8 +390,13 @@ namespace Audio
             Voice.Primed     = true;
         }
 
+        Glide(Voice, Frames);
+
         if (Produced > 0)
         {
+            // Only a voice under the open cutoff pays for a section, and its coefficients follow from that cutoff alone.
+            const Bool Occluded = Voice.Cutoff < static_cast<Real32>(kMixerCutoff);
+
             if (Voice.Spatial)
             {
                 // Collapse the stereo source to mono, then pan it into both channels.
@@ -350,11 +404,25 @@ namespace Audio
                 {
                     mScratchLeft[Frame] = 0.5f * (mScratchLeft[Frame] + mScratchRight[Frame]);
                 }
+
+                if (Occluded)
+                {
+                    Filter(Voice.Cutoff).Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
+                }
+
                 MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.Left,  TargetLeft);
                 MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.Gain.Right, TargetRight);
             }
             else
             {
+                if (Occluded)
+                {
+                    const Filter Section(Voice.Cutoff);
+
+                    Section.Apply(Voice.FilterLeft,  mScratchLeft.GetData(),  Produced);
+                    Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
+                }
+
                 MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.Gain.Left,  TargetLeft);
                 MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.Gain.Right, TargetRight);
             }

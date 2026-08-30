@@ -34,6 +34,9 @@ namespace Audio
 
         /// \brief Maximum number of active audio instances.
         kMaxInstances   = 256,
+
+        /// \brief Cutoff frequency, in hertz, at or above which a voice's low-pass is fully open.
+        kMixerCutoff    = 20000,
     };
 
     /// \brief Specifies the audio distance attenuation models.

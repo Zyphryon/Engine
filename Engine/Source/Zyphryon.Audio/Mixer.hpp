@@ -75,6 +75,12 @@ namespace Audio
         /// \param Volume The new volume.
         void SetVolume(Object Handle, Real32 Volume);
 
+        /// \brief Enqueues a command to set a voice's low-pass cutoff.
+        ///
+        /// \param Handle The playback handle.
+        /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the voice unfiltered.
+        void SetCutoff(Object Handle, Real32 Cutoff);
+
         /// \brief Enqueues a command to set a spatial voice's world transform.
         ///
         /// \param Handle    The playback handle.
@@ -147,7 +153,7 @@ namespace Audio
         /// \brief The kind of a queued control command.
         enum class Op : UInt8
         {
-            Play, Stop, Pause, Resume, Loop, Volume, Move, Listener, Cone
+            Play, Stop, Pause, Resume, Loop, Volume, Cutoff, Move, Listener, Cone
         };
 
         /// \brief A single queued control command transferred from the game thread to the audio thread.
@@ -163,6 +169,7 @@ namespace Audio
             Angle        InnerAngle;
             Angle        OuterAngle;
             Real32       OuterGain;
+            Real32       Cutoff;
             Object       Handle;
             Op           Kind;
             Category     Category;
@@ -176,6 +183,12 @@ namespace Audio
         ///
         /// \param Command The command to apply.
         void Apply(ConstRef<Command> Command);
+
+        /// \brief Advances a voice's cutoff one block toward its target (audio thread).
+        ///
+        /// \param Voice  The voice whose cutoff to advance.
+        /// \param Frames The number of frames in the current block.
+        void Glide(Ref<Voice> Voice, UInt32 Frames);
 
         /// \brief Mixes a single voice into the master accumulators for the current block (audio thread).
         ///

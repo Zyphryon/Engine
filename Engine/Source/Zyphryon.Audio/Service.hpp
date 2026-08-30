@@ -130,6 +130,12 @@ namespace Audio
         /// \param Transform The new world transform of the audio source in 3D space.
         void SetPlaybackPose(Object Handle, ConstRef<Matrix4x4> Transform);
 
+        /// \brief Sets the low-pass cutoff for a specific playback instance.
+        ///
+        /// \param Handle The handle of the playback instance.
+        /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the source unfiltered.
+        void SetPlaybackCutoff(Object Handle, Real32 Cutoff);
+
         /// \brief Subscribes to completion notifications for a playback handle.
         ///
         /// \param Handle   The playback handle to monitor.

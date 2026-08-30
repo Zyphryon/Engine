@@ -14,6 +14,7 @@
 
 #include "Decoder.hpp"
 #include "Emitter.hpp"
+#include "Filter.hpp"
 #include "Zyphryon.Math/Vector3.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -38,33 +39,45 @@ namespace Audio
         Vector3         Forward   = -Vector3::UnitZ();
 
         /// The base linear volume of the voice (range [0, 1]).
-        Real32          Volume    = 1.0f;
+        Real32          Volume       = 1.0f;
 
         /// The current smoothed per-channel gains, used to deramp toward the target and avoid clicks.
         Gains           Gain;
+
+        /// The low-pass memory the left channel carries, or the mono image of a spatial voice.
+        Filter::State   FilterLeft   = { };
+
+        /// The low-pass memory the right channel carries, unused by a spatial voice.
+        Filter::State   FilterRight  = { };
+
+        /// The cutoff frequency, in hertz, the low-pass currently runs at.
+        Real32          Cutoff       = static_cast<Real32>(kMixerCutoff);
+
+        /// The cutoff frequency, in hertz, the low-pass glides toward, so occlusion ramps instead of switching.
+        Real32          CutoffTarget = static_cast<Real32>(kMixerCutoff);
 
         /// The handle that identifies this voice, mirrored here so completed voices can be reaped by handle.
         Object          Handle;
 
         /// The number of interleaved samples the decoder produces per frame (stride).
-        UInt16          Stride    = 2;
+        UInt16          Stride       = 2;
 
         /// The submix category this voice is routed through.
-        Category        Category  = Category::Effect;
+        Category        Category     = Category::Effect;
 
         /// `true` when the voice is spatialized, `false` for a direct stereo voice.
-        Bool            Spatial   = false;
+        Bool            Spatial      = false;
 
         /// `true` when the voice loops on reaching the end of its stream.
-        Bool            Looping   = false;
+        Bool            Looping      = false;
 
         /// `true` when the voice is paused and should not advance or contribute audio.
-        Bool            Paused    = false;
+        Bool            Paused       = false;
 
         /// `true` once the voice has produced audio at least once, so gains prime instead of ramping from zero.
-        Bool            Primed    = false;
+        Bool            Primed       = false;
 
         /// `true` when the voice has ended and is awaiting reaping.
-        Bool            Finished  = false;
+        Bool            Finished     = false;
     };
 }

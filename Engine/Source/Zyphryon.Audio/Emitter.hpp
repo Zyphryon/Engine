@@ -33,7 +33,8 @@ namespace Audio
               mInnerAngle  { Angle::FromDegrees(360.0f) },
               mOuterRadius { 100.0f },
               mOuterAngle  { Angle::FromDegrees(360.0f) },
-              mOuterGain   { 0.0f }
+              mOuterGain   { 0.0f },
+              mCutoff      { 0.0f }
         {
         }
 
@@ -123,6 +124,26 @@ namespace Audio
             return mOuterGain;
         }
 
+        /// \brief Sets the low-pass cutoff a voice starts at when it plays through this emitter.
+        ///
+        /// \note A cutoff of zero leaves the source unfiltered.
+        ///
+        /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the source unfiltered.
+        ZY_INLINE void SetCutoff(Real32 Cutoff)
+        {
+            ZY_ASSERT(Cutoff >= 0.0f, "Cutoff must be non-negative");
+
+            mCutoff = Cutoff;
+        }
+
+        /// \brief Gets the low-pass cutoff of the emitter.
+        ///
+        /// \return The cutoff frequency in hertz.
+        ZY_INLINE Real32 GetCutoff() const
+        {
+            return mCutoff;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -134,5 +155,6 @@ namespace Audio
         Real32      mOuterRadius;
         Angle       mOuterAngle;
         Real32      mOuterGain;
+        Real32      mCutoff;
     };
 }
