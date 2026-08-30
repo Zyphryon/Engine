@@ -77,6 +77,9 @@ namespace Audio::Codec
         /// \see Decoder::Read(Span<Real32>)
         UInt64 Read(Span<Real32> Output) override;
 
+        /// \see Decoder::Skip(UInt64)
+        UInt64 Skip(UInt64 Frames) override;
+
     private:
 
         /// \brief Holds the state one channel's decoder carries from each sample to the next.

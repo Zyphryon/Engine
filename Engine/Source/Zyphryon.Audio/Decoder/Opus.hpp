@@ -48,6 +48,9 @@ namespace Audio::Codec
         /// \see Decoder::Read(Span<Real32>)
         UInt64 Read(Span<Real32> Output) override;
 
+        /// \see Decoder::Skip(UInt64)
+        UInt64 Skip(UInt64 Frames) override;
+
     private:
 
         /// \brief The largest frame count a single Opus packet can carry at 48 kHz, being 120 milliseconds.

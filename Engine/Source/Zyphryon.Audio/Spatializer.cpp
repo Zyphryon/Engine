@@ -30,16 +30,24 @@ namespace Audio
 
         const Real32 Clamped = Min(Distance, Outer);
 
+        Real32 Value = 1.0f;
+        Real32 Floor = 0.0f;
+
         switch (Model)
         {
         case Attenuation::Linear:
-            return (Outer - Clamped) / Max(Outer - Inner, kEpsilon<Real32>);
+            Value = (Outer - Clamped) / Max(Outer - Inner, kEpsilon<Real32>);
+            break;
         case Attenuation::Inverse:
-            return Inner / Clamped;
+            Value = Inner / Clamped;
+            Floor = Inner / Outer;
+            break;
         case Attenuation::Exponential:
-            return (Inner / Clamped) * (Inner / Clamped);
+            Value = (Inner / Clamped) * (Inner / Clamped);
+            Floor = (Inner / Outer) * (Inner / Outer);
+            break;
         }
-        return 1.0f;
+        return (Value - Floor) / Max(1.0f - Floor, kEpsilon<Real32>);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

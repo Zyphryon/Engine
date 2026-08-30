@@ -80,4 +80,15 @@ namespace Audio::Codec
         mCursor += Count;
         return Count;
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt64 Linear::Skip(UInt64 Frames)
+    {
+        const UInt64 Advance = Min(Frames, mFrames - mCursor);
+        mCursor += Advance;
+
+        return Advance;
+    }
 }

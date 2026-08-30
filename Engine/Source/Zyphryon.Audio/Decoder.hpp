@@ -45,5 +45,11 @@ namespace Audio
         /// \param Output A span to receive the decoded audio samples as 32-bit floating-point values.
         /// \return The number of frames successfully read into the output buffer.
         virtual UInt64 Read(Span<Real32> Output) = 0;
+
+        /// \brief Advances past a number of frames without producing any samples.
+        ///
+        /// \param Frames The number of frames to advance past.
+        /// \return The number of frames actually advanced; fewer than \p Frames indicates the stream ended.
+        virtual UInt64 Skip(UInt64 Frames) = 0;
     };
 }

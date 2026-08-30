@@ -170,13 +170,13 @@ namespace Audio
         };
 
         /// \brief A single queued control command transferred from the game thread to the audio thread.
-        ///
-        /// \note Members are ordered by descending alignment to minimize padding.
         struct Command final
         {
-            Matrix4x4    Transform;
             Ptr<Decoder> Decoder;
             Emitter      Emitter;
+            Vector3      Position;
+            Vector3      Forward;
+            Vector3      Right;
             Real32       Volume;
             UInt32       Stride;
             Angle        InnerAngle;
@@ -209,14 +209,21 @@ namespace Audio
         /// \param Frames The number of frames to mix.
         void Mix(Ref<Voice> Voice, UInt32 Frames);
 
-        /// \brief Reads a voice's decoded PCM into planar stereo scratch, handling looping (audio thread).
+        /// \brief Reads a voice's decoded PCM into planar scratch, handling looping (audio thread).
         ///
         /// \param Voice  The voice to read from.
-        /// \param Left   Destination buffer for the left channel.
-        /// \param Right  Destination buffer for the right channel.
+        /// \param Left   Destination buffer for the left channel, or for the image of a spatial voice.
+        /// \param Right  Destination buffer for the right channel, left untouched by a spatial voice.
         /// \param Frames The number of frames to read.
         /// \return The number of frames actually read; fewer than \p Frames indicates the stream ended.
         UInt32 Read(Ref<Voice> Voice, Ptr<Real32> Left, Ptr<Real32> Right, UInt32 Frames);
+
+        /// \brief Advances a voice past a block it contributes nothing to, so a silent voice still ends on time.
+        ///
+        /// \param Voice  The voice to advance.
+        /// \param Frames The number of frames to advance past.
+        /// \return The number of frames actually advanced; fewer than \p Frames indicates the stream ended.
+        UInt32 Silence(Ref<Voice> Voice, UInt32 Frames);
 
         /// \brief Renders one sub-block of up to \ref kMixerBlock frames (audio thread).
         ///

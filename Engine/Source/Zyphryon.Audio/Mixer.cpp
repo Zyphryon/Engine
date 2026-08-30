@@ -145,7 +145,8 @@ namespace Audio
         Command.Decoder   = Decoder;
         Command.Stride    = Stride;
         Command.Emitter   = Emitter;
-        Command.Transform = Transform;
+        Command.Position  = Transform.GetTranslation();
+        Command.Forward   = Vector3::Normalize(Transform.GetForward());
         return Submit(Command);
     }
 
@@ -191,9 +192,10 @@ namespace Audio
     void Mixer::SetTransform(Object Handle, ConstRef<Matrix4x4> Transform)
     {
         Command Command { };
-        Command.Kind      = Op::Move;
-        Command.Handle    = Handle;
-        Command.Transform = Transform;
+        Command.Kind     = Op::Move;
+        Command.Handle   = Handle;
+        Command.Position = Transform.GetTranslation();
+        Command.Forward  = Vector3::Normalize(Transform.GetForward());
         Submit(Command);
     }
 
@@ -236,8 +238,10 @@ namespace Audio
     void Mixer::SetListener(ConstRef<Matrix4x4> Transform)
     {
         Command Command { };
-        Command.Kind      = Op::Listener;
-        Command.Transform = Transform;
+        Command.Kind     = Op::Listener;
+        Command.Position = Transform.GetTranslation();
+        Command.Forward  = Vector3::Normalize(Transform.GetForward());
+        Command.Right    = Vector3::Normalize(Transform.GetRight());
         Submit(Command);
     }
 
@@ -292,8 +296,8 @@ namespace Audio
             if (Command.Spatial)
             {
                 Voice.Emitter      = Command.Emitter;
-                Voice.Position     = Command.Transform.GetTranslation();
-                Voice.Forward      = Vector3::Normalize(Command.Transform.GetForward());
+                Voice.Position     = Command.Position;
+                Voice.Forward      = Command.Forward;
                 Voice.Cutoff       = ResolveCutoff(Command.Emitter.GetCutoff());
                 Voice.CutoffTarget = Voice.Cutoff;
             }
@@ -339,15 +343,12 @@ namespace Audio
         case Op::Move:
             if (const Ptr<Voice> Voice = mVoices.TryGet(Command.Handle))
             {
-                Voice->Position = Command.Transform.GetTranslation();
-                Voice->Forward  = Vector3::Normalize(Command.Transform.GetForward());
+                Voice->Position = Command.Position;
+                Voice->Forward  = Command.Forward;
             }
             break;
         case Op::Listener:
-            mSpatializer.SetListener(
-                Command.Transform.GetTranslation(),
-                Vector3::Normalize(Command.Transform.GetForward()),
-                Vector3::Normalize(Command.Transform.GetRight()));
+            mSpatializer.SetListener(Command.Position, Command.Forward, Command.Right);
             break;
         case Op::Cone:
             mSpatializer.SetListenerCone(Command.InnerAngle, Command.OuterAngle, Command.OuterGain);
@@ -401,8 +402,6 @@ namespace Audio
         mRanks[Voice.Handle.GetSlot() - 1].store(
             Rank(Voice.Category, Max(TargetLeft, TargetRight)), std::memory_order_relaxed);
 
-        const UInt32 Produced = Read(Voice, mScratchLeft.GetData(), mScratchRight.GetData(), Frames);
-
         if (!Voice.Primed)
         {
             Voice.Gain.Left  = TargetLeft;
@@ -412,6 +411,26 @@ namespace Audio
 
         Glide(Voice, Frames);
 
+        // Under a sixteen-bit step the voice cannot move the output, and it is not still ramping down into one.
+        constexpr Real32 kSilent = 1.0f / 32768.0f;
+
+        if (Max(TargetLeft, TargetRight) <= kSilent && Max(Voice.Gain.Left, Voice.Gain.Right) <= kSilent)
+        {
+            const UInt32 Skipped = Silence(Voice, Frames);
+
+            Voice.Gain.Left  = TargetLeft;
+            Voice.Gain.Right = TargetRight;
+
+            if (Skipped < Frames && !Voice.Looping)
+            {
+                Voice.Reason   = Reason::Completed;
+                Voice.Finished = true;
+            }
+            return;
+        }
+
+        const UInt32 Produced = Read(Voice, mScratchLeft.GetData(), mScratchRight.GetData(), Frames);
+
         if (Produced > 0)
         {
             // Only a voice under the open cutoff pays for a section, and its coefficients follow from that cutoff alone.
@@ -419,12 +438,6 @@ namespace Audio
 
             if (Voice.Spatial)
             {
-                // Collapse the stereo source to mono, then pan it into both channels.
-                for (UInt32 Frame = 0; Frame < Produced; ++Frame)
-                {
-                    mScratchLeft[Frame] = 0.5f * (mScratchLeft[Frame] + mScratchRight[Frame]);
-                }
-
                 if (Occluded)
                 {
                     Filter(Voice.Cutoff).Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
@@ -497,8 +510,27 @@ namespace Audio
                 }
             }
 
-            // Deinterleave the source frames into planar stereo.
-            if (Voice.Stride == 1)
+            // Deinterleave the source frames, folding a spatial voice to the one image its pan reads.
+            if (Voice.Spatial)
+            {
+                if (Voice.Stride == 1)
+                {
+                    for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
+                    {
+                        Left[Done + Frame] = mDecode[Frame];
+                    }
+                }
+                else
+                {
+                    for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
+                    {
+                        const UInt32 Base = Frame * Voice.Stride;
+
+                        Left[Done + Frame] = 0.5f * (mDecode[Base] + mDecode[Base + 1]);
+                    }
+                }
+            }
+            else if (Voice.Stride == 1)
             {
                 for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
                 {
@@ -516,6 +548,44 @@ namespace Audio
                 }
             }
             Done += Decoded;
+        }
+        return Done;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt32 Mixer::Silence(Ref<Voice> Voice, UInt32 Frames)
+    {
+        UInt32 Done = 0;
+
+        while (Done < Frames)
+        {
+            UInt32 Skipped = static_cast<UInt32>(Voice.Decoder->Skip(Frames - Done));
+
+            if (Skipped == 0)
+            {
+                if (Voice.Looping)
+                {
+                    if (!Voice.Decoder->Seek(0))
+                    {
+                        Voice.Looping = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+
+                Skipped = static_cast<UInt32>(Voice.Decoder->Skip(Frames - Done));
+
+                if (Skipped == 0)
+                {
+                    break;
+                }
+            }
+            Done += Skipped;
         }
         return Done;
     }

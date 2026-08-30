@@ -111,6 +111,31 @@ namespace Audio::Codec
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    UInt64 Adaptive::Skip(UInt64 Frames)
+    {
+        constexpr UInt32 kChunk = 64;
+
+        Array<Real32, kChunk * kMixerStride> Discard;
+
+        UInt64 Done = 0;
+
+        while (Done < Frames)
+        {
+            const UInt64 Request = Min(Frames - Done, static_cast<UInt64>(kChunk)) * mStride;
+            const UInt64 Decoded = Read(Span(Discard.GetData(), Request));
+
+            if (Decoded == 0)
+            {
+                break;
+            }
+            Done += Decoded;
+        }
+        return Done;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Adaptive::Prime(UInt64 Block)
     {
         for (UInt16 Index = 0; Index < mStride; ++Index)

@@ -204,4 +204,13 @@ namespace Audio::Codec
         mCursor += Done;
         return Done;
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt64 Opus::Skip(UInt64 Frames)
+    {
+        const UInt64 Advance = Min(Frames, mFrames - mCursor);
+        return (Advance > 0 && Seek(mCursor + Advance) ? Advance : 0);
+    }
 }
