@@ -36,10 +36,10 @@ namespace Audio
         /// \param Frames The number of frames to render.
         void Render(Span<Real32> Output, UInt32 Frames);
 
-        /// \brief Drains the handles of voices that completed since the last call (game thread).
+        /// \brief Drains the voices that ended since the last call, with the reason each one ended (game thread).
         ///
-        /// \param Output The sequence that receives the completed playback handles.
-        void Drain(Ref<Sequence<Object>> Output);
+        /// \param Output The sequence that receives the ended playbacks.
+        void Drain(Ref<Sequence<Completion>> Output);
 
         /// \brief Enqueues a non-spatial playback command.
         ///
@@ -113,6 +113,19 @@ namespace Audio
         /// \param OuterAngle The outer cone angle.
         /// \param OuterGain  The gain applied outside the outer cone.
         void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain);
+
+        /// \brief Gets the rank a slot's voice mixed at during the last block (game thread).
+        ///
+        /// \note A slot that has not mixed since it was filled reads `0`, naming a voice not yet heard.
+        ///
+        /// \param Slot The slot to read, counted from one.
+        /// \return The voice's rank as of the last block.
+        ZY_INLINE Real32 GetRank(Object::Slot Slot) const
+        {
+            ZY_ASSERT(Slot > 0 && Slot <= kMaxInstances, "Slot must name a voice");
+
+            return mRanks[Slot - 1].load(std::memory_order_relaxed);
+        }
 
         /// \brief Sets the master volume applied to the final mix.
         ///
@@ -220,6 +233,22 @@ namespace Audio
             return mCommands.Push(Command);
         }
 
+    public:
+
+        /// \brief Ranks a voice from its category and the gain it reaches the listener at.
+        ///
+        /// \note A category floor outranks any gain, so a footstep never takes the slot music or dialogue holds.
+        ///
+        /// \param Category The submix category.
+        /// \param Gain     The post-attenuation linear gain (range [0, 1]).
+        /// \return The rank, where a larger value names a voice worth keeping over a smaller one.
+        ZY_INLINE static constexpr Real32 Rank(Category Category, Real32 Gain)
+        {
+            // Category floors in declaration order, each above zero so an unmixed slot stays distinguishable at zero.
+            constexpr Array kFloor(3.0f, 2.0f, 4.0f, 1.0f, 5.0f);
+            return kFloor[Enum::Cast(Category)] + Min(Gain, 1.0f);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -228,9 +257,10 @@ namespace Audio
         Pool<Voice, kMaxInstances>                     mVoices;
         Spatializer                                    mSpatializer;
         Ring<Command, kMaxCommands>                    mCommands;
-        Ring<Object, kMaxCommands>                     mCompletions;
+        Ring<Completion, kMaxCommands>                 mCompletions;
         Atomic<Real32>                                 mMasterVolume;
         Array<Atomic<Real32>, Enum::Count<Category>()> mSubmixVolume;
+        Array<Atomic<Real32>, kMaxInstances>           mRanks;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

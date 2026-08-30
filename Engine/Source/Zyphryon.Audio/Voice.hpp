@@ -79,5 +79,8 @@ namespace Audio
 
         /// `true` when the voice has ended and is awaiting reaping.
         Bool            Finished     = false;
+
+        /// The reason the voice ended, reported to the game thread once it is reaped.
+        Reason          Reason       = Reason::Completed;
     };
 }

@@ -41,15 +41,21 @@ namespace Audio
         // Collects playback handles that completed since the last tick.
         mMixer.Drain(mNotifications);
 
-        // Dispatches callbacks for completed playback handles and releases their retained tracks (game thread).
-        for (const Object Handle : mNotifications)
+        // Dispatches callbacks for ended playbacks and releases their retained tracks (game thread).
+        for (ConstRef<Completion> Completion : mNotifications)
         {
-            mInstances.Free(Handle);
-            mResources.Erase(Handle);
-
-            if (Callback Delegate; mSubscriptions.Extract(Handle, Delegate))
+            // A superseded slot was accounted for the moment it changed hands, so the mixer's word on it is stale.
+            if (!mInstances.IsAllocated(Completion.Handle))
             {
-                Delegate(Handle);
+                continue;
+            }
+
+            mInstances.Free(Completion.Handle);
+            mResources.Erase(Completion.Handle);
+
+            if (Callback Delegate; mSubscriptions.Extract(Completion.Handle, Delegate))
+            {
+                Delegate(Completion.Handle, Completion.Reason);
             }
         }
         mNotifications.Clear();
@@ -152,6 +158,12 @@ namespace Audio
 
     void Service::SetListenerPose(ConstRef<Matrix4x4> Transform)
     {
+        // The service keeps its own listener so a newcomer can be placed without reading the audio thread's copy.
+        mListener.SetListener(
+            Transform.GetTranslation(),
+            Vector3::Normalize(Transform.GetForward()),
+            Vector3::Normalize(Transform.GetRight()));
+
         mMixer.SetListener(Transform);
     }
 
@@ -164,6 +176,8 @@ namespace Audio
         ZY_ASSERT(OuterAngle.IsValid(), "Outer angle must be normalized (0 <= angle < 2π)");
         ZY_ASSERT(InnerAngle <= OuterAngle, "Inner angle cannot exceed outer angle");
         ZY_ASSERT(IsBetween(OuterGain, 0.0f, 1.0f), "Outer gain must be [0,1]");
+
+        mListener.SetListenerCone(InnerAngle, OuterAngle, OuterGain);
 
         mMixer.SetListenerCone(InnerAngle, OuterAngle, OuterGain);
     }
@@ -179,7 +193,7 @@ namespace Audio
 
         if (Unique<Decoder> Decoder = Sound->Decode())
         {
-            if (const Object Playback = mInstances.Allocate())
+            if (const Object Playback = Reserve(Category, Volume * mMixer.GetSubmixVolume(Category)))
             {
                 if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume))
                 {
@@ -206,7 +220,11 @@ namespace Audio
 
         if (Unique<Decoder> Decoder = Sound->Decode())
         {
-            if (const Object Playback = mInstances.Allocate())
+            const Gains  Placement = mListener.Compute(
+                Transform.GetTranslation(), Vector3::Normalize(Transform.GetForward()), Emitter);
+            const Real32 Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.Left, Placement.Right);
+
+            if (const Object Playback = Reserve(Category, Gain))
             {
                 if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Transform))
                 {
@@ -312,6 +330,52 @@ namespace Audio
     void Service::Resume(Object Handle)
     {
         mMixer.Resume(Handle);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Object Service::Reserve(Category Category, Real32 Gain)
+    {
+        if (const Object Handle = mInstances.Allocate())
+        {
+            return Handle;
+        }
+
+        // With every slot taken the newcomer outranks one of them or it does not play, so arrival order stops deciding.
+        Real32 Weakest = Mixer::Rank(Category, Gain);
+        Object Victim;
+
+        for (Object::Slot Slot = 1; Slot <= mInstances.GetTop(); ++Slot)
+        {
+            if (!mInstances.IsOccupied(Slot))
+            {
+                continue;
+            }
+
+            if (const Real32 Rank = mMixer.GetRank(Slot); Rank > 0.0f && Rank < Weakest)
+            {
+                Weakest = Rank;
+                Victim  = mInstances.GetKey(Slot);
+            }
+        }
+
+        if (!Victim)
+        {
+            return Object();
+        }
+
+        mResources.Erase(Victim);
+        mInstances.Free(Victim);
+
+        // The slot is secured before the owner hears of it, so a callback that plays cannot take it back.
+        const Object Handle = mInstances.Allocate();
+
+        if (Callback Delegate; mSubscriptions.Extract(Victim, Delegate))
+        {
+            Delegate(Victim, Reason::Superseded);
+        }
+        return Handle;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

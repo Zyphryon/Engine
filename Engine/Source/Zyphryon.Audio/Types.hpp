@@ -57,6 +57,14 @@ namespace Audio
         Interface,      ///< User interface sounds such as clicks or notifications.
     };
 
+    /// \brief Specifies why a playback instance ended.
+    enum class Reason : UInt8
+    {
+        Completed,      ///< The source stream reached its end.
+        Stopped,        ///< The playback was stopped by an explicit request.
+        Superseded,     ///< The playback lost its mixing slot to a more important sound.
+    };
+
     /// \brief Specifies how a baked sound stores its samples.
     enum class Encoding : UInt8
     {
@@ -80,6 +88,16 @@ namespace Audio
 
     /// \brief A handle representing an active audio playback instance.
     using Object = Key<kMaxInstances>;
+
+    /// \brief Describes a playback instance that ended and the reason it did.
+    struct Completion final
+    {
+        /// The handle of the playback that ended.
+        Object Handle;
+
+        /// The reason the playback ended.
+        Reason Reason = Reason::Completed;
+    };
 
     /// \brief Holds the per-channel linear output gains for a stereo source.
     struct Gains final

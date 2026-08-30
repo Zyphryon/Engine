@@ -28,8 +28,8 @@ namespace Audio
     {
     public:
 
-        /// \brief Callback invoked when playback completes.
-        using Callback = Delegate<void(Object)>;
+        /// \brief Callback invoked when playback ends, carrying the reason it did.
+        using Callback = Delegate<void(Object, Reason)>;
 
     public:
 
@@ -136,10 +136,12 @@ namespace Audio
         /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the source unfiltered.
         void SetPlaybackCutoff(Object Handle, Real32 Cutoff);
 
-        /// \brief Subscribes to completion notifications for a playback handle.
+        /// \brief Subscribes to end-of-playback notifications for a playback handle.
+        ///
+        /// \note A superseded playback reports before \ref Play returns, since the slot changes hands there.
         ///
         /// \param Handle   The playback handle to monitor.
-        /// \param Callback The callback to invoke when the playback completes.
+        /// \param Callback The callback to invoke when the playback ends.
         void Subscribe(Object Handle, Callback Callback);
 
         /// \brief Unsubscribes from completion notifications for a playback handle.
@@ -169,6 +171,13 @@ namespace Audio
 
     private:
 
+        /// \brief Reserves a playback slot, taking the least important voice's when the pool is full.
+        ///
+        /// \param Category The submix category the newcomer is routed through.
+        /// \param Gain     The gain the newcomer would reach the listener at.
+        /// \return The reserved handle, or `0` when nothing playing ranks below the newcomer.
+        Object Reserve(Category Category, Real32 Gain);
+
         /// \brief Registers built-in resource loaders for audio resources.
         void RegisterBuiltinLoaders();
 
@@ -179,7 +188,8 @@ namespace Audio
 
         Driver                         mDriver;
         Mixer                          mMixer;
-        Sequence<Object>               mNotifications;
+        Spatializer                    mListener;
+        Sequence<Completion>           mNotifications;
         Table<Object, Callback>        mSubscriptions;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

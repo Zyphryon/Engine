@@ -70,6 +70,11 @@ namespace Audio
         {
             mSubmixVolume[Index].store(1.0f, std::memory_order_relaxed);
         }
+
+        for (UInt32 Index = 0; Index < kMaxInstances; ++Index)
+        {
+            mRanks[Index].store(0.0f, std::memory_order_relaxed);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -89,10 +94,10 @@ namespace Audio
             Offset += Count;
         }
 
-        /// Frees voices that finished during the current render and reports their handles.
+        /// Frees voices that finished during the current render and reports why each one ended.
         mVoices.ForEach([this](Ref<Voice> Voice)
         {
-            if (Voice.Finished && mCompletions.Push(Voice.Handle))
+            if (Voice.Finished && mCompletions.Push(Completion(Voice.Handle, Voice.Reason)))
             {
                 mVoices.Free(Voice.Handle);
             }
@@ -102,11 +107,11 @@ namespace Audio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mixer::Drain(Ref<Sequence<Object>> Output)
+    void Mixer::Drain(Ref<Sequence<Completion>> Output)
     {
-        for (Object Handle; mCompletions.Pop(Handle); )
+        for (Completion Completion; mCompletions.Pop(Completion); )
         {
-            Output.Append(Handle);
+            Output.Append(Completion);
         }
     }
 
@@ -258,6 +263,12 @@ namespace Audio
         {
         case Op::Play:
         {
+            // A slot a superseded voice still holds is taken over in silence.
+            if (mVoices.IsOccupied(Command.Handle.GetSlot()))
+            {
+                mVoices.Release(Command.Handle.GetSlot());
+            }
+
             mVoices.Acquire(Command.Handle);
 
             Ref<Voice> Voice   = mVoices[Command.Handle];
@@ -271,6 +282,10 @@ namespace Audio
             Voice.Paused       = false;
             Voice.Finished     = false;
             Voice.Primed       = false;
+            Voice.Reason       = Reason::Completed;
+
+            // A voice ranks at nothing until it has mixed once, so a sound is never stolen before it is heard.
+            mRanks[Command.Handle.GetSlot() - 1].store(0.0f, std::memory_order_relaxed);
             Voice.Gain.Left    = 1.0f;
             Voice.Gain.Right   = 1.0f;
 
@@ -287,6 +302,7 @@ namespace Audio
         case Op::Stop:
             if (const Ptr<Voice> Voice = mVoices.TryGet(Command.Handle))
             {
+                Voice->Reason   = Reason::Stopped;
                 Voice->Finished = true;
             }
             break;
@@ -381,6 +397,10 @@ namespace Audio
             TargetLeft = TargetRight = Voice.Volume * Submix;
         }
 
+        // Publishes what the voice is worth this block, so the game thread can weigh a newcomer against it.
+        mRanks[Voice.Handle.GetSlot() - 1].store(
+            Rank(Voice.Category, Max(TargetLeft, TargetRight)), std::memory_order_relaxed);
+
         const UInt32 Produced = Read(Voice, mScratchLeft.GetData(), mScratchRight.GetData(), Frames);
 
         if (!Voice.Primed)
@@ -434,6 +454,7 @@ namespace Audio
         // A short read with no looping means the stream reached its end.
         if (Produced < Frames && !Voice.Looping)
         {
+            Voice.Reason   = Reason::Completed;
             Voice.Finished = true;
         }
     }
