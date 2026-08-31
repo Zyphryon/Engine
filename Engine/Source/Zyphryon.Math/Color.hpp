@@ -416,7 +416,7 @@ inline namespace Math
         {
             if constexpr (IsReal<Type>)
             {
-                return Clamp(Channel, Type(0), Limit()) * Value;
+                return ::Clamp(Channel, Type(0), Limit()) * Value;
             }
             else
             {
