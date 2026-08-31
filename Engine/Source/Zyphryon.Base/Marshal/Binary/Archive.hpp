@@ -156,6 +156,7 @@ inline namespace Base
                 {
                     using Element = Type::Element;
 
+                    Value.Clear();
                     Value.Advance(SerializeCount(IsTriviallyCopyable<Element> ? sizeof(Element) : 1));
                 }
                 else
