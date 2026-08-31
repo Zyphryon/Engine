@@ -101,10 +101,10 @@ inline namespace Math
         /// \return A 32-bit unsigned integer representing the packed RGBA value.
         ZY_INLINE constexpr UInt32 ToRGBA8() const
         {
-            const UInt32 R = static_cast<UInt32>(Scale<1ULL << 8>(mComponents[0]));
-            const UInt32 G = static_cast<UInt32>(Scale<1ULL << 8>(mComponents[1]));
-            const UInt32 B = static_cast<UInt32>(Scale<1ULL << 8>(mComponents[2]));
-            const UInt32 A = static_cast<UInt32>(Scale<1ULL << 8>(mComponents[3]));
+            const UInt32 R = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[0]));
+            const UInt32 G = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[1]));
+            const UInt32 B = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[2]));
+            const UInt32 A = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[3]));
             return (A << 24) | (B  << 16) | (G << 8) | R;
         }
 
@@ -114,11 +114,11 @@ inline namespace Math
         ZY_INLINE constexpr AnyColor<UInt8> ToColor8() const
             requires(IsReal<Type>)
         {
-            return AnyColor(
-                static_cast<UInt8>(Scale<1ULL << 8>(mComponents[0])),
-                static_cast<UInt8>(Scale<1ULL << 8>(mComponents[1])),
-                static_cast<UInt8>(Scale<1ULL << 8>(mComponents[2])),
-                static_cast<UInt8>(Scale<1ULL << 8>(mComponents[3])));
+            return AnyColor<UInt8>(
+                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[0])),
+                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[1])),
+                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[2])),
+                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[3])));
         }
 
         /// \brief Converts the color from sRGB into linear space.
