@@ -222,21 +222,21 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ComPtr<ID3D11Device1>               mDevice;
-        ComPtr<ID3D11DeviceContext1>        mDeviceImmediate;
-        ComPtr<IDXGIFactory1>               mDeviceFactory;
-        D3D11Properties                     mDeviceProperties;
-        D3D11Compiler                       mCompiler;
-        Description                         mDescription;
+        ComPtr<ID3D11Device1>               	mDevice;
+        ComPtr<ID3D11DeviceContext1>        	mDeviceImmediate;
+        ComPtr<IDXGIFactory1>               	mDeviceFactory;
+        D3D11Properties                     	mDeviceProperties;
+        D3D11Compiler                       	mCompiler;
+        Description                         	mDescription;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ComPtr<IDXGISwapChain>              mSwapchain;
-        Array<D3D11Buffer, kMaxBuffers>     mBuffers;
-        Array<D3D11Pass, kMaxPasses>        mPasses;
-        Array<D3D11Pipeline, kMaxPipelines> mPipelines;
-        Array<D3D11Sampler, kMaxSamplers>   mSamplers;
-        Array<D3D11Texture, kMaxTextures>   mTextures;
+        ComPtr<IDXGISwapChain>                  mSwapchain;
+        Array<D3D11Buffer,   kMaxBuffers   + 1> mBuffers;
+        Array<D3D11Pass,     kMaxPasses    + 1> mPasses;
+        Array<D3D11Pipeline, kMaxPipelines + 1> mPipelines;
+        Array<D3D11Sampler,  kMaxSamplers  + 1> mSamplers;
+        Array<D3D11Texture,  kMaxTextures  + 1> mTextures;
     };
 }

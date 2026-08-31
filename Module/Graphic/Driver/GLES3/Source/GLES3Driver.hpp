@@ -221,25 +221,25 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        GLES3Context                        mContext;
-        GLES3Compiler                       mCompiler;
-        Description                         mDescription;
-        GLES3Snapshot                       mSnapshot;
+        GLES3Context                            mContext;
+        GLES3Compiler                           mCompiler;
+        Description                             mDescription;
+        GLES3Snapshot                           mSnapshot;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        GLuint                              mGlobalReadFramebuffer = 0;
-        GLuint                              mGlobalDrawFramebuffer = 0;
-        GLuint                              mGlobalVAO             = 0;
+        GLuint                                  mGlobalReadFramebuffer = 0;
+        GLuint                                  mGlobalDrawFramebuffer = 0;
+        GLuint                                  mGlobalVAO             = 0;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<GLES3Buffer,   kMaxBuffers>   mBuffers;
-        Array<GLES3Pass,     kMaxPasses>    mPasses;
-        Array<GLES3Pipeline, kMaxPipelines> mPipelines;
-        Array<GLuint,        kMaxSamplers>  mSamplers;
-        Array<GLES3Texture,  kMaxTextures>  mTextures;
+        Array<GLES3Buffer,   kMaxBuffers   + 1> mBuffers;
+        Array<GLES3Pass,     kMaxPasses    + 1> mPasses;
+        Array<GLES3Pipeline, kMaxPipelines + 1> mPipelines;
+        Array<GLuint,        kMaxSamplers  + 1> mSamplers;
+        Array<GLES3Texture,  kMaxTextures  + 1> mTextures;
     };
 }
