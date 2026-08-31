@@ -58,8 +58,16 @@ inline namespace Math
 
             using Unsigned = Unsigned<Type>;
 
-            const Unsigned Range = static_cast<Unsigned>(Maximum) - static_cast<Unsigned>(Minimum) + 1;
-            const UInt64   Limit = kMaximum<UInt64> - (kMaximum<UInt64> % Range);
+            const UInt64 Span = static_cast<UInt64>(
+                static_cast<Unsigned>(Maximum) - static_cast<Unsigned>(Minimum));
+
+            if (Span == kMaximum<UInt64>)
+            {
+                return static_cast<Type>(NextUnsignedInteger64());
+            }
+
+            const UInt64 Range = Span + 1;
+            const UInt64 Limit = kMaximum<UInt64> - (kMaximum<UInt64> % Range);
 
             UInt64 Value;
             do
