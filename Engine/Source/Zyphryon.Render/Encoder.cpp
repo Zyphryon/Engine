@@ -31,6 +31,7 @@ namespace Render
 
         mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = Encoder.mFrame;
         mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = Encoder.mPass;
+        mCommand.Scissor = Encoder.mScissor;
 
         // Every texture the signature declares holds its slot, so one left unbound still reads as zero.
         for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
@@ -121,7 +122,8 @@ namespace Render
 
     void Encoder::Reset()
     {
-        mPass = Graphic::Stream();
+        mPass    = Graphic::Stream();
+        mScissor = Graphic::Scissor();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -130,6 +132,14 @@ namespace Render
     void Encoder::SetFrame(Graphic::Stream Stream)
     {
         mFrame = Stream;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Encoder::SetScissor(Graphic::Scissor Scissor)
+    {
+        mScissor = Scissor;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -158,6 +168,7 @@ namespace Render
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
+        Command.Scissor = mScissor;
 
         // Bind the material uniform block, textures, and samplers from the schema.
         if (Material)
@@ -198,6 +209,7 @@ namespace Render
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
+        Command.Scissor = mScissor;
 
         // Bind the caller's textures in declaration order, paired with the technique's own samplers.
         ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
@@ -241,6 +253,7 @@ namespace Render
         // Bind the per-frame, per-pass, and per-object (instance) uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)]   = mFrame;
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]     = mPass;
+        Command.Scissor = mScissor;
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
 
         // Bind the run's material (uniform block, textures, and samplers) when the caller named one.

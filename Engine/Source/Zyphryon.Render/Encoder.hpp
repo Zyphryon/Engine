@@ -191,6 +191,14 @@ namespace Render
         /// \param Stream The transient stream holding the per-pass uniforms.
         void SetPass(Graphic::Stream Stream);
 
+        /// \brief Sets the rectangle every subsequent draw is clipped to.
+        ///
+        /// \note Read from the target's top-left on both APIs, and honoured only by a technique whose
+        ///       rasterizer state enables the scissor. An empty rectangle keeps no pixel at all.
+        ///
+        /// \param Scissor The region to keep, in pixels.
+        void SetScissor(Graphic::Scissor Scissor);
+
         /// \brief Packs a value into a transient uniform block and binds it as the pass's.
         ///
         /// \param Block The value laid out as the technique declares the pass's block.
@@ -364,5 +372,6 @@ namespace Render
         Ref<Graphic::Service> mService;
         Graphic::Stream       mFrame;
         Graphic::Stream       mPass;
+        Graphic::Scissor      mScissor;
     };
 }
