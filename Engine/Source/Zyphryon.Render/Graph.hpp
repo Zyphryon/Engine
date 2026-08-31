@@ -12,8 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Pass.hpp"
-#include "Target.hpp"
+#include "Blueprint.hpp"
 #include "Zyphryon.Engine/Subsystem.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -22,83 +21,106 @@
 
 namespace Render
 {
-    /// \brief Executes an ordered set of render passes for a frame.
+    /// \brief One realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
+    ///
+    /// \note A view is a graph, so drawing the same scene from another camera costs just another set of buffers.
     class Graph final
     {
     public:
 
-        /// \brief Constructs a renderer bound to the host's graphic service.
+        /// \brief Constructs a graph that realizes the given blueprint.
         ///
-        /// \param Host The service host that provides the graphic service.
-        Graph(Ref<Engine::Subsystem::Host> Host);
+        /// \param Host      The service host that provides the graphic service.
+        /// \param Blueprint The blueprint naming what the graph draws.
+        Graph(Ref<Engine::Subsystem::Host> Host, Ref<Blueprint> Blueprint);
 
-        /// \brief Creates a pass of the given type, appends it to the execution order, and returns it.
-        ///
-        /// \param Parameters The arguments forwarded to the pass's constructor.
-        /// \return A reference to the newly created pass.
-        template<typename Type, typename... Arguments>
-        ZY_INLINE Ref<Type> AddPass(AnyRef<Arguments>... Parameters)
-        {
-            return static_cast<Ref<Type>>(* mPasses.Append(Unique<Type>::Create(Forward<Arguments>(Parameters)...)));
-        }
+        /// \brief Destroys every texture and handle the graph holds.
+        ~Graph();
 
-        /// \brief Gets a pass by its position in the execution order.
-        ///
-        /// \param Index The zero-based index of the pass, in execution order.
-        /// \return A reference to the requested pass.
-        template<typename Type = Pass>
-        ZY_INLINE Ref<Type> GetPass(UInt32 Index)
-        {
-            return static_cast<Ref<Type>>(* mPasses[Index]);
-        }
-
-        /// \brief Gets a pass by its position in the execution order.
-        ///
-        /// \param Index The zero-based index of the pass, in execution order.
-        /// \return A read-only reference to the requested pass.
-        template<typename Type>
-        ZY_INLINE ConstRef<Type> GetPass(UInt Index) const
-        {
-            return static_cast<ConstRef<Type>>(* mPasses[Index]);
-        }
-
-        /// \brief Creates a renderer-managed target.
-        ///
-        /// \param Description The target's format and sizing policy.
-        /// \return A reference to the newly created target.
-        ZY_INLINE Ref<Target> AddTarget(ConstRef<Target::Description> Description)
-        {
-            return * mTargets.Append(Unique<Target>::Create(Description));
-        }
-
-        /// \brief Gets a managed target by its position in creation order.
-        ///
-        /// \param Index The zero-based index of the target, in creation order.
-        /// \return A reference to the requested target.
-        ZY_INLINE Ref<Target> GetTarget(UInt32 Index)
-        {
-            return * mTargets[Index];
-        }
-
-        /// \brief Gets a managed target by its position in creation order.
-        ///
-        /// \param Index The zero-based index of the target, in creation order.
-        /// \return A read-only reference to the requested target.
-        ZY_INLINE ConstRef<Target> GetTarget(UInt32 Index) const
-        {
-            return * mTargets[Index];
-        }
-
-        /// \brief Resizes every managed target and rebuilds each pass handle from its declared attachments.
+        /// \brief Recreates every texture and pass handle at the specified output size.
         ///
         /// \param Width  The frame's output width, in pixels.
         /// \param Height The frame's output height, in pixels.
         void Resize(UInt16 Width, UInt16 Height);
 
-        /// \brief Executes every registered pass in order and submits the frame.
+        /// \brief Executes every active pass in order and submits the frame.
         ///
         /// \param Frame The pre-packed frame uniform stream.
         void Run(Graphic::Stream Frame);
+
+        /// \brief Gets the texture realized for one of the blueprint's targets.
+        ///
+        /// \param Slot The slot naming the target, as \ref Blueprint::AddTarget returned it.
+        /// \return The texture object, valid until the next resize.
+        ZY_INLINE Graphic::Object GetTexture(UInt32 Slot) const
+        {
+            return mSlots[Slot].Texture;
+        }
+
+        /// \brief Gets the width one of the blueprint's targets came out at, in pixels.
+        ///
+        /// \param Slot The slot naming the target.
+        /// \return The width the target was realized at.
+        ZY_INLINE UInt16 GetWidth(UInt32 Slot) const
+        {
+            return mSlots[Slot].Width;
+        }
+
+        /// \brief Gets the height one of the blueprint's targets came out at, in pixels.
+        ///
+        /// \param Slot The slot naming the target.
+        /// \return The height the target was realized at.
+        ZY_INLINE UInt16 GetHeight(UInt32 Slot) const
+        {
+            return mSlots[Slot].Height;
+        }
+
+        /// \brief Gets the output width the graph was last resized to, in pixels.
+        ///
+        /// \return The width every full-scale target tracks.
+        ZY_INLINE UInt16 GetWidth() const
+        {
+            return mWidth;
+        }
+
+        /// \brief Gets the output height the graph was last resized to, in pixels.
+        ///
+        /// \return The height every full-scale target tracks.
+        ZY_INLINE UInt16 GetHeight() const
+        {
+            return mHeight;
+        }
+
+    private:
+
+        /// \brief One target the graph realized, and the size it came out at.
+        struct Slot final
+        {
+            /// TODO_DOC
+            Graphic::Object Texture;
+
+            /// TODO_DOC
+            UInt16          Width;
+
+            /// TODO_DOC
+            UInt16          Height;
+        };
+
+        /// \brief One pass the graph baked, and the surface it draws into.
+        struct Step final
+        {
+            /// The pass handle, borrowed from the step before it when the pass draws inline.
+            Graphic::Object   Handle = 0;
+
+            /// Whether the handle belongs to the step before it, which this pass appends its draws to.
+            Bool              Inline = false;
+
+            /// The viewport covering the target the pass draws into.
+            Graphic::Viewport Viewport;
+        };
+
+        /// \brief Destroys every texture and handle, leaving the graph unrealized.
+        void Release();
 
     private:
 
@@ -106,8 +128,11 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Retainer<Graphic::Service> mService;
+        Ref<Blueprint>             mBlueprint;
         Encoder                    mEncoder;
-        Sequence<Unique<Target>>   mTargets;
-        Sequence<Unique<Pass>>     mPasses;
+        Sequence<Slot>             mSlots;
+        Sequence<Step>             mSteps;
+        UInt16                     mWidth;
+        UInt16                     mHeight;
     };
 }

@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Encoder.hpp"
-#include "Target.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -26,30 +25,33 @@ namespace Render
     {
     public:
 
+        /// \brief Names no managed target, which on the first color attachment means the display surface.
+        static constexpr UInt32 kNone = 0xFFFFFFFF;
+
         /// \brief A declared color attachment.
         struct ColorAttachment final
         {
-            /// The managed target written by this attachment, or `nullptr` for the display surface.
-            Ptr<Render::Target> Target  = nullptr;
+            /// The slot of the target written by this attachment, or \ref kNone for the display surface.
+            UInt32          Target  = kNone;
 
-            /// The managed target the multisampled result is resolved into, or `nullptr` when not multisampled.
-            Ptr<Render::Target> Resolve = nullptr;
+            /// The slot of the target the multisampled result is resolved into, or \ref kNone when not multisampled.
+            UInt32          Resolve = kNone;
 
             /// The operation applied when the pass opens.
-            Graphic::Action     Load    = Graphic::Action::Clear;
+            Graphic::Action Load    = Graphic::Action::Clear;
 
             /// The operation applied when the pass closes.
-            Graphic::Action     Store   = Graphic::Action::Store;
+            Graphic::Action Store   = Graphic::Action::Store;
 
             /// The color this attachment is cleared to (used when \ref Load is \ref Graphic::Action::Clear).
-            Color               Tint    = Color(0.0f, 0.0f, 0.0f, 1.0f);
+            Color           Tint    = Color(0.0f, 0.0f, 0.0f, 1.0f);
         };
 
         /// \brief A declared depth/stencil attachment.
         struct DepthAttachment final
         {
-            /// The managed depth/stencil target, or `nullptr` when the pass has no depth attachment.
-            Ptr<Target>     Target       = nullptr;
+            /// The slot of the depth/stencil target, or \ref kNone when the pass has no depth attachment.
+            UInt32          Target       = kNone;
 
             /// The operation applied to the depth buffer when the pass opens.
             Graphic::Action DepthLoad    = Graphic::Action::Clear;
@@ -72,10 +74,10 @@ namespace Render
 
     public:
 
-        /// \brief Constructs a pass with the display surface as its target.
+        /// \brief Constructs a pass that is active and draws into the display surface.
         ZY_INLINE Pass()
             : mActive { true },
-              mTarget { Graphic::kDisplay }
+              mInline { false }
         {
         }
 
@@ -96,38 +98,6 @@ namespace Render
         ZY_INLINE Bool IsActive() const
         {
             return mActive;
-        }
-
-        /// \brief Sets the graphic target this pass renders into.
-        ///
-        /// \param Target The target handle (the display surface by default).
-        ZY_INLINE void SetTarget(Graphic::Object Target)
-        {
-            mTarget = Target;
-        }
-
-        /// \brief Gets the graphic target this pass renders into.
-        ///
-        /// \return The target handle.
-        ZY_INLINE Graphic::Object GetTarget() const
-        {
-            return mTarget;
-        }
-
-        /// \brief Sets the viewport, in target pixels, the pass renders with.
-        ///
-        /// \param Viewport The viewport rectangle and depth range.
-        ZY_INLINE void SetViewport(ConstRef<Graphic::Viewport> Viewport)
-        {
-            mViewport = Viewport;
-        }
-
-        /// \brief Gets the viewport the pass renders with.
-        ///
-        /// \return The viewport rectangle and depth range.
-        ZY_INLINE ConstRef<Graphic::Viewport> GetViewport() const
-        {
-            return mViewport;
         }
 
         /// \brief Declares a color attachment and appends it to the pass.
@@ -171,26 +141,29 @@ namespace Render
             return mDepthAttachment;
         }
 
-        /// \brief Attaches a continuation pass that draws inside this pass's open target.
+        /// \brief Sets whether the pass appends its draws to the target the pass before it opened.
         ///
-        /// \param Continuation The pass to run after this one.
-        ZY_INLINE void SetContinuation(Unique<Pass> Continuation)
+        /// \note An inline pass declares no attachments of its own, inheriting the group's clears and viewport.
+        ///
+        /// \param Inline `true` to draw into the target already open, `false` to open one of its own.
+        ZY_INLINE void SetInline(Bool Inline)
         {
-            mContinuation = Move(Continuation);
+            mInline = Inline;
         }
 
-        /// \brief Gets the continuation pass attached to this pass.
+        /// \brief Checks whether the pass appends its draws to the target the pass before it opened.
         ///
-        /// \return A pointer to the continuation, or `nullptr` if none is attached.
-        ZY_INLINE Ptr<Pass> GetContinuation() const
+        /// \return `true` if the pass draws inline, otherwise `false`.
+        ZY_INLINE Bool IsInline() const
         {
-            return mContinuation ? AddressOf(* mContinuation) : nullptr;
+            return mInline;
         }
 
         /// \brief Executes the pass, recording its draw commands through the encoder.
         ///
         /// \param Encoder The encoder used to build this pass's draw commands.
-        virtual void Run(Ref<Encoder> Encoder) = 0;
+        /// \param Graph   The graph being drawn, which the pass reads every target it samples from.
+        virtual void Run(Ref<Encoder> Encoder, ConstRef<class Graph> Graph) = 0;
 
     protected:
 
@@ -198,10 +171,8 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Bool                                                mActive;
-        Graphic::Object                                     mTarget;
-        Graphic::Viewport                                   mViewport;
+        Bool                                                mInline;
         Sequence<ColorAttachment, Graphic::kMaxAttachments> mColorAttachment;
         DepthAttachment                                     mDepthAttachment;
-        Unique<Pass>                                        mContinuation;
     };
 }
