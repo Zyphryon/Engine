@@ -49,6 +49,28 @@ namespace Render
             return mTargets;
         }
 
+        /// \brief Restates the fraction of the output a graph realizes one target at.
+        ///
+        /// \param Slot   The slot the target was declared under.
+        /// \param Sizing The fraction of the output to realize it at.
+        ZY_INLINE void ResizeTarget(UInt32 Slot, Target::Scale Sizing)
+        {
+            mTargets[Slot].Sizing = Sizing;
+        }
+
+        /// \brief Restates the explicit size a graph realizes one target at, independent of the output.
+        ///
+        /// \param Slot   The slot the target was declared under.
+        /// \param Width  The width to realize it at, in pixels.
+        /// \param Height The height to realize it at, in pixels.
+        ZY_INLINE void ResizeTarget(UInt32 Slot, UInt16 Width, UInt16 Height)
+        {
+            Ref<Target> Description = mTargets[Slot];
+            Description.Sizing = Target::Scale::Fixed;
+            Description.Width  = Width;
+            Description.Height = Height;
+        }
+
         /// \brief Creates a pass of the given type, appends it to the execution order, and returns it.
         ///
         /// \param Parameters The arguments forwarded to the pass's constructor.

@@ -93,17 +93,20 @@ namespace Render
 
     private:
 
-        /// \brief One target the graph realized, and the size it came out at.
+        /// \brief One target the graph realized, and the shape it came out in.
         struct Slot final
         {
-            /// TODO_DOC
-            Graphic::Object Texture;
+            /// The texture the graph realized for the target, or zero while it holds none.
+            Graphic::Object        Texture = 0;
 
-            /// TODO_DOC
-            UInt16          Width;
+            /// The format the texture was realized with.
+            Graphic::TextureFormat Format  = Graphic::TextureFormat::Unspecified;
 
-            /// TODO_DOC
-            UInt16          Height;
+            /// The width the texture came out at, in pixels.
+            UInt16                 Width   = 0;
+
+            /// The height the texture came out at, in pixels.
+            UInt16                 Height  = 0;
         };
 
         /// \brief One pass the graph baked, and the surface it draws into.

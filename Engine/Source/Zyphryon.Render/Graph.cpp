@@ -43,40 +43,83 @@ namespace Render
 
     void Graph::Resize(UInt16 Width, UInt16 Height)
     {
-        Release();
-
         mWidth  = Width;
         mHeight = Height;
 
-        // Realize a texture of the graph's own for every target the blueprint declares.
-        for (ConstRef<Target> Description : mBlueprint.GetTargets())
+        ConstSpan<Target> Targets = mBlueprint.GetTargets();
+
+        while (mSlots.GetSize() < Targets.GetSize())
         {
-            Ref<Slot> Entry = mSlots.Append();
+            mSlots.Append(Slot());
+        }
+
+        // Realize a texture of the graph's own for every target whose shape is not the one it already holds.
+        Bool Realized = false;
+
+        for (UInt32 Index = 0; Index < Targets.GetSize(); ++Index)
+        {
+            ConstRef<Target> Description = Targets[Index];
+            Ref<Slot>        Entry       = mSlots[Index];
+
+            UInt16 Sized;
+            UInt16 Tall;
 
             switch (Description.Sizing)
             {
             case Target::Scale::Full:
-                Entry.Width  = Width;
-                Entry.Height = Height;
+                Sized = Width;
+                Tall  = Height;
                 break;
             case Target::Scale::Half:
-                Entry.Width  = Width  / 2;
-                Entry.Height = Height / 2;
+                Sized = Width  / 2;
+                Tall  = Height / 2;
                 break;
             case Target::Scale::Quarter:
-                Entry.Width  = Width  / 4;
-                Entry.Height = Height / 4;
+                Sized = Width  / 4;
+                Tall  = Height / 4;
                 break;
-            case Target::Scale::Fixed:
-                Entry.Width  = Description.Width;
-                Entry.Height = Description.Height;
+            default:
+                Sized = Description.Width;
+                Tall  = Description.Height;
                 break;
             }
 
-            Entry.Width   = Max(1, Entry.Width);
-            Entry.Height  = Max(1, Entry.Height);
-            Entry.Texture = mService->CreateTexture(Description.Format, Entry.Width, Entry.Height, 1, Description.Samples);
+            Sized = Max(1, Sized);
+            Tall  = Max(1, Tall);
+
+            // A texture already standing in the shape it is asked for again is left where it is.
+            if (Entry.Texture && Entry.Format == Description.Format && Entry.Width == Sized && Entry.Height == Tall)
+            {
+                continue;
+            }
+
+            if (Entry.Texture)
+            {
+                mService->DeleteTexture(Entry.Texture);
+            }
+
+            Entry.Format  = Description.Format;
+            Entry.Width   = Sized;
+            Entry.Height  = Tall;
+            Entry.Texture = mService->CreateTexture(Description.Format, Sized, Tall, 1, Description.Samples);
+            Realized      = true;
         }
+
+        // Every step names the textures it draws into, so they stand only while none of them moved.
+        if (!Realized && !mSteps.IsEmpty())
+        {
+            return;
+        }
+
+        for (ConstRef<Step> Entry : mSteps)
+        {
+            // The display surface is not the graph's to destroy, and an inline step never owned its handle.
+            if (!Entry.Inline && Entry.Handle != Graphic::kDisplay)
+            {
+                mService->DeletePass(Entry.Handle);
+            }
+        }
+        mSteps.Clear();
 
         // Bake one step per pass over the textures the graph just realized.
         for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
