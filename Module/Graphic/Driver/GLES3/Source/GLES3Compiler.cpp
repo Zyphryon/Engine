@@ -207,6 +207,7 @@ namespace Graphic
         Preamble.Append("precision highp float;\n");
         Preamble.Append("precision highp int;\n");
         Preamble.Append("precision highp sampler2D;\n");
+        Preamble.Append("precision highp sampler2DArray;\n");
 
 #else
 
@@ -247,11 +248,11 @@ namespace Graphic
 
 #endif
 
-        const ConstPtr<GLchar> Sources[] = { Preamble.GetData(),                     Body.GetData()                     };
-        const GLint            Lengths[] = { static_cast<GLint>(Preamble.GetSize()), static_cast<GLint>(Body.GetSize()) };
+        const ConstPtr<GLchar> Sources[] = { Preamble.GetData(),                     Body.GetData(),                     "\n" };
+        const GLint            Lengths[] = { static_cast<GLint>(Preamble.GetSize()), static_cast<GLint>(Body.GetSize()), 1    };
 
         const GLuint Handle = glCreateShader(GLES3Convert(Stage));
-        glShaderSource(Handle, 2, Sources, Lengths);
+        glShaderSource(Handle, 3, Sources, Lengths);
         glCompileShader(Handle);
 
         GLint Compiled = GL_FALSE;
