@@ -732,6 +732,26 @@ inline namespace Math
             return AnyColor(Limit() - Color.GetRed(), Limit() - Color.GetGreen(), Limit() - Color.GetBlue(), Color.GetAlpha());
         }
 
+		/// \brief Linearly interpolates between two color values.
+		///
+		/// \param Start      The starting color value.
+		/// \param End        The ending color value.
+		/// \param Percentage The interpolation factor, in the range [0, 1].
+		/// \return The color value interpolated between \a Start and \a End.
+        ZY_INLINE static constexpr AnyColor Lerp(ConstRef<AnyColor> Start, ConstRef<AnyColor> End, Real32 Percentage)
+        {
+            const auto Channel = [Percentage](Type From, Type To)
+            {
+                return static_cast<Type>(::Lerp(static_cast<Real32>(From), static_cast<Real32>(To), Percentage));
+            };
+
+            return AnyColor(
+                Channel(Start.GetRed(),   End.GetRed()),
+                Channel(Start.GetGreen(), End.GetGreen()),
+                Channel(Start.GetBlue(),  End.GetBlue()),
+                Channel(Start.GetAlpha(), End.GetAlpha()));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
