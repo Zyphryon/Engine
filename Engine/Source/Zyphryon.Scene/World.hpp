@@ -529,6 +529,25 @@ namespace Scene
             Root().template Children<Relation>(Forward<Callable>(Callback));
         }
 
+        /// \brief Iterates over every entity holding a relation that points at the given target.
+        ///
+        /// \tparam Relation The relation the entities are held by.
+        /// \param  Component The target the relation points at.
+        /// \param  Callback  The function to call for each entity holding it.
+        template<typename Relation, typename Callable>
+        ZY_INLINE void Each(Entity Component, AnyRef<Callable> Callback) const
+        {
+            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
+
+            for (ecs_iter_t Iterator = ecs_each_id(mHandle, Pair); ecs_each_next(& Iterator);)
+            {
+                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
+                {
+                    Callback(Entity(mHandle, Iterator.entities[Element]));
+                }
+            }
+        }
+
         /// \brief Iterates over all singleton components and tags on the world and invokes a callback for each one.
         ///
         /// \param Callback The function to call for each component or tag.
