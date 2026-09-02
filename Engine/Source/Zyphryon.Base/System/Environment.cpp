@@ -26,9 +26,17 @@ inline namespace Base
         static constexpr Text kPrefix   = "--";
         static constexpr Text kNegation = "no-";
 
+        mStorage.Clear();
+        mStorage.Reserve(Count);
+
         for (UInt Index = 1; Index < Count; ++Index)
         {
-            const Text Argument = StrConvert(Arguments[Index]);
+            mStorage.Append(Str(StrConvert(Arguments[Index])));
+        }
+
+        for (UInt Index = 0; Index < mStorage.GetSize(); ++Index)
+        {
+            const Text Argument = mStorage[Index];
 
             if (!StrStartsWith(Argument, kPrefix))
             {
@@ -49,9 +57,9 @@ inline namespace Base
                 Name  = Name.Slice(kNegation.GetSize());
                 Value = "false";
             }
-            else if (Index + 1 < Count)
+            else if (Index + 1 < mStorage.GetSize())
             {
-                if (const Text Next = StrConvert(Arguments[Index + 1]); !StrStartsWith(Next, kPrefix))
+                if (const Text Next = mStorage[Index + 1]; !StrStartsWith(Next, kPrefix))
                 {
                     Value = Next;
                     ++Index;
