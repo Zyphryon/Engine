@@ -44,8 +44,8 @@ FUNCTION(ZyApplyOptions TARGET)
         TARGET_LINK_OPTIONS(${TARGET} PRIVATE
             -sALLOW_MEMORY_GROWTH=1
             -sSTACK_SIZE=2MB
-            -sINITIAL_MEMORY=64MB
-            -sMAXIMUM_MEMORY=512MB
+            -sINITIAL_MEMORY=256MB
+            -sMAXIMUM_MEMORY=1GB
             -sMIN_WEBGL_VERSION=2
             -sMAX_WEBGL_VERSION=2
             -sUSE_WEBGL2=1
