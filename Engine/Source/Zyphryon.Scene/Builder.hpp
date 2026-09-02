@@ -1190,6 +1190,22 @@ namespace Scene::DSL
     template<typename... Types>
     inline constexpr Implication<Types...> Implies { };
 
+    /// \brief Names the component an entity carries while it hangs from another.
+    ///
+    /// \return The entity a term is written against to ask whether one hangs from anything at all.
+    ZY_INLINE Entity Parent()
+    {
+        return Entity(ecs_id(EcsParent));
+    }
+
+    /// \brief Names the tag an entity carries while it stands as an archetype rather than a thing in the world.
+    ///
+    /// \return The entity a term is written against to ask whether one is an archetype.
+    ZY_INLINE Entity Prefab()
+    {
+        return Entity(EcsPrefab);
+    }
+
     /// \brief Concept satisfied when \p Type states the name it should register under.
     template<typename Type>
     concept IsNamed = requires { { Type::kName } -> IsCastable<Text>; };
