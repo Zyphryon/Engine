@@ -26,7 +26,8 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Remote::Remote(Text Address)
-        : mAddress { Address }
+        : mAddress { Address },
+          mActive  { 0 }
     {
         if (StrEndsWith(mAddress, "/"))
         {
@@ -81,16 +82,50 @@ namespace Content
     {
 #if defined(ZY_PLATFORM_WEB)
 
-        // The request outlives this call, so what answers it is put somewhere the call does not own.
-        const Ptr<Request> Handle = new Request(Move(Callback), this);
+        mQueue.Append(new Request(Str(Path), Move(Callback), this, 0));
+
+        Pump();
+
+#else
+
+        // Nothing else here speaks over the wire yet, and answering as though it did would have the caller
+        // wait for something that is never coming.
+        Callback(Filesystem::Result::Denied, Blob());
+
+#endif // ZY_PLATFORM_WEB
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Remote::Pump()
+    {
+        while (mActive < kMaxInFlight && !mQueue.IsEmpty())
+        {
+            const Ptr<Request> Handle = mQueue.GetFront();
+
+            mQueue.Remove(0);
+            ++mActive;
+
+            Send(Handle);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Remote::Send(Ptr<Request> Handle)
+    {
+#if defined(ZY_PLATFORM_WEB)
+
+        ++Handle->Attempt;
 
         emscripten_fetch_attr_t Attributes;
         emscripten_fetch_attr_init(AddressOf(Attributes));
 
         Blit(Attributes.requestMethod, 4, "GET");
 
-        // The bytes are handed over whole rather than in pieces, which is what a blob wants, and the fetch
-        // keeps them until it is freed: what arrives is taken over below rather than copied out of it.
+        // The bytes are wanted whole rather than in pieces, which is what a blob is.
         Attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
         Attributes.userData   = Handle;
 
@@ -104,7 +139,7 @@ namespace Content
             Blit(Data, Size, Fetch->data);
             emscripten_fetch_close(Fetch);
 
-            OnSucceed(Handle, Data, Size);
+            Close(Handle, Filesystem::Result::Success, Data, Size);
         };
 
         Attributes.onerror    = [](Ptr<emscripten_fetch_t> Fetch)
@@ -114,16 +149,27 @@ namespace Content
 
             emscripten_fetch_close(Fetch);
 
-            OnFail(Handle, Status);
+            // Being told to slow down is not an answer about the file, so the same question is asked again.
+            if (Status == kTooMany && Handle->Attempt < kMaxAttempts)
+            {
+                Ref<Remote> Owner = * Handle->Owner;
+
+                Owner.mQueue.Append(Handle);
+                --Owner.mActive;
+
+                Owner.Pump();
+                return;
+            }
+
+            // A file that is not there and an address that cannot be reached are told apart, since only one
+            // of them is worth asking about again.
+            Close(Handle, Status == 404 ? Filesystem::Result::Inexistent : Filesystem::Result::Unknown, nullptr, 0);
         };
 
-        const Str Address = Str::Print<"{0}/{1}">(mAddress, Path);
+        Str Address = Str::Print<"{0}/{1}">(mAddress, Handle->Path);
+        Address.Append('\0');
 
         emscripten_fetch(AddressOf(Attributes), Address.GetData());
-
-#else
-
-        Callback(Filesystem::Result::Denied, Blob());
 
 #endif // ZY_PLATFORM_WEB
     }
@@ -131,27 +177,27 @@ namespace Content
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Remote::OnSucceed(Ptr<Request> Handle, Ptr<Byte> Data, UInt32 Size)
+    void Remote::Close(Ptr<Request> Handle, Filesystem::Result Result, Ptr<Byte> Data, UInt32 Size)
     {
-        Handle->Callback(Filesystem::Result::Success, Blob(Data, Size, [](Ptr<Byte> Address)
+        Ref<Remote> Owner = * Handle->Owner;
+
+        if (Data)
         {
-            delete[] Address;
-        }));
+            Handle->Callback(Result, Blob(Data, Size, [](Ptr<Byte> Address)
+            {
+                delete[] Address;
+            }));
+        }
+        else
+        {
+            Handle->Callback(Result, Blob());
+        }
 
         delete Handle;
-    }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // Whatever was held back for want of room goes out now that there is some.
+        --Owner.mActive;
 
-    void Remote::OnFail(Ptr<Request> Handle, UInt32 Status)
-    {
-        const Filesystem::Result Result = (Status == 404)
-            ? Filesystem::Result::Inexistent
-            : Filesystem::Result::Unknown;
-
-        Handle->Callback(Result, Blob());
-
-        delete Handle;
+        Owner.Pump();
     }
 }

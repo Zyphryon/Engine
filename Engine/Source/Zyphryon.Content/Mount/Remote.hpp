@@ -50,34 +50,54 @@ namespace Content
 
     private:
 
-        /// \brief One request that has been sent and not yet answered.
+        /// \brief How many requests are allowed to be waiting on an answer at once.
+        static constexpr UInt32 kMaxInFlight = 6;
+
+        /// \brief How many times a request that was refused for arriving too fast is sent again.
+        static constexpr UInt32 kMaxAttempts = 4;
+
+        /// \brief The status a server answers with when it is being asked for too much at once.
+        static constexpr UInt32 kTooMany     = 429;
+
+        /// \brief One request, either waiting its turn or waiting on an answer.
         struct Request final
         {
-            /// The callback that receives whatever comes back.
-            OnRead   Callback;
+            /// The path being asked for, kept because a refused request is sent again.
+            Str         Path;
 
-            /// The mount that sent it, which the completion is handed back through.
+            /// The callback that receives whatever comes back.
+            OnRead      Callback;
+
+            /// The mount that sent it, which every answer is handed back through.
             Ptr<Remote> Owner;
+
+            /// How many times this has been sent.
+            UInt32      Attempt;
         };
 
-        /// \brief Answers a request that came back with bytes, and releases it.
-        ///
-        /// \param Handle  The request being answered.
-        /// \param Data    The bytes that came back, which the blob takes over.
-        /// \param Size    The number of bytes that came back.
-        static void OnSucceed(Ptr<Request> Handle, Ptr<Byte> Data, UInt32 Size);
+        /// \brief Sends whatever is waiting its turn, for as long as there is room to.
+        void Pump();
 
-        /// \brief Answers a request that came back with nothing, and releases it.
+        /// \brief Sends one request.
+        ///
+        /// \param Handle The request to send.
+        void Send(Ptr<Request> Handle);
+
+        /// \brief Answers a request and releases it, then sends whatever was waiting behind it.
         ///
         /// \param Handle The request being answered.
-        /// \param Status The status it came back with, which says why there is nothing.
-        static void OnFail(Ptr<Request> Handle, UInt32 Status);
+        /// \param Result What to answer with.
+        /// \param Data   The bytes that came back, which the blob takes over, or nothing.
+        /// \param Size   The number of bytes that came back.
+        static void Close(Ptr<Request> Handle, Filesystem::Result Result, Ptr<Byte> Data, UInt32 Size);
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Str mAddress;
+        Str                    mAddress;
+        Sequence<Ptr<Request>> mQueue;
+        UInt32                 mActive;
     };
 }
