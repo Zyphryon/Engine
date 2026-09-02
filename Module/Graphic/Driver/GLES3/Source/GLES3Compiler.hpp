@@ -62,5 +62,11 @@ namespace Graphic
         /// \param Source The GLSL source to parse.
         /// \param Blocks The sequence to populate with extracted bindings.
         void Parse(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Blocks) const;
+
+        /// \brief Parses the GLSL source to extract sampler declarations, in the order they are declared.
+        ///
+        /// \param Source   The GLSL source module to scan.
+        /// \param Samplers The sequence each newly seen declaration is appended to.
+        void Sample(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Samplers) const;
     };
 }

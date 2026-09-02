@@ -90,21 +90,41 @@ namespace Graphic
             {
                 --Back;
             }
-            if (Back > Copied && Code[Back - 1] == ',')
+
+            UInt Forward = End;
+            while (Forward < Code.GetSize() && IsInlineSpace(Code[Forward]))
+            {
+                ++Forward;
+            }
+
+            if (Back > Copied && Code[Back - 1] == '(' && Forward < Code.GetSize() && Code[Forward] == ')')
+            {
+                // Nothing else stood in the list, and an empty `layout()` is not valid, so the whole one goes.
+                UInt Head = Back - 1;
+                while (Head > Copied && IsInlineSpace(Code[Head - 1]))
+                {
+                    --Head;
+                }
+                while (Head > Copied && StrIsIdentifier(Code[Head - 1]))
+                {
+                    --Head;
+                }
+
+                RemoveStart = Head;
+                End         = Forward + 1;
+
+                while (End < Code.GetSize() && IsInlineSpace(Code[End]))
+                {
+                    ++End;
+                }
+            }
+            else if (Back > Copied && Code[Back - 1] == ',')
             {
                 RemoveStart = Back - 1;
             }
-            else
+            else if (Forward < Code.GetSize() && Code[Forward] == ',')
             {
-                UInt Forward = End;
-                while (Forward < Code.GetSize() && IsInlineSpace(Code[Forward]))
-                {
-                    ++Forward;
-                }
-                if (Forward < Code.GetSize() && Code[Forward] == ',')
-                {
-                    End = Forward + 1;
-                }
+                End = Forward + 1;
             }
 
             Result.Append(Text(Code.GetData() + Copied, RemoveStart - Copied));
@@ -114,34 +134,6 @@ namespace Graphic
 
         Result.Append(Text(Code.GetData() + Copied, Code.GetSize() - Copied));
         return Result;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static Bool GLES3IsSampler(GLenum Type)
-    {
-        switch (Type)
-        {
-        case GL_SAMPLER_2D:
-        case GL_SAMPLER_3D:
-        case GL_SAMPLER_CUBE:
-        case GL_SAMPLER_2D_SHADOW:
-        case GL_SAMPLER_2D_ARRAY:
-        case GL_SAMPLER_2D_ARRAY_SHADOW:
-        case GL_SAMPLER_CUBE_SHADOW:
-        case GL_INT_SAMPLER_2D:
-        case GL_INT_SAMPLER_3D:
-        case GL_INT_SAMPLER_CUBE:
-        case GL_INT_SAMPLER_2D_ARRAY:
-        case GL_UNSIGNED_INT_SAMPLER_2D:
-        case GL_UNSIGNED_INT_SAMPLER_3D:
-        case GL_UNSIGNED_INT_SAMPLER_CUBE:
-        case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
-            return true;
-        default:
-            return false;
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -297,29 +289,112 @@ namespace Graphic
             }
         }
 
+        Sequence<GLES3Binding> Samplers;
+
+        for (ConstRef<Blob> Module : Program.Modules)
+        {
+            if (Module.GetSize() > 0)
+            {
+                Sample(Module, Samplers);
+            }
+        }
+
         glUseProgram(Handle);
 
-        // Assign each sampler the next sequential texture unit in enumeration order.
-        GLint Count = 0;
-        glGetProgramiv(Handle, GL_ACTIVE_UNIFORMS, AddressOf(Count));
-
-        GLint Unit = 0;
-        for (GLint Index = 0; Index < Count; ++Index)
+        for (ConstRef<GLES3Binding> Sampler : Samplers)
         {
-            GLchar  Name[128] { };
-            GLsizei Length = 0;
-            GLint   Size   = 0;
-            GLenum  Type   = 0;
-            glGetActiveUniform(Handle, Index, sizeof(Name), AddressOf(Length), AddressOf(Size), AddressOf(Type), Name);
+            if (const GLint Location = glGetUniformLocation(Handle, Sampler.Name.GetData()); Location >= 0)
+            {
+                glUniform1i(Location, Sampler.Point);
+            }
+        }
+    }
 
-            if (!GLES3IsSampler(Type))
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void GLES3Compiler::Sample(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Samplers) const
+    {
+        UInt Cursor = 0;
+
+        const Text Code(Source.GetData<Char>(), Source.GetSize());
+
+        while (GLES3FindWord(Code, "layout", Cursor))
+        {
+            StrSkipWhitespace(Code, Cursor);
+
+            if (!StrConsume(Code, Cursor, '('))
             {
                 continue;
             }
 
-            if (const GLint Location = glGetUniformLocation(Handle, Name); Location >= 0)
+            // Isolate the parenthesized qualifier list.
+            const SInt CloseRelative = StrFind(Code.Slice(Cursor), ')');
+            if (CloseRelative <= 0)
             {
-                glUniform1i(Location, Unit++);
+                continue;
+            }
+
+            const Text Qualifiers(Code.GetData() + Cursor, static_cast<UInt>(CloseRelative));
+            Cursor += static_cast<UInt>(CloseRelative) + 1;             // Skip past ')'.
+
+            // Recover the binding point declared inside the qualifier list, if any: `binding = N`.
+            UInt Inner = 0;
+
+            if (!GLES3FindWord(Qualifiers, "binding", Inner))
+            {
+                continue;
+            }
+
+            StrSkipWhitespace(Qualifiers, Inner);
+
+            if (!StrConsume(Qualifiers, Inner, '='))
+            {
+                continue;
+            }
+
+            StrSkipWhitespace(Qualifiers, Inner);
+
+            if (Inner >= Qualifiers.GetSize() || !StrIsDigit(Qualifiers[Inner]))
+            {
+                continue;
+            }
+            const GLint Point = StrExtractNumber<10, GLint>(Qualifiers, Inner);
+
+            StrSkipWhitespace(Code, Cursor);
+
+            if (!StrEqualCase(GLES3ReadWord(Code, Cursor), "uniform"))
+            {
+                continue;
+            }
+
+            StrSkipWhitespace(Code, Cursor);
+
+            if (!StrContains(GLES3ReadWord(Code, Cursor), "sampler"))
+            {
+                continue;
+            }
+
+            StrSkipWhitespace(Code, Cursor);
+
+            const Text Name = GLES3ReadWord(Code, Cursor);
+
+            if (Name.IsEmpty())
+            {
+                continue;
+            }
+
+            // Both stages may name the same sampler, and both then mean the one texture.
+            Bool Declared = false;
+
+            for (ConstRef<GLES3Binding> Sampler : Samplers)
+            {
+                Declared = Declared || StrEqualCase(Text(Sampler.Name.GetData(), Sampler.Name.GetSize()), Name);
+            }
+
+            if (!Declared)
+            {
+                Samplers.Append(Name, Point);
             }
         }
     }
