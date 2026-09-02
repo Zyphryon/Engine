@@ -174,7 +174,7 @@ namespace Graphic
 
         // A floating-point back-buffer (HDR) needs the float pixel type, which is its own extension.
         const Bool WantsFloat = (Config.ColorFormat == TextureFormat::RGBA16Float) && GLAD_WGL_ARB_pixel_format_float;
-        const Bool WantsSRGB  = (Config.ColorFormat == TextureFormat::RGBA8UIntNorm_sRGB) && GLAD_WGL_ARB_framebuffer_sRGB;
+        const Bool WantsSRGB  = (Config.ColorFormat == TextureFormat::RGBA8UIntNorm_sRGB);
 
         // Select an accelerated, double-buffered pixel format through the ARB path.
         struct KeyPair { SInt32 Key; SInt32 Value; };
@@ -189,7 +189,7 @@ namespace Graphic
         Attributes.Append(WGL_ALPHA_BITS_ARB,     AlphaBits);
         Attributes.Append(WGL_DEPTH_BITS_ARB,     DepthBits);
         Attributes.Append(WGL_STENCIL_BITS_ARB,   StencilBits);
-        if (WantsSRGB)
+        if (WantsSRGB && (GLAD_WGL_ARB_framebuffer_sRGB || GLAD_WGL_EXT_framebuffer_sRGB))
         {
             Attributes.Append(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE);
         }
