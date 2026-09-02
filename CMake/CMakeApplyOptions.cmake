@@ -49,6 +49,7 @@ FUNCTION(ZyApplyOptions TARGET)
             -sMIN_WEBGL_VERSION=2
             -sMAX_WEBGL_VERSION=2
             -sUSE_WEBGL2=1
+            -sFETCH=1
             $<$<CONFIG:Debug>:
                 -sASSERTIONS=2
                 -sSAFE_HEAP=1
