@@ -77,6 +77,21 @@ inline namespace Base
         {
         }
 
+        /// \brief Gets how many bytes are still left to read.
+        ///
+        /// \return The bytes remaining when reading, and zero when writing.
+        ZY_INLINE UInt32 GetAvailable() const
+        {
+            if constexpr (IsReader)
+            {
+                return mArchive.GetAvailable();
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
         /// \brief Serializes a value of any supported type.
         ///
         /// \param Value The value to read into or write from.
