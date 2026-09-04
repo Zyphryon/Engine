@@ -45,9 +45,9 @@ namespace Graphic
         switch (Value)
         {
         case TextureFormat::D16UIntNorm:
-            return DXGI_FORMAT_R16_UNORM;
+            return DXGI_FORMAT_D16_UNORM;
         case TextureFormat::D32Float:
-            return DXGI_FORMAT_R32_FLOAT;
+            return DXGI_FORMAT_D32_FLOAT;
         case TextureFormat::D24S8UIntNorm:
             return DXGI_FORMAT_D24_UNORM_S8_UINT;
         case TextureFormat::D32S8UIntNorm:
