@@ -142,8 +142,9 @@ namespace Render
                 }
             }
 
-            // A pass whose primary color attachment names no target renders to the display surface.
-            if (Colors.IsEmpty() || Colors.GetFront().Target == Pass::kNone)
+            const Bool IsDepthOnly = Colors.IsEmpty() && Stage.GetDepth().Target != Pass::kNone;
+
+            if (!IsDepthOnly && (Colors.IsEmpty() || Colors.GetFront().Target == Pass::kNone))
             {
                 Entry.Handle   = Graphic::kDisplay;
                 Entry.Viewport = Graphic::Viewport(0.0f, 0.0f, Width, Height);
@@ -174,8 +175,8 @@ namespace Render
 
             Entry.Handle = mService->CreatePass(Resolved, Depth);
 
-            // The pass viewport tracks the size its first color target came out at.
-            const UInt32 Primary = Colors.GetFront().Target;
+            // The pass viewport tracks the size its first target came out at, colors first.
+            const UInt32 Primary = IsDepthOnly ? Stage.GetDepth().Target : Colors.GetFront().Target;
             Entry.Viewport = Graphic::Viewport(0.0f, 0.0f, GetWidth(Primary), GetHeight(Primary));
         }
     }

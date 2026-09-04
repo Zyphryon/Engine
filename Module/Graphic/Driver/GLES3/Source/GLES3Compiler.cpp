@@ -200,6 +200,7 @@ namespace Graphic
         Preamble.Append("precision highp int;\n");
         Preamble.Append("precision highp sampler2D;\n");
         Preamble.Append("precision highp sampler2DArray;\n");
+        Preamble.Append("precision highp sampler2DShadow;\n");
 
 #else
 

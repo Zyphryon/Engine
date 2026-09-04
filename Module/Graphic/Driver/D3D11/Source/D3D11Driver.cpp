@@ -510,8 +510,15 @@ namespace Graphic
             break;
         }
 
+        D3D11_FILTER Filter = D3D11Convert(Descriptor.Filter);
+
+        if (Descriptor.Comparison != TestCondition::None)
+        {
+            Filter = static_cast<D3D11_FILTER>(Filter | D3D11_COMPARISON_FILTERING_BIT);
+        }
+
         const CD3D11_SAMPLER_DESC SamplerDescriptor(
-            D3D11Convert(Descriptor.Filter),
+            Filter,
             D3D11Convert(Descriptor.AddressModeU),
             D3D11Convert(Descriptor.AddressModeV),
             D3D11Convert(Descriptor.AddressModeW),
@@ -683,12 +690,12 @@ namespace Graphic
             = (Target.DepthStencil.Target ? Target.DepthStencil.Target.Get() : nullptr);
         mDeviceImmediate->OMSetRenderTargets(ColorAttachments.GetSize(), ColorAttachments.GetData(), DepthAttachment);
 
-        // Clear color attachments as specified.
+        // Clear color attachments as specified, only as far as the clears handed over actually reach.
         for (UInt32 Index = 0; Index < ColorAttachments.GetSize(); ++Index)
         {
             ConstRef<D3D11ColorAttachment> Attachment = Target.Colors[Index];
 
-            if (Attachment.LoadAction == Action::Clear)
+            if (Attachment.LoadAction == Action::Clear && Index < Colors.GetSize())
             {
                 mDeviceImmediate->ClearRenderTargetView(
                     ColorAttachments[Index], reinterpret_cast<ConstPtr<FLOAT>>(AddressOf(Colors[Index])));
