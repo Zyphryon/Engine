@@ -24,9 +24,6 @@
 /// The reciprocal of the full turn, for trading a divide against a multiply.
 #define ZY_INV_TWO_PI    0.15915494309
 
-/// The turn from one sample to the next that spreads a spiral of them as evenly as any count can.
-#define ZY_GOLDEN_ANGLE  2.39996322973
-
 /// Small enough to stand in for zero, large enough to keep a divide from running away.
 #define ZY_EPSILON       0.0001
 
