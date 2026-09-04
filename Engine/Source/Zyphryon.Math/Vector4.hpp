@@ -545,6 +545,44 @@ inline namespace Math
         /// \return A vector containing the cross product of the XYZ components, with W = 0.
         ZY_INLINE static Vector4 Cross3(Vector4 P0, Vector4 P1);
 
+        /// \brief Encodes a vector into the whole range of an integer per lane, the way a normalized vertex attribute reads it back.
+        ///
+        /// \param Value The vector to encode, each lane held to the range the integer spans.
+        /// \return The lanes in order, each spread over the integer's range.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeNormalized(Vector4 Value)
+            requires IsIntegral<Integer>
+        {
+            return Array(::EncodeNormalized<Integer>(Value.GetX()), 
+					     ::EncodeNormalized<Integer>(Value.GetY()), 
+						 ::EncodeNormalized<Integer>(Value.GetZ()), 
+						 ::EncodeNormalized<Integer>(Value.GetW()));
+        }
+
+        /// \brief Encodes a vector as fixed-point integers, at a given count of steps per unit.
+        ///
+        /// \param Value The vector to encode.
+        /// \param Scale The count of steps one unit is cut into.
+        /// \return The lanes in order, each in steps and held to what the integer can carry.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeFixed(Vector4 Value, Real32 Scale)
+            requires IsIntegral<Integer>
+        {
+            return Array(::EncodeFixed<Integer>(Value.GetX(), Scale), 
+					     ::EncodeFixed<Integer>(Value.GetY(), Scale), 
+						 ::EncodeFixed<Integer>(Value.GetZ(), Scale), 
+						 ::EncodeFixed<Integer>(Value.GetW(), Scale));
+        }
+
+        /// \brief Encodes a vector as half-precision lanes, the way a half vertex attribute reads it back.
+        ///
+        /// \param Value The vector to encode.
+        /// \return The lanes in order, each rounded to the nearest half.
+        ZY_INLINE static Array<Half, 4> EncodeHalf(Vector4 Value)
+        {
+            return Array(Half(Value.GetX()), Half(Value.GetY()), Half(Value.GetZ()), Half(Value.GetW()));
+        }
+
         /// \brief Gets the component-wise minimum of two vectors.
         ///
         /// \param P0 The first vector.

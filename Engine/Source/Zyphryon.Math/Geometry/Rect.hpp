@@ -693,6 +693,31 @@ inline namespace Math
             return AnyRect(X1, Y1, X2, Y2);
         }
 
+        /// \brief Encodes a rectangle into the whole range of an integer per edge, the way a normalized vertex attribute reads it back.
+        ///
+        /// \param Value The rectangle to encode, each edge held to the range the integer spans.
+        /// \return The minimum corner then the maximum corner, each edge spread over the integer's range.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeNormalized(AnyRect Value)
+            requires IsIntegral<Integer>
+        {
+            return Array(::EncodeNormalized<Integer>(Value.mMinimumX), ::EncodeNormalized<Integer>(Value.mMinimumY),
+						 ::EncodeNormalized<Integer>(Value.mMaximumX), ::EncodeNormalized<Integer>(Value.mMaximumY));
+        }
+
+        /// \brief Encodes a rectangle as fixed-point integers, at a given count of steps per unit.
+        ///
+        /// \param Value The rectangle to encode.
+        /// \param Scale The count of steps one unit is cut into.
+        /// \return The minimum corner then the maximum corner, each edge in steps and held to what the integer can carry.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeFixed(AnyRect Value, Real32 Scale)
+            requires IsIntegral<Integer>
+        {
+            return Array(::EncodeFixed<Integer>(Value.mMinimumX, Scale), ::EncodeFixed<Integer>(Value.mMinimumY, Scale),
+						 ::EncodeFixed<Integer>(Value.mMaximumX, Scale), ::EncodeFixed<Integer>(Value.mMaximumY, Scale));
+        }
+
         /// \brief Gets the component-wise minimum of two rectangles.
         ///
         /// \param First  The first rectangle.
