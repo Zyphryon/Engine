@@ -84,6 +84,16 @@ namespace Scene
             return mHandle ? static_cast<UInt>(ecs_query_count(mHandle).entities) : 0;
         }
 
+        /// \brief Checks whether what the query matches changed since it was last iterated.
+        ///
+        /// \note Only a query created with \ref Cache::Watched keeps the bookkeeping this asks.
+        ///
+        /// \return `true` when something matched was written, added or removed, otherwise `false`.
+        ZY_INLINE Bool IsChanged() const
+        {
+            return mHandle ? ecs_query_changed(mHandle) : false;
+        }
+
         /// \brief Executes the query, invoking a callback for each matching entity.
         ///
         /// \note Omitting \p Types derives them from the parameters \p Each declares, in order.

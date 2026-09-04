@@ -244,7 +244,8 @@ namespace Scene
             DSL::_::Descriptor Builder(mWorld);
             DSL::_::Build<void, CompileExpression...>(Builder, Runtime...);
 
-            ecs_query_cache_kind_t Kind = EcsQueryCacheDefault;
+            ecs_query_cache_kind_t Kind  = EcsQueryCacheDefault;
+            UInt32                 Flags = 0;
 
             switch (Policy)
             {
@@ -257,8 +258,12 @@ namespace Scene
             case Cache::None:
                 Kind = EcsQueryCacheNone;
                 break;
+            case Cache::Watched:
+                Kind  = EcsQueryCacheAuto;
+                Flags = EcsQueryDetectChanges;
+                break;
             }
-            return Query(Builder.BuildQuery(Name, Kind));
+            return Query(Builder.BuildQuery(Name, Kind, Flags));
         }
 
         /// \brief Creates a timer entity that can be used to rate-limit or schedule systems.

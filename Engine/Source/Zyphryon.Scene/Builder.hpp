@@ -284,9 +284,10 @@ namespace Scene::DSL::_
         /// \param Name  The optional name the query registers under.
         /// \param Cache The caching strategy to apply.
         /// \return The query, which the caller owns.
-        ZY_INLINE Ptr<ecs_query_t> BuildQuery(Text Name, ecs_query_cache_kind_t Cache)
+        ZY_INLINE Ptr<ecs_query_t> BuildQuery(Text Name, ecs_query_cache_kind_t Cache, UInt32 Flags = 0)
         {
             mQuery.cache_kind = Cache;
+            mQuery.flags     |= Flags;
             mQuery.entity     = Reserve(Name);
 
             return ecs_query_init(mWorld, AddressOf(mQuery));

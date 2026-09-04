@@ -57,6 +57,7 @@ namespace Scene
         Default,    ///< Determined by query creation context.
         Auto,       ///< Automatically manages caching based on query terms.
         None,       ///< Disables caching; query is evaluated every execution.
+        Watched,    ///< Caches automatically, and watches what it matches so a sweep can ask what changed.
     };
 
     /// \brief Defines execution modes for system scheduling.
