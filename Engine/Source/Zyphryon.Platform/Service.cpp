@@ -44,6 +44,8 @@ namespace Platform
 
     void Service::OnTick(Real64 Delta)
     {
+        ZY_PROFILE_SCOPE("Platform::Tick");
+
         // Poll system messages (platform-specific).
         mWindow.Poll();
 

@@ -924,6 +924,8 @@ namespace Graphic
         // Present the default framebuffer when committing the display pass.
         if (Pass == kDisplay)
         {
+            ZY_PROFILE_SCOPE("Driver::Present");
+
             mContext.Present();
         }
     }

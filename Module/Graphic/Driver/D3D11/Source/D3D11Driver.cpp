@@ -888,6 +888,8 @@ namespace Graphic
         // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
+            ZY_PROFILE_SCOPE("Driver::Present");
+
             const UInt Interval = mDeviceProperties.Tearless ? 1 : 0;
             const UInt Flag     = Interval == 0 && mDeviceProperties.Tearing  ? DXGI_PRESENT_ALLOW_TEARING : 0;
             D3D11Check(mSwapchain->Present(Interval, Flag));
