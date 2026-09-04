@@ -624,4 +624,69 @@ inline namespace Base
     {
         return Z * (Width * Height) + Y * Width + X;
     }
+
+    /// \brief Encodes a value into the whole range of an integer, the way a normalized vertex attribute reads it back.
+    ///
+    /// \param Value The value to encode, which is held to the range the type spans.
+    /// \return The value spread over the integer's range, rounded to the nearest step.
+    template<typename Type>
+    ZY_INLINE Type EncodeNormalized(Real32 Value)
+        requires IsIntegral<Type>
+    {
+        if constexpr (std::is_signed_v<Type>)
+        {
+            return static_cast<Type>(Round(Clamp(Value, -1.0f, 1.0f) * static_cast<Real32>(kMaximum<Type>)));
+        }
+        else
+        {
+            return static_cast<Type>(Clamp(Value, 0.0f, 1.0f) * static_cast<Real32>(kMaximum<Type>) + 0.5f);
+        }
+    }
+
+    /// \brief Decodes a value \ref EncodeNormalized spread over an integer's range.
+    ///
+    /// \param Value The encoded value.
+    /// \return The value it stands for, over zero through one or negative one through one.
+    template<typename Type>
+    ZY_INLINE Real32 DecodeNormalized(Type Value)
+        requires IsIntegral<Type>
+    {
+        const Real32 Result = static_cast<Real32>(Value) / static_cast<Real32>(kMaximum<Type>);
+
+        if constexpr (std::is_signed_v<Type>)
+        {
+            return Max(Result, -1.0f);
+        }
+        else
+        {
+            return Result;
+        }
+    }
+
+    /// \brief Encodes a value as a fixed-point integer, at a given count of steps per unit.
+    ///
+    /// \param Value The value to encode.
+    /// \param Scale The count of steps one unit is cut into.
+    /// \return The value in steps, rounded to the nearest one and held to what the type can carry.
+    template<typename Type>
+    ZY_INLINE Type EncodeFixed(Real32 Value, Real32 Scale)
+        requires IsIntegral<Type>
+    {
+        constexpr Real32 Floor = static_cast<Real32>(kMinimum<Type>);
+        constexpr Real32 Ceil  = static_cast<Real32>(kMaximum<Type>);
+
+        return static_cast<Type>(Clamp(Round(Value * Scale), Floor, Ceil));
+    }
+
+    /// \brief Decodes a value \ref EncodeFixed cut into steps.
+    ///
+    /// \param Value The value in steps.
+    /// \param Scale The count of steps one unit was cut into.
+    /// \return The value the steps stand for.
+    template<typename Type>
+    ZY_INLINE Real32 DecodeFixed(Type Value, Real32 Scale)
+        requires IsIntegral<Type>
+    {
+        return static_cast<Real32>(Value) / Scale;
+    }
 }
