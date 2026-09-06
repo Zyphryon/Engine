@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
+#include "Protocol/Ledger.hpp"
 #include "Codec.hpp"
 #include "Zyphryon.Job/Service.hpp"
 
@@ -86,8 +87,11 @@ namespace Scene
 
     void Service::LoadHierarchy(Ref<Reader> Archive, Entity Actor)
     {
-        // Reads the entity's data.
-        Actor.Load(Archive);
+		// Reads the entity's data.
+        Defer([&]
+        {
+            Actor.Load(Archive);
+        });
 
         // Reads the entity's hierarchy, over the parts its archetype already gave it where a record names one.
         const Entity          Archetype = Actor.GetArchetype();
@@ -186,12 +190,12 @@ namespace Scene
     {
         const UInt32 Size = Archive.Read<UInt32>();
 
-        struct Defer
+        struct Adoption
         {
             Entity Source;
             UInt64 Parent;
         };
-        Sequence<Defer> Pending(Size);
+        Sequence<Adoption> Pending(Size);
 
         for (UInt32 Element = 1, Limit = Size; Element <= Limit; ++Element)
         {
@@ -201,16 +205,20 @@ namespace Scene
             mArchetypes.Acquire(static_cast<UInt32>(ID) - kMinRangeArchetypes);
 
             Entity Archetype = Allocate<true>(ID);
-            Archetype.Add(EcsPrefab);
-            Archetype.Load(Archive);
+
+            Defer([&]
+            {
+                Archetype.Add(EcsPrefab);
+                Archetype.Load(Archive);
+            });
 
             if (Parent)
             {
-                Pending.Append(Defer(Archetype, Parent));
+                Pending.Append(Adoption(Archetype, Parent));
             }
         }
 
-        for (ConstRef<Defer> Entry : Pending)
+        for (ConstRef<Adoption> Entry : Pending)
         {
             Entry.Source.Attach(GetEntity(Entry.Parent), Hierarchy::Fixed);
         }
