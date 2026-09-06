@@ -164,6 +164,60 @@ namespace Scene
             });
         }
 
+        /// \brief Writes the components of the specified actor that differ from the same components on a reference.
+        ///
+        /// A component the reference lacks, or holds with other bytes, is written; one it holds alike is not, so a
+        /// prefab's part goes out as only what was changed on it. A component the actor lacks is never written.
+        ///
+        /// \param Archive   The binary data writer to write the component data to.
+        /// \param Actor     The actor from which to save the components.
+        /// \param Reference The actor whose components are the baseline.
+        /// \return `true` if at least one component was written, `false` otherwise.
+        template<typename Owner>
+        ZY_INLINE static Bool WriteComponentsOf(Ref<Writer> Archive, Owner Actor, Owner Reference)
+        {
+            Bool Written = false;
+
+            Archive.WriteBlock<UInt32>([&](Ref<Writer> Output)
+            {
+                Writer Mine;
+                Writer Theirs;
+
+                Actor.Each([&](Entity Component)
+                {
+                    Mine.Clear();
+                    Theirs.Clear();
+
+                    WriteComponent<Owner>(Mine, Actor, Component);
+
+                    // A component with no serializer writes nothing, and so has nothing to compare.
+                    if (Mine.GetSize() == 0)
+                    {
+                        return;
+                    }
+
+                    if (ecs_has_id(Component.GetWorld(), Reference.GetID(), Component.GetID()))
+                    {
+                        WriteComponent<Owner>(Theirs, Reference, Component);
+                    }
+
+                    Bool Same = (Mine.GetSize() == Theirs.GetSize());
+
+                    for (UInt32 Index = 0; Same && Index < Mine.GetSize(); ++Index)
+                    {
+                        Same = (Mine.GetData()[Index] == Theirs.GetData()[Index]);
+                    }
+
+                    if (!Same)
+                    {
+                        Output.Write<Byte>(Mine.GetData(), Mine.GetSize());
+                        Written = true;
+                    }
+                });
+            });
+            return Written;
+        }
+
     private:
 
         /// \brief Resolves a component entity by the name it was written under.

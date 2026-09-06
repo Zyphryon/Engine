@@ -89,13 +89,43 @@ namespace Scene
         // Reads the entity's data.
         Actor.Load(Archive);
 
-        // Reads the entity's hierarchy.
-        const ConstSpan<Byte> Data = Archive.ReadBlock<UInt32, Byte>();
+        // Reads the entity's hierarchy, over the parts its archetype already gave it where a record names one.
+        const Entity          Archetype = Actor.GetArchetype();
+        const ConstSpan<Byte> Data      = Archive.ReadBlock<UInt32, Byte>();
 
         for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
         {
-            const Entity Children = LoadHierarchy(Hierarchy);
-            Children.Attach(Actor, Scene::Hierarchy::Open);
+            // A record naming a part of this entity's own archetype is laid over the part the archetype has
+            // already given it, so what was changed on a part survives; anything else is a child of its own.
+            Entity Part;
+
+            if (Archetype.IsValid())
+            {
+                Reader Peek(Data.GetData() + Hierarchy.GetOffset(), Hierarchy.GetAvailable());
+                Peek.ReadText();
+                Peek.ReadText();
+
+                if (const Entity Source(mWorld, Peek.Read<UInt64>()); Source.IsAlive() && Source.GetParent() == Archetype)
+                {
+                    Actor.Children([&](Entity Child)
+                    {
+                        if (Child.GetArchetype() == Source)
+                        {
+                            Part = Child;
+                        }
+                    });
+                }
+            }
+
+            if (Part.IsValid())
+            {
+                LoadHierarchy(Hierarchy, Part);
+            }
+            else
+            {
+                const Entity Children = LoadHierarchy(Hierarchy);
+                Children.Attach(Actor, Scene::Hierarchy::Open);
+            }
         }
     }
 
@@ -109,26 +139,43 @@ namespace Scene
             return;
         }
 
-        // Writes the entity's data.
-        Actor.Save(Archive);
-
-        // The archetype this entity was instantiated from, if any.
-        const Entity Archetype = Actor.GetArchetype();
-
-        // Writes the entity's hierarchy.
-        Archive.WriteBlock<UInt32>([this, Actor, Archetype](Ref<Writer> Output)
+        const auto SaveChildren = [this, Actor](Ref<Writer> Output)
         {
             Actor.Children([&](Entity Children)
             {
-                const Entity Source = Children.GetArchetype();
-
-                if (Archetype.IsValid() && Source.IsValid() && Source.GetParent() == Archetype)
-                {
-                    return;
-                }
                 SaveHierarchy(Output, Children);
             });
-        });
+        };
+
+        // A part of a prefab goes out as what was changed on it, and not at all when nothing was.
+        const Entity Source = Actor.GetArchetype();
+        const Entity Parent = Actor.GetParent();
+
+        if (Source.IsValid() && Parent.IsValid() && Parent.GetArchetype().IsValid() && Source.GetParent() == Parent.GetArchetype())
+        {
+            Writer Record;
+
+            Bool Changed = Actor.Save(Record, Source);
+
+            Record.WriteBlock<UInt32>([&](Ref<Writer> Output)
+            {
+                const UInt32 Before = Output.GetSize();
+                SaveChildren(Output);
+                Changed |= (Output.GetSize() != Before);
+            });
+
+            if (Changed)
+            {
+                Archive.Write<Byte>(Record.GetData(), Record.GetSize());
+            }
+            return;
+        }
+
+        // Writes the entity's data.
+        Actor.Save(Archive);
+
+        // Writes the entity's hierarchy.
+        Archive.WriteBlock<UInt32>(SaveChildren);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
