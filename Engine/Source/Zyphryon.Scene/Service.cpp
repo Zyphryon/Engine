@@ -147,15 +147,16 @@ namespace Scene
             });
         };
 
-        // A part of a prefab goes out as what was changed on it, and not at all when nothing was.
         const Entity Source = Actor.GetArchetype();
         const Entity Parent = Actor.GetParent();
 
-        if (Source.IsValid() && Parent.IsValid() && Parent.GetArchetype().IsValid() && Source.GetParent() == Parent.GetArchetype())
+        if (Source.IsValid())
         {
+            const Bool Part = Parent.IsValid() && Parent.GetArchetype().IsValid() && Source.GetParent() == Parent.GetArchetype();
+
             Writer Record;
 
-            Bool Changed = Actor.Save(Record, Source);
+            Bool Changed = Actor.Save(Record);
 
             Record.WriteBlock<UInt32>([&](Ref<Writer> Output)
             {
@@ -164,7 +165,7 @@ namespace Scene
                 Changed |= (Output.GetSize() != Before);
             });
 
-            if (Changed)
+            if (Changed || !Part)
             {
                 Archive.Write<Byte>(Record.GetData(), Record.GetSize());
             }

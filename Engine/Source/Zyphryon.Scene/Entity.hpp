@@ -1026,14 +1026,8 @@ namespace Scene
         /// \brief Saves this entity's components to a binary data stream.
         ///
         /// \param Archive The binary data writer to write the component data to.
-        void Save(Ref<Writer> Archive) const;
-
-        /// \brief Saves this entity to a binary data stream as what differs from a reference entity.
-        ///
-        /// \param Archive   The binary data writer to write the entity to.
-        /// \param Reference The entity whose components are the baseline.
-        /// \return `true` if at least one component differed and was written, `false` otherwise.
-        Bool Save(Ref<Writer> Archive, Entity Reference) const;
+        /// \return `true` if at least one component was written, `false` otherwise.
+        Bool Save(Ref<Writer> Archive) const;
 
         /// \brief Copies this entity's components into a destination entity.
         ///

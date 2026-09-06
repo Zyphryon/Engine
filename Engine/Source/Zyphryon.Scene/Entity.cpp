@@ -61,7 +61,7 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Entity::Save(Ref<Writer> Archive) const
+    Bool Entity::Save(Ref<Writer> Archive) const
     {
         // Write the entity's name.
         Archive.WriteText(GetName());
@@ -74,25 +74,7 @@ namespace Scene
         Archive.Write<UInt64>(Archetype.IsValid() ? Archetype.GetID() : 0);
 
         // Write the entity's components.
-        Codec::WriteComponentsOf(Archive, * this);
+        return Codec::WriteComponentsOf(Archive, * this);
     }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Entity::Save(Ref<Writer> Archive, Entity Reference) const
-    {
-        // Write the entity's name.
-        Archive.WriteText(GetName());
-
-        // Write the entity's alias.
-        Archive.WriteText(GetAlias());
-
-        // Write the entity's archetype (or '0' if not valid).
-        const Entity Archetype = GetArchetype();
-        Archive.Write<UInt64>(Archetype.IsValid() ? Archetype.GetID() : 0);
-
-        // Write the entity's components, those that differ from the reference's.
-        return Codec::WriteComponentsOf(Archive, * this, Reference);
-    }
 }
