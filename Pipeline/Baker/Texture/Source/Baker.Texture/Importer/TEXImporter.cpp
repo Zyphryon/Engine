@@ -117,8 +117,7 @@ namespace Pipeline::Baker::Texture
 
         for (UInt32 Slice = 0; Slice < Layers; ++Slice)
         {
-            Blob Data = Blob::Allocate<Byte>(Length);
-            Data.Copy<Byte>(Pixels + static_cast<UInt>(Slice) * Stride, Length);
+            Blob Data = Blob::Copy(ConstSpan<Byte>(Pixels + static_cast<UInt>(Slice) * Stride, Length));
 
             Result.Slices.Append(Bitmap(Format, Width, Height, 1, Move(Data)));
         }

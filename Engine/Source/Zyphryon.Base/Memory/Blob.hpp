@@ -197,6 +197,18 @@ inline namespace Base
             });
         }
 
+        /// \brief Creates a blob that owns a copy of an existing buffer.
+        ///
+        /// \param Span The constant span referencing the buffer to copy.
+        /// \return A blob that owns a new buffer holding the same bytes, with a deleter that releases the memory.
+        template<typename Type>
+        ZY_INLINE static Blob Copy(ConstSpan<Type> Span)
+        {
+            Blob Result = Allocate<Type>(Span.GetSize());
+            Result.Copy(Span.GetData(), static_cast<UInt32>(Span.GetSize() * sizeof(Type)));
+            return Result;
+        }
+
         /// \brief Creates a blob that borrows an existing buffer without taking ownership.
         ///
         /// \param Data  The pointer to the first element of the buffer.

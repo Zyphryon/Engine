@@ -133,10 +133,7 @@ namespace Graphic
             }
             Result.Append(Source.Slice(Cursor));
 
-            Blob Stitched = Blob::Allocate<Char>(Result.GetSize());
-            Stitched.Copy(Result.GetData(), static_cast<UInt32>(Result.GetSize()));
-
-            SetSource(Move(Stitched));
+            SetSource(Blob::Copy(ConstSpan<Char>(Result.GetData(), Result.GetSize())));
         }
 
     private:
