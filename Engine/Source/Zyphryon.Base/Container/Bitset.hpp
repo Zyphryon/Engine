@@ -147,6 +147,21 @@ inline namespace Base
             return (mData[kWordCount - 1] & kLastMask) == kLastMask;
         }
 
+        /// \brief Invokes a callback with the index of every set bit, lowest first.
+        ///
+        /// \param Callback The function invoked with each zero-based bit index.
+        template<typename Callable>
+        ZY_INLINE constexpr void ForEach(AnyRef<Callable> Callback) const
+        {
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                for (Word Pending = mData[Index]; Pending; Pending &= Pending - 1)
+                {
+                    Callback(Index * kWordBits + CountTrailingZeros(Pending));
+                }
+            }
+        }
+
         /// \brief Gets the index of the lowest set bit.
         ///
         /// \return The zero-based index of the first set bit, or \p Size if no bit is set.
@@ -268,6 +283,95 @@ inline namespace Base
                 }
             }
             return Size;
+        }
+
+        /// \brief Gets the bits set in both this bitset and another.
+        ///
+        /// \param Other The bitset to intersect with.
+        /// \return A bitset holding the bits set in both.
+        ZY_INLINE constexpr Bitset operator&(ConstRef<Bitset> Other) const
+        {
+            Bitset Result;
+
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                Result.mData[Index] = mData[Index] & Other.mData[Index];
+            }
+            return Result;
+        }
+
+        /// \brief Gets the bits set in either this bitset or another.
+        ///
+        /// \param Other The bitset to unite with.
+        /// \return A bitset holding the bits set in either.
+        ZY_INLINE constexpr Bitset operator|(ConstRef<Bitset> Other) const
+        {
+            Bitset Result;
+
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                Result.mData[Index] = mData[Index] | Other.mData[Index];
+            }
+            return Result;
+        }
+
+        /// \brief Gets the bits this bitset leaves clear, within its size.
+        ///
+        /// \return A bitset holding every bit this one does not.
+        ZY_INLINE constexpr Bitset operator~() const
+        {
+            constexpr UInt kRemainder = Size % kWordBits;
+            constexpr Word kLastMask  = kRemainder ? ((Word(1) << kRemainder) - 1u) : kWordFull;
+
+            Bitset Result;
+
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                Result.mData[Index] = ~mData[Index] & (Index == kWordCount - 1 ? kLastMask : kWordFull);
+            }
+            return Result;
+        }
+
+        /// \brief Keeps only the bits also set in another bitset.
+        ///
+        /// \param Other The bitset to intersect with.
+        /// \return A reference to this bitset.
+        ZY_INLINE constexpr Ref<Bitset> operator&=(ConstRef<Bitset> Other)
+        {
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                mData[Index] &= Other.mData[Index];
+            }
+            return (* this);
+        }
+
+        /// \brief Sets every bit set in another bitset.
+        ///
+        /// \param Other The bitset to unite with.
+        /// \return A reference to this bitset.
+        ZY_INLINE constexpr Ref<Bitset> operator|=(ConstRef<Bitset> Other)
+        {
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                mData[Index] |= Other.mData[Index];
+            }
+            return (* this);
+        }
+
+        /// \brief Checks whether two bitsets hold the same bits.
+        ///
+        /// \param Other The bitset to compare with.
+        /// \return `true` if every bit agrees, otherwise `false`.
+        ZY_INLINE constexpr Bool operator==(ConstRef<Bitset> Other) const
+        {
+            for (UInt Index = 0; Index < kWordCount; ++Index)
+            {
+                if (mData[Index] != Other.mData[Index])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
     private:
