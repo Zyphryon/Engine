@@ -103,6 +103,14 @@ namespace Network
 
     Bool Socket::Bind(ConstRef<Endpoint> Address)
     {
+        // An endpoint bound to every interface is expected to hear IPv4 peers too.
+        if (Address.GetData<sockaddr>()->sa_family == AF_INET6)
+        {
+            SInt32 False = 0;
+
+            setsockopt(static_cast<SInt32>(mHandle), IPPROTO_IPV6, IPV6_V6ONLY, AddressOf(False), sizeof(False));
+        }
+
         if (bind(static_cast<SInt32>(mHandle), Address.GetData<sockaddr>(), Address.GetSize()) != 0)
         {
             LOG_E("Network: a socket could not be bound ({0})", errno);
