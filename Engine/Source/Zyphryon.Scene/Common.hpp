@@ -82,11 +82,20 @@ namespace Scene
         Inheritable,  ///< Component values can be inherited across entities.
         Local,        ///< Component never reaches an instance spawned from an archetype.
         Toggleable,   ///< Component can be toggled on/off without removal.
-        Sparse,       ///< Component is stored sparsely for memory efficiency.
+        Sparse,       ///< Component is stored outside the table, so its address holds while the entity moves.
+        Unfragmented, ///< Component is kept out of the table type, so adding or removing it never moves the entity.
         Associative,  ///< Component behaves like a key-value association.
         Singleton,    ///< Component exists only once globally (per world).
         Final,        ///< Component cannot be extended or overridden.
         Symmetric,    ///< Component has symmetric behavior in relationships.
         Exclusive,    ///< Component has exclusive behavior in relationships.
+    };
+
+    /// \brief Specifies what happens to an entity that refers to another when what it refers to is deleted.
+    enum class Cleanup : UInt8
+    {
+        Remove, ///< The reference is removed, and the entity that held it lives on.
+        Delete, ///< The entity that held the reference is deleted along with it.
+        Panic,  ///< Deleting with the reference still held is an error, so it has to be removed by hand first.
     };
 }

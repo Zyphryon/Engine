@@ -209,6 +209,18 @@ namespace Scene::DSL::_
             return (* this);
         }
 
+        /// \brief Groups the results by the target of a relationship, so one group can be walked on its own.
+        ///
+        /// \note Only a cached query groups, since the groups live on the cache.
+        ///
+        /// \param Relation The relationship whose target names a group.
+        /// \return This description, allowing for method chaining.
+        ZY_INLINE Ref<Descriptor> GroupBy(ecs_entity_t Relation)
+        {
+            mQuery.group_by = Relation;
+            return (* this);
+        }
+
         /// \brief Sets the minimum time that must elapse between two runs of a system.
         ///
         /// \param Seconds The interval in seconds.
@@ -1136,12 +1148,42 @@ namespace Scene::DSL
         }
     };
 
+    /// \brief Represents the grouping of results by the target of a relationship.
+    ///
+    /// \note Only a cached query groups, and \ref Query::Run may then walk one group alone.
+    ///
+    /// \tparam Relation The relationship whose target names a group.
+    template<typename Relation>
+    struct GroupBy
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = _::TypeList<>;
+
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                Builder.GroupBy(Scene::_::Identify<Relation>());
+            }
+        }
+    };
+
     /// \brief Represents a set of traits granted together, so several may travel as one term.
     ///
     /// \tparam Values The traits to grant.
     template<Trait... Values>
     struct Traits final
     {
+        /// \brief Grants the traits to one component.
+        ///
+        /// \tparam Type  The component the traits are granted to.
+        /// \param  World The world the component belongs to.
+        template<typename Type>
+        ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
+        {
+            Component<Type>(World, Scene::_::Identify<Type>()).Grant(Values...);
+        }
     };
 
     /// \brief Grants a component the ability to be written to and read from an archive.
@@ -1158,6 +1200,9 @@ namespace Scene::DSL
 
     /// \brief Grants a component storage that keeps it out of the table its entity is filed under.
     inline constexpr Traits<Trait::Sparse>       Sparse       { };
+
+    /// \brief Grants a component absence from the table type, so it comes and goes without moving its entity.
+    inline constexpr Traits<Trait::Unfragmented> Unfragmented { };
 
     /// \brief Grants a component the behaviour of a key-value association.
     inline constexpr Traits<Trait::Associative>  Associative  { };
@@ -1183,6 +1228,17 @@ namespace Scene::DSL
     template<typename... Types>
     struct Implication final
     {
+        /// \brief Attaches the implied components to one component.
+        ///
+        /// \tparam Type  The component that brings the others along.
+        /// \param  World The world the component belongs to.
+        template<typename Type>
+        ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
+        {
+            const Component<Type> Handle(World, Scene::_::Identify<Type>());
+
+            (Handle.template With<Types>(), ...);
+        }
     };
 
     /// \brief Names the components a declaration brings along with it.
@@ -1190,6 +1246,42 @@ namespace Scene::DSL
     /// \tparam Types The components attached alongside.
     template<typename... Types>
     inline constexpr Implication<Types...> Implies { };
+
+    /// \brief Represents what a deletion does to the entities holding a component, or holding a pair of it.
+    ///
+    /// \tparam Policy What is done to them.
+    /// \tparam Target Whether the rule fires when the target of a pair dies, rather than the component itself.
+    template<Cleanup Policy, Bool Target>
+    struct Cleaning final
+    {
+        /// \brief Attaches the rule to one component or relationship.
+        ///
+        /// \tparam Type  The component or relationship the rule is attached to.
+        /// \param  World The world the component belongs to.
+        template<typename Type>
+        ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
+        {
+            const ecs_entity_t Action = Policy == Cleanup::Remove ? EcsRemove : Policy == Cleanup::Delete ? EcsDelete : EcsPanic;
+
+            ecs_add_id(World, Scene::_::Identify<Type>(), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
+        }
+    };
+
+    /// \brief Declares what happens to the entities holding a component when the component itself is deleted.
+    ///
+    /// \tparam Policy What is done to them.
+    template<Cleanup Policy>
+    inline constexpr Cleaning<Policy, false> OnDelete
+    {
+    };
+
+    /// \brief Declares what happens to the entities holding a pair of a relationship when the pair's target dies.
+    ///
+    /// \tparam Policy What is done to them.
+    template<Cleanup Policy>
+    inline constexpr Cleaning<Policy, true> OnDeleteTarget
+    {
+    };
 
     /// \brief Names the component an entity carries while it hangs from another.
     ///
@@ -1265,33 +1357,13 @@ namespace Scene::DSL
                 }
             }
 
-            /// \brief Applies every term to one component.
+            /// \brief Applies every term to one component, each term knowing how it applies itself.
             ///
             /// \param World The world the component belongs to.
             template<typename Type>
             ZY_INLINE static void ApplyEach(Ptr<ecs_world_t> World)
             {
-                (ApplyTerm<Type>(World, Parts { }), ...);
-            }
-
-            /// \brief Grants one set of traits to one component.
-            ///
-            /// \param World The world the component belongs to.
-            template<typename Type, Trait... Values>
-            ZY_INLINE static void ApplyTerm(Ptr<ecs_world_t> World, Traits<Values...>)
-            {
-                Component<Type>(World, Scene::_::Identify<Type>()).Grant(Values...);
-            }
-
-            /// \brief Attaches one set of implications to one component.
-            ///
-            /// \param World The world the component belongs to.
-            template<typename Type, typename... Targets>
-            ZY_INLINE static void ApplyTerm(Ptr<ecs_world_t> World, Implication<Targets...>)
-            {
-                const Component<Type> Handle(World, Scene::_::Identify<Type>());
-
-                (Handle.template With<Targets>(), ...);
+                (Parts::template Apply<Type>(World), ...);
             }
         };
     };

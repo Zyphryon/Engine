@@ -116,6 +116,30 @@ namespace Scene
             Runner::Make(Move(Each))(Cursor);
         }
 
+        /// \brief Executes the query over one group alone, invoking a callback for each matching entity in it.
+        ///
+        /// \note Omitting \p Types derives them from the parameters \p Each declares, in order.
+        ///
+        /// \param Group The target whose group is walked, as the query was grouped by \ref DSL::GroupBy.
+        /// \param Each  The function or functor to execute for every matching entity.
+        template<typename... Types, typename FEach>
+        ZY_INLINE void Run(Entity Group, AnyRef<FEach> Each) const
+        {
+            using Declared  = DSL::_::TypeList<Types...>;
+            using Trimmed   = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
+            using Inferred  = typename DSL::_::Infer<Trimmed>::Fields;
+            using Signature = Select<sizeof...(Types) == 0, Inferred, Declared>;
+            using Runner    = DSL::_::RunnerFactory<Signature, StripAll<FEach>>;
+
+            ecs_iter_t     Handle = ecs_query_iter(mHandle->world, mHandle);
+            const Iterator Cursor(AddressOf(Handle));
+
+            Cursor.Reset();
+            ecs_iter_set_group(AddressOf(Handle), Group.GetID());
+
+            Runner::Make(Move(Each))(Cursor);
+        }
+
         /// \brief Move-assigns a query from another query instance, transferring ownership.
         ZY_INLINE Ref<Query> operator=(AnyRef<Query> Other) noexcept
         {

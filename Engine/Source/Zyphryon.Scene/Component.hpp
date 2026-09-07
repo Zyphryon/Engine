@@ -155,6 +155,9 @@ namespace Scene
             case Trait::Sparse:
                 ecs_add_id(mWorld, mHandle, EcsSparse);
                 break;
+            case Trait::Unfragmented:
+                ecs_add_id(mWorld, mHandle, EcsDontFragment);
+                break;
             case Trait::Associative:
                 ecs_add_id(mWorld, mHandle, EcsPairIsTag);
                 break;
@@ -194,6 +197,9 @@ namespace Scene
                 break;
             case Trait::Sparse:
                 ecs_remove_id(mWorld, mHandle, EcsSparse);
+                break;
+            case Trait::Unfragmented:
+                ecs_remove_id(mWorld, mHandle, EcsDontFragment);
                 break;
             case Trait::Associative:
                 ecs_remove_id(mWorld, mHandle, EcsPairIsTag);
