@@ -153,7 +153,7 @@ namespace Scene::Protocol
 
         /// \brief Gets the key the scope is subscribed to by.
         ///
-        /// \return The key.
+        /// \return The key, which is never zero for a scope peers can subscribe to.
         ZY_INLINE UInt64 GetKey() const
         {
             return mKey;

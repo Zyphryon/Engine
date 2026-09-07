@@ -55,7 +55,7 @@ namespace Scene::Protocol
 
         /// \brief Drops a peer, forgetting what it was subscribed to and what it knew.
         ///
-        /// \param Link The peer.
+        /// \param Link The peer being dropped, which is forgotten along with everything it saw.
         void Expel(Network::Connection Link);
 
         /// \brief Sets the scopes a peer sees, replacing whatever it saw before.
@@ -72,7 +72,7 @@ namespace Scene::Protocol
         /// \param Rule The rule, or nothing to let every peer see everything beneath the scopes it subscribes to.
         ZY_INLINE void SetVisibility(AnyRef<Visibility> Rule)
         {
-            mVisibility = Move(Rule);
+            mVisibility = ::Move(Rule);
         }
 
     private:
@@ -129,8 +129,8 @@ namespace Scene::Protocol
 
         /// \brief Gets the components of a replica a peer is allowed to receive.
         ///
-        /// \param Peer   The peer.
-        /// \param Record The replica.
+        /// \param Peer   The peer being sent to, whose ownership of the entity decides which mask applies.
+        /// \param Record The replica, whose owner is compared against the peer.
         /// \return The mask of components addressed to that peer.
         static Mask Audience(ConstRef<Member> Peer, ConstRef<Replica> Record);
 
@@ -140,11 +140,17 @@ namespace Scene::Protocol
         /// \return The peer, or null when no peer was admitted under the key.
         Ptr<Member> Find(UInt64 Key);
 
+        /// \brief Takes a peer off a group's subscribers.
+        ///
+        /// \param Group The group the peer stops seeing.
+        /// \param Peer  The peer leaving it, found by walking since a group has few.
+        static void Leave(Ref<Group> Group, Ptr<Member> Peer);
+
         /// \brief Gives a peer a replica it now sees: a spawn, or for one held from disk, only what departed from it.
         ///
-        /// \param Peer     The peer.
+        /// \param Peer     The peer that now sees the replica, whose reliable stream the spawn or update is written into.
         /// \param Actor    The entity carrying the replica.
-        /// \param Record   The replica.
+        /// \param Record   The replica, which says whether the entity is held from disk or was spawned, and who owns it.
         /// \param Tracking What the publisher remembers about the replica.
         /// \param Key      The key of the scope the replica stands in.
         /// \param Fresh    Whether the peer sees the scope for the first time, which is when what departed from disk is said.
@@ -152,7 +158,7 @@ namespace Scene::Protocol
 
         /// \brief Asks the rule whether a peer sees a replica, which it does without a rule.
         ///
-        /// \param Peer  The peer.
+        /// \param Peer  The peer asking, which is what the rule is given to decide by.
         /// \param Actor The entity carrying the replica.
         /// \return `true` if the peer sees it, `false` if it is hidden from the peer.
         Bool Visible(ConstRef<Member> Peer, Entity Actor);
@@ -164,27 +170,27 @@ namespace Scene::Protocol
         ///
         /// \note A replica held from disk was never given, so it is never taken away.
         ///
-        /// \param Peer       The peer.
+        /// \param Peer       The peer that stops seeing the replica, told to forget it only if it ever knew it.
         /// \param Identifier The identifier of the replica.
         void Conceal(Ref<Member> Peer, UInt64 Identifier);
 
         /// \brief Tells a peer about every replica beneath a scope it now sees.
         ///
         /// \param Actor The entity carrying the scope, or one beneath it.
-        /// \param Peer  The peer.
+        /// \param Peer  The peer that now sees the scope, given every announced replica beneath it.
         /// \param Fresh Whether the peer sees the scope for the first time, which is when what departed from disk is said.
         void Announce(Entity Actor, Ref<Member> Peer, Bool Fresh);
 
         /// \brief Makes a peer forget every spawned replica beneath a scope it no longer sees.
         ///
         /// \param Actor The entity carrying the scope, or one beneath it.
-        /// \param Peer  The peer.
+        /// \param Peer  The peer that stops seeing the scope, told to forget every spawned replica beneath it.
         void Retract(Entity Actor, Ref<Member> Peer);
 
         /// \brief Moves a replica between scopes, telling the peers that stop or start seeing it.
         ///
         /// \param Actor    The entity carrying the replica.
-        /// \param Record   The replica.
+        /// \param Record   The replica, which says whether it is spawned or held from disk, and so how it is given and taken.
         /// \param Tracking What the publisher remembers about the replica.
         /// \param Key      The key of the scope the replica now stands in, or zero.
         void Move(Entity Actor, ConstRef<Replica> Record, Ref<Tracker> Tracking, UInt64 Key);
@@ -192,46 +198,46 @@ namespace Scene::Protocol
         /// \brief Sends what a replica touched or removed to every peer that sees it.
         ///
         /// \param Actor    The entity carrying the replica.
-        /// \param Record   The replica.
+        /// \param Record   The replica, whose owner decides which components each peer is sent.
         /// \param Tracking What the publisher remembers about the replica.
         void Broadcast(Entity Actor, ConstRef<Replica> Record, Ref<Tracker> Tracking);
 
         /// \brief Writes the spawn of a replica into a peer's reliable stream.
         ///
-        /// \param Peer   The peer.
+        /// \param Peer   The peer being told, whose reliable stream the spawn lands in.
         /// \param Actor  The entity carrying the replica.
-        /// \param Record The replica.
+        /// \param Record The replica, whose identifier and owner the spawn names.
         /// \param Key    The key of the scope the replica stands in.
         void WriteSpawn(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, UInt64 Key);
 
         /// \brief Writes what a replica departed from disk into a peer's reliable stream, changed or gone alike.
         ///
-        /// \param Peer   The peer.
+        /// \param Peer   The peer being told, whose reliable stream the update lands in.
         /// \param Actor  The entity carrying the replica.
-        /// \param Record The replica.
+        /// \param Record The replica, whose identifier the update names.
         /// \param Wanted The components that departed, written when held and named as gone when not.
         void WriteUpdate(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, Mask Wanted);
 
         /// \brief Writes the forgetting of a replica into a peer's reliable stream.
         ///
-        /// \param Peer       The peer.
+        /// \param Peer       The peer being told, whose reliable stream the forgetting lands in.
         /// \param Identifier The identifier of the replica.
         void WriteForget(Ref<Member> Peer, UInt64 Identifier);
 
         /// \brief Adds an entry to a peer's datagram, sending the one being filled when it has no room left.
         ///
-        /// \param Peer  The peer.
+        /// \param Peer  The peer being sent to, whose datagram the entry is added to.
         /// \param Entry The entry, which must fit a datagram on its own.
         void WriteStream(Ref<Member> Peer, ConstSpan<Byte> Entry);
 
         /// \brief Sends a peer's reliable stream if it grew past the chunk size.
         ///
-        /// \param Peer The peer.
+        /// \param Peer The peer whose reliable stream is looked at.
         void Drain(Ref<Member> Peer);
 
         /// \brief Sends whatever a peer has gathered, reliable stream and datagram both.
         ///
-        /// \param Peer The peer.
+        /// \param Peer The peer whose gathered messages go out now.
         void Flush(Ref<Member> Peer);
 
     private:

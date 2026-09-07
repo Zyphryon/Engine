@@ -78,7 +78,7 @@ namespace Scene::Protocol
 
     /// \brief Puts an entity in line for the next publish, once per tick.
     ///
-    /// \param Actor    The entity.
+    /// \param Actor    The entity that has something to say, which carries the tracker.
     /// \param Tracking The tracker the entity carries.
     /// \return `true` if what the entity has to say will be looked at, `false` if there is nobody to say it to.
     ZY_INLINE Bool Enlist(Entity Actor, Ref<Tracker> Tracking)

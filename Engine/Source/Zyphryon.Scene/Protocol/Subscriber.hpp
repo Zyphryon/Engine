@@ -66,7 +66,7 @@ namespace Scene::Protocol
 
         /// \brief Finds the entity a replica identifier stands for.
         ///
-        /// \param Identifier The identifier.
+        /// \param Identifier The identifier the entity travels under.
         /// \return The entity, or an invalid entity when none carries the identifier.
         ZY_INLINE Entity Find(UInt64 Identifier) const
         {
