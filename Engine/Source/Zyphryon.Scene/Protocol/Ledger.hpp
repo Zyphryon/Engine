@@ -60,15 +60,6 @@ namespace Scene::Protocol
 
         /// How many loads from disk are underway, during which what lands is the baseline and not a change.
         UInt32           Restoring  = 0;
-
-        /// \brief Reads or writes nothing, since a ledger is never persisted, but a component that is not trivially
-        ///        copyable has to say how it would be.
-        ///
-        /// \param Archive The archive to read from or write to.
-        template<typename Serializer>
-        ZY_INLINE void Serialize(Serializer Archive)
-        {
-        }
     };
 
     /// \brief Runs a load from disk, during which what lands is the baseline the wire measures change against.

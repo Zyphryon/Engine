@@ -141,7 +141,14 @@ namespace Scene
             switch (Trait)
             {
             case Trait::Serializable:
-                Context::Get(mWorld).AddFactory(mHandle, Factory::Create<Type>());
+                if constexpr (IsSerializable<Type, Archive<Reader>> || IsTriviallyCopyable<Type>)
+                {
+                    Context::Get(mWorld).AddFactory(mHandle, Factory::Create<Type>());
+                }
+                else
+                {
+                    ZY_ASSERT(false, "Component declared serializable neither implements Serialize nor is trivially copyable");
+                }
                 break;
             case Trait::Inheritable:
                 ecs_add_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit));
