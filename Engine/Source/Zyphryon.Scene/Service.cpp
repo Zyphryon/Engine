@@ -12,6 +12,7 @@
 
 #include "Service.hpp"
 #include "Codec.hpp"
+#include "Protocol/Ledger.hpp"
 #include "Zyphryon.Job/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -86,7 +87,6 @@ namespace Scene
 
     void Service::LoadHierarchy(Ref<Reader> Archive, Entity Actor)
     {
-		// Reads the entity's data.
         Defer([&]
         {
             Actor.Load(Archive);
@@ -96,7 +96,7 @@ namespace Scene
         const Entity          Archetype = Actor.GetArchetype();
         const ConstSpan<Byte> Data      = Archive.ReadBlock<UInt32, Byte>();
 
-        for (Reader Hierarchy(Data.GetData(), Data.GetSize()); Hierarchy.GetAvailable() > 0;)
+        for (Reader Hierarchy(Data); Hierarchy.GetAvailable() > 0;)
         {
             // A record naming a part of this entity's own archetype is laid over the part the archetype has
             // already given it, so what was changed on a part survives; anything else is a child of its own.
@@ -279,7 +279,22 @@ namespace Scene
             DSL::Declare<Orphaned>("Orphaned", DSL::Local),
 
             // Transient marks entities that are left out of serialization.
-            DSL::Declare<Transient>("Transient", DSL::Associative));
+            DSL::Declare<Transient>("Transient", DSL::Associative),
+
+            // Replica is the identity an entity carries on the wire, which brings the protocol's own memory along.
+            DSL::Declare<Protocol::Replica>(DSL::Local, DSL::Implies<Protocol::Tracker>),
+
+            // Tracker is what the publisher remembers about a replica, and Scope a group peers subscribe to as one.
+            DSL::Declare<Protocol::Tracker, Protocol::Scope>(DSL::Local),
+
+            // Remote marks an entity another side has authority over, so the local simulation leaves it be.
+            DSL::Declare<Protocol::Remote>("Remote", DSL::Local),
+
+            // Ledger is what the world has to say since the last publish, of which it holds a single instance.
+            DSL::Declare<Protocol::Ledger>("Ledger", DSL::Singleton));
+
+        // The ledger always exists, so a touch never has to ask whether the world has one yet.
+        GetWorld().Set(Protocol::Ledger());
 
         // Periodically reclaims memory by removing empty internal storage tables.
         CreateSystem<DSL::Interval<15>>("_Compact", EcsPostFrame, Execution::Immediate,

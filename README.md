@@ -38,7 +38,6 @@ you enable the module that needs it.
 | [libopus](https://opus-codec.org/) | always (core) | Opus decoding for the `.snd` container |
 | [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
 | [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |
-| [stb](https://github.com/nothings/stb) | `ZY_GRAPHIC_LOADER_STB` *(OFF)* | Runtime image decode |
 
 ### What doesn't
 
