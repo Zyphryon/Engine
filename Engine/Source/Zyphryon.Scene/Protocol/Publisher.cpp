@@ -23,7 +23,7 @@ namespace Scene::Protocol
 
     Publisher::Publisher(Ref<Engine::Subsystem::Host> Host)
         : Locator { Host },
-          mStamp  { 0 }
+          mSweep  { 0 }
     {
         Ref<Service> Scene = GetService<Service>();
 
@@ -83,7 +83,7 @@ namespace Scene::Protocol
 
                 for (const Ptr<Member> Peer : Group.Subscribers)
                 {
-                    Announce(Actor, * Peer);
+                    Announce(Actor, * Peer, true);
                 }
             });
 
@@ -176,7 +176,6 @@ namespace Scene::Protocol
 
         Peer.Reliable.Write<UInt8>(static_cast<UInt8>(Opcode::Hello));
         Peer.Reliable.Write<UInt64>(Table.GetHash());
-        Peer.Reliable.Write<UInt64>(mStamp);
         Peer.Reliable.Write<UInt64>(Key);
 
         // Every replicated singleton the world holds, so the peer starts from the same world as everyone else.
@@ -264,7 +263,7 @@ namespace Scene::Protocol
 
                 if (Group.Actor.IsValid())
                 {
-                    Announce(Group.Actor, * Peer);
+                    Announce(Group.Actor, * Peer, true);
                 }
             }
         }
@@ -332,6 +331,13 @@ namespace Scene::Protocol
             }
         }
         Book.Pending.Clear();
+
+        // Sight is asked again now and then over everything, since a peer moves out of it without touching a thing.
+        if (!mVisibility.IsEmpty() && ++mSweep >= kSweep)
+        {
+            mSweep = 0;
+            Sweep();
+        }
 
         // The singletons are seen by everyone, so they go out to everyone.
         if (Book.Touched.Any())
@@ -405,19 +411,60 @@ namespace Scene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Reveal(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, ConstRef<Tracker> Tracking, UInt64 Key)
+    void Publisher::Reveal(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, ConstRef<Tracker> Tracking, UInt64 Key, Bool Fresh)
     {
+        const Bool Seen = Visible(Peer, Actor);
+
         if (Record.IsPersistent())
         {
-            // Both sides hold it from disk, so only what departed from disk has to be said.
+            // Both sides hold it from disk, so only what departed from disk has to be said, and only on first sight.
+            if (!Fresh || !Seen)
+            {
+                return;
+            }
+
             if (const Mask Diverged = Tracking.Diverged & Audience(Peer, Record); Diverged.Any())
             {
                 WriteUpdate(Peer, Actor, Record, Diverged);
             }
         }
+        else if (!Seen)
+        {
+            // Out of the peer's sight, and forgotten there if it was ever in it.
+            Conceal(Peer, Record.GetIdentifier());
+        }
         else if (Peer.Known.Insert(Record.GetIdentifier()))
         {
             WriteSpawn(Peer, Actor, Record, Key);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Publisher::Visible(ConstRef<Member> Peer, Entity Actor)
+    {
+        return mVisibility.IsEmpty() || mVisibility(Peer.Link, Actor);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Publisher::Sweep()
+    {
+        for (Ref<Table<UInt64, Group>::Pair> Entry : mGroups)
+        {
+            Ref<Group> Group = Entry.Second;
+
+            if (!Group.Actor.IsAlive())
+            {
+                continue;
+            }
+
+            for (const Ptr<Member> Peer : Group.Subscribers)
+            {
+                Announce(Group.Actor, * Peer, false);
+            }
         }
     }
 
@@ -435,9 +482,9 @@ namespace Scene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Announce(Entity Actor, Ref<Member> Peer)
+    void Publisher::Announce(Entity Actor, Ref<Member> Peer, Bool Fresh)
     {
-        Actor.Children([this, & Peer](Entity Child)
+        Actor.Children([this, & Peer, Fresh](Entity Child)
         {
             if (const ConstPtr<Replica> Record = Child.TryGet<const Replica>())
             {
@@ -449,12 +496,12 @@ namespace Scene::Protocol
                     return;
                 }
 
-                Reveal(Peer, Child, * Record, Tracking, Tracking.Scope);
+                Reveal(Peer, Child, * Record, Tracking, Tracking.Scope, Fresh);
             }
             else if (!Child.Has<Scope>())
             {
                 // A nested scope is a group of its own, anything else is looked through.
-                Announce(Child, Peer);
+                Announce(Child, Peer, Fresh);
             }
         });
     }
@@ -509,7 +556,7 @@ namespace Scene::Protocol
                 {
                     continue;
                 }
-                Reveal(* Peer, Actor, Record, Tracking, Key);
+                Reveal(* Peer, Actor, Record, Tracking, Key, true);
             }
         }
 
@@ -556,6 +603,21 @@ namespace Scene::Protocol
 
         for (const Ptr<Member> Peer : Group->Subscribers)
         {
+            if (!Visible(* Peer, Actor))
+            {
+                if (!Record.IsPersistent())
+                {
+                    Conceal(* Peer, Identifier);
+                }
+                continue;
+            }
+
+            if (!Record.IsPersistent() && Peer->Known.Insert(Identifier))
+            {
+                WriteSpawn(* Peer, Actor, Record, Tracking.Scope);
+                continue;
+            }
+
             const Mask Allowed  = Audience(* Peer, Record);
             const Mask Present  = Held & Allowed;
             const Mask Reliable = Present & ~Table.GetStreamMask();

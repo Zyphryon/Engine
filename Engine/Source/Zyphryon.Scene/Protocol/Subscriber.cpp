@@ -25,7 +25,6 @@ namespace Scene::Protocol
 
     Subscriber::Subscriber(Ref<Engine::Subsystem::Host> Host)
         : Locator   { Host },
-          mStamp    { 0 },
           mIdentity { 0 },
           mAccepted { false },
           mRejected { false }
@@ -171,17 +170,11 @@ namespace Scene::Protocol
     void Subscriber::OnHello(Ref<Reader> Input)
     {
         const UInt64 Hash     = Input.Read<UInt64>();
-        const UInt64 Stamp    = Input.Read<UInt64>();
         const UInt64 Identity = Input.Read<UInt64>();
 
         if (Hash != Manifest::Get().GetHash())
         {
             LOG_E("Scene: The publisher replicates a different set of components than this build");
-            mRejected = true;
-        }
-        else if (Stamp != mStamp)
-        {
-            LOG_E("Scene: The publisher runs a different world than the one loaded here");
             mRejected = true;
         }
         else

@@ -32,6 +32,12 @@ namespace Scene::Protocol
         /// \brief Size the reliable stream of a peer is sent at without waiting for the tick to end.
         static constexpr UInt32 kMaxChunk = 16 * 1024;
 
+        /// \brief Number of publishes between two sweeps of the visibility rule over everything a peer sees.
+        static constexpr UInt32 kSweep    = 8;
+
+        /// \brief Represents the rule that says whether a peer may see a replica at all, over the scopes it subscribes to.
+        using Visibility = Delegate<Bool(Network::Connection, Entity)>;
+
     public:
 
         /// \brief Constructs a publisher instance with the specified service host.
@@ -41,14 +47,6 @@ namespace Scene::Protocol
 
         /// \brief Destructor, which takes down what was hung on the world.
         ~Publisher();
-
-        /// \brief Sets the stamp of the world, which a peer must present the same of to be kept.
-        ///
-        /// \param Stamp The stamp, which is the application's to derive from what both sides load from disk.
-        ZY_INLINE void SetStamp(UInt64 Stamp)
-        {
-            mStamp = Stamp;
-        }
 
         /// \brief Takes on a peer, greeting it with the manifest, the stamp and every replicated singleton.
         ///
@@ -68,6 +66,14 @@ namespace Scene::Protocol
 
         /// \brief Sends every peer what changed since the last time, once the world has moved for the tick.
         void Publish();
+
+        /// \brief Sets the rule that says which replicas each peer sees, which is everything without one.
+        ///
+        /// \param Rule The rule, or nothing to let every peer see everything beneath the scopes it subscribes to.
+        ZY_INLINE void SetVisibility(AnyRef<Visibility> Rule)
+        {
+            mVisibility = Move(Rule);
+        }
 
     private:
 
@@ -134,12 +140,6 @@ namespace Scene::Protocol
         /// \return The peer, or null when no peer was admitted under the key.
         Ptr<Member> Find(UInt64 Key);
 
-        /// \brief Takes a peer off a group's subscribers.
-        ///
-        /// \param Group The group.
-        /// \param Peer  The peer.
-        static void Leave(Ref<Group> Group, Ptr<Member> Peer);
-
         /// \brief Gives a peer a replica it now sees: a spawn, or for one held from disk, only what departed from it.
         ///
         /// \param Peer     The peer.
@@ -147,7 +147,18 @@ namespace Scene::Protocol
         /// \param Record   The replica.
         /// \param Tracking What the publisher remembers about the replica.
         /// \param Key      The key of the scope the replica stands in.
-        void Reveal(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, ConstRef<Tracker> Tracking, UInt64 Key);
+        /// \param Fresh    Whether the peer sees the scope for the first time, which is when what departed from disk is said.
+        void Reveal(Ref<Member> Peer, Entity Actor, ConstRef<Replica> Record, ConstRef<Tracker> Tracking, UInt64 Key, Bool Fresh);
+
+        /// \brief Asks the rule whether a peer sees a replica, which it does without a rule.
+        ///
+        /// \param Peer  The peer.
+        /// \param Actor The entity carrying the replica.
+        /// \return `true` if the peer sees it, `false` if it is hidden from the peer.
+        Bool Visible(ConstRef<Member> Peer, Entity Actor);
+
+        /// \brief Asks the rule again over everything every peer sees, forgetting what left sight and spawning what came into it.
+        void Sweep();
 
         /// \brief Takes a replica away from a peer that no longer sees it, if it was ever given.
         ///
@@ -161,7 +172,8 @@ namespace Scene::Protocol
         ///
         /// \param Actor The entity carrying the scope, or one beneath it.
         /// \param Peer  The peer.
-        void Announce(Entity Actor, Ref<Member> Peer);
+        /// \param Fresh Whether the peer sees the scope for the first time, which is when what departed from disk is said.
+        void Announce(Entity Actor, Ref<Member> Peer, Bool Fresh);
 
         /// \brief Makes a peer forget every spawned replica beneath a scope it no longer sees.
         ///
@@ -227,10 +239,11 @@ namespace Scene::Protocol
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt64                        mStamp;
         Table<UInt64, Unique<Member>> mMembers;
         Table<UInt64, Group>          mGroups;
         Sequence<Departure>           mDepartures;
+        Visibility                    mVisibility;
+        UInt32                        mSweep;
         Array<Entity, 4>              mObservers;
         Sequence<Entity>              mWatchers;
         Writer                        mScratch;

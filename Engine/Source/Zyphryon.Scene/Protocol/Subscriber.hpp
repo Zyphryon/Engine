@@ -34,14 +34,6 @@ namespace Scene::Protocol
         /// \brief Destructor, which takes down what was hung on the world.
         ~Subscriber();
 
-        /// \brief Sets the stamp of the world, which the publisher's greeting has to match.
-        ///
-        /// \param Stamp The stamp, which is the application's to derive from what both sides load from disk.
-        ZY_INLINE void SetStamp(UInt64 Stamp)
-        {
-            mStamp = Stamp;
-        }
-
         /// \brief Applies a message from the publisher.
         ///
         /// \param Message The payload, exactly as the publisher wrote it.
@@ -129,7 +121,6 @@ namespace Scene::Protocol
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt64                        mStamp;
         UInt64                        mIdentity;
         Bool                          mAccepted;
         Bool                          mRejected;
