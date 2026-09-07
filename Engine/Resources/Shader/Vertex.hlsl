@@ -126,6 +126,28 @@ float3 ZyEmitBox(uint VertexID)
     return kEdges[VertexID];
 }
 
+/// \brief Traces a cylinder centred on the origin, drawn as a line list.
+///
+/// \param VertexID The endpoint to trace, as `SV_VertexID` counts them.
+/// \param Segments The chords each ring is drawn with.
+///
+/// \return The endpoint, over negative one through one on every axis, the axis of the cylinder being Y.
+float3 ZyEmitCylinder(uint VertexID, int Segments)
+{
+    const int   Line = int(VertexID / 2u);
+    const int   End  = int(VertexID & 1u);
+    const float Turn = 6.28318530718 / float(Segments);
+
+    if (Line < 2 * Segments)
+    {
+        const float Theta = Turn * float((Line % Segments) + End);
+        return float3(cos(Theta), (Line / Segments) == 0 ? -1.0 : 1.0, sin(Theta));
+    }
+
+    const float Theta = 1.57079632679 * float(Line - 2 * Segments);
+    return float3(cos(Theta), End == 0 ? -1.0 : 1.0, sin(Theta));
+}
+
 /// \brief Fills a box centred on the origin, drawn as a single strip of fourteen.
 ///
 /// \param VertexID The corner to fill, as `SV_VertexID` counts them.
