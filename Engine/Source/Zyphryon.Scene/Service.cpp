@@ -71,7 +71,10 @@ namespace Scene
 
     void Service::LoadWorld(Ref<Reader> Archive)
     {
-        Codec::ReadComponentsOf(mWorld, Archive, World(mWorld));
+        Protocol::Restore(GetWorld(), [&]
+        {
+            Codec::ReadComponentsOf(mWorld, Archive, World(mWorld));
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -87,9 +90,12 @@ namespace Scene
 
     void Service::LoadHierarchy(Ref<Reader> Archive, Entity Actor)
     {
-        Defer([&]
+        Protocol::Restore(GetWorld(), [&]
         {
-            Actor.Load(Archive);
+            Defer([&]
+            {
+                Actor.Load(Archive);
+            });
         });
 
         // Reads the entity's hierarchy, over the parts its archetype already gave it where a record names one.
@@ -205,10 +211,13 @@ namespace Scene
 
             Entity Archetype = Allocate<true>(ID);
 
-            Defer([&]
+            Protocol::Restore(GetWorld(), [&]
             {
-                Archetype.Add(EcsPrefab);
-                Archetype.Load(Archive);
+                Defer([&]
+                {
+                    Archetype.Add(EcsPrefab);
+                    Archetype.Load(Archive);
+                });
             });
 
             if (Parent)
@@ -289,6 +298,9 @@ namespace Scene
 
             // Remote marks an entity another side has authority over, so the local simulation leaves it be.
             DSL::Declare<Protocol::Remote>("Remote", DSL::Local),
+
+            // Possessed marks an entity the publisher spawned on this side's behalf, which is this side's to steer.
+            DSL::Declare<Protocol::Possessed>("Possessed", DSL::Local),
 
             // Ledger is what the world has to say since the last publish, of which it holds a single instance.
             DSL::Declare<Protocol::Ledger>("Ledger", DSL::Singleton));

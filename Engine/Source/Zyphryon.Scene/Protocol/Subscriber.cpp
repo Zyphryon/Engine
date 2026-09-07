@@ -320,6 +320,10 @@ namespace Scene::Protocol
             {
                 Actor.Add<Remote>();
             }
+            else
+            {
+                Actor.Add<Possessed>();
+            }
 
             Actor.Emplace<Replica>(Identifier);
 

@@ -108,6 +108,13 @@ namespace Content
         /// \param Callback The callback invoked with the file's contents if the read succeeds.
         void Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback);
 
+        /// \brief Reads the contents of the file at the specified URI, delivering them on a lane of the caller's choosing.
+        ///
+        /// \param Key      The URI key identifying the file to read.
+        /// \param Lane     The lane the callback runs on.
+        /// \param Callback The callback invoked with the file's contents if the read succeeds.
+        void Read(ConstRef<Uri> Key, Job::Lane Lane, AnyRef<Mount::OnRead> Callback);
+
         /// \brief Writes the specified bytes to a file at the given URI, creating or overwriting it as necessary.
         ///
         /// \param Key      The URI key identifying the file to write.
@@ -185,9 +192,9 @@ namespace Content
         /// \param Key The URI to unsubscribe from.
         void Unsubscribe(ConstRef<Uri> Key);
 
-        /// \brief Gets the number of asset load operations currently in flight.
+        /// \brief Gets the number of asset loads and lane-delivered reads currently in flight.
         ///
-        /// \return The number of assets that have been queued but not yet finalized.
+        /// \return The number of assets queued but not yet finalized, plus the reads whose callback has yet to run.
         ZY_INLINE UInt32 GetPending() const
         {
             return mParserPending.load(std::memory_order_acquire);

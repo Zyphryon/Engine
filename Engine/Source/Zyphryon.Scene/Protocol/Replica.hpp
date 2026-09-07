@@ -167,6 +167,9 @@ namespace Scene::Protocol
         UInt64 mKey;
     };
 
+    /// \brief Tag type that marks an entity the publisher spawned on this side's behalf.
+    using Possessed = Tag<"Possessed">;
+	
     /// \brief Tag type that marks an entity another side has authority over, so the local simulation leaves it be.
-    using Remote = Tag<"Remote">;
+    using Remote    = Tag<"Remote">;
 }
