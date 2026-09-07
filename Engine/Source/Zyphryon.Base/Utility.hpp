@@ -251,6 +251,39 @@ inline namespace Base
         return static_cast<UInt>(std::count(Data, Data + Size, Value));
     }
 
+    /// \brief Adds every element in [\p Data, \p Data + \p Size) onto \p Initial.
+    ///
+    /// \param Data    The pointer to the beginning of the range.
+    /// \param Size    The number of elements to add.
+    /// \param Initial The value the sum starts from, which also fixes the type it is kept in.
+    /// \return The sum of \p Initial and every element.
+    template<typename Input, typename Type>
+    constexpr Type Accumulate(ConstPtr<Input> Data, UInt Size, Type Initial)
+    {
+        for (UInt Index = 0; Index < Size; ++Index)
+        {
+            Initial += Data[Index];
+        }
+        return Initial;
+    }
+
+    /// \brief Adds what \p Projection makes of every element in [\p Data, \p Data + \p Size) onto \p Initial.
+    ///
+    /// \param Data       The pointer to the beginning of the range.
+    /// \param Size       The number of elements to add.
+    /// \param Initial    The value the sum starts from, which also fixes the type it is kept in.
+    /// \param Projection The unary callable turning an element into what is added.
+    /// \return The sum of \p Initial and the projection of every element.
+    template<typename Input, typename Type, typename Callable>
+    constexpr Type Accumulate(ConstPtr<Input> Data, UInt Size, Type Initial, AnyRef<Callable> Projection)
+    {
+        for (UInt Index = 0; Index < Size; ++Index)
+        {
+            Initial += Projection(Data[Index]);
+        }
+        return Initial;
+    }
+
     /// \brief Orders the elements in [\p Data, \p Data + \p Size) by ascending value.
     ///
     /// \param Data The pointer to the beginning of the range.

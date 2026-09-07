@@ -262,6 +262,48 @@ inline namespace Base
         return StrTrimRight(StrTrimLeft(Value));
     }
 
+    /// \brief Returns a sub-view with every leading \p Character removed.
+    ///
+    /// \param Value     The text to trim.
+    /// \param Character The character to strip from the front.
+    /// \return A sub-view of \p Value that no longer begins with \p Character.
+    constexpr Text StrTrimLeft(Text Value, Char Character)
+    {
+        UInt Start = 0;
+
+        while (Start < Value.GetSize() && Value[Start] == Character)
+        {
+            ++Start;
+        }
+        return Value.Slice(Start);
+    }
+
+    /// \brief Returns a sub-view with every trailing \p Character removed.
+    ///
+    /// \param Value     The text to trim.
+    /// \param Character The character to strip from the back.
+    /// \return A sub-view of \p Value that no longer ends with \p Character.
+    constexpr Text StrTrimRight(Text Value, Char Character)
+    {
+        UInt End = Value.GetSize();
+
+        while (End > 0 && Value[End - 1] == Character)
+        {
+            --End;
+        }
+        return Value.Slice(0, End);
+    }
+
+    /// \brief Returns a sub-view with every leading and trailing \p Character removed.
+    ///
+    /// \param Value     The text to trim.
+    /// \param Character The character to strip from both ends.
+    /// \return A sub-view of \p Value that neither begins nor ends with \p Character.
+    constexpr Text StrTrim(Text Value, Char Character)
+    {
+        return StrTrimRight(StrTrimLeft(Value, Character), Character);
+    }
+
     /// \brief Checks whether \p Search appears anywhere within \p Value.
     ///
     /// \param Value  The text to search within.
@@ -436,6 +478,49 @@ inline namespace Base
             }
         }
         return true;
+    }
+
+    /// \brief Returns the index of the first occurrence of \p Search within \p Value, whatever the case.
+    ///
+    /// \param Value  The text to search within.
+    /// \param Search The substring to look for.
+    /// \return A zero-based index of the first match, or `-1` if not found.
+    constexpr SInt StrFindCaseInsensitive(Text Value, Text Search)
+    {
+        if (Search.IsEmpty())
+        {
+            return 0;
+        }
+        if (Search.GetSize() > Value.GetSize())
+        {
+            return -1;
+        }
+
+        for (UInt Index = 0, Limit = Value.GetSize() - Search.GetSize(); Index <= Limit; ++Index)
+        {
+            UInt Cursor = 0;
+
+            while (Cursor < Search.GetSize() && StrLowercase(Value[Index + Cursor]) == StrLowercase(Search[Cursor]))
+            {
+                ++Cursor;
+            }
+
+            if (Cursor == Search.GetSize())
+            {
+                return static_cast<SInt>(Index);
+            }
+        }
+        return -1;
+    }
+
+    /// \brief Checks whether \p Search appears anywhere within \p Value, whatever the case.
+    ///
+    /// \param Value  The text to search within.
+    /// \param Search The substring to look for.
+    /// \return `true` if \p Search is found in \p Value regardless of case, `false` otherwise.
+    constexpr Bool StrContainsCaseInsensitive(Text Value, Text Search)
+    {
+        return StrFindCaseInsensitive(Value, Search) != -1;
     }
 
     /// \brief Invokes \p Callback with a `Text` view for each token in \p Value delimited by \p Delimiter.
