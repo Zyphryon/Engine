@@ -53,7 +53,7 @@ namespace Scene
             }
 
             // Apply payload if present; otherwise attach component without data.
-            if (Reader Data(Bundle.GetData(), Bundle.GetSize()); Data.GetAvailable() > 0)
+            if (Reader Data(Bundle); Data.GetAvailable() > 0)
             {
                 if (const ConstPtr<Factory> Serializer = Context::Get(World).GetFactory(Second.GetID()))
                 {
@@ -98,7 +98,7 @@ namespace Scene
         {
             const ConstSpan<Byte> Data = Archive.ReadBlock<UInt32, Byte>();
 
-            for (Reader Scope(Data.GetData(), Data.GetSize()); Scope.GetAvailable() > 0;)
+            for (Reader Scope(Data); Scope.GetAvailable() > 0;)
             {
                 ReadComponent(World, Scope, Actor);
             }

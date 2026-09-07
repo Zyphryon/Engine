@@ -53,7 +53,7 @@ namespace Audio
 
     Bool SNDLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
-        Reader Input(Data.GetData(), Data.GetSize());
+        Reader Input(Data);
 
         return Parse(Input, * Retainer<Sound>::Cast(Scope.GetResource()));
     }

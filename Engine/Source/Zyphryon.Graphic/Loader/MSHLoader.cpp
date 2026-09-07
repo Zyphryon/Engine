@@ -24,7 +24,7 @@ namespace Graphic
 
     Bool MSHLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
-        Reader Input(Data.GetData(), Data.GetSize());
+        Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('M' << 8) | ('S' << 16) | ('H' << 24)))
         {

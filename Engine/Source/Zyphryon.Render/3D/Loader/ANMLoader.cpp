@@ -43,7 +43,7 @@ namespace Render
 
     Bool ANMLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
-        Reader Input(Data.GetData(), Data.GetSize());
+        Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('A' << 8) | ('N' << 16) | ('M' << 24)))
         {

@@ -161,6 +161,22 @@ inline namespace Base
             return mSize * sizeof(Type);
         }
 
+        /// \brief Checks whether an element equal to the given value is in the span.
+        ///
+        /// \param Value The value to look for.
+        /// \return `true` if an element compares equal to \p Value, otherwise `false`.
+        ZY_INLINE constexpr Bool Contains(ConstRef<Type> Value) const
+        {
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                if (mData[Index] == Value)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// \brief Returns a sub-span starting at the given offset.
         ///
         /// \param Offset The zero-based index of the first element to include.

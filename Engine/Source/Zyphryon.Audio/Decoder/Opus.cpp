@@ -45,7 +45,7 @@ namespace Audio::Codec
             return;
         }
 
-        Reader Input(Samples.GetData(), Samples.GetSize());
+        Reader Input(Samples);
 
         mPreskip               = Input.Read<UInt16>();
         mPacketFrames          = Input.Read<UInt16>();

@@ -23,7 +23,7 @@ namespace Graphic
 
     Bool TEXLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
-        Reader Input(Data.GetData(), Data.GetSize());
+        Reader Input(Data);
 
         return Parse(Input, * Retainer<Image>::Cast(Scope.GetResource()));
     }

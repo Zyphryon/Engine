@@ -25,7 +25,7 @@ namespace Render
 
     Bool SKLLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
     {
-        Reader Input(Data.GetData(), Data.GetSize());
+        Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('S' << 8) | ('K' << 16) | ('L' << 24)))
         {

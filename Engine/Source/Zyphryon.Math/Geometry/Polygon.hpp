@@ -71,7 +71,7 @@ inline namespace Math
         /// \return The ordered vertices.
         ZY_INLINE constexpr ConstSpan<Vector2> GetVertices() const
         {
-            return ConstSpan<Vector2>(mVertices.GetData(), mVertices.GetSize());
+            return mVertices;
         }
 
         /// \brief Gets the number of vertices in the ring.

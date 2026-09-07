@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Base/Compression/LZ4.hpp"
+#include "Zyphryon.Base/Container/Span.hpp"
 #include "Zyphryon.Base/Lexical/Text.hpp"
 #include "Zyphryon.Base/Scalar.hpp"
 
@@ -42,6 +43,16 @@ inline namespace Base
         ZY_INLINE Reader(ConstPtr<Byte> Data, UInt32 Size)
             : mData   { Data },
               mSize   { Size },
+              mOffset { 0 }
+        {
+        }
+
+        /// \brief Constructs a reader over the given span of bytes.
+        ///
+        /// \param Data The span of bytes to read from.
+        ZY_INLINE Reader(ConstSpan<Byte> Data)
+            : mData   { Data.GetData() },
+              mSize   { static_cast<UInt32>(Data.GetSize()) },
               mOffset { 0 }
         {
         }

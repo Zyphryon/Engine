@@ -133,7 +133,7 @@ namespace Graphic
             }
             Result.Append(Source.Slice(Cursor));
 
-            SetSource(Blob::Copy(ConstSpan<Char>(Result.GetData(), Result.GetSize())));
+            SetSource(Blob::Copy<Char>(Result));
         }
 
     private:
