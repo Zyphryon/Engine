@@ -282,7 +282,7 @@ namespace Scene
             DSL::Declare<Transient>("Transient", DSL::Associative),
 
             // Replica is the identity an entity carries on the wire, which brings the protocol's own memory along.
-            DSL::Declare<Protocol::Replica>(DSL::Local, DSL::Implies<Protocol::Tracker>),
+            DSL::Declare<Protocol::Replica>(DSL::Serializable, DSL::Local, DSL::Implies<Protocol::Tracker>),
 
             // Tracker is what the publisher remembers about a replica, and Scope a group peers subscribe to as one.
             DSL::Declare<Protocol::Tracker, Protocol::Scope>(DSL::Local),

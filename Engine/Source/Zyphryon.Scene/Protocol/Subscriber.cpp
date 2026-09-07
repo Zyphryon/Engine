@@ -38,25 +38,26 @@ namespace Scene::Protocol
             EcsOnSet,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
-                const UInt64 Identifier = Record.GetIdentifier();
-
-                mReplicas.Assign(Identifier, Known(Actor));
-
-                // Whatever is held from disk belongs to the publisher, since that is the side that moves it.
-                if (Record.IsPersistent())
+                if (const UInt64 Identifier = Record.GetIdentifier(); Identifier != 0)
                 {
-                    Actor.Add<Remote>();
-                }
+					mReplicas.Assign(Identifier, Known(Actor));
 
-                Sequence<Blob> Waiting;
+					// Whatever is held from disk belongs to the publisher, since that is the side that moves it.
+					if (Record.IsPersistent())
+					{
+						Actor.Add<Remote>();
+					}
 
-                if (mPendingUpdates.Extract(Identifier, Waiting))
-                {
-                    for (ConstRef<Blob> Body : Waiting)
-                    {
-                        Reader Input(Body);
-                        Wire::Decode(Input, Actor);
-                    }
+					Sequence<Blob> Waiting;
+
+					if (mPendingUpdates.Extract(Identifier, Waiting))
+					{
+						for (ConstRef<Blob> Body : Waiting)
+						{
+							Reader Input(Body);
+							Wire::Decode(Input, Actor);
+						}
+					}
                 }
             });
 

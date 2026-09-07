@@ -36,6 +36,12 @@ namespace Scene::Protocol
             EcsOnSet,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
+                // A file that held a runtime replica reads one back that names nothing, and it has nothing to say.
+                if (!Record.IsValid())
+                {
+                    return;
+                }
+
                 Ref<Ledger>  Book     = GetService<Service>().GetWorld().Get<Ledger>();
                 Ref<Tracker> Tracking = Actor.Get<Tracker>();
 
@@ -298,7 +304,7 @@ namespace Scene::Protocol
             const ConstPtr<Replica> Record   = Actor.TryGet<const Replica>();
             const Ptr<Tracker>      Tracking = Actor.TryGet<Tracker>();
 
-            if (Record == nullptr || Tracking == nullptr)
+            if (Record == nullptr || Tracking == nullptr || !Record->IsValid())
             {
                 continue;
             }

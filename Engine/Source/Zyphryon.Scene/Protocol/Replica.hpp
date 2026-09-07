@@ -74,6 +74,55 @@ namespace Scene::Protocol
             return (mIdentifier & kPersistent) != 0;
         }
 
+        /// \brief Checks whether the replica names anything.
+        ///
+        /// \return `true` if it carries an identifier, `false` if it was read back from a file that held a runtime one.
+        ZY_INLINE Bool IsValid() const
+        {
+            return mIdentifier != 0;
+        }
+
+        /// \brief Serializes the identifier of a persistent replica, and nothing of a runtime one.
+        ///
+        /// \param Archive The archive to read from or write to.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            if constexpr (Serializer::IsWriter)
+            {
+                UInt64 Identifier = IsPersistent() ? mIdentifier : 0;
+                Archive.Serialize(Identifier);
+            }
+            else
+            {
+                Archive.Serialize(mIdentifier);
+
+                // An owner is a live connection, so whatever was written has nobody on the other end of it now.
+                mOwner = Network::Connection();
+            }
+        }
+
+	public:
+
+        /// \brief Draws the identity of an entity held from disk, which nothing else was ever given.
+        ///
+        /// \param Draw The function that draws a random 64-bit number, called until one names something.
+        /// \return The replica, persistent and owned by nobody.
+        template<typename Callable>
+        ZY_INLINE static Replica Persistent(AnyRef<Callable> Draw)
+        {
+            UInt64 Identifier;
+
+            // The top bit is the protocol's own, and an identifier of nought names nothing.
+            do
+            {
+                Identifier = static_cast<UInt64>(Draw()) & ~kPersistent;
+            }
+            while (Identifier == 0);
+
+            return Replica(kPersistent | Identifier);
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
