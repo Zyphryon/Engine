@@ -83,7 +83,8 @@ namespace Job
 
 #if !defined(ZY_HAS_THREADS)
         // Every lane lands here, so a load burst is spread over frames rather than run to the end in one callback.
-        const Real64 Deadline = Platform::Timer().GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
+        const Platform::Timer Clock    = Platform::Timer();
+        const Real64          Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
 #endif
 
         while (Pending != 0)
