@@ -155,10 +155,9 @@ namespace Graphic
     constexpr auto D3D11Convert(TextureBorder Value)
     {
         static constexpr FLOAT kMapping[][4] = {
-            { 0.0f, 0.0f, 0.0f, 0.0f },     // OpaqueBlack
-            { 1.0f, 1.0f, 1.0f, 0.0f },     // OpaqueWhite
-            { 0.0f, 0.0f, 0.0f, 1.0f },     // TransparentBlack
-            { 1.0f, 1.0f, 1.0f, 1.0f }      // TransparentWhite
+            { 0.0f, 0.0f, 0.0f, 1.0f },     // OpaqueBlack
+            { 1.0f, 1.0f, 1.0f, 1.0f },     // OpaqueWhite
+            { 0.0f, 0.0f, 0.0f, 0.0f },     // TransparentBlack
         };
         return kMapping[Enum::Cast(Value)];
     }

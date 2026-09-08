@@ -259,7 +259,6 @@ namespace Graphic
             { 0.0f, 0.0f, 0.0f, 1.0f },     // OpaqueBlack
             { 1.0f, 1.0f, 1.0f, 1.0f },     // OpaqueWhite
             { 0.0f, 0.0f, 0.0f, 0.0f },     // TransparentBlack
-            { 1.0f, 1.0f, 1.0f, 0.0f },     // TransparentWhite
         };
         return kMapping[Enum::Cast(Value)];
     }
