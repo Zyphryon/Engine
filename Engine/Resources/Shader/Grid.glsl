@@ -16,6 +16,7 @@
 /// \param Repeat The place along the lattice, counted in periods, so that a line falls on every whole number.
 ///
 /// \return The coverage, over zero between lines through one on a line.
+#ifdef FRAGMENT_SHADER
 float ZyGridLine(float Repeat)
 {
     float Derivate = max(fwidth(Repeat), 1e-8);
@@ -40,5 +41,6 @@ float ZyGridLine(vec2 Repeat)
 
     return clamp(1.0 - min(Distance.x, Distance.y), 0.0, 1.0) * Density;
 }
+#endif // FRAGMENT_SHADER
 
 #endif // ZY_GRID_INCLUDED

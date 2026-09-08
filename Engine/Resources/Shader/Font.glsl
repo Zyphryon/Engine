@@ -55,10 +55,12 @@ float ZyFontMedian(vec3 Sample)
 /// \param Range   The width of the field's range, in atlas units along each axis.
 ///
 /// \return The count of pixels one unit of the field covers.
+#ifdef FRAGMENT_SHADER
 float ZyFontSpread(vec2 Texture, vec2 Range)
 {
     return max(dot(Range, 1.0 / fwidth(Texture)) * 0.5, 1.0);
 }
+#endif // FRAGMENT_SHADER
 
 /// \brief Shades one pixel of a glyph, laying the outset under the stroke the way the effect asks.
 ///
