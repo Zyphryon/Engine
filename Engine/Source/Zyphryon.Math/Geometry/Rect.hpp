@@ -702,7 +702,7 @@ inline namespace Math
             requires IsIntegral<Integer>
         {
             return Array(::EncodeNormalized<Integer>(Value.mMinimumX), ::EncodeNormalized<Integer>(Value.mMinimumY),
-						 ::EncodeNormalized<Integer>(Value.mMaximumX), ::EncodeNormalized<Integer>(Value.mMaximumY));
+                         ::EncodeNormalized<Integer>(Value.mMaximumX), ::EncodeNormalized<Integer>(Value.mMaximumY));
         }
 
         /// \brief Encodes a rectangle as fixed-point integers, at a given count of steps per unit.
@@ -715,7 +715,7 @@ inline namespace Math
             requires IsIntegral<Integer>
         {
             return Array(::EncodeFixed<Integer>(Value.mMinimumX, Scale), ::EncodeFixed<Integer>(Value.mMinimumY, Scale),
-						 ::EncodeFixed<Integer>(Value.mMaximumX, Scale), ::EncodeFixed<Integer>(Value.mMaximumY, Scale));
+                         ::EncodeFixed<Integer>(Value.mMaximumX, Scale), ::EncodeFixed<Integer>(Value.mMaximumY, Scale));
         }
 
         /// \brief Gets the component-wise minimum of two rectangles.

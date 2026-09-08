@@ -125,8 +125,8 @@ namespace Job
         }
 
     private:
-	
-		/// The milliseconds a tick may spend on the main lane before what is left waits for the next one.
+    
+        /// The milliseconds a tick may spend on the main lane before what is left waits for the next one.
         static constexpr SInt64 kMaxTickBudget = 6;
 
         /// \brief Runs a job to completion, then publishes it and queues everything it was gating.

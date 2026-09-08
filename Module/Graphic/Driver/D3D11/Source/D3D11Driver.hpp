@@ -222,12 +222,12 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ComPtr<ID3D11Device1>               	mDevice;
-        ComPtr<ID3D11DeviceContext1>        	mDeviceImmediate;
-        ComPtr<IDXGIFactory1>               	mDeviceFactory;
-        D3D11Properties                     	mDeviceProperties;
-        D3D11Compiler                       	mCompiler;
-        Description                         	mDescription;
+        ComPtr<ID3D11Device1>                   mDevice;
+        ComPtr<ID3D11DeviceContext1>            mDeviceImmediate;
+        ComPtr<IDXGIFactory1>                   mDeviceFactory;
+        D3D11Properties                         mDeviceProperties;
+        D3D11Compiler                           mCompiler;
+        Description                             mDescription;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

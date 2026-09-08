@@ -166,7 +166,7 @@ namespace Render
 
         /// The bits of an order key that identify a batch, indexed by queue.
         static constexpr UInt64 kGroupMask[] 
-		{
+        {
             0xFFFFFFFFFF000000ull,  ///< Opaque:      [Pipeline|Material|Mesh] sit in the high 40 bits.
             0x000000FFFFFFFFFFull,  ///< Transparent: [Pipeline|Material|Mesh] sit in the low 40 bits.
         };
@@ -259,7 +259,7 @@ namespace Render
             return (Raw ^ Mask) >> (32 - Bits);
         }
 
-	public:
+    public:
 
         /// \brief Resolves the queue a technique's output belongs to from the blend state it declares.
         ///

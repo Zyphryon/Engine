@@ -39,24 +39,24 @@ namespace Scene::Protocol
             {
                 if (const UInt64 Identifier = Record.GetIdentifier(); Identifier != 0)
                 {
-					mReplicas.Assign(Identifier, Known(Actor));
+                    mReplicas.Assign(Identifier, Known(Actor));
 
-					// Whatever is held from disk belongs to the publisher, since that is the side that moves it.
-					if (Record.IsPersistent())
-					{
-						Actor.Add<Remote>();
-					}
+                    // Whatever is held from disk belongs to the publisher, since that is the side that moves it.
+                    if (Record.IsPersistent())
+                    {
+                        Actor.Add<Remote>();
+                    }
 
-					Sequence<Blob> Waiting;
+                    Sequence<Blob> Waiting;
 
-					if (mPendingUpdates.Extract(Identifier, Waiting))
-					{
-						for (ConstRef<Blob> Body : Waiting)
-						{
-							Reader Input(Body);
-							Wire::Decode(Input, Actor);
-						}
-					}
+                    if (mPendingUpdates.Extract(Identifier, Waiting))
+                    {
+                        for (ConstRef<Blob> Body : Waiting)
+                        {
+                            Reader Input(Body);
+                            Wire::Decode(Input, Actor);
+                        }
+                    }
                 }
             });
 

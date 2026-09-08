@@ -32,16 +32,16 @@ namespace Scene::Protocol
     /// \brief Specifies how a replicated component travels: who receives it and under which guarantee.
     enum class Replication : UInt8
     {
-        None      = 0,       				///< Nothing, which no declaration should state.
-        Self      = 1 << 0,  				///< The peer that owns the entity receives it.
-        Others    = 1 << 1,  				///< Every peer but the one that owns the entity receives it.
-        Once      = 1 << 2,  				///< Sent when the entity is spawned and never again, so touching it is a no-op.
-        Streamed  = 1 << 3,  				///< Sent unreliably whenever it changes, latest wins, for state that moves every tick.
+        None      = 0,                      ///< Nothing, which no declaration should state.
+        Self      = 1 << 0,                 ///< The peer that owns the entity receives it.
+        Others    = 1 << 1,                 ///< Every peer but the one that owns the entity receives it.
+        Once      = 1 << 2,                 ///< Sent when the entity is spawned and never again, so touching it is a no-op.
+        Streamed  = 1 << 3,                 ///< Sent unreliably whenever it changes, latest wins, for state that moves every tick.
 
-        Everyone  = Self     | Others, 	 	///< Every peer that sees the entity receives it, reliably, as it changes.
-        Streaming = Everyone | Streamed,	///< Every peer receives it unreliably as it moves, latest wins.
+        Everyone  = Self     | Others,      ///< Every peer that sees the entity receives it, reliably, as it changes.
+        Streaming = Everyone | Streamed,    ///< Every peer receives it unreliably as it moves, latest wins.
         Spawned   = Everyone | Once,        ///< Every peer receives it with the spawn and never again.
-        Mirrored  = Others   | Streamed,  	///< Everyone but the owner receives it as it moves, the owner being its source.
+        Mirrored  = Others   | Streamed,    ///< Everyone but the owner receives it as it moves, the owner being its source.
     };
     ZY_DEFINE_BITWISE_ENUM(Replication)
 

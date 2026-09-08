@@ -141,7 +141,7 @@ namespace Scene
                 // Write the serialized component bundle to the output stream.
                 Archive.WriteBlock<UInt32>([&](Ref<Writer> Output)
                 {
-					if (!Component.IsTag())
+                    if (!Component.IsTag())
                     {
                         Serializer->Write(Output, Actor.TryGet(Component));
                     }

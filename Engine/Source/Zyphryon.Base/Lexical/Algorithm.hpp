@@ -472,7 +472,7 @@ inline namespace Base
 
         for (UInt Index = 0; Index < Left.GetSize(); ++Index)
         {
-			if (StrLowercase(Left[Index]) != StrLowercase(Right[Index]))
+            if (StrLowercase(Left[Index]) != StrLowercase(Right[Index]))
             {
                 return false;
             }

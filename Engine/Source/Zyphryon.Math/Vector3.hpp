@@ -753,8 +753,8 @@ inline namespace Math
             requires IsIntegral<Integer>
         {
             return Array(::EncodeNormalized<Integer>(Value.GetX()), 
-					     ::EncodeNormalized<Integer>(Value.GetY()), 
-						 ::EncodeNormalized<Integer>(Value.GetZ()));
+                         ::EncodeNormalized<Integer>(Value.GetY()), 
+                         ::EncodeNormalized<Integer>(Value.GetZ()));
         }
 
         /// \brief Encodes a vector as fixed-point integers, at a given count of steps per unit.
@@ -767,8 +767,8 @@ inline namespace Math
             requires IsIntegral<Integer>
         {
             return Array(::EncodeFixed<Integer>(Value.GetX(), Scale), 
-						 ::EncodeFixed<Integer>(Value.GetY(), Scale), 
-						 ::EncodeFixed<Integer>(Value.GetZ(), Scale));
+                         ::EncodeFixed<Integer>(Value.GetY(), Scale), 
+                         ::EncodeFixed<Integer>(Value.GetZ(), Scale));
         }
 
         /// \brief Encodes a vector as half-precision lanes, the way a half vertex attribute reads it back.
