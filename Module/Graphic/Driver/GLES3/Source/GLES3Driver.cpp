@@ -139,6 +139,14 @@ namespace Graphic
             return false;
         }
 
+#if !defined(ZY_PLATFORM_WEB)
+        if (!GLAD_GL_ARB_texture_storage)
+        {
+            LOG_E("GLES3Driver: the driver lacks GL_ARB_texture_storage");
+            return false;
+        }
+#endif
+
         LoadCapabilities();
 
         // Core profiles mandate a bound vertex array object; a single one is kept current for the driver's lifetime
@@ -530,38 +538,29 @@ namespace Graphic
         ConstPtr<Byte> Bytes = Data.GetData();
         const UInt8    Count = Max<UInt8>(1, Levels);
 
+        // Every level of every slice is allocated at once, so the uploads below only fill what already exists.
         if (IsArray)
         {
-            // Declared empty a level at a time, then filled a slice at a time: the source is ordered
-            // slice-major, while glTexImage3D wants every layer of one level in a single contiguous block.
+            glTexStorage3D(GL_TEXTURE_2D_ARRAY, Count, Description.Internal, Width, Height, Slices);
+        }
+        else
+        {
+            glTexStorage2D(Texture.Target, Count, Description.Internal, Width, Height);
+        }
+
+        // The source is ordered slice-major, with every level of one slice before the next slice begins.
+        for (UInt16 Slice = 0; Slice < Slices && Bytes; ++Slice)
+        {
+            const GLenum Face = IsCube ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Slice) : GL_TEXTURE_2D;
+
             for (UInt8 Level = 0; Level < Count; ++Level)
             {
                 const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
                 const UInt16 LevelHeight = GetLevelExtent(Height, Level);
+                const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
 
-                if (Description.Compressed)
+                if (IsArray)
                 {
-                    const UInt32 Size = GetLevelSize(Format, Width, Height, Level) * Slices;
-
-                    glCompressedTexImage3D(
-                        GL_TEXTURE_2D_ARRAY, Level, Description.Internal, LevelWidth, LevelHeight, Slices, 0, Size, nullptr);
-                }
-                else
-                {
-                    glTexImage3D(
-                        GL_TEXTURE_2D_ARRAY, Level, Description.Internal, LevelWidth, LevelHeight, Slices, 0,
-                        Description.External, Description.Type, nullptr);
-                }
-            }
-
-            for (UInt16 Slice = 0; Slice < Slices && Bytes; ++Slice)
-            {
-                for (UInt8 Level = 0; Level < Count; ++Level)
-                {
-                    const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
-                    const UInt16 LevelHeight = GetLevelExtent(Height, Level);
-                    const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
-
                     if (Description.Compressed)
                     {
                         glCompressedTexSubImage3D(
@@ -574,45 +573,24 @@ namespace Graphic
                             GL_TEXTURE_2D_ARRAY, Level, 0, 0, Slice, LevelWidth, LevelHeight, 1,
                             Description.External, Description.Type, Bytes);
                     }
-
-                    Bytes += Size;
                 }
-            }
-        }
-        else
-        {
-            for (UInt16 Slice = 0; Slice < Slices; ++Slice)
-            {
-                const GLenum Face = IsCube ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Slice) : GL_TEXTURE_2D;
-
-                for (UInt8 Level = 0; Level < Count; ++Level)
+                else
                 {
-                    const UInt16 LevelWidth  = GetLevelExtent(Width, Level);
-                    const UInt16 LevelHeight = GetLevelExtent(Height, Level);
-                    const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
-
                     if (Description.Compressed)
                     {
-                        glCompressedTexImage2D(
-                            Face, Level, Description.Internal, LevelWidth, LevelHeight, 0, Size, Bytes);
+                        glCompressedTexSubImage2D(
+                            Face, Level, 0, 0, LevelWidth, LevelHeight, Description.Internal, Size, Bytes);
                     }
                     else
                     {
-                        glTexImage2D(
-                            Face, Level, Description.Internal, LevelWidth, LevelHeight, 0,
-                            Description.External, Description.Type, Bytes);
-                    }
-
-                    if (Bytes)
-                    {
-                        Bytes += Size;
+                        glTexSubImage2D(
+                            Face, Level, 0, 0, LevelWidth, LevelHeight, Description.External, Description.Type, Bytes);
                     }
                 }
+
+                Bytes += Size;
             }
         }
-
-        glTexParameteri(Texture.Target, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(Texture.Target, GL_TEXTURE_MAX_LEVEL,  Count - 1);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
