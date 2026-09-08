@@ -698,6 +698,12 @@ namespace Graphic
 
         /// The byte offset within the buffer where the stream data begins.
         UInt32 Offset = 0;
+
+        /// \brief Checks whether two streams name the same range of the same buffer.
+        ///
+        /// \param Other The stream to compare against.
+        /// \return `true` if every field matches, otherwise `false`.
+        ZY_INLINE constexpr Bool operator==(ConstRef<Stream> Other) const = default;
     };
 
     /// \brief Defines the sampling parameters for texture access in shaders.

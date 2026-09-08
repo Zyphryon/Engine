@@ -22,6 +22,31 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    template<typename Type>
+    static Bool Differ(ConstSpan<Type> Oldest, ConstSpan<Type> Newest, Ref<UInt32> Min, Ref<UInt32> Max)
+    {
+        const UInt32 Limit = static_cast<UInt32>(::Max(Oldest.GetSize(), Newest.GetSize()));
+
+        Min = Limit;
+        Max = 0;
+
+        for (UInt32 Element = 0; Element < Limit; ++Element)
+        {
+            const Type Old = Element < Oldest.GetSize() ? Oldest[Element] : Type { };
+            const Type New = Element < Newest.GetSize() ? Newest[Element] : Type { };
+
+            if (Old != New)
+            {
+                Min = ::Min(Element, Min);
+                Max = ::Max(Element + 1, Max);
+            }
+        }
+        return Min < Max;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     static Bool D3D11Check(HRESULT Result)
     {
         if (FAILED(Result))
@@ -1119,39 +1144,21 @@ namespace Graphic
 
     void D3D11Driver::ApplyVertexResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        const UInt32 OldSize = Oldest.Vertices.GetSize();
-        const UInt32 NewSize = Newest.Vertices.GetSize();
-        const UInt32 Limit   = ::Max(OldSize, NewSize);
+        UInt32 Min;
+        UInt32 Max;
 
-        // The first pass only compares, so a draw that rebinds nothing touches no pool and writes no array.
-        UInt32 Min = Limit;
-        UInt32 Max = 0;
-
-        for (UInt32 Element = 0; Element < Limit; ++Element)
-        {
-            const Stream Old = Element < OldSize ? Oldest.Vertices[Element] : Stream { };
-            const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream { };
-
-            if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
-            {
-                Min = ::Min(Element, Min);
-                Max = ::Max(Element + 1, Max);
-            }
-        }
-
-        if (Min >= Max)
+        if (!Differ<Stream>(Oldest.Vertices, Newest.Vertices, Min, Max))
         {
             return;
         }
 
-        // The second pass gathers the dirty span alone, which is also the span handed to the device.
         Ptr<ID3D11Buffer> Array[Command::kMaxVertices];
         UINT              ArrayOffset[Command::kMaxVertices];
         UINT              ArrayStride[Command::kMaxVertices];
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
-            const Stream New = Element < NewSize ? Newest.Vertices[Element] : Stream { };
+            const Stream New = Element < Newest.Vertices.GetSize() ? Newest.Vertices[Element] : Stream { };
 
             Array[Element]       = mBuffers[New.Buffer].Get();
             ArrayOffset[Element] = New.Offset;
@@ -1166,26 +1173,10 @@ namespace Graphic
 
     void D3D11Driver::ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        const UInt32 OldSize = Oldest.Samplers.GetSize();
-        const UInt32 NewSize = Newest.Samplers.GetSize();
-        const UInt32 Limit   = ::Max(OldSize, NewSize);
+        UInt32 Min;
+        UInt32 Max;
 
-        UInt32 Min = Limit;
-        UInt32 Max = 0;
-
-        for (UInt32 Element = 0; Element < Limit; ++Element)
-        {
-            const Object Old = Element < OldSize ? Oldest.Samplers[Element] : Object { };
-            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object { };
-
-            if (Old != New)
-            {
-                Min = ::Min(Element, Min);
-                Max = ::Max(Element + 1, Max);
-            }
-        }
-
-        if (Min >= Max)
+        if (!Differ<Object>(Oldest.Samplers, Newest.Samplers, Min, Max))
         {
             return;
         }
@@ -1194,7 +1185,7 @@ namespace Graphic
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
-            const Object New = Element < NewSize ? Newest.Samplers[Element] : Object { };
+            const Object New = Element < Newest.Samplers.GetSize() ? Newest.Samplers[Element] : Object { };
 
             Array[Element] = mSamplers[New].Get();
         }
@@ -1209,26 +1200,10 @@ namespace Graphic
 
     void D3D11Driver::ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        const UInt32 OldSize = Oldest.Textures.GetSize();
-        const UInt32 NewSize = Newest.Textures.GetSize();
-        const UInt32 Limit   = ::Max(OldSize, NewSize);
+        UInt32 Min;
+        UInt32 Max;
 
-        UInt32 Min = Limit;
-        UInt32 Max = 0;
-
-        for (UInt32 Element = 0; Element < Limit; ++Element)
-        {
-            const Object Old = Element < OldSize ? Oldest.Textures[Element] : Object { };
-            const Object New = Element < NewSize ? Newest.Textures[Element] : Object { };
-
-            if (Old != New)
-            {
-                Min = ::Min(Element, Min);
-                Max = ::Max(Element + 1, Max);
-            }
-        }
-
-        if (Min >= Max)
+        if (!Differ<Object>(Oldest.Textures, Newest.Textures, Min, Max))
         {
             return;
         }
@@ -1237,7 +1212,7 @@ namespace Graphic
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
-            const Object New = Element < NewSize ? Newest.Textures[Element] : Object { };
+            const Object New = Element < Newest.Textures.GetSize() ? Newest.Textures[Element] : Object { };
 
             Array[Element] = mTextures[New].Resource.Get();
         }
@@ -1252,22 +1227,10 @@ namespace Graphic
 
     void D3D11Driver::ApplyUniformResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
-        UInt32 Min = Command::kMaxUniforms;
-        UInt32 Max = 0;
+        UInt32 Min;
+        UInt32 Max;
 
-        for (UInt32 Element = 0; Element < Command::kMaxUniforms; ++Element)
-        {
-            ConstRef<Stream> Old = Oldest.Uniforms[Element];
-            ConstRef<Stream> New = Newest.Uniforms[Element];
-
-            if (Old.Buffer != New.Buffer || Old.Offset != New.Offset || Old.Stride != New.Stride)
-            {
-                Min = ::Min(Element, Min);
-                Max = ::Max(Element + 1, Max);
-            }
-        }
-
-        if (Min >= Max)
+        if (!Differ<Stream>(Oldest.Uniforms, Newest.Uniforms, Min, Max))
         {
             return;
         }
