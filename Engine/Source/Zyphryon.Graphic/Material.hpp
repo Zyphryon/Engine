@@ -72,8 +72,8 @@ namespace Graphic
         /// \brief Gets the image bound to the named texture.
         ///
         /// \param Name The pre-hashed texture name.
-        /// \return The image resource bound to the texture, or null if none.
-        Retainer<Image> GetImage(UInt64 Name) const;
+        /// \return The image bound to the texture, or an empty retainer if none.
+        ConstRetainer<Image> GetImage(UInt64 Name) const;
 
         /// \brief Gets every texture bound by this material.
         ///

@@ -47,8 +47,10 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Retainer<Image> Material::GetImage(UInt64 Name) const
+    ConstRetainer<Image> Material::GetImage(UInt64 Name) const
     {
+        static const Retainer<Image> kNone;
+
         for (ConstRef<TextureEntry> Entry : mTextures)
         {
             if (Entry.Hash == Name)
@@ -56,7 +58,7 @@ namespace Graphic
                 return Entry.Image;
             }
         }
-        return nullptr;
+        return kNone;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
