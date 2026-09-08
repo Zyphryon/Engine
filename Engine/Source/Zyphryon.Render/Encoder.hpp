@@ -165,7 +165,7 @@ namespace Render
         /// \param Service The graphic service used to allocate transient commands and uniforms.
         Encoder(Ref<Graphic::Service> Service);
 
-        /// \brief Resets the per-pass scratch (collector and arena), preserving capacity for reuse.
+        /// \brief Resets the per-pass scratch, forgetting the material last resolved.
         void Reset();
 
         /// \brief Sets the frame's uniform block bound to every subsequent draw.
@@ -354,15 +354,39 @@ namespace Render
 
     private:
 
-        /// \brief Binds every texture and sampler the technique declares, sourced from the material.
+        /// \brief What a material resolves to under a technique: its variant, packed block, images and samplers.
+        struct Binding final
+        {
+            /// The technique the material was resolved under.
+            ConstPtr<Graphic::Technique> Technique = nullptr;
+
+            /// The material resolved, compared by address.
+            ConstPtr<Graphic::Material>  Material  = nullptr;
+
+            /// The samplers the material supplied itself, one bit per slot, as opposed to the technique's own.
+            UInt32                       Overrides = 0;
+
+            /// The variant the material's features select.
+            Graphic::Technique::Key      Variant   = 0;
+
+            /// The material's uniform block, packed into the frame's arena.
+            Graphic::Stream              Uniforms;
+
+            /// The image handle for every texture the technique declares, zero where the material has none.
+            Sequence<Graphic::Object, Graphic::Command::kMaxTextures> Textures;
+
+            /// The sampler for every slot the technique declares, the material's own or the technique's.
+            Sequence<Graphic::Object, Graphic::Command::kMaxSamplers> Samplers;
+        };
+
+        /// \brief Resolves a material under a technique, reusing the last resolution while both are unchanged.
         ///
-        /// \param Command  The command being assembled.
-        /// \param Schema   The schema naming the textures and samplers the technique declares.
-        /// \param Material The material to source images and samplers from.
-        void BindTextures(
-            Ref<Graphic::Command>       Command,
-            ConstRef<Graphic::Schema>   Schema,
-            ConstRef<Graphic::Material> Material);
+        /// \note The cache holds one entry and is dropped by \ref Reset and \ref SetFrame.
+        ///
+        /// \param Technique The technique whose schema names what to bind.
+        /// \param Material  The material to source the variant, block, images and samplers from.
+        /// \return The resolved bindings.
+        ConstRef<Binding> Resolve(ConstRef<Graphic::Technique> Technique, ConstRef<Graphic::Material> Material);
 
     private:
 
@@ -373,5 +397,6 @@ namespace Render
         Graphic::Stream       mFrame;
         Graphic::Stream       mPass;
         Graphic::Scissor      mScissor;
+        Binding               mBinding;
     };
 }

@@ -51,32 +51,29 @@ namespace Render
 
     Ref<Encoder::Binder> Encoder::Binder::Apply(ConstRef<Graphic::Material> Material)
     {
-        ConstRef<Graphic::Schema> Schema = mTechnique.GetSchema();
+        ConstRef<Binding> Bound = mEncoder.Resolve(mTechnique, Material);
 
         // The material answers by name, so each image lands in the slot the signature declared it under.
-        const ConstSpan<UInt64> Textures = Schema.GetTextures();
-
-        for (UInt32 Index = 0, Limit = Textures.GetSize(); Index < Limit; ++Index)
+        for (UInt32 Index = 0, Limit = Bound.Textures.GetSize(); Index < Limit; ++Index)
         {
-            if (ConstRetainer<Graphic::Image> Image = Material.GetImage(Textures[Index]))
+            if (const Graphic::Object Handle = Bound.Textures[Index])
             {
-                mCommand.Textures[Index] = Image->GetHandle();
+                mCommand.Textures[Index] = Handle;
             }
         }
 
         // A material overrides a sampler only where it sets one, leaving the technique's own everywhere else.
-        for (UInt32 Index = 0, Limit = Schema.GetSamplers().GetSize(); Index < Limit; ++Index)
+        for (UInt32 Index = 0, Limit = Bound.Samplers.GetSize(); Index < Limit; ++Index)
         {
-            if (const Graphic::Object Handle = Material.GetSampler(Schema.GetSamplers()[Index].Hash))
+            if (Bound.Overrides & (1u << Index))
             {
-                mCommand.Samplers[Index] = Handle;
+                mCommand.Samplers[Index] = Bound.Samplers[Index];
             }
         }
 
-        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Material)]
-            = mEncoder.Pack(Graphic::Frequency::Material, mTechnique, Material);
+        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound.Uniforms;
 
-        mVariant |= mTechnique.Resolve(Material);
+        mVariant |= Bound.Variant;
         return * this;
     }
 
@@ -124,6 +121,7 @@ namespace Render
     {
         mPass    = Graphic::Stream();
         mScissor = Graphic::Scissor();
+        mBinding = Binding();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -131,7 +129,8 @@ namespace Render
 
     void Encoder::SetFrame(Graphic::Stream Stream)
     {
-        mFrame = Stream;
+        mFrame   = Stream;
+        mBinding = Binding();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -163,7 +162,9 @@ namespace Render
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
         // The material decides which features turn on, so it selects the variant the draw is compiled for.
-        Command.Pipeline = Technique.GetHandle(Material ? Technique.Resolve(* Material) : 0);
+        const ConstPtr<Binding> Bound = Material ? AddressOf(Resolve(Technique, * Material)) : nullptr;
+
+        Command.Pipeline = Technique.GetHandle(Bound ? Bound->Variant : 0);
 
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
@@ -171,12 +172,11 @@ namespace Render
         Command.Scissor = mScissor;
 
         // Bind the material uniform block, textures, and samplers from the schema.
-        if (Material)
+        if (Bound)
         {
-            Ref<Graphic::Stream> Stream = Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)];
-            Stream = Pack(Graphic::Frequency::Material, Technique, * Material);
-
-            BindTextures(Command, Technique.GetSchema(), * Material);
+            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound->Uniforms;
+            Command.Textures = Bound->Textures;
+            Command.Samplers = Bound->Samplers;
         }
 
         // Bind the per-instance vertex stream and, if present, the per-instance uniform block.
@@ -248,7 +248,9 @@ namespace Render
         Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
 
         // The material decides which features turn on, so it selects the variant the draw is compiled for.
-        Command.Pipeline = Technique.GetHandle(Material ? Technique.Resolve(* Material) : 0);
+        const ConstPtr<Binding> Bound = Material ? AddressOf(Resolve(Technique, * Material)) : nullptr;
+
+        Command.Pipeline = Technique.GetHandle(Bound ? Bound->Variant : 0);
 
         // Bind the per-frame, per-pass, and per-object (instance) uniform blocks.
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)]   = mFrame;
@@ -257,12 +259,11 @@ namespace Render
         Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
 
         // Bind the run's material (uniform block, textures, and samplers) when the caller named one.
-        if (Material)
+        if (Bound)
         {
-            const Graphic::Stream Data = Pack(Graphic::Frequency::Material, Technique, * Material);
-            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Data;
-
-            BindTextures(Command, Schema, * Material);
+            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound->Uniforms;
+            Command.Textures = Bound->Textures;
+            Command.Samplers = Bound->Samplers;
         }
 
         // Bind one stream per interleaved block, in slot order (matching the technique's layout).
@@ -315,24 +316,50 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::BindTextures(
-        Ref<Graphic::Command>       Command,
-        ConstRef<Graphic::Schema>   Schema,
-        ConstRef<Graphic::Material> Material)
+    ConstRef<Encoder::Binding> Encoder::Resolve(ConstRef<Graphic::Technique> Technique, ConstRef<Graphic::Material> Material)
     {
+        Ref<Binding> Bound = mBinding;
+
+        // A run of draws sharing a material under one technique packs and resolves it once.
+        if (Bound.Technique == AddressOf(Technique) && Bound.Material == AddressOf(Material))
+        {
+            return Bound;
+        }
+
+        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+
+        Bound.Technique = AddressOf(Technique);
+        Bound.Material  = AddressOf(Material);
+        Bound.Overrides = 0;
+        Bound.Variant   = Technique.Resolve(Material);
+        Bound.Uniforms  = Pack(Graphic::Frequency::Material, Technique, Material);
+
+        Bound.Textures.Clear();
+
         for (const UInt64 Name : Schema.GetTextures())
         {
             ConstRetainer<Graphic::Image> Image = Material.GetImage(Name);
 
-            Command.Textures.Append(Image ? Image->GetHandle() : 0);
+            Bound.Textures.Append(Image ? Image->GetHandle() : 0);
         }
 
-        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
+        Bound.Samplers.Clear();
+
+        for (UInt32 Index = 0, Limit = Schema.GetSamplers().GetSize(); Index < Limit; ++Index)
         {
-            // Fall back to the technique's own sampler when the material supplies none.
-            const Graphic::Object Handle = Material.GetSampler(Field.Hash);
+            ConstRef<Graphic::Schema::Sampler> Field = Schema.GetSamplers()[Index];
 
-            Command.Samplers.Append(Handle ? Handle : Field.Handle);
+            // Fall back to the technique's own sampler when the material supplies none.
+            if (const Graphic::Object Handle = Material.GetSampler(Field.Hash))
+            {
+                Bound.Samplers.Append(Handle);
+                Bound.Overrides |= (1u << Index);
+            }
+            else
+            {
+                Bound.Samplers.Append(Field.Handle);
+            }
         }
+        return Bound;
     }
 }
