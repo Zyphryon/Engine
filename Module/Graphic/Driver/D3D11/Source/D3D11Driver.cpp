@@ -381,13 +381,7 @@ namespace Graphic
         {
             D3D11_BLEND_DESC Description = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
 
-            Description.RenderTarget[0].BlendEnable           = !(
-                   States.BlendSrcColor       == BlendFactor::One
-                && States.BlendSrcAlpha       == BlendFactor::One
-                && States.BlendDstColor       == BlendFactor::Zero
-                && States.BlendDstAlpha       == BlendFactor::Zero
-                && States.BlendEquationColor  == BlendFunction::Add
-                && States.BlendEquationAlpha  == BlendFunction::Add);
+            Description.RenderTarget[0].BlendEnable           = States.UsesBlending();
             Description.RenderTarget[0].SrcBlend              = D3D11Convert(States.BlendSrcColor);
             Description.RenderTarget[0].DestBlend             = D3D11Convert(States.BlendDstColor);
             Description.RenderTarget[0].BlendOp               = D3D11Convert(States.BlendEquationColor);
@@ -403,17 +397,10 @@ namespace Graphic
         {
             D3D11_DEPTH_STENCIL_DESC Description = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 
-            Description.DepthEnable    = States.DepthTest != TestCondition::Always || States.DepthMask;
+            Description.DepthEnable    = States.UsesDepth();
             Description.DepthFunc      = D3D11Convert(States.DepthTest);
             Description.DepthWriteMask = static_cast<D3D11_DEPTH_WRITE_MASK>(States.DepthMask);
-            Description.StencilEnable  = States.StencilFrontTest      != TestCondition::Always
-                                      || States.StencilFrontFail      != TestAction::Keep
-                                      || States.StencilFrontDepthFail != TestAction::Keep
-                                      || States.StencilFrontDepthPass != TestAction::Keep
-                                      || States.StencilBackTest       != TestCondition::Always
-                                      || States.StencilBackFail       != TestAction::Keep
-                                      || States.StencilBackDepthFail  != TestAction::Keep
-                                      || States.StencilBackDepthPass  != TestAction::Keep;
+            Description.StencilEnable  = States.UsesStencil();
             Description.StencilReadMask              = States.StencilReadMask;
             Description.StencilWriteMask             = States.StencilWriteMask;
             Description.FrontFace.StencilFunc        = D3D11Convert(States.StencilFrontTest);

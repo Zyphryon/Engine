@@ -870,6 +870,42 @@ namespace Graphic
 
         /// Primitive topology used for vertex interpretation.
         Primitive      Topology              = Primitive::TriangleList;
+
+        /// \brief Checks whether blending does anything a plain write would not.
+        ///
+        /// \return `true` if any blend factor or equation departs from source-over-nothing, otherwise `false`.
+        ZY_INLINE constexpr Bool UsesBlending() const
+        {
+            return BlendSrcColor      != BlendFactor::One
+                || BlendSrcAlpha      != BlendFactor::One
+                || BlendDstColor      != BlendFactor::Zero
+                || BlendDstAlpha      != BlendFactor::Zero
+                || BlendEquationColor != BlendFunction::Add
+                || BlendEquationAlpha != BlendFunction::Add;
+        }
+
+        /// \brief Checks whether the depth buffer is read or written at all.
+        ///
+        /// \return `true` if depth is tested or written, otherwise `false`.
+        ZY_INLINE constexpr Bool UsesDepth() const
+        {
+            return DepthTest != TestCondition::Always || DepthMask;
+        }
+
+        /// \brief Checks whether the stencil buffer is read or written at all.
+        ///
+        /// \return `true` if either face tests or acts on the stencil, otherwise `false`.
+        ZY_INLINE constexpr Bool UsesStencil() const
+        {
+            return StencilFrontTest      != TestCondition::Always
+                || StencilFrontFail      != TestAction::Keep
+                || StencilFrontDepthFail != TestAction::Keep
+                || StencilFrontDepthPass != TestAction::Keep
+                || StencilBackTest       != TestCondition::Always
+                || StencilBackFail       != TestAction::Keep
+                || StencilBackDepthFail  != TestAction::Keep
+                || StencilBackDepthPass  != TestAction::Keep;
+        }
     };
 
     /// \brief Defines the parameters for a draw call.

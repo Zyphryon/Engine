@@ -386,13 +386,7 @@ namespace Graphic
         Pipeline.Program = mCompiler.Compile(Program);
 
         // Blend.
-        Pipeline.BlendEnable        = !(
-               States.BlendSrcColor      == BlendFactor::One
-            && States.BlendSrcAlpha      == BlendFactor::One
-            && States.BlendDstColor      == BlendFactor::Zero
-            && States.BlendDstAlpha      == BlendFactor::Zero
-            && States.BlendEquationColor == BlendFunction::Add
-            && States.BlendEquationAlpha == BlendFunction::Add);
+        Pipeline.BlendEnable        = States.UsesBlending();
         Pipeline.BlendSrcColor      = GLES3Convert(States.BlendSrcColor);
         Pipeline.BlendDstColor      = GLES3Convert(States.BlendDstColor);
         Pipeline.BlendEquationColor = GLES3Convert(States.BlendEquationColor);
@@ -403,7 +397,7 @@ namespace Graphic
         Pipeline.AlphaToCoverage    = States.AlphaToCoverage;
 
         // Depth.
-        Pipeline.DepthEnable        = States.DepthTest != TestCondition::Always || States.DepthMask;
+        Pipeline.DepthEnable        = States.UsesDepth();
         Pipeline.DepthMask          = States.DepthMask;
         Pipeline.DepthFunction      = GLES3Convert(States.DepthTest);
         Pipeline.DepthClip          = States.DepthClip;
@@ -411,14 +405,7 @@ namespace Graphic
         Pipeline.DepthBiasSlope     = States.DepthBiasSlope;
 
         // Stencil.
-        Pipeline.StencilEnable        = States.StencilFrontTest      != TestCondition::Always
-                                     || States.StencilFrontFail      != TestAction::Keep
-                                     || States.StencilFrontDepthFail != TestAction::Keep
-                                     || States.StencilFrontDepthPass != TestAction::Keep
-                                     || States.StencilBackTest       != TestCondition::Always
-                                     || States.StencilBackFail       != TestAction::Keep
-                                     || States.StencilBackDepthFail  != TestAction::Keep
-                                     || States.StencilBackDepthPass  != TestAction::Keep;
+        Pipeline.StencilEnable        = States.UsesStencil();
         Pipeline.StencilReadMask      = States.StencilReadMask;
         Pipeline.StencilWriteMask     = States.StencilWriteMask;
         Pipeline.StencilFrontFunction = GLES3Convert(States.StencilFrontTest);
