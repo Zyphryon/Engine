@@ -28,7 +28,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem { Host }
+        : Subsystem { Host },
+          mProducer { 0 },
+          mConsumer { kMaxFrames - 1 }
     {
 #if !defined(ZY_PLATFORM_WEB)
         mWorker = Thread([this](std::stop_token Token)
@@ -381,6 +383,11 @@ namespace Graphic
 
         // Clears the in-flight command queue.
         mFrames[mConsumer].Commands.Clear();
+
+#if !defined(ZY_PLATFORM_WEB)
+        // The frame goes back to the CPU already mapped, so its next round of writes needs no copy behind it.
+        MapInFlightFrame(mFrames[mConsumer]);
+#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -419,7 +426,11 @@ namespace Graphic
     {
         Arena.Buffer   = mBuffers.Allocate();
         Arena.Capacity = Capacity;
+
+#if defined(ZY_PLATFORM_WEB)
+        // Every write goes through the CPU writer here, since the buffer is never mapped.
         Arena.Memory.Reserve(Capacity);
+#endif
 
         mDriver->CreateBuffer(Arena.Buffer, Storage::Dynamic, Usage, Capacity, ConstSpan<Byte>());
     }
@@ -429,6 +440,15 @@ namespace Graphic
 
     void Service::UpdateInFlightArena(Ref<InFlightArena> Arena, Usage Usage)
     {
+#if !defined(ZY_PLATFORM_WEB)
+        if (Arena.Mapping)
+        {
+            mDriver->UnmapBuffer(Arena.Buffer);
+
+            Arena.Mapping = nullptr;
+        }
+#endif
+
         if (Ref<Sequence<Byte>> Data = Arena.Memory; !Data.IsEmpty())
         {
             // Ensure GPU buffer has enough capacity to hold the new data.
@@ -454,6 +474,22 @@ namespace Graphic
             // Clear the data after uploading to the GPU to free up memory on the CPU side.
             Data.Clear();
         }
+
+        Arena.Cursor = 0;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::EvictInFlightArena(Ref<InFlightArena> Arena)
+    {
+        ZY_ASSERT(Arena.Memory.IsEmpty(), "An evicted arena writes through its memory alone");
+
+        // What was written keeps its offsets, so every stream handed out before the spill still holds.
+        Arena.Memory.Advance(Arena.Cursor);
+        Blit(Arena.Memory.GetData(), Arena.Cursor, Arena.Mapping);
+
+        Arena.Mapping = nullptr;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -474,6 +510,24 @@ namespace Graphic
         UpdateInFlightArena(Frame.Vertices, Usage::Vertex);
         UpdateInFlightArena(Frame.Indices,  Usage::Index);
         UpdateInFlightArena(Frame.Uniforms, Usage::Uniform);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::MapInFlightFrame(Ref<InFlightFrame> Frame)
+    {
+        // A frame whose buffers were never created, or a driver that maps nothing, leaves the CPU writer in charge.
+        if (mDriver)
+        {
+            for (const Ptr<InFlightArena> Arena : { AddressOf(Frame.Vertices), AddressOf(Frame.Indices), AddressOf(Frame.Uniforms) })
+            {
+                if (Arena->Buffer)
+                {
+                    Arena->Mapping = mDriver->MapBuffer(Arena->Buffer, 0, Arena->Capacity);
+                }
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

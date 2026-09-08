@@ -405,17 +405,23 @@ namespace Graphic
             UInt32 Cursor;
         };
 
-        /// \brief Holds the CPU-side linear allocator and the corresponding GPU buffer for one transient stream.
+        /// \brief Holds the GPU buffer for one transient stream and the memory the frame writes it through.
         struct InFlightArena final
         {
-            /// The CPU-side linear allocator that accumulates transient data for the frame.
+            /// The CPU-side writer, used while the buffer is not mapped and once a frame outgrows the mapping.
             Sequence<Byte> Memory;
 
+            /// The buffer's own memory while it is mapped for the frame, or null when writes go through \ref Memory.
+            Ptr<Byte>      Mapping  = nullptr;
+
+            /// The bytes written into \ref Mapping so far.
+            UInt32         Cursor   = 0;
+
             /// The GPU buffer handle that receives the uploaded data each frame.
-            Object         Buffer;
+            Object         Buffer   = 0;
 
             /// The current capacity of the GPU buffer in bytes.
-            UInt32         Capacity;
+            UInt32         Capacity = 0;
         };
 
         /// \brief Groups all per-frame resources required to record and execute one GPU frame.
@@ -488,26 +494,48 @@ namespace Graphic
         /// \param Capacity The initial capacity of the GPU buffer in bytes.
         void CreateInFlightArena(Ref<InFlightArena> Arena, Usage Usage, UInt32 Capacity);
 
-        /// \brief Uploads the accumulated CPU data of a single \ref InFlightArena to its GPU buffer and resets the writer.
+        /// \brief Unmaps a single \ref InFlightArena and uploads whatever its CPU writer holds, then resets both.
         ///
         /// \param Arena The in-flight arena to upload and reset.
         /// \param Usage The intended GPU usage of the buffer backing this arena.
         void UpdateInFlightArena(Ref<InFlightArena> Arena, Usage Usage);
 
-        /// \brief Allocates a region of transient CPU memory from the given arena.
+        /// \brief Moves what a frame wrote through the mapping into the CPU writer, so the frame can keep growing.
+        ///
+        /// \param Arena The in-flight arena whose mapping ran out.
+        void EvictInFlightArena(Ref<InFlightArena> Arena);
+
+        /// \brief Allocates a region of transient memory from the given arena.
+        ///
+        /// \note The region is the GPU buffer's own memory while the arena is mapped, which is write-combined.
         ///
         /// \param Arena  The in-flight arena from which to allocate the transient data.
         /// \param Stride The byte stride of each element, used for alignment and reservation.
         /// \param Count  The number of elements to allocate.
-        /// \return A transient mapping the allocated CPU memory and the corresponding GPU stream.
+        /// \return A transient mapping the allocated memory and the corresponding GPU stream.
         template<typename Type>
         ZY_INLINE Transient<Type> RequestInFlightArena(Ref<InFlightArena> Arena, UInt32 Stride, UInt32 Count)
         {
+            const UInt32 Size = Count * Stride;
+
+            // What fits the mapping is written straight into the buffer, with no copy behind it.
+            if (Arena.Mapping)
+            {
+                const UInt32 Offset = AlignPowTwo(Arena.Cursor, Stride);
+
+                if (Offset + Size <= Arena.Capacity)
+                {
+                    Arena.Cursor = Offset + Size;
+
+                    const Ptr<Type> Address = reinterpret_cast<Ptr<Type>>(Arena.Mapping + Offset);
+                    return Transient<Type>(Address, Stream(Arena.Buffer, Stride, Offset));
+                }
+                EvictInFlightArena(Arena);
+            }
+
             Ref<Sequence<Byte>> Buffer = Arena.Memory;
 
             const UInt32 Offset = AlignPowTwo(static_cast<UInt32>(Buffer.GetSize()), Stride);
-            const UInt32 Size   = Count * Stride;
-
             Buffer.Advance(Offset - Buffer.GetSize() + Size);
 
             const Ptr<Type> Address = reinterpret_cast<Ptr<Type>>(Buffer.GetData() + Offset);
@@ -524,6 +552,11 @@ namespace Graphic
         /// \param Frame The in-flight frame to update.
         void UploadInFlightFrame(Ref<InFlightFrame> Frame);
 
+        /// \brief Maps every arena of a frame, so the frame's next round of writes lands in the buffers themselves.
+        ///
+        /// \param Frame The in-flight frame the CPU is about to write.
+        void MapInFlightFrame(Ref<InFlightFrame> Frame);
+
         /// \brief Registers built-in resource loaders for graphic resources.
         void RegisterBuiltinLoaders();
 
@@ -536,8 +569,8 @@ namespace Graphic
         Description                      mDescription;
         Thread                           mWorker;
         Atomic<Bool>                     mSignal;
-        UInt8                            mProducer = 0;
-        UInt8                            mConsumer = kMaxFrames - 1;
+        UInt8                            mProducer;
+        UInt8                            mConsumer;
         Array<InFlightFrame, kMaxFrames> mFrames;
         Snapshot                         mSnapshot;
 
