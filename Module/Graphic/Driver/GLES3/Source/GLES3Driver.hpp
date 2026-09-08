@@ -122,6 +122,7 @@ namespace Graphic
         struct GLES3Pipeline final
         {
             GLuint        Program               = 0;
+            Bool          Ready                 = false;
             Bool          BlendEnable           = false;
             GLenum        BlendSrcColor         = GL_ONE;
             GLenum        BlendDstColor         = GL_ZERO;
@@ -190,6 +191,12 @@ namespace Graphic
         /// \return `true` when the extension is present, `false` otherwise.
         Bool HasExtension(ConstPtr<Char> Name) const;
 
+        /// \brief Brings a pipeline whose link is still outstanding into use once the link has landed.
+        ///
+        /// \param ID The pipeline to settle.
+        /// \return `true` when the pipeline can be drawn with, `false` while it links or once it failed.
+        Bool Settle(Object ID);
+
         /// \brief Applies the fixed-function state and program described by a pipeline, emitting only the changes
         ///        relative to the state cached from the previous application.
         ///
@@ -221,25 +228,26 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        GLES3Context                            mContext;
-        GLES3Compiler                           mCompiler;
-        Description                             mDescription;
-        GLES3Snapshot                           mSnapshot;
+        GLES3Context                             mContext;
+        GLES3Compiler                            mCompiler;
+        Description                              mDescription;
+        GLES3Snapshot                            mSnapshot;
+        Table<Object, GLES3Compiler::GLES3Build> mCompilations;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        GLuint                                  mGlobalReadFramebuffer = 0;
-        GLuint                                  mGlobalDrawFramebuffer = 0;
-        GLuint                                  mGlobalVAO             = 0;
+        GLuint                                   mGlobalReadFramebuffer = 0;
+        GLuint                                   mGlobalDrawFramebuffer = 0;
+        GLuint                                   mGlobalVAO             = 0;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<GLES3Buffer,   kMaxBuffers   + 1> mBuffers;
-        Array<GLES3Pass,     kMaxPasses    + 1> mPasses;
-        Array<GLES3Pipeline, kMaxPipelines + 1> mPipelines;
-        Array<GLuint,        kMaxSamplers  + 1> mSamplers;
-        Array<GLES3Texture,  kMaxTextures  + 1> mTextures;
+        Array<GLES3Buffer,   kMaxBuffers   + 1>  mBuffers;
+        Array<GLES3Pass,     kMaxPasses    + 1>  mPasses;
+        Array<GLES3Pipeline, kMaxPipelines + 1>  mPipelines;
+        Array<GLuint,        kMaxSamplers  + 1>  mSamplers;
+        Array<GLES3Texture,  kMaxTextures  + 1>  mTextures;
     };
 }

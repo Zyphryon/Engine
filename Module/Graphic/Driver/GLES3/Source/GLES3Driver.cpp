@@ -149,6 +149,8 @@ namespace Graphic
 
         LoadCapabilities();
 
+        mCompiler.Initialize();
+
         // Core profiles mandate a bound vertex array object; a single one is kept current for the driver's lifetime
         // while attribute pointers are re-specified per pipeline / vertex-stream change.
         glGenVertexArrays(1, AddressOf(mGlobalVAO));
@@ -390,8 +392,16 @@ namespace Graphic
     {
         Ref<GLES3Pipeline> Pipeline = mPipelines[ID];
 
-        // Program.
-        Pipeline.Program = mCompiler.Compile(Program);
+        // The link is issued and left to run; the first draw that wants the program settles it.
+        GLES3Compiler::GLES3Build Build;
+
+        Pipeline.Program = mCompiler.Compile(Program, Build);
+        Pipeline.Ready   = false;
+
+        if (Pipeline.Program)
+        {
+            mCompilations.Assign(ID, Move(Build));
+        }
 
         // Blend.
         Pipeline.BlendEnable        = States.UsesBlending();
@@ -445,11 +455,45 @@ namespace Graphic
 
     void GLES3Driver::DeletePipeline(Object ID)
     {
+        // A program deleted before its link landed still owns its stages.
+        if (const Ptr<GLES3Compiler::GLES3Build> Build = mCompilations.Find(ID))
+        {
+            glDeleteShader(Build->Vertex);
+            glDeleteShader(Build->Fragment);
+
+            mCompilations.Erase(ID);
+        }
+
         if (mPipelines[ID].Program)
         {
             glDeleteProgram(mPipelines[ID].Program);
         }
         mPipelines[ID] = GLES3Pipeline();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool GLES3Driver::Settle(Object ID)
+    {
+        Ref<GLES3Pipeline> Pipeline = mPipelines[ID];
+
+        if (Pipeline.Program == 0 || !mCompiler.IsReady(Pipeline.Program))
+        {
+            return false;
+        }
+
+        Pipeline.Ready = mCompiler.Finish(Pipeline.Program, * mCompilations.Find(ID));
+
+        if (!Pipeline.Ready)
+        {
+            glDeleteProgram(Pipeline.Program);
+
+            Pipeline.Program = 0;
+        }
+
+        mCompilations.Erase(ID);
+        return Pipeline.Ready;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -752,14 +796,23 @@ namespace Graphic
     {
         static constexpr Command kEmptyCommand { };
 
+        // The diff runs against the last command actually issued, since a skipped one bound nothing.
+        ConstPtr<Command> Applied = AddressOf(kEmptyCommand);
+
         for (UInt32 Batch = 0; Batch < Commands.GetSize(); ++Batch)
         {
             ConstRef<Command> Newest = Commands[Batch];
-            ConstRef<Command> Oldest = Batch > 0 ? Commands[Batch - 1] : kEmptyCommand;
+            ConstRef<Command> Oldest = (* Applied);
 
             ConstRef<GLES3Pipeline> Pipeline = mPipelines[Newest.Pipeline];
 
-            const Bool IsPipelineDirty = (Batch == 0) || (Oldest.Pipeline != Newest.Pipeline);
+            // A program still linking is skipped rather than waited for, so a load never stalls the frame.
+            if (!Pipeline.Ready && !Settle(Newest.Pipeline))
+            {
+                continue;
+            }
+
+            const Bool IsPipelineDirty = (Applied == AddressOf(kEmptyCommand)) || (Oldest.Pipeline != Newest.Pipeline);
 
             if (IsPipelineDirty || Oldest.Stencil != Newest.Stencil)
             {
@@ -850,6 +903,8 @@ namespace Graphic
                     glDrawArrays(Pipeline.Primitive, First, Count);
                 }
             }
+
+            Applied = AddressOf(Newest);
         }
     }
 
@@ -884,6 +939,35 @@ namespace Graphic
                 }
                 ++Index;
             }
+        }
+
+        // Whatever the pass does not keep is dropped now, which spares a tiled GPU the write of the tile back to memory.
+        Sequence<GLenum, kMaxAttachments + 2> Discards;
+
+        for (UInt32 Index = 0; Index < Target.Colors.GetSize(); ++Index)
+        {
+            ConstRef<ColorAttachment> Attachment = Target.Colors[Index];
+
+            if (Attachment.StoreAction == Action::Discard || Attachment.Resolve)
+            {
+                Discards.Append(Target.Framebuffer ? GL_COLOR_ATTACHMENT0 + Index : GL_COLOR);
+            }
+        }
+
+        if (Target.Depth.DepthStoreAction == Action::Discard)
+        {
+            Discards.Append(Target.Framebuffer ? GL_DEPTH_ATTACHMENT : GL_DEPTH);
+        }
+
+        if (Target.Depth.StencilStoreAction == Action::Discard)
+        {
+            Discards.Append(Target.Framebuffer ? GL_STENCIL_ATTACHMENT : GL_STENCIL);
+        }
+
+        if (!Discards.IsEmpty())
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, Target.Framebuffer);
+            glInvalidateFramebuffer(GL_FRAMEBUFFER, Discards.GetSize(), Discards.GetData());
         }
 
         // Present the default framebuffer when committing the display pass.

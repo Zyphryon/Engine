@@ -12,6 +12,10 @@
 
 #include "GLES3Compiler.hpp"
 
+#if defined(ZY_PLATFORM_WEB)
+#include <emscripten/html5.h>
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -139,35 +143,72 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    GLuint GLES3Compiler::Compile(ConstRef<Program> Program) const
+    void GLES3Compiler::Initialize()
     {
-        const GLuint Vertex   = Compile(ShaderStage::Vertex,   Program.Modules[Enum::Cast(ShaderStage::Vertex)],   Program.Macros);
-        const GLuint Fragment = Compile(ShaderStage::Fragment, Program.Modules[Enum::Cast(ShaderStage::Fragment)], Program.Macros);
+#if defined(ZY_PLATFORM_WEB)
+        mParallel = emscripten_webgl_enable_extension(
+            emscripten_webgl_get_current_context(), "KHR_parallel_shader_compile") == EM_TRUE;
+#else
+        mParallel = (GLAD_GL_KHR_parallel_shader_compile != 0);
 
-        if (Vertex == 0 || Fragment == 0)
+        if (mParallel)
         {
-            if (Vertex)
-            {
-                glDeleteShader(Vertex);
-            }
-            if (Fragment)
-            {
-                glDeleteShader(Fragment);
-            }
+            glMaxShaderCompilerThreadsKHR(0xFFFFFFFF);
+        }
+#endif
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    GLuint GLES3Compiler::Compile(ConstRef<Program> Program, Ref<GLES3Build> Build) const
+    {
+        Build.Vertex   = Compile(ShaderStage::Vertex,   Program.Modules[Enum::Cast(ShaderStage::Vertex)],   Program.Macros);
+        Build.Fragment = Compile(ShaderStage::Fragment, Program.Modules[Enum::Cast(ShaderStage::Fragment)], Program.Macros);
+
+        if (Build.Vertex == 0 || Build.Fragment == 0)
+        {
+            glDeleteShader(Build.Vertex);
+            glDeleteShader(Build.Fragment);
             return 0;
         }
 
         const GLuint Handle = glCreateProgram();
-        glAttachShader(Handle, Vertex);
-        glAttachShader(Handle, Fragment);
+
+        glAttachShader(Handle, Build.Vertex);
+        glAttachShader(Handle, Build.Fragment);
         glLinkProgram(Handle);
 
-        glDetachShader(Handle, Vertex);
-        glDetachShader(Handle, Fragment);
+        for (ConstRef<Blob> Module : Program.Modules)
+        {
+            if (Module.GetSize() > 0)
+            {
+                Parse(Module, Build.Blocks);
+                Sample(Module, Build.Samplers);
+            }
+        }
+        return Handle;
+    }
 
-        glDeleteShader(Vertex);
-        glDeleteShader(Fragment);
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Bool GLES3Compiler::IsReady(GLuint Handle) const
+    {
+        GLint Completed = GL_TRUE;
+
+        if (mParallel)
+        {
+            glGetProgramiv(Handle, GL_COMPLETION_STATUS_KHR, AddressOf(Completed));
+        }
+        return Completed == GL_TRUE;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool GLES3Compiler::Finish(GLuint Handle, Ref<GLES3Build> Build) const
+    {
         GLint Linked = GL_FALSE;
         glGetProgramiv(Handle, GL_LINK_STATUS, AddressOf(Linked));
 
@@ -175,15 +216,53 @@ namespace Graphic
         {
             GLchar  Message[1024] { };
             GLsizei Length = 0;
-            glGetProgramInfoLog(Handle, sizeof(Message), AddressOf(Length), Message);
 
+            glGetProgramInfoLog(Handle, sizeof(Message), AddressOf(Length), Message);
             LOG_E("GLES3Compiler: Failed to link program: {0}", Text(Message, Length));
-            glDeleteProgram(Handle);
-            return 0;
+
+            // A stage that failed to compile surfaces here, since nothing asked it earlier.
+            for (const GLuint Shader : { Build.Vertex, Build.Fragment })
+            {
+                glGetShaderInfoLog(Shader, sizeof(Message), AddressOf(Length), Message);
+
+                if (Length > 0)
+                {
+                    LOG_E("GLES3Compiler: {0}", Text(Message, Length));
+                }
+            }
         }
 
-        Reflect(Handle, Program);
-        return Handle;
+        glDetachShader(Handle, Build.Vertex);
+        glDetachShader(Handle, Build.Fragment);
+        glDeleteShader(Build.Vertex);
+        glDeleteShader(Build.Fragment);
+
+        if (Linked == GL_FALSE)
+        {
+            return false;
+        }
+
+        // Bind each uniform block to its declared binding point.
+        for (ConstRef<GLES3Binding> Block : Build.Blocks)
+        {
+            const GLuint Index = glGetUniformBlockIndex(Handle, Block.Name.GetData());
+
+            if (Index != GL_INVALID_INDEX)
+            {
+                glUniformBlockBinding(Handle, Index, Block.Point);
+            }
+        }
+
+        glUseProgram(Handle);
+
+        for (ConstRef<GLES3Binding> Sampler : Build.Samplers)
+        {
+            if (const GLint Location = glGetUniformLocation(Handle, Sampler.Name.GetData()); Location >= 0)
+            {
+                glUniform1i(Location, Sampler.Point);
+            }
+        }
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -247,68 +326,7 @@ namespace Graphic
         const GLuint Handle = glCreateShader(GLES3Convert(Stage));
         glShaderSource(Handle, 3, Sources, Lengths);
         glCompileShader(Handle);
-
-        GLint Compiled = GL_FALSE;
-        glGetShaderiv(Handle, GL_COMPILE_STATUS, AddressOf(Compiled));
-
-        if (Compiled == GL_FALSE)
-        {
-            GLchar  Message[1024] { };
-            GLsizei Length = 0;
-            glGetShaderInfoLog(Handle, sizeof(Message), AddressOf(Length), Message);
-
-            LOG_E("GLES3Compiler: Failed to compile {0} shader: {1}", Enum::GetName(Stage), Text(Message, Length));
-            glDeleteShader(Handle);
-            return 0;
-        }
         return Handle;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void GLES3Compiler::Reflect(GLuint Handle, ConstRef<Program> Program) const
-    {
-        Sequence<GLES3Binding> Blocks;
-
-        for (ConstRef<Blob> Module : Program.Modules)
-        {
-            if (Module.GetSize() > 0)
-            {
-                Parse(Module, Blocks);
-            }
-        }
-
-        // Bind each uniform block to its declared binding point.
-        for (ConstRef<GLES3Binding> Block : Blocks)
-        {
-            const GLuint Index = glGetUniformBlockIndex(Handle, Block.Name.GetData());
-
-            if (Index != GL_INVALID_INDEX)
-            {
-                glUniformBlockBinding(Handle, Index, Block.Point);
-            }
-        }
-
-        Sequence<GLES3Binding> Samplers;
-
-        for (ConstRef<Blob> Module : Program.Modules)
-        {
-            if (Module.GetSize() > 0)
-            {
-                Sample(Module, Samplers);
-            }
-        }
-
-        glUseProgram(Handle);
-
-        for (ConstRef<GLES3Binding> Sampler : Samplers)
-        {
-            if (const GLint Location = glGetUniformLocation(Handle, Sampler.Name.GetData()); Location >= 0)
-            {
-                glUniform1i(Location, Sampler.Point);
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
