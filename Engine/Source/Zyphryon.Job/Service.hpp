@@ -125,6 +125,9 @@ namespace Job
         }
 
     private:
+	
+		/// The milliseconds a tick may spend on the main lane before what is left waits for the next one.
+        static constexpr SInt64 kMaxTickBudget = 6;
 
         /// \brief Runs a job to completion, then publishes it and queues everything it was gating.
         ///
@@ -168,5 +171,6 @@ namespace Job
         Gate                       mGate;
         Registry                   mRegistry;
         Array<Executor, kMaxLanes> mExecutors;
+        Slot                       mResidue;
     };
 }

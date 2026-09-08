@@ -12,6 +12,10 @@
 
 #include "Service.hpp"
 
+#if !defined(ZY_HAS_THREADS)
+#include "Zyphryon.Platform/Timer.hpp"
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -22,7 +26,8 @@ namespace Job
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem { Host }
+        : Subsystem { Host },
+		  mResidue  { 0 }
     {
 #if defined(ZY_HAS_THREADS)
         const UInt Cores = Max(1u, std::thread::hardware_concurrency());
@@ -52,13 +57,34 @@ namespace Job
     {
         ZY_PROFILE_SCOPE("Job::Tick");
 
-        Slot Pending;
+        // What the last tick left over runs first, and only then whatever was queued since.
+        Slot Pending = mResidue;
 
         {
             Guard Guard(mMutex);
 
-            Pending = GetExecutor(Lane::Main).Drain();
+            const Slot Queued = GetExecutor(Lane::Main).Drain();
+
+            if (Pending == 0)
+            {
+                Pending = Queued;
+            }
+            else if (Queued != 0)
+            {
+                Slot Last = Pending;
+
+                while (mRegistry[Last].Next != 0)
+                {
+                    Last = mRegistry[Last].Next;
+                }
+                mRegistry[Last].Next = Queued;
+            }
         }
+
+#if !defined(ZY_HAS_THREADS)
+        // Every lane lands here, so a load burst is spread over frames rather than run to the end in one callback.
+        const Real64 Deadline = Platform::Timer().GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
+#endif
 
         while (Pending != 0)
         {
@@ -67,7 +93,16 @@ namespace Job
             Execute(Pending);
 
             Pending = Following;
+
+#if !defined(ZY_HAS_THREADS)
+            if (Pending != 0 && Clock.GetSeconds() >= Deadline)
+            {
+                break;
+            }
+#endif
         }
+
+        mResidue = Pending;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
