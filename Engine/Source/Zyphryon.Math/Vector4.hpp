@@ -802,7 +802,7 @@ inline namespace Math
 #if   defined(ZY_ARCH_X86_64)
 #   include "Vector4_SSE4.inl"
 #elif defined(ZY_ARCH_ARM64)
-#   include "Vector4_NEON.inl"
+#   error "Vector4 has no NEON backend yet, so ARM64 cannot build"
 #elif defined(ZY_ARCH_WASM32) || defined(ZY_ARCH_WASM64)
 #   include "Vector4_WASM.inl"
 #endif
