@@ -520,7 +520,9 @@ namespace Graphic
         // A frame whose buffers were never created, or a driver that maps nothing, leaves the CPU writer in charge.
         if (mDriver)
         {
-            for (const Ptr<InFlightArena> Arena : { AddressOf(Frame.Vertices), AddressOf(Frame.Indices), AddressOf(Frame.Uniforms) })
+            Array Arenas(AddressOf(Frame.Vertices), AddressOf(Frame.Indices), AddressOf(Frame.Uniforms));
+            
+            for (const Ptr<InFlightArena> Arena : Arenas)
             {
                 if (Arena->Buffer)
                 {
