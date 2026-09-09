@@ -86,6 +86,16 @@ namespace Pipeline::Baker::Font
 
     Blob Baker::Bake(ConstSpan<Byte> Source, Text Type, ConstRef<Profile> Profile) const
     {
+        const Baker::Source Only { .Data = Source, .Type = Type };
+
+        return Bake(ConstSpan<Baker::Source>(AddressOf(Only), 1), Profile);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob Baker::Bake(ConstSpan<Source> Sources, ConstRef<Profile> Profile) const
+    {
         if (Profile.Size <= 0.0f || Profile.Range <= 0.0f)
         {
             LOG_E("Font: the em size and the range both have to be positive");
@@ -100,23 +110,72 @@ namespace Pipeline::Baker::Font
             return Blob();
         }
 
-        const ConstPtr<Importer> Codec = Find(Type);
-
-        if (Codec == nullptr)
+        if (Sources.IsEmpty())
         {
-            LOG_E("Font: '{0}' is not a source format this baker understands", Type);
+            LOG_E("Font: no typeface was given to bake");
 
             return Blob();
         }
 
-        const Typeface Face = Codec->Import(Source, Profile);
+        Typeface::Metrics         Measured;
+        Sequence<Typeface::Glyph> Outlined;
+        Typeface::Kerning         Paired;
+        Table<UInt32, UInt32>     Claimed;
 
-        if (Face.IsEmpty())
+        for (ConstRef<Source> Each : Sources)
         {
-            LOG_E("Font: the typeface carries none of the requested codepoints");
+            const ConstPtr<Importer> Codec = Find(Each.Type);
+
+            if (Codec == nullptr)
+            {
+                LOG_E("Font: '{0}' is not a source format this baker understands", Each.Type);
+
+                return Blob();
+            }
+
+            // A source may narrow what it answers for, which is how a fallback gives its icons and nothing else.
+            Pipeline::Baker::Font::Profile Asked = Profile;
+
+            if (!Each.Charset.IsEmpty())
+            {
+                Asked.Charset = Each.Charset;
+            }
+
+            const Typeface Face = Codec->Import(Each.Data, Asked);
+
+            if (Face.IsEmpty())
+            {
+                continue;
+            }
+
+            if (Outlined.IsEmpty())
+            {
+                Measured = Face.GetMetrics();
+            }
+
+            for (ConstRef<Typeface::Glyph> Glyph : Face.GetGlyphs())
+            {
+                if (!Claimed.Find(Glyph.Codepoint))
+                {
+                    Claimed.Assign(Glyph.Codepoint, static_cast<UInt32>(Outlined.GetSize()));
+                    Outlined.Append(Glyph);
+                }
+            }
+
+            for (ConstRef<Typeface::Kerning::Pair> Pair : Face.GetKerning())
+            {
+                Paired.Assign(Pair.First, Pair.Second);
+            }
+        }
+
+        if (Outlined.IsEmpty())
+        {
+            LOG_E("Font: the typefaces carry none of the requested codepoints");
 
             return Blob();
         }
+
+        const Typeface Face(Move(Measured), Move(Outlined), Move(Paired));
 
         // The cells are laid out first so the fields can be filled in parallel: every glyph writes only its own
         // cell, and the sequence must not resize while that is happening.

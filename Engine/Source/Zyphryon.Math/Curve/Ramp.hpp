@@ -20,7 +20,7 @@
 
 inline namespace Math
 {
-    /// \brief A run of values keyed by the moment each is worn, read by blending the pair either side of a moment.
+    /// \brief Represents a run of values keyed by the moment each is worn, read by blending the pair either side of one.
     ///
     /// \tparam Type     The value the run carries, blended by its own `Lerp` where it has one and by arithmetic otherwise.
     /// \tparam Capacity The number of stops held inline, or zero to hold them on the heap.

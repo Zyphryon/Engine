@@ -33,6 +33,19 @@ namespace Pipeline::Baker::Font
         /// \brief Maps every accepted extension to the importer that claims it.
         using Registry  = Table<Extension, Retainer<Importer>>;
 
+        /// \brief One typeface a bake draws from, and the codepoints it is asked to give.
+        struct Source final
+        {
+            /// The encoded source bytes.
+            ConstSpan<Byte>    Data;
+
+            /// The source extension, which selects the importer.
+            Text               Type;
+
+            /// The codepoints to take from it, or empty to take whatever the profile asks for.
+            Sequence<Interval> Charset;
+        };
+
     public:
 
         /// \brief Constructs a baker with every importer the build enables already registered.
@@ -67,6 +80,15 @@ namespace Pipeline::Baker::Font
         {
             return mRegistry;
         }
+
+        /// \brief Bakes several typefaces into one font.
+        ///
+        /// \note The sources are read in order and the first to carry a codepoint keeps it.
+        ///
+        /// \param Sources The typefaces to draw from, in the order they are asked.
+        /// \param Profile The settings controlling the bake.
+        /// \return A blob holding the native font bytes, or an empty blob on failure.
+        Blob Bake(ConstSpan<Source> Sources, ConstRef<Profile> Profile) const;
 
         /// \brief Bakes an encoded typeface held in memory.
         ///
