@@ -91,6 +91,21 @@ namespace Scene
             return Entity(mHandle->world, mHandle->entities[Row]);
         }
 
+        /// \brief Gets the target of the pair a field matched, which is what a wildcard term leaves open.
+        ///
+        /// \param Field The field to read, which is the first term unless the query names more.
+        /// \return The entity the pair points at, or an invalid entity when the field matched no pair.
+        ZY_INLINE Entity GetTarget(UInt8 Field = 0) const
+        {
+            const ecs_id_t Handle = ecs_field_id(mHandle, Field);
+
+            if (ecs_id_is_pair(Handle))
+            {
+                return Entity(mHandle->world, ecs_get_alive(mHandle->world, ECS_PAIR_SECOND(Handle)));
+            }
+            return Entity();
+        }
+
         /// \brief Gets the time elapsed since the previous frame.
         ///
         /// \return The frame delta in seconds.
