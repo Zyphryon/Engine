@@ -702,6 +702,57 @@ inline namespace Base
             return Result;
         }
 
+        /// \brief Creates a string from a text written with escapes for the codepoints that have no key.
+        ///
+        /// \param Content The text as it was written, where `\\uXXXX` and `\\U########` each name a codepoint.
+        /// \return A string holding what every escape named, and everything else exactly as it stood.
+        ZY_INLINE static constexpr String Unescape(Text Content)
+        {
+            String Buffer(Content.GetSize());
+
+            for (UInt Index = 0; Index < Content.GetSize(); ++Index)
+            {
+                const Char Letter = Content[Index];
+                const Char Marker = Index + 1 < Content.GetSize() ? Content[Index + 1] : '\0';
+
+                if (Letter != '\\' || (Marker != 'u' && Marker != 'U'))
+                {
+                    Buffer.Append(Letter);
+                    continue;
+                }
+
+                const UInt Digits    = (Marker == 'u' ? 4 : 8);
+                UInt32     Codepoint = 0;
+                UInt       Read      = 0;
+
+                for (; Read < Digits && Index + 2 + Read < Content.GetSize(); ++Read)
+                {
+                    const Char Digit = Content[Index + 2 + Read];
+                    const UInt Value = Digit >= '0' && Digit <= '9' ? Digit - '0'
+                                     : Digit >= 'a' && Digit <= 'f' ? Digit - 'a' + 10
+                                     : Digit >= 'A' && Digit <= 'F' ? Digit - 'A' + 10
+                                     : 16;
+
+                    if (Value > 15)
+                    {
+                        break;
+                    }
+                    Codepoint = (Codepoint << 4) | static_cast<UInt32>(Value);
+                }
+
+                // An escape that was never finished is the writer's own text, and is left exactly as it stood.
+                if (Read < Digits)
+                {
+                    Buffer.Append(Letter);
+                    continue;
+                }
+
+                Buffer.AppendCodepoint(Codepoint);
+                Index += 1 + Digits;
+            }
+            return Buffer;
+        }
+
         /// \brief Joins two pieces of text with a delimiter in between.
         ///
         /// \param Left      The text to appear before the delimiter.
