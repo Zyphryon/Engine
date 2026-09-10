@@ -303,7 +303,13 @@ namespace Scene
             DSL::Declare<Protocol::Possessed>("Possessed", DSL::Local),
 
             // Ledger is what the world has to say since the last publish, of which it holds a single instance.
-            DSL::Declare<Protocol::Ledger>("Ledger", DSL::Singleton));
+            DSL::Declare<Protocol::Ledger>("Ledger", DSL::Singleton),
+
+            // Description is how a component shows itself to a tool, which the simulation never reads.
+            DSL::Declare<Description>("Description", DSL::Final),
+
+            // Schema is what a component is made of, laid out by the type itself rather than for it.
+            DSL::Declare<Reflection::Schema>("Schema", DSL::Final));
 
         // The ledger always exists, so a touch never has to ask whether the world has one yet.
         GetWorld().Set(Protocol::Ledger());

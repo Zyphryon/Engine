@@ -17,6 +17,7 @@
 #include "Component.hpp"
 #include "Pipeline.hpp"
 #include "Query.hpp"
+#include "Reflection.hpp"
 #include "System.hpp"
 #include "Tag.hpp"
 #include "Timer.hpp"
@@ -154,15 +155,22 @@ namespace Scene
 
         /// \brief Registers every component a set of declarations describes.
         ///
-        /// \note Every name is reserved before any trait is applied, so a trait may name a component
-        ///       declared alongside it without the two having to be ordered by hand.
-        ///
         /// \param List The descriptions, as built by \ref DSL::Declare.
         template<typename... Declarations>
         ZY_INLINE void Register(Declarations... List) const
         {
             (List.Reserve(mWorld), ...);
             (List.Apply(mWorld), ...);
+        }
+
+        /// \brief Registers every component that declares itself, each bringing its own name and terms.
+        ///
+        /// \tparam Types The components to register.
+        template<typename... Types>
+        ZY_INLINE void Register() const
+            requires (DSL::IsSelfDeclared<Types> && ...)
+        {
+            Register(Types::OnDeclare()...);
         }
 
         /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.

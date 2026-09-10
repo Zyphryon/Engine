@@ -674,6 +674,156 @@ namespace Scene::DSL::_
 
         using Type = decltype((TypeList<> { } + ... + Entry<Declared> { }));
     };
+
+    /// \brief Represents terms matched with a fixed access and handed to the callback.
+    ///
+    /// \note A type spelled as a pointer matches optionally; a tag contributes nothing to the callback.
+    ///
+    /// \tparam Access The mutability imposed on every type the term was declared with.
+    /// \tparam Mode   The read/write mode the term declares to the scheduler.
+    /// \tparam Types  The components, pairs or tags to match.
+    template<Mutability Access, ecs_inout_kind_t Mode, typename... Types>
+    struct Accessed
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename Collect<Access, Types...>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Accessed(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<Descriptor> Builder)
+        {
+            (EmitAccess<typename Qualify<Types, Access>::Type, Mode, Data>(Builder), ...);
+        }
+
+        ZY_INLINE void ApplyRuntime(Ref<Descriptor> Builder) const
+        {
+            Builder.With(Expression.GetHandle()).InOut(Mode);
+        }
+    };
+
+    /// \brief Represents terms that constrain what an entity matches, without reaching the callback.
+    ///
+    /// \tparam Operator The operator applied to every type the term was declared with.
+    /// \tparam Types    The components, pairs or tags the operator is applied to.
+    template<ecs_oper_kind_t Operator, typename... Types>
+    struct Filtered
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = TypeList<>;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Filtered(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<Descriptor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (EmitFilter<Types, Operator>(Builder), ...);
+            }
+        }
+
+        ZY_INLINE void ApplyRuntime(Ref<Descriptor> Builder) const
+        {
+            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Oper(Operator);
+        }
+    };
+
+    /// \brief Represents a term sourced from an ancestor rather than from the entity being matched.
+    ///
+    /// \tparam Descend `true` to traverse breadth-first, `false` to substitute the nearest ancestor.
+    /// \tparam Type    The component, pair or tag to match on an ancestor.
+    template<Bool Descend, typename Type>
+    struct Traversed
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = typename Collect<Mutability::Declared, Type>::Type;
+
+        /// The entity matched when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime term matching an entity resolved during execution.
+        ///
+        /// \param Expression The entity the term matches.
+        ZY_INLINE constexpr explicit Traversed(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<Descriptor> Builder)
+        {
+            EmitTraversal<Type, Data, Descend>(Builder);
+        }
+
+        ZY_INLINE void ApplyRuntime(Ref<Descriptor> Builder) const
+        {
+            Ref<Descriptor> Term = Builder.With(Expression.GetHandle()).InOut(EcsInOutNone);
+
+            if constexpr (Descend)
+            {
+                Term.Cascade();
+            }
+            else
+            {
+                Term.Up();
+            }
+        }
+    };
+
+    /// \brief Represents an access the callback performs outside the query, for sync placement only.
+    ///
+    /// \tparam Mode  The read/write mode declared for the scheduler.
+    /// \tparam Types The components, pairs or tags accessed outside the query.
+    template<ecs_inout_kind_t Mode, typename... Types>
+    struct Staged
+    {
+        /// The values this term contributes to the callback, in order.
+        using Fields = TypeList<>;
+
+        /// The entity declared when the term is supplied at runtime instead of at compile time.
+        Entity Expression;
+
+        /// \brief Constructs a runtime declaration for an entity resolved during execution.
+        ///
+        /// \param Expression The entity the callback accesses.
+        ZY_INLINE constexpr explicit Staged(Entity Expression)
+            : Expression { Expression }
+        {
+        }
+
+        template<Bool Data>
+        ZY_INLINE static void Apply(Ref<Descriptor> Builder)
+        {
+            if constexpr (!Data)
+            {
+                (EmitStage<Types, Mode>(Builder), ...);
+            }
+        }
+
+        ZY_INLINE void ApplyRuntime(Ref<Descriptor> Builder) const
+        {
+            Builder.With(Expression.GetHandle()).InOutStage(Mode);
+        }
+    };
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -688,33 +838,7 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
-    struct In
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = typename _::Collect<_::Mutability::Immutable, Types...>::Type;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit In(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Immutable>::Type, EcsIn, Data>(Builder), ...);
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsIn);
-        }
-    };
+    using In = _::Accessed<_::Mutability::Immutable, EcsIn, Types...>;
 
     /// \brief Represents terms matched with read-write access and handed to the callback.
     ///
@@ -722,33 +846,7 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
-    struct InOut
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = typename _::Collect<_::Mutability::Mutable, Types...>::Type;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit InOut(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, EcsInOut, Data>(Builder), ...);
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOut);
-        }
-    };
+    using InOut = _::Accessed<_::Mutability::Mutable, EcsInOut, Types...>;
 
     /// \brief Represents terms matched with write-only access and handed to the callback.
     ///
@@ -756,68 +854,13 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
-    struct Out
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = typename _::Collect<_::Mutability::Mutable, Types...>::Type;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit Out(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            (_::EmitAccess<typename _::Qualify<Types, _::Mutability::Mutable>::Type, EcsOut, Data>(Builder), ...);
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsOut);
-        }
-    };
+    using Out = _::Accessed<_::Mutability::Mutable, EcsOut, Types...>;
 
     /// \brief Represents terms an entity must carry, without handing them to the callback.
     ///
     /// \tparam Types The components, pairs or tags to match.
     template<typename... Types>
-    struct With
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = _::TypeList<>;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit With(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            if constexpr (!Data)
-            {
-                (_::EmitFilter<Types, EcsAnd>(Builder), ...);
-            }
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone);
-        }
-    };
+    using With = _::Filtered<EcsAnd, Types...>;
 
     /// \brief Represents terms an entity may carry, without handing them to the callback.
     ///
@@ -825,71 +868,13 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags to match optionally.
     template<typename... Types>
-    struct Opt
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = _::TypeList<>;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit Opt(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            if constexpr (!Data)
-            {
-                (_::EmitFilter<Types, EcsOptional>(Builder), ...);
-            }
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Optional();
-        }
-    };
+    using Opt = _::Filtered<EcsOptional, Types...>;
 
     /// \brief Represents terms an entity must not carry.
     ///
     /// \tparam Types The components, pairs or tags to exclude.
     template<typename... Types>
-    struct Not
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = _::TypeList<>;
-
-        /// The entity excluded when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term excluding an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term excludes.
-        ZY_INLINE constexpr explicit Not(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            if constexpr (!Data)
-            {
-                (_::EmitFilter<Types, EcsNot>(Builder), ...);
-            }
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Oper(EcsNot);
-        }
-    };
+    using Not = _::Filtered<EcsNot, Types...>;
 
     /// \brief Represents a term satisfied when an entity carries any one of several types.
     ///
@@ -940,65 +925,13 @@ namespace Scene::DSL
     ///
     /// \tparam Type The component, pair or tag to match on an ancestor.
     template<typename Type>
-    struct Up
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = typename _::Collect<_::Mutability::Declared, Type>::Type;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit Up(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            _::EmitTraversal<Type, Data, false>(Builder);
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Up();
-        }
-    };
+    using Up = _::Traversed<false, Type>;
 
     /// \brief Represents a term sourced from an ancestor, ordering results breadth-first.
     ///
     /// \tparam Type The component, pair or tag to match on an ancestor.
     template<typename Type>
-    struct Cascade
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = typename _::Collect<_::Mutability::Declared, Type>::Type;
-
-        /// The entity matched when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime term matching an entity resolved during execution.
-        ///
-        /// \param Expression The entity the term matches.
-        ZY_INLINE constexpr explicit Cascade(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            _::EmitTraversal<Type, Data, true>(Builder);
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOut(EcsInOutNone).Cascade();
-        }
-    };
+    using Cascade = _::Traversed<true, Type>;
 
     /// \brief Represents components the callback read outside the query, for sync placement only.
     ///
@@ -1006,36 +939,7 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags read outside the query.
     template<typename... Types>
-    struct Read
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = _::TypeList<>;
-
-        /// The entity declared when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime declaration for an entity resolved during execution.
-        ///
-        /// \param Expression The entity the callback read.
-        ZY_INLINE constexpr explicit Read(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            if constexpr (!Data)
-            {
-                (_::EmitStage<Types, EcsIn>(Builder), ...);
-            }
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOutStage(EcsIn);
-        }
-    };
+    using Read = _::Staged<EcsIn, Types...>;
 
     /// \brief Represents components the callback writes outside the query, for sync placement only.
     ///
@@ -1043,36 +947,7 @@ namespace Scene::DSL
     ///
     /// \tparam Types The components, pairs or tags written outside the query.
     template<typename... Types>
-    struct Write
-    {
-        /// The values this term contributes to the callback, in order.
-        using Fields = _::TypeList<>;
-
-        /// The entity declared when the term is supplied at runtime instead of at compile time.
-        Entity Expression;
-
-        /// \brief Constructs a runtime declaration for an entity resolved during execution.
-        ///
-        /// \param Expression The entity the callback writes.
-        ZY_INLINE constexpr explicit Write(Entity Expression)
-            : Expression { Expression }
-        {
-        }
-
-        template<Bool Data>
-        ZY_INLINE static void Apply(Ref<_::Descriptor> Builder)
-        {
-            if constexpr (!Data)
-            {
-                (_::EmitStage<Types, EcsOut>(Builder), ...);
-            }
-        }
-
-        ZY_INLINE void ApplyRuntime(Ref<_::Descriptor> Builder) const
-        {
-            Builder.With(Expression.GetHandle()).InOutStage(EcsOut);
-        }
-    };
+    using Write = _::Staged<EcsOut, Types...>;
 
     /// \brief Represents an ordering applied to the results of a query.
     ///
@@ -1309,14 +1184,23 @@ namespace Scene::DSL
     template<typename... Types>
     struct Declaration final
     {
+    public:
+
         /// \brief Carries the terms describing the components, so registration can apply them in two passes.
         ///
         /// \tparam Parts The traits and implications the components share.
         template<typename... Parts>
         struct Description final
         {
-            /// \brief The identifier the component registers under, or null to take it from the type.
-            ConstPtr<Char> Name;
+            /// \brief Constructs a description of the components out of the terms describing them.
+            ///
+            /// \param Name  The identifier the component registers under, or null to take it from the type.
+            /// \param Terms The traits and implications the components share.
+            ZY_INLINE constexpr Description(ConstPtr<Char> Name, Parts... Terms)
+                : Name  { Name },
+                  Terms { Terms... }
+            {
+            }
 
             /// \brief Registers every component named, so its name resolves before anything refers to it.
             ///
@@ -1334,7 +1218,40 @@ namespace Scene::DSL
                 (ApplyEach<Types>(World), ...);
             }
 
+
         private:
+
+            /// \brief Carries the terms of a declaration by value, so a term may bring along what it was built with.
+            template<typename... Parts>
+            struct Bundle final
+            {
+                /// \brief Applies nothing, since there is nothing left to apply.
+                template<typename Type>
+                ZY_INLINE void Apply(Ptr<ecs_world_t>) const
+                {
+                }
+            };
+
+            template<typename Head, typename... Tail>
+            struct Bundle<Head, Tail...> final
+            {
+                /// The first term.
+                ZY_COMPRESSED Head            First;
+
+                /// The terms after it.
+                ZY_COMPRESSED Bundle<Tail...> Rest;
+
+                /// \brief Applies every term to one component, each term knowing how it applies itself.
+                ///
+                /// \tparam Type  The component the terms apply to.
+                /// \param  World The world the component belongs to.
+                template<typename Type>
+                ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
+                {
+                    First.template Apply<Type>(World);
+                    Rest.template Apply<Type>(World);
+                }
+            };
 
             /// \brief Registers one component under the name it should answer to.
             ///
@@ -1361,12 +1278,24 @@ namespace Scene::DSL
             ///
             /// \param World The world the component belongs to.
             template<typename Type>
-            ZY_INLINE static void ApplyEach(Ptr<ecs_world_t> World)
+            ZY_INLINE void ApplyEach(Ptr<ecs_world_t> World) const
             {
-                (Parts::template Apply<Type>(World), ...);
+                Terms.template Apply<Type>(World);
             }
+
+        private:
+
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+            ConstPtr<Char>   Name;
+            Bundle<Parts...> Terms;
         };
     };
+
+    /// \brief Concept satisfied when a type declares itself, rather than being declared for it.
+    template<typename Type>
+    concept IsSelfDeclared = requires { Type::OnDeclare(); };
 
     /// \brief Describes one or more components, to be handed to \ref Service::Register.
     ///
@@ -1376,7 +1305,7 @@ namespace Scene::DSL
     template<typename... Types, typename... Parts> requires (!(IsCastable<Parts, ConstPtr<Char>> || ...))
     ZY_INLINE constexpr auto Declare(Parts... Description)
     {
-        return typename Declaration<Types...>::template Description<Parts...> { };
+        return typename Declaration<Types...>::template Description<Parts...>(nullptr, Description...);
     }
 
     /// \brief Describes one component under a name of its own, rather than the one its type carries.
@@ -1390,7 +1319,7 @@ namespace Scene::DSL
     {
         static_assert(sizeof...(Types) == 1, "Only one component can be declared under a name");
 
-        return typename Declaration<Types...>::template Description<Parts...> { Name };
+        return typename Declaration<Types...>::template Description<Parts...>(Name, Description...);
     }
 }
 
@@ -1586,9 +1515,6 @@ namespace Scene::DSL::_
     private:
 
         /// The value the term at a given position contributes to the callback, padded so an empty set still names one.
-        ///
-        /// A list inferred from a callback keeps the references the parameters were spelled with, which are
-        /// dropped here so a field is described by its value type alone.
         template<UInt Index>
         using Value = StripRef<typename Identify<Index, Types..., Empty>::Type>;
 
@@ -1619,10 +1545,6 @@ namespace Scene::DSL::_
         }
 
         /// \brief Builds the view one term hands a batched callback.
-        ///
-        /// \note The length carries what the row loop would otherwise have to test: a term that matched
-        ///       nothing is empty, one the batch shares holds a single element, and an owned one holds a row
-        ///       per entity.
         ///
         /// \param Slot  The slot describing where the term's data lives.
         /// \param Count The number of rows the result holds.
@@ -1719,10 +1641,6 @@ namespace Scene::DSL::_
 
         /// \brief Walks every row of the current result, each term through a cursor of its own.
         ///
-        /// \note A cursor advances by one row for a term the entity owns and by nothing for one the whole
-        ///       result shares, so a row costs an add rather than a multiply and the loop carries no
-        ///       dependency on the index it is at.
-        ///
         /// \tparam Pattern The absence pattern the result matched.
         /// \param  Cursor  The result being walked.
         /// \param  Each    The callback invoked for each row.
@@ -1738,9 +1656,6 @@ namespace Scene::DSL::_
         }
 
         /// \brief Walks every row of the current result, each term through a cursor of its own.
-        ///
-        /// \note The cursors arrive as parameters rather than as a table so that each one is a local the loop
-        ///       can hold in a register.
         ///
         /// \tparam Pattern The absence pattern the result matched.
         /// \param  Cursor  The result being walked.
