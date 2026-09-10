@@ -144,7 +144,7 @@ ENDIF ()
 
 FetchContent_Declare(External_Flecs
         GIT_REPOSITORY https://github.com/SanderMertens/flecs
-        GIT_SHALLOW    TRUE)
+        GIT_TAG        1fca290cf0b155c93f85e5857ff2749e292b2988)
 FetchContent_MakeAvailable(External_Flecs)
 
 ZyApplyOptions(flecs_static)
