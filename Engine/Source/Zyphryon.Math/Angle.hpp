@@ -223,7 +223,7 @@ inline namespace Math
         /// \return The angle corresponding to the given coordinates.
         ZY_INLINE static Angle FromCartesian(Real32 X, Real32 Y)
         {
-            return InvTangent(X, Y);
+            return InvTangent(Y, X);
         }
 
         /// \brief Normalizes the given angle to the range [0, 2π).

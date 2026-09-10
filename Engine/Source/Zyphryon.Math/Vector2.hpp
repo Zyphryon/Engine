@@ -254,7 +254,7 @@ inline namespace Math
         ZY_INLINE Angle GetAngle() const
             requires (IsReal<Type>)
         {
-            return Angle::FromCartesian(mX, mY);
+            return Angle::FromCartesian(mY, mX);
         }
 
         /// \brief Gets the angle in radians between this vector and another.
