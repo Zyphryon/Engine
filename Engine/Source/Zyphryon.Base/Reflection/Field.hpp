@@ -613,12 +613,14 @@ namespace Reflection
             }
         }
 
-        /// \brief Reaches through a wrapper to the one part it holds.
+        /// \brief Finds where a value lies inside an instance, whether it is held or handed back by reference.
+        ///
+        /// \note The instance is mutable, so the constness of a getter is its word about the value, not the value's.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
-        /// \return The address of the wrapper inside the instance.
+        /// \return The address of the value inside the instance.
         template<auto Handle>
-        ZY_INLINE static Ptr<void> OnWrapper(Ptr<void> Instance)
+        ZY_INLINE static Ptr<void> OnAddress(Ptr<void> Instance)
         {
             using Access = Detail::Accessor<decltype(Handle)>;
 
@@ -643,7 +645,7 @@ namespace Reflection
         {
             using Content = typename Detail::Accessor<decltype(Handle)>::Value;
 
-            return Describe<Content>::kFields[0].Read(OnWrapper<Handle>(Instance));
+            return Describe<Content>::kFields[0].Read(OnAddress<Handle>(Instance));
         }
 
         /// \brief Write handler for a value shown in place of the one part it holds.
@@ -655,7 +657,7 @@ namespace Reflection
         {
             using Content = typename Detail::Accessor<decltype(Handle)>::Value;
 
-            Describe<Content>::kFields[0].Write(OnWrapper<Handle>(Instance), Input);
+            Describe<Content>::kFields[0].Write(OnAddress<Handle>(Instance), Input);
         }
 
         /// \brief Read handler generated for a value reached in place, which hands back where it lies.
@@ -665,20 +667,7 @@ namespace Reflection
         template<auto Handle, Kind Tag>
         ZY_INLINE static Value OnLocate(Ptr<void> Instance)
         {
-            using Access = Detail::Accessor<decltype(Handle)>;
-
-            const Ptr<typename Access::Owner> Object = static_cast<Ptr<typename Access::Owner>>(Instance);
-
-            if constexpr (Access::kIsData)
-            {
-                return Value::FromAddress(Tag, AddressOf(Object->*Handle));
-            }
-            else
-            {
-                // The instance is mutable, so the constness is the word of the getter about the value, not the value.
-                return Value::FromAddress(
-                    Tag, const_cast<Ptr<typename Access::Value>>(AddressOf((Object->*Handle)())));
-            }
+            return Value::FromAddress(Tag, OnAddress<Handle>(Instance));
         }
 
     private:
