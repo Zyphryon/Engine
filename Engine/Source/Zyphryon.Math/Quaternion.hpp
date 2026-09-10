@@ -464,6 +464,14 @@ inline namespace Math
             return Start * BlendWeightA + Nearest * BlendWeightB;
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Quaternion" };
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

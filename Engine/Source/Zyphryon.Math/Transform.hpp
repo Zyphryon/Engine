@@ -21,79 +21,79 @@
 inline namespace Math
 {
     /// \brief Represents position, rotation, and scale of an object in 3D space.
-    class Transform3D final
+    class Transform final
     {
     public:
 
         /// \brief Default constructor initializing the transform to an identity state.
-        ZY_INLINE Transform3D()
+        ZY_INLINE Transform()
             : mScale { Vector3::One() }
         {
         }
 
-        /// \brief Copy constructor for Transform3D.
-        ZY_INLINE Transform3D(ConstRef<Transform3D> Other) = default;
+        /// \brief Copy constructor for Transform.
+        ZY_INLINE Transform(ConstRef<Transform> Other) = default;
 
-        /// \brief Constructs a Transform3D with the specified 3D translation, scale, and rotation.
+        /// \brief Constructs a Transform with the specified 3D translation, scale, and rotation.
         ///
         /// \param Translation The 3D translation vector to set.
         /// \param Scale       The 3D scale vector to set.
         /// \param Rotation    The quaternion representing the rotation to set.
-        ZY_INLINE Transform3D(Vector3 Translation, Vector3 Scale, Quaternion Rotation)
+        ZY_INLINE Transform(Vector3 Translation, Vector3 Scale, Quaternion Rotation)
         {
             SetTranslation(Translation);
             SetScale(Scale);
             SetRotation(Rotation);
         }
 
-        /// \brief Constructs a Transform3D with the specified 2D translation (Z = 0), scale (Z = 1), and rotation.
+        /// \brief Constructs a Transform with the specified 2D translation (Z = 0), scale (Z = 1), and rotation.
         ///
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
         /// \param Scale       The 2D scale vector to set (Z component will be set to 1).
         /// \param Rotation    The quaternion representing the rotation to set.
-        ZY_INLINE Transform3D(Vector2 Translation, Vector2 Scale, Quaternion Rotation)
+        ZY_INLINE Transform(Vector2 Translation, Vector2 Scale, Quaternion Rotation)
         {
             SetTranslation(Translation);
             SetScale(Scale);
             SetRotation(Rotation);
         }
 
-        /// \brief Constructs a Transform3D with the specified 3D translation and rotation.
+        /// \brief Constructs a Transform with the specified 3D translation and rotation.
         ///
         /// \param Translation The 3D translation vector to set.
         /// \param Rotation    The quaternion representing the rotation to set.
-        ZY_INLINE Transform3D(Vector3 Translation, Quaternion Rotation)
-            : Transform3D()
+        ZY_INLINE Transform(Vector3 Translation, Quaternion Rotation)
+            : Transform()
         {
             SetTranslation(Translation);
             SetRotation(Rotation);
         }
 
-        /// \brief Constructs a Transform3D with the specified 2D translation (Z = 0) and rotation.
+        /// \brief Constructs a Transform with the specified 2D translation (Z = 0) and rotation.
         ///
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
         /// \param Rotation    The quaternion representing the rotation.
-        ZY_INLINE Transform3D(Vector2 Translation, Quaternion Rotation)
-            : Transform3D()
+        ZY_INLINE Transform(Vector2 Translation, Quaternion Rotation)
+            : Transform()
         {
             SetTranslation(Translation);
             SetRotation(Rotation);
         }
 
-        /// \brief Constructs a Transform3D with the specified 3D translation.
+        /// \brief Constructs a Transform with the specified 3D translation.
         ///
         /// \param Translation The 3D translation vector to set.
-        ZY_INLINE explicit Transform3D(Vector3 Translation)
-            : Transform3D()
+        ZY_INLINE explicit Transform(Vector3 Translation)
+            : Transform()
         {
             SetTranslation(Translation);
         }
 
-        /// \brief Constructs a Transform3D with the specified 2D translation (Z = 0).
+        /// \brief Constructs a Transform with the specified 2D translation (Z = 0).
         ///
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
-        ZY_INLINE explicit Transform3D(Vector2 Translation)
-            : Transform3D()
+        ZY_INLINE explicit Transform(Vector2 Translation)
+            : Transform()
         {
             SetTranslation(Translation);
         }
@@ -110,7 +110,7 @@ inline namespace Math
         ///
         /// \param Translation The 2D translation vector.
         /// \return A reference to this transform, modified by the new translation.
-        ZY_INLINE Ref<Transform3D> SetTranslation(Vector2 Translation)
+        ZY_INLINE Ref<Transform> SetTranslation(Vector2 Translation)
         {
             mTranslation = Vector3(Translation.GetX(), Translation.GetY(), 0.0f);
             return (* this);
@@ -120,7 +120,7 @@ inline namespace Math
         ///
         /// \param Translation The 3D translation vector.
         /// \return A reference to this transform, modified by the new translation.
-        ZY_INLINE Ref<Transform3D> SetTranslation(Vector3 Translation)
+        ZY_INLINE Ref<Transform> SetTranslation(Vector3 Translation)
         {
             mTranslation = Translation;
             return (* this);
@@ -138,7 +138,7 @@ inline namespace Math
         ///
         /// \param Scale The 2D scale vector.
         /// \return A reference to this transform, modified by the new scale.
-        ZY_INLINE Ref<Transform3D> SetScale(Vector2 Scale)
+        ZY_INLINE Ref<Transform> SetScale(Vector2 Scale)
         {
             return SetScale(Vector3(Scale.GetX(), Scale.GetY(), 1.0f));
         }
@@ -147,7 +147,7 @@ inline namespace Math
         ///
         /// \param Scale The 3D scale vector.
         /// \return A reference to this transform, modified by the new scale.
-        ZY_INLINE Ref<Transform3D> SetScale(Vector3 Scale)
+        ZY_INLINE Ref<Transform> SetScale(Vector3 Scale)
         {
             mScale = Scale;
             return (* this);
@@ -165,7 +165,7 @@ inline namespace Math
         ///
         /// \param Rotation The quaternion representing the rotation.
         /// \return A reference to this transform, modified by the new rotation.
-        ZY_INLINE Ref<Transform3D> SetRotation(Quaternion Rotation)
+        ZY_INLINE Ref<Transform> SetRotation(Quaternion Rotation)
         {
             mRotation = Rotation;
             return (* this);
@@ -183,7 +183,7 @@ inline namespace Math
         ///
         /// \param Translation The SD translation vector to apply.
         /// \return A reference to this transform, modified by the translation.
-        ZY_INLINE Ref<Transform3D> Translate(Vector2 Translation)
+        ZY_INLINE Ref<Transform> Translate(Vector2 Translation)
         {
             return Translate(Vector3(Translation.GetX(), Translation.GetY(), 0));
         }
@@ -192,7 +192,7 @@ inline namespace Math
         ///
         /// \param Translation The 3D translation vector to apply.
         /// \return A reference to this transform, modified by the translation.
-        ZY_INLINE Ref<Transform3D> Translate(Vector3 Translation)
+        ZY_INLINE Ref<Transform> Translate(Vector3 Translation)
         {
             mTranslation += Translation;
             return (* this);
@@ -202,7 +202,7 @@ inline namespace Math
         ///
         /// \param Scalar The scalar value to apply as a scale factor.
         /// \return A reference to this transform, modified by the scale.
-        ZY_INLINE Ref<Transform3D> Scale(Real32 Scalar)
+        ZY_INLINE Ref<Transform> Scale(Real32 Scalar)
         {
             ZY_ASSERT(Scalar != 0.0f, "Scale factor must not be zero");
 
@@ -214,7 +214,7 @@ inline namespace Math
         ///
         /// \param Vector The 2D scale factors to apply.
         /// \return A reference to this transform, modified by the scale.
-        ZY_INLINE Ref<Transform3D> Scale(Vector2 Vector)
+        ZY_INLINE Ref<Transform> Scale(Vector2 Vector)
         {
             return Scale(Vector3(Vector.GetX(), Vector.GetY(), 1.0f));
         }
@@ -223,7 +223,7 @@ inline namespace Math
         ///
         /// \param Vector The 3D scale factors to apply.
         /// \return A reference to this transform, modified by the scale.
-        ZY_INLINE Ref<Transform3D> Scale(Vector3 Vector)
+        ZY_INLINE Ref<Transform> Scale(Vector3 Vector)
         {
             ZY_ASSERT(Vector.GetX() != 0.0f, "Scale X must not be zero");
             ZY_ASSERT(Vector.GetY() != 0.0f, "Scale Y must not be zero");
@@ -237,7 +237,7 @@ inline namespace Math
         ///
         /// \param Rotation The quaternion representing the rotation to apply.
         /// \return A reference to this transform, modified by the rotation.
-        ZY_INLINE Ref<Transform3D> Rotate(Quaternion Rotation)
+        ZY_INLINE Ref<Transform> Rotate(Quaternion Rotation)
         {
             mRotation = Rotation * mRotation;
             return (* this);
@@ -247,7 +247,7 @@ inline namespace Math
         ///
         /// \param Angles The 2D vector containing pitch (X) and yaw (Y) in radians.
         /// \return A reference to this transform, modified by the rotation.
-        ZY_INLINE Ref<Transform3D> Rotate(Vector2 Angles)
+        ZY_INLINE Ref<Transform> Rotate(Vector2 Angles)
         {
             return Rotate(Quaternion::FromEulerAngles(Vector3(Angles, 0.0f)));
         }
@@ -256,7 +256,7 @@ inline namespace Math
         ///
         /// \param Angles The 3D vector containing Euler angles for rotation.
         /// \return A reference to this transform, modified by the rotation.
-        ZY_INLINE Ref<Transform3D> Rotate(Vector3 Angles)
+        ZY_INLINE Ref<Transform> Rotate(Vector3 Angles)
         {
             return Rotate(Quaternion::FromEulerAngles(Angles));
         }
@@ -266,7 +266,7 @@ inline namespace Math
         /// \param Rotation The rotation angle.
         /// \param Axis     The axis around which to rotate (must be normalized).
         /// \return A reference to this transform, modified by the rotation.
-        ZY_INLINE Ref<Transform3D> Rotate(Angle Rotation, Vector3 Axis)
+        ZY_INLINE Ref<Transform> Rotate(Angle Rotation, Vector3 Axis)
         {
             return Rotate(Quaternion::FromAngles(Rotation, Axis));
         }
@@ -289,12 +289,12 @@ inline namespace Math
         /// \param End        The ending transformation.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A transformation interpolated between the start and end transformations.
-        ZY_INLINE static Transform3D Lerp(ConstRef<Transform3D> Start, ConstRef<Transform3D> End, Real32 Percentage)
+        ZY_INLINE static Transform Lerp(ConstRef<Transform> Start, ConstRef<Transform> End, Real32 Percentage)
         {
             const Vector3    Translation = ::Lerp(Start.GetTranslation(), End.GetTranslation(), Percentage);
             const Vector3    Scale       = ::Lerp(Start.GetScale(), End.GetScale(), Percentage);
             const Quaternion Rotation    = Quaternion::Slerp(Start.GetRotation(), End.GetRotation(), Percentage);
-            return Transform3D(Translation, Scale, Rotation);
+            return Transform(Translation, Scale, Rotation);
         }
 
         /// \brief Serializes the state of the transform to or from the specified archive.
@@ -306,6 +306,25 @@ inline namespace Math
             Archive.Serialize(mTranslation);
             Archive.Serialize(mScale);
             Archive.Serialize(mRotation);
+        }
+
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Transform" };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&Transform::mTranslation>("Translation"),
+                Reflection::Field::Property<&Transform::mScale>("Scale"),
+                Reflection::Field::Property<&Transform::mRotation>("Rotation"));
         }
 
     private:

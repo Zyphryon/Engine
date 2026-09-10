@@ -40,6 +40,7 @@
 #include "Zyphryon.Base/Memory/Unique.hpp"
 #include "Zyphryon.Base/Pattern/Enumerator.hpp"
 #include "Zyphryon.Base/Pattern/Switchable.hpp"
+#include "Zyphryon.Base/Reflection/Schema.hpp"
 #include "Zyphryon.Base/System/Entropy.hpp"
 #include "Zyphryon.Base/System/Environment.hpp"
 #include "Zyphryon.Base/System/Filesystem.hpp"

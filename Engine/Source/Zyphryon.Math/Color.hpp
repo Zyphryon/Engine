@@ -752,6 +752,28 @@ inline namespace Math
                 Channel(Start.GetAlpha(), End.GetAlpha()));
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            Reflection::Presentation Presentation;
+
+            if      constexpr (IsAnyOf<Type, Real32>)
+            {
+                Presentation.Name = "Math.Color";
+            }
+            else if constexpr (IsAnyOf<Type, UInt8>)
+            {
+                Presentation.Name = "Math.IntColor8";
+            }
+            else
+            {
+                static_assert(false, "The colour has no name for the type it holds");
+            }
+            return Presentation;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

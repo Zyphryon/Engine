@@ -357,6 +357,24 @@ inline namespace Math
             return Circle(Center, (Edge - Center).GetLength());
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Circle" };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&Circle::mCenter>("Center"),
+                Reflection::Field::Property<&Circle::mRadius>("Radius"));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

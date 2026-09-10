@@ -1156,6 +1156,22 @@ namespace Scene
             return Entity();
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Scene.Entity", .Flat = true };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(Reflection::Field::Property<&Entity::mHandle>("Id"));
+        }
+
     private:
 
         /// \brief Gets the size a component was registered with.

@@ -932,6 +932,44 @@ inline namespace Math
             }
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            Reflection::Presentation Presentation;
+
+            if      constexpr (IsAnyOf<Type, Real32>)
+            {
+                Presentation.Name = "Math.Rect";
+            }
+            else if constexpr (IsAnyOf<Type, SInt32>)
+            {
+                Presentation.Name = "Math.IntRect";
+            }
+            else if constexpr (IsAnyOf<Type, UInt32>)
+            {
+                Presentation.Name = "Math.UIntRect";
+            }
+            else
+            {
+                static_assert(false, "The rectangle has no name for the type it holds");
+            }
+            return Presentation;
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&AnyRect::mMinimumX>("MinimumX"),
+                Reflection::Field::Property<&AnyRect::mMinimumY>("MinimumY"),
+                Reflection::Field::Property<&AnyRect::mMaximumX>("MaximumX"),
+                Reflection::Field::Property<&AnyRect::mMaximumY>("MaximumY"));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

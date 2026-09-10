@@ -335,6 +335,24 @@ inline namespace Math
             }
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Ray" };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&Ray::mOrigin>("Origin"),
+                Reflection::Field::Property<&Ray::mDirection>("Direction"));
+        }
+
     private:
 
         /// \brief The reciprocal standing in for an axis the ray does not travel along.

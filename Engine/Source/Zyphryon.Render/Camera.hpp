@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Graphic/Types.hpp"
-#include "Zyphryon.Math/Transform3D.hpp"
+#include "Zyphryon.Math/Transform.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -635,11 +635,11 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt32      mMask;
-        Matrix4x4   mProjection;
-        Matrix4x3   mView;
-        Matrix4x4   mViewProjection;
-        Matrix4x4   mViewProjectionInverse;
-        Transform3D mTransform;
+        UInt32    mMask;
+        Matrix4x4 mProjection;
+        Matrix4x3 mView;
+        Matrix4x4 mViewProjection;
+        Matrix4x4 mViewProjectionInverse;
+        Transform mTransform;
     };
 }

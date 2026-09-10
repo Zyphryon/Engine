@@ -344,6 +344,25 @@ inline namespace Math
             return Cylinder(Source.mCenter, Abs(Source.mRadius), Abs(Source.mExtent));
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Cylinder" };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&Cylinder::mCenter>("Center"),
+                Reflection::Field::Property<&Cylinder::mRadius>("Radius"),
+                Reflection::Field::Property<&Cylinder::mExtent>("Extent"));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -769,6 +769,14 @@ inline namespace Math
         /// \return A new vector with components rearranged.
         ZY_INLINE static Vector4 Swizzle1133(Vector4 Vector);
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Math.Vector4" };
+        }
+
     private:
 
 #if   defined(ZY_ARCH_X86_64)

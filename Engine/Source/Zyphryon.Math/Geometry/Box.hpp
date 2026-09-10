@@ -902,6 +902,42 @@ inline namespace Math
                 AnyVector3<Type>(Center.GetX() + HalfX, Center.GetY() + HalfY, Center.GetZ() + HalfZ));
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            Reflection::Presentation Presentation;
+
+            if      constexpr (IsAnyOf<Type, Real32>)
+            {
+                Presentation.Name = "Math.Box";
+            }
+            else if constexpr (IsAnyOf<Type, SInt32>)
+            {
+                Presentation.Name = "Math.IntBox";
+            }
+            else if constexpr (IsAnyOf<Type, UInt32>)
+            {
+                Presentation.Name = "Math.UIntBox";
+            }
+            else
+            {
+                static_assert(false, "The box has no name for the type it holds");
+            }
+            return Presentation;
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The set of reflected fields.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(
+                Reflection::Field::Property<&AnyBox::mMinimum>("Minimum"),
+                Reflection::Field::Property<&AnyBox::mMaximum>("Maximum"));
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

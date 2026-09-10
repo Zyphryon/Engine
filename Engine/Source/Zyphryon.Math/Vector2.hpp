@@ -799,6 +799,32 @@ inline namespace Math
             return AnyVector2(::Ceil(Vector.mX), ::Ceil(Vector.mY));
         }
 
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            Reflection::Presentation Presentation;
+
+            if      constexpr (IsAnyOf<Type, Real32>)
+            {
+                Presentation.Name = "Math.Vector2";
+            }
+            else if constexpr (IsAnyOf<Type, SInt32>)
+            {
+                Presentation.Name = "Math.IntVector2";
+            }
+            else if constexpr (IsAnyOf<Type, UInt32>)
+            {
+                Presentation.Name = "Math.UIntVector2";
+            }
+            else
+            {
+                static_assert(false, "The vector has no name for the type it holds");
+            }
+            return Presentation;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
