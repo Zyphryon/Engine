@@ -393,6 +393,39 @@ inline namespace Base
             return false;
         }
 
+
+        /// \brief Removes every element for which \p Predicate returns `true`, shifting the survivors left.
+        ///
+        /// \note Unlike \ref RemoveFastSomeIf the elements that stay keep the order they were in.
+        ///
+        /// \param Predicate The unary predicate used to identify the elements to remove.
+        /// \return The number of elements removed.
+        template<typename Callable>
+        ZY_INLINE UInt RemoveSomeIf(AnyRef<Callable> Predicate)
+        {
+            UInt Kept = 0;
+
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                if (!Predicate(mData[Index]))
+                {
+                    if (Kept != Index)
+                    {
+                        mData[Kept] = Move(mData[Index]);
+                    }
+                    ++Kept;
+                }
+            }
+
+            const UInt Removed = mSize - Kept;
+
+            if (Removed)
+            {
+                Remove(Kept, Removed);
+            }
+            return Removed;
+        }
+
         /// \brief Removes the element at the given index by swapping it with the last element.
         ///
         /// \param Index The zero-based index of the element to remove. Does not preserve insertion order.
@@ -1031,6 +1064,39 @@ inline namespace Base
                 }
             }
             return false;
+        }
+
+
+        /// \brief Removes every element for which \p Predicate returns `true`, shifting the survivors left.
+        ///
+        /// \note Unlike \ref RemoveFastSomeIf the elements that stay keep the order they were in.
+        ///
+        /// \param Predicate The unary predicate used to identify the elements to remove.
+        /// \return The number of elements removed.
+        template<typename Callable>
+        ZY_INLINE constexpr UInt RemoveSomeIf(AnyRef<Callable> Predicate)
+        {
+            UInt Kept = 0;
+
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                if (!Predicate(mStorage[Index]))
+                {
+                    if (Kept != Index)
+                    {
+                        mStorage[Kept] = Move(mStorage[Index]);
+                    }
+                    ++Kept;
+                }
+            }
+
+            const UInt Removed = mSize - Kept;
+
+            if (Removed)
+            {
+                Remove(Kept, Removed);
+            }
+            return Removed;
         }
 
         /// \brief Removes the element at the given index by swapping it with the last element.

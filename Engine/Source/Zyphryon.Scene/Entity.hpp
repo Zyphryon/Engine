@@ -1123,6 +1123,39 @@ namespace Scene
             return Root;
         }
 
+        /// \brief Checks whether this entity is the given ancestor or stands anywhere beneath it.
+        ///
+        /// \param Ancestor The entity to look for up the parent chain.
+        /// \return `true` if this entity is the ancestor or descends from it, `false` otherwise.
+        ZY_INLINE Bool IsWithin(Entity Ancestor) const
+        {
+            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                if (Cursor == Ancestor)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// \brief Resolves the nearest entity up the parent chain that carries a component, this one included.
+        ///
+        /// \tparam Component The component to look for.
+        /// \return The nearest entity carrying it, or an invalid entity when nothing up the chain does.
+        template<typename Component>
+        ZY_INLINE Entity FindRecursively() const
+        {
+            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                if (Cursor.Has<Component>())
+                {
+                    return Cursor;
+                }
+            }
+            return Entity();
+        }
+
     private:
 
         /// \brief Gets the size a component was registered with.

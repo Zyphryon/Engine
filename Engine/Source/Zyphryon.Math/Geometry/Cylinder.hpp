@@ -252,6 +252,28 @@ inline namespace Math
             return mCenter.GetXZ().GetDistanceSquared(Other.mCenter.GetXZ()) <= (Reach * Reach);
         }
 
+
+        /// \brief Checks if this cylinder intersects with a box.
+        ///
+        /// \note The box is axis-aligned, so the nearest part of it to the axis is found by clamping into it.
+        ///
+        /// \param Other The box to check.
+        /// \return `true` if the cylinder and the box intersect, `false` otherwise.
+        ZY_INLINE constexpr Bool Test(Box Other) const
+        {
+            if (GetBottom() > Other.GetMaximumY() || GetTop() < Other.GetMinimumY())
+            {
+                return false;
+            }
+
+            const Vector2 Center(mCenter.GetX(), mCenter.GetZ());
+            const Vector2 Closest(
+                Clamp(Center.GetX(), Other.GetMinimumX(), Other.GetMaximumX()),
+                Clamp(Center.GetY(), Other.GetMinimumZ(), Other.GetMaximumZ()));
+
+            return Center.GetDistanceSquared(Closest) <= (mRadius * mRadius);
+        }
+
         /// \brief Checks if this cylinder is equal to another cylinder.
         ///
         /// \param Other The cylinder to compare to.
