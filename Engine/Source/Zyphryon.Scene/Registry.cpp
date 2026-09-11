@@ -42,13 +42,7 @@ namespace Scene::_
         }
 
         const ConstPtr<Factory> Serializer = Context::Get(World).GetFactory(Component);
-
-        if (Serializer == nullptr)
-        {
-            return;
-        }
-
-        const Text Name = StrConvert(Label);
+        const Text              Name       = StrConvert(Label);
 
         // Letting go of the last record takes an entity out of what is being walked, so the holders are
         // gathered before any of them is touched.
@@ -93,21 +87,38 @@ namespace Scene::_
                     continue;
                 }
 
-                if (const Ptr<void> Memory = Relation.IsValid()
-                    ? Target.Ensure(Relation, Slot)
-                    : Target.Ensure(Slot))
+                // A tag stands for itself and holds nothing, so it is put on rather than written into.
+                if (Record.Data.IsEmpty())
                 {
-                    Reader Source(ConstSpan<Byte>(Record.Data.GetData(), Record.Data.GetSize()));
-                    Serializer->Read(Source, Memory);
+                    if (Relation.IsValid())
+                    {
+                        Target.Add(Relation, Slot);
+                    }
+                    else
+                    {
+                        Target.Add(Slot);
+                    }
+                    continue;
                 }
 
-                if (Relation.IsValid())
+                if (Serializer != nullptr)
                 {
-                    Target.Notify(Relation, Slot);
-                }
-                else
-                {
-                    Target.Notify(Slot);
+                    if (const Ptr<void> Memory = Relation.IsValid()
+                        ? Target.Ensure(Relation, Slot)
+                        : Target.Ensure(Slot))
+                    {
+                        Reader Source(ConstSpan<Byte>(Record.Data.GetData(), Record.Data.GetSize()));
+                        Serializer->Read(Source, Memory);
+                    }
+
+                    if (Relation.IsValid())
+                    {
+                        Target.Notify(Relation, Slot);
+                    }
+                    else
+                    {
+                        Target.Notify(Slot);
+                    }
                 }
             }
 
