@@ -723,6 +723,27 @@ inline namespace Math
             return AnyColor(Red, Green, Blue, Color.GetAlpha());
         }
 
+        /// \brief Multiplies the RGB channels of a color by those of a real one, holding them in range.
+        ///
+        /// \param First  The first color.
+        /// \param Second The real color whose channels scale it.
+        /// \return A color with modulated RGB and the alpha of \p First.
+        ZY_INLINE static constexpr AnyColor Modulate(AnyColor First, AnyColor<Real32> Second)
+            requires(!IsReal<Type>)
+        {
+            constexpr auto Channel = [](Type Value, Real32 Amount)
+            {
+                return static_cast<Type>(
+                    ::Clamp(static_cast<Real32>(Value) * Amount, 0.0f, static_cast<Real32>(Limit())));
+            };
+
+            return AnyColor(
+                Channel(First.GetRed(),   Second.GetRed()),
+                Channel(First.GetGreen(), Second.GetGreen()),
+                Channel(First.GetBlue(),  Second.GetBlue()),
+                First.GetAlpha());
+        }
+
         /// \brief Returns the inverted color (1 - channel).
         ///
         /// \param Color The input color.
