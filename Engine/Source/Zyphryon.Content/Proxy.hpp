@@ -47,6 +47,23 @@ namespace Content
         {
         }
 
+        /// \brief Sets the name of the resource the proxy stands for, letting go of whatever it held.
+        ///
+        /// \param Path The path the resource is loaded from.
+        ZY_INLINE void SetKey(AnyRef<Uri> Path)
+        {
+            mPath     = Move(Path);
+            mResource = nullptr;
+        }
+
+        /// \brief Gets the name of the resource the proxy stands for.
+        ///
+        /// \return The path the resource is loaded from.
+        ZY_INLINE ConstRef<Uri> GetKey() const
+        {
+            return mPath;
+        }
+
         /// \brief Gets the resource managed by the proxy.
         ///
         /// \return The managed resource.
@@ -73,6 +90,24 @@ namespace Content
         ZY_INLINE void Serialize(Serializer Archive)
         {
             Archive.Serialize(mPath);
+        }
+
+    public:
+
+        /// \brief Provides the name this type is registered under in the reflection system.
+        ///
+        /// \return The fully qualified reflection name of the type, and how it is shown.
+        ZY_INLINE static constexpr auto OnClassify()
+        {
+            return Reflection::Presentation { .Name = "Content.Asset", .Flat = true };
+        }
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The fields of the type, in the order they are shown.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(Reflection::Field::Property<&Proxy::GetKey, &Proxy::SetKey>("Key"));
         }
 
     private:
