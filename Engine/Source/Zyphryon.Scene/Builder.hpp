@@ -1238,7 +1238,9 @@ namespace Scene::DSL
         private:
 
             /// \brief Carries the terms of a declaration by value, so a term may bring along what it was built with.
-            template<typename... Parts>
+            ///
+            /// \tparam Carried The terms held, which are the ones the enclosing description was given.
+            template<typename... Carried>
             struct Bundle final
             {
                 /// \brief Applies nothing, since there is nothing left to apply.
