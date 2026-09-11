@@ -62,6 +62,8 @@ namespace Scene::_
             }
         }
 
+        const Entity Slot(World, Component);
+
         for (ecs_entity_t Holder : Holders)
         {
             const Entity       Actor(World, Holder);
@@ -71,6 +73,8 @@ namespace Scene::_
             {
                 continue;
             }
+
+            const Entity Target = (Holder == Keeper ? Slot : Actor);
 
             for (ConstRef<Salvage::Record> Record : Kept->GetRecords())
             {
@@ -89,9 +93,9 @@ namespace Scene::_
                     continue;
                 }
 
-                const Entity Slot(World, Component);
-
-                if (const Ptr<void> Memory = Relation.IsValid() ? Actor.Ensure(Relation, Slot) : Actor.Ensure(Slot))
+                if (const Ptr<void> Memory = Relation.IsValid()
+                    ? Target.Ensure(Relation, Slot)
+                    : Target.Ensure(Slot))
                 {
                     Reader Source(ConstSpan<Byte>(Record.Data.GetData(), Record.Data.GetSize()));
                     Serializer->Read(Source, Memory);
@@ -99,11 +103,11 @@ namespace Scene::_
 
                 if (Relation.IsValid())
                 {
-                    Actor.Notify(Relation, Slot);
+                    Target.Notify(Relation, Slot);
                 }
                 else
                 {
-                    Actor.Notify(Slot);
+                    Target.Notify(Slot);
                 }
             }
 
