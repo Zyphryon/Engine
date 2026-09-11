@@ -44,6 +44,7 @@ namespace Reflection
             Notifying = 0b00000010, ///< The owner is told after a write, so whatever watches it runs.
             Mask      = 0b00000100, ///< The whole number stands for a set of bits rather than a quantity.
             Tagged    = 0b00001000, ///< The value named itself, so the name sits where the bounds would.
+            Format    = 0b00010000, ///< The tag stands for how the value is shown, not for what it is.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Trait)
 
@@ -381,6 +382,37 @@ namespace Reflection
             return Compose<Getter, Setter, Kind::Opaque>(Text(Name, Count - 1), Slot);
         }
 
+        /// \brief Describes a value naming something held elsewhere, which a tool picks for itself.
+        ///
+        /// \tparam Getter The data member, or the getter, the name is read through.
+        /// \tparam Setter The setter the name is written through, left out for a data member or a read-only value.
+        /// \param  Name   The name the value is shown under, taken as an array so only a lasting one can be given.
+        /// \param  Filter What the tool offers to pick from, taken the same way and for the same reason.
+        /// \return A field describing that name.
+        template<auto Getter, auto Setter = nullptr, UInt Count, UInt Length>
+        ZY_INLINE static constexpr Field Asset(const Char (& Name)[Count], const Char (& Filter)[Length])
+        {
+            using Access = Detail::Accessor<decltype(Getter)>;
+
+            constexpr Bool Flat = IsFlat<typename Access::Value>;
+            constexpr Kind Tag  = OnTag<typename Access::Value>();
+
+            static_assert(Tag == Kind::Text, "A name a tool picks reads and writes as a value");
+
+            if constexpr (Flat)
+            {
+                Detail::Borrow<Getter, Kind::Structure>();
+            }
+            else
+            {
+                Detail::Borrow<Getter, Tag>();
+            }
+
+            const Extra Slot { .Label = Text(Filter, Length - 1) };
+
+            return Compose<Getter, Setter, Tag, Flat, Trait::Tagged | Trait::Format>(Text(Name, Count - 1), Slot);
+        }
+
         /// \brief Describes a run of elements of one kind, which is walked by position rather than by name.
         ///
         /// \tparam Getter The data member, or the getter, the run is reached through.
@@ -529,7 +561,14 @@ namespace Reflection
         {
             if constexpr (Flat)
             {
-                return OnWriteFlat<Handle>;
+                if constexpr (IsSetter)
+                {
+                    return OnWriteWhole<Handle>;
+                }
+                else
+                {
+                    return OnWriteFlat<Handle>;
+                }
             }
             else if constexpr (Tag == Kind::List)
             {
@@ -550,14 +589,14 @@ namespace Reflection
         /// \param Name The name of the field, which outlives it.
         /// \param Slot The bounds, options, fields or tag the kind needs.
         /// \return A field describing the value the accessors reach.
-        template<auto Getter, auto Setter, Kind Tag, Bool Flat = false>
+        template<auto Getter, auto Setter, Kind Tag, Bool Flat = false, Trait Extras = Trait { }>
         ZY_INLINE static constexpr Field Compose(Text Name, Extra Slot)
         {
             using Access = Detail::Accessor<decltype(Getter)>;
             using Owner  = typename Access::Owner;
 
             constexpr Reader Read   = OnReader<Getter, Tag, Flat>();
-            constexpr Trait  Marked = Detail::IsNamed<typename Access::Value> ? Trait::Tagged : Trait { };
+            constexpr Trait  Marked = (Detail::IsNamed<typename Access::Value> ? Trait::Tagged : Trait { }) | Extras;
 
             if constexpr (IsAnyOf<decltype(Setter), Null>)
             {
@@ -648,6 +687,22 @@ namespace Reflection
             return Describe<Content>::kFields[0].Read(OnAddress<Handle>(Instance));
         }
 
+        /// \brief Write handler for a flat value the owner wants handed to it rather than written in place.
+        ///
+        /// \param Instance The raw pointer to the instance the field belongs to.
+        /// \param Input    The value to write into that part.
+        template<auto Handle>
+        ZY_INLINE static void OnWriteWhole(Ptr<void> Instance, ConstRef<Value> Input)
+        {
+            using Access  = Detail::Accessor<decltype(Handle)>;
+            using Content = typename Access::Value;
+
+            Content Whole { };
+
+            Describe<Content>::kFields[0].Write(AddressOf(Whole), Input);
+
+            (static_cast<Ptr<typename Access::Owner>>(Instance)->*Handle)(Move(Whole));
+        }
         /// \brief Write handler for a value shown in place of the one part it holds.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
