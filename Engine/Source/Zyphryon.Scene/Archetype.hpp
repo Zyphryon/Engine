@@ -204,6 +204,52 @@ namespace Scene
             return Archetype(mHandle.GetArchetype());
         }
 
+        /// \brief Checks whether this archetype stands somewhere under another in the hierarchy.
+        ///
+        /// \param Ancestor The archetype to look for above this one.
+        /// \return `true` when \p Ancestor is a parent of this one at any depth, `false` otherwise.
+        ZY_INLINE Bool IsDescendantOf(Archetype Ancestor) const
+        {
+            for (Archetype Walk = GetParent(); Walk.IsValid(); Walk = Walk.GetParent())
+            {
+                if (Walk == Ancestor)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// \brief Checks whether this archetype inherits from another, however far back.
+        ///
+        /// \param Base The archetype to look for along the chain this one inherits through.
+        /// \return `true` when this one inherits from \p Base at any remove, `false` otherwise.
+        ZY_INLINE Bool IsInstanceOf(Archetype Base) const
+        {
+            for (Archetype Walk = GetArchetype(); Walk.IsValid(); Walk = Walk.GetArchetype())
+            {
+                if (Walk == Base)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// \brief Gets the archetype this one hangs from, which is itself when nothing stands above it.
+        ///
+        /// \return The topmost archetype of the hierarchy this one belongs to.
+        ZY_INLINE Archetype GetRoot() const
+        {
+            Archetype Root(* this);
+
+            for (Archetype Walk = Root.GetParent(); Walk.IsValid(); Walk = Walk.GetParent())
+            {
+                Root = Walk;
+            }
+            return Root;
+        }
+
         /// \brief Sets the internal name of this archetype, used for lookups and identification.
         ///
         /// \param Name The name to assign.
