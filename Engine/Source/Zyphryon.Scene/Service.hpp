@@ -161,6 +161,7 @@ namespace Scene
         {
             (List.Reserve(mWorld), ...);
             (List.Apply(mWorld), ...);
+            (List.Reconcile(mWorld), ...);
         }
 
         /// \brief Registers every component that declares itself, each bringing its own name and terms.

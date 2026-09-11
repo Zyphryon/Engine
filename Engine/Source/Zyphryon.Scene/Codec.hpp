@@ -14,6 +14,7 @@
 
 #include "Context.hpp"
 #include "Entity.hpp"
+#include "Salvage.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -45,10 +46,16 @@ namespace Scene
             // Read serialized component payload.
             const ConstSpan<Byte> Bundle = Archive.ReadBlock<UInt32, Byte>();
 
-            // A relation that named a target it can no longer resolve is skipped the same way, because
-            // attaching the component alone would grant the entity something it never had.
+            // A name the world has no place for is kept whole rather than lost, so the entity is written
+            // back as it came in and the component lands the moment something does name it.
             if (!Second.IsValid() || (!Pair.IsEmpty() && !First.IsValid()))
             {
+                const Entity Keeper(World, _::Identify<Salvage>(World));
+
+                if (const Ptr<Salvage> Kept = static_cast<Ptr<Salvage>>(Actor.Ensure(Keeper)))
+                {
+                    Kept->Keep(Pair, Name, Bundle);
+                }
                 return;
             }
 
@@ -167,6 +174,18 @@ namespace Scene
                 {
                     Written |= WriteComponent<Owner>(Output, Actor, Component);
                 });
+
+                if (const ConstPtr<Salvage> Kept = Actor.template TryGet<const Salvage>())
+                {
+                    for (ConstRef<Salvage::Record> Record : Kept->GetRecords())
+                    {
+                        Output.WriteText(Record.Relation);
+                        Output.WriteText(Record.Name);
+                        Output.WriteBlock<UInt32>(ConstSpan<Byte>(Record.Data.GetData(), Record.Data.GetSize()));
+
+                        Written = true;
+                    }
+                }
             });
             return Written;
         }

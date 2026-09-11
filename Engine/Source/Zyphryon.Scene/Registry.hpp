@@ -266,7 +266,11 @@ namespace Scene::_
         return Identity<Component>::Value;
     }
 
+    /// \brief Puts back everything kept under a component's name, now that the world knows the name.
     ///
+    /// \param World     The world the component belongs to.
+    /// \param Component The component that has just been registered.
+    void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component);
 
     /// \brief Gets the identifier a component type answers to, registering it if it declares itself.
     ///
@@ -287,6 +291,8 @@ namespace Scene::_
 
                 Declaration.Reserve(World);
                 Declaration.Apply(World);
+
+                Reconcile(World, Identity<Component>::Value);
             }
             else
             {

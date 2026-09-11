@@ -1226,6 +1226,14 @@ namespace Scene::DSL
                 (ApplyEach<Types>(World), ...);
             }
 
+            /// \brief Puts back everything kept under the names of the components described.
+            ///
+            /// \param World The world the components belong to.
+            ZY_INLINE void Reconcile(Ptr<ecs_world_t> World) const
+            {
+                (Scene::_::Reconcile(World, Scene::_::Identity<Types>::Value), ...);
+            }
+
 
         private:
 
