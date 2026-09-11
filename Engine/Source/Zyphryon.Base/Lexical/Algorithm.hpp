@@ -460,6 +460,33 @@ inline namespace Base
         return Left.GetSize() < Right.GetSize() ? -1 : 1;
     }
 
+    /// \brief Orders two text views the way a list of names is read, paying no mind to case.
+    ///
+    /// \param Left  The text on the left of the comparison.
+    /// \param Right The text on the right of the comparison.
+    /// \return A negative value when \p Left is read first, a positive one when \p Right is, zero when alike.
+    constexpr SInt32 StrCompareCaseInsensitive(Text Left, Text Right)
+    {
+        const UInt Length = Min(Left.GetSize(), Right.GetSize());
+
+        for (UInt Index = 0; Index < Length; ++Index)
+        {
+            const Char First  = StrLowercase(Left[Index]);
+            const Char Second = StrLowercase(Right[Index]);
+
+            if (First != Second)
+            {
+                return First < Second ? -1 : 1;
+            }
+        }
+
+        if (Left.GetSize() == Right.GetSize())
+        {
+            return 0;
+        }
+        return Left.GetSize() < Right.GetSize() ? -1 : 1;
+    }
+
     /// \brief Checks whether two text views are equal.
     ///
     /// \param Left  The first text to compare.
