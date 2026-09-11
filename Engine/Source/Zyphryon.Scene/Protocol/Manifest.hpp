@@ -56,7 +56,7 @@ namespace Scene::Protocol
         {
             using Component = StripAll<Type>;
 
-            const Scene::Component<Component> Handle(World, _::Identify<Component>());
+            const Scene::Component<Component> Handle(World, _::Identify<Component>(World));
             Handle.Grant(Trait::Serializable);
 
             // A second world declaring the same type keeps the place the first one was given.

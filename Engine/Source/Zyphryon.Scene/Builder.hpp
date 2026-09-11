@@ -82,13 +82,21 @@ namespace Scene::DSL::_
         {
         }
 
+        /// \brief Gets the world the description is built against.
+        ///
+        /// \return The world the description is built against.
+        ZY_INLINE Ptr<ecs_world_t> GetWorld() const
+        {
+            return mWorld;
+        }
+
         /// \brief Adds a term matching a component type.
         ///
         /// \return This description, allowing for method chaining.
         template<typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(Scene::_::Identify<Component>());
+            return With(Scene::_::Identify<Component>(mWorld));
         }
 
         /// \brief Adds a term matching a relation pair formed by two component types.
@@ -97,7 +105,7 @@ namespace Scene::DSL::_
         template<typename Relation, typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(Scene::_::Identify<Relation>(), Scene::_::Identify<Component>());
+            return With(Scene::_::Identify<Relation>(mWorld), Scene::_::Identify<Component>(mWorld));
         }
 
         /// \brief Adds a term matching an identifier resolved at runtime.
@@ -204,7 +212,7 @@ namespace Scene::DSL::_
         template<typename Type, typename Comparator>
         ZY_INLINE Ref<Descriptor> OrderBy(Comparator Comparison)
         {
-            mQuery.order_by          = Scene::_::Identify<Type>();
+            mQuery.order_by          = Scene::_::Identify<Type>(mWorld);
             mQuery.order_by_callback = reinterpret_cast<ecs_order_by_action_t>(Comparison);
             return (* this);
         }
@@ -1039,7 +1047,7 @@ namespace Scene::DSL
         {
             if constexpr (!Data)
             {
-                Builder.GroupBy(Scene::_::Identify<Relation>());
+                Builder.GroupBy(Scene::_::Identify<Relation>(Builder.GetWorld()));
             }
         }
     };
@@ -1057,7 +1065,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            Component<Type>(World, Scene::_::Identify<Type>()).Grant(Values...);
+            Component<Type>(World, Scene::_::Identify<Type>(World)).Grant(Values...);
         }
     };
 
@@ -1110,7 +1118,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            const Component<Type> Handle(World, Scene::_::Identify<Type>());
+            const Component<Type> Handle(World, Scene::_::Identify<Type>(World));
 
             (Handle.template With<Types>(), ...);
         }
@@ -1138,7 +1146,7 @@ namespace Scene::DSL
         {
             const ecs_entity_t Action = Policy == Cleanup::Remove ? EcsRemove : Policy == Cleanup::Delete ? EcsDelete : EcsPanic;
 
-            ecs_add_id(World, Scene::_::Identify<Type>(), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
+            ecs_add_id(World, Scene::_::Identify<Type>(World), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
         }
     };
 

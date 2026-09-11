@@ -108,7 +108,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
         {
-            Entity(World, Scene::_::Identify<Type>()).Set(Value);
+            Entity(World, Scene::_::Identify<Type>(World)).Set(Value);
         }
     };
 
@@ -145,7 +145,7 @@ namespace Scene::DSL
             static_assert(Reflection::IsDescribed<Type>,
                 "A reflected component lays out its own fields with OnDescribe, or with ZY_REFLECT");
 
-            Entity(World, Scene::_::Identify<Type>()).Set(Reflection::Schema::Of<Type>());
+            Entity(World, Scene::_::Identify<Type>(World)).Set(Reflection::Schema::Of<Type>());
         }
     };
 

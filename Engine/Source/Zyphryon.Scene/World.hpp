@@ -333,7 +333,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE World Purge() const
         {
-            ecs_remove_all(mHandle, _::Identify<Component>());
+            ecs_remove_all(mHandle, _::Identify<Component>(mHandle));
             return (* this);
         }
 
@@ -355,7 +355,7 @@ namespace Scene
         template<typename Relation, typename Component>
         ZY_INLINE World Purge() const
         {
-            ecs_remove_all(mHandle, (_::Identify<Relation, Component>()));
+            ecs_remove_all(mHandle, (_::Identify<Relation, Component>(mHandle)));
             return (* this);
         }
 
@@ -367,7 +367,7 @@ namespace Scene
         template<typename Relation>
         ZY_INLINE World Purge(Entity Component) const
         {
-            ecs_remove_all(mHandle, _::Identify<Relation>(Component.GetID()));
+            ecs_remove_all(mHandle, _::Identify<Relation>(mHandle, Component.GetID()));
             return (* this);
         }
 
@@ -537,7 +537,7 @@ namespace Scene
         template<typename Relation, typename Callable>
         ZY_INLINE void Each(Entity Component, AnyRef<Callable> Callback) const
         {
-            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
+            const ecs_id_t Pair = _::Identify<Relation>(mHandle, Component.GetID());
 
             for (ecs_iter_t Iterator = ecs_each_id(mHandle, Pair); ecs_each_next(& Iterator);)
             {
@@ -575,7 +575,7 @@ namespace Scene
         template<typename Component>
         ZY_INLINE Entity Singleton() const
         {
-            return Entity(mHandle, _::Identify<Component>());
+            return Entity(mHandle, _::Identify<Component>(mHandle));
         }
 
         /// \brief Gets the entity that stands for the root of the hierarchy.

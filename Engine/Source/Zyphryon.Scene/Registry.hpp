@@ -266,33 +266,54 @@ namespace Scene::_
         return Identity<Component>::Value;
     }
 
-    /// \brief Gets the identifier a component type registered under.
     ///
+
+    /// \brief Gets the identifier a component type answers to, registering it if it declares itself.
+    ///
+    /// \note A component that declares itself brings its own name and terms along.
+    ///
+    /// \param World The world the component belongs to.
     /// \return The identifier of \p Type.
     template<typename Type>
-    ZY_INLINE ecs_entity_t Identify()
+    ZY_INLINE ecs_entity_t Identify(Ptr<ecs_world_t> World)
     {
-        ZY_ASSERT(Identity<StripAll<Type>>::Value, "Component is used before it was registered in the world");
+        using Component = StripAll<Type>;
 
-        return Identity<StripAll<Type>>::Value;
+        if (!Identity<Component>::Value)
+        {
+            if constexpr (requires (Ptr<ecs_world_t> Target) { Component::OnDeclare().Reserve(Target); })
+            {
+                const auto Declaration = Component::OnDeclare();
+
+                Declaration.Reserve(World);
+                Declaration.Apply(World);
+            }
+            else
+            {
+                ZY_ASSERT(false, "Component was reached before anything declared it in the world");
+            }
+        }
+        return Identity<Component>::Value;
     }
 
     /// \brief Gets the identifier a relation pair formed by two component types resolves to.
     ///
+    /// \param World The world the components belong to.
     /// \return The identifier of the pair.
     template<typename Relation, typename Component>
-    ZY_INLINE ecs_id_t Identify()
+    ZY_INLINE ecs_id_t Identify(Ptr<ecs_world_t> World)
     {
-        return ecs_pair(Identify<Relation>(), Identify<Component>());
+        return ecs_pair(Identify<Relation>(World), Identify<Component>(World));
     }
 
     /// \brief Gets the identifier a relation pair with a runtime target resolves to.
     ///
+    /// \param World     The world the relation belongs to.
     /// \param Component The target of the relation.
     /// \return The identifier of the pair.
     template<typename Relation>
-    ZY_INLINE ecs_id_t Identify(ecs_entity_t Component)
+    ZY_INLINE ecs_id_t Identify(Ptr<ecs_world_t> World, ecs_entity_t Component)
     {
-        return ecs_pair(Identify<Relation>(), Component);
+        return ecs_pair(Identify<Relation>(World), Component);
     }
 }
