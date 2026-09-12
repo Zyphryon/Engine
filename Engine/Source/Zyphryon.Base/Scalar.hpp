@@ -281,11 +281,11 @@ inline namespace Base
 
     /// \brief Computes the angle of the vector running from the origin to the given coordinates.
     ///
-    /// \param Y The Y coordinate.
     /// \param X The X coordinate.
+    /// \param Y The Y coordinate.
     /// \return The angle, in radians, within [-π, π].
     template<IsReal Type>
-    ZY_INLINE Type InvTangent(Type Y, Type X)
+    ZY_INLINE Type InvTangent(Type X, Type Y)
     {
         return std::atan2(Y, X);
     }
