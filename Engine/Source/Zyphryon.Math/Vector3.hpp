@@ -704,6 +704,19 @@ inline namespace Math
             return AnyVector3(XZ.GetX(), Y, XZ.GetY());
         }
 
+        /// \brief Creates a unit vector from the bearing and elevation that name a direction.
+        ///
+        /// \param Bearing   The way it points across the ground, measured from the x-axis toward the z-axis.
+        /// \param Elevation The way it points out of the ground, within [-π/2, π/2].
+        /// \return A new unit vector pointing the way the two angles name.
+        ZY_INLINE static AnyVector3 FromBearing(Angle Bearing, Angle Elevation)
+            requires(IsReal<Type>)
+        {
+            const Type Flat = Angle::Cosine(Elevation);
+
+            return AnyVector3(Angle::Cosine(Bearing) * Flat, Angle::Sine(Elevation), Angle::Sine(Bearing) * Flat);
+        }
+
         /// \brief Projects the source vector onto the target vector.
         ///
         /// \param Source The vector to be projected.
