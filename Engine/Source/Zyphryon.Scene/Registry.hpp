@@ -274,12 +274,10 @@ namespace Scene::_
 
     /// \brief Gets the identifier a component type answers to, registering it if it declares itself.
     ///
-    /// \note A component that declares itself brings its own name and terms along.
-    ///
     /// \param World The world the component belongs to.
     /// \return The identifier of \p Type.
     template<typename Type>
-    ZY_INLINE ecs_entity_t Identify(Ptr<ecs_world_t> World)
+    inline ecs_entity_t Identify(Ptr<ecs_world_t> World)
     {
         using Component = StripAll<Type>;
 
