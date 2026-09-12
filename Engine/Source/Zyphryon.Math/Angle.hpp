@@ -271,6 +271,20 @@ inline namespace Math
             return Base::Tangent(Value.GetRadians());
         }
 
+        /// \brief Measures the shortest way round from one angle to another.
+        ///
+        /// \param Origin The angle the turn is measured from.
+        /// \param Target The angle the turn is measured to.
+        /// \return The turn, in the range [-π, π), negative when the shortest way round runs backwards.
+        ZY_INLINE static Angle Between(Angle Origin, Angle Target)
+        {
+            constexpr Real32 kTwoPi = 2.0f * kPI<Real32>;
+
+            const Real32 Apart = Target.GetRadians() - Origin.GetRadians();
+
+            return FromRadians(Apart - kTwoPi * Floor(Apart / kTwoPi + 0.5f));
+        }
+
         /// \brief Provides the name this type is registered under in the reflection system.
         ///
         /// \return The fully qualified reflection name of the type, and how it is shown.

@@ -50,9 +50,8 @@ inline namespace Base
     ///
     /// \param Value The value to compute the absolute for.
     /// \return A value equal to |\p Value|.
-    template<typename Type>
+    template<IsSigned Type>
     constexpr Type Abs(Type Value)
-        requires IsSigned<Type>
     {
         return Value < Type(0) ? -Value : Value;
     }
@@ -61,9 +60,8 @@ inline namespace Base
     ///
     /// \param Value The value to floor.
     /// \return The largest integer less than or equal to \a Value.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Floor(Type Value)
-        requires IsReal<Type>
     {
         return std::floor(Value);
     }
@@ -72,9 +70,8 @@ inline namespace Base
     ///
     /// \param Value The value to ceil.
     /// \return The smallest integer greater than or equal to \a Value.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Ceil(Type Value)
-        requires IsReal<Type>
     {
         return std::ceil(Value);
     }
@@ -83,9 +80,8 @@ inline namespace Base
     ///
     /// \param Value The value to round.
     /// \return The nearest integer to \a Value.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Round(Type Value)
-        requires IsReal<Type>
     {
         return std::round(Value);
     }
@@ -95,9 +91,8 @@ inline namespace Base
     /// \param Dividend The dividend value.
     /// \param Divisor  The divisor value.
     /// \return The remainder of the division of \a Dividend by \a Divisor.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Mod(Type Dividend, Type Divisor)
-        requires(IsReal<Type>)
     {
         ZY_ASSERT(Divisor != 0, "Divisor cannot be zero");
 
@@ -109,9 +104,8 @@ inline namespace Base
     /// \param Base     The base value.
     /// \param Exponent The exponent value.
     /// \return The result of raising \p Base to the power of \p Exponent.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Pow(Type Base, Type Exponent)
-        requires IsReal<Type>
     {
         return std::pow(Base, Exponent);
     }
@@ -132,9 +126,8 @@ inline namespace Base
     ///
     /// \param Exponent The exponent value.
     /// \return The result of 2 ^ \p Exponent.
-    template<typename Type>
+    template<IsIntegral Type>
     constexpr UInt Pow2(Type Exponent)
-        requires (IsIntegral<Type>)
     {
         return Type(1) << Exponent;
     }
@@ -143,9 +136,8 @@ inline namespace Base
     ///
     /// \param Exponent The exponent value.
     /// \return The result of 10 ^ \p Exponent.
-    template<typename Type>
+    template<IsIntegral Type>
     constexpr UInt64 Pow10(Type Exponent)
-        requires IsIntegral<Type>
     {
         static constexpr UInt64 kPow10Table[20] =
         {
@@ -227,9 +219,8 @@ inline namespace Base
     ///
     /// \param Radians The angle, in radians, to compute the sine for.
     /// \return The sine of \a Radians.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Sine(Type Radians)
-        requires IsReal<Type>
     {
         return std::sin(Radians);
     }
@@ -238,9 +229,8 @@ inline namespace Base
     ///
     /// \param Radians The angle, in radians, to compute the cosine for.
     /// \return The cosine of \a Radians.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Cosine(Type Radians)
-        requires IsReal<Type>
     {
         return std::cos(Radians);
     }
@@ -249,9 +239,8 @@ inline namespace Base
     ///
     /// \param Radians The angle, in radians, to compute the tangent for.
     /// \return The tangent of \a Radians.
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type Tangent(Type Radians)
-        requires IsReal<Type>
     {
         return std::tan(Radians);
     }
@@ -260,9 +249,9 @@ inline namespace Base
     ///
     /// \param Ratio The sine ratio, which must lie within the unit range.
     /// \return The angle, in radians, within [-π/2, π/2].
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type InvSine(Type Ratio)
-        requires IsReal<Type>
+        requires <Type>
     {
         ZY_ASSERT(Ratio >= Type(-1) && Ratio <= Type(1), "Ratio out of range [-1,1]");
 
@@ -273,9 +262,8 @@ inline namespace Base
     ///
     /// \param Ratio The cosine ratio, which must lie within the unit range.
     /// \return The angle, in radians, within [0, π].
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type InvCosine(Type Ratio)
-        requires IsReal<Type>
     {
         ZY_ASSERT(Ratio >= Type(-1) && Ratio <= Type(1), "Ratio out of range [-1,1]");
 
@@ -286,9 +274,8 @@ inline namespace Base
     ///
     /// \param Ratio The tangent ratio.
     /// \return The angle, in radians, within [-π/2, π/2].
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type InvTangent(Type Ratio)
-        requires IsReal<Type>
     {
         return std::atan(Ratio);
     }
@@ -298,9 +285,8 @@ inline namespace Base
     /// \param Y The Y coordinate.
     /// \param X The X coordinate.
     /// \return The angle, in radians, within [-π, π].
-    template<typename Type>
+    template<IsReal Type>
     ZY_INLINE Type InvTangent(Type Y, Type X)
-        requires IsReal<Type>
     {
         return std::atan2(Y, X);
     }
@@ -357,15 +343,26 @@ inline namespace Base
         return Min(Max(Value, Minimum), Maximum);
     }
 
+    /// \brief Works out how much of the way to something one step closes, at a rate no step count changes.
+    ///
+    /// \param Delta The time since the last step.
+    /// \param Time  The time the gap is crossed in, or zero to cross the whole of it at once.
+    /// \return The share of the gap to close this step, from nothing at all to the whole of it.
+    template<IsReal Type>
+    ZY_INLINE Type Settle(Type Delta, Type Time)
+    {
+        constexpr Type kRemainder = Type(0.001);
+        return Time > Type(0) ? Type(1) - Pow(kRemainder, Delta / Time) : Type(1);
+    }
+
     /// \brief Linearly interpolates between two scalar values.
     ///
     /// \param Start      The starting scalar value.
     /// \param End        The ending scalar value.
     /// \param Percentage The interpolation factor, in the range [0, 1].
     /// \return The scalar value interpolated between \a Start and \a End.
-    template<typename Value, typename Delta>
+    template<typename Value, IsReal Delta>
     constexpr Value Lerp(Value Start, Value End, Delta Percentage)
-        requires IsReal<Delta>
     {
         if constexpr (IsReal<Value>)
         {
@@ -383,9 +380,8 @@ inline namespace Base
     /// \param End   The scalar value the range ends at.
     /// \param Value The scalar value to place within the range.
     /// \return The fraction of the range the value falls at, or `0` when the range is empty.
-    template<typename Value>
+    template<IsReal Value>
     constexpr Value InverseLerp(Value Start, Value End, Value Position)
-        requires IsReal<Value>
     {
         const Value Range = End - Start;
 
@@ -456,9 +452,8 @@ inline namespace Base
     ///
     /// \param Value The value to inspect.
     /// \return `true` if \p Value is NaN, `false` otherwise.
-    template<typename Type>
+    template<IsReal Type>
     constexpr Bool IsNaN(Type Value)
-        requires IsReal<Type>
     {
         if constexpr (sizeof(Type) == sizeof(Real32))
         {
@@ -474,9 +469,8 @@ inline namespace Base
     ///
     /// \param Value The value to inspect.
     /// \return `true` if \p Value is infinite, `false` otherwise.
-    template<typename Type>
+    template<IsReal Type>
     constexpr Bool IsInf(Type Value)
-        requires IsReal<Type>
     {
         if constexpr (sizeof(Type) == sizeof(Real32))
         {
@@ -495,9 +489,8 @@ inline namespace Base
     ///
     /// \param Value The integral value to inspect.
     /// \return The number of decimal digits in the base-10 representation of \p Value.
-    template<typename Type>
+    template<IsIntegral Type>
     constexpr UInt CountDigitsDecimal(Type Value)
-        requires IsIntegral<Type>
     {
         using Unsigned = Unsigned<Type>;
 
@@ -518,9 +511,8 @@ inline namespace Base
     ///
     /// \param Value The integral value to inspect.
     /// \return The number of bits in the binary representation of \p Value.
-    template<typename Type>
+    template<IsIntegral Type>
     constexpr Type CountDigitsBinary(Type Value)
-        requires IsIntegral<Type>
     {
         return (sizeof(Type) * 8) - CountLeadingZeros(Value);
     }
@@ -529,9 +521,8 @@ inline namespace Base
     ///
     /// \param Value The integral value to inspect.
     /// \return The number of hex digits in the base-16 representation of \p Value.
-    template<typename Type>
+    template<IsIntegral Type>
     constexpr UInt CountDigitsHexadecimal(Type Value)
-        requires IsIntegral<Type>
     {
         return (CountDigitsBinary(Value) + 3) >> 2;
     }
@@ -542,9 +533,8 @@ inline namespace Base
     ///
     /// \param Value The integral value to inspect.
     /// \return The number of digits needed to represent \p Value in base \p Base.
-    template<UInt Base, typename Type>
+    template<UInt Base, IsIntegral Type>
     constexpr UInt CountDigits(Type Value)
-        requires IsIntegral<Type>
     {
         if (Value == Type(0))
         {
@@ -576,9 +566,8 @@ inline namespace Base
     /// \param Value     The floating-point value to inspect.
     /// \param Precision The number of digits after the decimal point.
     /// \return The number of digits needed to represent \p Value with \p Precision precision.
-    template<typename Type>
+    template<IsReal Type>
     constexpr UInt CountDigits(Type Value, UInt Precision = 6)
-        requires IsReal<Type>
     {
         if (IsNaN(Value))
         {
@@ -629,9 +618,8 @@ inline namespace Base
     ///
     /// \param Value The value to encode, which is held to the range the type spans.
     /// \return The value spread over the integer's range, rounded to the nearest step.
-    template<typename Type>
+    template<IsIntegral Type>
     ZY_INLINE Type EncodeNormalized(Real32 Value)
-        requires IsIntegral<Type>
     {
         if constexpr (std::is_signed_v<Type>)
         {
@@ -647,9 +635,8 @@ inline namespace Base
     ///
     /// \param Value The encoded value.
     /// \return The value it stands for, over zero through one or negative one through one.
-    template<typename Type>
+    template<IsIntegral Type>
     ZY_INLINE Real32 DecodeNormalized(Type Value)
-        requires IsIntegral<Type>
     {
         const Real32 Result = static_cast<Real32>(Value) / static_cast<Real32>(kMaximum<Type>);
 
@@ -668,9 +655,8 @@ inline namespace Base
     /// \param Value The value to encode.
     /// \param Scale The count of steps one unit is cut into.
     /// \return The value in steps, rounded to the nearest one and held to what the type can carry.
-    template<typename Type>
+    template<IsIntegral Type>
     ZY_INLINE Type EncodeFixed(Real32 Value, Real32 Scale)
-        requires IsIntegral<Type>
     {
         constexpr Real32 Floor = static_cast<Real32>(kMinimum<Type>);
         constexpr Real32 Ceil  = static_cast<Real32>(kMaximum<Type>);
@@ -683,9 +669,8 @@ inline namespace Base
     /// \param Value The value in steps.
     /// \param Scale The count of steps one unit was cut into.
     /// \return The value the steps stand for.
-    template<typename Type>
+    template<IsIntegral Type>
     ZY_INLINE Real32 DecodeFixed(Type Value, Real32 Scale)
-        requires IsIntegral<Type>
     {
         return static_cast<Real32>(Value) / Scale;
     }
