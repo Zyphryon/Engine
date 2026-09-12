@@ -24,11 +24,11 @@ inline namespace Math
     Vector3 Quaternion::ToEulerAngles() const
     {
         const Real32 QX   = GetX(), QY = GetY(), QZ = GetZ(), QW = GetW();
-        const Real32 SinY = Clamp(2.0f * (QW * QY - QZ * QX), -1.0f, 1.0f);
+        const Real32 SinY = Clamp(2.0f * (QX * QZ + QW * QY), -1.0f, 1.0f);
 
-        const Angle Pitch = Angle::FromCartesian(2.0f * (QW * QX + QY * QZ), 1.0f - 2.0f * (QX * QX + QY * QY));
-        const Angle Yaw   = Angle::FromCartesian(SinY, Sqrt(1.0f - SinY * SinY));
-        const Angle Roll  = Angle::FromCartesian(2.0f * (QW * QZ + QX * QY), 1.0f - 2.0f * (QY * QY + QZ * QZ));
+        const Angle Pitch = Angle::FromCartesian(1.0f - 2.0f * (QX * QX + QY * QY), 2.0f * (QW * QX - QY * QZ));
+        const Angle Yaw   = Angle::FromSine(SinY);
+        const Angle Roll  = Angle::FromCartesian(1.0f - 2.0f * (QY * QY + QZ * QZ), 2.0f * (QW * QZ - QX * QY));
 
         return Vector3(Pitch.GetRadians(), Yaw.GetRadians(), Roll.GetRadians());
     }
