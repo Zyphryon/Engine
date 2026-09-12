@@ -251,7 +251,6 @@ inline namespace Base
     /// \return The angle, in radians, within [-π/2, π/2].
     template<IsReal Type>
     ZY_INLINE Type InvSine(Type Ratio)
-        requires <Type>
     {
         ZY_ASSERT(Ratio >= Type(-1) && Ratio <= Type(1), "Ratio out of range [-1,1]");
 
