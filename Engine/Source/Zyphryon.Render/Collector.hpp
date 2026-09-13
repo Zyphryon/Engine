@@ -113,6 +113,16 @@ namespace Render
             mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Mesh, Depth), Entry);
         }
 
+        /// \brief Pushes a command that batches by pipeline and material alone, with no depth or mesh to order by.
+        ///
+        /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
+        /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
+        /// \param Material The material to use for rendering, which may be null for default material.
+        ZY_INLINE void Push(Object Entry, UInt16 Pipeline, UInt16 Material)
+        {
+            Push(Entry, 0.0f, 0, Pipeline, Material);
+        }
+
         /// \brief Drains the open phase, invoking a callback for each batch of commands it collected.
         ///
         /// \param Callback The function to call for each batch of commands, which receives a span of commands.
