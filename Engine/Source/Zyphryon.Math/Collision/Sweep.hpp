@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Manifold.hpp"
-#include "Zyphryon.Math/Geometry/Cylinder.hpp"
+#include "Shape.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -35,7 +35,7 @@ inline namespace Math
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  How far the first volume travels.
+        /// \param Motion  The distance the first volume travels.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Box> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact);
@@ -44,7 +44,7 @@ inline namespace Math
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  How far the first volume travels.
+        /// \param Motion  The distance the first volume travels.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact);
@@ -53,7 +53,7 @@ inline namespace Math
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  How far the first volume travels.
+        /// \param Motion  The distance the first volume travels.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact);
@@ -62,10 +62,19 @@ inline namespace Math
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  How far the first volume travels.
+        /// \param Motion  The distance the first volume travels.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact);
+
+        /// \brief Finds where a moving volume first meets a standing one.
+        ///
+        /// \param First   The volume being moved.
+        /// \param Second  The volume standing in its way.
+        /// \param Motion  The distance the first volume travels.
+        /// \param Contact Receives where the two meet, unchanged when they never do.
+        /// \return `true` if the two meet within the motion, `false` otherwise.
+        static Bool Test(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Ref<Manifold> Contact);
 
     private:
 

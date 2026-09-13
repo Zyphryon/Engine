@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Manifold.hpp"
-#include "Zyphryon.Math/Geometry/Cylinder.hpp"
+#include "Shape.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -59,6 +59,14 @@ inline namespace Math
         /// \param Contact Receives the way out and how far one has sunk in, untouched when the two are clear.
         /// \return `true` if the two overlap, `false` otherwise.
         static Bool Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Ref<Manifold> Contact);
+
+        /// \brief Checks whether two shapes of any kind share a spot, and how one leaves the other by the shortest way.
+        ///
+        /// \param First   The volume to be pushed clear.
+        /// \param Second  The volume it is stuck in.
+        /// \param Contact Receives the way out and how far one has sunk in, untouched when the two are clear.
+        /// \return `true` if the two overlap, `false` otherwise.
+        static Bool Test(ConstRef<Shape> First, ConstRef<Shape> Second, Ref<Manifold> Contact);
 
     private:
 

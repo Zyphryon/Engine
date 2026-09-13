@@ -283,17 +283,14 @@ inline namespace Base
         template<UInt8 Element = 0, typename Callable, typename Type>
         ZY_INLINE static decltype(auto) VisitImpl(UInt8 Index, AnyRef<Callable> Callback, AnyRef<Type> Value)
         {
-            if constexpr (Element < sizeof...(Types))
+            if constexpr (Element + 1 < sizeof...(Types))
             {
-                if (Element == Index)
-                {
-                    return Callback(Value.template Get<typename Identify<Element, Types...>::Type>());
-                }
-                else
+                if (Element != Index)
                 {
                     return VisitImpl<Element + 1, Callable>(Index, Forward<Callable>(Callback), Value);
                 }
             }
+            return Callback(Value.template Get<typename Identify<Element, Types...>::Type>());
         }
 
     public:
