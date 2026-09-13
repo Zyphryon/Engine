@@ -191,6 +191,46 @@ namespace Scene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Archetype Service::CloneArchetype(Archetype Source, Archetype Parent)
+    {
+        ZY_ASSERT(Source.IsValid(), "Source is not a valid archetype");
+
+        // A fresh archetype slot carries nothing yet, which is what a clone wants for its destination.
+        const Entity Copy = Allocate<true>();
+        Source.GetEntity().Clone(Copy);
+
+        // The copy came with its source's place in an assembly; it stands where the caller says instead.
+        Copy.Detach();
+
+        const Archetype Result(Copy);
+
+        // The parts are gathered first, since cloning one allocates and the walk must not see the copies.
+        Sequence<Archetype> Parts;
+
+        Source.GetEntity().Children([&Parts](Entity Part)
+        {
+            Parts.Append(Archetype(Part));
+        });
+
+        for (const Archetype Part : Parts)
+        {
+            CloneArchetype(Part, Result);
+        }
+
+        Result.Invalidate();
+
+        // The copy joins its parent whole, so an instance the parent already has is stood up with every part
+        // of it at once rather than with the top alone.
+        if (Parent.IsValid())
+        {
+            Parent.Attach(Result);
+        }
+        return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::LoadArchetypes(Ref<Reader> Archive)
     {
         const UInt32 Size = Archive.Read<UInt32>();

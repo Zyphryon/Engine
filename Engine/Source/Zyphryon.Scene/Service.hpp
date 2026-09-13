@@ -103,26 +103,22 @@ namespace Scene
             return Actor;
         }
 
-        /// \brief Creates a new archetype entity, optionally cloning an existing one.
+        /// \brief Creates a new archetype entity that carries nothing yet.
         ///
-        /// \param Source An optional archetype to clone from. Must be a valid archetype if provided.
         /// \return The newly created archetype entity.
-        ZY_INLINE Archetype CreateArchetype(Entity Source = Entity())
+        ZY_INLINE Archetype CreateArchetype()
         {
             const Entity Actor = Allocate<true>();
-
-            if (Source.IsValid())
-            {
-                ZY_ASSERT(Source.IsArchetype(), "Source entity is not an archetype");
-
-                Source.Clone(Actor);
-            }
-            else
-            {
-                Actor.Add(EcsPrefab);
-            }
+            Actor.Add(EcsPrefab);
             return Actor;
         }
+
+        /// \brief Copies an archetype, everything it carries and every fixed part beneath it.
+        ///
+        /// \param Source The archetype to copy.
+        /// \param Parent The archetype the copy is attached under, or an invalid one to leave it standing alone.
+        /// \return The copy that was made.
+        Archetype CloneArchetype(Archetype Source, Archetype Parent = Archetype());
 
         /// \brief Looks up a live entity by its unique numeric identifier.
         ///

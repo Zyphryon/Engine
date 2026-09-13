@@ -127,8 +127,9 @@ namespace Scene
         {
             const Ptr<ecs_world_t> World = mHandle.GetWorld();
 
-            for (ecs_iter_t Iterator = ecs_each_id(World, ecs_pair(EcsIsA, mHandle.GetID()));
-                 ecs_each_next(& Iterator);)
+            ecs_iter_t Iterator = ecs_each_id(World, ecs_pair(EcsIsA, mHandle.GetID()));
+
+            while (ecs_each_next(AddressOf(Iterator)))
             {
                 for (SInt32 Element = 0; Element < Iterator.count; ++Element)
                 {
@@ -137,7 +138,7 @@ namespace Scene
             }
         }
 
-        /// \brief Attaches an existing archetype as a fixed part of this one.
+        /// \brief Attaches an existing archetype as a fixed part of this one and stands it under every live instance.
         ///
         /// \param Part The archetype to attach as a fixed child. Allocated by \ref Service::CreateArchetype.
         /// \return This archetype, allowing for method chaining.
@@ -145,6 +146,16 @@ namespace Scene
         {
             Unlock();
             Part.mHandle.Attach(mHandle, Hierarchy::Fixed);
+
+            // A prefab's children reach an instance only as its archetype link is made, so the ones already
+            // standing are given the new part by hand.
+            Children([World = mHandle.GetWorld(), Part](Entity Instance)
+            {
+                Entity(World, ecs_new(World))
+                    .SetAlias(Part.GetAlias())
+                    .SetArchetype(Part.mHandle)
+                    .Attach(Instance, Hierarchy::Fixed);
+            });
             return (* this);
         }
 
@@ -156,6 +167,41 @@ namespace Scene
         {
             Unlock();
             Part.Destruct();
+            return (* this);
+        }
+
+        /// \brief Lifts a fixed part out of this archetype without destroying it, leaving it a root of its own.
+        ///
+        /// \param Part The part archetype to release. Must be a fixed child of this archetype.
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype Release(Archetype Part) const
+        {
+            Unlock();
+            Part.UnlockRecursively();
+            Part.mHandle.Detach();
+            return (* this);
+        }
+
+        /// \brief Gives every live instance the components this archetype and its bases carry that it does not own.
+        ///
+        /// \note An instance only ever receives copies at the moment its archetype link is created.
+        ///
+        /// \return This archetype, allowing for method chaining.
+        ZY_INLINE Archetype Reapply() const
+        {
+            Children([this](Entity Instance)
+            {
+                for (Archetype Base = (* this); Base.IsValid(); Base = Base.GetArchetype())
+                {
+                    Base.mHandle.Each([Instance](Entity Component)
+                    {
+                        if (!Component.IsPair() && Component.IsOverridable() && !Instance.Owns(Component))
+                        {
+                            Instance.Add(Component);
+                        }
+                    });
+                }
+            });
             return (* this);
         }
 
