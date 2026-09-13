@@ -99,6 +99,17 @@ float ZyWrapAngle(float Radians)
     return Radians - ZY_TWO_PI * round(Radians * ZY_INV_TWO_PI);
 }
 
+/// \brief Turns a vector by an angle carried as its cosine and sine, so many turns share the one pair.
+///
+/// \param Vector The vector to turn.
+/// \param Turn   The angle to turn by, as its cosine and sine.
+///
+/// \return The vector, turned.
+vec2 ZyRotate(vec2 Vector, vec2 Turn)
+{
+    return vec2(Vector.x * Turn.x - Vector.y * Turn.y, Vector.x * Turn.y + Vector.y * Turn.x);
+}
+
 /// \brief Normalizes a vector, giving back zero rather than dividing by a length it does not have.
 ///
 /// \param Vector The vector to normalize.
