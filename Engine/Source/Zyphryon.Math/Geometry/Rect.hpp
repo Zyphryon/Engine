@@ -656,12 +656,12 @@ inline namespace Math
 
     public:
 
-        /// \brief Gets the invalid rect.
+        /// \brief Gets a rect that fails every validity check and is the identity of \ref Union.
         ///
         /// \return An invalid rect.
         ZY_INLINE static constexpr AnyRect Invalid()
         {
-            return AnyRect(Type(1), Type(1), Type(0), Type(0));
+            return AnyRect(kMaximum<Type>, kMaximum<Type>, Lowest(), Lowest());
         }
 
         /// \brief Gets an empty rect.
@@ -823,6 +823,24 @@ inline namespace Math
             return AnyRect<Target>(MinimumX, MinimumY, MaximumX, MaximumY);
         }
 
+        /// \brief Gets the cells of a grid a rectangle reaches into, both rectangles inclusive of their maximum.
+        ///
+        /// \note Division rounds toward negative infinity, so a coordinate below zero lands in the cell that holds it.
+        ///
+        /// \param Source The rectangle, whose maximum is the last coordinate inside it.
+        /// \param Cell   The size of one cell along both axes.
+        /// \return The range of cells, whose maximum is the last cell inside it.
+        template<typename Target>
+        ZY_INLINE static constexpr AnyRect<Target> Quantize(AnyRect Source, Type Cell)
+            requires(IsIntegral<Type> && IsIntegral<Target>)
+        {
+            return AnyRect<Target>(
+                Divide<Target>(Source.mMinimumX, Cell),
+                Divide<Target>(Source.mMinimumY, Cell),
+                Divide<Target>(Source.mMaximumX, Cell),
+                Divide<Target>(Source.mMaximumY, Cell));
+        }
+
         /// \brief Anchors a rectangle relative to a pivot point.
         ///
         /// \param Source The source rectangle.
@@ -971,6 +989,34 @@ inline namespace Math
         }
 
     private:
+
+        /// \brief Gets the lowest value the coordinate type can hold.
+        ///
+        /// \return The lowest value.
+        ZY_INLINE static constexpr Type Lowest()
+        {
+            if constexpr (IsReal<Type>)
+            {
+                return -kMaximum<Type>;
+            }
+            else
+            {
+                return kMinimum<Type>;
+            }
+        }
+
+        /// \brief Divides a coordinate by a cell, rounding toward negative infinity.
+        ///
+        /// \param Value The coordinate.
+        /// \param Cell  The size of one cell.
+        /// \return The cell the coordinate falls in.
+        template<typename Target>
+        ZY_INLINE static constexpr Target Divide(Type Value, Type Cell)
+            requires(IsIntegral<Type>)
+        {
+            const Type Quotient = Value / Cell;
+            return static_cast<Target>((Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0))) ? Quotient - Type(1) : Quotient);
+        }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

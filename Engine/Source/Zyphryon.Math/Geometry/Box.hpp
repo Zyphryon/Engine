@@ -665,12 +665,12 @@ inline namespace Math
 
     public:
 
-        /// \brief Gets an invalid box (min > max).
+        /// \brief Gets a box that fails every validity check and is the identity of \ref Union.
         ///
         /// \return An invalid box.
         ZY_INLINE static constexpr AnyBox Invalid()
         {
-            return AnyBox(Type(1), Type(1), Type(1), Type(0), Type(0), Type(0));
+            return AnyBox(kMaximum<Type>, kMaximum<Type>, kMaximum<Type>, Lowest(), Lowest(), Lowest());
         }
 
         /// \brief Gets a zero box with all coordinates set to zero.
@@ -872,6 +872,26 @@ inline namespace Math
                     static_cast<Target>(::Ceil(Source.mMaximum.GetZ()))));
         }
 
+        /// \brief Gets the cells of a grid a box reaches into, both boxes inclusive of their maximum.
+        ///
+        /// \param Source The box, whose maximum is the last coordinate inside it.
+        /// \param Cell   The size of one cell along all three axes.
+        /// \return The range of cells, whose maximum is the last cell inside it.
+        template<typename Target>
+        ZY_INLINE static constexpr AnyBox<Target> Quantize(AnyBox Source, Type Cell)
+            requires(IsIntegral<Type> && IsIntegral<Target>)
+        {
+            return AnyBox<Target>(
+                AnyVector3<Target>(
+                    Divide<Target>(Source.mMinimum.GetX(), Cell),
+                    Divide<Target>(Source.mMinimum.GetY(), Cell),
+                    Divide<Target>(Source.mMinimum.GetZ(), Cell)),
+                AnyVector3<Target>(
+                    Divide<Target>(Source.mMaximum.GetX(), Cell),
+                    Divide<Target>(Source.mMaximum.GetY(), Cell),
+                    Divide<Target>(Source.mMaximum.GetZ(), Cell)));
+        }
+
         /// \brief Gets the AABB that fully contains the given box after transformation.
         ///
         /// \param Source The box to transform.
@@ -939,6 +959,34 @@ inline namespace Math
         }
 
     private:
+
+        /// \brief Gets the lowest value the coordinate type can hold.
+        ///
+        /// \return The lowest value.
+        ZY_INLINE static constexpr Type Lowest()
+        {
+            if constexpr (IsReal<Type>)
+            {
+                return -kMaximum<Type>;
+            }
+            else
+            {
+                return kMinimum<Type>;
+            }
+        }
+
+        /// \brief Divides a coordinate by a cell, rounding toward negative infinity.
+        ///
+        /// \param Value The coordinate.
+        /// \param Cell  The size of one cell.
+        /// \return The cell the coordinate falls in.
+        template<typename Target>
+        ZY_INLINE static constexpr Target Divide(Type Value, Type Cell)
+            requires(IsIntegral<Type>)
+        {
+            const Type Quotient = Value / Cell;
+            return static_cast<Target>((Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0))) ? Quotient - Type(1) : Quotient);
+        }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
