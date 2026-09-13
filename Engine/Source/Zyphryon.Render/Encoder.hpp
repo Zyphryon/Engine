@@ -94,6 +94,16 @@ namespace Render
                 return * this;
             }
 
+            /// \brief Draws through an index stream rather than straight down the vertex buffers.
+            ///
+            /// \param Indices The index stream, whose stride says whether an index is two bytes or four.
+            /// \return This binder, so the bindings of a draw read as one statement.
+            ZY_INLINE Ref<Binder> SetIndices(ConstRef<Graphic::Stream> Indices)
+            {
+                mCommand.Indices = Indices;
+                return * this;
+            }
+
             /// \brief Turns on the features a caller enables itself, beyond the ones its bindings imply.
             ///
             /// \param Variant The bitmask of the features to add.
