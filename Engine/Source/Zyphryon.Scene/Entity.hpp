@@ -1107,6 +1107,60 @@ namespace Scene
             }
         }
 
+        /// \brief Attaches a tag to an entity and every ancestor it hangs from.
+        ///
+        /// \tparam Tag   The tag type to add.
+        /// \param  Actor The entity to attach the tag to, along with everything above it.
+        template<typename Tag>
+        ZY_INLINE static void AddAncestrally(Entity Actor)
+        {
+            const Ptr<ecs_world_t> World = Actor.GetWorld();
+
+            const Bool Deferred = !ecs_is_deferred(World);
+
+            if (Deferred)
+            {
+                ecs_defer_begin(World);
+            }
+
+            for (Entity Cursor = Actor; Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                Cursor.Add<Tag>();
+            }
+
+            if (Deferred)
+            {
+                ecs_defer_end(World);
+            }
+        }
+
+        /// \brief Removes a tag from an entity and every ancestor it hangs from.
+        ///
+        /// \tparam Tag   The tag type to remove.
+        /// \param  Actor The entity to remove the tag from, along with everything above it.
+        template<typename Tag>
+        ZY_INLINE static void RemoveAncestrally(Entity Actor)
+        {
+            const Ptr<ecs_world_t> World = Actor.GetWorld();
+
+            const Bool Deferred = !ecs_is_deferred(World);
+
+            if (Deferred)
+            {
+                ecs_defer_begin(World);
+            }
+
+            for (Entity Cursor = Actor; Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                Cursor.Remove<Tag>();
+            }
+
+            if (Deferred)
+            {
+                ecs_defer_end(World);
+            }
+        }
+
         /// \brief Resolves the topmost ancestor of an entity within a specific hierarchy type.
         ///
         /// \param Actor     The entity to resolve from.
