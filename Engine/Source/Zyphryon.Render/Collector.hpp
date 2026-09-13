@@ -244,7 +244,7 @@ namespace Render
         ///
         /// \param Depth The depth value to convert, which may be any finite floating-point value.
         /// \return The depth field, left-aligned so an unspent budget leaves whole bytes constant.
-        template<UInt32 Bits = 0>
+        template<UInt32 Bits = 24>
         ZY_INLINE static constexpr UInt32 OpaqueDepthToBits(Real32 Depth)
         {
             if constexpr (Bits == 0)
