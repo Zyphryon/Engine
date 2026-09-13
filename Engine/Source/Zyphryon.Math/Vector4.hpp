@@ -512,6 +512,16 @@ inline namespace Math
         /// \return A normalized vector with magnitude 1.0f.
         ZY_INLINE static Vector4 Normalize(Vector4 Vector);
 
+        /// \brief Normalizes the XYZ components of a vector to unit length, scaling W along with them.
+        ///
+        /// \param Vector The vector to normalize.
+        /// \return The vector scaled by the length of its XYZ components.
+        ZY_INLINE static Vector4 Normalize3(Vector4 Vector)
+        {
+            const Real32 Length = Vector.GetXYZ().GetLength();
+            return ::IsAlmostZero(Length) ? Vector : Vector / Length;
+        }
+
         /// \brief Reflects the incident vector over the given normal using XYZ components only (W ignored).
         ///
         /// \param Incident The incoming vector to reflect.

@@ -37,6 +37,9 @@ namespace Render
 
             // Recompute the inverse of the combined view-projection matrix.
             mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);
+
+            // Recompute the frustum the new view-projection closes.
+            mFrustum = Frustum::FromMatrix(mViewProjection);
             return true;
         }
         return false;

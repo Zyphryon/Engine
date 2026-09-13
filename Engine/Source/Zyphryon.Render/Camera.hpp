@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Graphic/Types.hpp"
+#include "Zyphryon.Math/Geometry/Frustum.hpp"
 #include "Zyphryon.Math/Transform.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -94,6 +95,14 @@ namespace Render
         ZY_INLINE ConstRef<Matrix4x4> GetViewProjectionInverse() const
         {
             return mViewProjectionInverse;
+        }
+
+        /// \brief Gets the frustum the view-projection closes, for testing what the camera sees.
+        ///
+        /// \return The frustum, rebuilt by \ref Compute whenever the view-projection changes.
+        ZY_INLINE ConstRef<Frustum> GetFrustum() const
+        {
+            return mFrustum;
         }
 
         /// \brief Gets the camera's right vector.
@@ -640,6 +649,7 @@ namespace Render
         Matrix4x3 mView;
         Matrix4x4 mViewProjection;
         Matrix4x4 mViewProjectionInverse;
+        Frustum   mFrustum;
         Transform mTransform;
     };
 }
