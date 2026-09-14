@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Collector.hpp"
-#include <Zyphryon.Graphic/Service.hpp>
+#include "Encoder.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,23 +21,52 @@
 
 namespace ZyRender
 {
-    /// \brief Gathers the draws of one pass for a \ref Collector to order, and reads each batch back out.
+    /// \brief Gathers the draws of one pass for a \ref Collector to order, and writes each batch it hands back.
     ///
-    /// \tparam Layout  The per-instance data one draw is laid out from, in the layout its technique reads.
-    /// \tparam Command The record a draw's batch is keyed by, which every draw in that batch shares.
-    template<typename Layout, typename Command>
-    class Recorder
+    /// \tparam Layout The per-instance data one draw is laid out from, in the layout its technique reads.
+    template<typename Layout>
+    class Recorder final
     {
     public:
 
-        /// \brief Holds the two halves of one recorded draw, for whoever recorded it to fill.
-        struct Record final
+        /// \brief Holds what every draw of one batch shares, which is what the batch was gathered by.
+        struct Batch final
         {
-            /// The instance the draw is laid out from.
-            Ref<Layout>  Instance;
+            /// The technique the batch is drawn with.
+            ConstPtr<ZyGraphic::Technique> Technique;
 
-            /// The record the draw's batch is keyed by.
-            Ref<Command> Entry;
+            /// The material the batch binds.
+            ConstPtr<ZyGraphic::Material>  Material;
+
+            /// The features the draw turns on beyond the ones its material implies.
+            ZyGraphic::Technique::Key      Variant;
+
+            /// What else keeps the draw out of a batch it does not belong in.
+            UInt16                         Group;
+
+            /// \brief Constructs a batch bound to no technique and no material.
+            ZY_INLINE constexpr Batch()
+                : Technique { nullptr },
+                  Material  { nullptr },
+                  Variant   { 0 },
+                  Group     { 0 }
+            {
+            }
+
+            /// \brief Constructs a batch with everything its draws share.
+            ///
+            /// \param Technique The technique the batch is drawn with.
+            /// \param Material  The material the batch binds.
+            /// \param Variant   The features the draw turns on beyond the ones its material implies.
+            /// \param Group     What else keeps the draw out of a batch it does not belong in.
+            ZY_INLINE constexpr Batch(ConstPtr<ZyGraphic::Technique> Technique,
+                ConstPtr<ZyGraphic::Material> Material, ZyGraphic::Technique::Key Variant, UInt16 Group)
+                : Technique { Technique },
+                  Material  { Material },
+                  Variant   { Variant },
+                  Group     { Group }
+            {
+            }
         };
 
     public:
@@ -47,10 +76,13 @@ namespace ZyRender
         /// \param Service   The service the transient instance streams are allocated from.
         /// \param Collector The collector the draws are ordered and batched by.
         /// \param Kind      The tag every draw is stamped with, so a drain routes its batches back here.
-        ZY_INLINE Recorder(ConstRetainer<ZyGraphic::Service> Service, Ref<Collector> Collector, UInt32 Kind)
+        /// \param Vertices  How many vertices one instance is drawn from, four being the quad most are.
+        ZY_INLINE Recorder(
+            ConstRetainer<ZyGraphic::Service> Service, Ref<Collector> Collector, UInt32 Kind, UInt32 Vertices = 4)
             : mService   { Service },
               mCollector { Collector },
-              mKind      { Kind }
+              mKind      { Kind },
+              mVertices  { Vertices }
         {
         }
 
@@ -60,14 +92,6 @@ namespace ZyRender
         ZY_INLINE void SetTechnique(ConstRetainer<ZyGraphic::Technique> Technique)
         {
             mTechnique = Technique;
-        }
-
-        /// \brief Gets the technique subsequent draws are recorded under.
-        ///
-        /// \return The technique, or nothing while none has been set.
-        ZY_INLINE ConstRetainer<ZyGraphic::Technique> GetTechnique() const
-        {
-            return mTechnique;
         }
 
         /// \brief Gets the service the transient streams are allocated from.
@@ -83,34 +107,69 @@ namespace ZyRender
         /// \return `true` while nothing has been recorded.
         ZY_INLINE Bool IsEmpty() const
         {
-            return mCommands.IsEmpty();
+            return mBatches.IsEmpty();
         }
 
         /// \brief Drops everything recorded so far, and the technique it was recorded under.
         ZY_INLINE void Reset()
         {
-            mCommands.Clear();
+            mBatches.Clear();
             mLayouts.Clear();
             mTechnique = nullptr;
         }
 
-        /// \brief Records one draw and files it with the collector, handing back the halves to fill.
+        /// \brief Records one draw and files it with the collector, handing back the instance to fill.
         ///
         /// \param Order    Where the draw falls in the queue the collector orders.
-        /// \param Key      What keeps the draw out of a batch it does not belong in.
-        /// \param Material The material the batch is grouped by.
-        /// \return The instance the draw is laid out from, and the record its batch is keyed by.
-        ZY_INLINE Record Open(Real32 Order, UInt16 Key, ZyGraphic::Object Material)
+        /// \param Material The material the draw binds, which its batch is gathered by.
+        /// \param Group    What else keeps the draw out of a batch it does not belong in.
+        /// \param Variant  The features the draw turns on beyond the ones its material implies.
+        /// \return The instance the draw is laid out from.
+        ZY_INLINE Ref<Layout> Open(
+            Real32 Order, ConstRef<ZyGraphic::Material> Material, UInt16 Group, ZyGraphic::Technique::Key Variant = 0)
         {
             ZY_ASSERT(mTechnique, "A technique must be set before recording a draw");
 
             // Filed before either half exists, so the slot it is filed under is the one they land in.
-            const Collector::Object Entry(mKind, mCommands.GetSize());
+            mCollector.Push(
+                Collector::Object(mKind, mBatches.GetSize()),
+                Order, 
+                Group, 
+                mTechnique->GetHandle(), 
+                Material.GetHandle());
 
-            mCollector.Push(Entry, Order, Key, mTechnique->GetHandle(), Material);
+            mBatches.Append(Batch(AddressOf(* mTechnique), AddressOf(Material), Variant, Group));
 
-            return Record(mLayouts.Append(), mCommands.Append());
+            return mLayouts.Append();
         }
+
+        /// \brief Gets what every draw of one batch shares.
+        ///
+        /// \param Commands The batch the collector handed back.
+        /// \return The record the batch's first draw was recorded with.
+        ZY_INLINE ConstRef<Batch> GetLeader(ConstSpan<Collector::Command> Commands) const
+        {
+            return mBatches[Commands.GetFront().Entry.Slot];
+        }
+
+        /// \brief Writes one batch as a single instanced draw through the encoder.
+        ///
+        /// \param Encoder  The encoder that builds the resulting draw command.
+        /// \param Commands The batch the collector handed back.
+        /// \param Uniform  The per-instance uniform stream the batch reads, where it reads one at all.
+        ZY_INLINE void Write(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands,
+            ConstRef<ZyGraphic::Stream> Uniform = ZyGraphic::Stream())
+        {
+            ConstRef<Batch> First = GetLeader(Commands);
+
+            const ZyGraphic::Invocation Invocation {
+                .Count     = mVertices,
+                .Instances = static_cast<UInt32>(Commands.GetSize())
+            };
+            Encoder.Draw(* First.Technique, First.Material, Gather(Commands), Uniform, Invocation, First.Variant);
+        }
+
+    private:
 
         /// \brief Gathers one batch's instances into a stream, in the order the collector sorted them into.
         ///
@@ -118,23 +177,13 @@ namespace ZyRender
         /// \return The instance-rate stream the batch draws from.
         ZY_INLINE ZyGraphic::Stream Gather(ConstSpan<Collector::Command> Commands) const
         {
-            ZyGraphic::Transient<Layout> Block
-                = mService->template AllocateInFlightVertices<Layout>(Commands.GetSize());
+            ZyGraphic::Transient<Layout> Block = mService->AllocateInFlightVertices<Layout>(Commands.GetSize());
 
             for (UInt32 Element = 0, Limit = Commands.GetSize(); Element < Limit; ++Element)
             {
                 Block[Element] = mLayouts[Commands[Element].Entry.Slot];
             }
             return Block.GetStream();
-        }
-
-        /// \brief Gets the record a batch is keyed by, which every draw in it shares.
-        ///
-        /// \param Commands The batch the collector handed back.
-        /// \return The record the batch's first draw was recorded with.
-        ZY_INLINE ConstRef<Command> GetLeader(ConstSpan<Collector::Command> Commands) const
-        {
-            return mCommands[Commands.GetFront().Entry.Slot];
         }
 
     private:
@@ -145,8 +194,9 @@ namespace ZyRender
         Retainer<ZyGraphic::Service>   mService;
         Ref<Collector>                 mCollector;
         UInt32                         mKind;
+        UInt32                         mVertices;
         Retainer<ZyGraphic::Technique> mTechnique;
-        Sequence<Command>              mCommands;
+        Sequence<Batch>                mBatches;
         Sequence<Layout>               mLayouts;
     };
 }
