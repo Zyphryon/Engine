@@ -157,14 +157,24 @@ namespace ZyRender
         ConstPtr<ZyGraphic::Material>   Material,
         ConstRef<ZyGraphic::Stream>     Instances,
         ConstRef<ZyGraphic::Stream>     Uniform,
-        ConstRef<ZyGraphic::Invocation> Parameters)
+        ConstRef<ZyGraphic::Invocation> Parameters,
+        ZyGraphic::Technique::Key       Variant)
     {
         Ref<ZyGraphic::Command> Command = mService.AllocateInFlightCommand();
 
-        // The material decides which features turn on, so it selects the variant the draw is compiled for.
+        // The material decides which features turn on, and the caller adds whatever it turns on itself.
         const ConstPtr<Binding> Bound = Material ? AddressOf(Resolve(Technique, * Material)) : nullptr;
 
-        Command.Pipeline = Technique.GetHandle(Bound ? Bound->Variant : 0);
+        const ZyGraphic::Technique::Key Features = (Bound ? Bound->Variant : 0) | Variant;
+
+        Command.Pipeline = Technique.GetHandle(Features);
+
+        // A variant nothing compiled leaves the pipeline unbound, which draws nothing and says nothing.
+        if (Features != 0 && Command.Pipeline == 0)
+        {
+            LOG_W("'{0}' has no variant {1} compiled, so the draw binds nothing",
+                Technique.GetKey().GetUrl(), Features);
+        }
 
         // Bind the per-frame and per-pass uniform blocks.
         Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Frame)] = mFrame;

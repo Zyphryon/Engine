@@ -279,12 +279,14 @@ namespace ZyRender
         /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Uniform    The per-instance uniform stream bound to scope #Instance (empty stream if unused).
         /// \param Parameters The draw parameters.
+        /// \param Variant    The features the caller turns on itself, beyond the ones the material implies.
         void Draw(
             ConstRef<ZyGraphic::Technique>  Technique,
             ConstPtr<ZyGraphic::Material>   Material,
             ConstRef<ZyGraphic::Stream>     Instances,
             ConstRef<ZyGraphic::Stream>     Uniform,
-            ConstRef<ZyGraphic::Invocation> Parameters);
+            ConstRef<ZyGraphic::Invocation> Parameters,
+            ZyGraphic::Technique::Key       Variant = 0);
 
         /// \brief Emits one (optionally instanced) draw without a per-instance uniform stream.
         ///
@@ -292,13 +294,15 @@ namespace ZyRender
         /// \param Material   The material to bind, or `nullptr` for a material-less draw.
         /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Parameters The draw parameters.
+        /// \param Variant    The features the caller turns on itself, beyond the ones the material implies.
         ZY_INLINE void Draw(
             ConstRef<ZyGraphic::Technique>  Technique,
             ConstPtr<ZyGraphic::Material>   Material,
             ConstRef<ZyGraphic::Stream>     Instances,
-            ConstRef<ZyGraphic::Invocation> Parameters)
+            ConstRef<ZyGraphic::Invocation> Parameters,
+            ZyGraphic::Technique::Key       Variant = 0)
         {
-            Draw(Technique, Material, Instances, ZyGraphic::Stream(), Parameters);
+            Draw(Technique, Material, Instances, ZyGraphic::Stream(), Parameters, Variant);
         }
 
         /// \brief Emits one (optionally instanced) material-less draw for a pass-level effect.
