@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Reflection
+namespace ZyReflection
 {
     class Field;
 
@@ -45,17 +45,17 @@ namespace Reflection
     /// \code
     /// // A plain type: every member is read and written through whatever accessor it already has.
     /// ZY_REFLECT(Timer,
-    ///     Reflection::Field::Property<&Timer::mElapsed>("Elapsed").Between(0.0f, 60.0f),
-    ///     Reflection::Field::Property<&Timer::IsPaused, &Timer::SetPaused>("Paused"));
+    ///     ZyReflection::Field::Property<&Timer::mElapsed>("Elapsed").Between(0.0f, 60.0f),
+    ///     ZyReflection::Field::Property<&Timer::IsPaused, &Timer::SetPaused>("Paused"));
     ///
     /// // A type holding another described type, which a walk steps into rather than flattening.
     /// ZY_REFLECT(Profile,
-    ///     Reflection::Field::Property<&Profile::GetName, &Profile::SetName>("Name"),
-    ///     Reflection::Field::Nested<&Profile::GetTimer, &Profile::SetTimer>("Timer"));
+    ///     ZyReflection::Field::Property<&Profile::GetName, &Profile::SetName>("Name"),
+    ///     ZyReflection::Field::Nested<&Profile::GetTimer, &Profile::SetTimer>("Timer"));
     ///
     /// // A value no schema can express, handed on under the tag its own module gave it.
     /// ZY_REFLECT(Palette,
-    ///     Reflection::Field::Custom<&Palette::mGradient>("Gradient", "Palette.Gradient"));
+    ///     ZyReflection::Field::Custom<&Palette::mGradient>("Gradient", "Palette.Gradient"));
     /// \endcode
     /// \brief Concept satisfied when a type lays out its own fields rather than having them laid out for it.
     template<typename Type>
@@ -83,9 +83,9 @@ namespace Reflection
     ///
     /// \code
     /// template<>
-    /// struct Reflection::Classify<Timestamp>
+    /// struct ZyReflection::Classify<Timestamp>
     /// {
-    ///     static constexpr Reflection::Kind kValue = Reflection::Kind::Foreign;
+    ///     static constexpr ZyReflection::Kind kValue = ZyReflection::Kind::Foreign;
     ///     static constexpr Char             kTag[] = "Chrono.Timestamp";
     /// };
     /// \endcode
@@ -344,7 +344,7 @@ namespace Reflection
             }
             else if constexpr (IsEnum<Type>)
             {
-                return static_cast<Payload>(Enum::Cast(Content));
+                return static_cast<Payload>(ZyEnum::Cast(Content));
             }
             else
             {
@@ -441,15 +441,15 @@ namespace Reflection
         template<IsEnum Type>
         constexpr auto BuildOptions()
         {
-            static_assert(Enum::Count<Type>() > 0, "An enumerated field needs an enum with at least one enumerator");
+            static_assert(ZyEnum::Count<Type>() > 0, "An enumerated field needs an enum with at least one enumerator");
 
-            constexpr auto Values = Enum::GetValues<Type>();
+            constexpr auto Values = ZyEnum::GetValues<Type>();
 
-            Array<Option, Enum::Count<Type>()> Result;
+            Array<Option, ZyEnum::Count<Type>()> Result;
 
             for (UInt Index = 0; Index < Values.GetSize(); ++Index)
             {
-                Result[Index] = Option(Enum::GetName(Values[Index]), static_cast<SInt64>(Enum::Cast(Values[Index])));
+                Result[Index] = Option(ZyEnum::GetName(Values[Index]), static_cast<SInt64>(ZyEnum::Cast(Values[Index])));
             }
             return Result;
         }

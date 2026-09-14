@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Gathers channels authored apart into the one bitmap that carries them together.
     class Compositor final

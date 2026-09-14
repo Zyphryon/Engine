@@ -23,10 +23,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace ZyContent
 {
     /// \brief Central coordinator for content I/O, caching, and lifecycle management.
-    class Service final : public Engine::Subsystem, public Engine::Locator<Job::Service>
+    class Service final : public ZyEngine::Subsystem, public ZyEngine::Locator<ZyJob::Service>
     {
     public:
 
@@ -113,7 +113,7 @@ namespace Content
         /// \param Key      The URI key identifying the file to read.
         /// \param Lane     The lane the callback runs on.
         /// \param Callback The callback invoked with the file's contents if the read succeeds.
-        void Read(ConstRef<Uri> Key, Job::Lane Lane, AnyRef<Mount::OnRead> Callback);
+        void Read(ConstRef<Uri> Key, ZyJob::Lane Lane, AnyRef<Mount::OnRead> Callback);
 
         /// \brief Writes the specified bytes to a file at the given URI, creating or overwriting it as necessary.
         ///

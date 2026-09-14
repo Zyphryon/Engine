@@ -18,12 +18,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Log   // TODO: Proper implementation
+namespace ZyLog   // TODO: Proper implementation
 {
     namespace Detail
     {
         template<typename ...Arguments>
-        ZY_INLINE Text Print(AnyRef<Format::Pattern<>> Format, AnyRef<Arguments>... Parameters)
+        ZY_INLINE Text Print(AnyRef<ZyFormat::Pattern<>> Format, AnyRef<Arguments>... Parameters)
         {
             thread_local String<4096> Buffer;
 
@@ -43,17 +43,17 @@ namespace Log   // TODO: Proper implementation
 
 /// \def LOG_D
 /// \brief Logs a debug-level message.
-#define LOG_D(Message, ...) Log::Write(0, Log::Detail::Print(Message ## _Text, ##__VA_ARGS__))
+#define LOG_D(Message, ...) ::ZyLog::Write(0, ::ZyLog::Detail::Print(Message ## _Text, ##__VA_ARGS__))
 
 /// \def LOG_I
 /// \brief Logs an info-level message.
-#define LOG_I(Message, ...) Log::Write(1, Log::Detail::Print(Message ## _Text, ##__VA_ARGS__))
+#define LOG_I(Message, ...) ::ZyLog::Write(1, ::ZyLog::Detail::Print(Message ## _Text, ##__VA_ARGS__))
 
 /// \def LOG_W
 /// \brief Logs a warning-level message.
-#define LOG_W(Message, ...) Log::Write(2, Log::Detail::Print(Message ## _Text, ##__VA_ARGS__))
+#define LOG_W(Message, ...) ::ZyLog::Write(2, ::ZyLog::Detail::Print(Message ## _Text, ##__VA_ARGS__))
 
 /// \def LOG_E
 /// \brief Logs an error-level message.
-#define LOG_E(Message, ...) Log::Write(3, Log::Detail::Print(Message ## _Text, ##__VA_ARGS__))
+#define LOG_E(Message, ...) ::ZyLog::Write(3, ::ZyLog::Detail::Print(Message ## _Text, ##__VA_ARGS__))
 }

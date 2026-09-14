@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene
+namespace ZyScene
 {
     /// \brief Represents an entity within the ECS (Entity-Component System).
     ///
@@ -962,6 +962,25 @@ namespace Scene
             return Entity(mWorld, ecs_get_target(mWorld, mHandle, EcsIsA, 0));
         }
 
+        /// \brief Gets the whole path the entity is named by, every scope it stands under included.
+        ///
+        /// \return The path, or an empty string when the entity carries no name.
+        ZY_INLINE Str64 GetPath() const
+        {
+            Str64 Result;
+
+            if (const Ptr<Char> Path = ecs_get_path_w_sep(mWorld, 0, mHandle, "::", nullptr))
+            {
+                const Text Content = Describe(Path);
+                ZY_ASSERT(Content.GetSize() <= Result.GetCapacity(), "An entity's path outgrows what holds it");
+
+                Result = Content;
+
+                ecs_os_free(Path);
+            }
+            return Result;
+        }
+
         /// \brief Sets the internal name of this entity, used for lookups and identification.
         ///
         /// \param Name The name to assign.
@@ -1215,7 +1234,7 @@ namespace Scene
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Scene.Entity", .Flat = true };
+            return ZyReflection::Presentation { .Name = "Scene.Entity", .Flat = true };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -1223,7 +1242,7 @@ namespace Scene
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::Property<&Entity::mHandle>("Id"));
+            return Array(ZyReflection::Field::Property<&Entity::mHandle>("Id"));
         }
 
     private:

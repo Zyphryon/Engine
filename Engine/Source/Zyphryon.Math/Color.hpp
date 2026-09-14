@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a color with red, green, blue, and alpha channels.
     template<typename Type>
@@ -384,8 +384,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
-            Format::Processor<Output>::Format(Buffer, kPattern, GetRed(), GetGreen(), GetBlue(), GetAlpha());
+            static constexpr ZyFormat::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, GetRed(), GetGreen(), GetBlue(), GetAlpha());
         }
 
     private:
@@ -778,7 +778,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            Reflection::Presentation Presentation;
+            ZyReflection::Presentation Presentation;
 
             if      constexpr (IsAnyOf<Type, Real32>)
             {

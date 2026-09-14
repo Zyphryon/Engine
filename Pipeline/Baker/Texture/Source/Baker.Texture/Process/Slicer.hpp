@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Cuts one atlas into the bitmaps a cube map or an array texture is assembled from.
     class Slicer final

@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::UDP
+namespace ZyNetwork::UDP
 {
     /// \brief Number of bytes the envelope takes at the front of every datagram.
     inline constexpr UInt kEnvelope  = 1;

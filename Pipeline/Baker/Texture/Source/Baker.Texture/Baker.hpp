@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Bakes source images into the engine's native texture format.
     class Baker final
@@ -39,7 +39,7 @@ namespace Pipeline::Baker::Texture
         /// \brief Constructs a baker with every importer the build enables already registered.
         ///
         /// \param Scheduler The pool the slices are baked on, which must outlive the baker.
-        explicit Baker(Ref<Job::Service> Scheduler);
+        explicit Baker(Ref<ZyJob::Service> Scheduler);
 
         /// \brief Registers an importer under each extension it accepts.
         ///
@@ -97,7 +97,7 @@ namespace Pipeline::Baker::Texture
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Job::Service> mScheduler;
-        Registry          mRegistry;
+        Ref<ZyJob::Service> mScheduler;
+        Registry            mRegistry;
     };
 }

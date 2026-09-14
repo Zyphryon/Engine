@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace ZyInput
 {
     /// \brief Represents a standard keyboard input device and its state.
     class Keyboard final
@@ -26,7 +26,7 @@ namespace Input
     public:
 
         /// \brief The total number of supported keys.
-        constexpr static UInt32 kMaxKeys = Enum::Count<Key>();
+        constexpr static UInt32 kMaxKeys = ZyEnum::Count<Key>();
 
     public:
 
@@ -50,7 +50,7 @@ namespace Input
         /// \return `true` if the key was pressed this frame, otherwise `false`.
         ZY_INLINE Bool IsKeyPressed(Key Key) const
         {
-            return !mLastKeys.Test(Enum::Cast(Key)) && mThisKeys.Test(Enum::Cast(Key));
+            return !mLastKeys.Test(ZyEnum::Cast(Key)) && mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
         /// \brief Checks if a key is currently held down.
@@ -59,7 +59,7 @@ namespace Input
         /// \return `true` if the key is held, otherwise `false`.
         ZY_INLINE Bool IsKeyHeld(Key Key) const
         {
-            return mThisKeys.Test(Enum::Cast(Key));
+            return mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
         /// \brief Checks if a key was released during the current frame.
@@ -68,7 +68,7 @@ namespace Input
         /// \return `true` if the key was released this frame, otherwise `false`.
         ZY_INLINE Bool IsKeyReleased(Key Key) const
         {
-            return mLastKeys.Test(Enum::Cast(Key)) && !mThisKeys.Test(Enum::Cast(Key));
+            return mLastKeys.Test(ZyEnum::Cast(Key)) && !mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
     private:

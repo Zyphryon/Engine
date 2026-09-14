@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::TCP
+namespace ZyNetwork::TCP
 {
     /// \brief Represents an endpoint that accepts peers over a stream, and owns every peer it accepted.
     class Server final : public Channel

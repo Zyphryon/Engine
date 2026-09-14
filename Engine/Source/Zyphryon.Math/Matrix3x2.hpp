@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents an affine 2D transformation matrix, stored as the two non-constant rows of a 2x3.
     class Matrix3x2 final
@@ -192,8 +192,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<5> kPattern("({0}, {1})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1]);
+            static constexpr ZyFormat::Pattern<5> kPattern("({0}, {1})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1]);
         }
 
     public:
@@ -427,7 +427,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Matrix3x2" };
+            return ZyReflection::Presentation { .Name = "Math.Matrix3x2" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -435,7 +435,7 @@ inline namespace Math
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::List<&Matrix3x2::mColumns>("Columns"));
+            return Array(ZyReflection::Field::List<&Matrix3x2::mColumns>("Columns"));
         }
 
     private:

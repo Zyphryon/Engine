@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Sound
+namespace ZyPipeline::Baker::Sound
 {
     /// \brief Runs the baker over a command line.
     ///

@@ -38,9 +38,9 @@ FUNCTION(ZyApplyModules TARGET)
         ${HEADERS}
         #include \"${TARGET}.Modules.hpp\"
 
-        Engine::Modules Runtime::ZyRegisterModules()
+        ZyEngine::Modules ZyRuntime::ZyRegisterModules()
         {
-            Engine::Modules Modules;
+            ZyEngine::Modules Modules;
 
             ${CLASSES}
 
@@ -52,7 +52,7 @@ FUNCTION(ZyApplyModules TARGET)
 
         #include <Zyphryon.Runtime/Entry.hpp>
 
-        Engine::Modules Runtime::ZyRegisterModules();
+        ZyEngine::Modules ZyRuntime::ZyRegisterModules();
         ")
 
     TARGET_LINK_LIBRARIES(${TARGET} PRIVATE ${LIBRARIES})

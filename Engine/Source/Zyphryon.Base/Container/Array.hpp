@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A fixed-size contiguous sequence container holding exactly \p Count elements of \p Type.
     template<typename Type, UInt Count>
@@ -141,7 +141,7 @@ inline namespace Base
         /// \brief Orders the elements in place by ascending value.
         ZY_INLINE constexpr void Sort()
         {
-            Base::Sort(GetData(), GetSize());
+            ZyBase::Sort(GetData(), GetSize());
         }
 
         /// \brief Orders the elements in place by a comparison of your own.
@@ -150,7 +150,7 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE constexpr void Sort(AnyRef<Callable> Comparator)
         {
-            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
+            ZyBase::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
         }
 
         /// \brief Gets the element at the specified index.

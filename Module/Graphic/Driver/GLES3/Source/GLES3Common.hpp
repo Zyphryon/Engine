@@ -25,7 +25,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Describes how a \ref VertexFormat feeds a generic vertex attribute.
     struct GLES3Attribute final
@@ -66,7 +66,7 @@ namespace Graphic
             static_cast<GLenum>(GL_VERTEX_SHADER),      // ShaderStage::Vertex
             static_cast<GLenum>(GL_FRAGMENT_SHADER),    // ShaderStage::Fragment
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Storage into the matching GLES 3.0 buffer usage hint.
@@ -77,7 +77,7 @@ namespace Graphic
             static_cast<GLenum>(GL_DYNAMIC_DRAW),   // Storage::Dynamic
             static_cast<GLenum>(GL_STREAM_DRAW),    // Storage::Stream
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref BlendFactor into the matching GLES 3.0 enumeration.
@@ -99,7 +99,7 @@ namespace Graphic
             static_cast<GLenum>(0x8589),                        // BlendFactor::Src1Alpha
             static_cast<GLenum>(0x88FB),                        // BlendFactor::OneMinusSrc1Alpha
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref BlendFunction into the matching GLES 3.0 enumeration.
@@ -112,7 +112,7 @@ namespace Graphic
             static_cast<GLenum>(GL_MIN),                        // BlendFunction::Min
             static_cast<GLenum>(GL_MAX),                        // BlendFunction::Max
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Cull into the matching GLES 3.0 face enumeration.
@@ -123,7 +123,7 @@ namespace Graphic
             static_cast<GLenum>(GL_BACK),                       // Cull::Back
             static_cast<GLenum>(GL_FRONT),                      // Cull::Front
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Primitive into the matching GLES 3.0 topology enumeration.
@@ -136,7 +136,7 @@ namespace Graphic
             static_cast<GLenum>(GL_TRIANGLES),                  // Primitive::TriangleList
             static_cast<GLenum>(GL_TRIANGLE_STRIP),             // Primitive::TriangleStrip
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Usage into the matching GLES 3.0 topology enumeration.
@@ -171,7 +171,7 @@ namespace Graphic
             static_cast<GLenum>(GL_LESS),                       // TestCondition::Less
             static_cast<GLenum>(GL_LEQUAL),                     // TestCondition::LessEqual
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TestAction into the matching GLES 3.0 stencil operation enumeration.
@@ -187,7 +187,7 @@ namespace Graphic
             static_cast<GLenum>(GL_INCR_WRAP),                  // TestAction::Increment
             static_cast<GLenum>(GL_INCR),                       // TestAction::IncrementSaturate
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TextureAddress into the matching GLES 3.0 wrap enumeration.
@@ -199,7 +199,7 @@ namespace Graphic
             static_cast<GLenum>(GL_REPEAT),                     // TextureAddress::Repeat
             static_cast<GLenum>(GL_MIRRORED_REPEAT),            // TextureAddress::Mirror
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Resolves the GLES 3.0 minification filter for a \ref TextureFilter.
@@ -217,7 +217,7 @@ namespace Graphic
             static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic8x
             static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic16x
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Resolves the GLES 3.0 magnification filter for a \ref TextureFilter.
@@ -260,7 +260,7 @@ namespace Graphic
             { 1.0f, 1.0f, 1.0f, 1.0f },     // OpaqueWhite
             { 0.0f, 0.0f, 0.0f, 0.0f },     // TransparentBlack
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TextureFormat into its GLES 3.0 internal/external/type triple.

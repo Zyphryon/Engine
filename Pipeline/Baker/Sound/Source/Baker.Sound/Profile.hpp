@@ -18,19 +18,19 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Sound
+namespace ZyPipeline::Baker::Sound
 {
     /// \brief The settings that steer one bake.
     struct Profile final
     {
         /// The encoding the samples are stored with.
-        Audio::Encoding Encoding = Audio::Encoding::Linear;
+        ZyAudio::Encoding Encoding = ZyAudio::Encoding::Linear;
 
         /// The rate opus targets across every channel, in bits per second; the other encodings ignore it.
-        SInt32          Bitrate  = 96000;
+        SInt32            Bitrate  = 96000;
 
         /// Whether the payload is LZ4-compressed when that shrinks the output.
-        Bool            Compress = true;
+        Bool              Compress = true;
 
         /// \brief Derives a profile from a parsed command line.
         ///
@@ -39,8 +39,8 @@ namespace Pipeline::Baker::Sound
         static Profile From(ConstRef<Environment> Environment)
         {
             Profile Result;
-            Result.Encoding = Environment.Contains("opus")  ? Audio::Encoding::Opus
-                            : Environment.Contains("adpcm") ? Audio::Encoding::Adaptive : Audio::Encoding::Linear;
+            Result.Encoding = Environment.Contains("opus")  ? ZyAudio::Encoding::Opus
+                            : Environment.Contains("adpcm") ? ZyAudio::Encoding::Adaptive : ZyAudio::Encoding::Linear;
             Result.Bitrate  = Environment.GetNumber<SInt32>("bitrate", Result.Bitrate);
             Result.Compress = Environment.GetBool("compressed", Result.Compress);
             return Result;

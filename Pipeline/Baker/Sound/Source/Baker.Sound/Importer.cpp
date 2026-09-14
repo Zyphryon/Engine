@@ -25,14 +25,14 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Sound
+namespace ZyPipeline::Baker::Sound
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     static Sample Resample(AnyRef<Blob> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames)
     {
-        if (Frequency == Audio::kMixerFrequency)
+        if (Frequency == ZyAudio::kMixerFrequency)
         {
             return Sample(Move(Samples), Frequency, Stride, Frames);
         }
@@ -40,8 +40,8 @@ namespace Pipeline::Baker::Sound
         const ConstSpan Source(Samples.GetData<Real32>(), Frames * Stride);
 
         UInt64 Produced = 0;
-        Blob   Data     = Audio::Resampler::Convert(Source, Stride, Frames, Frequency, Audio::kMixerFrequency, Produced);
-        return Sample(Move(Data), Audio::kMixerFrequency, Stride, Produced);
+        Blob   Data     = ZyAudio::Resampler::Convert(Source, Stride, Frames, Frequency, ZyAudio::kMixerFrequency, Produced);
+        return Sample(Move(Data), ZyAudio::kMixerFrequency, Stride, Produced);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

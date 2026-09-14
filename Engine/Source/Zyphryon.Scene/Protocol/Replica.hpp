@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     /// \brief Represents the identity an entity carries on the wire.
     class Replica final
@@ -36,7 +36,7 @@ namespace Scene::Protocol
         ///
         /// \param Identifier The identifier the entity is known by on both sides.
         /// \param Owner      The peer that owns the entity, which receives what is addressed to the owner alone.
-        ZY_INLINE explicit Replica(UInt64 Identifier, Network::Connection Owner = Network::Connection())
+        ZY_INLINE explicit Replica(UInt64 Identifier, ZyNetwork::Connection Owner = ZyNetwork::Connection())
             : mIdentifier { Identifier },
               mOwner      { Owner }
         {
@@ -53,7 +53,7 @@ namespace Scene::Protocol
         /// \brief Sets the peer that owns the entity.
         ///
         /// \param Owner The peer, or an invalid connection when nobody owns it.
-        ZY_INLINE void SetOwner(Network::Connection Owner)
+        ZY_INLINE void SetOwner(ZyNetwork::Connection Owner)
         {
             mOwner = Owner;
         }
@@ -61,7 +61,7 @@ namespace Scene::Protocol
         /// \brief Gets the peer that owns the entity.
         ///
         /// \return The peer, or an invalid connection when nobody owns it.
-        ZY_INLINE Network::Connection GetOwner() const
+        ZY_INLINE ZyNetwork::Connection GetOwner() const
         {
             return mOwner;
         }
@@ -98,7 +98,7 @@ namespace Scene::Protocol
                 Archive.Serialize(mIdentifier);
 
                 // An owner is a live connection, so whatever was written has nobody on the other end of it now.
-                mOwner = Network::Connection();
+                mOwner = ZyNetwork::Connection();
             }
         }
 
@@ -128,8 +128,8 @@ namespace Scene::Protocol
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt64              mIdentifier;
-        Network::Connection mOwner;
+        UInt64                mIdentifier;
+        ZyNetwork::Connection mOwner;
     };
 
     /// \brief Represents a group of entities peers subscribe to as one, which is every replica beneath it.

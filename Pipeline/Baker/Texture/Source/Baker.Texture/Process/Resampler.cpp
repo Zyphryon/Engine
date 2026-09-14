@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -57,7 +57,7 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static auto Pick(ConstRef<Graphic::TextureMetadata> Format)
+    static auto Pick(ConstRef<ZyGraphic::TextureMetadata> Format)
     {
         const UInt32 Channel = Clamp<UInt32>(Format.Components, 1, kMaxComponents) - 1;
         const UInt32 Slot = Channel * 2 + (Format.IsSRGB ? 1 : 0);
@@ -98,12 +98,12 @@ namespace Pipeline::Baker::Texture
 
     Bitmap Resampler::Resize(ConstRef<Bitmap> Source, UInt16 Width, UInt16 Height)
     {
-        const Graphic::TextureFormat   Format   = Source.GetFormat();
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureFormat   Format   = Source.GetFormat();
+        const ZyGraphic::TextureMetadata Metadata = ZyGraphic::GetTextureMetadata(Format);
 
         if (Metadata.IsCompressed() || Metadata.IsPacked || Metadata.Components == 0)
         {
-            LOG_E("Texture: '{0}' must have its texels unpacked before it can be filtered", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' must have its texels unpacked before it can be filtered", ZyEnum::GetName(Format));
 
             return Bitmap();
         }
@@ -115,7 +115,7 @@ namespace Pipeline::Baker::Texture
             return Bitmap();
         }
 
-        Blob Output = Blob::Allocate<Byte>(Graphic::GetLevelSize(Format, Width, Height, 0));
+        Blob Output = Blob::Allocate<Byte>(ZyGraphic::GetLevelSize(Format, Width, Height, 0));
 
         if (Source.GetWidth() == Width && Source.GetHeight() == Height)
         {

@@ -3,7 +3,7 @@
 # Materializes every resource directory registered with ZyRegisterResources() into a consumer application,
 # generating <target>.Embedded.{hpp,cpp} that exposes:
 #
-#   void ZyRegisterEmbedded(Ref<Content::Service> Service);
+#   void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
 #
 # Usage:
 #   ZyApplyResources(<target>)
@@ -23,7 +23,7 @@ FUNCTION(ZyApplyResources TARGET)
 
 #include <Zyphryon.Content/Service.hpp>
 
-void ZyRegisterEmbedded(Ref<Content::Service> Service);
+void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
 ]=])
 
     # Compile every file's bytes into the binary and serve them from a Memory mount.
@@ -65,7 +65,7 @@ void ZyRegisterEmbedded(Ref<Content::Service> Service);
 
         # Nothing registered: emit a no-op so the application still links.
         SET(SOURCE "#include \"${TARGET}.Embedded.hpp\"\n\n")
-        STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<Content::Service> Service)\n{\n}\n")
+        STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<ZyContent::Service> Service)\n{\n}\n")
 
     ELSE()
 
@@ -73,11 +73,11 @@ void ZyRegisterEmbedded(Ref<Content::Service> Service);
         STRING(APPEND SOURCE "#include \"${TARGET}.Embedded.hpp\"\n\n")
         STRING(APPEND SOURCE "namespace\n{\n")
         STRING(APPEND SOURCE "${BLOBS}\n")
-        STRING(APPEND SOURCE "    static const Content::Memory::Entry kEmbedded[] =\n    {\n")
+        STRING(APPEND SOURCE "    static const ZyContent::Memory::Entry kEmbedded[] =\n    {\n")
         STRING(APPEND SOURCE "${ENTRIES}")
         STRING(APPEND SOURCE "    };\n}\n\n")
-        STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<Content::Service> Service)\n{\n")
-        STRING(APPEND SOURCE "    Service.AddMount(\"Embedded\", Retainer<Content::Memory>::Create(ConstSpan<Content::Memory::Entry>(kEmbedded)));\n")
+        STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<ZyContent::Service> Service)\n{\n")
+        STRING(APPEND SOURCE "    Service.AddMount(\"Embedded\", Retainer<ZyContent::Memory>::Create(ConstSpan<ZyContent::Memory::Entry>(kEmbedded)));\n")
         STRING(APPEND SOURCE "}\n")
 
     ENDIF()

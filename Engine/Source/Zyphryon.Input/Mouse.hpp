@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace ZyInput
 {
     /// \brief Represents a standard mouse input device.
     class Mouse final
@@ -26,7 +26,7 @@ namespace Input
     public:
 
         /// \brief The total number of supported mouse buttons.
-        constexpr static UInt32 kMaxButtons = Enum::Count<Button>();
+        constexpr static UInt32 kMaxButtons = ZyEnum::Count<Button>();
 
     public:
 
@@ -91,7 +91,7 @@ namespace Input
         /// \return `true` if the button transitioned from released to pressed this frame, otherwise `false`.
         ZY_INLINE Bool IsButtonPressed(Button Button) const
         {
-            return !mLastButtons.Test(Enum::Cast(Button)) && mThisButtons.Test(Enum::Cast(Button));
+            return !mLastButtons.Test(ZyEnum::Cast(Button)) && mThisButtons.Test(ZyEnum::Cast(Button));
         }
 
         /// \brief Checks if a mouse button is currently held down.
@@ -100,7 +100,7 @@ namespace Input
         /// \return `true` if the button is currently pressed, otherwise `false`.
         ZY_INLINE Bool IsButtonHeld(Button Button) const
         {
-            return mThisButtons.Test(Enum::Cast(Button));
+            return mThisButtons.Test(ZyEnum::Cast(Button));
         }
 
         /// \brief Checks if a mouse button was released during the current frame.
@@ -109,7 +109,7 @@ namespace Input
         /// \return `true` if the button transitioned from pressed to released this frame, otherwise `false`.
         ZY_INLINE Bool IsButtonReleased(Button Button) const
         {
-            return mLastButtons.Test(Enum::Cast(Button)) && !mThisButtons.Test(Enum::Cast(Button));
+            return mLastButtons.Test(ZyEnum::Cast(Button)) && !mThisButtons.Test(ZyEnum::Cast(Button));
         }
 
     private:

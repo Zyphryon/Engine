@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network
+namespace ZyNetwork
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -147,7 +147,7 @@ namespace Network
 
         const Retainer<Service> Self(this);
 
-        GetHost().GetService<Job::Service>()->Dispatch(Job::Lane::IO, [Self, Link, Origin, Transport, Listener, Server]
+        GetHost().GetService<ZyJob::Service>()->Dispatch(ZyJob::Lane::IO, [Self, Link, Origin, Transport, Listener, Server]
         {
             Executor::Request Entry;
             Entry.Link      = Link;

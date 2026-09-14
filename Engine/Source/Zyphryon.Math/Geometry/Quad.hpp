@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a generic 2D quadrilateral defined by four corner points.
     class Quad final
@@ -322,7 +322,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Quad" };
+            return ZyReflection::Presentation { .Name = "Math.Quad" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -330,7 +330,7 @@ inline namespace Math
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::List<&Quad::mCorners>("Corners"));
+            return Array(ZyReflection::Field::List<&Quad::mCorners>("Corners"));
         }
 
     private:

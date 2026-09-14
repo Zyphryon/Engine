@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Reflection
+namespace ZyReflection
 {
     /// \brief Represents the fields of one type, in the order they were declared.
     class Schema final
@@ -158,7 +158,7 @@ namespace Reflection
 /// \param ...  The fields of the type, in the order they are shown.
 #define ZY_REFLECT(Type, ...)                             \
     template<>                                            \
-    struct Reflection::Describe<Type> final               \
+    struct ZyReflection::Describe<Type> final               \
     {                                                     \
         static constexpr Array kFields = { __VA_ARGS__ }; \
     }
@@ -172,9 +172,9 @@ namespace Reflection
 /// \param Name The tag whoever edits the value matches on.
 #define ZY_REFLECT_CLASSIFIED(Type, Name)                                     \
     template<>                                                                \
-    struct Reflection::Classify<Type> final                                   \
+    struct ZyReflection::Classify<Type> final                                   \
     {                                                                         \
-        static constexpr Reflection::Kind kValue = Reflection::Kind::Foreign; \
+        static constexpr ZyReflection::Kind kValue = ZyReflection::Kind::Foreign; \
                                                                               \
         static constexpr Char             kTag[] = Name;                      \
     }

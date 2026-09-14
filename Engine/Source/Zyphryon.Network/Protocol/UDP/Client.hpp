@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::UDP
+namespace ZyNetwork::UDP
 {
     /// \brief Represents a connection over datagrams, pointed at the one peer it speaks to.
     class Client final : public Channel

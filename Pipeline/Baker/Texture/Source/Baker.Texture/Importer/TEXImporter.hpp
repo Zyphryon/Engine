@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Represents an \ref Importer that reads a baked texture back into the slices it was written from.
     class TEXImporter final : public Importer

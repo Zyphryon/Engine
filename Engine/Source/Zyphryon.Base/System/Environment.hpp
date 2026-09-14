@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A parsed command line, exposed as named switches plus ordered operands.
     ///
@@ -123,7 +123,7 @@ inline namespace Base
         {
             const Text Value = GetText(Name, Text::Empty());
 
-            return Value.IsEmpty() ? Default : Enum::Cast<Type>(Value, Default);
+            return Value.IsEmpty() ? Default : ZyEnum::Cast<Type>(Value, Default);
         }
 
         /// \brief Gets the operands, in the order they appeared.

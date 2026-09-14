@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace ZyAudio
 {
     /// \brief Runtime state for a single active playback instance, owned by the mixer's voice pool.
     struct Voice final

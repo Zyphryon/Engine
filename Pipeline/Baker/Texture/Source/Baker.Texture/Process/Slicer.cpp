@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,13 +25,13 @@ namespace Pipeline::Baker::Texture
     // Every cut addresses whole texels of one level, whichever shape it takes, so both share this gate.
     static Bool Accepts(ConstRef<Bitmap> Source)
     {
-        const Graphic::TextureFormat   Format   = Source.GetFormat();
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureFormat   Format   = Source.GetFormat();
+        const ZyGraphic::TextureMetadata Metadata = ZyGraphic::GetTextureMetadata(Format);
 
         // Cutting addresses whole texels, which a block-compressed or bit-packed surface does not have.
         if (Metadata.IsCompressed() || Metadata.IsPacked || Metadata.Components == 0)
         {
-            LOG_E("Texture: '{0}' must have its texels unpacked before it can be cut", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' must have its texels unpacked before it can be cut", ZyEnum::GetName(Format));
 
             return false;
         }
@@ -164,7 +164,7 @@ namespace Pipeline::Baker::Texture
             return Sequence<Bitmap>();
         }
 
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Source.GetFormat());
+        const ZyGraphic::TextureMetadata Metadata = ZyGraphic::GetTextureMetadata(Source.GetFormat());
 
         const UInt32 Width  = Source.GetWidth()  / Layout.Columns;
         const UInt32 Height = Source.GetHeight() / Layout.Rows;
@@ -213,7 +213,7 @@ namespace Pipeline::Baker::Texture
             return Bitmap();
         }
 
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Source.GetFormat());
+        const ZyGraphic::TextureMetadata Metadata = ZyGraphic::GetTextureMetadata(Source.GetFormat());
 
         const UInt32 Stride = Metadata.BitsPerPixel / 8;
         const UInt32 Sweep  = Source.GetWidth() * Stride;

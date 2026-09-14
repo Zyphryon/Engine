@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a generic vector with (x, y) components.
     template<typename Type>
@@ -582,8 +582,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<5> kPattern("({0}, {1})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mX, mY);
+            static constexpr ZyFormat::Pattern<5> kPattern("({0}, {1})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mX, mY);
         }
 
     public:
@@ -804,7 +804,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            Reflection::Presentation Presentation;
+            ZyReflection::Presentation Presentation;
 
             if      constexpr (IsAnyOf<Type, Real32>)
             {

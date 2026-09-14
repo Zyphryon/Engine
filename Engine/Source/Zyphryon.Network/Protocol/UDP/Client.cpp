@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::UDP
+namespace ZyNetwork::UDP
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -157,7 +157,7 @@ namespace Network::UDP
         {
             mAnswering = false;
 
-            Data[0] = Enum::Cast(Envelope::Answer);
+            Data[0] = ZyEnum::Cast(Envelope::Answer);
             Blit(Data + kEnvelope, sizeof(mCookie), AddressOf(mCookie));
 
             Await(Operation::Send, Watcher.Send(mSocket, mLink, ConstSpan(Data, kChallenge)));
@@ -166,7 +166,7 @@ namespace Network::UDP
 
         if (const UInt32 Size = mSession.Build(Time, Span(Data + kEnvelope, mTransmit.GetCapacity() - kEnvelope)))
         {
-            Data[0] = Enum::Cast(Envelope::Data);
+            Data[0] = ZyEnum::Cast(Envelope::Data);
 
             Await(Operation::Send, Watcher.Send(mSocket, mLink, ConstSpan(Data, kEnvelope + Size)));
         }

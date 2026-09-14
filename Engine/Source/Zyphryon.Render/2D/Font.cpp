@@ -16,12 +16,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Font::Font(AnyRef<Content::Uri> Key)
+    Font::Font(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) }
     {
     }
@@ -42,9 +42,9 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Font::OnCreate(Ref<Engine::Subsystem::Host> Host)
+    Bool Font::OnCreate(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        for (ConstRef<Retainer<Graphic::Material>> Material : mAtlases)
+        for (ConstRef<Retainer<ZyGraphic::Material>> Material : mAtlases)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive && !Material->OnCreate(Host))
             {
@@ -57,9 +57,9 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Font::OnDelete(Ref<Engine::Subsystem::Host> Host)
+    void Font::OnDelete(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        for (ConstRef<Retainer<Graphic::Material>> Material : mAtlases)
+        for (ConstRef<Retainer<ZyGraphic::Material>> Material : mAtlases)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {

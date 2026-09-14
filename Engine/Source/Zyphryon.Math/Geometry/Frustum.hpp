@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents the six planes a view-projection closes the world off with, for asking what lies inside them.
     class Frustum final
@@ -49,7 +49,7 @@ inline namespace Math
         /// \return The plane, its normal in the first three components and its distance in the fourth.
         ZY_INLINE Vector4 GetPlane(Side Plane) const
         {
-            return mPlanes[Enum::Cast(Plane)];
+            return mPlanes[ZyEnum::Cast(Plane)];
         }
 
         /// \brief Checks whether a point lies inside every plane.
@@ -83,6 +83,6 @@ inline namespace Math
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Vector4, Enum::Count<Side>()> mPlanes;
+        Array<Vector4, ZyEnum::Count<Side>()> mPlanes;
     };
 }

@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Enum
+namespace ZyEnum
 {
 /// \def ZY_DEFINE_BITWISE_ENUM_TYPE
 /// \brief Defines bitwise operators for the specified enum type with the given access level.

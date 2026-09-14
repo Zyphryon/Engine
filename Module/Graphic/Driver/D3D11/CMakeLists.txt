@@ -55,4 +55,4 @@ ZyApplyOptions(${PROJECT_NAME})
 ## Registration
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "D3D11Module.hpp" CLASS "Graphic::D3D11Module")
+ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "D3D11Module.hpp" CLASS "ZyGraphic::D3D11Module")

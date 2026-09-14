@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     namespace
     {
@@ -85,7 +85,7 @@ inline namespace Base
 
         do
         {
-            Base::Blit(Cursor, kLZ4WildStride, Source);
+            ZyBase::Blit(Cursor, kLZ4WildStride, Source);
             Cursor += kLZ4WildStride;
             Source += kLZ4WildStride;
         }
@@ -99,7 +99,7 @@ inline namespace Base
     {
         if (Offset == 1)
         {
-            Base::Fill(Destination, Length, * Match);
+            ZyBase::Fill(Destination, Length, * Match);
             return;
         }
 
@@ -109,9 +109,9 @@ inline namespace Base
         do
         {
             const UInt32 Available = static_cast<UInt32>(Cursor - Match);
-            const UInt32 Chunk     = Base::Min(Available, static_cast<UInt32>(Finish - Cursor));
+            const UInt32 Chunk     = ZyBase::Min(Available, static_cast<UInt32>(Finish - Cursor));
 
-            Base::Blit(Cursor, Chunk, Match);
+            ZyBase::Blit(Cursor, Chunk, Match);
             Cursor += Chunk;
         }
         while (Cursor < Finish);
@@ -123,7 +123,7 @@ inline namespace Base
     static UInt32 LZ4Read32(ConstPtr<Byte> Pointer)
     {
         UInt32 Value;
-        Base::Blit(AddressOf(Value), sizeof(Value), Pointer);
+        ZyBase::Blit(AddressOf(Value), sizeof(Value), Pointer);
         return Value;
     }
 

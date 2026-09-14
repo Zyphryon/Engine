@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Font
+namespace ZyPipeline::Baker::Font
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -40,7 +40,7 @@ namespace Pipeline::Baker::Font
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Baker::Baker(Ref<Job::Service> Scheduler)
+    Baker::Baker(Ref<ZyJob::Service> Scheduler)
         : mScheduler { Scheduler }
     {
         Register(Retainer<STBImporter>::Create());
@@ -134,7 +134,7 @@ namespace Pipeline::Baker::Font
             }
 
             // A source may narrow what it answers for, which is how a fallback gives its icons and nothing else.
-            Pipeline::Baker::Font::Profile Asked = Profile;
+            ZyPipeline::Baker::Font::Profile Asked = Profile;
 
             if (!Each.Charset.IsEmpty())
             {
@@ -188,7 +188,7 @@ namespace Pipeline::Baker::Font
 
         const ConstSpan<Typeface::Glyph> Outlines = Face.GetGlyphs();
 
-        mScheduler.Parallel(Job::Lane::Compute, static_cast<UInt32>(Outlines.GetSize()), [&](UInt32 Start, UInt32 End)
+        mScheduler.Parallel(ZyJob::Lane::Compute, static_cast<UInt32>(Outlines.GetSize()), [&](UInt32 Start, UInt32 End)
         {
             for (UInt32 Index = Start; Index < End; ++Index)
             {
@@ -213,7 +213,7 @@ namespace Pipeline::Baker::Font
         }
 
         // The glyph table is the engine's own type, so the loader reads back exactly what is written here.
-        Render::Font::Glyphs Glyphs;
+        ZyRender::Font::Glyphs Glyphs;
         Glyphs.Reserve(Cells.GetSize());
 
         const Real32 Extent = static_cast<Real32>(Sheet.Side);
@@ -222,7 +222,7 @@ namespace Pipeline::Baker::Font
         {
             // Value-initialized because the glyph table is written to disk as one dense block, so any padding
             // the compiler leaves between the fields would otherwise put indeterminate bytes in the file.
-            Render::Font::Glyph Glyph { };
+            ZyRender::Font::Glyph Glyph { };
             Glyph.Page = static_cast<UInt16>(Entry.Page);
 
             // A blank carries no field, and the canvas skips a zero-size rectangle when drawing text.
@@ -252,15 +252,15 @@ namespace Pipeline::Baker::Font
         // from whatever cell happens to sit at the same index.
         for (ConstRef<Typeface::Glyph> Glyph : Face.GetGlyphs())
         {
-            if (const Ptr<Render::Font::Glyph> Entry = Glyphs.Find(Glyph.Codepoint))
+            if (const Ptr<ZyRender::Font::Glyph> Entry = Glyphs.Find(Glyph.Codepoint))
             {
                 Entry->Advance = Glyph.Advance;
             }
         }
 
-        Render::Font::Kerning Kerning = Face.GetKerning();
+        ZyRender::Font::Kerning Kerning = Face.GetKerning();
 
-        Render::Font::Metrics Metrics;
+        ZyRender::Font::Metrics Metrics;
         Metrics.Size               = Profile.Size;
         Metrics.Distance           = Profile.Range;
         Metrics.Ascender           = Face.GetMetrics().Ascender;

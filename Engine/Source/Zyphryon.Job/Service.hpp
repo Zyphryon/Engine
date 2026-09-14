@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Job
+namespace ZyJob
 {
     /// \brief A lane-based job scheduler with dependency tracking and helping waits.
-    class Service final : public Engine::Subsystem
+    class Service final : public ZyEngine::Subsystem
     {
     public:
 
@@ -45,7 +45,7 @@ namespace Job
         /// \return The number of worker threads, or `0` for \ref Lane::Main and on platforms without threads.
         ZY_INLINE UInt32 GetConcurrency(Lane Target) const
         {
-            return mExecutors[Enum::Cast(Target)].GetConcurrency();
+            return mExecutors[ZyEnum::Cast(Target)].GetConcurrency();
         }
 
         /// \brief Submits a job that nothing will wait on.
@@ -140,7 +140,7 @@ namespace Job
         /// \return The executor that lane queues on.
         ZY_INLINE Ref<Executor> GetExecutor(Lane Target)
         {
-            return mExecutors[Enum::Cast(Target)];
+            return mExecutors[ZyEnum::Cast(Target)];
         }
 
         /// \brief Maps a lane onto the one that actually runs it, collapsing to \ref Lane::Main without threads.

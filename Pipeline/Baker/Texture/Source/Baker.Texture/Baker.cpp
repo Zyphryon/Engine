@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -41,7 +41,7 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Baker::Baker(Ref<Job::Service> Scheduler)
+    Baker::Baker(Ref<ZyJob::Service> Scheduler)
         : mScheduler { Scheduler }
     {
         Register(Retainer<STBImporter>::Create());
@@ -135,7 +135,7 @@ namespace Pipeline::Baker::Texture
             {
                 return Blob();
             }
-            return Exporter::Export(mScheduler, Move(Faces), Graphic::TextureLayout::TextureCube, Profile);
+            return Exporter::Export(mScheduler, Move(Faces), ZyGraphic::TextureLayout::TextureCube, Profile);
         }
 
         if (Profile.Slice.IsValid())
@@ -148,7 +148,7 @@ namespace Pipeline::Baker::Texture
             {
                 return Blob();
             }
-            return Exporter::Export(mScheduler, Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
+            return Exporter::Export(mScheduler, Move(Slices), ZyGraphic::TextureLayout::Texture2DArray, Profile);
         }
 
         // A lone slice keeps the layout it was decoded as, so a one-layer array does not come back as a plain 2D.
@@ -244,7 +244,7 @@ namespace Pipeline::Baker::Texture
 
             Slices.Append(Move(Frame));
         }
-        return Exporter::Export(mScheduler, Move(Slices), Graphic::TextureLayout::Texture2DArray, Profile);
+        return Exporter::Export(mScheduler, Move(Slices), ZyGraphic::TextureLayout::Texture2DArray, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents an affine 3D transformation matrix, stored as the three non-constant rows of a 3x4.
     class ZY_ALIGN(16) Matrix4x3 final
@@ -355,8 +355,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<7> kPattern("({0}, {1}, {2})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1], mColumns[2]);
+            static constexpr ZyFormat::Pattern<7> kPattern("({0}, {1}, {2})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1], mColumns[2]);
         }
 
     public:
@@ -674,7 +674,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Matrix4x3" };
+            return ZyReflection::Presentation { .Name = "Math.Matrix4x3" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -682,7 +682,7 @@ inline namespace Math
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::List<&Matrix4x3::mColumns>("Columns"));
+            return Array(ZyReflection::Field::List<&Matrix4x3::mColumns>("Columns"));
         }
 
     private:

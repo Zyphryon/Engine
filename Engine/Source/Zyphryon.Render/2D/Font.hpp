@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief A font resource containing glyph metrics, kerning data, and a material for rendering text.
-    class Font final : public Content::AbstractResource<Font>
+    class Font final : public ZyContent::AbstractResource<Font>
     {
     public:
 
@@ -87,14 +87,14 @@ namespace Render
         using Kerning = Table<UInt64, Real32>;
 
         /// \brief Sequence holding one material per atlas page, indexed by \c Glyph::Page.
-        using Atlases = Sequence<Retainer<Graphic::Material>>;
+        using Atlases = Sequence<Retainer<ZyGraphic::Material>>;
 
     public:
 
         /// \brief Constructs a font resource with the given content key.
         ///
         /// \param Key The URI key identifying this font resource.
-        explicit Font(AnyRef<Content::Uri> Key);
+        explicit Font(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Initializes the font with metrics, glyph data, kerning pairs, and a material.
         ///
@@ -149,7 +149,7 @@ namespace Render
         ///
         /// \param Page The atlas page, as carried by \c Glyph::Page.
         /// \return The material containing that page's atlas texture.
-        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt32 Page = 0) const
+        ZY_INLINE ConstRetainer<ZyGraphic::Material> GetMaterial(UInt32 Page = 0) const
         {
             ZY_ASSERT(Page < mAtlases.GetSize(), "Font atlas page is out of bounds");
 
@@ -235,11 +235,11 @@ namespace Render
 
     public:
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override;
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override;
 
     private:
 

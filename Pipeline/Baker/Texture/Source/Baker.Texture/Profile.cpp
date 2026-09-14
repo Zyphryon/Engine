@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -60,7 +60,7 @@ namespace Pipeline::Baker::Texture
     Profile Profile::From(ConstRef<Environment> Environment)
     {
         Profile Result;
-        Result.Format   = Environment.GetEnum<Graphic::TextureFormat>("format", Result.Format);
+        Result.Format   = Environment.GetEnum<ZyGraphic::TextureFormat>("format", Result.Format);
         Result.Mipmaps  = Environment.GetBool("mipmaps",    Result.Mipmaps);
         Result.Linear   = Environment.GetBool("linear",     Result.Linear);
         Result.Compress = Environment.GetBool("compressed", Result.Compress);

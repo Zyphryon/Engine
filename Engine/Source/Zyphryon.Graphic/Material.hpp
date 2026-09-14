@@ -18,10 +18,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Represents a material resource combining textures, samplers, and uniform data.
-    class Material final : public Content::AbstractResource<Material>
+    class Material final : public ZyContent::AbstractResource<Material>
     {
     public:
 
@@ -53,7 +53,7 @@ namespace Graphic
         /// \brief Constructs a material resource with the given content key.
         ///
         /// \param Key The unique content key identifying this material.
-        explicit Material(AnyRef<Content::Uri> Key);
+        explicit Material(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Gets the resource handle for this material.
         ///
@@ -141,20 +141,20 @@ namespace Graphic
         /// \param Service The graphic service used to destroy the resource.
         void Unload(Ref<Service> Service);
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             return Upload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             Unload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
-        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
+        void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
     private:
 

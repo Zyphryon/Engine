@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Sound
+namespace ZyPipeline::Baker::Sound
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -42,7 +42,7 @@ namespace Pipeline::Baker::Sound
             Delta  = -Delta;
         }
 
-        SInt32 Size  = Audio::Codec::Adaptive::kStepTable[Step];
+        SInt32 Size  = ZyAudio::Codec::Adaptive::kStepTable[Step];
         SInt32 Total = Size >> 3;
 
         if (Delta >= Size)
@@ -70,7 +70,7 @@ namespace Pipeline::Baker::Sound
         }
 
         Predictor = Clamp<SInt32>(Predictor + ((Nibble & 0x8) ? -Total : Total), -32768, 32767);
-        Step      = Clamp<SInt32>(Step + Audio::Codec::Adaptive::kStepIndex[Nibble], 0, Audio::Codec::Adaptive::kStepLimit);
+        Step      = Clamp<SInt32>(Step + ZyAudio::Codec::Adaptive::kStepIndex[Nibble], 0, ZyAudio::Codec::Adaptive::kStepLimit);
         return Nibble;
     }
 
@@ -97,8 +97,8 @@ namespace Pipeline::Baker::Sound
     Blob Exporter::EncodeAdaptive(ConstRef<Sample> Source)
     {
         // The block geometry is the decoder's, so the two stay in step by construction rather than by comment.
-        constexpr UInt32 kBlockFrames = Audio::Codec::Adaptive::kBlockFrames;
-        constexpr UInt32 kBlockStride = Audio::Codec::Adaptive::kBlockStride;
+        constexpr UInt32 kBlockFrames = ZyAudio::Codec::Adaptive::kBlockFrames;
+        constexpr UInt32 kBlockStride = ZyAudio::Codec::Adaptive::kBlockStride;
 
         const ConstSpan<Real32> Samples = Source.GetSamples();
         const UInt16            Stride  = Source.GetStride();
@@ -112,7 +112,7 @@ namespace Pipeline::Baker::Sound
 
         // The step index carries across blocks, which keeps a block boundary from resetting the quantiser to
         // its coarsest setting; the preamble records whatever it reached so the decoder resumes from it.
-        Array<SInt32, Audio::kMixerStride> Steps { };
+        Array<SInt32, ZyAudio::kMixerStride> Steps { };
 
         for (UInt64 Block = 0; Block < Blocks; ++Block)
         {
@@ -244,7 +244,7 @@ namespace Pipeline::Baker::Sound
             return Blob();
         }
 
-        if (Source.GetStride() > Audio::kMixerStride)
+        if (Source.GetStride() > ZyAudio::kMixerStride)
         {
             LOG_E("Audio: {0} channels exceeds what the mixer consumes", Source.GetStride());
             return Blob();
@@ -254,13 +254,13 @@ namespace Pipeline::Baker::Sound
 
         switch (Profile.Encoding)
         {
-        case Audio::Encoding::Adaptive:
+        case ZyAudio::Encoding::Adaptive:
             Payload = EncodeAdaptive(Source);
             break;
-        case Audio::Encoding::Opus:
+        case ZyAudio::Encoding::Opus:
             Payload = EncodeOpus(Source, Profile.Bitrate);
             break;
-        case Audio::Encoding::Linear:
+        case ZyAudio::Encoding::Linear:
             Payload = EncodeLinear(Source);
             break;
         }
@@ -276,7 +276,7 @@ namespace Pipeline::Baker::Sound
         Writer Output(Length + 32);
         Output.Write<UInt32>(kMagic);
         Output.Write<UInt16>(kVersion);
-        Output.Write<Audio::Encoding>(Profile.Encoding);
+        Output.Write<ZyAudio::Encoding>(Profile.Encoding);
         Output.Write<UInt16>(Source.GetStride());
         Output.Write<UInt32>(Source.GetFrequency());
         Output.Write<UInt64>(Source.GetFrames());

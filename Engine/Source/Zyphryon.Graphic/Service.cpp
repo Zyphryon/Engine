@@ -22,7 +22,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -99,9 +99,9 @@ namespace Graphic
                 mSnapshot.Tearless = Config.Tearless;
 
                 LOG_I("Graphics: Using {0}", mDescription.Backend);
-                LOG_I("Graphics: Detected Tier ({0})", Enum::GetName(mDescription.Tier));
+                LOG_I("Graphics: Detected Tier ({0})", ZyEnum::GetName(mDescription.Tier));
 
-                for (ConstRef<Graphic::Adapter> Endpoint : mDescription.Adapters)
+                for (ConstRef<ZyGraphic::Adapter> Endpoint : mDescription.Adapters)
                 {
                     LOG_I("Graphics: Found GPU '{0}'", Endpoint.Description);
                     LOG_I("Graphics:     Memory {0} (video)", Endpoint.Memory);
@@ -537,7 +537,7 @@ namespace Graphic
 
     void Service::RegisterBuiltinLoaders()
     {
-        ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
+        ConstRetainer<ZyContent::Service> Content = GetHost().GetService<ZyContent::Service>();
 
         Content->AddLoader(MSHLoader::kTypes, Retainer<MSHLoader>::Create());
         Content->AddLoader(MTLLoader::kTypes, Retainer<MTLLoader>::Create());

@@ -88,4 +88,4 @@ ZyApplyOptions(${PROJECT_NAME})
 ## Registration
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "GLES3Module.hpp" CLASS "Graphic::GLES3Module")
+ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "GLES3Module.hpp" CLASS "ZyGraphic::GLES3Module")

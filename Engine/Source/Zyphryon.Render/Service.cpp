@@ -21,12 +21,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Service::Service(Ref<Engine::Subsystem::Host> Host)
+    Service::Service(Ref<ZyEngine::Subsystem::Host> Host)
         : Subsystem { Host }
     {
         RegisterBuiltinLoaders();
@@ -37,7 +37,7 @@ namespace Render
 
     void Service::RegisterBuiltinLoaders()
     {
-        ConstRetainer<Content::Service> Content = GetHost().GetService<Content::Service>();
+        ConstRetainer<ZyContent::Service> Content = GetHost().GetService<ZyContent::Service>();
         Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
         Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
         Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());

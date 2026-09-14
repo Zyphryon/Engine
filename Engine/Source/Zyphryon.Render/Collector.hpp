@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Collects rendering commands for efficient submission to the graphics service.
     class Collector final
@@ -135,7 +135,7 @@ namespace Render
             }
 
             const UInt32 Size = mQueue.GetSize();
-            const UInt64 Mask = kGroupMask[Enum::Cast(mPhase)];
+            const UInt64 Mask = kGroupMask[ZyEnum::Cast(mPhase)];
 
             // The sort overwrites every element it lands on, so the scratch only ever needs raw capacity.
             if (mScratch.GetSize() < Size * sizeof(Command))
@@ -275,11 +275,11 @@ namespace Render
         ///
         /// \param Technique The technique whose fixed-function blend state decides the queue.
         /// \return The queue the technique's draws are collected into.
-        ZY_INLINE static Priority GetPriority(ConstRef<Graphic::Technique> Technique)
+        ZY_INLINE static Priority GetPriority(ConstRef<ZyGraphic::Technique> Technique)
         {
-            ConstRef<Graphic::States> States = Technique.GetDescription().Base.States;
+            ConstRef<ZyGraphic::States> States = Technique.GetDescription().Base.States;
 
-            const Bool Opaque = (States.BlendSrcColor == Graphic::BlendFactor::One && States.BlendDstColor == Graphic::BlendFactor::Zero);
+            const Bool Opaque = (States.BlendSrcColor == ZyGraphic::BlendFactor::One && States.BlendDstColor == ZyGraphic::BlendFactor::Zero);
             return Opaque ? Priority::Opaque : Priority::Transparent;
         }
 

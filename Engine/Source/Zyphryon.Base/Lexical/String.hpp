@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A mutable string container with optional inline storage.
     ///
@@ -456,11 +456,11 @@ inline namespace Base
         /// \param Pattern    The format pattern string.
         /// \param Parameters The arguments to format into the pattern.
         template<typename... Arguments>
-        ZY_INLINE constexpr void Format(Format::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
+        ZY_INLINE constexpr void Format(ZyFormat::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
         {
             Clear();
 
-            Format::Processor<String>::Format(* this, Pattern, Parameters...);
+            ZyFormat::Processor<String>::Format(* this, Pattern, Parameters...);
 
             Seal();
         }
@@ -472,11 +472,11 @@ inline namespace Base
         template<Symbol Pattern, typename... Arguments>
         ZY_INLINE constexpr void Format(AnyRef<Arguments>... Parameters)
         {
-            constexpr Format::Pattern<> kPattern(Pattern);
+            constexpr ZyFormat::Pattern<> kPattern(Pattern);
 
             Clear();
 
-            Format::Processor<String>::Format(* this, kPattern, Parameters...);
+            ZyFormat::Processor<String>::Format(* this, kPattern, Parameters...);
 
             Seal();
         }
@@ -490,7 +490,7 @@ inline namespace Base
         {
             if (const UInt Size = GetSize(); Size > 0)
             {
-                return Base::Hash(mBuffer.GetData(), Size);
+                return ZyBase::Hash(mBuffer.GetData(), Size);
             }
             return 0;
         }
@@ -776,7 +776,7 @@ inline namespace Base
         /// \param Parameters The arguments to format into the pattern.
         /// \return A string with the formatted text.
         template<typename... Arguments>
-        ZY_INLINE static constexpr String Print(Format::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
+        ZY_INLINE static constexpr String Print(ZyFormat::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
         {
             String Buffer;
             Buffer.Format(Pattern, Parameters...);

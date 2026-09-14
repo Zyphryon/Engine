@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -101,7 +101,7 @@ namespace Pipeline::Baker::Texture
 
         // An unrecognized `--format` resolves to `Unspecified`, which is indistinguishable from omitting the
         // switch, so reject it rather than letting a typo silently fall back to inference.
-        if (Parsed.Contains("format") && Settings.Format == Graphic::TextureFormat::Unspecified)
+        if (Parsed.Contains("format") && Settings.Format == ZyGraphic::TextureFormat::Unspecified)
         {
             LOG_E("Texture: '{0}' is not a recognized format name", Parsed.GetText("format", Text::Empty()));
             return 1;
@@ -149,8 +149,8 @@ namespace Pipeline::Baker::Texture
 
     static SInt32 Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments)
     {
-        Engine::Subsystem::Host      Host;
-        const Retainer<Job::Service> Scheduler = Host.Register<Job::Service>();
+        ZyEngine::Subsystem::Host      Host;
+        const Retainer<ZyJob::Service> Scheduler = Host.Register<ZyJob::Service>();
 
         Environment Parsed;
         Parsed.Parse(Count, Arguments);
@@ -167,8 +167,8 @@ namespace Pipeline::Baker::Texture
 
 int main(int Count, char * Arguments[])
 {
-    const SInt32 Result = Pipeline::Baker::Texture::Run(static_cast<UInt>(Count), Arguments);
+    const SInt32 Result = ZyPipeline::Baker::Texture::Run(static_cast<UInt>(Count), Arguments);
 
-    Log::Flush();
+    ZyLog::Flush();
     return Result;
 }

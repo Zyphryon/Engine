@@ -21,10 +21,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace ZyAudio
 {
     /// \brief High-level audio service that owns the mixer and its output device driver.
-    class Service final : public Engine::Subsystem
+    class Service final : public ZyEngine::Subsystem
     {
     public:
 

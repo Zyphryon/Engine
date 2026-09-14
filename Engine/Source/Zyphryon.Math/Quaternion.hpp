@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a quaternion for 3D rotations.
     class ZY_ALIGN(16) Quaternion final
@@ -349,8 +349,8 @@ inline namespace Math
             Angle Rotation;
             const Vector3 Axis = GetAxis(Rotation);
 
-            static constexpr Format::Pattern<5> kPattern("(Axis: {0} Angle: {1})");
-            Format::Processor<Output>::Format(Buffer, kPattern, Axis, Rotation);
+            static constexpr ZyFormat::Pattern<5> kPattern("(Axis: {0} Angle: {1})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, Axis, Rotation);
         }
 
     public:
@@ -370,7 +370,7 @@ inline namespace Math
         /// \return The conjugated quaternion.
         ZY_INLINE static Quaternion Conjugate(Quaternion Quaternion)
         {
-            return Math::Quaternion(Quaternion.mData * Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
+            return ZyMath::Quaternion(Quaternion.mData * Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
         }
 
         /// \brief Invert the given quaternion.
@@ -382,7 +382,7 @@ inline namespace Math
             const Real32 LengthSquared = Quaternion.GetLengthSquared();
             ZY_ASSERT(LengthSquared > kEpsilon<Real32>, "Cannot invert a zero-length quaternion");
 
-            return Math::Quaternion(Conjugate(Quaternion).mData / LengthSquared);
+            return ZyMath::Quaternion(Conjugate(Quaternion).mData / LengthSquared);
         }
 
         /// \brief Computes the dot product of two quaternions.
@@ -469,7 +469,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Quaternion" };
+            return ZyReflection::Presentation { .Name = "Math.Quaternion" };
         }
 
     private:

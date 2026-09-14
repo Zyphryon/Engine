@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Specifies the graphic configuration constants.
     enum : UInt32
@@ -441,8 +441,8 @@ namespace Graphic
     enum class Visibility : UInt8
     {
         None     = 0,                                       ///< Reached by no stage; the binding is inert.
-        Vertex   = 1 << Enum::Cast(ShaderStage::Vertex),    ///< Reached by the vertex stage.
-        Fragment = 1 << Enum::Cast(ShaderStage::Fragment),  ///< Reached by the fragment stage.
+        Vertex   = 1 << ZyEnum::Cast(ShaderStage::Vertex),    ///< Reached by the vertex stage.
+        Fragment = 1 << ZyEnum::Cast(ShaderStage::Fragment),  ///< Reached by the fragment stage.
         All      = Vertex | Fragment,                       ///< Reached by every stage.
     };
     ZY_DEFINE_BITWISE_ENUM(Visibility)
@@ -755,10 +755,10 @@ namespace Graphic
     struct Program final
     {
         /// The shader modules for each pipeline stage (vertex, fragment, etc.).
-        Array<Blob, Enum::Count<ShaderStage>()> Modules;
+        Array<Blob, ZyEnum::Count<ShaderStage>()> Modules;
 
         /// Preprocessor macros used during shader compilation.
-        Sequence<Macro>                         Macros;
+        Sequence<Macro>                           Macros;
     };
 
     /// \brief Describes a single resource binding declared by a shader program.
@@ -787,7 +787,7 @@ namespace Graphic
         Attributes                               Attributes;
 
         /// The resource bindings declared by the program, indexed by the frequency that rebinds them.
-        Array<Bindings, Enum::Count<Frequency>()> Bindings;
+        Array<Bindings, ZyEnum::Count<Frequency>()> Bindings;
     };
 
     /// \brief Describes the fixed-function GPU state for a rendering pipeline.

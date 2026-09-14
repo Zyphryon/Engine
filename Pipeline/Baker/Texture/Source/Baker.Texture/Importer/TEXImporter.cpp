@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,8 +50,8 @@ namespace Pipeline::Baker::Texture
             return Surface();
         }
 
-        const Graphic::TextureLayout Layout  = Input.Read<Graphic::TextureLayout>();
-        const Graphic::TextureFormat Format  = Input.Read<Graphic::TextureFormat>();
+        const ZyGraphic::TextureLayout Layout  = Input.Read<ZyGraphic::TextureLayout>();
+        const ZyGraphic::TextureFormat Format  = Input.Read<ZyGraphic::TextureFormat>();
         const UInt16                 Width   = Input.Read<UInt16>();
         const UInt16                 Height  = Input.Read<UInt16>();
         const UInt16                 Layers  = Input.Read<UInt16>();
@@ -68,18 +68,18 @@ namespace Pipeline::Baker::Texture
 
         // Cropping, filtering and transcoding each address one texel at a time, which a block-compressed or
         // bit-packed payload would only expose through a decoder this baker does not carry.
-        const Graphic::TextureMetadata Description = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureMetadata Description = ZyGraphic::GetTextureMetadata(Format);
 
         if (Description.IsCompressed() || Description.IsPacked || !Description.IsSampler())
         {
-            LOG_E("Texture: '{0}' stores no plain interleaved texels, so it cannot be read back", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' stores no plain interleaved texels, so it cannot be read back", ZyEnum::GetName(Format));
 
             return Surface();
         }
 
         // The payload is gathered slice-major, each slice holding its whole chain, so the two counts in the
         // header fix exactly how long it must be.
-        const UInt32 Stride = Graphic::GetLevelOffset(Format, Width, Height, Levels);
+        const UInt32 Stride = ZyGraphic::GetLevelOffset(Format, Width, Height, Levels);
 
         if (static_cast<UInt64>(Stride) * Layers != Size)
         {
@@ -109,7 +109,7 @@ namespace Pipeline::Baker::Texture
 
         // Every stage after an importer takes a single level, so each slice is read back at its base level
         // alone and the chain above it is filtered again when the bake asks for one.
-        const UInt32 Length = Graphic::GetLevelSize(Format, Width, Height, 0);
+        const UInt32 Length = ZyGraphic::GetLevelSize(Format, Width, Height, 0);
 
         Surface Result;
         Result.Layout = Layout;

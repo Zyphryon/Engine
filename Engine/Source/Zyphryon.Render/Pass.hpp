@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief A render pass that executes a sequence of draw commands through an encoder.
     class Pass
@@ -32,44 +32,44 @@ namespace Render
         struct ColorAttachment final
         {
             /// The slot of the target written by this attachment, or \ref kNone for the display surface.
-            UInt32          Target  = kNone;
+            UInt32            Target  = kNone;
 
             /// The slot of the target the multisampled result is resolved into, or \ref kNone when not multisampled.
-            UInt32          Resolve = kNone;
+            UInt32            Resolve = kNone;
 
             /// The operation applied when the pass opens.
-            Graphic::Action Load    = Graphic::Action::Clear;
+            ZyGraphic::Action Load    = ZyGraphic::Action::Clear;
 
             /// The operation applied when the pass closes.
-            Graphic::Action Store   = Graphic::Action::Store;
+            ZyGraphic::Action Store   = ZyGraphic::Action::Store;
 
-            /// The color this attachment is cleared to (used when \ref Load is \ref Graphic::Action::Clear).
-            Color           Tint    = Color(0.0f, 0.0f, 0.0f, 1.0f);
+            /// The color this attachment is cleared to (used when \ref Load is \ref ZyGraphic::Action::Clear).
+            Color             Tint    = Color(0.0f, 0.0f, 0.0f, 1.0f);
         };
 
         /// \brief A declared depth/stencil attachment.
         struct DepthAttachment final
         {
             /// The slot of the depth/stencil target, or \ref kNone when the pass has no depth attachment.
-            UInt32          Target       = kNone;
+            UInt32            Target       = kNone;
 
             /// The operation applied to the depth buffer when the pass opens.
-            Graphic::Action DepthLoad    = Graphic::Action::Clear;
+            ZyGraphic::Action DepthLoad    = ZyGraphic::Action::Clear;
 
             /// The operation applied to the depth buffer when the pass closes.
-            Graphic::Action DepthStore   = Graphic::Action::Store;
+            ZyGraphic::Action DepthStore   = ZyGraphic::Action::Store;
 
             /// The operation applied to the stencil buffer when the pass opens.
-            Graphic::Action StencilLoad  = Graphic::Action::Clear;
+            ZyGraphic::Action StencilLoad  = ZyGraphic::Action::Clear;
 
             /// The operation applied to the stencil buffer when the pass closes.
-            Graphic::Action StencilStore = Graphic::Action::Store;
+            ZyGraphic::Action StencilStore = ZyGraphic::Action::Store;
 
-            /// The value the depth buffer is cleared to (used when \ref DepthLoad is \ref Graphic::Action::Clear).
-            Real32          Depth        = 1.0f;
+            /// The value the depth buffer is cleared to (used when \ref DepthLoad is \ref ZyGraphic::Action::Clear).
+            Real32            Depth        = 1.0f;
 
-            /// The value the stencil buffer is cleared to (used when \ref StencilLoad is \ref Graphic::Action::Clear).
-            UInt8           Stencil      = 0;
+            /// The value the stencil buffer is cleared to (used when \ref StencilLoad is \ref ZyGraphic::Action::Clear).
+            UInt8             Stencil      = 0;
         };
 
     public:
@@ -170,9 +170,9 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Bool                                                mActive;
-        Bool                                                mInline;
-        Sequence<ColorAttachment, Graphic::kMaxAttachments> mColorAttachment;
-        DepthAttachment                                     mDepthAttachment;
+        Bool                                                  mActive;
+        Bool                                                  mInline;
+        Sequence<ColorAttachment, ZyGraphic::kMaxAttachments> mColorAttachment;
+        DepthAttachment                                       mDepthAttachment;
     };
 }

@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief A decoded source bitmap, handed from an importer to the exporter.
     class Bitmap final
@@ -26,7 +26,7 @@ namespace Pipeline::Baker::Texture
     public:
 
         /// \brief The engine texture format describing how this bitmap's pixels are laid out.
-        using Format = Graphic::TextureFormat;
+        using Format = ZyGraphic::TextureFormat;
 
     public:
 

@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network
+namespace ZyNetwork
 {
     /// \brief Represents everything the endpoints have had to say, held until the application is ready to hear it.
     class Mailbox final
@@ -139,8 +139,8 @@ namespace Network
         /// \param Other The mailbox to trade with.
         ZY_INLINE void Swap(Ref<Mailbox> Other)
         {
-            Base::Swap(mEntries, Other.mEntries);
-            Base::Swap(mArena,   Other.mArena);
+            ZyBase::Swap(mEntries, Other.mEntries);
+            ZyBase::Swap(mArena,   Other.mArena);
         }
 
     private:

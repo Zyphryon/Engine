@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Job
+namespace ZyJob
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -83,7 +83,7 @@ namespace Job
 
 #if !defined(ZY_HAS_THREADS)
         // Every lane lands here, so a load burst is spread over frames rather than run to the end in one callback.
-        const Platform::Timer Clock    = Platform::Timer();
+        const ZyPlatform::Timer Clock    = ZyPlatform::Timer();
         const Real64          Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
 #endif
 

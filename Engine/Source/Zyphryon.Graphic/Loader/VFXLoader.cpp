@@ -18,23 +18,23 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     VFXLoader::VFXLoader(ShaderLanguage Language)
-        : mLanguage { Enum::GetName(Language) }
+        : mLanguage { ZyEnum::GetName(Language) }
     {
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool VFXLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
+    Bool VFXLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
         Technique::Description Description;
-        Graphic::Schema        Schema;
+        ZyGraphic::Schema      Schema;
 
         JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject JsonRoot(JsonDocument);
@@ -71,7 +71,7 @@ namespace Graphic
                     ZY_ASSERT(JsonTexture.GetNumber<UInt8>("Register", Index) == Register,
                         "Texture registers must be dense and ordered");
 
-                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
+                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
                         Resource::Texture, Register, 1, Visibility);
                 }
             }
@@ -100,7 +100,7 @@ namespace Graphic
                     ZY_ASSERT(JsonSampler.GetNumber<UInt8>("Register", Index) == Register,
                         "Sampler registers must be dense and ordered");
 
-                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
+                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
                         Resource::Sampler, Register, 1, Visibility);
                 }
             }
@@ -136,12 +136,12 @@ namespace Graphic
             }
 
             // Declare one uniform block per frequency that declared any field, at the register matching it.
-            for (const Frequency Frequency : Enum::GetValues<Frequency>())
+            for (const Frequency Frequency : ZyEnum::GetValues<Frequency>())
             {
                 if (Schema.GetUniforms(Frequency).Size > 0)
                 {
-                    Description.Signature.Bindings[Enum::Cast(Frequency)].Append(
-                        Resource::Uniform, Enum::Cast(Frequency), 1, Visibility::All);
+                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
+                        Resource::Uniform, ZyEnum::Cast(Frequency), 1, Visibility::All);
                 }
             }
         }
@@ -346,8 +346,8 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void VFXLoader::LoadProgram(
-        Ref<Content::Service>   Service,
-        Ref<Content::Scope>     Scope,
+        Ref<ZyContent::Service> Service,
+        Ref<ZyContent::Scope>   Scope,
         JsonObject              Section,
         Ref<Sequence<Macro>>    Macros,
         Ref<Technique::Shaders> Shaders)
@@ -382,7 +382,7 @@ namespace Graphic
                     const Text        Path  = JsonShader.GetString("Path");
                     const ShaderStage Stage = JsonShader.GetEnum("Stage", ShaderStage::Vertex);
 
-                    Shaders[Enum::Cast(Stage)] = Service.Load<Shader>(Path, AddressOf(Scope));
+                    Shaders[ZyEnum::Cast(Stage)] = Service.Load<Shader>(Path, AddressOf(Scope));
                 }
             }
         }

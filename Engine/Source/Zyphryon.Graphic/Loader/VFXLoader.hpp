@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Content loader for technique assets using JSON.
-    class VFXLoader final : public Content::Loader
+    class VFXLoader final : public ZyContent::Loader
     {
     public:
 
@@ -37,7 +37,7 @@ namespace Graphic
         VFXLoader(ShaderLanguage Language);
 
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
-        Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+        Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
 
     private:
 
@@ -57,8 +57,8 @@ namespace Graphic
         /// \param Macros  Receives the preprocessor macros the section declares, appended to what it holds.
         /// \param Shaders Receives the shader module of every stage the section declares.
         void LoadProgram(
-            Ref<Content::Service>   Service,
-            Ref<Content::Scope>     Scope,
+            Ref<ZyContent::Service> Service,
+            Ref<ZyContent::Scope>   Scope,
             JsonObject              Section,
             Ref<Sequence<Macro>>    Macros,
             Ref<Technique::Shaders> Shaders);

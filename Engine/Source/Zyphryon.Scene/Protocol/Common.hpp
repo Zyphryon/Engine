@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     /// \brief Maximum number of component types that can be replicated, one bit each in a dirty mask.
     inline constexpr UInt8  kMaxComponents = 128;
@@ -74,7 +74,7 @@ namespace Scene::Protocol
     ///
     /// \param Link The connection naming the peer.
     /// \return The key, which the publisher writes into the greeting so the peer can recognise itself.
-    ZY_INLINE constexpr UInt64 KeyOf(Network::Connection Link)
+    ZY_INLINE constexpr UInt64 KeyOf(ZyNetwork::Connection Link)
     {
         return (static_cast<UInt64>(Link.GetChannel().GetValue()) << 32)
               | static_cast<UInt64>(Link.GetPeer().GetValue());

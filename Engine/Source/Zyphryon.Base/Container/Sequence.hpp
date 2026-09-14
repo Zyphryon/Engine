@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A contiguous sequence of \p Type elements whose storage policy is controlled by \p Count.
     ///
@@ -575,7 +575,7 @@ inline namespace Base
         /// \brief Orders the elements in place by ascending value.
         ZY_INLINE void Sort()
         {
-            Base::Sort(GetData(), GetSize());
+            ZyBase::Sort(GetData(), GetSize());
         }
 
         /// \brief Orders the elements in place by a comparison of your own.
@@ -584,7 +584,7 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE void Sort(AnyRef<Callable> Comparator)
         {
-            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
+            ZyBase::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
         }
 
         /// \brief Checks whether the sequence contains an element matching the specified predicate.
@@ -1210,7 +1210,7 @@ inline namespace Base
         /// \brief Orders the elements in place by ascending value.
         ZY_INLINE constexpr void Sort()
         {
-            Base::Sort(GetData(), GetSize());
+            ZyBase::Sort(GetData(), GetSize());
         }
 
         /// \brief Orders the elements in place by a comparison of your own.
@@ -1219,7 +1219,7 @@ inline namespace Base
         template<typename Callable>
         ZY_INLINE constexpr void Sort(AnyRef<Callable> Comparator)
         {
-            Base::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
+            ZyBase::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
         }
 
         /// \brief Checks whether the sequence contains an element matching the specified predicate.

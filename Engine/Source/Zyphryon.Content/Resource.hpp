@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace ZyContent
 {
     /// \brief Base class for content resources managed by the content service.
     class Resource : public Retainable<Resource>
@@ -155,7 +155,7 @@ namespace Content
         ///
         /// \param Host The service host providing access to engine services.
         /// \return `true` if the resource initialized successfully, otherwise `false`.
-        virtual Bool OnCreate(Ref<Engine::Subsystem::Host> Host)
+        virtual Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host)
         {
             return true;
         }
@@ -163,7 +163,7 @@ namespace Content
         /// \brief Called when the resource is being unloaded.
         ///
         /// \param Host The service host providing access to engine services.
-        virtual void OnDelete(Ref<Engine::Subsystem::Host> Host)
+        virtual void OnDelete(Ref<ZyEngine::Subsystem::Host> Host)
         {
 
         }
@@ -171,7 +171,7 @@ namespace Content
         /// \brief Called before the resource is reloaded, to reload the resources it references.
         ///
         /// \param Host The service host providing access to engine services.
-        virtual void OnReload(Ref<Engine::Subsystem::Host> Host)
+        virtual void OnReload(Ref<ZyEngine::Subsystem::Host> Host)
         {
 
         }

@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace ZyAudio
 {
     /// \brief The engine's software audio mixer: voices, submixes, spatialization, and effects.
     class Mixer final
@@ -149,7 +149,7 @@ namespace Audio
         /// \param Volume   The new volume.
         ZY_INLINE void SetSubmixVolume(Category Category, Real32 Volume)
         {
-            mSubmixVolume[Enum::Cast(Category)].store(Volume, std::memory_order_relaxed);
+            mSubmixVolume[ZyEnum::Cast(Category)].store(Volume, std::memory_order_relaxed);
         }
 
         /// \brief Gets the volume of a submix category.
@@ -158,7 +158,7 @@ namespace Audio
         /// \return The submix volume.
         ZY_INLINE Real32 GetSubmixVolume(Category Category) const
         {
-            return mSubmixVolume[Enum::Cast(Category)].load(std::memory_order_relaxed);
+            return mSubmixVolume[ZyEnum::Cast(Category)].load(std::memory_order_relaxed);
         }
 
     private:
@@ -253,7 +253,7 @@ namespace Audio
         {
             // Category floors in declaration order, each above zero so an unmixed slot stays distinguishable at zero.
             constexpr Array kFloor(3.0f, 2.0f, 4.0f, 1.0f, 5.0f);
-            return kFloor[Enum::Cast(Category)] + Min(Gain, 1.0f);
+            return kFloor[ZyEnum::Cast(Category)] + Min(Gain, 1.0f);
         }
 
     private:
@@ -261,13 +261,13 @@ namespace Audio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Pool<Voice, kMaxInstances>                     mVoices;
-        Spatializer                                    mSpatializer;
-        Ring<Command, kMaxCommands>                    mCommands;
-        Ring<Completion, kMaxCommands>                 mCompletions;
-        Atomic<Real32>                                 mMasterVolume;
-        Array<Atomic<Real32>, Enum::Count<Category>()> mSubmixVolume;
-        Array<Atomic<Real32>, kMaxInstances>           mRanks;
+        Pool<Voice, kMaxInstances>                       mVoices;
+        Spatializer                                      mSpatializer;
+        Ring<Command, kMaxCommands>                      mCommands;
+        Ring<Completion, kMaxCommands>                   mCompletions;
+        Atomic<Real32>                                   mMasterVolume;
+        Array<Atomic<Real32>, ZyEnum::Count<Category>()> mSubmixVolume;
+        Array<Atomic<Real32>, kMaxInstances>             mRanks;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

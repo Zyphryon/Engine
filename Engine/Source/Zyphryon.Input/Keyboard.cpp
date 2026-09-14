@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace ZyInput
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -36,10 +36,10 @@ namespace Input
         case Event::Type::KeyType:
             break;
         case Event::Type::KeyUp:
-            mThisKeys.Reset(Enum::Cast(Event.KeyAction.Key));
+            mThisKeys.Reset(ZyEnum::Cast(Event.KeyAction.Key));
             break;
         case Event::Type::KeyDown:
-            mThisKeys.Set(Enum::Cast(Event.KeyAction.Key));
+            mThisKeys.Set(ZyEnum::Cast(Event.KeyAction.Key));
             break;
         default:
             break;

@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a half-line defined by an origin and a normalized direction.
     class Ray final
@@ -340,7 +340,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Ray" };
+            return ZyReflection::Presentation { .Name = "Math.Ray" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -349,8 +349,8 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Ray::mOrigin>("Origin"),
-                Reflection::Field::Property<&Ray::mDirection>("Direction"));
+                ZyReflection::Field::Property<&Ray::mOrigin>("Origin"),
+                ZyReflection::Field::Property<&Ray::mDirection>("Direction"));
         }
 
     private:

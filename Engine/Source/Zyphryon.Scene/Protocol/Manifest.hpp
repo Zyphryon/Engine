@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     /// \brief Represents the table of every component type that travels, in the order both sides declared them.
     class Manifest final
@@ -56,7 +56,7 @@ namespace Scene::Protocol
         {
             using Component = StripAll<Type>;
 
-            const Scene::Component<Component> Handle(World, _::Identify<Component>(World));
+            const ZyScene::Component<Component> Handle(World, _::Identify<Component>(World));
             Handle.Grant(Trait::Serializable);
 
             // A second world declaring the same type keeps the place the first one was given.
@@ -215,7 +215,7 @@ namespace Scene::Protocol
     };
 }
 
-namespace Scene::DSL
+namespace ZyScene::DSL
 {
     /// \brief Represents the declaration of a component that travels between peers, under one policy.
     ///

@@ -16,12 +16,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Publisher::Publisher(Ref<Engine::Subsystem::Host> Host)
+    Publisher::Publisher(Ref<ZyEngine::Subsystem::Host> Host)
         : Locator { Host },
           mSweep  { 0 }
     {
@@ -156,7 +156,7 @@ namespace Scene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Admit(Network::Connection Link)
+    void Publisher::Admit(ZyNetwork::Connection Link)
     {
         const UInt64 Key = KeyOf(Link);
 
@@ -195,7 +195,7 @@ namespace Scene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Expel(Network::Connection Link)
+    void Publisher::Expel(ZyNetwork::Connection Link)
     {
         const UInt64 Key = KeyOf(Link);
 
@@ -717,15 +717,15 @@ namespace Scene::Protocol
     {
         constexpr UInt32 kHeader = sizeof(UInt8) + sizeof(UInt32);
 
-        if (Entry.GetSize() + kHeader > Network::kMaxDatagram)
+        if (Entry.GetSize() + kHeader > ZyNetwork::kMaxDatagram)
         {
             LOG_W("Scene: An entry of {0} bytes cannot be streamed, it is bigger than a datagram", Entry.GetSize());
             return;
         }
 
-        if (Peer.Datagram.GetSize() + Entry.GetSize() > Network::kMaxDatagram)
+        if (Peer.Datagram.GetSize() + Entry.GetSize() > ZyNetwork::kMaxDatagram)
         {
-            GetService<Network::Service>().Send(Peer.Link, Network::Delivery::Unreliable, Peer.Datagram);
+            GetService<ZyNetwork::Service>().Send(Peer.Link, ZyNetwork::Delivery::Unreliable, Peer.Datagram);
             Peer.Datagram.Clear();
         }
 
@@ -746,7 +746,7 @@ namespace Scene::Protocol
         // Every message is whole on its own, so a stream may be cut between any two of them.
         if (Peer.Reliable.GetSize() >= kMaxChunk)
         {
-            GetService<Network::Service>().Send(Peer.Link, Network::Delivery::Reliable, Peer.Reliable);
+            GetService<ZyNetwork::Service>().Send(Peer.Link, ZyNetwork::Delivery::Reliable, Peer.Reliable);
 
             Peer.Reliable.Clear();
         }
@@ -757,18 +757,18 @@ namespace Scene::Protocol
 
     void Publisher::Flush(Ref<Member> Peer)
     {
-        Ref<Network::Service> Network = GetService<Network::Service>();
+        Ref<ZyNetwork::Service> Network = GetService<ZyNetwork::Service>();
 
         if (Peer.Reliable.GetSize() > 0)
         {
-            Network.Send(Peer.Link, Network::Delivery::Reliable, Peer.Reliable);
+            Network.Send(Peer.Link, ZyNetwork::Delivery::Reliable, Peer.Reliable);
 
             Peer.Reliable.Clear();
         }
 
         if (Peer.Datagram.GetSize() > 0)
         {
-            Network.Send(Peer.Link, Network::Delivery::Unreliable, Peer.Datagram);
+            Network.Send(Peer.Link, ZyNetwork::Delivery::Unreliable, Peer.Datagram);
 
             Peer.Datagram.Clear();
         }

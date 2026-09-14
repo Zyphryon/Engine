@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief The properties of a texture format that the engine has to state rather than derive.
     struct TextureMetadata final
@@ -231,7 +231,7 @@ namespace Graphic
             // TextureFormat::D32S8UIntNorm
             { .BitsPerPixel = 40,  .BlockSize = 1, .Components = 2, .IsDepth = 1, .IsStencil = 1, .IsFloat = 1, .IsSigned = 1 },
         };
-        return kMetadata[Enum::Cast(Format)];
+        return kMetadata[ZyEnum::Cast(Format)];
     }
 
     /// \brief The properties of a vertex format that the engine has to state rather than derive.
@@ -317,7 +317,7 @@ namespace Graphic
             // VertexFormat::UIntNorm10_10_10_2
             { .Components = 4, .BytesPerComponent = 4, .IsNormalized = 1, .IsPacked = 1 },
         };
-        return kMetadata[Enum::Cast(Format)];
+        return kMetadata[ZyEnum::Cast(Format)];
     }
 
     /// \brief Gets the extent of a mip level.
@@ -460,6 +460,6 @@ namespace Graphic
             // Uniform::UInt4
             { .Components = 4 },
         };
-        return kMetadata[Enum::Cast(Type)];
+        return kMetadata[ZyEnum::Cast(Type)];
     }
 }

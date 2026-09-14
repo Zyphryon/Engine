@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,7 +50,7 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static auto Pick(ConstRef<Graphic::TextureMetadata> Format, Bool Write)
+    static auto Pick(ConstRef<ZyGraphic::TextureMetadata> Format, Bool Write)
     {
         const UInt32 Channel = Clamp<UInt32>(Format.Components, 1, kMaxComponents) - 1;
         const UInt32 Slot = Channel * 4 + (Format.IsSRGB ? 2 : 0) + (Write ? 1 : 0);
@@ -95,9 +95,9 @@ namespace Pipeline::Baker::Texture
 
     Bitmap Compositor::Insert(ConstRef<Bitmap> Target, ConstRef<Bitmap> Source, UInt8 TargetChannel, UInt8 SourceChannel)
     {
-        const Graphic::TextureFormat   Format = Target.GetFormat();
-        const Graphic::TextureMetadata Reader = Graphic::GetTextureMetadata(Source.GetFormat());
-        const Graphic::TextureMetadata Writer = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureFormat   Format = Target.GetFormat();
+        const ZyGraphic::TextureMetadata Reader = ZyGraphic::GetTextureMetadata(Source.GetFormat());
+        const ZyGraphic::TextureMetadata Writer = ZyGraphic::GetTextureMetadata(Format);
 
         if (Reader.IsCompressed() || Reader.IsPacked || Writer.IsCompressed() || Writer.IsPacked)
         {
@@ -109,7 +109,7 @@ namespace Pipeline::Baker::Texture
         if (SourceChannel >= Reader.Components || TargetChannel >= Writer.Components)
         {
             LOG_E("Texture: '{0}' channel {1} cannot merge into '{2}' channel {3}",
-                Enum::GetName(Source.GetFormat()), SourceChannel, Enum::GetName(Format), TargetChannel);
+                ZyEnum::GetName(Source.GetFormat()), SourceChannel, ZyEnum::GetName(Format), TargetChannel);
 
             return Bitmap();
         }
@@ -126,7 +126,7 @@ namespace Pipeline::Baker::Texture
 
         Blob Values = Blob::Allocate<Real32>(Texels);
         Blob Output = Blob::Allocate<Byte>(
-            Graphic::GetLevelSize(Format, Target.GetWidth(), Target.GetHeight(), 0));
+            ZyGraphic::GetLevelSize(Format, Target.GetWidth(), Target.GetHeight(), 0));
 
         Copy(Output.GetData<Byte>(), Output.GetSize(), Target.GetPixels().GetData());
 

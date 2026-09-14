@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Describes the named resources a shader program samples, sets and reads, and where each one binds.
     class Schema final
@@ -29,19 +29,19 @@ namespace Graphic
         struct Uniform final
         {
             /// The hash identifying this field's name.
-            UInt64           Hash   = 0;
+            UInt64             Hash   = 0;
 
             /// The data type of the field.
-            Graphic::Uniform Type   = Graphic::Uniform::Float;
+            ZyGraphic::Uniform Type   = ZyGraphic::Uniform::Float;
 
             /// The size of the field, in bytes.
-            UInt16           Size   = 0;
+            UInt16             Size   = 0;
 
             /// The byte offset of the field within its owning uniform block.
-            UInt16           Offset = 0;
+            UInt16             Offset = 0;
 
             /// The value packed when a material does not set the field.
-            Parameter        Value;
+            Parameter          Value;
         };
 
         /// \brief Describes the layout of the uniform block declared for one frequency.
@@ -58,13 +58,13 @@ namespace Graphic
         struct Sampler final
         {
             /// The hash identifying this sampler's name.
-            UInt64           Hash   = 0;
+            UInt64             Hash   = 0;
 
             /// The state bound when a material does not supply its own.
-            Graphic::Sampler Descriptor;
+            ZyGraphic::Sampler Descriptor;
 
             /// The sampler resource resolved from the descriptor, or zero until the technique is uploaded.
-            Object           Handle = 0;
+            Object             Handle = 0;
         };
 
     public:
@@ -91,7 +91,7 @@ namespace Graphic
         /// \param Name       The name a material supplies its own state under.
         /// \param Descriptor The state bound when a material supplies none.
         /// \return The register the sampler was declared at.
-        ZY_INLINE UInt8 AddSampler(Text Name, ConstRef<Graphic::Sampler> Descriptor)
+        ZY_INLINE UInt8 AddSampler(Text Name, ConstRef<ZyGraphic::Sampler> Descriptor)
         {
             ZY_ASSERT(mSamplers.GetSize() < Command::kMaxSamplers, "Schema declares more samplers than a draw binds");
 
@@ -105,11 +105,11 @@ namespace Graphic
         /// \param Name      The name a material sets the field under.
         /// \param Type      The data type of the field.
         /// \param Value     The value packed when a material does not set the field.
-        ZY_INLINE void AddUniform(Frequency Frequency, Text Name, Graphic::Uniform Type, AnyRef<Parameter> Value)
+        ZY_INLINE void AddUniform(Frequency Frequency, Text Name, ZyGraphic::Uniform Type, AnyRef<Parameter> Value)
         {
-            const UInt16 Size = Parameter::GetSize(Enum::Cast(Type));
+            const UInt16 Size = Parameter::GetSize(ZyEnum::Cast(Type));
 
-            Ref<Block> Group = mUniforms[Enum::Cast(Frequency)];
+            Ref<Block> Group = mUniforms[ZyEnum::Cast(Frequency)];
             Group.Uniforms.Append(Hash(Name), Type, Size, Group.Size, Move(Value));
             Group.Size += Size;
         }
@@ -120,7 +120,7 @@ namespace Graphic
         /// \return The block declared for the frequency, empty if it declares no field.
         ZY_INLINE ConstRef<Block> GetUniforms(Frequency Frequency) const
         {
-            return mUniforms[Enum::Cast(Frequency)];
+            return mUniforms[ZyEnum::Cast(Frequency)];
         }
 
         /// \brief Gets the hashed names of the textures the program samples.
@@ -144,7 +144,7 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Block, Enum::Count<Frequency>()>   mUniforms;
+        Array<Block, ZyEnum::Count<Frequency>()> mUniforms;
         Sequence<UInt64, Command::kMaxTextures>  mTextures;
         Sequence<Sampler, Command::kMaxSamplers> mSamplers;
     };

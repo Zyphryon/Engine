@@ -20,10 +20,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Represents a GPU-backed geometry asset: one shared vertex/index buffer split into drawable primitives.
-    class Mesh final : public Content::AbstractResource<Mesh>
+    class Mesh final : public ZyContent::AbstractResource<Mesh>
     {
     public:
 
@@ -82,7 +82,7 @@ namespace Graphic
         /// \brief Constructs a mesh resource with the given content key.
         ///
         /// \param Key The unique content key identifying this mesh.
-        explicit Mesh(AnyRef<Content::Uri> Key);
+        explicit Mesh(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets the mesh's full property mask, replacing any previously set flags.
         ///
@@ -200,7 +200,7 @@ namespace Graphic
         /// \return The attribute's binding; its `Stride` is `0` when the mesh does not provide the attribute.
         ZY_INLINE Binding GetBinding(VertexSlot Slot) const
         {
-            return mBindings[Enum::Cast(Slot)];
+            return mBindings[ZyEnum::Cast(Slot)];
         }
 
         /// \brief Tests whether the mesh provides a vertex attribute.
@@ -209,7 +209,7 @@ namespace Graphic
         /// \return `true` if the attribute is present, `false` otherwise.
         ZY_INLINE Bool HasBinding(VertexSlot Slot) const
         {
-            return mBindings[Enum::Cast(Slot)].Stride != 0;
+            return mBindings[ZyEnum::Cast(Slot)].Stride != 0;
         }
 
         /// \brief Sets the shared index buffer's CPU data.
@@ -236,14 +236,14 @@ namespace Graphic
         /// \param Service The graphic service used to destroy the resources.
         void Unload(Ref<Service> Service);
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             return Upload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             Unload(* Host.GetService<Service>());
         }
@@ -253,18 +253,18 @@ namespace Graphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Property                                  mProperties;
-        Object                                    mVertices;
-        Object                                    mIndices;
-        Array<Binding, Enum::Count<VertexSlot>()> mBindings;
-        Sequence<Primitive>                       mPrimitives;
-        Sequence<Range, kMaxDetail>               mDetail;
-        Box                                       mExtent;
+        Property                                    mProperties;
+        Object                                      mVertices;
+        Object                                      mIndices;
+        Array<Binding, ZyEnum::Count<VertexSlot>()> mBindings;
+        Sequence<Primitive>                         mPrimitives;
+        Sequence<Range, kMaxDetail>                 mDetail;
+        Box                                         mExtent;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Blob                                      mGeometry;
-        Blob                                      mElements;
+        Blob                                        mGeometry;
+        Blob                                        mElements;
     };
 }

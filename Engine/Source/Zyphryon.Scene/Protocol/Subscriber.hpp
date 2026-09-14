@@ -19,17 +19,17 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     /// \brief Represents the side that follows a world it does not own, applying what the publisher says of it.
-    class Subscriber final : public Engine::Locator<Service>
+    class Subscriber final : public ZyEngine::Locator<Service>
     {
     public:
 
         /// \brief Constructs a subscriber instance with the specified service host.
         ///
         /// \param Host The service host to associate with the subscriber.
-        explicit Subscriber(Ref<Engine::Subsystem::Host> Host);
+        explicit Subscriber(Ref<ZyEngine::Subsystem::Host> Host);
 
         /// \brief Destructor, which takes down what was hung on the world.
         ~Subscriber();

@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief A smart pointer for COM objects.
     template<typename Type>
@@ -45,7 +45,7 @@ namespace Graphic
             D3D11_BLEND_SRC1_ALPHA,                 // BlendFactor::Src1Alpha
             D3D11_BLEND_INV_SRC1_ALPHA,             // BlendFactor::OneMinusSrc1Alpha
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref BlendFunction into the matching Direct3D 11 enumeration.
@@ -58,7 +58,7 @@ namespace Graphic
             D3D11_BLEND_OP_MIN,                     // BlendFunction::Min
             D3D11_BLEND_OP_MAX                      // BlendFunction::Max
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Cull into the matching Direct3D 11 face enumeration.
@@ -69,7 +69,7 @@ namespace Graphic
             D3D11_CULL_BACK,                // Cull::Back
             D3D11_CULL_FRONT,               // Cull::Front
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Fill into the matching Direct3D 11 fill-mode enumeration.
@@ -79,7 +79,7 @@ namespace Graphic
             D3D11_FILL_SOLID,               // Fill::Solid
             D3D11_FILL_WIREFRAME,           // Fill::Wireframe
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Primitive into the matching Direct3D 11 topology enumeration.
@@ -92,7 +92,7 @@ namespace Graphic
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,     // Primitive::TriangleList
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,    // Primitive::TriangleStrip
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Storage into the matching Direct3D 11 usage enumeration.
@@ -103,7 +103,7 @@ namespace Graphic
             D3D11_USAGE_DYNAMIC,             // Storage::Dynamic
             D3D11_USAGE_DEFAULT,             // Storage::Stream
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TestAction into the matching Direct3D 11 stencil operation enumeration.
@@ -119,7 +119,7 @@ namespace Graphic
             D3D11_STENCIL_OP_INCR,                  // TestAction::Increase
             D3D11_STENCIL_OP_INCR_SAT               // TestAction::IncreaseSaturate
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TestCondition into the matching Direct3D 11 comparison enumeration.
@@ -136,7 +136,7 @@ namespace Graphic
             D3D11_COMPARISON_LESS,                  // TestCondition::Less
             D3D11_COMPARISON_LESS_EQUAL             // TestCondition::LessEqual
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TextureAddress into the matching Direct3D 11 address enumeration.
@@ -148,7 +148,7 @@ namespace Graphic
             D3D11_TEXTURE_ADDRESS_WRAP,             // TextureAddress::Repeat
             D3D11_TEXTURE_ADDRESS_MIRROR            // TextureAddress::Mirror
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Resolves the border color (RGBA) associated with a \ref TextureBorder.
@@ -159,7 +159,7 @@ namespace Graphic
             { 1.0f, 1.0f, 1.0f, 1.0f },     // OpaqueWhite
             { 0.0f, 0.0f, 0.0f, 0.0f },     // TransparentBlack
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TextureFilter into the matching Direct3D 11 filter enumeration.
@@ -177,7 +177,7 @@ namespace Graphic
             D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic8x
             D3D11_FILTER_ANISOTROPIC,                // TextureFilter::Anisotropic16x
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref TextureFormat into the matching Direct3D 11 (DXGI) format enumeration.
@@ -258,7 +258,7 @@ namespace Graphic
             DXGI_FORMAT_R24G8_TYPELESS,         // TextureFormat::D24S8UIntNorm
             DXGI_FORMAT_R32G8X24_TYPELESS,      // TextureFormat::D32S8UIntNorm
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref Usage into the matching Direct3D 11 bind flags.
@@ -322,6 +322,6 @@ namespace Graphic
             DXGI_FORMAT_R10G10B10A2_UINT,       // VertexFormat::UInt10_10_10_2
             DXGI_FORMAT_R10G10B10A2_UNORM,      // VertexFormat::UIntNorm10_10_10_2
         };
-        return kMapping[Enum::Cast(Value)];
+        return kMapping[ZyEnum::Cast(Value)];
     }
 }

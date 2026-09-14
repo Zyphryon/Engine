@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief One realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
     ///
@@ -32,7 +32,7 @@ namespace Render
         ///
         /// \param Host      The service host that provides the graphic service.
         /// \param Blueprint The blueprint naming what the graph draws.
-        Graph(Ref<Engine::Subsystem::Host> Host, Ref<Blueprint> Blueprint);
+        Graph(Ref<ZyEngine::Subsystem::Host> Host, Ref<Blueprint> Blueprint);
 
         /// \brief Destroys every texture and handle the graph holds.
         ~Graph();
@@ -46,13 +46,13 @@ namespace Render
         /// \brief Executes every active pass in order and submits the frame.
         ///
         /// \param Frame The pre-packed frame uniform stream.
-        void Run(Graphic::Stream Frame);
+        void Run(ZyGraphic::Stream Frame);
 
         /// \brief Gets the texture realized for one of the blueprint's targets.
         ///
         /// \param Slot The slot naming the target, as \ref Blueprint::AddTarget returned it.
         /// \return The texture object, valid until the next resize.
-        ZY_INLINE Graphic::Object GetTexture(UInt32 Slot) const
+        ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Slot) const
         {
             return mSlots[Slot].Texture;
         }
@@ -97,29 +97,29 @@ namespace Render
         struct Slot final
         {
             /// The texture the graph realized for the target, or zero while it holds none.
-            Graphic::Object        Texture = 0;
+            ZyGraphic::Object        Texture = 0;
 
             /// The format the texture was realized with.
-            Graphic::TextureFormat Format  = Graphic::TextureFormat::Unspecified;
+            ZyGraphic::TextureFormat Format  = ZyGraphic::TextureFormat::Unspecified;
 
             /// The width the texture came out at, in pixels.
-            UInt16                 Width   = 0;
+            UInt16                   Width   = 0;
 
             /// The height the texture came out at, in pixels.
-            UInt16                 Height  = 0;
+            UInt16                   Height  = 0;
         };
 
         /// \brief One pass the graph baked, and the surface it draws into.
         struct Step final
         {
             /// The pass handle, borrowed from the step before it when the pass draws inline.
-            Graphic::Object   Handle = 0;
+            ZyGraphic::Object   Handle = 0;
 
             /// Whether the handle belongs to the step before it, which this pass appends its draws to.
-            Bool              Inline = false;
+            Bool                Inline = false;
 
             /// The viewport covering the target the pass draws into.
-            Graphic::Viewport Viewport;
+            ZyGraphic::Viewport Viewport;
         };
 
         /// \brief Destroys every texture and handle, leaving the graph unrealized.
@@ -130,12 +130,12 @@ namespace Render
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Graphic::Service> mService;
-        Ref<Blueprint>             mBlueprint;
-        Encoder                    mEncoder;
-        Sequence<Slot>             mSlots;
-        Sequence<Step>             mSteps;
-        UInt16                     mWidth;
-        UInt16                     mHeight;
+        Retainer<ZyGraphic::Service> mService;
+        Ref<Blueprint>               mBlueprint;
+        Encoder                      mEncoder;
+        Sequence<Slot>               mSlots;
+        Sequence<Step>               mSteps;
+        UInt16                       mWidth;
+        UInt16                       mHeight;
     };
 }

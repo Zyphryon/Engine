@@ -19,14 +19,14 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Exporter::IsSupported(Graphic::TextureFormat Format)
+    Bool Exporter::IsSupported(ZyGraphic::TextureFormat Format)
     {
-        const Graphic::TextureMetadata Description = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureMetadata Description = ZyGraphic::GetTextureMetadata(Format);
 
         // TODO: Block-compressed
 
@@ -52,18 +52,18 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob Exporter::Export(Ref<Job::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile)
+    Blob Exporter::Export(Ref<ZyJob::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile)
     {
         Sequence<Bitmap> Slices(1);
         Slices.Append(Move(Source));
 
-        return Export(Scheduler, Move(Slices), Graphic::TextureLayout::Texture2D, Profile);
+        return Export(Scheduler, Move(Slices), ZyGraphic::TextureLayout::Texture2D, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob Exporter::Export(Ref<Job::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile)
+    Blob Exporter::Export(Ref<ZyJob::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, ZyGraphic::TextureLayout Layout, ConstRef<Profile> Profile)
     {
         if (Slices.IsEmpty())
         {
@@ -73,12 +73,12 @@ namespace Pipeline::Baker::Texture
         const UInt16 Width  = Slices[0].GetWidth();
         const UInt16 Height = Slices[0].GetHeight();
 
-        const Graphic::TextureFormat Format =
-            (Profile.Format == Graphic::TextureFormat::Unspecified) ? Slices[0].GetFormat() : Profile.Format;
+        const ZyGraphic::TextureFormat Format =
+            (Profile.Format == ZyGraphic::TextureFormat::Unspecified) ? Slices[0].GetFormat() : Profile.Format;
 
         if (!IsSupported(Format))
         {
-            LOG_E("Texture: '{0}' is not a format this exporter can write", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' is not a format this exporter can write", ZyEnum::GetName(Format));
 
             return Blob();
         }
@@ -95,14 +95,14 @@ namespace Pipeline::Baker::Texture
         }
 
         // Filtering runs at each surface's own depth, so the conversion to the target format happens last.
-        const UInt8 Levels = Profile.Mipmaps ? Graphic::GetLevelCount(Width, Height) : 1;
+        const UInt8 Levels = Profile.Mipmaps ? ZyGraphic::GetLevelCount(Width, Height) : 1;
 
         Sequence<Bitmap> Baked;
         Baked.Resize(Slices.GetSize());
 
         // TODO: Resizer
 
-        Scheduler.Parallel(Job::Lane::Compute, static_cast<UInt32>(Slices.GetSize()), [&](UInt32 Start, UInt32 End)
+        Scheduler.Parallel(ZyJob::Lane::Compute, static_cast<UInt32>(Slices.GetSize()), [&](UInt32 Start, UInt32 End)
         {
             for (UInt32 Index = Start; Index < End; ++Index)
             {
@@ -138,8 +138,8 @@ namespace Pipeline::Baker::Texture
         Writer Output(Length + 32);
         Output.Write<UInt32>(kMagic);
         Output.Write<UInt16>(kVersion);
-        Output.Write<Graphic::TextureLayout>(Layout);
-        Output.Write<Graphic::TextureFormat>(Format);
+        Output.Write<ZyGraphic::TextureLayout>(Layout);
+        Output.Write<ZyGraphic::TextureFormat>(Format);
         Output.Write<UInt16>(Width);
         Output.Write<UInt16>(Height);
         Output.Write<UInt16>(static_cast<UInt16>(Baked.GetSize()));

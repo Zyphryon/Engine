@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Font
+namespace ZyPipeline::Baker::Font
 {
     /// \brief An \ref Importer backed by `stb_truetype`, covering the outline formats.
     class STBImporter final : public Importer

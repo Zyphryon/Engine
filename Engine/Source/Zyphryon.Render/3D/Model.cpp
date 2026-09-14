@@ -17,12 +17,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Model::Model(AnyRef<Content::Uri> Key)
+    Model::Model(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) }
     {
     }
@@ -30,14 +30,14 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Model::Upload(Ref<Graphic::Service> Service)
+    Bool Model::Upload(Ref<ZyGraphic::Service> Service)
     {
         if (mMesh && mMesh->GetPolicy() == Policy::Exclusive)
         {
             mMesh->Upload(Service);
         }
 
-        for (ConstRetainer<Graphic::Material> Material : mMaterials)
+        for (ConstRetainer<ZyGraphic::Material> Material : mMaterials)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {
@@ -50,14 +50,14 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Model::Unload(Ref<Graphic::Service> Service)
+    void Model::Unload(Ref<ZyGraphic::Service> Service)
     {
         if (mMesh && mMesh->GetPolicy() == Policy::Exclusive)
         {
             mMesh->Unload(Service);
         }
 
-        for (ConstRetainer<Graphic::Material> Material : mMaterials)
+        for (ConstRetainer<ZyGraphic::Material> Material : mMaterials)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {
@@ -69,9 +69,9 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Model::OnReload(Ref<Engine::Subsystem::Host> Host)
+    void Model::OnReload(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        Ref<Content::Service> Service = * Host.GetService<Content::Service>();
+        Ref<ZyContent::Service> Service = * Host.GetService<ZyContent::Service>();
 
         if (mMesh && mMesh->GetPolicy() != Policy::Exclusive)
         {
@@ -83,7 +83,7 @@ namespace Render
             Service.Reload(mSkeleton);
         }
 
-        for (ConstRetainer<Graphic::Material> Material : mMaterials)
+        for (ConstRetainer<ZyGraphic::Material> Material : mMaterials)
         {
             if (Material)
             {

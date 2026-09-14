@@ -22,10 +22,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::Protocol
+namespace ZyScene::Protocol
 {
     /// \brief Represents the side that owns the world and tells every peer what it sees of it.
-    class Publisher final : public Engine::Locator<Service, Network::Service>
+    class Publisher final : public ZyEngine::Locator<Service, ZyNetwork::Service>
     {
     public:
 
@@ -36,14 +36,14 @@ namespace Scene::Protocol
         static constexpr UInt32 kSweep    = 8;
 
         /// \brief Represents the rule that says whether a peer may see a replica at all, over the scopes it subscribes to.
-        using Visibility = Delegate<Bool(Network::Connection, Entity)>;
+        using Visibility = Delegate<Bool(ZyNetwork::Connection, Entity)>;
 
     public:
 
         /// \brief Constructs a publisher instance with the specified service host.
         ///
         /// \param Host The service host to associate with the publisher.
-        explicit Publisher(Ref<Engine::Subsystem::Host> Host);
+        explicit Publisher(Ref<ZyEngine::Subsystem::Host> Host);
 
         /// \brief Destructor, which takes down what was hung on the world.
         ~Publisher();
@@ -51,12 +51,12 @@ namespace Scene::Protocol
         /// \brief Takes on a peer, greeting it with the manifest, the stamp and every replicated singleton.
         ///
         /// \param Link The peer, which is known from here on by \ref Protocol::KeyOf.
-        void Admit(Network::Connection Link);
+        void Admit(ZyNetwork::Connection Link);
 
         /// \brief Drops a peer, forgetting what it was subscribed to and what it knew.
         ///
         /// \param Link The peer being dropped, which is forgotten along with everything it saw.
-        void Expel(Network::Connection Link);
+        void Expel(ZyNetwork::Connection Link);
 
         /// \brief Sets the scopes a peer sees, replacing whatever it saw before.
         ///
@@ -81,22 +81,22 @@ namespace Scene::Protocol
         struct Member final
         {
             /// The connection the peer is reached by.
-            Network::Connection Link;
+            ZyNetwork::Connection Link;
 
             /// The keys of the scopes the peer sees.
-            Bag<UInt64>         Scopes;
+            Bag<UInt64>           Scopes;
 
             /// The identifiers of the spawned replicas the peer holds, which have to be forgotten by name.
-            Bag<UInt64>         Known;
+            Bag<UInt64>           Known;
 
             /// The sequence the next datagram goes out under.
-            UInt32              Sequence = 0;
+            UInt32                Sequence = 0;
 
             /// The reliable messages gathered for the peer this tick.
-            Writer              Reliable;
+            Writer                Reliable;
 
             /// The datagram being filled for the peer this tick.
-            Writer              Datagram;
+            Writer                Datagram;
         };
 
         /// \brief Represents one scope and who sees it.

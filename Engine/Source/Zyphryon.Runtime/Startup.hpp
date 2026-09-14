@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Runtime
+namespace ZyRuntime
 {
     /// \brief Encapsulates the parameters the engine is brought up with, before any service exists.
     class Startup final
@@ -217,7 +217,7 @@ namespace Runtime
         /// \brief Sets the graphics color format.
         ///
         /// \param Format The desired color format for the graphics.
-        ZY_INLINE void SetGraphicsColorFormat(Graphic::TextureFormat Format)
+        ZY_INLINE void SetGraphicsColorFormat(ZyGraphic::TextureFormat Format)
         {
             mGraphicsColorFormat = Format;
         }
@@ -225,7 +225,7 @@ namespace Runtime
         /// \brief Gets the current graphics color format.
         ///
         /// \return The current color format used by the graphics system.
-        ZY_INLINE Graphic::TextureFormat GetGraphicsColorFormat() const
+        ZY_INLINE ZyGraphic::TextureFormat GetGraphicsColorFormat() const
         {
             return mGraphicsColorFormat;
         }
@@ -233,7 +233,7 @@ namespace Runtime
         /// \brief Sets the graphics depth format.
         ///
         /// \param Format The desired depth format for the graphics.
-        ZY_INLINE void SetGraphicsDepthFormat(Graphic::TextureFormat Format)
+        ZY_INLINE void SetGraphicsDepthFormat(ZyGraphic::TextureFormat Format)
         {
             mGraphicsDepthFormat = Format;
         }
@@ -241,7 +241,7 @@ namespace Runtime
         /// \brief Gets the current graphics depth format.
         ///
         /// \return The current depth format used by the graphics system.
-        ZY_INLINE Graphic::TextureFormat GetGraphicsDepthFormat() const
+        ZY_INLINE ZyGraphic::TextureFormat GetGraphicsDepthFormat() const
         {
             return mGraphicsDepthFormat;
         }
@@ -251,18 +251,18 @@ namespace Runtime
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Str                    mWindowMonitor;
-        Str                    mWindowTitle;
-        UInt32                 mWindowWidth;
-        UInt32                 mWindowHeight;
-        Bool                   mWindowFullscreen;
-        Bool                   mWindowBorderless;
-        Str                    mAudioAdapter;
-        Bool                   mAudioPauseOnFocusLost;
-        Str16                  mGraphicsDriver;
-        Str                    mGraphicsAdapter;
-        Bool                   mGraphicsTearless;
-        Graphic::TextureFormat mGraphicsColorFormat;
-        Graphic::TextureFormat mGraphicsDepthFormat;
+        Str                      mWindowMonitor;
+        Str                      mWindowTitle;
+        UInt32                   mWindowWidth;
+        UInt32                   mWindowHeight;
+        Bool                     mWindowFullscreen;
+        Bool                     mWindowBorderless;
+        Str                      mAudioAdapter;
+        Bool                     mAudioPauseOnFocusLost;
+        Str16                    mGraphicsDriver;
+        Str                      mGraphicsAdapter;
+        Bool                     mGraphicsTearless;
+        ZyGraphic::TextureFormat mGraphicsColorFormat;
+        ZyGraphic::TextureFormat mGraphicsDepthFormat;
     };
 }

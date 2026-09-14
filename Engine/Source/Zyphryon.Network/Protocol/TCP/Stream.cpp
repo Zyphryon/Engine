@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::TCP
+namespace ZyNetwork::TCP
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -155,7 +155,7 @@ namespace Network::TCP
             else if (mState == State::Live && Time >= mProbe)
             {
                 mOutbound.Frame(1 + sizeof(Time));
-                mOutbound.Append(Enum::Cast(Tag::Ping));
+                mOutbound.Append(ZyEnum::Cast(Tag::Ping));
                 mOutbound.Append(ConstSpan(reinterpret_cast<ConstPtr<Byte>>(AddressOf(Time)), sizeof(Time)));
 
                 mProbe = Time + Budget / 3.0;
@@ -186,7 +186,7 @@ namespace Network::TCP
             }
 
             mOutbound.Frame(static_cast<UInt32>(Message.GetSize()) + 1);
-            mOutbound.Append(Enum::Cast(Tag::Message));
+            mOutbound.Append(ZyEnum::Cast(Tag::Message));
             mOutbound.Append(Message);
 
             mStats.Pending = mTransmit.GetSize() + mOutbound.GetSize();
@@ -304,7 +304,7 @@ namespace Network::TCP
                 }
 
                 mOutbound.Frame(static_cast<UInt32>(Frame.GetSize()));
-                mOutbound.Append(Enum::Cast(Tag::Pong));
+                mOutbound.Append(ZyEnum::Cast(Tag::Pong));
                 mOutbound.Append(ConstSpan(Frame.GetData() + 1, Frame.GetSize() - 1));
 
                 Drain(Watcher);

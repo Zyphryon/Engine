@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Represents the bone hierarchy a model's geometry is skinned to.
-    class Skeleton final : public Content::AbstractResource<Skeleton>
+    class Skeleton final : public ZyContent::AbstractResource<Skeleton>
     {
     public:
 
@@ -83,7 +83,7 @@ namespace Render
         /// \brief Constructs a skeleton resource with the given content key.
         ///
         /// \param Key The unique content key identifying this skeleton.
-        explicit Skeleton(AnyRef<Content::Uri> Key);
+        explicit Skeleton(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Replaces the bone hierarchy.
         ///

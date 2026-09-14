@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Font
+namespace ZyPipeline::Baker::Font
 {
     /// \brief Bakes typefaces into the engine's native font format.
     class Baker final
@@ -51,7 +51,7 @@ namespace Pipeline::Baker::Font
         /// \brief Constructs a baker with every importer the build enables already registered.
         ///
         /// \param Scheduler The pool the glyphs are rasterized on, which must outlive the baker.
-        explicit Baker(Ref<Job::Service> Scheduler);
+        explicit Baker(Ref<ZyJob::Service> Scheduler);
 
         /// \brief Registers an importer under each extension it accepts.
         ///
@@ -111,7 +111,7 @@ namespace Pipeline::Baker::Font
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Job::Service> mScheduler;
-        Registry          mRegistry;
+        Ref<ZyJob::Service> mScheduler;
+        Registry            mRegistry;
     };
 }

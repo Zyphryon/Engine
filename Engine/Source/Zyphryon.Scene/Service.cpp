@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene
+namespace ZyScene
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -31,7 +31,7 @@ namespace Scene
         Context::Attach(mWorld);
 
         // Flecs runs stage 0 on the calling thread, so the count is one greater than the lane's worker count.
-        ecs_set_threads(mWorld, Host.GetService<Job::Service>()->GetConcurrency(Job::Lane::Compute) + 1);
+        ecs_set_threads(mWorld, Host.GetService<ZyJob::Service>()->GetConcurrency(ZyJob::Lane::Compute) + 1);
 
         // Ensures that handles within this range are exclusively for entities created during runtime,
         // preventing conflicts with internal engine objects like components or archetypes.
@@ -133,7 +133,7 @@ namespace Scene
             else
             {
                 const Entity Children = LoadHierarchy(Hierarchy);
-                Children.Attach(Actor, Scene::Hierarchy::Open);
+                Children.Attach(Actor, ZyScene::Hierarchy::Open);
             }
         }
     }
@@ -349,7 +349,7 @@ namespace Scene
             DSL::Declare<Description>("Description", DSL::Final),
 
             // Schema is what a component is made of, laid out by the type itself rather than for it.
-            DSL::Declare<Reflection::Schema>("Schema", DSL::Final));
+            DSL::Declare<ZyReflection::Schema>("Schema", DSL::Final));
 
         // The ledger always exists, so a touch never has to ask whether the world has one yet.
         GetWorld().Set(Protocol::Ledger());

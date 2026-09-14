@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -411,7 +411,7 @@ namespace Graphic
         Pipeline.BlendSrcAlpha      = GLES3Convert(States.BlendSrcAlpha);
         Pipeline.BlendDstAlpha      = GLES3Convert(States.BlendDstAlpha);
         Pipeline.BlendEquationAlpha = GLES3Convert(States.BlendEquationAlpha);
-        Pipeline.Channel            = Enum::Cast(States.Channel);
+        Pipeline.Channel            = ZyEnum::Cast(States.Channel);
         Pipeline.AlphaToCoverage    = States.AlphaToCoverage;
 
         // Depth.
@@ -558,7 +558,7 @@ namespace Graphic
         Texture.Width   = Width;
         Texture.Height  = Height;
         Texture.Layers  = Slices;
-        Texture.Samples = Enum::Cast(Samples);
+        Texture.Samples = ZyEnum::Cast(Samples);
 
         const GLES3Format Description = GLES3Convert(Format);
 

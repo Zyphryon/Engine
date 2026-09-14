@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -57,11 +57,11 @@ namespace Graphic
             return nullptr;
         }
 
-        const LPCSTR Profile = kProfiles[Enum::Cast(Tier)][Enum::Cast(Stage)];
+        const LPCSTR Profile = kProfiles[ZyEnum::Cast(Tier)][ZyEnum::Cast(Stage)];
 
         if (Profile == nullptr)
         {
-            LOG_E("Failed to compile shader: '{0}' carries no profile", Enum::GetName(Tier));
+            LOG_E("Failed to compile shader: '{0}' carries no profile", ZyEnum::GetName(Tier));
             return nullptr;
         }
 
@@ -91,7 +91,7 @@ namespace Graphic
                 --Length;
             }
 
-            LOG_E("Failed to compile {0} shader: {1}", Enum::GetName(Stage), Text(Data, Length));
+            LOG_E("Failed to compile {0} shader: {1}", ZyEnum::GetName(Stage), Text(Data, Length));
         }
         return Bytecode;
     }

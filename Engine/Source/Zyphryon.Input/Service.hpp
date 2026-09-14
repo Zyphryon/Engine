@@ -21,10 +21,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace ZyInput
 {
     /// \brief Provides high-level management of the input subsystem.
-    class Service final : public Engine::Subsystem
+    class Service final : public ZyEngine::Subsystem
     {
     public:
 

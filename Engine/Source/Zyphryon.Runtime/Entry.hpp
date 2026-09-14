@@ -18,14 +18,14 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Runtime
+namespace ZyRuntime
 {
     /// \brief Creates the set of modules the application was linked against.
     ///
     /// \note Defined by the translation unit `ZyApplyModules` generates for every application target.
     ///
     /// \return The modules the kernel attaches on startup.
-    Engine::Modules ZyRegisterModules();
+    ZyEngine::Modules ZyRegisterModules();
 
     /// \brief Boots a kernel of the given type and runs it until the application exits.
     ///
@@ -55,11 +55,11 @@ namespace Runtime
 
 #else
 
-#define ZY_APPLICATION(Type)                                                   \
-                                                                               \
-        int main(int Count, char * Arguments[])                                \
-        {                                                                      \
-            return Runtime::Launch<Type>(static_cast<UInt>(Count), Arguments); \
+#define ZY_APPLICATION(Type)                                                       \
+                                                                                   \
+        int main(int Count, char * Arguments[])                                    \
+        {                                                                          \
+            return ::ZyRuntime::Launch<Type>(static_cast<UInt>(Count), Arguments); \
         }
 
 #endif

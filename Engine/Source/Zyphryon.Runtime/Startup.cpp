@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Runtime
+namespace ZyRuntime
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -29,8 +29,8 @@ namespace Runtime
           mWindowBorderless      { false },
           mAudioPauseOnFocusLost { false },
           mGraphicsTearless      { true  },
-          mGraphicsColorFormat   { Graphic::TextureFormat::Unspecified },
-          mGraphicsDepthFormat   { Graphic::TextureFormat::Unspecified }
+          mGraphicsColorFormat   { ZyGraphic::TextureFormat::Unspecified },
+          mGraphicsDepthFormat   { ZyGraphic::TextureFormat::Unspecified }
     {
     }
 

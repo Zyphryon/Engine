@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio::Codec
+namespace ZyAudio::Codec
 {
     /// \brief Widens the signed 16-bit samples of a baked sound into the mixer's floating-point frames.
     class Linear final : public Decoder

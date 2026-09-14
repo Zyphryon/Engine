@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Describes a texture a \ref Pipeline declares and every \ref Graph realizes one of its own.
     struct Target final
@@ -33,18 +33,18 @@ namespace Render
         };
 
         /// The pixel format of the target texture.
-        Graphic::TextureFormat Format;
+        ZyGraphic::TextureFormat Format;
 
         /// How the target's dimensions track the frame's output size.
-        Scale                  Sizing  = Scale::Full;
+        Scale                    Sizing  = Scale::Full;
 
         /// The width, in pixels, used only when \ref Sizing is \ref Scale::Fixed.
-        UInt16                 Width   = 0;
+        UInt16                   Width   = 0;
 
         /// The height, in pixels, used only when \ref Sizing is \ref Scale::Fixed.
-        UInt16                 Height  = 0;
+        UInt16                   Height  = 0;
 
         /// The multisample count of the target texture.
-        Graphic::Multisample   Samples = Graphic::Multisample::X1;
+        ZyGraphic::Multisample   Samples = ZyGraphic::Multisample::X1;
     };
 }

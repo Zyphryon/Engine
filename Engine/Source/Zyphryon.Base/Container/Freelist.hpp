@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief Tracks allocation state for a fixed-capacity set of slots using a free-list strategy.
     ///
@@ -33,7 +33,7 @@ inline namespace Base
     public:
 
         /// \brief The key naming one slot at the epoch it was handed out at.
-        using Key   = Base::Key<Capacity, EpochBits>;
+        using Key   = ZyBase::Key<Capacity, EpochBits>;
 
         /// \brief The integer a slot is counted in.
         using Slot  = typename Key::Slot;

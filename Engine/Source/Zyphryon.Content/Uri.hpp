@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Content
+namespace ZyContent
 {
     /// \brief Represents a Uniform Resource Identifier for content addressing.
     class Uri final
@@ -140,7 +140,7 @@ namespace Content
         /// \return A 64-bit hash of the object.
         ZY_INLINE UInt64 Hash() const
         {
-            return Base::Hash(mUrl);
+            return ZyBase::Hash(mUrl);
         }
 
         /// \brief Serializes the state of the object to or from the specified archive.
@@ -173,7 +173,7 @@ namespace Content
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Content.Uri", .Flat = true };
+            return ZyReflection::Presentation { .Name = "Content.Uri", .Flat = true };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -181,7 +181,7 @@ namespace Content
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::Property<&Uri::mUrl>("Url"));
+            return Array(ZyReflection::Field::Property<&Uri::mUrl>("Url"));
         }
 
     private:

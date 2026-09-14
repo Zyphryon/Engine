@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene
+namespace ZyScene
 {
     /// \brief Specifies where a tool may attach a component, given what the entity it goes on stands as.
     enum class Authoring : UInt8
@@ -49,7 +49,7 @@ namespace Scene
     };
 }
 
-namespace Scene::DSL
+namespace ZyScene::DSL
 {
     /// \brief Represents the declaration of how a component presents itself to a tool.
     struct Describing final
@@ -108,7 +108,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
         {
-            Entity(World, Scene::_::Identify<Type>(World)).Set(Value);
+            Entity(World, ZyScene::_::Identify<Type>(World)).Set(Value);
         }
     };
 
@@ -142,10 +142,10 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
         {
-            static_assert(Reflection::IsDescribed<Type>,
+            static_assert(ZyReflection::IsDescribed<Type>,
                 "A reflected component lays out its own fields with OnDescribe, or with ZY_REFLECT");
 
-            Entity(World, Scene::_::Identify<Type>(World)).Set(Reflection::Schema::Of<Type>());
+            Entity(World, ZyScene::_::Identify<Type>(World)).Set(ZyReflection::Schema::Of<Type>());
         }
     };
 

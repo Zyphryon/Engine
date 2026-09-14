@@ -19,12 +19,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool FNTLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
+    Bool FNTLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
         Reader Input(Data);
 
@@ -53,8 +53,8 @@ namespace Render
         Serializer.Serialize(Glyphs);
 
         // Optional (KERN) and variable-count (ATLS) sections follow as a tag-length-value chunk stream.
-        Font::Kerning                      Kerning;
-        Sequence<Retainer<Graphic::Image>> Images;
+        Font::Kerning                        Kerning;
+        Sequence<Retainer<ZyGraphic::Image>> Images;
 
         while (Input.GetAvailable() >= 2 * sizeof(UInt32))
         {
@@ -77,10 +77,10 @@ namespace Render
                 break;
             case ('A' | ('T' << 8) | ('L' << 16) | ('S' << 24)):
             {
-                ConstRetainer<Graphic::Image> Page = Images.Append(Retainer<Graphic::Image>::Create("Atlas"));
-                Page->SetPolicy(Content::Resource::Policy::Exclusive);
+                ConstRetainer<ZyGraphic::Image> Page = Images.Append(Retainer<ZyGraphic::Image>::Create("Atlas"));
+                Page->SetPolicy(ZyContent::Resource::Policy::Exclusive);
 
-                if (!Graphic::TEXLoader::Parse(Body, * Page))
+                if (!ZyGraphic::TEXLoader::Parse(Body, * Page))
                 {
                     return false;
                 }
@@ -100,10 +100,10 @@ namespace Render
         // The atlas images and materials are owned exclusively by the font, one material per page.
         Font::Atlases Atlases(Images.GetSize());
 
-        for (ConstRetainer<Graphic::Image> Page : Images)
+        for (ConstRetainer<ZyGraphic::Image> Page : Images)
         {
-            ConstRetainer<Graphic::Material> Material = Atlases.Append(Retainer<Graphic::Material>::Create("Material"));
-            Material->SetPolicy(Content::Resource::Policy::Exclusive);
+            ConstRetainer<ZyGraphic::Material> Material = Atlases.Append(Retainer<ZyGraphic::Material>::Create("Material"));
+            Material->SetPolicy(ZyContent::Resource::Policy::Exclusive);
             Material->SetImage("Albedo"_Hash, Page);
             Material->SetParameter("Range"_Hash,
                 Vector2(Metrics.Distance / Page->GetWidth(),

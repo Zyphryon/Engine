@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::DSL::_
+namespace ZyScene::DSL::_
 {
     /// \brief Holds the callable a system or observer runs, so flecs can invoke and release it by plain pointer.
     ///
@@ -96,7 +96,7 @@ namespace Scene::DSL::_
         template<typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(Scene::_::Identify<Component>(mWorld));
+            return With(ZyScene::_::Identify<Component>(mWorld));
         }
 
         /// \brief Adds a term matching a relation pair formed by two component types.
@@ -105,7 +105,7 @@ namespace Scene::DSL::_
         template<typename Relation, typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(Scene::_::Identify<Relation>(mWorld), Scene::_::Identify<Component>(mWorld));
+            return With(ZyScene::_::Identify<Relation>(mWorld), ZyScene::_::Identify<Component>(mWorld));
         }
 
         /// \brief Adds a term matching an identifier resolved at runtime.
@@ -212,7 +212,7 @@ namespace Scene::DSL::_
         template<typename Type, typename Comparator>
         ZY_INLINE Ref<Descriptor> OrderBy(Comparator Comparison)
         {
-            mQuery.order_by          = Scene::_::Identify<Type>(mWorld);
+            mQuery.order_by          = ZyScene::_::Identify<Type>(mWorld);
             mQuery.order_by_callback = reinterpret_cast<ecs_order_by_action_t>(Comparison);
             return (* this);
         }
@@ -436,7 +436,7 @@ namespace Scene::DSL::_
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::DSL::_
+namespace ZyScene::DSL::_
 {
     /// \brief Represents a relationship between two types, matched as a single query term.
     ///
@@ -838,7 +838,7 @@ namespace Scene::DSL::_
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::DSL
+namespace ZyScene::DSL
 {
     /// \brief Represents terms matched with read-only access and handed to the callback.
     ///
@@ -1047,7 +1047,7 @@ namespace Scene::DSL
         {
             if constexpr (!Data)
             {
-                Builder.GroupBy(Scene::_::Identify<Relation>(Builder.GetWorld()));
+                Builder.GroupBy(ZyScene::_::Identify<Relation>(Builder.GetWorld()));
             }
         }
     };
@@ -1065,7 +1065,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            Component<Type>(World, Scene::_::Identify<Type>(World)).Grant(Values...);
+            Component<Type>(World, ZyScene::_::Identify<Type>(World)).Grant(Values...);
         }
     };
 
@@ -1118,7 +1118,7 @@ namespace Scene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            const Component<Type> Handle(World, Scene::_::Identify<Type>(World));
+            const Component<Type> Handle(World, ZyScene::_::Identify<Type>(World));
 
             (Handle.template With<Types>(), ...);
         }
@@ -1146,7 +1146,7 @@ namespace Scene::DSL
         {
             const ecs_entity_t Action = Policy == Cleanup::Remove ? EcsRemove : Policy == Cleanup::Delete ? EcsDelete : EcsPanic;
 
-            ecs_add_id(World, Scene::_::Identify<Type>(World), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
+            ecs_add_id(World, ZyScene::_::Identify<Type>(World), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
         }
     };
 
@@ -1231,7 +1231,7 @@ namespace Scene::DSL
             /// \param World The world the components belong to.
             ZY_INLINE void Reconcile(Ptr<ecs_world_t> World) const
             {
-                (Scene::_::Reconcile(World, Scene::_::Identity<Types>::Value), ...);
+                (ZyScene::_::Reconcile(World, ZyScene::_::Identity<Types>::Value), ...);
             }
 
 
@@ -1279,16 +1279,16 @@ namespace Scene::DSL
             {
                 if (Name)
                 {
-                    Scene::_::Register<Type>(World, StrConvert(Name));
+                    ZyScene::_::Register<Type>(World, StrConvert(Name));
                 }
                 else if constexpr (IsNamed<Type>)
                 {
-                    Scene::_::Register<Type>(World, Text(Type::kName));
+                    ZyScene::_::Register<Type>(World, Text(Type::kName));
                 }
                 else
                 {
                     // An empty name asks the registry to take the one the compiler records for the type.
-                    Scene::_::Register<Type>(World, Text::Empty());
+                    ZyScene::_::Register<Type>(World, Text::Empty());
                 }
             }
 
@@ -1345,7 +1345,7 @@ namespace Scene::DSL
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene::DSL::_
+namespace ZyScene::DSL::_
 {
     /// \brief Combines the callback values contributed by every expression of a description.
     ///

@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Job
+namespace ZyJob
 {
     /// \brief Identifies the pool of threads a job executes on.
     enum class Lane : UInt8
@@ -23,7 +23,7 @@ namespace Job
     };
 
     /// \brief Number of distinct lanes, used to size the per-lane pool storage.
-    inline constexpr UInt32 kMaxLanes = Enum::Count<Lane>();
+    inline constexpr UInt32 kMaxLanes = ZyEnum::Count<Lane>();
 
     /// \brief Maximum number of jobs that may be in flight at once.
     inline constexpr UInt32 kMaxJobs  = 1024;

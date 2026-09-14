@@ -19,12 +19,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool MDLLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
+    Bool MDLLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
         const Retainer<Model> Asset = Retainer<Model>::Cast(Scope.GetResource());
 
@@ -40,7 +40,7 @@ namespace Render
         // Resolve the referenced binary mesh; the content system tracks it as a dependency of this model.
         if (const Text Path = Root.GetString("Mesh"); !Path.IsEmpty())
         {
-            Asset->SetMesh(Service.Load<Graphic::Mesh>(Path, AddressOf(Scope)));
+            Asset->SetMesh(Service.Load<ZyGraphic::Mesh>(Path, AddressOf(Scope)));
         }
         else
         {
@@ -59,23 +59,23 @@ namespace Render
         {
             const UInt Count = Materials.GetSize();
 
-            Sequence<Retainer<Graphic::Material>> Table;
+            Sequence<Retainer<ZyGraphic::Material>> Table;
             Table.Reserve(Count);
 
             for (UInt Slot = 0; Slot < Count; ++Slot)
             {
-                Retainer<Graphic::Material> Object;
+                Retainer<ZyGraphic::Material> Object;
 
                 if (const JsonObject Definition = Materials.GetObject(Slot); Definition.IsValid())
                 {
-                    Object = Retainer<Graphic::Material>::Create(Content::Uri(Asset->GetKey()));
-                    Object->SetPolicy(Content::Resource::Policy::Exclusive);
+                    Object = Retainer<ZyGraphic::Material>::Create(ZyContent::Uri(Asset->GetKey()));
+                    Object->SetPolicy(ZyContent::Resource::Policy::Exclusive);
 
-                    Graphic::MTLLoader::Parse(Service, Scope, Definition, * Object);
+                    ZyGraphic::MTLLoader::Parse(Service, Scope, Definition, * Object);
                 }
                 else
                 {
-                    Object = Service.Load<Graphic::Material>(Materials.GetString(Slot), AddressOf(Scope));
+                    Object = Service.Load<ZyGraphic::Material>(Materials.GetString(Slot), AddressOf(Scope));
                 }
                 Table.Append(Move(Object));
             }

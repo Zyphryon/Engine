@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network
+namespace ZyNetwork
 {
     /// \brief Represents a queue of bytes written at the back and taken from the front.
     class Pipe final
@@ -196,10 +196,10 @@ namespace Network
         /// \param Other The pipe to trade with.
         ZY_INLINE void Swap(Ref<Pipe> Other)
         {
-            Base::Swap(mData,   Other.mData);
-            Base::Swap(mReader, Other.mReader);
-            Base::Swap(mWriter, Other.mWriter);
-            Base::Swap(mMarker, Other.mMarker);
+            ZyBase::Swap(mData,   Other.mData);
+            ZyBase::Swap(mReader, Other.mReader);
+            ZyBase::Swap(mWriter, Other.mWriter);
+            ZyBase::Swap(mMarker, Other.mMarker);
         }
 
         /// \brief Drops everything waiting, keeping the room it was written into.

@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Writes a decoded bitmap out in the engine's native texture format.
     class Exporter final
@@ -45,7 +45,7 @@ namespace Pipeline::Baker::Texture
         ///
         /// \param Format The texture format to test.
         /// \return `true` if the format is supported, otherwise `false`.
-        static Bool IsSupported(Graphic::TextureFormat Format);
+        static Bool IsSupported(ZyGraphic::TextureFormat Format);
 
         /// \brief Serializes one or more decoded bitmaps into a native texture blob.
         ///
@@ -54,7 +54,7 @@ namespace Pipeline::Baker::Texture
         /// \param Layout    The layout the slices compose.
         /// \param Profile   The settings controlling format, mip generation, and compression.
         /// \return A blob holding the texture file bytes, or an empty blob on failure.
-        static Blob Export(Ref<Job::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, Graphic::TextureLayout Layout, ConstRef<Profile> Profile);
+        static Blob Export(Ref<ZyJob::Service> Scheduler, AnyRef<Sequence<Bitmap>> Slices, ZyGraphic::TextureLayout Layout, ConstRef<Profile> Profile);
 
         /// \brief Serializes a single decoded bitmap into a native texture blob.
         ///
@@ -62,6 +62,6 @@ namespace Pipeline::Baker::Texture
         /// \param Source    The decoded bitmap to write.
         /// \param Profile   The settings controlling format, mip generation, and compression.
         /// \return A blob holding the texture file bytes, or an empty blob on failure.
-        static Blob Export(Ref<Job::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile);
+        static Blob Export(Ref<ZyJob::Service> Scheduler, AnyRef<Bitmap> Source, ConstRef<Profile> Profile);
     };
 }

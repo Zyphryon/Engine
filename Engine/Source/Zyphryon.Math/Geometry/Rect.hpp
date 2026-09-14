@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a generic 2D rectangle defined by (X1, Y1, X2, Y2) coordinates.
     template<typename Type>
@@ -955,7 +955,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            Reflection::Presentation Presentation;
+            ZyReflection::Presentation Presentation;
 
             if      constexpr (IsAnyOf<Type, Real32>)
             {
@@ -982,10 +982,10 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&AnyRect::mMinimumX>("MinimumX"),
-                Reflection::Field::Property<&AnyRect::mMinimumY>("MinimumY"),
-                Reflection::Field::Property<&AnyRect::mMaximumX>("MaximumX"),
-                Reflection::Field::Property<&AnyRect::mMaximumY>("MaximumY"));
+                ZyReflection::Field::Property<&AnyRect::mMinimumX>("MinimumX"),
+                ZyReflection::Field::Property<&AnyRect::mMinimumY>("MinimumY"),
+                ZyReflection::Field::Property<&AnyRect::mMaximumX>("MaximumX"),
+                ZyReflection::Field::Property<&AnyRect::mMaximumY>("MaximumY"));
         }
 
     private:

@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Encapsulate the graphic driver implementation using Direct3D 11.
     class D3D11Driver final : public Driver
@@ -125,7 +125,7 @@ namespace Graphic
         };
 
         /// \brief Per-format table of the highest supported quality level for each multisample count.
-        using D3D11Multisamples = Array<Array<UInt8, kMaxSamples + 1>, Enum::Count<TextureFormat>()>;
+        using D3D11Multisamples = Array<Array<UInt8, kMaxSamples + 1>, ZyEnum::Count<TextureFormat>()>;
 
         /// \brief Internal wrapper for Direct3D 11 render pass resources.
         struct D3D11Pass final

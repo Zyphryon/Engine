@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -163,8 +163,8 @@ namespace Graphic
 
     GLuint GLES3Compiler::Compile(ConstRef<Program> Program, Ref<GLES3Build> Build) const
     {
-        Build.Vertex   = Compile(ShaderStage::Vertex,   Program.Modules[Enum::Cast(ShaderStage::Vertex)],   Program.Macros);
-        Build.Fragment = Compile(ShaderStage::Fragment, Program.Modules[Enum::Cast(ShaderStage::Fragment)], Program.Macros);
+        Build.Vertex   = Compile(ShaderStage::Vertex,   Program.Modules[ZyEnum::Cast(ShaderStage::Vertex)],   Program.Macros);
+        Build.Fragment = Compile(ShaderStage::Fragment, Program.Modules[ZyEnum::Cast(ShaderStage::Fragment)], Program.Macros);
 
         if (Build.Vertex == 0 || Build.Fragment == 0)
         {

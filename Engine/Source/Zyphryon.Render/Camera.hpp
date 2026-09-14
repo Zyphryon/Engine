@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Represents a 3D camera with view and projection transforms.
     class Camera final
@@ -511,7 +511,7 @@ namespace Render
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
         template<Origin Origin = Origin::Northwest>
-        ZY_INLINE Vector3 GetWorldCoordinates(Vector3 Position, ConstRef<Graphic::Viewport> Viewport) const
+        ZY_INLINE Vector3 GetWorldCoordinates(Vector3 Position, ConstRef<ZyGraphic::Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -529,7 +529,7 @@ namespace Render
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The reconstructed world-space position.
         template<Origin Origin = Origin::Northwest>
-        ZY_INLINE Vector2 GetWorldCoordinates(Vector2 Position, ConstRef<Graphic::Viewport> Viewport) const
+        ZY_INLINE Vector2 GetWorldCoordinates(Vector2 Position, ConstRef<ZyGraphic::Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -546,7 +546,7 @@ namespace Render
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel Origin and Z is in depth range.
         template<Origin Origin = Origin::Southwest>
-        ZY_INLINE Vector3 GetScreenCoordinates(Vector3 Position, ConstRef<Graphic::Viewport> Viewport) const
+        ZY_INLINE Vector3 GetScreenCoordinates(Vector3 Position, ConstRef<ZyGraphic::Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -566,7 +566,7 @@ namespace Render
         /// \param Viewport The viewport definition, including dimensions and depth range.
         /// \return The screen-space position, where X and Y are in pixel coordinates.
         template<Origin Origin = Origin::Southwest>
-        ZY_INLINE Vector2 GetScreenCoordinates(Vector2 Position, ConstRef<Graphic::Viewport> Viewport) const
+        ZY_INLINE Vector2 GetScreenCoordinates(Vector2 Position, ConstRef<ZyGraphic::Viewport> Viewport) const
         {
             ZY_ASSERT(Viewport.Width > 0 && Viewport.Height > 0, "Invalid viewport size");
             ZY_ASSERT(!IsAlmostZero(Viewport.MaxDepth - Viewport.MinDepth), "Invalid depth range");
@@ -585,7 +585,7 @@ namespace Render
         /// \param Viewport  The viewport definition, including dimensions and depth range.
         /// \return The corresponding offset in screen pixels.
         template<Origin Origin = Origin::Southwest>
-        ZY_INLINE Vector2 GetScreenDirection(Vector3 Direction, ConstRef<Graphic::Viewport> Viewport) const
+        ZY_INLINE Vector2 GetScreenDirection(Vector3 Direction, ConstRef<ZyGraphic::Viewport> Viewport) const
         {
             const Vector3 Base = GetScreenCoordinates<Origin>(Vector3::Zero(), Viewport);
             const Vector3 Tip  = GetScreenCoordinates<Origin>(Direction, Viewport);
@@ -605,7 +605,7 @@ namespace Render
         /// \param Viewport The viewport definition providing the origin offset and dimensions.
         /// \return The corresponding Y coordinate in normalized device space `[-1.0, 1.0]`.
         template<Origin Origin>
-        ZY_INLINE static constexpr Real32 ScreenYToNormalizedDeviceY(Real32 Y, ConstRef<Graphic::Viewport> Viewport)
+        ZY_INLINE static constexpr Real32 ScreenYToNormalizedDeviceY(Real32 Y, ConstRef<ZyGraphic::Viewport> Viewport)
         {
             const Real32 Normalized = (Y - Viewport.Y) / Viewport.Height * 2.0f;
 
@@ -625,7 +625,7 @@ namespace Render
         /// \param Viewport The viewport definition providing the origin offset and dimensions.
         /// \return The corresponding Y coordinate in screen space.
         template<Origin Origin>
-        ZY_INLINE static constexpr Real32 NormalizedDeviceYToScreenY(Real32 Y, ConstRef<Graphic::Viewport> Viewport)
+        ZY_INLINE static constexpr Real32 NormalizedDeviceYToScreenY(Real32 Y, ConstRef<ZyGraphic::Viewport> Viewport)
         {
             const Real32 Scaled = Viewport.Height * (Y + 1.0f) * 0.5f;
 

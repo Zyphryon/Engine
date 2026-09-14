@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Input
+namespace ZyInput
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -44,10 +44,10 @@ namespace Input
             mThisScrollY += Event.MouseScroll.DeltaY;
             break;
         case Event::Type::MouseUp:
-            mThisButtons.Reset(Enum::Cast(Event.MouseAction.Button));
+            mThisButtons.Reset(ZyEnum::Cast(Event.MouseAction.Button));
             break;
         case Event::Type::MouseDown:
-            mThisButtons.Set(Enum::Cast(Event.MouseAction.Button));
+            mThisButtons.Set(ZyEnum::Cast(Event.MouseAction.Button));
             break;
         default:
             break;

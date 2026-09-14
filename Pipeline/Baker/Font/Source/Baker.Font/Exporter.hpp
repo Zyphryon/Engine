@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Font
+namespace ZyPipeline::Baker::Font
 {
     /// \brief Writes a baked typeface out in the engine's native font format.
     class Exporter final
@@ -57,10 +57,10 @@ namespace Pipeline::Baker::Font
         /// \param Side    The side every page shares, in texels.
         /// \return A blob holding the font file bytes, or an empty blob on failure.
         static Blob Export(
-            Ref<Render::Font::Metrics> Metrics,
-            Ref<Render::Font::Glyphs>  Glyphs,
-            Ref<Render::Font::Kerning> Kerning,
-            ConstSpan<Blob>            Pages,
-            UInt16                     Side);
+            Ref<ZyRender::Font::Metrics> Metrics,
+            Ref<ZyRender::Font::Glyphs>  Glyphs,
+            Ref<ZyRender::Font::Kerning> Kerning,
+            ConstSpan<Blob>              Pages,
+            UInt16                       Side);
     };
 }

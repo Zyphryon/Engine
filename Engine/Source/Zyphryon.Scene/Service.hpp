@@ -28,10 +28,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene
+namespace ZyScene
 {
     /// \brief Manages the world lifecycle, entity allocation, and scene serialization.
-    class Service final : public Engine::Subsystem
+    class Service final : public ZyEngine::Subsystem
     {
     public:
 
@@ -168,6 +168,41 @@ namespace Scene
             requires (DSL::IsSelfDeclared<Types> && ...)
         {
             Register(Types::OnDeclare()...);
+        }
+
+        /// \brief Imports a module, declaring everything it holds under a name of its own.
+        ///
+        /// \tparam Type       The module to import, which declares itself through a static `OnImport`.
+        /// \tparam Arguments  The types of whatever else the module is declared with.
+        /// \param  Parameters Whatever else the module is declared with, handed to it after the service.
+        /// \return The entity the module was imported as.
+        template<typename Type, typename... Arguments>
+        ZY_INLINE Entity Import(AnyRef<Arguments>... Parameters)
+            requires requires (Ref<Service> Host, Arguments... List) { Type::OnImport(Host, List...); }
+        {
+            // The name carries no terminator of its own, so it is copied before the world is given it.
+            const Str64 Label(_::GetTypeName<Type>());
+
+            ecs_entity_desc_t Description { };
+            Description.name     = Label.GetData();
+            Description.sep      = "::";
+            Description.root_sep = "::";
+
+            const Entity::Handle Handle = ecs_entity_init(mWorld, AddressOf(Description));
+
+            ZY_ASSERT(Handle, "Failed to create a module in the world");
+
+            if (!ecs_has_id(mWorld, Handle, EcsModule))
+            {
+                ecs_add_id(mWorld, Handle, EcsModule);
+
+                const ecs_entity_t Restored = ecs_set_scope(mWorld, Handle);
+
+                Type::OnImport(* this, Forward<Arguments>(Parameters)...);
+
+                ecs_set_scope(mWorld, Restored);
+            }
+            return Entity(mWorld, Handle);
         }
 
         /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.

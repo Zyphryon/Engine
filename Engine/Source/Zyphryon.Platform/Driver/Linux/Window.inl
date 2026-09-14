@@ -21,260 +21,260 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Platform
+namespace ZyPlatform
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Input::Key ConvertKeySymbol(KeySym Symbol)
+    static ZyInput::Key ConvertKeySymbol(KeySym Symbol)
     {
         switch (Symbol)
         {
         case XK_a:
         case XK_A:
-            return Input::Key::A;
+            return ZyInput::Key::A;
         case XK_b:
         case XK_B:
-            return Input::Key::B;
+            return ZyInput::Key::B;
         case XK_c:
         case XK_C:
-            return Input::Key::C;
+            return ZyInput::Key::C;
         case XK_d:
         case XK_D:
-            return Input::Key::D;
+            return ZyInput::Key::D;
         case XK_e:
         case XK_E:
-            return Input::Key::E;
+            return ZyInput::Key::E;
         case XK_f:
         case XK_F:
-            return Input::Key::F;
+            return ZyInput::Key::F;
         case XK_g:
         case XK_G:
-            return Input::Key::G;
+            return ZyInput::Key::G;
         case XK_h:
         case XK_H:
-            return Input::Key::H;
+            return ZyInput::Key::H;
         case XK_i:
         case XK_I:
-            return Input::Key::I;
+            return ZyInput::Key::I;
         case XK_j:
         case XK_J:
-            return Input::Key::J;
+            return ZyInput::Key::J;
         case XK_k:
         case XK_K:
-            return Input::Key::K;
+            return ZyInput::Key::K;
         case XK_l:
         case XK_L:
-            return Input::Key::L;
+            return ZyInput::Key::L;
         case XK_m:
         case XK_M:
-            return Input::Key::M;
+            return ZyInput::Key::M;
         case XK_n:
         case XK_N:
-            return Input::Key::N;
+            return ZyInput::Key::N;
         case XK_o:
         case XK_O:
-            return Input::Key::O;
+            return ZyInput::Key::O;
         case XK_p:
         case XK_P:
-            return Input::Key::P;
+            return ZyInput::Key::P;
         case XK_q:
         case XK_Q:
-            return Input::Key::Q;
+            return ZyInput::Key::Q;
         case XK_r:
         case XK_R:
-            return Input::Key::R;
+            return ZyInput::Key::R;
         case XK_s:
         case XK_S:
-            return Input::Key::S;
+            return ZyInput::Key::S;
         case XK_t:
         case XK_T:
-            return Input::Key::T;
+            return ZyInput::Key::T;
         case XK_u:
         case XK_U:
-            return Input::Key::U;
+            return ZyInput::Key::U;
         case XK_v:
         case XK_V:
-            return Input::Key::V;
+            return ZyInput::Key::V;
         case XK_w:
         case XK_W:
-            return Input::Key::W;
+            return ZyInput::Key::W;
         case XK_x:
         case XK_X:
-            return Input::Key::X;
+            return ZyInput::Key::X;
         case XK_y:
         case XK_Y:
-            return Input::Key::Y;
+            return ZyInput::Key::Y;
         case XK_z:
         case XK_Z:
-            return Input::Key::Z;
+            return ZyInput::Key::Z;
         case XK_0:
-            return Input::Key::Alpha0;
+            return ZyInput::Key::Alpha0;
         case XK_1:
-            return Input::Key::Alpha1;
+            return ZyInput::Key::Alpha1;
         case XK_2:
-            return Input::Key::Alpha2;
+            return ZyInput::Key::Alpha2;
         case XK_3:
-            return Input::Key::Alpha3;
+            return ZyInput::Key::Alpha3;
         case XK_4:
-            return Input::Key::Alpha4;
+            return ZyInput::Key::Alpha4;
         case XK_5:
-            return Input::Key::Alpha5;
+            return ZyInput::Key::Alpha5;
         case XK_6:
-            return Input::Key::Alpha6;
+            return ZyInput::Key::Alpha6;
         case XK_7:
-            return Input::Key::Alpha7;
+            return ZyInput::Key::Alpha7;
         case XK_8:
-            return Input::Key::Alpha8;
+            return ZyInput::Key::Alpha8;
         case XK_9:
-            return Input::Key::Alpha9;
+            return ZyInput::Key::Alpha9;
         case XK_F1:
-            return Input::Key::F1;
+            return ZyInput::Key::F1;
         case XK_F2:
-            return Input::Key::F2;
+            return ZyInput::Key::F2;
         case XK_F3:
-            return Input::Key::F3;
+            return ZyInput::Key::F3;
         case XK_F4:
-            return Input::Key::F4;
+            return ZyInput::Key::F4;
         case XK_F5:
-            return Input::Key::F5;
+            return ZyInput::Key::F5;
         case XK_F6:
-            return Input::Key::F6;
+            return ZyInput::Key::F6;
         case XK_F7:
-            return Input::Key::F7;
+            return ZyInput::Key::F7;
         case XK_F8:
-            return Input::Key::F8;
+            return ZyInput::Key::F8;
         case XK_F9:
-            return Input::Key::F9;
+            return ZyInput::Key::F9;
         case XK_F10:
-            return Input::Key::F10;
+            return ZyInput::Key::F10;
         case XK_F11:
-            return Input::Key::F11;
+            return ZyInput::Key::F11;
         case XK_F12:
-            return Input::Key::F12;
+            return ZyInput::Key::F12;
         case XK_Left:
-            return Input::Key::Left;
+            return ZyInput::Key::Left;
         case XK_Right:
-            return Input::Key::Right;
+            return ZyInput::Key::Right;
         case XK_Up:
-            return Input::Key::Up;
+            return ZyInput::Key::Up;
         case XK_Down:
-            return Input::Key::Down;
+            return ZyInput::Key::Down;
         case XK_Home:
-            return Input::Key::Home;
+            return ZyInput::Key::Home;
         case XK_End:
-            return Input::Key::End;
+            return ZyInput::Key::End;
         case XK_Prior:
-            return Input::Key::PageUp;
+            return ZyInput::Key::PageUp;
         case XK_Next:
-            return Input::Key::PageDown;
+            return ZyInput::Key::PageDown;
         case XK_Insert:
-            return Input::Key::Insert;
+            return ZyInput::Key::Insert;
         case XK_Delete:
-            return Input::Key::Delete;
+            return ZyInput::Key::Delete;
         case XK_space:
-            return Input::Key::Space;
+            return ZyInput::Key::Space;
         case XK_Escape:
-            return Input::Key::Escape;
+            return ZyInput::Key::Escape;
         case XK_Return:
-            return Input::Key::Enter;
+            return ZyInput::Key::Enter;
         case XK_Tab:
-            return Input::Key::Tab;
+            return ZyInput::Key::Tab;
         case XK_BackSpace:
-            return Input::Key::Backspace;
+            return ZyInput::Key::Backspace;
         case XK_Caps_Lock:
-            return Input::Key::Capital;
+            return ZyInput::Key::Capital;
         case XK_Scroll_Lock:
-            return Input::Key::Scroll;
+            return ZyInput::Key::Scroll;
         case XK_Num_Lock:
-            return Input::Key::NumLock;
+            return ZyInput::Key::NumLock;
         case XK_Print:
-            return Input::Key::Print;
+            return ZyInput::Key::Print;
         case XK_Pause:
-            return Input::Key::Pause;
+            return ZyInput::Key::Pause;
         case XK_Shift_L:
-            return Input::Key::LeftShift;
+            return ZyInput::Key::LeftShift;
         case XK_Shift_R:
-            return Input::Key::RightShift;
+            return ZyInput::Key::RightShift;
         case XK_Control_L:
-            return Input::Key::LeftCtrl;
+            return ZyInput::Key::LeftCtrl;
         case XK_Control_R:
-            return Input::Key::RightCtrl;
+            return ZyInput::Key::RightCtrl;
         case XK_Alt_L:
-            return Input::Key::LeftAlt;
+            return ZyInput::Key::LeftAlt;
         case XK_Alt_R:
-            return Input::Key::RightAlt;
+            return ZyInput::Key::RightAlt;
         case XK_Super_L:
-            return Input::Key::LeftSuper;
+            return ZyInput::Key::LeftSuper;
         case XK_Super_R:
-            return Input::Key::RightSuper;
+            return ZyInput::Key::RightSuper;
         case XK_Menu:
-            return Input::Key::Menu;
+            return ZyInput::Key::Menu;
         case XK_semicolon:
-            return Input::Key::Semicolon;
+            return ZyInput::Key::Semicolon;
         case XK_slash:
-            return Input::Key::Slash;
+            return ZyInput::Key::Slash;
         case XK_grave:
-            return Input::Key::Grave;
+            return ZyInput::Key::Grave;
         case XK_bracketleft:
-            return Input::Key::LeftBracket;
+            return ZyInput::Key::LeftBracket;
         case XK_backslash:
-            return Input::Key::Backslash;
+            return ZyInput::Key::Backslash;
         case XK_bracketright:
-            return Input::Key::RightBracket;
+            return ZyInput::Key::RightBracket;
         case XK_apostrophe:
-            return Input::Key::Apostrophe;
+            return ZyInput::Key::Apostrophe;
         case XK_comma:
-            return Input::Key::Comma;
+            return ZyInput::Key::Comma;
         case XK_minus:
-            return Input::Key::Minus;
+            return ZyInput::Key::Minus;
         case XK_period:
-            return Input::Key::Period;
+            return ZyInput::Key::Period;
         case XK_equal:
-            return Input::Key::Equal;
+            return ZyInput::Key::Equal;
         case XK_KP_0:
         case XK_KP_Insert:
-            return Input::Key::Keypad0;
+            return ZyInput::Key::Keypad0;
         case XK_KP_1:
         case XK_KP_End:
-            return Input::Key::Keypad1;
+            return ZyInput::Key::Keypad1;
         case XK_KP_2:
         case XK_KP_Down:
-            return Input::Key::Keypad2;
+            return ZyInput::Key::Keypad2;
         case XK_KP_3:
         case XK_KP_Next:
-            return Input::Key::Keypad3;
+            return ZyInput::Key::Keypad3;
         case XK_KP_4:
         case XK_KP_Left:
-            return Input::Key::Keypad4;
+            return ZyInput::Key::Keypad4;
         case XK_KP_5:
         case XK_KP_Begin:
-            return Input::Key::Keypad5;
+            return ZyInput::Key::Keypad5;
         case XK_KP_6:
         case XK_KP_Right:
-            return Input::Key::Keypad6;
+            return ZyInput::Key::Keypad6;
         case XK_KP_7:
         case XK_KP_Home:
-            return Input::Key::Keypad7;
+            return ZyInput::Key::Keypad7;
         case XK_KP_8:
         case XK_KP_Up:
-            return Input::Key::Keypad8;
+            return ZyInput::Key::Keypad8;
         case XK_KP_9:
         case XK_KP_Prior:
-            return Input::Key::Keypad9;
+            return ZyInput::Key::Keypad9;
         case XK_KP_Decimal:
         case XK_KP_Delete:
-            return Input::Key::Decimal;
+            return ZyInput::Key::Decimal;
         case XK_KP_Divide:
-            return Input::Key::Divide;
+            return ZyInput::Key::Divide;
         case XK_KP_Multiply:
-            return Input::Key::Multiply;
+            return ZyInput::Key::Multiply;
         case XK_KP_Subtract:
-            return Input::Key::Subtract;
+            return ZyInput::Key::Subtract;
         case XK_KP_Add:
-            return Input::Key::Add;
+            return ZyInput::Key::Add;
         default:
-            return Input::Key::Unknown;
+            return ZyInput::Key::Unknown;
         }
     }
 
@@ -444,7 +444,7 @@ namespace Platform
             {
                 const KeySym Symbol = ::XLookupKeysym(AddressOf(Event.xkey), 0);
 
-                if (const Input::Key Key = ConvertKeySymbol(Symbol); Key != Input::Key::Unknown)
+                if (const ZyInput::Key Key = ConvertKeySymbol(Symbol); Key != ZyInput::Key::Unknown)
                 {
                     Dispatcher.QueueKeyDown(Key);
                 }
@@ -474,7 +474,7 @@ namespace Platform
             {
                 const KeySym Symbol = ::XLookupKeysym(AddressOf(Event.xkey), 0);
 
-                if (const Input::Key Key = ConvertKeySymbol(Symbol); Key != Input::Key::Unknown)
+                if (const ZyInput::Key Key = ConvertKeySymbol(Symbol); Key != ZyInput::Key::Unknown)
                 {
                     Dispatcher.QueueKeyUp(Key);
                 }
@@ -485,13 +485,13 @@ namespace Platform
                 switch (Event.xbutton.button)
                 {
                 case Button1:
-                    Dispatcher.QueueMouseButtonDown(Input::Button::Left);
+                    Dispatcher.QueueMouseButtonDown(ZyInput::Button::Left);
                     break;
                 case Button2:
-                    Dispatcher.QueueMouseButtonDown(Input::Button::Middle);
+                    Dispatcher.QueueMouseButtonDown(ZyInput::Button::Middle);
                     break;
                 case Button3:
-                    Dispatcher.QueueMouseButtonDown(Input::Button::Right);
+                    Dispatcher.QueueMouseButtonDown(ZyInput::Button::Right);
                     break;
                 case Button4:
                     Dispatcher.QueueMouseScroll(0.0f, 1.0f);
@@ -506,10 +506,10 @@ namespace Platform
                     Dispatcher.QueueMouseScroll(1.0f, 0.0f);
                     break;
                 case 8:
-                    Dispatcher.QueueMouseButtonDown(Input::Button::Back);
+                    Dispatcher.QueueMouseButtonDown(ZyInput::Button::Back);
                     break;
                 case 9:
-                    Dispatcher.QueueMouseButtonDown(Input::Button::Forward);
+                    Dispatcher.QueueMouseButtonDown(ZyInput::Button::Forward);
                     break;
                 default:
                     break;
@@ -521,19 +521,19 @@ namespace Platform
                 switch (Event.xbutton.button)
                 {
                 case Button1:
-                    Dispatcher.QueueMouseButtonUp(Input::Button::Left);
+                    Dispatcher.QueueMouseButtonUp(ZyInput::Button::Left);
                     break;
                 case Button2:
-                    Dispatcher.QueueMouseButtonUp(Input::Button::Middle);
+                    Dispatcher.QueueMouseButtonUp(ZyInput::Button::Middle);
                     break;
                 case Button3:
-                    Dispatcher.QueueMouseButtonUp(Input::Button::Right);
+                    Dispatcher.QueueMouseButtonUp(ZyInput::Button::Right);
                     break;
                 case 8:
-                    Dispatcher.QueueMouseButtonUp(Input::Button::Back);
+                    Dispatcher.QueueMouseButtonUp(ZyInput::Button::Back);
                     break;
                 case 9:
-                    Dispatcher.QueueMouseButtonUp(Input::Button::Forward);
+                    Dispatcher.QueueMouseButtonUp(ZyInput::Button::Forward);
                     break;
                 default:
                     break;

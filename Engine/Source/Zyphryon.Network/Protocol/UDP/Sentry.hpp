@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::UDP
+namespace ZyNetwork::UDP
 {
     /// \brief Represents the proof a stranger has to send back before an endpoint writes anything down about it.
     class Sentry final
@@ -69,7 +69,7 @@ namespace Network::UDP
 
             const UInt64 Cookie = Reckon(Origin, 0);
 
-            Output[0] = Enum::Cast(Envelope::Challenge);
+            Output[0] = ZyEnum::Cast(Envelope::Challenge);
 
             Blit(Output.GetData() + kEnvelope, sizeof(Cookie), AddressOf(Cookie));
         }

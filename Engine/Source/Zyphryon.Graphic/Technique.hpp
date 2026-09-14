@@ -21,10 +21,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Represents a rendering technique containing a configured pipeline.
-    class Technique final : public Content::AbstractResource<Technique>
+    class Technique final : public ZyContent::AbstractResource<Technique>
     {
     public:
 
@@ -32,7 +32,7 @@ namespace Graphic
         using Key = UInt32;
 
         /// \brief Type alias for an array of shader modules indexed by pipeline stage.
-        using Shaders = Array<Retainer<Shader>, Enum::Count<ShaderStage>()>;
+        using Shaders = Array<Retainer<Shader>, ZyEnum::Count<ShaderStage>()>;
 
         /// \brief Specifies the groups of fixed-function state a feature replaces as a whole.
         enum class Block : UInt8
@@ -100,7 +100,7 @@ namespace Graphic
         /// \brief Constructs a technique resource with the given content key.
         ///
         /// \param Key The unique content key identifying this pipeline.
-        explicit Technique(AnyRef<Content::Uri> Key);
+        explicit Technique(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets up the technique with the given description and schema.
         ///
@@ -209,20 +209,20 @@ namespace Graphic
         /// \param Service The graphic service used to destroy the resource.
         void Unload(Ref<Service> Service);
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             return Upload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             Unload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
-        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
+        void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
     private:
 
@@ -256,7 +256,7 @@ namespace Graphic
         /// \return The bitmask holding the block's bit.
         ZY_INLINE static constexpr UInt8 GetBlockMask(Block Block)
         {
-            return (1u << Enum::Cast(Block));
+            return (1u << ZyEnum::Cast(Block));
         }
 
     private:

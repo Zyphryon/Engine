@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network
+namespace ZyNetwork
 {
     /// \brief Represents the thread every endpoint runs on, and the queues the application speaks to it through.
     class Executor final
@@ -200,24 +200,24 @@ namespace Network
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Thread                                  mWorker;
-        Platform::Timer                         mClock;
+        Thread                                 mWorker;
+        ZyPlatform::Timer                      mClock;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Mutex                                   mMutex;
-        Outbox                                  mPending;
-        Sequence<Request>                       mRequests;
-        Mailbox                                 mIncoming;
+        Mutex                                  mMutex;
+        Outbox                                 mPending;
+        Sequence<Request>                      mRequests;
+        Mailbox                                mIncoming;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Pool<Retainer<Channel>, kMaxEndpoints>  mChannels;
-        Proactor                                mWatcher;
-        Mailbox                                 mReport;
-        Outbox                                  mScratch;
-        Sequence<Request>                       mAdmit;
+        Pool<Retainer<Channel>, kMaxEndpoints> mChannels;
+        Proactor                               mWatcher;
+        Mailbox                                mReport;
+        Outbox                                 mScratch;
+        Sequence<Request>                      mAdmit;
     };
 }

@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,7 +50,7 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static auto Pick(ConstRef<Graphic::TextureMetadata> Format)
+    static auto Pick(ConstRef<ZyGraphic::TextureMetadata> Format)
     {
         const UInt32 Channel = Clamp<UInt32>(Format.Components, 1, kMaxComponents) - 1;
         const UInt32 Slot = Channel * 2 + (Format.IsSRGB ? 1 : 0);
@@ -91,12 +91,12 @@ namespace Pipeline::Baker::Texture
 
     Bitmap Mipmapper::Generate(AnyRef<Bitmap> Source, UInt8 Levels)
     {
-        const Graphic::TextureFormat   Format   = Source.GetFormat();
-        const Graphic::TextureMetadata Metadata = Graphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureFormat   Format   = Source.GetFormat();
+        const ZyGraphic::TextureMetadata Metadata = ZyGraphic::GetTextureMetadata(Format);
 
         if (Metadata.IsCompressed() || Metadata.IsPacked || Metadata.Components == 0)
         {
-            LOG_E("Texture: '{0}' must have its texels unpacked before it can be filtered", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' must have its texels unpacked before it can be filtered", ZyEnum::GetName(Format));
 
             return Bitmap();
         }
@@ -105,7 +105,7 @@ namespace Pipeline::Baker::Texture
         const UInt16 Height = Source.GetHeight();
 
         ZY_ASSERT(Source.GetLevels() == 1, "A chain can only be built from a single level");
-        ZY_ASSERT(Levels <= Graphic::GetLevelCount(Width, Height), "More levels than the extent can halve into");
+        ZY_ASSERT(Levels <= ZyGraphic::GetLevelCount(Width, Height), "More levels than the extent can halve into");
 
         // Nothing to filter, so the surface passes straight through rather than being copied.
         if (Levels <= 1)
@@ -113,24 +113,24 @@ namespace Pipeline::Baker::Texture
             return Move(Source);
         }
 
-        Blob Output = Blob::Allocate<Byte>(Graphic::GetLevelOffset(Format, Width, Height, Levels));
+        Blob Output = Blob::Allocate<Byte>(ZyGraphic::GetLevelOffset(Format, Width, Height, Levels));
 
         const Ptr<Byte> Target = Output.GetData<Byte>();
 
         // The base level carries over untouched; each later level is filtered from the one immediately above.
-        Copy(Target, Graphic::GetLevelSize(Format, Width, Height, 0), Source.GetPixels().GetData());
+        Copy(Target, ZyGraphic::GetLevelSize(Format, Width, Height, 0), Source.GetPixels().GetData());
 
         const auto Process = Pick(Metadata);
 
         for (UInt8 Level = 1; Level < Levels; ++Level)
         {
             Process(
-                Target + Graphic::GetLevelOffset(Format, Width, Height, Level - 1),
-                Graphic::GetLevelExtent(Width,  Level - 1),
-                Graphic::GetLevelExtent(Height, Level - 1),
-                Target + Graphic::GetLevelOffset(Format, Width, Height, Level),
-                Graphic::GetLevelExtent(Width,  Level),
-                Graphic::GetLevelExtent(Height, Level));
+                Target + ZyGraphic::GetLevelOffset(Format, Width, Height, Level - 1),
+                ZyGraphic::GetLevelExtent(Width,  Level - 1),
+                ZyGraphic::GetLevelExtent(Height, Level - 1),
+                Target + ZyGraphic::GetLevelOffset(Format, Width, Height, Level),
+                ZyGraphic::GetLevelExtent(Width,  Level),
+                ZyGraphic::GetLevelExtent(Height, Level));
         }
         return Bitmap(Format, Width, Height, Levels, Move(Output));
     }

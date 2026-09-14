@@ -18,17 +18,17 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Represents a shader resource containing module source code for a pipeline stage.
-    class Shader final : public Content::AbstractResource<Shader>
+    class Shader final : public ZyContent::AbstractResource<Shader>
     {
     public:
 
         /// \brief Constructs a shader resource with the given content key.
         ///
         /// \param Key The unique content key identifying this shader.
-        ZY_INLINE explicit Shader(AnyRef<Content::Uri> Key)
+        ZY_INLINE explicit Shader(AnyRef<ZyContent::Uri> Key)
             : AbstractResource { Move(Key) }
         {
         }
@@ -69,8 +69,8 @@ namespace Graphic
             return Text(mSource.GetData<Char>(), mSource.GetSize());
         }
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             // Every fragment has finished by now, and carries its own already stitched, so one pass is enough.
             if (!mFragments.IsEmpty())
@@ -80,8 +80,8 @@ namespace Graphic
             return true;
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             mFragments.Clear();
         }

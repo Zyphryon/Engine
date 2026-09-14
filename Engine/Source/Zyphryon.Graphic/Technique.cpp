@@ -17,12 +17,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Technique::Technique(AnyRef<Content::Uri> Key)
+    Technique::Technique(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) },
           mHandle          { 0 }
     {
@@ -129,9 +129,9 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Technique::OnReload(Ref<Engine::Subsystem::Host> Host)
+    void Technique::OnReload(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        Ref<Content::Service> Service = * Host.GetService<Content::Service>();
+        Ref<ZyContent::Service> Service = * Host.GetService<ZyContent::Service>();
 
         for (ConstRetainer<Shader> Shader : mDescription.Base.Shaders)
         {
@@ -183,7 +183,7 @@ namespace Graphic
 
             Program.Macros.Append(Patch.Macros);
 
-            for (UInt Stage = 0, Stages = Enum::Count<ShaderStage>(); Stage < Stages; ++Stage)
+            for (UInt Stage = 0, Stages = ZyEnum::Count<ShaderStage>(); Stage < Stages; ++Stage)
             {
                 if (Patch.Shaders[Stage])
                 {
@@ -206,7 +206,7 @@ namespace Graphic
             Claimed = SetBit(Claimed, Feature.Blocks);
         }
 
-        for (UInt Index = 0, Limit = Enum::Count<ShaderStage>(); Index < Limit; ++Index)
+        for (UInt Index = 0, Limit = ZyEnum::Count<ShaderStage>(); Index < Limit; ++Index)
         {
             if (ConstRetainer<Shader> Shader = Modules[Index])
             {

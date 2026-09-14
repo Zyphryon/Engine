@@ -16,13 +16,13 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Graph::Graph(Ref<Engine::Subsystem::Host> Host, Ref<Blueprint> Blueprint)
-        : mService   { Host.GetService<Graphic::Service>() },
+    Graph::Graph(Ref<ZyEngine::Subsystem::Host> Host, Ref<Blueprint> Blueprint)
+        : mService   { Host.GetService<ZyGraphic::Service>() },
           mBlueprint { Blueprint },
           mEncoder   { * mService },
           mWidth     { 0 },
@@ -114,7 +114,7 @@ namespace Render
         for (ConstRef<Step> Entry : mSteps)
         {
             // The display surface is not the graph's to destroy, and an inline step never owned its handle.
-            if (!Entry.Inline && Entry.Handle != Graphic::kDisplay)
+            if (!Entry.Inline && Entry.Handle != ZyGraphic::kDisplay)
             {
                 mService->DeletePass(Entry.Handle);
             }
@@ -146,23 +146,23 @@ namespace Render
 
             if (!IsDepthOnly && (Colors.IsEmpty() || Colors.GetFront().Target == Pass::kNone))
             {
-                Entry.Handle   = Graphic::kDisplay;
-                Entry.Viewport = Graphic::Viewport(0.0f, 0.0f, Width, Height);
+                Entry.Handle   = ZyGraphic::kDisplay;
+                Entry.Viewport = ZyGraphic::Viewport(0.0f, 0.0f, Width, Height);
                 continue;
             }
 
-            Sequence<Graphic::ColorAttachment, Graphic::kMaxAttachments> Resolved;
+            Sequence<ZyGraphic::ColorAttachment, ZyGraphic::kMaxAttachments> Resolved;
 
             for (ConstRef<Pass::ColorAttachment> Color : Colors)
             {
-                Ref<Graphic::ColorAttachment> Attachment = Resolved.Append();
+                Ref<ZyGraphic::ColorAttachment> Attachment = Resolved.Append();
                 Attachment.Target      = Color.Target  != Pass::kNone ? GetTexture(Color.Target)  : 0;
                 Attachment.Resolve     = Color.Resolve != Pass::kNone ? GetTexture(Color.Resolve) : 0;
                 Attachment.LoadAction  = Color.Load;
                 Attachment.StoreAction = Color.Store;
             }
 
-            Graphic::DepthAttachment Depth;
+            ZyGraphic::DepthAttachment Depth;
 
             if (ConstRef<Pass::DepthAttachment> Source = Stage.GetDepth(); Source.Target != Pass::kNone)
             {
@@ -177,7 +177,7 @@ namespace Render
 
             // The pass viewport tracks the size its first target came out at, colors first.
             const UInt32 Primary = IsDepthOnly ? Stage.GetDepth().Target : Colors.GetFront().Target;
-            Entry.Viewport = Graphic::Viewport(0.0f, 0.0f, GetWidth(Primary), GetHeight(Primary));
+            Entry.Viewport = ZyGraphic::Viewport(0.0f, 0.0f, GetWidth(Primary), GetHeight(Primary));
         }
     }
 
@@ -194,7 +194,7 @@ namespace Render
         for (ConstRef<Step> Entry : mSteps)
         {
             // The display surface is not the graph's to destroy, and an inline step never owned its handle.
-            if (!Entry.Inline && Entry.Handle != Graphic::kDisplay)
+            if (!Entry.Inline && Entry.Handle != ZyGraphic::kDisplay)
             {
                 mService->DeletePass(Entry.Handle);
             }
@@ -207,7 +207,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Graph::Run(Graphic::Stream Frame)
+    void Graph::Run(ZyGraphic::Stream Frame)
     {
         // Bind the frame-global uniforms shared by every pass and draw this frame.
         mEncoder.SetFrame(Frame);
@@ -241,7 +241,7 @@ namespace Render
             // The group opens on its first active pass, clearing as the pass that declared the target asked.
             if (!Opened)
             {
-                Sequence<Color, Graphic::kMaxAttachments> Clears;
+                Sequence<Color, ZyGraphic::kMaxAttachments> Clears;
 
                 for (ConstRef<Pass::ColorAttachment> Color : Owner->GetColors())
                 {

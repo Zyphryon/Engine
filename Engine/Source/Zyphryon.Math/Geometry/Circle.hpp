@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a 2D circle defined by a center point and radius.
     class Circle final
@@ -362,7 +362,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Circle" };
+            return ZyReflection::Presentation { .Name = "Math.Circle" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -371,8 +371,8 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Circle::mCenter>("Center"),
-                Reflection::Field::Property<&Circle::mRadius>("Radius"));
+                ZyReflection::Field::Property<&Circle::mCenter>("Center"),
+                ZyReflection::Field::Property<&Circle::mRadius>("Radius"));
         }
 
     private:

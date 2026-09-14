@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -565,8 +565,8 @@ namespace Graphic
         Description.BindFlags  = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
         Description.MiscFlags  = IsCube ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
         Description.SampleDesc = {
-            .Count = Enum::Cast(Samples),
-            .Quality = mDeviceProperties.Multisample[Enum::Cast(Format)][Enum::Cast(Samples)]
+            .Count = ZyEnum::Cast(Samples),
+            .Quality = mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Samples)]
         };
 
         if (HasBit(Usage, Usage::Target))
@@ -587,7 +587,7 @@ namespace Graphic
 
         Ref<D3D11Texture> Texture = mTextures[ID];
         Texture.Format  = Format;
-        Texture.Samples = Enum::Cast(Samples);
+        Texture.Samples = ZyEnum::Cast(Samples);
         Texture.Levels  = Levels;
         Texture.Layers  = Slices;
 
@@ -1014,7 +1014,7 @@ namespace Graphic
         }
 
         // Query supported multisample anti-aliasing (MSAA) levels for each texture format.
-        for (const TextureFormat Format : Enum::GetValues<TextureFormat>())
+        for (const TextureFormat Format : ZyEnum::GetValues<TextureFormat>())
         {
             if (Format == TextureFormat::Unspecified)
             {
@@ -1023,18 +1023,18 @@ namespace Graphic
 
             const DXGI_FORMAT DXGIFormat = D3D11Convert(Format);
 
-            for (const Multisample Sample : Enum::GetValues<Multisample>())
+            for (const Multisample Sample : ZyEnum::GetValues<Multisample>())
             {
                 const UINT Count   = static_cast<UInt32>(Sample);
                 UINT       Quality = 0;
 
                 if (SUCCEEDED(mDevice->CheckMultisampleQualityLevels(DXGIFormat, Count, AddressOf(Quality))) && Quality > 0)
                 {
-                    mDeviceProperties.Multisample[Enum::Cast(Format)][Enum::Cast(Sample)] = static_cast<UInt8>(Quality - 1);
+                    mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Sample)] = static_cast<UInt8>(Quality - 1);
                 }
                 else
                 {
-                    mDeviceProperties.Multisample[Enum::Cast(Format)][Enum::Cast(Sample)] = 0;
+                    mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Sample)] = 0;
                 }
             }
         }

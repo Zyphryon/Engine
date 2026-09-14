@@ -19,17 +19,17 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Represents an immutable, GPU-backed texture asset intended for sampling.
-    class Image final : public Content::AbstractResource<Image>
+    class Image final : public ZyContent::AbstractResource<Image>
     {
     public:
 
         /// \brief Constructs an image resource with the given content key.
         ///
         /// \param Key The unique content key identifying this image.
-        explicit Image(AnyRef<Content::Uri> Key);
+        explicit Image(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets up the image with specified parameters and raw data.
         ///
@@ -109,14 +109,14 @@ namespace Graphic
         /// \param Service The graphic service used to destroy the resource.
         void Unload(Ref<Service> Service);
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             return Upload(* Host.GetService<Service>());
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
             Unload(* Host.GetService<Service>());
         }

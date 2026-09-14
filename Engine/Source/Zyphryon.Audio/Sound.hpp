@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace ZyAudio
 {
     /// \brief Represents an audio sound resource containing raw audio data and its associated metadata.
-    class Sound final : public Content::AbstractResource<Sound>
+    class Sound final : public ZyContent::AbstractResource<Sound>
     {
     public:
 
@@ -34,7 +34,7 @@ namespace Audio
         /// \brief Constructs the sound resource with a unique key.
         ///
         /// \param Key The unique content key identifying this sound.
-        explicit Sound(AnyRef<Content::Uri> Key);
+        explicit Sound(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Populates the sound with audio data and its associated metadata.
         ///
@@ -45,8 +45,8 @@ namespace Audio
         /// \param Samples   The raw audio data for the sound, either PCM or encoded bytes.
         void Load(UInt64 Frames, UInt32 Frequency, UInt16 Stride, AnyRef<Codec> Codec, AnyRef<Blob> Samples);
         
-        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
-        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
+        void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
         /// \brief Creates a new decoder instance for this sound's audio data using the associated codec.
         ///

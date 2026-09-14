@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Rewrites a bitmap's texels into another interleaved format.
     class Transcoder final
@@ -32,6 +32,6 @@ namespace Pipeline::Baker::Texture
         /// \param Source The bitmap to convert.
         /// \param Format The format to produce.
         /// \return A bitmap in the target format, or an invalid bitmap when the format cannot be written.
-        static Bitmap Transcode(AnyRef<Bitmap> Source, Graphic::TextureFormat Format);
+        static Bitmap Transcode(AnyRef<Bitmap> Source, ZyGraphic::TextureFormat Format);
     };
 }

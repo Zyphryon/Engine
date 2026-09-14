@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network::UDP
+namespace ZyNetwork::UDP
 {
     /// \brief Represents everything one peer has been handed to say and everything it has heard back.
     /// TODO: Current support: Unreliable (Only)

@@ -26,7 +26,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a generic vector with (x, y, z, w) floating-point components.
     class ZY_ALIGN(16) Vector4 final
@@ -91,7 +91,7 @@ inline namespace Math
         template<Real32 Tolerance = kTolerance<Real32>>
         ZY_INLINE Bool IsNormalized() const
         {
-            return Base::Abs(GetLengthSquared() - 1.0f) <= Tolerance;
+            return ZyBase::Abs(GetLengthSquared() - 1.0f) <= Tolerance;
         }
 
         /// \brief Checks if this vector is parallel to another vector (based on the XYZ components).
@@ -439,8 +439,8 @@ inline namespace Math
             ZY_ALIGN(16) Array<Real32, 4> Result;
             Store(Result.GetData());
 
-            static constexpr Format::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
-            Format::Processor<Output>::Format(Buffer, kPattern, Result[0], Result[1], Result[2], Result[3]);
+            static constexpr ZyFormat::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, Result[0], Result[1], Result[2], Result[3]);
         }
 
     public:
@@ -784,7 +784,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Vector4" };
+            return ZyReflection::Presentation { .Name = "Math.Vector4" };
         }
 
     private:

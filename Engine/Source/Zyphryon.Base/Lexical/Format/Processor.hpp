@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Format
+namespace ZyFormat
 {
     /// \brief Concept that is satisfied when \p Type can be formatted into \p Output via an `OnFormat` method.
     template<typename Type, typename Output>

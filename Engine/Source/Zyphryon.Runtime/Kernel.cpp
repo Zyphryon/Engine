@@ -32,7 +32,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Runtime
+namespace ZyRuntime
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -48,21 +48,21 @@ namespace Runtime
     void Kernel::Save(JsonObject Root)
     {
 #if !defined(ZY_MODE_HEADLESS)
-        if (ConstRetainer<Platform::Service> Platform = GetService<Platform::Service>())
+        if (ConstRetainer<ZyPlatform::Service> Platform = GetService<ZyPlatform::Service>())
         {
-            ConstRef<Platform::Window> Window = Platform->GetWindow();
+            ConstRef<ZyPlatform::Window> Window = Platform->GetWindow();
 
             mStartup.SetWindowWidth(Window.GetWidth());
             mStartup.SetWindowHeight(Window.GetHeight());
             mStartup.SetWindowFullscreen(Window.IsFullscreen());
 
-            if (const ConstPtr<Platform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY()))
+            if (const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY()))
             {
                 mStartup.SetWindowMonitor(Monitor->GetName());
             }
         }
 
-        if (ConstRetainer<Graphic::Service> Graphics = GetService<Graphic::Service>())
+        if (ConstRetainer<ZyGraphic::Service> Graphics = GetService<ZyGraphic::Service>())
         {
             mStartup.SetGraphicsTearless(Graphics->IsTearless());
         }
@@ -74,7 +74,7 @@ namespace Runtime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<Engine::Modules> Modules)
+    void Kernel::Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<ZyEngine::Modules> Modules)
     {
         ZY_PROFILE_THREAD("Main Thread");
 
@@ -132,7 +132,7 @@ namespace Runtime
 #if !defined(ZY_MODE_HEADLESS)
 
         LOG_I("Kernel: Creating platform service");
-        ConstRetainer<Platform::Service> Platform = Register<Platform::Service>();
+        ConstRetainer<ZyPlatform::Service> Platform = Register<ZyPlatform::Service>();
         if (!Platform->Initialize(
             mStartup.GetWindowMonitor(),
             mStartup.GetWindowTitle(),
@@ -146,7 +146,7 @@ namespace Runtime
         }
 
         LOG_I("Kernel: Creating input service");
-        ConstRetainer<Input::Service> Input = Register<Input::Service>();
+        ConstRetainer<ZyInput::Service> Input = Register<ZyInput::Service>();
         Input->OnWindowExit.AddMethod<& Kernel::OnWindowExit>(this);
         Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
         Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
@@ -154,37 +154,37 @@ namespace Runtime
 #endif
 
         LOG_I("Kernel: Creating job service");
-        Register<Job::Service>();
+        Register<ZyJob::Service>();
 
         LOG_I("Kernel: Creating network service");
-        if (ConstRetainer<Network::Service> Network = Register<Network::Service>(); !Network->Initialize())
+        if (ConstRetainer<ZyNetwork::Service> Network = Register<ZyNetwork::Service>(); !Network->Initialize())
         {
-            Unregister<Network::Service>();
+            Unregister<ZyNetwork::Service>();
 
             LOG_W("Kernel: Failed to initialize network service");
         }
 
         LOG_I("Kernel: Creating content service");
-        Register<Content::Service>();
+        Register<ZyContent::Service>();
 
         LOG_I("Kernel: Creating scene service");
-        Register<Scene::Service>();
+        Register<ZyScene::Service>();
 
 #if !defined(ZY_MODE_HEADLESS)
 
         LOG_I("Kernel: Creating graphic service");
-        ConstRetainer<Graphic::Service> Graphic = Register<Graphic::Service>();
+        ConstRetainer<ZyGraphic::Service> Graphic = Register<ZyGraphic::Service>();
 
         LOG_I("Kernel: Creating audio service");
-        ConstRetainer<Audio::Service> Audio = Register<Audio::Service>();
+        ConstRetainer<ZyAudio::Service> Audio = Register<ZyAudio::Service>();
 
         LOG_I("Kernel: Creating render service");
-        Register<Render::Service>();
+        Register<ZyRender::Service>();
 
 #endif
 
         // Attaches external modules to the engine, allowing them to register their own services and systems.
-        for (Ref<Unique<Engine::Module>> Module : mModules)
+        for (Ref<Unique<ZyEngine::Module>> Module : mModules)
         {
             LOG_I("Kernel: Attaching module '{0}' v.{1}", Module->GetName(), Module->GetVersion());
             Module->OnAttach(* this);
@@ -192,23 +192,23 @@ namespace Runtime
 
 #if !defined(ZY_MODE_HEADLESS)
 
-        Ref<Platform::Window> Window = Platform->GetWindow();
+        Ref<ZyPlatform::Window> Window = Platform->GetWindow();
 
         LOG_I("Kernel: Initializing graphic service");
-        Graphic::Configuration GraphicsConfig;
+        ZyGraphic::Configuration GraphicsConfig;
         GraphicsConfig.Tearless    = mStartup.IsGraphicsTearless();
         GraphicsConfig.Width       = Window.GetWidth();
         GraphicsConfig.Height      = Window.GetHeight();
         GraphicsConfig.ColorFormat = mStartup.GetGraphicsColorFormat();
         GraphicsConfig.DepthFormat = mStartup.GetGraphicsDepthFormat();
 
-        if (GraphicsConfig.ColorFormat == Graphic::TextureFormat::Unspecified)
+        if (GraphicsConfig.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
         {
-            const ConstPtr<Platform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
+            const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
 
             GraphicsConfig.ColorFormat = (Monitor && Monitor->IsHDR())
-                ? Graphic::TextureFormat::RGBA16Float
-                : Graphic::TextureFormat::RGBA8UIntNorm_sRGB;
+                ? ZyGraphic::TextureFormat::RGBA16Float
+                : ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB;
         }
 
         Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
@@ -240,7 +240,7 @@ namespace Runtime
         OnTick(Delta);
 
         // Update all registered services with the current frame delta.
-        Engine::Subsystem::Host::Tick(Delta);
+        ZyEngine::Subsystem::Host::Tick(Delta);
 
         ZY_PROFILE_FRAME;
         return mAlive;
@@ -255,7 +255,7 @@ namespace Runtime
         OnTerminate();
 
         // Detaches external modules to the engine, allowing them to clean up any resources they allocated.
-        for (Ref<Unique<Engine::Module>> Module : mModules)
+        for (Ref<Unique<ZyEngine::Module>> Module : mModules)
         {
             Module->OnDetach(* this);
         }
@@ -264,7 +264,7 @@ namespace Runtime
         Teardown();
 
         // The application no longer owns `main`, so this is the last place its log tail can be written out.
-        Log::Flush();
+        ZyLog::Flush();
 
 #if defined(ZY_PLATFORM_WEB)
 
@@ -290,7 +290,7 @@ namespace Runtime
 
     Bool Kernel::OnWindowResize(UInt32 Width, UInt32 Height)
     {
-        if (ConstRetainer<Graphic::Service> Graphic = GetService<Graphic::Service>())
+        if (ConstRetainer<ZyGraphic::Service> Graphic = GetService<ZyGraphic::Service>())
         {
             Graphic->Reset(Width, Height, Graphic->IsTearless());
         }
@@ -304,7 +304,7 @@ namespace Runtime
     {
         if (mStartup.IsAudioPauseOnFocusLost())
         {
-            if (ConstRetainer<Audio::Service> Audio = GetService<Audio::Service>())
+            if (ConstRetainer<ZyAudio::Service> Audio = GetService<ZyAudio::Service>())
             {
                 if (Focused)
                 {

@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief The widest interleaved layout handled, and the size of the scratch a texel unpacks into.
     static constexpr UInt32 kMaxComponents = 4;
@@ -46,7 +46,7 @@ namespace Pipeline::Baker::Texture
     ///
     /// \param Format The format description to classify.
     /// \return The matching storage kind.
-    ZY_INLINE Component GetComponent(ConstRef<Graphic::TextureMetadata> Format)
+    ZY_INLINE Component GetComponent(ConstRef<ZyGraphic::TextureMetadata> Format)
     {
         const UInt32 Bits = Format.BitsPerComponent();
 

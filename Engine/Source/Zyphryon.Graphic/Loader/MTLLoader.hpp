@@ -19,10 +19,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Content loader for material assets using JSON.
-    class MTLLoader final : public Content::Loader
+    class MTLLoader final : public ZyContent::Loader
     {
     public:
 
@@ -32,7 +32,7 @@ namespace Graphic
     public:
 
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
-        Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+        Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
 
     public:
 
@@ -42,6 +42,6 @@ namespace Graphic
         /// \param Scope   The scope that tracks the material's image dependencies.
         /// \param Root    The material JSON object.
         /// \param Asset   The material resource to populate.
-        static void Parse(Ref<Content::Service> Service, Ref<Content::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset);
+        static void Parse(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset);
     };
 }

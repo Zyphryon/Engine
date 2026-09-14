@@ -18,16 +18,16 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     /// \brief Represents the bitmaps one source decodes into, and the layout they compose.
     struct Surface final
     {
         /// The layout the slices compose.
-        Graphic::TextureLayout Layout = Graphic::TextureLayout::Texture2D;
+        ZyGraphic::TextureLayout Layout = ZyGraphic::TextureLayout::Texture2D;
 
         /// One bitmap per array slice or cube face, in the order the layout addresses them.
-        Sequence<Bitmap>       Slices;
+        Sequence<Bitmap>         Slices;
 
         /// \brief Checks whether the decode produced anything at all.
         ///

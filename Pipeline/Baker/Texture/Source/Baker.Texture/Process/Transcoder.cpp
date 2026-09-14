@@ -17,7 +17,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -92,11 +92,11 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static auto Pick(ConstRef<Graphic::TextureMetadata> Source, ConstRef<Graphic::TextureMetadata> Target)
+    static auto Pick(ConstRef<ZyGraphic::TextureMetadata> Source, ConstRef<ZyGraphic::TextureMetadata> Target)
     {
         // Target and transfer are contiguous enums, so they flatten into one index.
-        const UInt32 Slot = Enum::Cast(GetComponent(Target)) * Enum::Count<Gamma>()
-                          + Enum::Cast(GetGamma(Source.IsSRGB, Target.IsSRGB));
+        const UInt32 Slot = ZyEnum::Cast(GetComponent(Target)) * ZyEnum::Count<Gamma>()
+                          + ZyEnum::Cast(GetGamma(Source.IsSRGB, Target.IsSRGB));
 
         // Every target and transfer for one source type, in the order the index above walks them.
         const auto Select = []<typename From>(UInt32 Index)
@@ -135,21 +135,21 @@ namespace Pipeline::Baker::Texture
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bitmap Transcoder::Transcode(AnyRef<Bitmap> Source, Graphic::TextureFormat Format)
+    Bitmap Transcoder::Transcode(AnyRef<Bitmap> Source, ZyGraphic::TextureFormat Format)
     {
-        const Graphic::TextureMetadata Target = Graphic::GetTextureMetadata(Format);
-        const Graphic::TextureMetadata Origin = Graphic::GetTextureMetadata(Source.GetFormat());
+        const ZyGraphic::TextureMetadata Target = ZyGraphic::GetTextureMetadata(Format);
+        const ZyGraphic::TextureMetadata Origin = ZyGraphic::GetTextureMetadata(Source.GetFormat());
 
         if (Target.IsCompressed() || Target.IsPacked || Target.Components == 0)
         {
-            LOG_E("Texture: '{0}' cannot be written as interleaved components", Enum::GetName(Format));
+            LOG_E("Texture: '{0}' cannot be written as interleaved components", ZyEnum::GetName(Format));
 
             return Bitmap();
         }
 
         if (Origin.IsCompressed() || Origin.IsPacked || Origin.Components == 0)
         {
-            LOG_E("Texture: '{0}' must be unpacked before it can be converted", Enum::GetName(Source.GetFormat()));
+            LOG_E("Texture: '{0}' must be unpacked before it can be converted", ZyEnum::GetName(Source.GetFormat()));
 
             return Bitmap();
         }
@@ -164,18 +164,18 @@ namespace Pipeline::Baker::Texture
         const UInt16 Height = Source.GetHeight();
         const UInt8  Levels = Max<UInt8>(Source.GetLevels(), 1);
 
-        Blob Output = Blob::Allocate<Byte>(Graphic::GetLevelOffset(Format, Width, Height, Levels));
+        Blob Output = Blob::Allocate<Byte>(ZyGraphic::GetLevelOffset(Format, Width, Height, Levels));
 
         const auto Process = Pick(Origin, Target);
 
         for (UInt8 Level = 0; Level < Levels; ++Level)
         {
             Process(
-                Source.GetPixels().GetData() + Graphic::GetLevelOffset(Source.GetFormat(), Width, Height, Level),
+                Source.GetPixels().GetData() + ZyGraphic::GetLevelOffset(Source.GetFormat(), Width, Height, Level),
                 Origin.Components,
-                Output.GetData()             + Graphic::GetLevelOffset(Format, Width, Height, Level),
+                Output.GetData()             + ZyGraphic::GetLevelOffset(Format, Width, Height, Level),
                 Target.Components,
-                Graphic::GetLevelExtent(Width, Level) * Graphic::GetLevelExtent(Height, Level));
+                ZyGraphic::GetLevelExtent(Width, Level) * ZyGraphic::GetLevelExtent(Height, Level));
         }
         return Bitmap(Format, Width, Height, Levels, Move(Output));
     }

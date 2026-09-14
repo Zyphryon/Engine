@@ -17,12 +17,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool MTLLoader::Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data)
+    Bool MTLLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
         const Retainer<Material> Asset = Retainer<Material>::Cast(Scope.GetResource());
 
@@ -43,7 +43,7 @@ namespace Graphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void MTLLoader::Parse(Ref<Content::Service> Service, Ref<Content::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset)
+    void MTLLoader::Parse(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, ConstRef<JsonObject> Root, Ref<Material> Asset)
     {
         // Parse 'Images' section, keyed by the texture name the technique declares.
         if (const JsonObject JsonImages = Root.GetObject("Images"); JsonImages.IsValid())
@@ -86,7 +86,7 @@ namespace Graphic
                 const Text Name = Entry.First;
                 const Text Type = JsonParameter.GetString("Type");
 
-                switch (Enum::Cast(Type, Uniform::Float))
+                switch (ZyEnum::Cast(Type, Uniform::Float))
                 {
                 case Uniform::Bool:
                 {

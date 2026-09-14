@@ -22,7 +22,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A JSON value that can represent any JSON type.
     class JsonValue final
@@ -225,11 +225,11 @@ inline namespace Base
                 return;
             }
 
-            static constexpr Format::Pattern<5> kPattern("{0}");
+            static constexpr ZyFormat::Pattern<5> kPattern("{0}");
 
             mData.Visit([&]<typename T0>(AnyRef<T0> Value)
             {
-                Format::Processor<Output>::Format(Buffer, kPattern, Value);
+                ZyFormat::Processor<Output>::Format(Buffer, kPattern, Value);
             });
         }
 

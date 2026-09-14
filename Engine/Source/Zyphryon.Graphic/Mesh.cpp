@@ -16,12 +16,12 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Mesh::Mesh(AnyRef<Content::Uri> Key)
+    Mesh::Mesh(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) },
           mProperties      { Property::None },
           mVertices        { 0 },
@@ -43,7 +43,7 @@ namespace Graphic
 
     void Mesh::SetBinding(VertexSlot Slot, VertexFormat Format, UInt16 Stride, UInt32 Offset)
     {
-        mBindings[Enum::Cast(Slot)] = Binding(Format, Stride, Offset);
+        mBindings[ZyEnum::Cast(Slot)] = Binding(Format, Stride, Offset);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

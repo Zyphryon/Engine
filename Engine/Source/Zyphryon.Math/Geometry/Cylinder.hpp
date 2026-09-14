@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents an upright 3D cylinder defined by a center point, a radius and a half height.
     class Cylinder final
@@ -349,7 +349,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Cylinder" };
+            return ZyReflection::Presentation { .Name = "Math.Cylinder" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -358,9 +358,9 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Cylinder::mCenter>("Center"),
-                Reflection::Field::Property<&Cylinder::mRadius>("Radius"),
-                Reflection::Field::Property<&Cylinder::mExtent>("Extent"));
+                ZyReflection::Field::Property<&Cylinder::mCenter>("Center"),
+                ZyReflection::Field::Property<&Cylinder::mRadius>("Radius"),
+                ZyReflection::Field::Property<&Cylinder::mExtent>("Extent"));
         }
 
     private:

@@ -20,10 +20,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Runtime
+namespace ZyRuntime
 {
     /// \brief Entry point and main coordinator of the application runtime.
-    class Kernel : public Engine::Subsystem::Host
+    class Kernel : public ZyEngine::Subsystem::Host
     {
     public:
 
@@ -45,7 +45,7 @@ namespace Runtime
         /// \param Count     The number of entries in \p Arguments.
         /// \param Arguments The argument vector, as handed to the platform entry point.
         /// \param Modules   The modules to attach and run.
-        void Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<Engine::Modules> Modules);
+        void Run(UInt Count, ConstPtr<ConstPtr<Char>> Arguments, AnyRef<ZyEngine::Modules> Modules);
 
         /// \brief Signals the application to exit gracefully.
         void Quit();
@@ -132,10 +132,10 @@ namespace Runtime
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Bool            mAlive;
-        Platform::Timer mTimer;
-        Environment     mEnvironment;
-        Startup         mStartup;
-        Engine::Modules mModules;
+        Bool              mAlive;
+        ZyPlatform::Timer mTimer;
+        Environment       mEnvironment;
+        Startup           mStartup;
+        ZyEngine::Modules mModules;
     };
 }

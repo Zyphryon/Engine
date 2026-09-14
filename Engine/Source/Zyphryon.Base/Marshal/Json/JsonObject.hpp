@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A JSON array type forward declaration.
     class JsonArray;
@@ -186,7 +186,7 @@ inline namespace Base
         template<IsEnum Type>
         ZY_INLINE void SetEnum(Text Key, Type Value)
         {
-            mNode->GetObject().Assign(Key, Enum::GetName(Value));
+            mNode->GetObject().Assign(Key, ZyEnum::GetName(Value));
         }
 
         /// \brief Gets the enumeration value for the specified key.
@@ -201,7 +201,7 @@ inline namespace Base
 
             if (Value != nullptr && Value->IsString())
             {
-                return Enum::Cast<Type>(Value->GetString(), Default);
+                return ZyEnum::Cast<Type>(Value->GetString(), Default);
             }
             return Default;
         }

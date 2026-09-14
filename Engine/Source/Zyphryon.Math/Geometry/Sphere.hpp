@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a 3D sphere defined by a center point and radius.
     class Sphere final
@@ -376,7 +376,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Sphere" };
+            return ZyReflection::Presentation { .Name = "Math.Sphere" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -385,8 +385,8 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Sphere::mCenter>("Center"),
-                Reflection::Field::Property<&Sphere::mRadius>("Radius"));
+                ZyReflection::Field::Property<&Sphere::mCenter>("Center"),
+                ZyReflection::Field::Property<&Sphere::mRadius>("Radius"));
         }
 
     private:

@@ -16,239 +16,239 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Platform
+namespace ZyPlatform
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Input::Key ConvertWebKey(Text Code)
+    static ZyInput::Key ConvertWebKey(Text Code)
     {
         switch (Hash(Code))
         {
         case "KeyA"_Hash:
-            return Input::Key::A;
+            return ZyInput::Key::A;
         case "KeyB"_Hash:
-            return Input::Key::B;
+            return ZyInput::Key::B;
         case "KeyC"_Hash:
-            return Input::Key::C;
+            return ZyInput::Key::C;
         case "KeyD"_Hash:
-            return Input::Key::D;
+            return ZyInput::Key::D;
         case "KeyE"_Hash:
-            return Input::Key::E;
+            return ZyInput::Key::E;
         case "KeyF"_Hash:
-            return Input::Key::F;
+            return ZyInput::Key::F;
         case "KeyG"_Hash:
-            return Input::Key::G;
+            return ZyInput::Key::G;
         case "KeyH"_Hash:
-            return Input::Key::H;
+            return ZyInput::Key::H;
         case "KeyI"_Hash:
-            return Input::Key::I;
+            return ZyInput::Key::I;
         case "KeyJ"_Hash:
-            return Input::Key::J;
+            return ZyInput::Key::J;
         case "KeyK"_Hash:
-            return Input::Key::K;
+            return ZyInput::Key::K;
         case "KeyL"_Hash:
-            return Input::Key::L;
+            return ZyInput::Key::L;
         case "KeyM"_Hash:
-            return Input::Key::M;
+            return ZyInput::Key::M;
         case "KeyN"_Hash:
-            return Input::Key::N;
+            return ZyInput::Key::N;
         case "KeyO"_Hash:
-            return Input::Key::O;
+            return ZyInput::Key::O;
         case "KeyP"_Hash:
-            return Input::Key::P;
+            return ZyInput::Key::P;
         case "KeyQ"_Hash:
-            return Input::Key::Q;
+            return ZyInput::Key::Q;
         case "KeyR"_Hash:
-            return Input::Key::R;
+            return ZyInput::Key::R;
         case "KeyS"_Hash:
-            return Input::Key::S;
+            return ZyInput::Key::S;
         case "KeyT"_Hash:
-            return Input::Key::T;
+            return ZyInput::Key::T;
         case "KeyU"_Hash:
-            return Input::Key::U;
+            return ZyInput::Key::U;
         case "KeyV"_Hash:
-            return Input::Key::V;
+            return ZyInput::Key::V;
         case "KeyW"_Hash:
-            return Input::Key::W;
+            return ZyInput::Key::W;
         case "KeyX"_Hash:
-            return Input::Key::X;
+            return ZyInput::Key::X;
         case "KeyY"_Hash:
-            return Input::Key::Y;
+            return ZyInput::Key::Y;
         case "KeyZ"_Hash:
-            return Input::Key::Z;
+            return ZyInput::Key::Z;
         case "Digit0"_Hash:
-            return Input::Key::Alpha0;
+            return ZyInput::Key::Alpha0;
         case "Digit1"_Hash:
-            return Input::Key::Alpha1;
+            return ZyInput::Key::Alpha1;
         case "Digit2"_Hash:
-            return Input::Key::Alpha2;
+            return ZyInput::Key::Alpha2;
         case "Digit3"_Hash:
-            return Input::Key::Alpha3;
+            return ZyInput::Key::Alpha3;
         case "Digit4"_Hash:
-            return Input::Key::Alpha4;
+            return ZyInput::Key::Alpha4;
         case "Digit5"_Hash:
-            return Input::Key::Alpha5;
+            return ZyInput::Key::Alpha5;
         case "Digit6"_Hash:
-            return Input::Key::Alpha6;
+            return ZyInput::Key::Alpha6;
         case "Digit7"_Hash:
-            return Input::Key::Alpha7;
+            return ZyInput::Key::Alpha7;
         case "Digit8"_Hash:
-            return Input::Key::Alpha8;
+            return ZyInput::Key::Alpha8;
         case "Digit9"_Hash:
-            return Input::Key::Alpha9;
+            return ZyInput::Key::Alpha9;
         case "F1"_Hash:
-            return Input::Key::F1;
+            return ZyInput::Key::F1;
         case "F2"_Hash:
-            return Input::Key::F2;
+            return ZyInput::Key::F2;
         case "F3"_Hash:
-            return Input::Key::F3;
+            return ZyInput::Key::F3;
         case "F4"_Hash:
-            return Input::Key::F4;
+            return ZyInput::Key::F4;
         case "F5"_Hash:
-            return Input::Key::F5;
+            return ZyInput::Key::F5;
         case "F6"_Hash:
-            return Input::Key::F6;
+            return ZyInput::Key::F6;
         case "F7"_Hash:
-            return Input::Key::F7;
+            return ZyInput::Key::F7;
         case "F8"_Hash:
-            return Input::Key::F8;
+            return ZyInput::Key::F8;
         case "F9"_Hash:
-            return Input::Key::F9;
+            return ZyInput::Key::F9;
         case "F10"_Hash:
-            return Input::Key::F10;
+            return ZyInput::Key::F10;
         case "F11"_Hash:
-            return Input::Key::F11;
+            return ZyInput::Key::F11;
         case "F12"_Hash:
-            return Input::Key::F12;
+            return ZyInput::Key::F12;
         case "NumLock"_Hash:
-            return Input::Key::NumLock;
+            return ZyInput::Key::NumLock;
         case "ShiftLeft"_Hash:
-            return Input::Key::LeftShift;
+            return ZyInput::Key::LeftShift;
         case "ShiftRight"_Hash:
-            return Input::Key::RightShift;
+            return ZyInput::Key::RightShift;
         case "ControlLeft"_Hash:
-            return Input::Key::LeftCtrl;
+            return ZyInput::Key::LeftCtrl;
         case "ControlRight"_Hash:
-            return Input::Key::RightCtrl;
+            return ZyInput::Key::RightCtrl;
         case "AltLeft"_Hash:
-            return Input::Key::LeftAlt;
+            return ZyInput::Key::LeftAlt;
         case "AltRight"_Hash:
-            return Input::Key::RightAlt;
+            return ZyInput::Key::RightAlt;
         case "MetaLeft"_Hash:
-            return Input::Key::LeftSuper;
+            return ZyInput::Key::LeftSuper;
         case "MetaRight"_Hash:
-            return Input::Key::RightSuper;
+            return ZyInput::Key::RightSuper;
         case "Space"_Hash:
-            return Input::Key::Space;
+            return ZyInput::Key::Space;
         case "Enter"_Hash:
-            return Input::Key::Enter;
+            return ZyInput::Key::Enter;
         case "Escape"_Hash:
-            return Input::Key::Escape;
+            return ZyInput::Key::Escape;
         case "Backspace"_Hash:
-            return Input::Key::Backspace;
+            return ZyInput::Key::Backspace;
         case "Tab"_Hash:
-            return Input::Key::Tab;
+            return ZyInput::Key::Tab;
         case "CapsLock"_Hash:
-            return Input::Key::Capital;
+            return ZyInput::Key::Capital;
         case "ArrowUp"_Hash:
-            return Input::Key::Up;
+            return ZyInput::Key::Up;
         case "ArrowDown"_Hash:
-            return Input::Key::Down;
+            return ZyInput::Key::Down;
         case "ArrowLeft"_Hash:
-            return Input::Key::Left;
+            return ZyInput::Key::Left;
         case "ArrowRight"_Hash:
-            return Input::Key::Right;
+            return ZyInput::Key::Right;
         case "Home"_Hash:
-            return Input::Key::Home;
+            return ZyInput::Key::Home;
         case "End"_Hash:
-            return Input::Key::End;
+            return ZyInput::Key::End;
         case "PageUp"_Hash:
-            return Input::Key::PageUp;
+            return ZyInput::Key::PageUp;
         case "PageDown"_Hash:
-            return Input::Key::PageDown;
+            return ZyInput::Key::PageDown;
         case "Insert"_Hash:
-            return Input::Key::Insert;
+            return ZyInput::Key::Insert;
         case "Delete"_Hash:
-            return Input::Key::Delete;
+            return ZyInput::Key::Delete;
         case "Minus"_Hash:
-            return Input::Key::Minus;
+            return ZyInput::Key::Minus;
         case "Equal"_Hash:
-            return Input::Key::Equal;
+            return ZyInput::Key::Equal;
         case "BracketLeft"_Hash:
-            return Input::Key::LeftBracket;
+            return ZyInput::Key::LeftBracket;
         case "BracketRight"_Hash:
-            return Input::Key::RightBracket;
+            return ZyInput::Key::RightBracket;
         case "Backslash"_Hash:
-            return Input::Key::Backslash;
+            return ZyInput::Key::Backslash;
         case "Semicolon"_Hash:
-            return Input::Key::Semicolon;
+            return ZyInput::Key::Semicolon;
         case "Quote"_Hash:
-            return Input::Key::Apostrophe;
+            return ZyInput::Key::Apostrophe;
         case "Comma"_Hash:
-            return Input::Key::Comma;
+            return ZyInput::Key::Comma;
         case "Period"_Hash:
-            return Input::Key::Period;
+            return ZyInput::Key::Period;
         case "Slash"_Hash:
-            return Input::Key::Slash;
+            return ZyInput::Key::Slash;
         case "Backquote"_Hash:
-            return Input::Key::Grave;
+            return ZyInput::Key::Grave;
         case "Numpad0"_Hash:
-            return Input::Key::Keypad0;
+            return ZyInput::Key::Keypad0;
         case "Numpad1"_Hash:
-            return Input::Key::Keypad1;
+            return ZyInput::Key::Keypad1;
         case "Numpad2"_Hash:
-            return Input::Key::Keypad2;
+            return ZyInput::Key::Keypad2;
         case "Numpad3"_Hash:
-            return Input::Key::Keypad3;
+            return ZyInput::Key::Keypad3;
         case "Numpad4"_Hash:
-            return Input::Key::Keypad4;
+            return ZyInput::Key::Keypad4;
         case "Numpad5"_Hash:
-            return Input::Key::Keypad5;
+            return ZyInput::Key::Keypad5;
         case "Numpad6"_Hash:
-            return Input::Key::Keypad6;
+            return ZyInput::Key::Keypad6;
         case "Numpad7"_Hash:
-            return Input::Key::Keypad7;
+            return ZyInput::Key::Keypad7;
         case "Numpad8"_Hash:
-            return Input::Key::Keypad8;
+            return ZyInput::Key::Keypad8;
         case "Numpad9"_Hash:
-            return Input::Key::Keypad9;
+            return ZyInput::Key::Keypad9;
         case "NumpadAdd"_Hash:
-            return Input::Key::Add;
+            return ZyInput::Key::Add;
         case "NumpadSubtract"_Hash:
-            return Input::Key::Subtract;
+            return ZyInput::Key::Subtract;
         case "NumpadMultiply"_Hash:
-            return Input::Key::Multiply;
+            return ZyInput::Key::Multiply;
         case "NumpadDivide"_Hash:
-            return Input::Key::Divide;
+            return ZyInput::Key::Divide;
         case "NumpadDecimal"_Hash:
-            return Input::Key::Decimal;
+            return ZyInput::Key::Decimal;
         case "NumpadEnter"_Hash:
-            return Input::Key::Enter;
+            return ZyInput::Key::Enter;
         default:
-            return Input::Key::Unknown;
+            return ZyInput::Key::Unknown;
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Input::Button ConvertWebButton(SInt32 Button)
+    static ZyInput::Button ConvertWebButton(SInt32 Button)
     {
         switch (Button)
         {
         case 0:
-            return Input::Button::Left;
+            return ZyInput::Button::Left;
         case 1:
-            return Input::Button::Middle;
+            return ZyInput::Button::Middle;
         case 2:
-            return Input::Button::Right;
+            return ZyInput::Button::Right;
         case 3:
-            return Input::Button::Back;
+            return ZyInput::Button::Back;
         case 4:
-            return Input::Button::Forward;
+            return ZyInput::Button::Forward;
         default:
-            return Input::Button::Unknown;
+            return ZyInput::Button::Unknown;
         }
     }
 
@@ -266,7 +266,7 @@ namespace Platform
             {
                 if (!Event->repeat)
                 {
-                    if (const Input::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != Input::Key::Unknown)
+                    if (const ZyInput::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != ZyInput::Key::Unknown)
                     {
                         Canvas->mDispatcher.QueueKeyDown(Key);
                     }
@@ -287,7 +287,7 @@ namespace Platform
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                if (const Input::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != Input::Key::Unknown)
+                if (const ZyInput::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != ZyInput::Key::Unknown)
                 {
                     Canvas->mDispatcher.QueueKeyUp(Key);
                 }

@@ -18,10 +18,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Content loader for shader source assets.
-    class SHDLoader final : public Content::Loader
+    class SHDLoader final : public ZyContent::Loader
     {
     public:
 
@@ -31,6 +31,6 @@ namespace Graphic
     public:
 
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
-        Bool Load(Ref<Content::Service> Service, Ref<Content::Scope> Scope, AnyRef<Blob> Data) override;
+        Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
     };
 }

@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Base
+inline namespace ZyBase
 {
     /// \brief A JSON object type forward declaration.
     class JsonObject;
@@ -165,7 +165,7 @@ inline namespace Base
         template<IsEnum Type>
         ZY_INLINE void AddEnum(Type Value)
         {
-            mNode->GetArray().Append(Str(Enum::GetName(Value)));
+            mNode->GetArray().Append(Str(ZyEnum::GetName(Value)));
         }
 
         /// \brief Gets the enumeration value at the specified index.
@@ -182,7 +182,7 @@ inline namespace Base
 
                 if (Value.IsString())
                 {
-                    return Enum::Cast<Type>(Value.GetString(), Default);
+                    return ZyEnum::Cast<Type>(Value.GetString(), Default);
                 }
             }
             return Default;

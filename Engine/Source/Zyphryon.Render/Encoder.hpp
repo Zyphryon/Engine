@@ -21,7 +21,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Builds graphic draw commands with automatic resource binding.
     class Encoder final
@@ -37,14 +37,14 @@ namespace Render
             ///
             /// \param Encoder   The encoder the draw is emitted through.
             /// \param Technique The technique whose signature the draw fills.
-            Binder(Ref<Encoder> Encoder, ConstRef<Graphic::Technique> Technique);
+            Binder(Ref<Encoder> Encoder, ConstRef<ZyGraphic::Technique> Technique);
 
             /// \brief Binds an image to the texture the signature declares under the given name.
             ///
             /// \param Name  The hash of the texture's name.
             /// \param Image The image to bind, or zero to leave the texture unbound.
             /// \return This binder, so the bindings of a draw read as one statement.
-            ZY_INLINE Ref<Binder> SetImage(UInt64 Name, Graphic::Object Image)
+            ZY_INLINE Ref<Binder> SetImage(UInt64 Name, ZyGraphic::Object Image)
             {
                 const ConstSpan<UInt64> Textures = mTechnique.GetSchema().GetTextures();
 
@@ -69,9 +69,9 @@ namespace Render
             /// \param Name    The hash of the sampler's name.
             /// \param Sampler The sampler to read the texture through, replacing the technique's own.
             /// \return This binder, so the bindings of a draw read as one statement.
-            ZY_INLINE Ref<Binder> SetSampler(UInt64 Name, Graphic::Object Sampler)
+            ZY_INLINE Ref<Binder> SetSampler(UInt64 Name, ZyGraphic::Object Sampler)
             {
-                const ConstSpan<Graphic::Schema::Sampler> Samplers = mTechnique.GetSchema().GetSamplers();
+                const ConstSpan<ZyGraphic::Schema::Sampler> Samplers = mTechnique.GetSchema().GetSamplers();
 
                 for (UInt32 Index = 0, Limit = Samplers.GetSize(); Sampler && Index < Limit; ++Index)
                 {
@@ -98,7 +98,7 @@ namespace Render
             ///
             /// \param Indices The index stream, whose stride says whether an index is two bytes or four.
             /// \return This binder, so the bindings of a draw read as one statement.
-            ZY_INLINE Ref<Binder> SetIndices(ConstRef<Graphic::Stream> Indices)
+            ZY_INLINE Ref<Binder> SetIndices(ConstRef<ZyGraphic::Stream> Indices)
             {
                 mCommand.Indices = Indices;
                 return * this;
@@ -108,7 +108,7 @@ namespace Render
             ///
             /// \param Variant The bitmask of the features to add.
             /// \return This binder, so the bindings of a draw read as one statement.
-            ZY_INLINE Ref<Binder> SetVariant(Graphic::Technique::Key Variant)
+            ZY_INLINE Ref<Binder> SetVariant(ZyGraphic::Technique::Key Variant)
             {
                 mVariant |= Variant;
                 return * this;
@@ -128,7 +128,7 @@ namespace Render
             ///
             /// \param Material The material supplying images, samplers and the block of its own parameters.
             /// \return This binder, so the bindings of a draw read as one statement.
-            Ref<Binder> Apply(ConstRef<Graphic::Material> Material);
+            Ref<Binder> Apply(ConstRef<ZyGraphic::Material> Material);
 
             /// \brief Emits the draw the bindings were gathered for.
             ///
@@ -136,25 +136,25 @@ namespace Render
             /// \param Uniform    The per-instance uniform stream bound to scope #Instance (empty stream if unused).
             /// \param Parameters The draw parameters.
             void Draw(
-                ConstRef<Graphic::Stream>     Instances,
-                ConstRef<Graphic::Stream>     Uniform,
-                ConstRef<Graphic::Invocation> Parameters);
+                ConstRef<ZyGraphic::Stream>     Instances,
+                ConstRef<ZyGraphic::Stream>     Uniform,
+                ConstRef<ZyGraphic::Invocation> Parameters);
 
             /// \brief Emits the draw the bindings were gathered for, with no per-instance uniform stream.
             ///
             /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
             /// \param Parameters The draw parameters.
-            ZY_INLINE void Draw(ConstRef<Graphic::Stream> Instances, ConstRef<Graphic::Invocation> Parameters)
+            ZY_INLINE void Draw(ConstRef<ZyGraphic::Stream> Instances, ConstRef<ZyGraphic::Invocation> Parameters)
             {
-                Draw(Instances, Graphic::Stream(), Parameters);
+                Draw(Instances, ZyGraphic::Stream(), Parameters);
             }
 
             /// \brief Emits the single triangle that covers the whole target, for a pass-level effect.
             ZY_INLINE void DrawFullscreen()
             {
-                constexpr Graphic::Invocation Parameters { .Count = 3 };
+                constexpr ZyGraphic::Invocation Parameters { .Count = 3 };
 
-                Draw(Graphic::Stream(), Graphic::Stream(), Parameters);
+                Draw(ZyGraphic::Stream(), ZyGraphic::Stream(), Parameters);
             }
 
         private:
@@ -162,10 +162,10 @@ namespace Render
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-            Ref<Encoder>                 mEncoder;
-            ConstRef<Graphic::Technique> mTechnique;
-            Ref<Graphic::Command>        mCommand;
-            Graphic::Technique::Key      mVariant;
+            Ref<Encoder>                   mEncoder;
+            ConstRef<ZyGraphic::Technique> mTechnique;
+            Ref<ZyGraphic::Command>        mCommand;
+            ZyGraphic::Technique::Key      mVariant;
         };
 
     public:
@@ -173,7 +173,7 @@ namespace Render
         /// \brief Constructs an encoder bound to a graphic service.
         ///
         /// \param Service The graphic service used to allocate transient commands and uniforms.
-        Encoder(Ref<Graphic::Service> Service);
+        Encoder(Ref<ZyGraphic::Service> Service);
 
         /// \brief Resets the per-pass scratch, forgetting the material last resolved.
         void Reset();
@@ -181,16 +181,16 @@ namespace Render
         /// \brief Sets the frame's uniform block bound to every subsequent draw.
         ///
         /// \param Stream The transient stream holding the per-frame uniforms.
-        void SetFrame(Graphic::Stream Stream);
+        void SetFrame(ZyGraphic::Stream Stream);
 
         /// \brief Packs a value into a transient uniform block and binds it as the frame's.
         ///
         /// \param Block The value laid out as the technique declares the frame's block.
         template<typename Type>
         ZY_INLINE void SetFrame(ConstRef<Type> Block)
-            requires (!IsAnyOf<Type, Graphic::Stream>)
+            requires (!IsAnyOf<Type, ZyGraphic::Stream>)
         {
-            Graphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
+            ZyGraphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
             Slice[0] = Block;
 
             SetFrame(Slice.GetStream());
@@ -199,7 +199,7 @@ namespace Render
         /// \brief Sets the pass's uniform block and input textures.
         ///
         /// \param Stream The transient stream holding the per-pass uniforms.
-        void SetPass(Graphic::Stream Stream);
+        void SetPass(ZyGraphic::Stream Stream);
 
         /// \brief Sets the rectangle every subsequent draw is clipped to.
         ///
@@ -207,16 +207,16 @@ namespace Render
         ///       rasterizer state enables the scissor. An empty rectangle keeps no pixel at all.
         ///
         /// \param Scissor The region to keep, in pixels.
-        void SetScissor(Graphic::Scissor Scissor);
+        void SetScissor(ZyGraphic::Scissor Scissor);
 
         /// \brief Packs a value into a transient uniform block and binds it as the pass's.
         ///
         /// \param Block The value laid out as the technique declares the pass's block.
         template<typename Type>
         ZY_INLINE void SetPass(ConstRef<Type> Block)
-            requires (!IsAnyOf<Type, Graphic::Stream>)
+            requires (!IsAnyOf<Type, ZyGraphic::Stream>)
         {
-            Graphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
+            ZyGraphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
             Slice[0] = Block;
 
             SetPass(Slice.GetStream());
@@ -230,29 +230,29 @@ namespace Render
         /// \param  Source     The provider supplying field values by hash.
         /// \return A transient stream holding the packed block, or an empty stream if the block declares no fields.
         template<typename Provider>
-        ZY_INLINE Graphic::Stream Pack(
-            Graphic::Frequency Frequency, ConstRef<Graphic::Technique> Technique, ConstRef<Provider> Source)
+        ZY_INLINE ZyGraphic::Stream Pack(
+            ZyGraphic::Frequency Frequency, ConstRef<ZyGraphic::Technique> Technique, ConstRef<Provider> Source)
         {
-            ConstRef<Graphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
+            ConstRef<ZyGraphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
 
             if (Block.Size == 0)
             {
-                return Graphic::Stream();
+                return ZyGraphic::Stream();
             }
 
-            Graphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
+            ZyGraphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
 
-            for (ConstRef<Graphic::Schema::Uniform> Field : Block.Uniforms)
+            for (ConstRef<ZyGraphic::Schema::Uniform> Field : Block.Uniforms)
             {
                 // Fall back to the technique's default when the material does not set the field.
-                ConstPtr<Graphic::Parameter> Parameter = Source.GetParameter(Field.Hash);
+                ConstPtr<ZyGraphic::Parameter> Parameter = Source.GetParameter(Field.Hash);
 
                 if (Parameter == nullptr)
                 {
                     Parameter = AddressOf(Field.Value);
                 }
 
-                if (Parameter->GetSlot() == Enum::Cast(Field.Type))
+                if (Parameter->GetSlot() == ZyEnum::Cast(Field.Type))
                 {
                     Parameter->Visit([&]<typename Type>(ConstRef<Type> Value)
                     {
@@ -267,7 +267,7 @@ namespace Render
         ///
         /// \param Technique The technique whose signature the draw fills.
         /// \return The binder gathering the draw's bindings.
-        ZY_INLINE Binder Begin(ConstRef<Graphic::Technique> Technique)
+        ZY_INLINE Binder Begin(ConstRef<ZyGraphic::Technique> Technique)
         {
             return Binder(* this, Technique);
         }
@@ -280,11 +280,11 @@ namespace Render
         /// \param Uniform    The per-instance uniform stream bound to scope #Instance (empty stream if unused).
         /// \param Parameters The draw parameters.
         void Draw(
-            ConstRef<Graphic::Technique>  Technique,
-            ConstPtr<Graphic::Material>   Material,
-            ConstRef<Graphic::Stream>     Instances,
-            ConstRef<Graphic::Stream>     Uniform,
-            ConstRef<Graphic::Invocation> Parameters);
+            ConstRef<ZyGraphic::Technique>  Technique,
+            ConstPtr<ZyGraphic::Material>   Material,
+            ConstRef<ZyGraphic::Stream>     Instances,
+            ConstRef<ZyGraphic::Stream>     Uniform,
+            ConstRef<ZyGraphic::Invocation> Parameters);
 
         /// \brief Emits one (optionally instanced) draw without a per-instance uniform stream.
         ///
@@ -293,12 +293,12 @@ namespace Render
         /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Parameters The draw parameters.
         ZY_INLINE void Draw(
-            ConstRef<Graphic::Technique>  Technique,
-            ConstPtr<Graphic::Material>   Material,
-            ConstRef<Graphic::Stream>     Instances,
-            ConstRef<Graphic::Invocation> Parameters)
+            ConstRef<ZyGraphic::Technique>  Technique,
+            ConstPtr<ZyGraphic::Material>   Material,
+            ConstRef<ZyGraphic::Stream>     Instances,
+            ConstRef<ZyGraphic::Invocation> Parameters)
         {
-            Draw(Technique, Material, Instances, Graphic::Stream(), Parameters);
+            Draw(Technique, Material, Instances, ZyGraphic::Stream(), Parameters);
         }
 
         /// \brief Emits one (optionally instanced) material-less draw for a pass-level effect.
@@ -309,11 +309,11 @@ namespace Render
         /// \param Parameters The draw parameters.
         /// \param Variant    The bitmask of the features the variant to draw with was compiled from.
         void Draw(
-            ConstRef<Graphic::Technique>  Technique,
-            ConstSpan<Graphic::Object>    Textures,
-            ConstRef<Graphic::Stream>     Instances,
-            ConstRef<Graphic::Invocation> Parameters,
-            Graphic::Technique::Key       Variant = 0);
+            ConstRef<ZyGraphic::Technique>  Technique,
+            ConstSpan<ZyGraphic::Object>    Textures,
+            ConstRef<ZyGraphic::Stream>     Instances,
+            ConstRef<ZyGraphic::Invocation> Parameters,
+            ZyGraphic::Technique::Key       Variant = 0);
 
         /// \brief Emits one material-less draw for a pass-level effect.
         ///
@@ -322,12 +322,12 @@ namespace Render
         /// \param Parameters The draw parameters.
         /// \param Variant    The bitmask of the features the variant to draw with was compiled from.
         ZY_INLINE void Draw(
-            ConstRef<Graphic::Technique>  Technique,
-            ConstSpan<Graphic::Object>    Textures,
-            ConstRef<Graphic::Invocation> Parameters,
-            Graphic::Technique::Key       Variant = 0)
+            ConstRef<ZyGraphic::Technique>  Technique,
+            ConstSpan<ZyGraphic::Object>    Textures,
+            ConstRef<ZyGraphic::Invocation> Parameters,
+            ZyGraphic::Technique::Key       Variant = 0)
         {
-            Draw(Technique, Textures, Graphic::Stream(), Parameters, Variant);
+            Draw(Technique, Textures, ZyGraphic::Stream(), Parameters, Variant);
         }
 
         /// \brief Emits the single triangle that covers the whole target, for a pass-level effect.
@@ -336,14 +336,14 @@ namespace Render
         /// \param Textures  The input textures, in the technique's declared slot order.
         /// \param Variant   The bitmask of the features the variant to draw with was compiled from.
         ZY_INLINE void DrawFullscreen(
-            ConstRef<Graphic::Technique> Technique,
-            ConstSpan<Graphic::Object>   Textures = { },
-            Graphic::Technique::Key      Variant  = 0)
+            ConstRef<ZyGraphic::Technique> Technique,
+            ConstSpan<ZyGraphic::Object>   Textures = { },
+            ZyGraphic::Technique::Key      Variant  = 0)
         {
-            constexpr Graphic::Invocation Parameters {
+            constexpr ZyGraphic::Invocation Parameters {
                 .Count = 3
             };
-            Draw(Technique, Textures, Graphic::Stream(), Parameters, Variant);
+            Draw(Technique, Textures, ZyGraphic::Stream(), Parameters, Variant);
         }
 
         /// \brief Emits one indexed draw over a run of a mesh, drawn with the given material.
@@ -355,12 +355,12 @@ namespace Render
         /// \param Instances The instance-rate vertex stream (empty stream for a single non-instanced draw).
         /// \param Uniform   The per-object data stream bound to the Instance scope (empty for none).
         void Draw(
-            ConstRef<Graphic::Technique>  Technique,
-            ConstRef<Graphic::Mesh>       Mesh,
-            ConstPtr<Graphic::Material>   Material,
-            ConstRef<Graphic::Invocation> Range,
-            ConstRef<Graphic::Stream>     Instances,
-            ConstRef<Graphic::Stream>     Uniform);
+            ConstRef<ZyGraphic::Technique>  Technique,
+            ConstRef<ZyGraphic::Mesh>       Mesh,
+            ConstPtr<ZyGraphic::Material>   Material,
+            ConstRef<ZyGraphic::Invocation> Range,
+            ConstRef<ZyGraphic::Stream>     Instances,
+            ConstRef<ZyGraphic::Stream>     Uniform);
 
     private:
 
@@ -368,25 +368,25 @@ namespace Render
         struct Binding final
         {
             /// The technique the material was resolved under.
-            ConstPtr<Graphic::Technique> Technique = nullptr;
+            ConstPtr<ZyGraphic::Technique> Technique = nullptr;
 
             /// The material resolved, compared by address.
-            ConstPtr<Graphic::Material>  Material  = nullptr;
+            ConstPtr<ZyGraphic::Material>  Material  = nullptr;
 
             /// The samplers the material supplied itself, one bit per slot, as opposed to the technique's own.
-            UInt32                       Overrides = 0;
+            UInt32                         Overrides = 0;
 
             /// The variant the material's features select.
-            Graphic::Technique::Key      Variant   = 0;
+            ZyGraphic::Technique::Key      Variant   = 0;
 
             /// The material's uniform block, packed into the frame's arena.
-            Graphic::Stream              Uniforms;
+            ZyGraphic::Stream              Uniforms;
 
             /// The image handle for every texture the technique declares, zero where the material has none.
-            Sequence<Graphic::Object, Graphic::Command::kMaxTextures> Textures;
+            Sequence<ZyGraphic::Object, ZyGraphic::Command::kMaxTextures> Textures;
 
             /// The sampler for every slot the technique declares, the material's own or the technique's.
-            Sequence<Graphic::Object, Graphic::Command::kMaxSamplers> Samplers;
+            Sequence<ZyGraphic::Object, ZyGraphic::Command::kMaxSamplers> Samplers;
         };
 
         /// \brief Resolves a material under a technique, reusing the last resolution while both are unchanged.
@@ -396,17 +396,17 @@ namespace Render
         /// \param Technique The technique whose schema names what to bind.
         /// \param Material  The material to source the variant, block, images and samplers from.
         /// \return The resolved bindings.
-        ConstRef<Binding> Resolve(ConstRef<Graphic::Technique> Technique, ConstRef<Graphic::Material> Material);
+        ConstRef<Binding> Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Graphic::Service> mService;
-        Graphic::Stream       mFrame;
-        Graphic::Stream       mPass;
-        Graphic::Scissor      mScissor;
-        Binding               mBinding;
+        Ref<ZyGraphic::Service> mService;
+        ZyGraphic::Stream       mFrame;
+        ZyGraphic::Stream       mPass;
+        ZyGraphic::Scissor      mScissor;
+        Binding                 mBinding;
     };
 }

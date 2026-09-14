@@ -16,21 +16,21 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Encoder::Binder::Binder(Ref<Encoder> Encoder, ConstRef<Graphic::Technique> Technique)
+    Encoder::Binder::Binder(Ref<Encoder> Encoder, ConstRef<ZyGraphic::Technique> Technique)
         : mEncoder   { Encoder },
           mTechnique { Technique },
           mCommand   { Encoder.mService.AllocateInFlightCommand() },
           mVariant   { 0 }
     {
-        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+        ConstRef<ZyGraphic::Schema> Schema = Technique.GetSchema();
 
-        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = Encoder.mFrame;
-        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = Encoder.mPass;
+        mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Frame)] = Encoder.mFrame;
+        mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]  = Encoder.mPass;
         mCommand.Scissor = Encoder.mScissor;
 
         // Every texture the signature declares holds its slot, so one left unbound still reads as zero.
@@ -40,7 +40,7 @@ namespace Render
         }
 
         // Samplers start at the technique's own, which a caller replaces only where it wants to.
-        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
+        for (ConstRef<ZyGraphic::Schema::Sampler> Field : Schema.GetSamplers())
         {
             mCommand.Samplers.Append(Field.Handle);
         }
@@ -49,14 +49,14 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ref<Encoder::Binder> Encoder::Binder::Apply(ConstRef<Graphic::Material> Material)
+    Ref<Encoder::Binder> Encoder::Binder::Apply(ConstRef<ZyGraphic::Material> Material)
     {
         ConstRef<Binding> Bound = mEncoder.Resolve(mTechnique, Material);
 
         // The material answers by name, so each image lands in the slot the signature declared it under.
         for (UInt32 Index = 0, Limit = Bound.Textures.GetSize(); Index < Limit; ++Index)
         {
-            if (const Graphic::Object Handle = Bound.Textures[Index])
+            if (const ZyGraphic::Object Handle = Bound.Textures[Index])
             {
                 mCommand.Textures[Index] = Handle;
             }
@@ -71,7 +71,7 @@ namespace Render
             }
         }
 
-        mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound.Uniforms;
+        mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Material)] = Bound.Uniforms;
 
         mVariant |= Bound.Variant;
         return * this;
@@ -81,9 +81,9 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::Binder::Draw(
-        ConstRef<Graphic::Stream>     Instances,
-        ConstRef<Graphic::Stream>     Uniform,
-        ConstRef<Graphic::Invocation> Parameters)
+        ConstRef<ZyGraphic::Stream>     Instances,
+        ConstRef<ZyGraphic::Stream>     Uniform,
+        ConstRef<ZyGraphic::Invocation> Parameters)
     {
         mCommand.Pipeline = mTechnique.GetHandle(mVariant);
 
@@ -101,7 +101,7 @@ namespace Render
 
         if (Uniform.Buffer)
         {
-            mCommand.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
+            mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Instance)] = Uniform;
         }
         mCommand.Parameters = Parameters;
     }
@@ -109,7 +109,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Encoder::Encoder(Ref<Graphic::Service> Service)
+    Encoder::Encoder(Ref<ZyGraphic::Service> Service)
         : mService { Service }
     {
     }
@@ -119,15 +119,15 @@ namespace Render
 
     void Encoder::Reset()
     {
-        mPass    = Graphic::Stream();
-        mScissor = Graphic::Scissor();
+        mPass    = ZyGraphic::Stream();
+        mScissor = ZyGraphic::Scissor();
         mBinding = Binding();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::SetFrame(Graphic::Stream Stream)
+    void Encoder::SetFrame(ZyGraphic::Stream Stream)
     {
         mFrame   = Stream;
         mBinding = Binding();
@@ -136,7 +136,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::SetScissor(Graphic::Scissor Scissor)
+    void Encoder::SetScissor(ZyGraphic::Scissor Scissor)
     {
         mScissor = Scissor;
     }
@@ -144,7 +144,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Encoder::SetPass(Graphic::Stream Stream)
+    void Encoder::SetPass(ZyGraphic::Stream Stream)
     {
         mPass = Stream;
     }
@@ -153,13 +153,13 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::Draw(
-        ConstRef<Graphic::Technique>  Technique,
-        ConstPtr<Graphic::Material>   Material,
-        ConstRef<Graphic::Stream>     Instances,
-        ConstRef<Graphic::Stream>     Uniform,
-        ConstRef<Graphic::Invocation> Parameters)
+        ConstRef<ZyGraphic::Technique>  Technique,
+        ConstPtr<ZyGraphic::Material>   Material,
+        ConstRef<ZyGraphic::Stream>     Instances,
+        ConstRef<ZyGraphic::Stream>     Uniform,
+        ConstRef<ZyGraphic::Invocation> Parameters)
     {
-        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
+        Ref<ZyGraphic::Command> Command = mService.AllocateInFlightCommand();
 
         // The material decides which features turn on, so it selects the variant the draw is compiled for.
         const ConstPtr<Binding> Bound = Material ? AddressOf(Resolve(Technique, * Material)) : nullptr;
@@ -167,14 +167,14 @@ namespace Render
         Command.Pipeline = Technique.GetHandle(Bound ? Bound->Variant : 0);
 
         // Bind the per-frame and per-pass uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Frame)] = mFrame;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]  = mPass;
         Command.Scissor = mScissor;
 
         // Bind the material uniform block, textures, and samplers from the schema.
         if (Bound)
         {
-            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound->Uniforms;
+            Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Material)] = Bound->Uniforms;
             Command.Textures = Bound->Textures;
             Command.Samplers = Bound->Samplers;
         }
@@ -187,7 +187,7 @@ namespace Render
 
         if (Uniform.Buffer)
         {
-            Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
+            Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Instance)] = Uniform;
         }
         Command.Parameters = Parameters;
     }
@@ -196,30 +196,30 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::Draw(
-        ConstRef<Graphic::Technique>  Technique,
-        ConstSpan<Graphic::Object>    Textures,
-        ConstRef<Graphic::Stream>     Instances,
-        ConstRef<Graphic::Invocation> Parameters,
-        Graphic::Technique::Key       Variant)
+        ConstRef<ZyGraphic::Technique>  Technique,
+        ConstSpan<ZyGraphic::Object>    Textures,
+        ConstRef<ZyGraphic::Stream>     Instances,
+        ConstRef<ZyGraphic::Invocation> Parameters,
+        ZyGraphic::Technique::Key       Variant)
     {
-        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
+        Ref<ZyGraphic::Command> Command = mService.AllocateInFlightCommand();
 
         Command.Pipeline = Technique.GetHandle(Variant);
 
         // Bind the per-frame and per-pass uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)] = mFrame;
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]  = mPass;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Frame)] = mFrame;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]  = mPass;
         Command.Scissor = mScissor;
 
         // Bind the caller's textures in declaration order, paired with the technique's own samplers.
-        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+        ConstRef<ZyGraphic::Schema> Schema = Technique.GetSchema();
 
         for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
         {
             Command.Textures.Append(Index < Textures.GetSize() ? Textures[Index] : 0);
         }
 
-        for (ConstRef<Graphic::Schema::Sampler> Field : Schema.GetSamplers())
+        for (ConstRef<ZyGraphic::Schema::Sampler> Field : Schema.GetSamplers())
         {
             Command.Samplers.Append(Field.Handle);
         }
@@ -236,16 +236,16 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Encoder::Draw(
-        ConstRef<Graphic::Technique>  Technique,
-        ConstRef<Graphic::Mesh>       Mesh,
-        ConstPtr<Graphic::Material>   Material,
-        ConstRef<Graphic::Invocation> Range,
-        ConstRef<Graphic::Stream>     Instances,
-        ConstRef<Graphic::Stream>     Uniform)
+        ConstRef<ZyGraphic::Technique>  Technique,
+        ConstRef<ZyGraphic::Mesh>       Mesh,
+        ConstPtr<ZyGraphic::Material>   Material,
+        ConstRef<ZyGraphic::Invocation> Range,
+        ConstRef<ZyGraphic::Stream>     Instances,
+        ConstRef<ZyGraphic::Stream>     Uniform)
     {
-        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+        ConstRef<ZyGraphic::Schema> Schema = Technique.GetSchema();
 
-        Ref<Graphic::Command> Command = mService.AllocateInFlightCommand();
+        Ref<ZyGraphic::Command> Command = mService.AllocateInFlightCommand();
 
         // The material decides which features turn on, so it selects the variant the draw is compiled for.
         const ConstPtr<Binding> Bound = Material ? AddressOf(Resolve(Technique, * Material)) : nullptr;
@@ -253,34 +253,34 @@ namespace Render
         Command.Pipeline = Technique.GetHandle(Bound ? Bound->Variant : 0);
 
         // Bind the per-frame, per-pass, and per-object (instance) uniform blocks.
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Frame)]   = mFrame;
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Pass)]     = mPass;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Frame)]   = mFrame;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]     = mPass;
         Command.Scissor = mScissor;
-        Command.Uniforms[Enum::Cast(Graphic::Frequency::Instance)] = Uniform;
+        Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Instance)] = Uniform;
 
         // Bind the run's material (uniform block, textures, and samplers) when the caller named one.
         if (Bound)
         {
-            Command.Uniforms[Enum::Cast(Graphic::Frequency::Material)] = Bound->Uniforms;
+            Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Material)] = Bound->Uniforms;
             Command.Textures = Bound->Textures;
             Command.Samplers = Bound->Samplers;
         }
 
         // Bind one stream per interleaved block, in slot order (matching the technique's layout).
-        const Graphic::Object Vertices = Mesh.GetVertices();
+        const ZyGraphic::Object Vertices = Mesh.GetVertices();
 
-        for (const Graphic::VertexSlot Slot : Enum::GetValues<Graphic::VertexSlot>())
+        for (const ZyGraphic::VertexSlot Slot : ZyEnum::GetValues<ZyGraphic::VertexSlot>())
         {
             if (!Mesh.HasBinding(Slot))
             {
                 continue;
             }
 
-            const Graphic::Mesh::Binding Binding = Mesh.GetBinding(Slot);
+            const ZyGraphic::Mesh::Binding Binding = Mesh.GetBinding(Slot);
 
             Bool Bound = false;
 
-            for (ConstRef<Graphic::Stream> Stream : Command.Vertices)
+            for (ConstRef<ZyGraphic::Stream> Stream : Command.Vertices)
             {
                 Bound = Stream.Buffer  == Vertices
                      && Stream.Stride  == Binding.Stride
@@ -295,7 +295,7 @@ namespace Render
 
             if (!Bound)
             {
-                Command.Vertices.Append(Graphic::Stream(Vertices, Binding.Stride, Binding.Offset));
+                Command.Vertices.Append(ZyGraphic::Stream(Vertices, Binding.Stride, Binding.Offset));
             }
         }
 
@@ -305,10 +305,10 @@ namespace Render
             Command.Vertices.Append(Instances);
         }
 
-        if (const Graphic::Object Indices  = Mesh.GetIndices(); Indices)
+        if (const ZyGraphic::Object Indices  = Mesh.GetIndices(); Indices)
         {
-            const Bool IsExtended = Mesh.HasProperty(Graphic::Mesh::Property::Extended);
-            Command.Indices = Graphic::Stream(Indices, IsExtended ? sizeof(UInt32) : sizeof(UInt16), 0);
+            const Bool IsExtended = Mesh.HasProperty(ZyGraphic::Mesh::Property::Extended);
+            Command.Indices = ZyGraphic::Stream(Indices, IsExtended ? sizeof(UInt32) : sizeof(UInt16), 0);
         }
         Command.Parameters = Range;
     }
@@ -316,7 +316,7 @@ namespace Render
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ConstRef<Encoder::Binding> Encoder::Resolve(ConstRef<Graphic::Technique> Technique, ConstRef<Graphic::Material> Material)
+    ConstRef<Encoder::Binding> Encoder::Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material)
     {
         Ref<Binding> Bound = mBinding;
 
@@ -326,19 +326,19 @@ namespace Render
             return Bound;
         }
 
-        ConstRef<Graphic::Schema> Schema = Technique.GetSchema();
+        ConstRef<ZyGraphic::Schema> Schema = Technique.GetSchema();
 
         Bound.Technique = AddressOf(Technique);
         Bound.Material  = AddressOf(Material);
         Bound.Overrides = 0;
         Bound.Variant   = Technique.Resolve(Material);
-        Bound.Uniforms  = Pack(Graphic::Frequency::Material, Technique, Material);
+        Bound.Uniforms  = Pack(ZyGraphic::Frequency::Material, Technique, Material);
 
         Bound.Textures.Clear();
 
         for (const UInt64 Name : Schema.GetTextures())
         {
-            ConstRetainer<Graphic::Image> Image = Material.GetImage(Name);
+            ConstRetainer<ZyGraphic::Image> Image = Material.GetImage(Name);
 
             Bound.Textures.Append(Image ? Image->GetHandle() : 0);
         }
@@ -347,10 +347,10 @@ namespace Render
 
         for (UInt32 Index = 0, Limit = Schema.GetSamplers().GetSize(); Index < Limit; ++Index)
         {
-            ConstRef<Graphic::Schema::Sampler> Field = Schema.GetSamplers()[Index];
+            ConstRef<ZyGraphic::Schema::Sampler> Field = Schema.GetSamplers()[Index];
 
             // Fall back to the technique's own sampler when the material supplies none.
-            if (const Graphic::Object Handle = Material.GetSampler(Field.Hash))
+            if (const ZyGraphic::Object Handle = Material.GetSampler(Field.Hash))
             {
                 Bound.Samplers.Append(Handle);
                 Bound.Overrides |= (1u << Index);

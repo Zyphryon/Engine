@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Audio
+namespace ZyAudio
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -66,7 +66,7 @@ namespace Audio
     Mixer::Mixer()
         : mMasterVolume { 1.0f }
     {
-        for (UInt32 Index = 0; Index < Enum::Count<Category>(); ++Index)
+        for (UInt32 Index = 0; Index < ZyEnum::Count<Category>(); ++Index)
         {
             mSubmixVolume[Index].store(1.0f, std::memory_order_relaxed);
         }
@@ -381,7 +381,7 @@ namespace Audio
 
     void Mixer::Mix(Ref<Voice> Voice, UInt32 Frames)
     {
-        const Real32 Submix = mSubmixVolume[Enum::Cast(Voice.Category)].load(std::memory_order_relaxed);
+        const Real32 Submix = mSubmixVolume[ZyEnum::Cast(Voice.Category)].load(std::memory_order_relaxed);
 
         Real32 TargetLeft;
         Real32 TargetRight;

@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a 2D line segment defined by two points.
     class Line final
@@ -325,7 +325,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Line" };
+            return ZyReflection::Presentation { .Name = "Math.Line" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -334,8 +334,8 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Line::mStart>("Start"),
-                Reflection::Field::Property<&Line::mEnd>("End"));
+                ZyReflection::Field::Property<&Line::mStart>("Start"),
+                ZyReflection::Field::Property<&Line::mEnd>("End"));
         }
 
     private:

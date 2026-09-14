@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents position, rotation, and scale of an object in 3D space.
     class Transform final
@@ -277,8 +277,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<7> kPattern("({0}, {1}, {2})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mTranslation, mScale, mRotation);
+            static constexpr ZyFormat::Pattern<7> kPattern("({0}, {1}, {2})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mTranslation, mScale, mRotation);
         }
 
     public:
@@ -313,7 +313,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Transform" };
+            return ZyReflection::Presentation { .Name = "Math.Transform" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -322,9 +322,9 @@ inline namespace Math
         ZY_INLINE static constexpr auto OnDescribe()
         {
             return Array(
-                Reflection::Field::Property<&Transform::mTranslation>("Translation"),
-                Reflection::Field::Property<&Transform::mScale>("Scale"),
-                Reflection::Field::Property<&Transform::mRotation>("Rotation"));
+                ZyReflection::Field::Property<&Transform::mTranslation>("Translation"),
+                ZyReflection::Field::Property<&Transform::mScale>("Scale"),
+                ZyReflection::Field::Property<&Transform::mRotation>("Rotation"));
         }
 
     private:

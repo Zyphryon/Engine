@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a pivot point in normalized coordinates for 2D transformations.
     class Pivot2D final
@@ -60,8 +60,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<5> kPattern("({0}, {1})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mX, mY);
+            static constexpr ZyFormat::Pattern<5> kPattern("({0}, {1})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mX, mY);
         }
 
     public:
@@ -143,7 +143,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Pivot2D" };
+            return ZyReflection::Presentation { .Name = "Math.Pivot2D" };
         }
 
     private:

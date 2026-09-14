@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents a column-major 4x4 floating-point transformation matrix.
     class ZY_ALIGN(16) Matrix4x4 final
@@ -385,8 +385,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
-            Format::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1], mColumns[2], mColumns[3]);
+            static constexpr ZyFormat::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mColumns[0], mColumns[1], mColumns[2], mColumns[3]);
         }
 
     public:
@@ -678,7 +678,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Matrix4x4" };
+            return ZyReflection::Presentation { .Name = "Math.Matrix4x4" };
         }
 
         /// \brief Provides the reflected members of this type.
@@ -686,7 +686,7 @@ inline namespace Math
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(Reflection::Field::List<&Matrix4x4::mColumns>("Columns"));
+            return Array(ZyReflection::Field::List<&Matrix4x4::mColumns>("Columns"));
         }
 
     private:

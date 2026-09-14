@@ -20,10 +20,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Represents a clip of keyframed motion, played over a skeleton.
-    class Animation final : public Content::AbstractResource<Animation>
+    class Animation final : public ZyContent::AbstractResource<Animation>
     {
     public:
 
@@ -59,7 +59,7 @@ namespace Render
         /// \brief Constructs an animation resource with the given content key.
         ///
         /// \param Key The unique content key identifying this animation.
-        explicit Animation(AnyRef<Content::Uri> Key);
+        explicit Animation(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Checks whether the clip drives anything at all.
         ///

@@ -20,10 +20,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Platform
+namespace ZyPlatform
 {
     /// \brief Manages platform windows and pumps OS events each frame.
-    class Service : public Engine::Subsystem
+    class Service : public ZyEngine::Subsystem
     {
     public:
 
@@ -69,9 +69,9 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Dispatcher             mDispatcher;
-        Sequence<Input::Event> mEvents;
-        Window                 mWindow;
-        Display                mDisplay;
+        Dispatcher               mDispatcher;
+        Sequence<ZyInput::Event> mEvents;
+        Window                   mWindow;
+        Display                  mDisplay;
     };
 }

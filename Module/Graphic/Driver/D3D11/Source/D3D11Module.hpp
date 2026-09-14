@@ -18,10 +18,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Graphic
+namespace ZyGraphic
 {
     /// \brief Defines the Direct3D 11 module.
-    class D3D11Module final : public Engine::Module
+    class D3D11Module final : public ZyEngine::Module
     {
     public:
 
@@ -31,10 +31,10 @@ namespace Graphic
         /// \see Module::GetVersion()
         Text GetVersion() const override;
 
-        /// \see Module::OnAttach(Ref<Engine::Subsystem::Host>)
-        void OnAttach(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see Module::OnAttach(Ref<ZyEngine::Subsystem::Host>)
+        void OnAttach(Ref<ZyEngine::Subsystem::Host> Host) override;
 
-        /// \see Module::OnDetach(Ref<Engine::Subsystem::Host>)
-        void OnDetach(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see Module::OnDetach(Ref<ZyEngine::Subsystem::Host>)
+        void OnDetach(Ref<ZyEngine::Subsystem::Host> Host) override;
     };
 }

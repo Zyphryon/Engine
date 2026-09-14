@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Scene
+namespace ZyScene
 {
     /// \brief Provides static methods for serializing and deserializing components to and from binary data streams.
     class Codec final
@@ -139,11 +139,11 @@ namespace Scene
 
             if (Serializer && (!First.IsValid() || Scope.GetFactory(First.GetID())))
             {
-                // Write the name of the relation tag if valid, otherwise an empty string.
-                Archive.WriteText(First.IsValid() ? First.GetName() : "");
+                // Write the path of the relation tag if valid, otherwise an empty string.
+                Archive.WriteText(First.IsValid() ? Text(First.GetPath()) : "");
 
-                // Write the name of the relation target or component.
-                Archive.WriteText(Second.GetName());
+                // Write the path of the relation target or component.
+                Archive.WriteText(Second.GetPath());
 
                 // Write the serialized component bundle to the output stream.
                 Archive.WriteBlock<UInt32>([&](Ref<Writer> Output)
@@ -192,11 +192,11 @@ namespace Scene
 
     private:
 
-        /// \brief Resolves a component entity by the name it was written under.
+        /// \brief Resolves a component entity by the path it was written under.
         ///
-        /// \param World The world context used to resolve the name.
-        /// \param Name  The name to look up.
-        /// \return The entity registered under that name, or an invalid entity if there is none.
+        /// \param World The world context used to resolve the path.
+        /// \param Name  The path to look up.
+        /// \return The entity registered under that path, or an invalid entity if there is none.
         ZY_INLINE static Entity Resolve(Ptr<ecs_world_t> World, Text Name)
         {
             return Entity(World, ecs_lookup_path_w_sep(World, 0, Name.GetData(), "::", "::", true));

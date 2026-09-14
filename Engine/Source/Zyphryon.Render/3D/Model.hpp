@@ -20,22 +20,22 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Render
+namespace ZyRender
 {
     /// \brief Represents a renderable model combining geometry, materials, and an optional rig to deform on.
-    class Model final : public Content::AbstractResource<Model>
+    class Model final : public ZyContent::AbstractResource<Model>
     {
     public:
 
         /// \brief Constructs a model resource with the given content key.
         ///
         /// \param Key The unique content key identifying this model.
-        explicit Model(AnyRef<Content::Uri> Key);
+        explicit Model(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets the geometry of this model.
         ///
         /// \param Mesh The mesh resource to reference.
-        ZY_INLINE void SetMesh(ConstRetainer<Graphic::Mesh> Mesh)
+        ZY_INLINE void SetMesh(ConstRetainer<ZyGraphic::Mesh> Mesh)
         {
             mMesh = Mesh;
         }
@@ -43,7 +43,7 @@ namespace Render
         /// \brief Gets the geometry of this model.
         ///
         /// \return The referenced mesh resource, or null if unset.
-        ZY_INLINE ConstRetainer<Graphic::Mesh> GetMesh() const
+        ZY_INLINE ConstRetainer<ZyGraphic::Mesh> GetMesh() const
         {
             return mMesh;
         }
@@ -51,7 +51,7 @@ namespace Render
         /// \brief Sets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \param Skeleton The skeleton resource to reference.
-        ZY_INLINE void SetSkeleton(ConstRetainer<Render::Skeleton> Skeleton)
+        ZY_INLINE void SetSkeleton(ConstRetainer<ZyRender::Skeleton> Skeleton)
         {
             mSkeleton = Skeleton;
         }
@@ -59,7 +59,7 @@ namespace Render
         /// \brief Gets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \return The referenced skeleton resource, or null when the model does not deform.
-        ZY_INLINE ConstRetainer<Render::Skeleton> GetSkeleton() const
+        ZY_INLINE ConstRetainer<ZyRender::Skeleton> GetSkeleton() const
         {
             return mSkeleton;
         }
@@ -75,7 +75,7 @@ namespace Render
         /// \brief Replaces the material table.
         ///
         /// \param Table The materials, ordered so each entry sits at the slot its primitives index by.
-        ZY_INLINE void SetMaterials(AnyRef<Sequence<Retainer<Graphic::Material>>> Table)
+        ZY_INLINE void SetMaterials(AnyRef<Sequence<Retainer<ZyGraphic::Material>>> Table)
         {
             mMaterials = Move(Table);
         }
@@ -83,7 +83,7 @@ namespace Render
         /// \brief Gets the model's full material table.
         ///
         /// \return A read-only view over the material table.
-        ZY_INLINE ConstSpan<Retainer<Graphic::Material>> GetMaterials() const
+        ZY_INLINE ConstSpan<Retainer<ZyGraphic::Material>> GetMaterials() const
         {
             return mMaterials;
         }
@@ -92,7 +92,7 @@ namespace Render
         ///
         /// \param Slot The material-table slot to query.
         /// \return The material resource at the slot.
-        ZY_INLINE ConstRetainer<Graphic::Material> GetMaterial(UInt8 Slot) const
+        ZY_INLINE ConstRetainer<ZyGraphic::Material> GetMaterial(UInt8 Slot) const
         {
             return mMaterials[Slot];
         }
@@ -103,35 +103,35 @@ namespace Render
         ///
         /// \param Service The graphic service used to create the resources.
         /// \return `true` on success.
-        Bool Upload(Ref<Graphic::Service> Service);
+        Bool Upload(Ref<ZyGraphic::Service> Service);
 
         /// \brief Unloads the model's exclusively-owned mesh and materials from the GPU.
         ///
         /// \param Service The graphic service used to destroy the resources.
-        void Unload(Ref<Graphic::Service> Service);
+        void Unload(Ref<ZyGraphic::Service> Service);
 
-        /// \see Content::Resource::OnCreate(Ref<Engine::Subsystem::Host>)
-        Bool OnCreate(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnCreate(Ref<ZyEngine::Subsystem::Host>)
+        Bool OnCreate(Ref<ZyEngine::Subsystem::Host> Host) override
         {
-            return Upload(* Host.GetService<Graphic::Service>());
+            return Upload(* Host.GetService<ZyGraphic::Service>());
         }
 
-        /// \see Content::Resource::OnDelete(Ref<Engine::Subsystem::Host>)
-        void OnDelete(Ref<Engine::Subsystem::Host> Host) override
+        /// \see ZyContent::Resource::OnDelete(Ref<ZyEngine::Subsystem::Host>)
+        void OnDelete(Ref<ZyEngine::Subsystem::Host> Host) override
         {
-            Unload(* Host.GetService<Graphic::Service>());
+            Unload(* Host.GetService<ZyGraphic::Service>());
         }
 
-        /// \see Content::Resource::OnReload(Ref<Engine::Subsystem::Host>)
-        void OnReload(Ref<Engine::Subsystem::Host> Host) override;
+        /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
+        void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Graphic::Mesh>               mMesh;
-        Retainer<Render::Skeleton>            mSkeleton;
-        Sequence<Retainer<Graphic::Material>> mMaterials;
+        Retainer<ZyGraphic::Mesh>               mMesh;
+        Retainer<ZyRender::Skeleton>            mSkeleton;
+        Sequence<Retainer<ZyGraphic::Material>> mMaterials;
     };
 }

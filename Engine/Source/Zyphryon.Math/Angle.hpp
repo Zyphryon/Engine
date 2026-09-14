@@ -12,7 +12,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace Math
+inline namespace ZyMath
 {
     /// \brief Represents an angle in radians and provides methods for conversion to degrees.
     class Angle final
@@ -165,8 +165,8 @@ inline namespace Math
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr Format::Pattern<2> kPattern("{0}°");
-            Format::Processor<Output>::Format(Buffer, kPattern, GetDegrees());
+            static constexpr ZyFormat::Pattern<2> kPattern("{0}°");
+            ZyFormat::Processor<Output>::Format(Buffer, kPattern, GetDegrees());
         }
 
     public:
@@ -250,7 +250,7 @@ inline namespace Math
         /// \return The cosine of the angle.
         ZY_INLINE static Real32 Cosine(Angle Value)
         {
-            return Base::Cosine(Value.GetRadians());
+            return ZyBase::Cosine(Value.GetRadians());
         }
 
         /// \brief Calculates the sine of the given angle.
@@ -259,7 +259,7 @@ inline namespace Math
         /// \return The sine of the angle.
         ZY_INLINE static Real32 Sine(Angle Value)
         {
-            return Base::Sine(Value.GetRadians());
+            return ZyBase::Sine(Value.GetRadians());
         }
 
         /// \brief Calculates the tangent of the given angle.
@@ -268,7 +268,7 @@ inline namespace Math
         /// \return The tangent of the angle.
         ZY_INLINE static Real32 Tangent(Angle Value)
         {
-            return Base::Tangent(Value.GetRadians());
+            return ZyBase::Tangent(Value.GetRadians());
         }
 
         /// \brief Measures the shortest way round from one angle to another.
@@ -290,7 +290,7 @@ inline namespace Math
         /// \return The fully qualified reflection name of the type, and how it is shown.
         ZY_INLINE static constexpr auto OnClassify()
         {
-            return Reflection::Presentation { .Name = "Math.Angle" };
+            return ZyReflection::Presentation { .Name = "Math.Angle" };
         }
 
     private:

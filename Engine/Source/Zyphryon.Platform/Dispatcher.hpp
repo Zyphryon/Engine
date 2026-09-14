@@ -18,7 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Platform
+namespace ZyPlatform
 {
     /// \brief Collects and queues platform input events for processing by the input service.
     class Dispatcher final
@@ -53,9 +53,9 @@ namespace Platform
         /// \brief Hands over the events queued so far, leaving the dispatcher with none.
         ///
         /// \param Output Receives the events queued since the last reset.
-        ZY_INLINE void Drain(Ref<Sequence<Input::Event> > Output)
+        ZY_INLINE void Drain(Ref<Sequence<ZyInput::Event> > Output)
         {
-            Base::Swap(mInputEvents, Output);
+            ZyBase::Swap(mInputEvents, Output);
         }
 
         /// \brief Notify that a specific notification has occurred.
@@ -90,25 +90,25 @@ namespace Platform
 
             mInputText.Append(Content);
 
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::KeyType);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::KeyType);
             Event.KeyType.Content = Text(mInputText.GetData() + Offset, Content.GetSize());
         }
 
         /// \brief Queues a key release event.
         ///
         /// \param Key The physical key that was released.
-        ZY_INLINE void QueueKeyUp(Input::Key Key)
+        ZY_INLINE void QueueKeyUp(ZyInput::Key Key)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::KeyUp);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::KeyUp);
             Event.KeyAction.Key = Key;
         }
 
         /// \brief Queues a key press event.
         ///
         /// \param Key The physical key that was pressed.
-        ZY_INLINE void QueueKeyDown(Input::Key Key)
+        ZY_INLINE void QueueKeyDown(ZyInput::Key Key)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::KeyDown);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::KeyDown);
             Event.KeyAction.Key = Key;
         }
 
@@ -120,7 +120,7 @@ namespace Platform
         /// \param RelativeY The relative Y movement since the last event.
         ZY_INLINE void QueueMouseMove(Real32 X, Real32 Y, Real32 RelativeX, Real32 RelativeY)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::MouseMove);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::MouseMove);
             Event.MouseAxis.X      = X;
             Event.MouseAxis.Y      = Y;
             Event.MouseAxis.DeltaX = RelativeX;
@@ -133,7 +133,7 @@ namespace Platform
         /// \param DeltaY The vertical scroll delta.
         ZY_INLINE void QueueMouseScroll(Real32 DeltaX, Real32 DeltaY)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::MouseScroll);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::MouseScroll);
             Event.MouseScroll.DeltaX = DeltaX;
             Event.MouseScroll.DeltaY = DeltaY;
         }
@@ -141,18 +141,18 @@ namespace Platform
         /// \brief Queues a mouse button release event.
         ///
         /// \param Button The mouse button that was released.
-        ZY_INLINE void QueueMouseButtonUp(Input::Button Button)
+        ZY_INLINE void QueueMouseButtonUp(ZyInput::Button Button)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::MouseUp);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::MouseUp);
             Event.MouseAction.Button = Button;
         }
 
         /// \brief Queues a mouse button press event.
         ///
         /// \param Button The mouse button that was pressed.
-        ZY_INLINE void QueueMouseButtonDown(Input::Button Button)
+        ZY_INLINE void QueueMouseButtonDown(ZyInput::Button Button)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::MouseDown);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::MouseDown);
             Event.MouseAction.Button = Button;
         }
 
@@ -163,7 +163,7 @@ namespace Platform
         /// \param Y  The Y position the touch landed at.
         ZY_INLINE void QueueTouchDown(UInt32 ID, Real32 X, Real32 Y)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchDown);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchDown);
             Event.TouchAction.ID    = ID;
             Event.TouchAction.X     = X;
             Event.TouchAction.Y     = Y;
@@ -178,7 +178,7 @@ namespace Platform
         /// \param Y  The absolute Y position of the touch.
         ZY_INLINE void QueueTouchMove(UInt32 ID, Real32 X, Real32 Y)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchMove);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchMove);
             Event.TouchAction.ID    = ID;
             Event.TouchAction.X     = X;
             Event.TouchAction.Y     = Y;
@@ -191,7 +191,7 @@ namespace Platform
         /// \param Y  The Y position the touch left from.
         ZY_INLINE void QueueTouchUp(UInt32 ID, Real32 X, Real32 Y)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchUp);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchUp);
             Event.TouchAction.ID    = ID;
             Event.TouchAction.X     = X;
             Event.TouchAction.Y     = Y;
@@ -202,7 +202,7 @@ namespace Platform
         /// \param ID The identity of the touch that was taken away.
         ZY_INLINE void QueueTouchCancel(UInt32 ID)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::TouchCancel);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchCancel);
             Event.TouchAction.ID    = ID;
         }
 
@@ -211,7 +211,7 @@ namespace Platform
         /// \param Focused The focus state (true if gained, false if lost).
         ZY_INLINE void QueueWindowFocus(Bool Focused)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::WindowFocus);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::WindowFocus);
             Event.WindowFocus.State = Focused;
         }
 
@@ -221,7 +221,7 @@ namespace Platform
         /// \param Height The new window height in pixels.
         ZY_INLINE void QueueWindowResize(UInt16 Width, UInt16 Height)
         {
-            Ref<Input::Event> Event = mInputEvents.Append(Input::Event::Type::WindowResize);
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::WindowResize);
             Event.WindowResize.Width  = Width;
             Event.WindowResize.Height = Height;
         }
@@ -229,13 +229,13 @@ namespace Platform
         /// \brief Queues a window close request event.
         ZY_INLINE void QueueWindowExit()
         {
-            mInputEvents.Append(Input::Event::Type::WindowExit);
+            mInputEvents.Append(ZyInput::Event::Type::WindowExit);
         }
 
         /// \brief Gets the queued input events.
         ///
         /// \return The span of collected events from the current frame.
-        ZY_INLINE ConstSpan<Input::Event> GetInputEvents() const
+        ZY_INLINE ConstSpan<ZyInput::Event> GetInputEvents() const
         {
             return mInputEvents;
         }
@@ -245,8 +245,8 @@ namespace Platform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Notification           mNotifications;
-        Sequence<Input::Event> mInputEvents;
-        String<512>            mInputText;
+        Notification             mNotifications;
+        Sequence<ZyInput::Event> mInputEvents;
+        String<512>              mInputText;
     };
 }

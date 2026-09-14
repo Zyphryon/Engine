@@ -20,7 +20,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Network
+namespace ZyNetwork
 {
     /// \brief Represents one endpoint the service holds open, and everything that belongs to it alone.
     class Channel : public Retainable<Channel>
@@ -156,7 +156,7 @@ namespace Network
         /// \param Kind The operation now outstanding.
         ZY_INLINE constexpr void Await(Operation Kind)
         {
-            mAwaiting = SetBit(mAwaiting, 1u << Enum::Cast(Kind));
+            mAwaiting = SetBit(mAwaiting, 1u << ZyEnum::Cast(Kind));
         }
 
         /// \brief Records whether an operation reached the platform at all.
@@ -165,7 +165,7 @@ namespace Network
         /// \param Success The answer to whether the platform took it.
         ZY_INLINE constexpr void Await(Operation Kind, Bool Success)
         {
-            mAwaiting = SetOrClearBit(mAwaiting, 1u << Enum::Cast(Kind), Success);
+            mAwaiting = SetOrClearBit(mAwaiting, 1u << ZyEnum::Cast(Kind), Success);
         }
 
         /// \brief Records that an operation has come back.
@@ -173,7 +173,7 @@ namespace Network
         /// \param Kind The operation the platform has finished.
         ZY_INLINE constexpr void Settle(Operation Kind)
         {
-            mAwaiting = ClearBit(mAwaiting, 1u << Enum::Cast(Kind));
+            mAwaiting = ClearBit(mAwaiting, 1u << ZyEnum::Cast(Kind));
         }
 
         /// \brief Checks whether one kind of operation is already out with the platform.
@@ -182,7 +182,7 @@ namespace Network
         /// \return `true` while the platform still holds one, otherwise `false`.
         ZY_INLINE constexpr Bool IsAwaiting(Operation Kind) const
         {
-            return HasBit(mAwaiting, 1u << Enum::Cast(Kind));
+            return HasBit(mAwaiting, 1u << ZyEnum::Cast(Kind));
         }
 
     protected:

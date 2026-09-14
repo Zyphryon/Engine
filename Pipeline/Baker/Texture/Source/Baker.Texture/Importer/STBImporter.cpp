@@ -20,28 +20,28 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace Pipeline::Baker::Texture
+namespace ZyPipeline::Baker::Texture
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Graphic::TextureFormat Resolve(SInt32 Channels, Bool Real, Bool Wide, Bool sRGB)
+    static ZyGraphic::TextureFormat Resolve(SInt32 Channels, Bool Real, Bool Wide, Bool sRGB)
     {
         switch (Channels)
         {
         case 1:
-            return Real ? Graphic::TextureFormat::R32Float
-                 : Wide ? Graphic::TextureFormat::R16UIntNorm
-                        : Graphic::TextureFormat::R8UIntNorm;
+            return Real ? ZyGraphic::TextureFormat::R32Float
+                 : Wide ? ZyGraphic::TextureFormat::R16UIntNorm
+                        : ZyGraphic::TextureFormat::R8UIntNorm;
         case 2:
-            return Real ? Graphic::TextureFormat::RG32Float
-                 : Wide ? Graphic::TextureFormat::RG16UIntNorm
-                        : Graphic::TextureFormat::RG8UIntNorm;
+            return Real ? ZyGraphic::TextureFormat::RG32Float
+                 : Wide ? ZyGraphic::TextureFormat::RG16UIntNorm
+                        : ZyGraphic::TextureFormat::RG8UIntNorm;
         default:
-            return Real ? Graphic::TextureFormat::RGBA32Float
-                 : Wide ? Graphic::TextureFormat::RGBA16UIntNorm
-                 : sRGB ? Graphic::TextureFormat::RGBA8UIntNorm_sRGB
-                        : Graphic::TextureFormat::RGBA8UIntNorm;
+            return Real ? ZyGraphic::TextureFormat::RGBA32Float
+                 : Wide ? ZyGraphic::TextureFormat::RGBA16UIntNorm
+                 : sRGB ? ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB
+                        : ZyGraphic::TextureFormat::RGBA8UIntNorm;
         }
     }
 
@@ -126,10 +126,10 @@ namespace Pipeline::Baker::Texture
             return Surface();
         }
 
-        const Graphic::TextureFormat Format = Resolve(Request, Real, Wide, sRGB);
+        const ZyGraphic::TextureFormat Format = Resolve(Request, Real, Wide, sRGB);
 
         // Adopt the decoder's buffer rather than copying it; the blob releases it through the matching free.
-        const UInt32 Size = Graphic::GetLevelSize(Format, static_cast<UInt16>(Width), static_cast<UInt16>(Height), 0);
+        const UInt32 Size = ZyGraphic::GetLevelSize(Format, static_cast<UInt16>(Width), static_cast<UInt16>(Height), 0);
 
         Blob Data(static_cast<Ptr<Byte>>(Pixels), Size, Blob::Deleter([](Ptr<Byte> Address)
         {
