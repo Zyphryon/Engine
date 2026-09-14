@@ -27,9 +27,11 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Creates an uninitialized tween.
+        /// \brief Creates a tween that stands still at nothing.
         ZY_INLINE Tween()
-            : mTime        { 0 },
+            : mStart       { },
+              mEnd         { },
+              mTime        { 0 },
               mAccumulator { 0 },
               mEasing      { Easing::Linear }
         {
@@ -50,17 +52,35 @@ inline namespace ZyMath
         {
         }
 
+        /// \brief Aims the tween at a new value, starting over from wherever it now stands.
+        ///
+        /// \param End  The target value of the tween.
+        /// \param Time The total duration of the tween in seconds.
+        ZY_INLINE void Aim(Type End, Real64 Time)
+        {
+            mStart       = GetValue();
+            mEnd         = End;
+            mTime        = Time;
+            mAccumulator = 0;
+        }
+
         /// \brief Advances the tween by the specified time delta.
-        /// 
+        ///
         /// \param Delta The time elapsed since last update in seconds.
         /// \return The current interpolated value.
         ZY_INLINE Type Tick(Real64 Delta)
         {
-            ZY_ASSERT(mTime > 0.0, "Tween duration must be greater than zero");
-
             mAccumulator = Min(mAccumulator + Delta, mTime);
 
-            const Real32 Progress = static_cast<Real32>(mAccumulator / mTime);
+            return GetValue();
+        }
+
+        /// \brief Gets the value the tween stands at, leaving it where it is.
+        ///
+        /// \return The current interpolated value.
+        ZY_INLINE Type GetValue() const
+        {
+            const Real32 Progress = mTime > 0.0 ? static_cast<Real32>(mAccumulator / mTime) : 1.0f;
 
             if constexpr (IsLerpable<Type>)
             {
@@ -73,7 +93,7 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if the tween hasn't started yet.
-        /// 
+        ///
         /// \return `true` if the tween is idling, `false` otherwise.
         ZY_INLINE Bool IsIdle() const
         {
@@ -81,7 +101,7 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if the tween has completed.
-        /// 
+        ///
         /// \return `true` if the tween has reached its end value, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
