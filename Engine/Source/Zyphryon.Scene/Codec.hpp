@@ -135,9 +135,11 @@ namespace ZyScene
 
             ConstRef<Context> Scope = Context::Get(Component.GetWorld());
 
-            const ConstPtr<Factory> Serializer = Second.IsValid() ? Scope.GetFactory(Second.GetID()) : nullptr;
+            const ConstPtr<Factory> Serializer = IsSerializable(Component)
+                ? Scope.GetFactory(Second.GetID())
+                : nullptr;
 
-            if (Serializer && (!First.IsValid() || Scope.GetFactory(First.GetID())))
+            if (Serializer)
             {
                 // Write the path of the relation tag if valid, otherwise an empty string.
                 Archive.WriteText(First.IsValid() ? Text(First.GetPath()) : "");
@@ -158,6 +160,49 @@ namespace ZyScene
             return false;
         }
 
+
+        /// \brief Checks whether a component is one that is written out with the entity carrying it.
+        ///
+        /// \param Component The component or relation pair to check.
+        /// \return `true` when the world knows how to write it, `false` when it is left where it is.
+        ZY_INLINE static Bool IsSerializable(Entity Component)
+        {
+            const Entity First  = Component.IsPair() ? Component.GetRelation()  : Entity();
+            const Entity Second = Component.IsPair() ? Component.GetComponent() : Component;
+
+            ConstRef<Context> Scope = Context::Get(Component.GetWorld());
+
+            return Second.IsValid()
+                && Scope.GetFactory(Second.GetID())
+                && (!First.IsValid() || Scope.GetFactory(First.GetID()));
+        }
+
+        /// \brief Takes off an entity everything \ref WriteComponentsOf would have written of it.
+        ///
+        /// \param Actor The entity to take them off.
+        template<typename Owner>
+        ZY_INLINE static void EraseComponentsOf(Owner Actor)
+        {
+            Sequence<Entity> Discard;
+
+            // Removing while walking would move the entity between tables under the walk itself.
+            Actor.Each([&](Entity Component)
+            {
+                if (IsSerializable(Component))
+                {
+                    Discard.Append(Component);
+                }
+            });
+
+            for (const Entity Component : Discard)
+            {
+                Actor.Remove(Component);
+            }
+
+            // What was kept for a type the world no longer knows is written out too, so it goes as well.
+            Actor.template Remove<Salvage>();
+        }
+        
         /// \brief Writes multiple components from the specified actor to a binary data stream.
         ///
         /// \param Archive The binary data writer to write the component data to.

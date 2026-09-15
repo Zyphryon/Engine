@@ -160,12 +160,30 @@ namespace ZyScene
             return (* this);
         }
 
+        /// \brief Enables this entity and everything hanging from it, allowing systems to process them.
+        ///
+        /// \return This entity, allowing for method chaining.
+        ZY_INLINE Entity AwakeRecursively() const
+        {
+            EnableRecursively(* this, true);
+            return (* this);
+        }
+
         /// \brief Disables this entity, preventing it from being processed by systems that require it to be awake.
         ///
         /// \return This entity, allowing for method chaining.
         ZY_INLINE Entity Sleep() const
         {
             ecs_enable(mWorld, mHandle, false);
+            return (* this);
+        }
+
+        /// \brief Disables this entity and everything hanging from it, so no system processes them.
+        ///
+        /// \return This entity, allowing for method chaining.
+        ZY_INLINE Entity SleepRecursively() const
+        {
+            EnableRecursively(* this, false);
             return (* this);
         }
 
@@ -316,9 +334,10 @@ namespace ZyScene
         /// \tparam Component The component type to retrieve or create.
         /// \return A pointer to the component data.
         template<typename Component>
-        ZY_INLINE Ptr<void> Ensure() const
+        ZY_INLINE Ptr<StripAll<Component>> Ensure() const
         {
-            return ecs_ensure_id(mWorld, mHandle, _::Identify<Component>(mWorld), sizeof(StripAll<Component>));
+            return static_cast<Ptr<StripAll<Component>>>(
+                ecs_ensure_id(mWorld, mHandle, _::Identify<Component>(mWorld), sizeof(StripAll<Component>)));
         }
 
         /// \brief Gets a writable pointer to a component by runtime entity, creating it if it does not exist.
@@ -749,6 +768,39 @@ namespace ZyScene
         {
             ecs_enable_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()), false);
             return (* this);
+        }
+
+        /// \brief Checks whether this entity is the given ancestor or stands anywhere beneath it.
+        ///
+        /// \param Ancestor The entity to look for up the parent chain.
+        /// \return `true` if this entity is the ancestor or descends from it, `false` otherwise.
+        ZY_INLINE Bool IsWithin(Entity Ancestor) const
+        {
+            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                if (Cursor == Ancestor)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// \brief Resolves the nearest entity up the parent chain that carries a component, this one included.
+        ///
+        /// \tparam Component The component to look for.
+        /// \return The nearest entity carrying it, or an invalid entity when nothing up the chain does.
+        template<typename Component>
+        ZY_INLINE Entity FindRecursively() const
+        {
+            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
+            {
+                if (Cursor.Has<Component>())
+                {
+                    return Cursor;
+                }
+            }
+            return Entity();
         }
 
         /// \brief Sends an event to this entity, with an optional payload.
@@ -1196,39 +1248,6 @@ namespace ZyScene
             return Root;
         }
 
-        /// \brief Checks whether this entity is the given ancestor or stands anywhere beneath it.
-        ///
-        /// \param Ancestor The entity to look for up the parent chain.
-        /// \return `true` if this entity is the ancestor or descends from it, `false` otherwise.
-        ZY_INLINE Bool IsWithin(Entity Ancestor) const
-        {
-            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
-            {
-                if (Cursor == Ancestor)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// \brief Resolves the nearest entity up the parent chain that carries a component, this one included.
-        ///
-        /// \tparam Component The component to look for.
-        /// \return The nearest entity carrying it, or an invalid entity when nothing up the chain does.
-        template<typename Component>
-        ZY_INLINE Entity FindRecursively() const
-        {
-            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
-            {
-                if (Cursor.Has<Component>())
-                {
-                    return Cursor;
-                }
-            }
-            return Entity();
-        }
-
         /// \brief Provides the name this type is registered under in the reflection system.
         ///
         /// \return The fully qualified reflection name of the type, and how it is shown.
@@ -1246,16 +1265,6 @@ namespace ZyScene
         }
 
     private:
-
-        /// \brief Gets the size a component was registered with.
-        ///
-        /// \param Component The component to measure.
-        /// \return The size of the component in bytes, or zero when it carries none.
-        ZY_INLINE UInt32 Measure(ecs_id_t Component) const
-        {
-            const ConstPtr<ecs_type_info_t> Info = ecs_get_type_info(mWorld, Component);
-            return Info ? static_cast<UInt32>(Info->size) : 0;
-        }
 
         /// \brief Holds the callback an observer created by \ref Subscribe owns.
         template<typename Callable>
@@ -1297,6 +1306,43 @@ namespace ZyScene
             }
         };
 
+        /// \brief Enables or disables an entity and everything hanging from it.
+        ///
+        /// \param Actor The root entity to walk, along with its entire subtree.
+        /// \param Awake The choice to enable rather than disable.
+        ZY_INLINE static void EnableRecursively(Entity Actor, Bool Awake)
+        {
+            const Ptr<ecs_world_t> World = Actor.GetWorld();
+
+            const Bool Deferred = !ecs_is_deferred(World);
+
+            if (Deferred)
+            {
+                ecs_defer_begin(World);
+            }
+
+            EnableRecursivelyDeferred(Actor, Awake);
+
+            if (Deferred)
+            {
+                ecs_defer_end(World);
+            }
+        }
+
+        /// \brief Recursive worker for \ref EnableRecursively, run inside an already-open defer scope.
+        ///
+        /// \param Actor The root entity to walk, along with its entire subtree.
+        /// \param Awake The choice to enable rather than disable.
+        static void EnableRecursivelyDeferred(Entity Actor, Bool Awake)
+        {
+            ecs_enable(Actor.GetWorld(), Actor.GetHandle(), Awake);
+
+            Actor.Children([Awake](Entity Child)
+            {
+                EnableRecursivelyDeferred(Child, Awake);
+            });
+        }
+
         /// \brief Recursive worker for \ref AddRecursively, run inside an already-open defer scope.
         ///
         /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
@@ -1325,15 +1371,6 @@ namespace ZyScene
             });
         }
 
-        /// \brief Resolves a half of a pair back to the live entity it names.
-        ///
-        /// \param Handle The identifier stored in the pair, which carries no generation of its own.
-        /// \return The live entity the half refers to.
-        ZY_INLINE Entity Resolve(Handle Handle) const
-        {
-            return mWorld ? Entity(mWorld, ecs_get_alive(mWorld, Handle)) : Entity(Handle);
-        }
-
         /// \brief Wraps a string flecs owns, which is null whenever the entity carries no such name.
         ///
         /// \param Value The string to wrap, or null.
@@ -1341,6 +1378,25 @@ namespace ZyScene
         ZY_INLINE static Text Describe(ConstPtr<Char> Value)
         {
             return Value ? StrConvert(Value) : Text();
+        }
+
+        /// \brief Gets the size a component was registered with.
+        ///
+        /// \param Component The component to measure.
+        /// \return The size of the component in bytes, or zero when it carries none.
+        ZY_INLINE UInt32 Measure(ecs_id_t Component) const
+        {
+            const ConstPtr<ecs_type_info_t> Info = ecs_get_type_info(mWorld, Component);
+            return Info ? static_cast<UInt32>(Info->size) : 0;
+        }
+
+        /// \brief Resolves a half of a pair back to the live entity it names.
+        ///
+        /// \param Handle The identifier stored in the pair, which carries no generation of its own.
+        /// \return The live entity the half refers to.
+        ZY_INLINE Entity Resolve(Handle Handle) const
+        {
+            return mWorld ? Entity(mWorld, ecs_get_alive(mWorld, Handle)) : Entity(Handle);
         }
 
         /// \brief Gets a pointer to a component, honouring whether the type was spelled as read-only.
