@@ -271,13 +271,13 @@ namespace ZyScene::DSL::_
             return (* this);
         }
 
-        /// \brief Sets the event that triggers an observer.
+        /// \brief Adds to what an observer is woken by, which may name more than one event.
         ///
-        /// \param Event The event entity the observer listens for.
+        /// \param Events The events to listen for, folded in with whatever was already named.
         /// \return This description, allowing for method chaining.
-        ZY_INLINE Ref<Descriptor> Event(ecs_entity_t Event)
+        ZY_INLINE Ref<Descriptor> Listen(Event Events)
         {
-            mEvent = Event;
+            mEvents |= Events;
             return (* this);
         }
 
@@ -352,7 +352,24 @@ namespace ZyScene::DSL::_
             ecs_observer_desc_t Description { };
             Description.entity       = Reserve(Name);
             Description.query        = mQuery;
-            Description.events[0]    = mEvent;
+
+            // One observer may be woken by several events, which flecs takes as a run of slots rather than a mask.
+            UInt8 Slot = 0;
+
+            if (HasBit(mEvents, Event::Add))
+            {
+                Description.events[Slot++] = EcsOnAdd;
+            }
+
+            if (HasBit(mEvents, Event::Set))
+            {
+                Description.events[Slot++] = EcsOnSet;
+            }
+
+            if (HasBit(mEvents, Event::Remove))
+            {
+                Description.events[Slot++] = EcsOnRemove;
+            }
             Description.run          = Delegate::OnInvoke;
             Description.run_ctx      = new Delegate(Forward<Callable>(Callback));
             Description.run_ctx_free = Delegate::OnRelease;
@@ -423,7 +440,7 @@ namespace ZyScene::DSL::_
         Ptr<ecs_term_t>  mTerm       { nullptr };
         SInt8            mCount      { 0 };
         ecs_entity_t     mPhase      { 0 };
-        ecs_entity_t     mEvent      { 0 };
+        Event            mEvents     { };
         ecs_entity_t     mSource     { 0 };
         Real32           mInterval   { 0.0f };
         SInt32           mRate       { 0 };
@@ -1830,7 +1847,16 @@ namespace ZyScene::DSL::_
         template<typename... Values>
         ZY_INLINE static void Apply(ConstRef<Iterator> Cursor, ConstRef<FEach> Each, SInt32 Row, AnyRef<Values>... Data)
         {
-            if constexpr (requires { Each(Entity(), Forward<Values>(Data)...); })
+            if constexpr (requires { Each(Event(), Entity(), Forward<Values>(Data)...); })
+            {
+                const Ptr<ecs_iter_t> Handle = Cursor.GetHandle();
+
+                ZY_ASSERT(Handle->entities, "Callback asks for an entity the query does not produce");
+
+                ZY_INLINE_CALL Each(
+                    Cursor.GetEvent(), Entity(Handle->world, Handle->entities[Row]), Forward<Values>(Data)...);
+            }
+            else if constexpr (requires { Each(Entity(), Forward<Values>(Data)...); })
             {
                 const Ptr<ecs_iter_t> Handle = Cursor.GetHandle();
 

@@ -68,6 +68,15 @@ namespace ZyScene
         Concurrent, ///< Executes concurrently in worker threads.
     };
 
+    /// \brief Defines what may happen to a component, which an observer listens for one or more of.
+    enum class Event : UInt8
+    {
+        Add    = 0b00000001, ///< The component was put on the entity, before it has been given a value.
+        Set    = 0b00000010, ///< The component was given a value.
+        Remove = 0b00000100, ///< The component was taken off the entity, or taken away with the entity.
+    };
+    ZY_DEFINE_BITWISE_ENUM(Event)
+
     /// \brief Defines the hierarchy type of an entity in the scene.
     enum class Hierarchy : UInt8
     {

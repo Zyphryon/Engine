@@ -130,12 +130,26 @@ namespace ZyScene
             return Entity(mHandle->world, mHandle->system);
         }
 
-        /// \brief Gets the event this iteration was triggered by.
+        /// \brief Gets the event this iteration was woken by.
         ///
-        /// \return The event entity, or an invalid entity outside an observer.
-        ZY_INLINE Entity GetEvent() const
+        /// \return The event it stands for, or none at all outside an observer.
+        ZY_INLINE Event GetEvent() const
         {
-            return Entity(mHandle->world, mHandle->event);
+            if (mHandle->event == EcsOnAdd)
+            {
+                return Event::Add;
+            }
+
+            if (mHandle->event == EcsOnSet)
+            {
+                return Event::Set;
+            }
+
+            if (mHandle->event == EcsOnRemove)
+            {
+                return Event::Remove;
+            }
+            return Event();
         }
 
     private:

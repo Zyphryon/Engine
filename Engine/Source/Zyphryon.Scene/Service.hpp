@@ -254,17 +254,17 @@ namespace ZyScene
         /// \tparam FEach             The callable type invoked for each matching entity.
         /// \tparam RuntimeExpression Zero or more runtime expression types.
         /// \param  Name              The optional display name for the observer entity.
-        /// \param  Event             The event entity that triggers the observer.
+        /// \param  Type              The events that wake the observer, which may name more than one.
         /// \param  Each              The callback invoked for each entity that matches the event.
         /// \param  Runtime           The runtime expression values to append to the observer filter.
         /// \return The entity representing the created observer.
         template<typename... CompileExpression, typename FEach, typename... RuntimeExpression>
-        ZY_INLINE Entity CreateObserver(Text Name, Entity Event, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
+        ZY_INLINE Entity CreateObserver(Text Name, Event Type, AnyRef<FEach> Each, AnyRef<RuntimeExpression>... Runtime) const
         {
             DSL::_::Descriptor Builder(mWorld);
             const auto Signature = DSL::_::Build<FEach, CompileExpression...>(Builder, Runtime...);
 
-            Builder.Event(Event.GetHandle());
+            Builder.Listen(Type);
 
             using Runner = DSL::_::RunnerFactory<StripAll<decltype(Signature)>, StripAll<FEach>>;
             return Entity(mWorld, Builder.BuildObserver(Name, Runner::Make(Move(Each))));

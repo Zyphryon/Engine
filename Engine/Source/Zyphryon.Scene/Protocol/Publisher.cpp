@@ -33,7 +33,7 @@ namespace ZyScene::Protocol
         // Observes a replica landing on an entity, which the next publish then announces to its scope.
         mObservers[0] = Scene.CreateObserver<>(
             "Scene::Publisher::ObsSetReplica",
-            EcsOnSet,
+            Event::Set,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
                 // A file that held a runtime replica reads one back that names nothing, and it has nothing to say.
@@ -61,7 +61,7 @@ namespace ZyScene::Protocol
         // Observes a replica leaving an entity, so whoever was told about it is told to forget it.
         mObservers[1] = Scene.CreateObserver<>(
             "Scene::Publisher::ObsRemoveReplica",
-            EcsOnRemove,
+            Event::Remove,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
                 const ConstPtr<Tracker> Tracking = Actor.TryGet<const Tracker>();
@@ -75,7 +75,7 @@ namespace ZyScene::Protocol
         // Observes a scope landing on an entity to tell whoever already subscribed to its key what stands beneath it.
         mObservers[2] = Scene.CreateObserver<>(
             "Scene::Publisher::ObsSetScope",
-            EcsOnSet,
+            Event::Set,
             [this](Entity Actor, ConstRef<Scope> Component)
             {
                 Ref<Group> Group = mGroups.FindOrInsert(Component.GetKey());
@@ -90,7 +90,7 @@ namespace ZyScene::Protocol
         // Observes a scope leaving an entity, which keeps its subscribers since the key may land again.
         mObservers[3] = Scene.CreateObserver<>(
             "Scene::Publisher::ObsRemoveScope",
-            EcsOnRemove,
+            Event::Remove,
             [this](Entity Actor, ConstRef<Scope> Component)
             {
                 if (const Ptr<Group> Group = mGroups.Find(Component.GetKey()); Group && Group->Actor == Actor)
@@ -107,32 +107,28 @@ namespace ZyScene::Protocol
         {
             const Entity Component(Scene.GetWorld().GetHandle(), Table.GetEntry(Index).Component);
 
-            mWatchers.Append(Scene.CreateObserver(Text::Empty(), EcsOnAdd, [Index](Entity Actor, Ref<Tracker> Tracking)
-            {
-                if (Enlist(Actor, Tracking))
+            mWatchers.Append(Scene.CreateObserver(
+                Text::Empty(),
+                Event::Add | Event::Set | Event::Remove,
+                [Index](Event Type, Entity Actor, Ref<Tracker> Tracking)
                 {
-                    Tracking.Touched.Set(Index);
-                    Tracking.Removed.Reset(Index);
-                }
-            }, DSL::In(Component)));
+                    if (!Enlist(Actor, Tracking))
+                    {
+                        return;
+                    }
 
-            mWatchers.Append(Scene.CreateObserver(Text::Empty(), EcsOnSet, [Index](Entity Actor, Ref<Tracker> Tracking)
-            {
-                if (Enlist(Actor, Tracking))
-                {
-                    Tracking.Touched.Set(Index);
-                    Tracking.Removed.Reset(Index);
-                }
-            }, DSL::In(Component)));
-
-            mWatchers.Append(Scene.CreateObserver(Text::Empty(), EcsOnRemove, [Index](Entity Actor, Ref<Tracker> Tracking)
-            {
-                if (Enlist(Actor, Tracking))
-                {
-                    Tracking.Removed.Set(Index);
-                    Tracking.Touched.Reset(Index);
-                }
-            }, DSL::In(Component)));
+                    // Landing and being set both leave the component to be sent; leaving takes it back again.
+                    if (Type == Event::Remove)
+                    {
+                        Tracking.Removed.Set(Index);
+                        Tracking.Touched.Reset(Index);
+                    }
+                    else
+                    {
+                        Tracking.Touched.Set(Index);
+                        Tracking.Removed.Reset(Index);
+                    }
+                }, DSL::In(Component)));
         }
     }
 

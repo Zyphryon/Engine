@@ -311,7 +311,7 @@ namespace ZyScene
 #endif
 
         // Frees the archetype handle associated with the prefab to keep archetype tracking consistent.
-        CreateObserver("_Archetypes::OnRemove", EcsOnRemove, [this](Entity Actor)
+        CreateObserver("_Archetypes::OnRemove", Event::Remove, [this](Entity Actor)
         {
             mArchetypes.Free(Actor.GetID() - kMinRangeArchetypes);
         }, DSL::In(EcsPrefab));

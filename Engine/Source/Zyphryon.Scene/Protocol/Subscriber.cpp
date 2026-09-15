@@ -34,7 +34,7 @@ namespace ZyScene::Protocol
         // Observes a replica landing on an entity, from a spawn or from disk, to apply whatever waited for it.
         mObservers[0] = Scene.CreateObserver<>(
             "Scene::Subscriber::ObsSetReplica",
-            EcsOnSet,
+            Event::Set,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
                 if (const UInt64 Identifier = Record.GetIdentifier(); Identifier != 0)
@@ -63,7 +63,7 @@ namespace ZyScene::Protocol
         // Observes a replica leaving an entity, so its identifier stops resolving to it.
         mObservers[1] = Scene.CreateObserver<>(
             "Scene::Subscriber::ObsRemoveReplica",
-            EcsOnRemove,
+            Event::Remove,
             [this](Entity Actor, ConstRef<Replica> Record)
             {
                 mReplicas.EraseIf(Record.GetIdentifier(), [Actor](ConstRef<Known> Entry)
@@ -75,7 +75,7 @@ namespace ZyScene::Protocol
         // Observes a scope landing on an entity, to spawn whatever waited for it.
         mObservers[2] = Scene.CreateObserver<>(
             "Scene::Subscriber::ObsSetScope",
-            EcsOnSet,
+            Event::Set,
             [this](Entity Actor, ConstRef<Scope> Component)
             {
                 const UInt64 Key = Component.GetKey();
@@ -96,7 +96,7 @@ namespace ZyScene::Protocol
         // Observes a scope leaving an entity, so its key stops resolving to it.
         mObservers[3] = Scene.CreateObserver<>(
             "Scene::Subscriber::ObsRemoveScope",
-            EcsOnRemove,
+            Event::Remove,
             [this](Entity Actor, ConstRef<Scope> Component)
             {
                 mScopes.EraseIf(Component.GetKey(), [Actor](Entity Held)
