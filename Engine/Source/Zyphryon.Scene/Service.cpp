@@ -349,7 +349,10 @@ namespace ZyScene
             DSL::Declare<Description>("Description", DSL::Final),
 
             // Schema is what a component is made of, laid out by the type itself rather than for it.
-            DSL::Declare<ZyReflection::Schema>("Schema", DSL::Final));
+            DSL::Declare<ZyReflection::Schema>("Schema", DSL::Final),
+
+            // Salvage keeps what a record named and this world has no place for.
+            Salvage::OnDeclare());
 
         // The ledger always exists, so a touch never has to ask whether the world has one yet.
         GetWorld().Set(Protocol::Ledger());
