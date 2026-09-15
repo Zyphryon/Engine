@@ -49,6 +49,15 @@ inline namespace ZyMath
         /// \param W The w-component of the vector (default is 0.0f).
         ZY_INLINE Vector4(Real32 X, Real32 Y, Real32 Z, Real32 W = 0.0f);
 
+        /// \brief Constructor initializing the vector with a 3D vector and the remaining component.
+        ///
+        /// \param XYZ The vector supplying the x, y and z components.
+        /// \param W   The w-component of the vector (default is 0.0f).
+        ZY_INLINE explicit Vector4(ConstRef<Vector3> XYZ, Real32 W = 0.0f)
+            : Vector4(XYZ.GetX(), XYZ.GetY(), XYZ.GetZ(), W)
+        {
+        }
+
         /// \brief Constructor initializing the vector with four contiguous 32-bit floats.
         ///
         /// \param Values Pointer to four 32-bit floats. Must be 16-byte aligned.
