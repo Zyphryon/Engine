@@ -1418,6 +1418,13 @@ namespace ZyScene::DSL::_
         using Type = Select<IsAnyOf<StripAll<First>, Entity>, TypeList<Rest...>, TypeList<First, Rest...>>;
     };
 
+    /// \brief Removes a leading event parameter, which an observer may declare ahead of its entity.
+    template<typename... Rest>
+    struct StripContext<TypeList<Event, Rest...>>
+    {
+        using Type = typename StripContext<TypeList<Rest...>>::Type;
+    };
+
     /// \brief Removes a leading iterator and row pair.
     template<typename Row, typename... Rest>
     struct StripContext<TypeList<ConstRef<Iterator>, Row, Rest...>>
