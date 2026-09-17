@@ -118,17 +118,27 @@ inline namespace ZyBase
             return mData[mSize - 1];
         }
 
-        /// \brief Creates a subview of this text starting at the given offset.
+        /// \brief Creates a subview of this text from the given offset to the end.
         ///
         /// \param Offset The starting position of the subview.
-        /// \param Count  The number of characters to include. If zero, includes all remaining characters.
-        /// \return A new text view representing the subview.
-        ZY_INLINE constexpr Text Slice(UInt Offset, UInt Count = 0u) const
+        /// \return A new text view over the remaining characters, which is empty when the offset is the size.
+        ZY_INLINE constexpr Text Slice(UInt Offset) const
         {
-            const UInt Length = (Count == 0u ? mSize - Offset : Count);
-            ZY_ASSERT(Offset + Length <= mSize, "Slice range or offset exceeds text size");
+            ZY_ASSERT(Offset <= mSize, "Slice offset exceeds text size");
 
-            return Text(mData + Offset, Length);
+            return Text(mData + Offset, mSize - Offset);
+        }
+
+        /// \brief Creates a subview of this text of exactly the given length from the given offset.
+        ///
+        /// \param Offset The starting position of the subview.
+        /// \param Count  The number of characters to include, where zero yields an empty view.
+        /// \return A new text view representing the subview.
+        ZY_INLINE constexpr Text Slice(UInt Offset, UInt Count) const
+        {
+            ZY_ASSERT(Offset + Count <= mSize, "Slice range exceeds text size");
+
+            return Text(mData + Offset, Count);
         }
 
         /// \brief Computes a 64-bit hash of the text.

@@ -436,19 +436,27 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Creates a subview of this string starting at the given offset.
+        /// \brief Creates a subview of this string from the given offset to the end.
         ///
         /// \param Offset The starting position of the subview.
-        /// \param Count  The number of characters to include. If zero, includes all remaining characters.
-        /// \return A new text view representing the subview.
-        ZY_INLINE constexpr Text Slice(UInt Offset, UInt Count = 0u) const
+        /// \return A new text view over the remaining characters, which is empty when the offset is the size.
+        ZY_INLINE constexpr Text Slice(UInt Offset) const
         {
             ZY_ASSERT(Offset <= mBuffer.GetSize(), "Slice offset exceeds string size");
 
-            const UInt Length = (Count == 0u ? mBuffer.GetSize() - Offset : Count);
-            ZY_ASSERT(Offset + Length <= mBuffer.GetSize(), "Slice range exceeds string size");
+            return Text(mBuffer.GetData() + Offset, mBuffer.GetSize() - Offset);
+        }
 
-            return Text(mBuffer.GetData() + Offset, Length);
+        /// \brief Creates a subview of this string of exactly the given length from the given offset.
+        ///
+        /// \param Offset The starting position of the subview.
+        /// \param Count  The number of characters to include, where zero yields an empty view.
+        /// \return A new text view representing the subview.
+        ZY_INLINE constexpr Text Slice(UInt Offset, UInt Count) const
+        {
+            ZY_ASSERT(Offset + Count <= mBuffer.GetSize(), "Slice range exceeds string size");
+
+            return Text(mBuffer.GetData() + Offset, Count);
         }
 
         /// \brief Formats the string using a runtime pattern and parameters.

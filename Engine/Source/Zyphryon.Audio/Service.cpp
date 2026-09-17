@@ -307,13 +307,13 @@ namespace ZyAudio
 
     void Service::Silence(ConstRef<Sound> Asset)
     {
-        for (ConstRef<decltype(mResources)::Pair> Entry : mResources)
+        mResources.ForEach([&](Object Playback, ConstRetainer<Sound> Resource)
         {
-            if (AddressOf(* Entry.Second) == AddressOf(Asset))
+            if (AddressOf(* Resource) == AddressOf(Asset))
             {
-                mMixer.Stop(Entry.First);
+                mMixer.Stop(Playback);
             }
-        }
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -391,6 +391,30 @@ inline namespace ZyBase
             return (* this);
         }
 
+        /// \brief Visits every pair in the table, in storage order.
+        ///
+        /// \param Callback The callback invoked with each key and a reference to its value.
+        template<typename Function>
+        ZY_INLINE void ForEach(AnyRef<Function> Callback)
+        {
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                Callback(mEntries[Index].First, mEntries[Index].Second);
+            }
+        }
+
+        /// \brief Visits every pair in the table, in storage order.
+        ///
+        /// \param Callback The callback invoked with each key and its value.
+        template<typename Function>
+        ZY_INLINE void ForEach(AnyRef<Function> Callback) const
+        {
+            for (UInt Index = 0; Index < mSize; ++Index)
+            {
+                Callback(mEntries[Index].First, mEntries[Index].Second);
+            }
+        }
+
     private:
 
         /// \brief Sentinel value returned by Probe when no matching entry is found.

@@ -41,10 +41,13 @@ inline namespace ZyBase
 
         /// \brief Constructs an array from a list of values, forwarding each into the underlying storage.
         ///
+        /// \note One argument that is itself an array of this type is a copy, and is left to the copy constructor.
+        ///
         /// \param Parameters The values to initialize the array with, in order.
         template<typename... Arguments>
         ZY_INLINE constexpr Array(AnyRef<Arguments>... Parameters)
-            requires (sizeof...(Arguments) > 0 && sizeof...(Arguments) <= Count)
+            requires (sizeof...(Arguments) > 0 && sizeof...(Arguments) <= Count
+                  && !(sizeof...(Arguments) == 1 && (IsAnyOf<StripAll<Arguments>, Array> && ...)))
             : mData { static_cast<Type>(Parameters)... }
         {
         }

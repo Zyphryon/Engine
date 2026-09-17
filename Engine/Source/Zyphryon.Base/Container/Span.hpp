@@ -177,19 +177,27 @@ inline namespace ZyBase
             return false;
         }
 
-        /// \brief Returns a sub-span starting at the given offset.
+        /// \brief Returns a sub-span from the given offset to the end.
         ///
         /// \param Offset The zero-based index of the first element to include.
-        /// \param Count  The number of elements to include. When zero, the sub-span extends to the end.
-        /// \return A span over the requested sub-range.
-        ZY_INLINE constexpr Span Slice(UInt Offset, UInt Count = 0u) const
+        /// \return A span over the remaining elements, which is empty when the offset is the size.
+        ZY_INLINE constexpr Span Slice(UInt Offset) const
         {
             ZY_ASSERT(Offset <= mSize, "Slice offset is out of bounds");
 
-            const UInt Length = (Count == 0u ? mSize - Offset : Count);
-            ZY_ASSERT(Offset + Length <= mSize, "Slice range exceeds span bounds");
+            return Span(mData + Offset, mSize - Offset);
+        }
 
-            return Span(mData + Offset, Length);
+        /// \brief Returns a sub-span of exactly the given length from the given offset.
+        ///
+        /// \param Offset The zero-based index of the first element to include.
+        /// \param Count  The number of elements to include, where zero yields an empty span.
+        /// \return A span over the requested sub-range.
+        ZY_INLINE constexpr Span Slice(UInt Offset, UInt Count) const
+        {
+            ZY_ASSERT(Offset + Count <= mSize, "Slice range exceeds span bounds");
+
+            return Span(mData + Offset, Count);
         }
 
         /// \brief Gets the element at the specified index.

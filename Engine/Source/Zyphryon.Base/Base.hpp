@@ -19,6 +19,7 @@
 #include "Zyphryon.Base/Container/Heap.hpp"
 #include "Zyphryon.Base/Container/Key.hpp"
 #include "Zyphryon.Base/Container/Pool.hpp"
+#include "Zyphryon.Base/Container/Raster.hpp"
 #include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Base/Container/Span.hpp"
 #include "Zyphryon.Base/Container/Table.hpp"

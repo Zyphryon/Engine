@@ -44,13 +44,13 @@ namespace ZyContent
     {
         Sequence<Filesystem::Record> Files;
 
-        for (ConstRef<decltype(mEntries)::Pair> Pair : mEntries)
+        mEntries.ForEach([&](UInt64, ConstRef<Entry> Record)
         {
-            if (StrStartsWith(Pair.Second.Path, Path))
+            if (StrStartsWith(Record.Path, Path))
             {
-                Files.Append(Pair.Second.Path, Filesystem::Type::File, Pair.Second.Data.GetSize(), 0);
+                Files.Append(Record.Path, Filesystem::Type::File, Record.Data.GetSize(), 0);
             }
-        }
+        });
         Callback(Filesystem::Result::Success, Move(Files));
     }
 

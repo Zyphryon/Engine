@@ -21,6 +21,10 @@
 
 namespace ZyJob
 {
+    /// \brief Forward declaration of the value a job will produce.
+    template<typename Type>
+    class Future;
+
     /// \brief A lane-based job scheduler with dependency tracking and helping waits.
     class Service final : public ZyEngine::Subsystem
     {
@@ -61,6 +65,29 @@ namespace ZyJob
         /// \param Dependency An optional job that must complete before this one is queued.
         /// \return A handle that must be passed to \ref Wait, \ref Block or \ref Discard exactly once.
         Handle Submit(Lane Target, AnyRef<Task> Work, Handle Dependency = Handle());
+
+        /// \brief Submits a job that produces a value, written into a future the caller keeps in place.
+        ///
+        /// \note The future never moves while the job runs and waits for it before it is destroyed.
+        ///
+        /// \param Target     The lane to execute the job on.
+        /// \param Output     The future the value is written into once the job is done, with no job pending on it.
+        /// \param Work       The job to execute, whose return value is written into the future.
+        /// \param Dependency An optional job that must complete before this one is queued.
+        template<typename Type, typename Callable>
+        void Launch(Lane Target, Ref<Future<Type>> Output, AnyRef<Callable> Work, Handle Dependency = Handle())
+        {
+            ZY_ASSERT(!Output.IsPending(), "A future takes one job at a time");
+
+            // The job writes where the future already is, so the future never moves while the job runs.
+            const Ptr<Type> Where = AddressOf(Output.mValue);
+
+            Output.mService = this;
+            Output.mJob     = Submit(Target, [Where, Body = Move(Work)]
+            {
+                (* Where) = Body();
+            }, Dependency);
+        }
 
         /// \brief Blocks until the given job completes, executing other compute jobs meanwhile, then releases it.
         ///

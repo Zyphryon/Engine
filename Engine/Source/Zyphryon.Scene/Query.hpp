@@ -96,7 +96,7 @@ namespace ZyScene
 
         /// \brief Executes the query, invoking a callback for each matching entity.
         ///
-        /// \note Omitting \p Types derives them from the parameters \p Each declares, in order.
+        /// \note The world is deferred for the walk, so the callback may add and remove what it visits.
         ///
         /// \param Each The function or functor to execute for every matching entity.
         template<typename... Types, typename FEach>
@@ -113,12 +113,16 @@ namespace ZyScene
 
             Cursor.Reset();
 
-            Runner::Make(Move(Each))(Cursor);
+            ecs_defer_begin(mHandle->world);
+            {
+                Runner::Make(Move(Each))(Cursor);
+            }
+            ecs_defer_end(mHandle->world);
         }
 
         /// \brief Executes the query over one group alone, invoking a callback for each matching entity in it.
         ///
-        /// \note Omitting \p Types derives them from the parameters \p Each declares, in order.
+        /// \note The world is deferred for the walk, so the callback may add and remove what it visits.
         ///
         /// \param Group The target whose group is walked, as the query was grouped by \ref DSL::GroupBy.
         /// \param Each  The function or functor to execute for every matching entity.
@@ -137,7 +141,11 @@ namespace ZyScene
             Cursor.Reset();
             ecs_iter_set_group(AddressOf(Handle), Group.GetID());
 
-            Runner::Make(Move(Each))(Cursor);
+            ecs_defer_begin(mHandle->world);
+            {
+                Runner::Make(Move(Each))(Cursor);
+            }
+            ecs_defer_end(mHandle->world);
         }
 
         /// \brief Move-assigns a query from another query instance, transferring ownership.

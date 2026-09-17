@@ -25,19 +25,19 @@ namespace ZyEngine
         /// \param Time The current time in seconds.
         ZY_INLINE void Tick(Real64 Time)
         {
-            for (ConstRef<typename decltype(mServices)::Pair> Pair : mServices)
+            mServices.ForEach([Time](UInt64, ConstRetainer<Unit> Service)
             {
-                Pair.Second->OnTick(Time);
-            }
+                Service->OnTick(Time);
+            });
         }
 
         /// \brief Tears down all registered subsystems and clears the service registry.
         ZY_INLINE void Teardown()
         {
-            for (ConstRef<typename decltype(mServices)::Pair> Pair : mServices)
+            mServices.ForEach([](UInt64, ConstRetainer<Unit> Service)
             {
-                Pair.Second->OnTeardown();
-            }
+                Service->OnTeardown();
+            });
             mServices.Clear();
         }
 

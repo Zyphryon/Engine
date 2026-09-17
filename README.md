@@ -1,7 +1,7 @@
 # 🌌 Zyphryon Engine
 *Built from the ground up.*
 
-**Zyphryon** is a high-performance, cross-platform **game engine** written from scratch in C++20.
+**Zyphryon** is a high-performance, cross-platform **game engine** written from scratch in C++23.
 
 ---
 
@@ -58,7 +58,7 @@ Ship the baked assets and these stay on your workstation.
 
 ### Prerequisites
 - **CMake** 3.20+
-- **C++20** compliant compiler (MSVC 2019+, GCC 11+, Clang 13+)
+- **C++23** compliant compiler (MSVC 2019+, GCC 11+, Clang 13+)
 - **Platform SDKs**
     - Windows: Windows SDK 10.0+
     - Linux: `libasound2-dev`, `libx11-dev`, `libxrandr-dev` *(all required)*
