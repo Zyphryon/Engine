@@ -301,9 +301,9 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
+    void Service::Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
     {
-        Enqueue<& Driver::Prepare>(Pass, Viewport, Sequence<Color, kMaxAttachments>(Colors), Depth, Stencil);
+        Enqueue<& Driver::Prepare>(Pass, Name, Viewport, Sequence<Color, kMaxAttachments>(Colors), Depth, Stencil);
 
         // Mark the beginning of a new render pass, recording the pass handle and the current command buffer
         // offset so that commit can later slice the commands belonging to this pass.

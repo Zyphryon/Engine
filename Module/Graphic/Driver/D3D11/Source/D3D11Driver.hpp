@@ -17,6 +17,10 @@
 #include "Zyphryon.Graphic/Driver.hpp"
 #include <d3d11_4.h>
 
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+    #include <tracy/TracyD3D11.hpp>
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -85,8 +89,8 @@ namespace ZyGraphic
         /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16)
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
 
-        /// \see Driver::Prepare(Object, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
-        void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
+        /// \see Driver::Prepare(Object, Text, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
+        void Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
 
         /// \see Driver::Submit(ConstSpan<Command>)
         void Submit(ConstSpan<Command> Commands) override;
@@ -170,6 +174,55 @@ namespace ZyGraphic
             TextureFormat     DepthFormat = TextureFormat::Unspecified;
         };
 
+        /// \brief Internal wrapper for the profiler's view of the device, and the one zone a pass is timed by.
+        struct D3D11Profiler final
+        {
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+            TracyD3D11Ctx                        Context = nullptr;
+            ZY_ALIGN(tracy::D3D11ZoneScope) Byte Zone[sizeof(tracy::D3D11ZoneScope)];
+            Bool                                 Opened  = false;
+#endif
+
+            ZY_INLINE void Initialize(Ptr<ID3D11Device> Device, Ptr<ID3D11DeviceContext> Immediate)
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+                Context = TracyD3D11Context(Device, Immediate);
+#endif
+            }
+
+            ZY_INLINE void Open(Text Name)
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+                ZY_ASSERT(!Opened, "A render pass was prepared while another was still open");
+
+                static constexpr Char kZone[] = "D3D11Driver::Prepare";
+
+                Construct<tracy::D3D11ZoneScope>(reinterpret_cast<Ptr<tracy::D3D11ZoneScope>>(Zone),
+                    Context, static_cast<UInt32>(__LINE__), __FILE__, sizeof(__FILE__) - 1,
+                    kZone, sizeof(kZone) - 1, Name.GetData(), Name.GetSize(), true);
+                Opened = true;
+#endif
+            }
+
+            ZY_INLINE void Close()
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+                if (Opened)
+                {
+                    Destruct(* reinterpret_cast<Ptr<tracy::D3D11ZoneScope>>(Zone));
+                    Opened = false;
+                }
+#endif
+            }
+
+            ZY_INLINE void Collect()
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+                TracyD3D11Collect(Context);
+#endif                
+            }
+        };
+
     private:
 
         /// \brief Queries available GPU adapters.
@@ -232,6 +285,7 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        D3D11Profiler                           mProfiler;
         ComPtr<IDXGISwapChain>                  mSwapchain;
         Array<D3D11Buffer,   kMaxBuffers   + 1> mBuffers;
         Array<D3D11Pass,     kMaxPasses    + 1> mPasses;

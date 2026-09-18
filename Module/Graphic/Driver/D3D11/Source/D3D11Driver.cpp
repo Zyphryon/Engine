@@ -182,6 +182,8 @@ namespace ZyGraphic
                     LoadAdapters(D3D11Convert(Config.ColorFormat));
                     LoadCapabilities();
 
+                    mProfiler.Initialize(mDevice.Get(), mDeviceImmediate.Get());
+
                     if (Output)
                     {
                         CreateSwapchain(mPasses[0], static_cast<HWND>(Output), Config);
@@ -687,9 +689,11 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
+    void D3D11Driver::Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
     {
         Ref<D3D11Pass> Target = mPasses[Pass];
+
+        mProfiler.Open(Name);
 
         Sequence<Ptr<ID3D11RenderTargetView>, kMaxAttachments> ColorAttachments;
         for (ConstRef<D3D11ColorAttachment> Attachment : Target.Colors)
@@ -897,6 +901,9 @@ namespace ZyGraphic
             mDeviceImmediate->DiscardView(DepthAttachment.Target.Get());
         }
 
+        // Closed once the pass has resolved, so what it timed is the pass and not the wait for the display.
+        mProfiler.Close();
+
         // Present the swap chain if this is the primary rendering pass.
         if (Pass == kDisplay)
         {
@@ -905,6 +912,9 @@ namespace ZyGraphic
             const UInt Interval = mDeviceProperties.Tearless ? 1 : 0;
             const UInt Flag     = Interval == 0 && mDeviceProperties.Tearing  ? DXGI_PRESENT_ALLOW_TEARING : 0;
             D3D11Check(mSwapchain->Present(Interval, Flag));
+
+            // The frame is over, so whatever the queries have answered is gathered before the next one opens.
+            mProfiler.Collect();
         }
     }
 

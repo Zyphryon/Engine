@@ -113,8 +113,8 @@ namespace ZyRender
 
         for (ConstRef<Step> Entry : mSteps)
         {
-            // The display surface is not the graph's to destroy, and an inline step never owned its handle.
-            if (!Entry.Inline && Entry.Handle != ZyGraphic::kDisplay)
+            // The display surface is not the graph's to destroy.
+            if (Entry.Handle != ZyGraphic::kDisplay)
             {
                 mService->DeletePass(Entry.Handle);
             }
@@ -127,20 +127,6 @@ namespace ZyRender
             ConstRef<Pass>                   Stage  = (* mBlueprint.mPasses[Index]);
             ConstSpan<Pass::ColorAttachment> Colors = Stage.GetColors();
             Ref<Step>                        Entry  = mSteps.Append();
-
-            // An inline pass draws into what the pass before it opened, borrowing its handle and viewport.
-            if (Stage.IsInline())
-            {
-                ZY_ASSERT(Index > 0, "The first pass has no open target to draw into");
-                ZY_ASSERT(Colors.IsEmpty(), "An inline pass inherits the target of the pass before it");
-
-                if (Index > 0)
-                {
-                    Entry        = mSteps[Index - 1];
-                    Entry.Inline = true;
-                    continue;
-                }
-            }
 
             const Bool IsDepthOnly = Colors.IsEmpty() && Stage.GetDepth().Target != Pass::kNone;
 
@@ -193,8 +179,8 @@ namespace ZyRender
 
         for (ConstRef<Step> Entry : mSteps)
         {
-            // The display surface is not the graph's to destroy, and an inline step never owned its handle.
-            if (!Entry.Inline && Entry.Handle != ZyGraphic::kDisplay)
+            // The display surface is not the graph's to destroy.
+            if (Entry.Handle != ZyGraphic::kDisplay)
             {
                 mService->DeletePass(Entry.Handle);
             }
@@ -212,56 +198,32 @@ namespace ZyRender
         // Bind the frame-global uniforms shared by every pass and draw this frame.
         mEncoder.SetFrame(Frame);
 
-        // The pass that declared the open target, whose attachments every inline pass after it draws through.
-        ConstPtr<Pass> Owner  = nullptr;
-        Bool           Opened = false;
-
         for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
         {
             Ref<Pass>      Stage = (* mBlueprint.mPasses[Index]);
             ConstRef<Step> Entry = mSteps[Index];
-
-            // A pass that opens a target of its own closes whatever the passes before it were drawing into.
-            if (!Entry.Inline)
-            {
-                if (Opened)
-                {
-                    mService->Commit();
-
-                    Opened = false;
-                }
-                Owner = AddressOf(Stage);
-            }
 
             if (!Stage.IsActive())
             {
                 continue;
             }
 
-            // The group opens on its first active pass, clearing as the pass that declared the target asked.
-            if (!Opened)
+            // The pass opens the target it declared, clearing it as it asked, and closes it once it has drawn.
+            Sequence<Color, ZyGraphic::kMaxAttachments> Clears;
+
+            for (ConstRef<Pass::ColorAttachment> Color : Stage.GetColors())
             {
-                Sequence<Color, ZyGraphic::kMaxAttachments> Clears;
-
-                for (ConstRef<Pass::ColorAttachment> Color : Owner->GetColors())
-                {
-                    Clears.Append(Color.Tint);
-                }
-
-                ConstRef<Pass::DepthAttachment> Depth = Owner->GetDepth();
-
-                mService->Prepare(Entry.Handle, Entry.Viewport, Clears, Depth.Depth, Depth.Stencil);
-
-                mEncoder.Reset();
-
-                Opened = true;
+                Clears.Append(Color.Tint);
             }
 
-            Stage.Run(mEncoder, * this);
-        }
+            ConstRef<Pass::DepthAttachment> Depth = Stage.GetDepth();
 
-        if (Opened)
-        {
+            mService->Prepare(Entry.Handle, Stage.GetName(), Entry.Viewport, Clears, Depth.Depth, Depth.Stencil);
+
+            mEncoder.Reset();
+
+            Stage.Run(mEncoder, * this);
+
             mService->Commit();
         }
     }

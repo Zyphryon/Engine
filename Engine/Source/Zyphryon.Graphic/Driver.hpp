@@ -235,11 +235,12 @@ namespace ZyGraphic
         /// \brief Prepares the specified render pass for rendering by setting the viewport and clearing attachments.
         ///
         /// \param Pass     The render pass to prepare.
+        /// \param Name     The name a profiler and a frame capture show the pass under.
         /// \param Viewport The viewport defining the rendering area.
         /// \param Colors   The clear colors for each color attachment.
         /// \param Depth    The depth clear value.
         /// \param Stencil  The stencil clear value.
-        virtual void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
+        virtual void Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
         {
 
         }

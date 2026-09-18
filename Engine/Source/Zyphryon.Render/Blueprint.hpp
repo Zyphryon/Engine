@@ -73,12 +73,16 @@ namespace ZyRender
 
         /// \brief Creates a pass of the given type, appends it to the execution order, and returns it.
         ///
+        /// \param Name       The name a profiler and a frame capture show the pass under.
         /// \param Parameters The arguments forwarded to the pass's constructor.
         /// \return A reference to the newly created pass.
         template<typename Type, typename... Arguments>
-        ZY_INLINE Ref<Type> AddPass(AnyRef<Arguments>... Parameters)
+        ZY_INLINE Ref<Type> AddPass(Text Name, AnyRef<Arguments>... Parameters)
         {
-            return static_cast<Ref<Type>>(* mPasses.Append(Unique<Type>::Create(Forward<Arguments>(Parameters)...)));
+            Ref<Pass> Stage = * mPasses.Append(Unique<Type>::Create(Forward<Arguments>(Parameters)...));
+            Stage.SetName(Name);
+
+            return static_cast<Ref<Type>>(Stage);
         }
 
         /// \brief Gets a pass by its position in the execution order.

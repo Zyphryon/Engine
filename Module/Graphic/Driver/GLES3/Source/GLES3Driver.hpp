@@ -16,6 +16,10 @@
 #include "GLES3Context.hpp"
 #include "Zyphryon.Graphic/Driver.hpp"
 
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+    #include <tracy/TracyOpenGL.hpp>
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -87,8 +91,8 @@ namespace ZyGraphic
         /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16)
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
 
-        /// \see Driver::Prepare(Object, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
-        void Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
+        /// \see Driver::Prepare(Object, Text, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
+        void Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
 
         /// \see Driver::Submit(ConstSpan<Command>)
         void Submit(ConstSpan<Command> Commands) override;
@@ -180,6 +184,54 @@ namespace ZyGraphic
             GLuint         Vertices   = 0;
         };
 
+        /// \brief Internal wrapper for the profiler's view of the context, and the one zone a pass is timed by.
+        struct GLES3Profiler final
+        {
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+            ZY_ALIGN(tracy::GpuCtxScope) Byte Zone[sizeof(tracy::GpuCtxScope)];
+            Bool                              Opened = false;
+#endif
+
+            ZY_INLINE void Initialize()
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+                TracyGpuContext;
+#endif
+            }
+
+            ZY_INLINE void Open(Text Name)
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+                ZY_ASSERT(!Opened, "A render pass was prepared while another was still open");
+
+                static constexpr Char kZone[] = "GLES3Driver::Prepare";
+
+                Construct<tracy::GpuCtxScope>(reinterpret_cast<Ptr<tracy::GpuCtxScope>>(Zone),
+                    static_cast<UInt32>(__LINE__), __FILE__, sizeof(__FILE__) - 1,
+                    kZone, sizeof(kZone) - 1, Name.GetData(), Name.GetSize(), true);
+                Opened = true;
+#endif
+            }
+
+            ZY_INLINE void Close()
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+                if (Opened)
+                {
+                    Destruct(* reinterpret_cast<Ptr<tracy::GpuCtxScope>>(Zone));
+                    Opened = false;
+                }
+#endif
+            }
+
+            ZY_INLINE void Collect()
+            {
+#if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+                TracyGpuCollect;
+#endif
+            }
+        };
+
     private:
 
         /// \brief Detects the OpenGL version, feature tier, extensions, and device limits.
@@ -237,6 +289,7 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        GLES3Profiler                            mProfiler;
         GLuint                                   mGlobalReadFramebuffer = 0;
         GLuint                                   mGlobalDrawFramebuffer = 0;
         GLuint                                   mGlobalVAO             = 0;

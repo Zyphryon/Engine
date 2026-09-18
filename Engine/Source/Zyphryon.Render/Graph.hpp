@@ -112,11 +112,8 @@ namespace ZyRender
         /// \brief One pass the graph baked, and the surface it draws into.
         struct Step final
         {
-            /// The pass handle, borrowed from the step before it when the pass draws inline.
+            /// The pass handle the step draws through.
             ZyGraphic::Object   Handle = 0;
-
-            /// Whether the handle belongs to the step before it, which this pass appends its draws to.
-            Bool                Inline = false;
 
             /// The viewport covering the target the pass draws into.
             ZyGraphic::Viewport Viewport;

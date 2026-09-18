@@ -188,6 +188,10 @@ namespace ZyGraphic
         // Persistent framebuffers reused by CopyTexture as the blit read/draw endpoints.
         glGenFramebuffers(1, AddressOf(mGlobalReadFramebuffer));
         glGenFramebuffers(1, AddressOf(mGlobalDrawFramebuffer));
+
+        // Made once the context is current and its functions are loaded, on the thread every command is run on.
+        mProfiler.Initialize();
+
         return true;
     }
 
@@ -732,8 +736,10 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::Prepare(Object Pass, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
+    void GLES3Driver::Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil)
     {
+        mProfiler.Open(Name);
+
         Ref<GLES3Pass> Target = mPasses[Pass];
         glBindFramebuffer(GL_FRAMEBUFFER, Target.Framebuffer);
 
@@ -970,12 +976,18 @@ namespace ZyGraphic
             glInvalidateFramebuffer(GL_FRAMEBUFFER, Discards.GetSize(), Discards.GetData());
         }
 
+        // Closed once the pass has resolved, so what it timed is the pass and not the wait for the display.
+        mProfiler.Close();
+
         // Present the default framebuffer when committing the display pass.
         if (Pass == kDisplay)
         {
             ZY_PROFILE_SCOPE("Driver::Present");
 
             mContext.Present();
+
+            // The frame is over, so whatever the queries have answered is gathered before the next one opens.
+            mProfiler.Collect();
         }
     }
 

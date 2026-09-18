@@ -82,8 +82,8 @@ namespace ZyRender
             Swap(Input, Output);
         }
 
-        ZY_PROFILE_VALUE("Render.Sort.Commands", static_cast<SInt64>(Count));
-        ZY_PROFILE_VALUE("Render.Sort.Passes",   static_cast<SInt64>(Executed));
+        ZY_PROFILE_INTEGER("Render.Sort.Commands", Count);
+        ZY_PROFILE_INTEGER("Render.Sort.Passes",   Executed);
 
         return Input;
     }

@@ -76,13 +76,28 @@ namespace ZyRender
 
         /// \brief Constructs a pass that is active and draws into the display surface.
         ZY_INLINE Pass()
-            : mActive { true },
-              mInline { false }
+            : mActive { true }
         {
         }
 
         /// \brief Destroys the pass.
         virtual ~Pass() = default;
+
+        /// \brief Sets the name the pass is known by.
+        ///
+        /// \param Name The name a profiler and a frame capture show the pass under, which nothing drawn reads.
+        ZY_INLINE void SetName(Text Name)
+        {
+            mName = Name;
+        }
+
+        /// \brief Gets the name the pass is known by.
+        ///
+        /// \return The name, which is empty until one is set.
+        ZY_INLINE Text GetName() const
+        {
+            return mName;
+        }
 
         /// \brief Sets the active state of the pass.
         ///
@@ -141,24 +156,6 @@ namespace ZyRender
             return mDepthAttachment;
         }
 
-        /// \brief Sets whether the pass appends its draws to the target the pass before it opened.
-        ///
-        /// \note An inline pass declares no attachments of its own, inheriting the group's clears and viewport.
-        ///
-        /// \param Inline `true` to draw into the target already open, `false` to open one of its own.
-        ZY_INLINE void SetInline(Bool Inline)
-        {
-            mInline = Inline;
-        }
-
-        /// \brief Checks whether the pass appends its draws to the target the pass before it opened.
-        ///
-        /// \return `true` if the pass draws inline, otherwise `false`.
-        ZY_INLINE Bool IsInline() const
-        {
-            return mInline;
-        }
-
         /// \brief Executes the pass, recording its draw commands through the encoder.
         ///
         /// \param Encoder The encoder used to build this pass's draw commands.
@@ -170,8 +167,8 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        Str                                                   mName;
         Bool                                                  mActive;
-        Bool                                                  mInline;
         Sequence<ColorAttachment, ZyGraphic::kMaxAttachments> mColorAttachment;
         DepthAttachment                                       mDepthAttachment;
     };

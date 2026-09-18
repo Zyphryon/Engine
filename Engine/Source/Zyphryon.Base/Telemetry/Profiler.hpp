@@ -12,8 +12,10 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Zyphryon.Base/Primitive.hpp"
+
 #if defined(ZY_PROFILE_BACKEND_TRACY)
-#   include <Tracy/Tracy.hpp>
+#   include <tracy/Tracy.hpp>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -34,12 +36,20 @@ inline namespace ZyBase
 #   define ZY_PROFILE
 #endif
 
-/// \def ZY_PROFILE_VALUE(Name, Value)
-/// \brief Records a named numeric value in the profiler.
+/// \def ZY_PROFILE_INTEGER(Name, Value)
+/// \brief Records a named whole number in the profiler.
 #if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_VALUE(Name, Value) TracyPlot(Name, Value)
+#   define ZY_PROFILE_INTEGER(Name, Value) TracyPlot(Name, static_cast<SInt64>(Value))
 #else
-#   define ZY_PROFILE_VALUE(Name, Value) ((void)(Value))
+#   define ZY_PROFILE_INTEGER(Name, Value) ((void)(Value))
+#endif
+
+/// \def ZY_PROFILE_REAL(Name, Value)
+/// \brief Records a named real number in the profiler.
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+#   define ZY_PROFILE_REAL(Name, Value) TracyPlot(Name, static_cast<Real64>(Value))
+#else
+#   define ZY_PROFILE_REAL(Name, Value) ((void)(Value))
 #endif
 
 /// \def ZY_PROFILE_SCOPE(Name)
