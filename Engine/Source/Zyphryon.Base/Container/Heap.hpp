@@ -86,18 +86,22 @@ inline namespace ZyBase
         {
             mData.Append(Forward<Arguments>(Parameters)...);
 
-            for (UInt Child = mData.GetSize() - 1; Child > 0; )
+            UInt Child = mData.GetSize() - 1;
+            Type Held  = Move(mData[Child]);
+
+            while (Child > 0)
             {
                 const UInt Parent = (Child - 1) / 2;
 
-                if (!(mData[Child] < mData[Parent]))
+                if (!(Held < mData[Parent]))
                 {
                     break;
                 }
 
-                Swap(mData[Child], mData[Parent]);
-                Child = Parent;
+                mData[Child] = Move(mData[Parent]);
+                Child        = Parent;
             }
+            mData[Child] = Move(Held);
         }
 
         /// \brief Gets the smallest element the heap holds.
@@ -114,34 +118,40 @@ inline namespace ZyBase
         ZY_INLINE Type Pop()
         {
             Type Smallest = Move(mData[0]);
+            Type Held     = Move(mData[mData.GetSize() - 1]);
 
-            mData[0] = Move(mData[mData.GetSize() - 1]);
             mData.RemoveLast();
 
-            for (UInt Parent = 0, Limit = mData.GetSize(); ; )
+            if (!mData.IsEmpty())
             {
-                const UInt Left  = Parent * 2 + 1;
-                const UInt Right = Left + 1;
+                UInt Hole = 0;
 
-                UInt Target = Parent;
-
-                if (Left < Limit && mData[Left] < mData[Target])
+                for (const UInt Limit = mData.GetSize(); ; )
                 {
-                    Target = Left;
-                }
+                    const UInt Left  = Hole * 2 + 1;
+                    const UInt Right = Left + 1;
 
-                if (Right < Limit && mData[Right] < mData[Target])
-                {
-                    Target = Right;
-                }
+                    UInt Target = Hole;
 
-                if (Target == Parent)
-                {
-                    break;
-                }
+                    if (Left < Limit && mData[Left] < Held)
+                    {
+                        Target = Left;
+                    }
 
-                Swap(mData[Parent], mData[Target]);
-                Parent = Target;
+                    if (Right < Limit && mData[Right] < (Target == Hole ? Held : mData[Left]))
+                    {
+                        Target = Right;
+                    }
+
+                    if (Target == Hole)
+                    {
+                        break;
+                    }
+
+                    mData[Hole] = Move(mData[Target]);
+                    Hole        = Target;
+                }
+                mData[Hole] = Move(Held);
             }
             return Smallest;
         }
