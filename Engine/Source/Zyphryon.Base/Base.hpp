@@ -22,6 +22,7 @@
 #include "Zyphryon.Base/Container/Raster.hpp"
 #include "Zyphryon.Base/Container/Sequence.hpp"
 #include "Zyphryon.Base/Container/Span.hpp"
+#include "Zyphryon.Base/Container/Spool.hpp"
 #include "Zyphryon.Base/Container/Table.hpp"
 #include "Zyphryon.Base/Container/Variant.hpp"
 #include "Zyphryon.Base/Cryptography/Signer.hpp"
