@@ -23,11 +23,6 @@ inline namespace ZyMath
     };
 
     /// \brief A deterministic time cursor over a fixed duration, with looping, speed, and pause control.
-    ///
-    /// The cursor is an absolute function of an external clock rather than an accumulator: the local time is
-    /// `Offset + Speed * (Clock - Epoch)`. Advancing to a given time is idempotent, so the cursor never drifts
-    /// and is immune to divergent tick counts or sampling rates. This makes it safe for lockstep and rollback
-    /// networking, where `Advance` is fed the deterministic simulation time and the whole object snapshots cleanly.
     class Playback final
     {
     public:
@@ -68,14 +63,11 @@ inline namespace ZyMath
 
             if (mPlaying && mRepeat == Repeat::Once)
             {
-                if (const Real64 Local = GetElapsed(); Local >= mDuration)
+                const Real64 Local = GetElapsed();
+
+                if (mSpeed >= 0.0f ? Local >= mDuration : Local <= 0.0)
                 {
-                    mOffset  = mDuration;
-                    mPlaying = false;
-                }
-                else if (Local <= 0.0)
-                {
-                    mOffset  = 0.0;
+                    mOffset  = mSpeed >= 0.0f ? mDuration : 0.0;
                     mPlaying = false;
                 }
             }
