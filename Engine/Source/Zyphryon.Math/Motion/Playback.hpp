@@ -35,7 +35,8 @@ inline namespace ZyMath
               mClock    { 0 },
               mSpeed    { 1 },
               mRepeat   { Repeat::Once },
-              mPlaying  { false }
+              mPlaying  { false },
+              mFresh    { false }
         {
         }
 
@@ -50,7 +51,8 @@ inline namespace ZyMath
               mClock    { 0 },
               mSpeed    { 1 },
               mRepeat   { Mode },
-              mPlaying  { false }
+              mPlaying  { false },
+              mFresh    { false }
         {
         }
 
@@ -60,6 +62,7 @@ inline namespace ZyMath
         ZY_INLINE void Advance(Real64 Time)
         {
             mClock = Time;
+            mFresh = false;
 
             if (mPlaying && mRepeat == Repeat::Once)
             {
@@ -80,6 +83,7 @@ inline namespace ZyMath
             {
                 mEpoch   = mClock;
                 mPlaying = true;
+                mFresh   = true;
             }
         }
 
@@ -99,6 +103,7 @@ inline namespace ZyMath
             mOffset  = 0.0;
             mEpoch   = mClock;
             mPlaying = false;
+            mFresh   = true;
         }
 
         /// \brief Moves the cursor to an absolute local time, preserving continuity.
@@ -108,6 +113,7 @@ inline namespace ZyMath
         {
             mOffset = Local;
             mEpoch  = mClock;
+            mFresh  = true;
         }
 
         /// \brief Sets the playback speed multiplier, rebasing so the change is continuous.
@@ -226,6 +232,14 @@ inline namespace ZyMath
             return mSpeed >= 0.0f;
         }
 
+        /// \brief Checks whether the cursor was stood somewhere, by playing, seeking or stopping, and not advanced since.
+        ///
+        /// \return `true` until the next advance, `false` after it.
+        ZY_INLINE Bool IsFresh() const
+        {
+            return mFresh;
+        }
+
         /// \brief Checks whether the cursor is currently advancing.
         ///
         /// \return `true` if playing, `false` otherwise.
@@ -264,5 +278,6 @@ inline namespace ZyMath
         Real32 mSpeed;
         Repeat mRepeat;
         Bool   mPlaying;
+        Bool   mFresh;
     };
 }
