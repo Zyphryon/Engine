@@ -49,20 +49,13 @@ namespace ZyScene
         /// The places a tool may put the component.
         Authoring Policy;
 
-        /// \brief Checks whether a tool may put the component on something standing in the world.
+        /// \brief Checks whether a tool may put the component in any of the places given.
         ///
-        /// \return `true` if it may stand on an archetype or on an instance, `false` otherwise.
-        ZY_INLINE constexpr Bool IsPlaceable() const
+        /// \param Where The places to ask after, which may be one or several taken together.
+        /// \return `true` if it may stand in at least one of them, `false` otherwise.
+        ZY_INLINE constexpr Bool Allows(Authoring Where) const
         {
-            return (Policy & Authoring::Anywhere) != Authoring::Derived;
-        }
-
-        /// \brief Checks whether a tool may give the component to the world as a whole.
-        ///
-        /// \return `true` if it may stand on the world, `false` otherwise.
-        ZY_INLINE constexpr Bool IsWorldly() const
-        {
-            return HasBit(Policy, Authoring::World);
+            return (Policy & Where) != Authoring::Derived;
         }
     };
 }
@@ -116,16 +109,6 @@ namespace ZyScene::DSL
         {
             Describing Result = (* this);
             Result.Value.Policy = Policy;
-            return Result;
-        }
-
-        /// \brief Lets a tool give the component to the world as a whole, beside wherever else it may stand.
-        ///
-        /// \return The term, made the world's as well.
-        ZY_INLINE constexpr Describing Worldly() const
-        {
-            Describing Result = (* this);
-            Result.Value.Policy |= Authoring::World;
             return Result;
         }
 
