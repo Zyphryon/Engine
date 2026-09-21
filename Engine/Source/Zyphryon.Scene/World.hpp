@@ -548,17 +548,18 @@ namespace ZyScene
             }
         }
 
-        /// \brief Iterates over all singleton components and tags on the world and invokes a callback for each one.
+        /// \brief Iterates over every component and tag the world itself holds and invokes a callback for each one.
         ///
         /// \param Callback The function to call for each component or tag.
         template<typename Callable>
         ZY_INLINE void Each(AnyRef<Callable> Callback) const
         {
-            for (ecs_iter_t Iterator = ecs_each_id(mHandle, EcsSingleton); ecs_each_next(& Iterator);)
+            ecs_iter_t Iterator = ecs_each_id(mHandle, ecs_id(EcsComponent));
+            
+            while (ecs_each_next(AddressOf(Iterator)))
             {
                 for (SInt32 Element = 0; Element < Iterator.count; ++Element)
                 {
-                    // A component may declare itself a singleton without the world ever storing a value for it.
                     if (const Entity Component(mHandle, Iterator.entities[Element]); Has(Component))
                     {
                         Callback(Component);
