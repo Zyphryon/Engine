@@ -20,14 +20,16 @@
 
 namespace ZyScene
 {
-    /// \brief Specifies where a tool may attach a component, given what the entity it goes on stands as.
+    /// \brief Specifies where a tool may put a component, as the set of places it is allowed to stand.
     enum class Authoring : UInt8
     {
-        Anywhere,   ///< On an archetype and on an instance alike.
-        Instance,   ///< On a placed instance only, since an archetype has no use for it.
-        Archetype,  ///< On an archetype only, since every instance shares it.
-        Derived,    ///< Never by hand, since something else brings it along.
+        Derived   = 0,                     ///< Nowhere by hand, since something else brings it along.
+        Archetype = 1 << 0,                ///< On an archetype, where every instance shares it.
+        Instance  = 1 << 1,                ///< On a placed instance, which carries it alone.
+        World     = 1 << 2,                ///< On the world as a whole, which stands in nothing.
+        Anywhere  = Archetype | Instance,  ///< On an archetype and on an instance alike.
     };
+    ZY_DEFINE_BITWISE_ENUM(Authoring)
 
     /// \brief Describes how a component presents itself to a tool, which nothing in the simulation reads.
     struct Description final
@@ -44,8 +46,24 @@ namespace ZyScene
         /// What the component is for, shown on request.
         Text      Tooltip;
 
-        /// Where a tool may attach the component.
+        /// The places a tool may put the component.
         Authoring Policy;
+
+        /// \brief Checks whether a tool may put the component on something standing in the world.
+        ///
+        /// \return `true` if it may stand on an archetype or on an instance, `false` otherwise.
+        ZY_INLINE constexpr Bool IsPlaceable() const
+        {
+            return (Policy & Authoring::Anywhere) != Authoring::Derived;
+        }
+
+        /// \brief Checks whether a tool may give the component to the world as a whole.
+        ///
+        /// \return `true` if it may stand on the world, `false` otherwise.
+        ZY_INLINE constexpr Bool IsWorldly() const
+        {
+            return HasBit(Policy, Authoring::World);
+        }
     };
 }
 
@@ -90,14 +108,24 @@ namespace ZyScene::DSL
             return Result;
         }
 
-        /// \brief Restricts where a tool may attach the component.
+        /// \brief Restricts the places a tool may put the component to the ones given.
         ///
-        /// \param Policy Where the component may be attached.
+        /// \param Policy The places the component may stand, which replace the ones it stood in before.
         /// \return The term, restricted.
         ZY_INLINE constexpr Describing Placed(Authoring Policy) const
         {
             Describing Result = (* this);
             Result.Value.Policy = Policy;
+            return Result;
+        }
+
+        /// \brief Lets a tool give the component to the world as a whole, beside wherever else it may stand.
+        ///
+        /// \return The term, made the world's as well.
+        ZY_INLINE constexpr Describing Worldly() const
+        {
+            Describing Result = (* this);
+            Result.Value.Policy |= Authoring::World;
             return Result;
         }
 
