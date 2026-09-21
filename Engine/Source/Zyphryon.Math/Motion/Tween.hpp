@@ -64,6 +64,14 @@ inline namespace ZyMath
             mAccumulator = 0;
         }
 
+        /// \brief Moves the value the tween is heading for, leaving where it started and how far it has come alone.
+        ///
+        /// \param End The target value of the tween.
+        ZY_INLINE void Rearm(Type End)
+        {
+            mEnd = End;
+        }
+
         /// \brief Advances the tween by the specified time delta.
         ///
         /// \param Delta The time elapsed since last update in seconds.
