@@ -270,7 +270,7 @@ namespace ZyScene::_
     ///
     /// \param World     The world the component belongs to.
     /// \param Component The component that has just been registered.
-    void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component);
+    ZY_API void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component);
 
     /// \brief Gets the identifier a component type answers to, registering it if it declares itself.
     ///

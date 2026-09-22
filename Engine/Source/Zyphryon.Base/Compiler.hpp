@@ -130,6 +130,16 @@ inline namespace ZyBase
 #   define ZY_IMPORT
 #endif
 
+/// \def ZY_API
+/// \brief Marks a symbol the shared build carries out and everything built against it calls in.
+#if   defined(ZY_BUILD_SHARED)
+#   define ZY_API ZY_EXPORT
+#elif defined(ZY_USE_SHARED)
+#   define ZY_API ZY_IMPORT
+#else
+#   define ZY_API
+#endif
+
 /// \def ZY_INLINE_CALL
 /// \brief Forces every call the following statement makes to be inlined into it.
 #if   defined(ZY_COMPILER_MSVC)

@@ -149,6 +149,13 @@ FetchContent_MakeAvailable(External_Flecs)
 
 ZyApplyOptions(flecs_static)
 
+IF    (ZY_BUILD_SHARED)
+
+    SET_PROPERTY(TARGET flecs_static PROPERTY COMPILE_DEFINITIONS flecs_EXPORTS)
+    SET_PROPERTY(TARGET flecs_static PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
+
+ENDIF ()
+
 LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
