@@ -184,7 +184,7 @@ namespace ZyScene
         /// \tparam Component The component type to retrieve or create.
         /// \return A pointer to the component data.
         template<typename Component>
-        ZY_INLINE Ptr<void> Ensure() const
+        ZY_INLINE Ptr<StripAll<Component>> Ensure() const
         {
             return Singleton<Component>().template Ensure<Component>();
         }
