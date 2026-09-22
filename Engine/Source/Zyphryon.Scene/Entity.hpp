@@ -1017,9 +1017,9 @@ namespace ZyScene
         /// \brief Gets the whole path the entity is named by, every scope it stands under included.
         ///
         /// \return The path, or an empty string when the entity carries no name.
-        ZY_INLINE Str64 GetPath() const
+        ZY_INLINE Str128 GetPath() const
         {
-            Str64 Result;
+            Str128 Result;
 
             if (const Ptr<Char> Path = ecs_get_path_w_sep(mWorld, 0, mHandle, "::", nullptr))
             {

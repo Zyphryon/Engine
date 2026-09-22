@@ -275,6 +275,17 @@ namespace ZyScene::_
     /// \param Component The component that has just been registered.
     ZY_API void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component);
 
+    /// \brief Keeps every instance of a component as a record, so it lands again once the component is named anew.
+    ///
+    /// \param World     The world the component belongs to.
+    /// \param Component The component about to be taken out of the world.
+    ZY_API void Preserve(Ptr<ecs_world_t> World, ecs_entity_t Component);
+
+    /// \brief Empties whichever slot holds a component, so the type it stood for registers afresh.
+    ///
+    /// \param Component The component taken out of the world.
+    ZY_API void Forget(ecs_entity_t Component);
+
     /// \brief Gets the identifier a component type answers to.
     ///
     /// \return The identifier of \p Type.

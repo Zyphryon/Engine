@@ -24,17 +24,82 @@ namespace ZyScene::_
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ref<ecs_entity_t> Slot(Text Name)
+    static Ref<Table<Digest, Unique<ecs_entity_t>>> GetSlots()
     {
         static Table<Digest, Unique<ecs_entity_t>> Registry;
+        return Registry;
+    }
 
-        Ref<Unique<ecs_entity_t>> Held = Registry.FindOrInsert(Digest(Hash(Name)));
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<ecs_entity_t> Slot(Text Name)
+    {
+        Ref<Unique<ecs_entity_t>> Held = GetSlots().FindOrInsert(Digest(Hash(Name)));
 
         if (!Held)
         {
             Held = Unique<ecs_entity_t>::Create(0);
         }
         return (* Held);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Forget(ecs_entity_t Component)
+    {
+        GetSlots().ForEach([Component](Digest, Ref<Unique<ecs_entity_t>> Held)
+        {
+            if (Held && (* Held) == Component)
+            {
+                (* Held) = 0;
+            }
+        });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Preserve(Ptr<ecs_world_t> World, ecs_entity_t Component)
+    {
+        const ecs_entity_t      Keeper     = Identity<Salvage>::Value;
+        const ConstPtr<Factory> Serializer = Context::Get(World).GetFactory(Component);
+
+        if (!Keeper || Component == Keeper || Serializer == nullptr)
+        {
+            return;
+        }
+
+        const Str128 Name = Entity(World, Component).GetPath();
+        const Bool   Tag  = (ecs_get_type_info(World, Component) == nullptr);
+
+        Sequence<ecs_entity_t> Holders;
+
+        for (ecs_iter_t Iterator = ecs_each_id(World, Component); ecs_each_next(AddressOf(Iterator)); )
+        {
+            for (SInt32 Index = 0; Index < Iterator.count; ++Index)
+            {
+                Holders.Append(Iterator.entities[Index]);
+            }
+        }
+
+        for (ecs_entity_t Holder : Holders)
+        {
+            Writer Output;
+
+            if (!Tag)
+            {
+                Serializer->Write(Output, ecs_get_mut_id(World, Holder, Component));
+            }
+
+            const Entity Actor(World, Holder == Component ? Keeper : Holder);
+
+            if (const Ptr<Salvage> Kept = static_cast<Ptr<Salvage>>(Actor.Ensure(Entity(World, Keeper))))
+            {
+                Kept->Keep(Text(), Name, ConstSpan<Byte>(Output.GetData(), Output.GetSize()));
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,15 +115,14 @@ namespace ZyScene::_
             return;
         }
 
-        const ConstPtr<Char> Label = ecs_get_name(World, Component);
+        const Str128 Name = Entity(World, Component).GetPath();
 
-        if (Label == nullptr)
+        if (Name.IsEmpty())
         {
             return;
         }
 
         const ConstPtr<Factory> Serializer = Context::Get(World).GetFactory(Component);
-        const Text              Name       = StrConvert(Label);
 
         // Letting go of the last record takes an entity out of what is being walked, so the holders are
         // gathered before any of them is touched.

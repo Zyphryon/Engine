@@ -180,8 +180,22 @@ namespace ZyScene
         ZY_INLINE Entity Import(AnyRef<Arguments>... Parameters)
             requires requires (Ref<Service> Host, Arguments... List) { Type::OnImport(Host, List...); }
         {
+            return Import(_::GetTypeName<Type>(), [&]
+            {
+                Type::OnImport(* this, Forward<Arguments>(Parameters)...);
+            });
+        }
+
+        /// \brief Imports a module known only by name, declaring everything the callback brings under that name.
+        ///
+        /// \param Name     The name the module is imported as, which scopes everything declared inside it.
+        /// \param Callback The code that declares the module's contents, run once while the module is the scope.
+        /// \return The entity the module was imported as.
+        template<typename Callable>
+        ZY_INLINE Entity Import(Text Name, AnyRef<Callable> Callback)
+        {
             // The name carries no terminator of its own, so it is copied before the world is given it.
-            const Str64 Label(_::GetTypeName<Type>());
+            const Str64 Label(Name);
 
             ecs_entity_desc_t Description { };
             Description.name     = Label.GetData();
@@ -198,12 +212,19 @@ namespace ZyScene
 
                 const ecs_entity_t Restored = ecs_set_scope(mWorld, Handle);
 
-                Type::OnImport(* this, Forward<Arguments>(Parameters)...);
+                Callback();
 
                 ecs_set_scope(mWorld, Restored);
             }
             return Entity(mWorld, Handle);
         }
+
+        /// \brief Takes a module out of the world, and everything declared inside it with it.
+        ///
+        /// \note Whatever the module's components held is kept as a record, so importing it again brings it back.
+        ///
+        /// \param Module The module to take out, as \ref Import returned it.
+        void Discard(Entity Module);
 
         /// \brief Creates a named pipeline phase tag and optionally chains it after a dependency phase.
         ///

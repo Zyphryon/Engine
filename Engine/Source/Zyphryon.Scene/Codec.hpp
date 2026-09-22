@@ -36,11 +36,11 @@ namespace ZyScene
         ZY_INLINE static void ReadComponent(Ptr<ecs_world_t> World, Ref<Reader> Archive, Owner Actor)
         {
             // Read first element of the pair (tag/relationship); empty means single component.
-            const Str64  Pair    = Archive.ReadText();
+            const Str128 Pair    = Archive.ReadText();
             const Entity First   = !Pair.IsEmpty() ? Resolve(World, Pair) : Entity();
 
             // Read component name and resolve the component entity.
-            const Str64  Name   = Archive.ReadText();
+            const Str128 Name   = Archive.ReadText();
             const Entity Second = Resolve(World, Name);
 
             // Read serialized component payload.

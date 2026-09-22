@@ -69,6 +69,52 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::Discard(Entity Module)
+    {
+        if (!Module.IsAlive())
+        {
+            return;
+        }
+
+        Sequence<ecs_entity_t> Components;
+        Sequence<Entity>       Scopes;
+
+        Scopes.Append(Module);
+
+        while (!Scopes.IsEmpty())
+        {
+            const Entity Scope = Scopes.GetBack();
+            Scopes.RemoveLast();
+
+            Scope.Children([&](Entity Child)
+            {
+                if (ecs_has_id(mWorld, Child.GetID(), ecs_id(EcsComponent)))
+                {
+                    Components.Append(Child.GetID());
+                }
+                Scopes.Append(Child);
+            });
+        }
+
+        for (ecs_entity_t Component : Components)
+        {
+            _::Preserve(mWorld, Component);
+        }
+
+        Ref<Context> Registry = Context::Get(mWorld);
+
+        for (ecs_entity_t Component : Components)
+        {
+            Registry.RemoveFactory(Component);
+            _::Forget(Component);
+        }
+
+        ecs_delete(mWorld, Module.GetID());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::LoadWorld(Ref<Reader> Archive)
     {
         Protocol::Restore(GetWorld(), [&]

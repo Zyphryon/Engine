@@ -29,10 +29,10 @@ namespace ZyScene
         struct Record final
         {
             /// The relation the component was held under, or nothing when it stood on its own.
-            Str64          Relation;
+            Str128         Relation;
 
             /// The name the component was written under.
-            Str64          Name;
+            Str128         Name;
 
             /// The payload, byte for byte as it was read.
             Sequence<Byte> Data;

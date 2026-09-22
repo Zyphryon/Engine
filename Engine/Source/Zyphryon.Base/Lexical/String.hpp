@@ -878,6 +878,9 @@ inline namespace ZyBase
     /// \brief A stack-backed string with a fixed capacity of 62 characters.
     using Str64 = String<62>;
 
+    /// \brief A stack-backed string with a fixed capacity of 126 characters.
+    using Str128 = String<126>;
+
     /// \brief Allow concatenation of a string with a text literal.
     template<UInt Capacity>
     constexpr String<Capacity> operator+(ConstRef<String<Capacity>> Left, Text Right)
