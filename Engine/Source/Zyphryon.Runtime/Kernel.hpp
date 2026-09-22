@@ -36,9 +36,6 @@ namespace ZyRuntime
         /// \brief Kernels are not copied, since each one owns the modules it was handed.
         Kernel(ConstRef<Kernel> Other) = delete;
 
-        /// \brief Kernels are not copied, since each one owns the modules it was handed.
-        Ref<Kernel> operator=(ConstRef<Kernel> Other) = delete;
-
         /// \brief Writes the parameters a user is allowed to change, as they currently stand.
         ///
         /// \param Root The object to write the parameters under.
@@ -63,6 +60,9 @@ namespace ZyRuntime
         {
             return mEnvironment;
         }
+
+        /// \brief Kernels are not copied, since each one owns the modules it was handed.
+        Ref<Kernel> operator=(ConstRef<Kernel> Other) = delete;
 
     protected:
 

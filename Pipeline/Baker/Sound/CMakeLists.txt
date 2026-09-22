@@ -15,23 +15,30 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 PROJECT(ZyBakerSound VERSION 1.0.0 LANGUAGES CXX)
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Code
+## Target
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-FILE(GLOB_RECURSE PROJECT_SOURCE  "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
-LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+IF    (ZY_BUILD_PIPELINE_BAKER_LIBRARY)
+
+    ZyAddTarget(${PROJECT_NAME} STATIC EXCLUDE "/Main\\.cpp$")
+
+ELSE  ()
+
+    ZyAddTarget(${PROJECT_NAME} EXECUTABLE)
+
+ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (Zyphryon Engine)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-LIST(APPEND PROJECT_DEPENDENCIES "ZyEngine")
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC "ZyEngine")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (DrLibs) (PUBLIC DOMAIN)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-LIST(APPEND PROJECT_DEFINES "DR_WAV_NO_STDIO" "DR_MP3_NO_STDIO")
+TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "DR_WAV_NO_STDIO" "DR_MP3_NO_STDIO")
 
 FetchContent_Declare(External_DRLIBS
         GIT_REPOSITORY https://github.com/mackron/dr_libs
@@ -45,44 +52,28 @@ IF (NOT TARGET DrLibs)
 
 ENDIF ()
 
-LIST(APPEND PROJECT_DEPENDENCIES "DrLibs")
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "DrLibs")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Target
+## Dependency (Opus) (BSD-3-Clause)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-LIST(REMOVE_ITEM PROJECT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Source/Baker.Sound/Main.cpp")
+IF (NOT TARGET opus)
 
-IF    (ZY_BUILD_PIPELINE_BAKER_LIBRARY)
+    SET(OPUS_BUILD_SHARED_LIBRARY        OFF CACHE BOOL "" FORCE)
+    SET(OPUS_BUILD_PROGRAMS              OFF CACHE BOOL "" FORCE)
+    SET(OPUS_BUILD_TESTING               OFF CACHE BOOL "" FORCE)
+    SET(OPUS_INSTALL_PKG_CONFIG_MODULE   OFF CACHE BOOL "" FORCE)
+    SET(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
 
-    ADD_LIBRARY(${PROJECT_NAME} STATIC ${PROJECT_SOURCE})
+    FetchContent_Declare(External_Opus
+            GIT_REPOSITORY https://github.com/xiph/opus
+            GIT_SHALLOW    TRUE
+            GIT_TAG        v1.5.2)
+    FetchContent_MakeAvailable(External_Opus)
 
-ELSE  ()
-
-    ADD_EXECUTABLE(${PROJECT_NAME} ${PROJECT_SOURCE} "${CMAKE_CURRENT_SOURCE_DIR}/Source/Baker.Sound/Main.cpp")
+    ZyApplyOptions("opus")
 
 ENDIF ()
 
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Libraries
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Definitions
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${PROJECT_DEFINES})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Includes
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Properties
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-ZyApplyOptions(${PROJECT_NAME})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "opus")

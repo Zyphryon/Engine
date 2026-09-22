@@ -1,0 +1,75 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 26, "patch": 0 },
+
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug",
+      "description": "Unoptimized, instrumented, sanitized.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "relwithdebinfo",
+      "inherits": "base",
+      "displayName": "RelWithDebInfo",
+      "description": "Optimized without whole-program optimization, so a build iterates quickly and still runs fast.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release",
+      "description": "Fully optimized and stripped.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+
+    {
+      "name": "baker",
+      "inherits": "debug",
+      "displayName": "Debug + bakers",
+      "description": "Adds the offline asset bakers, which only a content pipeline needs.",
+      "cacheVariables": { "ZY_BUILD_PIPELINE_BAKER": "ON" }
+    },
+    {
+      "name": "headless",
+      "inherits": "release",
+      "displayName": "Release, headless",
+      "description": "No window, input, graphic or audio, for a dedicated server.",
+      "cacheVariables": { "ZY_MODE_HEADLESS": "ON" }
+    },
+    {
+      "name": "profile",
+      "inherits": "relwithdebinfo",
+      "displayName": "RelWithDebInfo + Tracy",
+      "description": "Lights up the ZY_PROFILE macros against a Tracy client.",
+      "cacheVariables": { "ZY_PROFILE_BACKEND_TRACY": "ON" }
+    },
+
+    {
+      "name": "web",
+      "inherits": "release",
+      "displayName": "Release, WebAssembly",
+      "description": "Needs an activated emsdk, which is what EMSDK is read from.",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+    }
+  ],
+
+  "buildPresets": [
+    { "name": "debug",          "configurePreset": "debug" },
+    { "name": "relwithdebinfo", "configurePreset": "relwithdebinfo" },
+    { "name": "release",        "configurePreset": "release" },
+    { "name": "baker",          "configurePreset": "baker" },
+    { "name": "headless",       "configurePreset": "headless" },
+    { "name": "profile",        "configurePreset": "profile" },
+    { "name": "web",            "configurePreset": "web" }
+  ]
+}

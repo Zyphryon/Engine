@@ -28,12 +28,11 @@ inline namespace ZyBase
         /// \brief The handle the system knows a loaded library by.
         using Handle = Ptr<void>;
 
+        /// \brief The extension the system names a loadable library by, which the web spells as POSIX does.
 #if   defined(ZY_PLATFORM_WINDOWS)
         static constexpr Text kExtension = "dll";
 #elif defined(ZY_PLATFORM_MACOS)
         static constexpr Text kExtension = "dylib";
-#elif defined(ZY_PLATFORM_WEB)
-        static constexpr Text kExtension = "wasm";
 #else
         static constexpr Text kExtension = "so";
 #endif

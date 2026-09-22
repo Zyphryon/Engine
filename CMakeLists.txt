@@ -43,6 +43,8 @@ ENDIF ()
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 INCLUDE(FetchContent)
+INCLUDE(CMake/CMakeAddTarget.cmake)
+INCLUDE(CMake/CMakeApplyLibrary.cmake)
 INCLUDE(CMake/CMakeApplyModules.cmake)
 INCLUDE(CMake/CMakeApplyOptions.cmake)
 INCLUDE(CMake/CMakeApplyResources.cmake)

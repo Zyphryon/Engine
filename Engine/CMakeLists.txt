@@ -18,25 +18,27 @@ PROJECT(ZyEngine VERSION 1.0.0 LANGUAGES CXX)
 ## Code
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-FILE(GLOB_RECURSE PROJECT_SOURCE  "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
-LIST(APPEND       PROJECT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
-
 IF    (ZY_MODE_HEADLESS)
 
-    LIST(FILTER PROJECT_SOURCE EXCLUDE REGEX "/Zyphryon\\.(Audio|Graphic|Input|Render)/")
-    LIST(FILTER PROJECT_SOURCE EXCLUDE REGEX "/Zyphryon\\.Platform/(Dispatcher|Display|Monitor|Service|Window)\\.cpp$")
+    ZyAddTarget(${PROJECT_NAME} STATIC PCH "Source/Zyphryon.Base/Base.hpp"
+            EXCLUDE "/Zyphryon\\.(Audio|Graphic|Input|Render)/"
+                    "/Zyphryon\\.Platform/(Dispatcher|Display|Monitor|Service|Window)\\.cpp$")
 
-    LIST(APPEND PROJECT_DEFINES "ZY_MODE_HEADLESS")
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "ZY_MODE_HEADLESS")
+
+ELSE  ()
+
+    ZyAddTarget(${PROJECT_NAME} STATIC PCH "Source/Zyphryon.Base/Base.hpp")
 
 ENDIF ()
 
 IF    (WIN32)
 
-    LIST(APPEND PROJECT_DEPENDENCIES "shcore" "avrt" "ole32" "ws2_32" "bcrypt")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC "shcore" "avrt" "ole32" "ws2_32" "bcrypt")
 
 ELSEIF (EMSCRIPTEN)
 
-    LIST(APPEND PROJECT_DEPENDENCIES "websocket.js")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC "websocket.js")
 
 ELSEIF (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 
@@ -52,7 +54,7 @@ ELSEIF (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 
         FIND_PACKAGE(ALSA REQUIRED)
 
-        LIST(APPEND PROJECT_DEPENDENCIES ALSA::ALSA X11::X11 X11::Xrandr)
+        TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ALSA::ALSA X11::X11 X11::Xrandr)
 
     ENDIF ()
 
@@ -77,13 +79,13 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 
     ZyApplyOptions("TracyClient")
 
-    LIST(APPEND PROJECT_DEFINES      "ZY_PROFILE_BACKEND_TRACY")
-    LIST(APPEND PROJECT_DEPENDENCIES "TracyClient")
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "ZY_PROFILE_BACKEND_TRACY")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME}      PUBLIC "TracyClient")
 
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Dependency (Opus) (BSD-3-Clause)
+## Dependency (Opus) (BSD-3-Clause) TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 IF    (NOT ZY_MODE_HEADLESS)
@@ -102,13 +104,16 @@ IF    (NOT ZY_MODE_HEADLESS)
 
     ZyApplyOptions("opus")
 
-    LIST(APPEND PROJECT_DEPENDENCIES "opus")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "opus")
 
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ## Dependency (Flecs) (MIT) TODO: Remove
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY ZY_SHARED_WHOLE   "flecs_static")
+SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY ZY_SHARED_EXPORTS "flecs_EXPORTS")
 
 OPTION(FLECS_REST_SERVICE "Enable Flecs rest service" OFF)
 
@@ -117,9 +122,6 @@ SET(FLECS_SHARED                    OFF CACHE BOOL "" FORCE)
 SET(FLECS_CUSTOM_BUILD              ON  CACHE BOOL "" FORCE)
 SET(FLECS_CPP                       OFF CACHE BOOL "" FORCE)
 SET(FLECS_DOC                       ON  CACHE BOOL "" FORCE)
-
-## The scene wraps flecs through its C API alone, so its C++ half is kept out of every translation unit.
-LIST(APPEND PROJECT_DEFINES "FLECS_NO_CPP")
 SET(FLECS_OS_API_IMPL               ON  CACHE BOOL "" FORCE)
 SET(FLECS_PIPELINE                  ON  CACHE BOOL "" FORCE)
 SET(FLECS_ENTITY_RANGES             ON  CACHE BOOL "" FORCE)
@@ -139,7 +141,7 @@ IF    (FLECS_REST_SERVICE)
     SET(FLECS_REST                  ON CACHE BOOL "" FORCE)
     SET(FLECS_STATS                 ON CACHE BOOL "" FORCE)
 
-    LIST(APPEND PROJECT_DEFINES "FLECS_REST_SERVICE")
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "FLECS_REST_SERVICE")
 ENDIF ()
 
 FetchContent_Declare(External_Flecs
@@ -149,48 +151,11 @@ FetchContent_MakeAvailable(External_Flecs)
 
 ZyApplyOptions(flecs_static)
 
-IF    (ZY_BUILD_SHARED)
-
-    SET_PROPERTY(TARGET flecs_static PROPERTY COMPILE_DEFINITIONS flecs_EXPORTS)
-    SET_PROPERTY(TARGET flecs_static PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
-
-ENDIF ()
-
-LIST(APPEND PROJECT_DEPENDENCIES "flecs_static")
+TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "FLECS_NO_CPP")
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}      PUBLIC "flecs_static")
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## DLL
+## Resources
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ADD_LIBRARY(${PROJECT_NAME} STATIC ${PROJECT_SOURCE})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## PCH
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_PRECOMPILE_HEADERS(${PROJECT_NAME} PUBLIC "Source/Zyphryon.Base/Base.hpp")
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Libraries
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Definitions
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${PROJECT_DEFINES})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Includes
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE})
-
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Properties
-## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-ZyApplyOptions(${PROJECT_NAME})
 ZyRegisterResources(TARGET ${PROJECT_NAME} DIRECTORY "Resources")

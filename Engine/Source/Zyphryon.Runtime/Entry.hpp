@@ -20,12 +20,12 @@
 
 namespace ZyRuntime
 {
-    /// \brief Creates the set of modules the application was linked against.
+    /// \brief Gathers every module the build was given, which whatever holds them answers for.
     ///
-    /// \note Defined by the translation unit `ZyApplyModules` generates for every application target.
+    /// \note Written by the build rather than by hand, beside whichever library the modules themselves stand in.
     ///
-    /// \return The modules the kernel attaches on startup.
-    ZyEngine::Modules ZyRegisterModules();
+    /// \return The modules, in the order they were registered.
+    ZY_API ZyEngine::Modules ZyRegisterModules();
 
     /// \brief Boots a kernel of the given type and runs it until the application exits.
     ///
