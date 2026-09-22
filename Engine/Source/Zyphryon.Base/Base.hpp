@@ -46,6 +46,7 @@
 #include "Zyphryon.Base/System/Entropy.hpp"
 #include "Zyphryon.Base/System/Environment.hpp"
 #include "Zyphryon.Base/System/Filesystem.hpp"
+#include "Zyphryon.Base/System/Library.hpp"
 #include "Zyphryon.Base/Telemetry/Log.hpp"
 #include "Zyphryon.Base/Telemetry/Profiler.hpp"
 #include "Zyphryon.Base/Thread/Atomic.hpp"

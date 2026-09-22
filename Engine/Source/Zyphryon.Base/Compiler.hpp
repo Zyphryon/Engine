@@ -110,6 +110,26 @@ inline namespace ZyBase
 #   define ZY_INLINE inline
 #endif
 
+/// \def ZY_EXPORT
+/// \brief Marks a symbol so a library carries it out where whatever loaded the library can find it.
+#if   defined(ZY_PLATFORM_WINDOWS)
+#   define ZY_EXPORT __declspec(dllexport)
+#else
+#   define ZY_EXPORT __attribute__((visibility("default")))
+#endif
+
+/// \def ZY_EXPORT_C
+/// \brief Marks a symbol carried out of a library under the plain name it was written with.
+#define ZY_EXPORT_C extern "C" ZY_EXPORT
+
+/// \def ZY_IMPORT
+/// \brief Marks a symbol as one another library carries, which this one only calls.
+#if   defined(ZY_PLATFORM_WINDOWS)
+#   define ZY_IMPORT __declspec(dllimport)
+#else
+#   define ZY_IMPORT
+#endif
+
 /// \def ZY_INLINE_CALL
 /// \brief Forces every call the following statement makes to be inlined into it.
 #if   defined(ZY_COMPILER_MSVC)
