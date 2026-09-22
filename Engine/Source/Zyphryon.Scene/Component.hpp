@@ -94,7 +94,7 @@ namespace ZyScene
         template<typename Target>
         ZY_INLINE Component With() const
         {
-            ecs_add_id(mWorld, mHandle, ecs_pair(EcsWith, _::Identify<Target>(mWorld)));
+            ecs_add_id(mWorld, mHandle, ecs_pair(EcsWith, _::Identify<Target>()));
             return (* this);
         }
 

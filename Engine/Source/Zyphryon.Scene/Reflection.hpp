@@ -119,7 +119,7 @@ namespace ZyScene::DSL
         template<typename Type>
         ZY_INLINE void Apply(Ptr<ecs_world_t> World) const
         {
-            Entity(World, ZyScene::_::Identify<Type>(World)).Set(Value);
+            Entity(World, ZyScene::_::Identify<Type>()).Set(Value);
         }
     };
 
@@ -156,7 +156,7 @@ namespace ZyScene::DSL
             static_assert(ZyReflection::IsDescribed<Type>,
                 "A reflected component lays out its own fields with OnDescribe, or with ZY_REFLECT");
 
-            Entity(World, ZyScene::_::Identify<Type>(World)).Set(ZyReflection::Schema::Of<Type>());
+            Entity(World, ZyScene::_::Identify<Type>()).Set(ZyReflection::Schema::Of<Type>());
         }
     };
 

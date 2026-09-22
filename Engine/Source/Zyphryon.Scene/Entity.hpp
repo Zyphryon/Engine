@@ -202,7 +202,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Add() const
         {
-            ecs_add_id(mWorld, mHandle, _::Identify<Component>(mWorld));
+            ecs_add_id(mWorld, mHandle, _::Identify<Component>());
             return (* this);
         }
 
@@ -224,7 +224,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Add() const
         {
-            ecs_add_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld));
+            ecs_add_id(mWorld, mHandle, _::Identify<Relation, Component>());
             return (* this);
         }
 
@@ -236,7 +236,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Entity Add(Entity Component) const
         {
-            ecs_add_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            ecs_add_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
             return (* this);
         }
 
@@ -259,7 +259,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Set(AnyRef<Component> Data) const
         {
-            Assign<StripAll<Component>>(_::Identify<Component>(mWorld), Data);
+            Assign<StripAll<Component>>(_::Identify<Component>(), Data);
             return (* this);
         }
 
@@ -272,7 +272,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Set(AnyRef<Component> Data) const
         {
-            Assign<StripAll<Component>>(_::Identify<Relation, Component>(mWorld), Data);
+            Assign<StripAll<Component>>(_::Identify<Relation, Component>(), Data);
             return (* this);
         }
 
@@ -285,7 +285,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Set(Entity Relation, AnyRef<Component> Data) const
         {
-            Assign<StripAll<Component>>(ecs_pair(Relation.GetID(), _::Identify<Component>(mWorld)), Data);
+            Assign<StripAll<Component>>(ecs_pair(Relation.GetID(), _::Identify<Component>()), Data);
             return (* this);
         }
 
@@ -298,7 +298,7 @@ namespace ZyScene
         ZY_INLINE Entity Emplace(AnyRef<Arguments>... Parameters) const
             requires (!IsAnyOf<StripAll<Arguments>, Entity> && ...)
         {
-            Construct<Component>(_::Identify<Component>(mWorld), Forward<Arguments>(Parameters)...);
+            Construct<Component>(_::Identify<Component>(), Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -311,7 +311,7 @@ namespace ZyScene
         template<typename Relation, typename Component, typename... Arguments>
         ZY_INLINE Entity Emplace(AnyRef<Arguments>... Parameters) const
         {
-            Construct<Component>(_::Identify<Relation, Component>(mWorld), Forward<Arguments>(Parameters)...);
+            Construct<Component>(_::Identify<Relation, Component>(), Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -325,7 +325,7 @@ namespace ZyScene
         ZY_INLINE Entity Emplace(Entity Relation, AnyRef<Arguments>... Parameters) const
         {
             Construct<Component>(
-                ecs_pair(Relation.GetID(), _::Identify<Component>(mWorld)), Forward<Arguments>(Parameters)...);
+                ecs_pair(Relation.GetID(), _::Identify<Component>()), Forward<Arguments>(Parameters)...);
             return (* this);
         }
 
@@ -337,7 +337,7 @@ namespace ZyScene
         ZY_INLINE Ptr<StripAll<Component>> Ensure() const
         {
             return static_cast<Ptr<StripAll<Component>>>(
-                ecs_ensure_id(mWorld, mHandle, _::Identify<Component>(mWorld), sizeof(StripAll<Component>)));
+                ecs_ensure_id(mWorld, mHandle, _::Identify<Component>(), sizeof(StripAll<Component>)));
         }
 
         /// \brief Gets a writable pointer to a component by runtime entity, creating it if it does not exist.
@@ -357,7 +357,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Ptr<void> Ensure(Entity Component) const
         {
-            const ecs_id_t Pair = _::Identify<Relation>(mWorld, Component.GetID());
+            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
             return ecs_ensure_id(mWorld, mHandle, Pair, Measure(Pair));
         }
 
@@ -379,7 +379,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Remove() const
         {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Component>(mWorld));
+            ecs_remove_id(mWorld, mHandle, _::Identify<Component>());
             return (* this);
         }
 
@@ -401,7 +401,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Remove() const
         {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld));
+            ecs_remove_id(mWorld, mHandle, _::Identify<Relation, Component>());
             return (* this);
         }
 
@@ -413,7 +413,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Entity Remove(Entity Component) const
         {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            ecs_remove_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
             return (* this);
         }
 
@@ -435,7 +435,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Bool Has() const
         {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Component>(mWorld));
+            return ecs_has_id(mWorld, mHandle, _::Identify<Component>());
         }
 
         /// \brief Checks if this entity has a given component or tag using a runtime entity.
@@ -455,7 +455,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Bool Has() const
         {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld));
+            return ecs_has_id(mWorld, mHandle, _::Identify<Relation, Component>());
         }
 
         /// \brief Checks if this entity has a relation pair using a compile-time relation and a runtime target.
@@ -466,7 +466,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Bool Has(Entity Component) const
         {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            return ecs_has_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
         }
 
         /// \brief Checks if this entity has a relation pair using two runtime entities.
@@ -486,7 +486,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Bool Owns() const
         {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Component>(mWorld));
+            return ecs_owns_id(mWorld, mHandle, _::Identify<Component>());
         }
 
         /// \brief Checks if this entity owns a given component or tag directly using a runtime entity.
@@ -506,7 +506,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Bool Owns() const
         {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld));
+            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation, Component>());
         }
 
         /// \brief Checks if this entity owns a relation pair directly using a compile-time relation and a runtime target.
@@ -517,7 +517,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Bool Owns(Entity Component) const
         {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
         }
 
         /// \brief Checks if this entity owns a relation pair directly using two runtime entities.
@@ -558,7 +558,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Ptr<Component> TryGet() const
         {
-            return Fetch<Component>(_::Identify<Component>(mWorld));
+            return Fetch<Component>(_::Identify<Component>());
         }
 
         /// \brief Gets a raw pointer to a component by runtime entity, or null if not found.
@@ -578,7 +578,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Ptr<Component> TryGet() const
         {
-            return Fetch<Component>(_::Identify<Relation, Component>(mWorld));
+            return Fetch<Component>(_::Identify<Relation, Component>());
         }
 
         /// \brief Gets a raw pointer to a component on a relation pair using a runtime target, or null if not found.
@@ -589,7 +589,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Ptr<void> TryGet(Entity Component) const
         {
-            return ecs_get_mut_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            return ecs_get_mut_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
         }
 
         /// \brief Gets a raw pointer to a component on a relation pair using two runtime entities, or null if not found.
@@ -609,7 +609,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Notify() const
         {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Component>(mWorld));
+            ecs_modified_id(mWorld, mHandle, _::Identify<Component>());
             return (* this);
         }
 
@@ -631,7 +631,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Notify() const
         {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld));
+            ecs_modified_id(mWorld, mHandle, _::Identify<Relation, Component>());
             return (* this);
         }
 
@@ -643,7 +643,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Entity Notify(Entity Component) const
         {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()));
+            ecs_modified_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
             return (* this);
         }
 
@@ -665,7 +665,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Enable() const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(mWorld), true);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(), true);
             return (* this);
         }
 
@@ -687,7 +687,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Enable() const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld), true);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(), true);
             return (* this);
         }
 
@@ -699,7 +699,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Entity Enable(Entity Component) const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()), true);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()), true);
             return (* this);
         }
 
@@ -721,7 +721,7 @@ namespace ZyScene
         template<typename Component>
         ZY_INLINE Entity Disable() const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(mWorld), false);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(), false);
             return (* this);
         }
 
@@ -743,7 +743,7 @@ namespace ZyScene
         template<typename Relation, typename Component>
         ZY_INLINE Entity Disable() const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(mWorld), false);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(), false);
             return (* this);
         }
 
@@ -755,7 +755,7 @@ namespace ZyScene
         template<typename Relation>
         ZY_INLINE Entity Disable(Entity Component) const
         {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(mWorld, Component.GetID()), false);
+            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()), false);
             return (* this);
         }
 
@@ -816,7 +816,7 @@ namespace ZyScene
         ZY_INLINE Entity Dispatch(ConstRef<Event> Payload, Bool Immediately = false) const
         {
             ecs_event_desc_t Description { };
-            Description.event       = _::Identify<Event>(mWorld);
+            Description.event       = _::Identify<Event>();
             Description.entity      = mHandle;
             Description.const_param = AddressOf(Payload);
             Description.observable  = const_cast<Ptr<ecs_world_t>>(ecs_get_world(mWorld));
@@ -843,7 +843,7 @@ namespace ZyScene
             using Handler = Listener<StripAll<Callable>>;
 
             ecs_observer_desc_t Description { };
-            Description.events[0]           = _::Identify<Event>(mWorld);
+            Description.events[0]           = _::Identify<Event>();
             Description.query.terms->id     = EcsAny;
             Description.query.terms->src.id = mHandle;
             Description.callback            = Handler::OnInvoke;
@@ -883,7 +883,7 @@ namespace ZyScene
         template<typename Relation, typename Callable>
         ZY_INLINE void Children(AnyRef<Callable> Callback) const
         {
-            Children(_::Identify<Relation>(mWorld), Forward<Callable>(Callback));
+            Children(_::Identify<Relation>(), Forward<Callable>(Callback));
         }
 
         /// \brief Iterates over all components and tags on this entity and invokes a callback for each one.
@@ -911,7 +911,7 @@ namespace ZyScene
         template<typename Relation, typename Callable>
         ZY_INLINE void Each(AnyRef<Callable> Callback) const
         {
-            const ecs_id_t Pattern = ecs_pair(_::Identify<Relation>(mWorld), EcsWildcard);
+            const ecs_id_t Pattern = ecs_pair(_::Identify<Relation>(), EcsWildcard);
 
             const auto OnMatch = [&](Entity Pair)
             {

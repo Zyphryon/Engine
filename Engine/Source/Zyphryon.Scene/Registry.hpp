@@ -20,18 +20,6 @@
 
 namespace ZyScene::_
 {
-    /// \brief Holds the identifier a component type answers to.
-    ///
-    /// \note The slot is filled once by \ref Register and read by every operation spelled with a type.
-    ///
-    /// \tparam Type The component type the slot belongs to.
-    template<typename Type>
-    struct Identity final
-    {
-        /// The identifier the world assigned, or `0` while the type has not been registered yet.
-        static inline ecs_entity_t Value = 0;
-    };
-
     /// \brief Gets the name the compiler records for a type, reduced to its last qualifier.
     ///
     /// \note The view points into the compiler's own literal, so it carries no null terminator of its own.
@@ -58,6 +46,21 @@ namespace ZyScene::_
         constexpr Text Keyword   = StrAfterLast(Named, ' ');
         return Keyword.IsEmpty() ? Named : Keyword;
     }
+
+    /// \brief Gets the slot a type's identifier is kept in, which is the same slot for everyone that asks.
+    ///
+    /// \param Name The unqualified name of the type, which the slot is found under.
+    /// \return The slot the type's identifier is written into and read out of.
+    ZY_API Ref<ecs_entity_t> Slot(Text Name);
+
+    /// \brief Holds the identifier a component type answers to.
+    ///
+    /// \tparam Type The component type the slot belongs to.
+    template<typename Type>
+    struct Identity final
+    {
+        static inline Ref<ecs_entity_t> Value = Slot(GetTypeName<Type>());
+    };
 
     /// \brief Builds the lifecycle hooks a component type needs to survive being moved between tables.
     ///
@@ -272,52 +275,35 @@ namespace ZyScene::_
     /// \param Component The component that has just been registered.
     ZY_API void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component);
 
-    /// \brief Gets the identifier a component type answers to, registering it if it declares itself.
+    /// \brief Gets the identifier a component type answers to.
     ///
-    /// \param World The world the component belongs to.
     /// \return The identifier of \p Type.
     template<typename Type>
-    inline ecs_entity_t Identify(Ptr<ecs_world_t> World)
+    ZY_INLINE ecs_entity_t Identify()
     {
         using Component = StripAll<Type>;
 
-        if (!Identity<Component>::Value)
-        {
-            if constexpr (requires (Ptr<ecs_world_t> Target) { Component::OnDeclare().Reserve(Target); })
-            {
-                const auto Declaration = Component::OnDeclare();
+        ZY_ASSERT(Identity<Component>::Value, "Component was reached before anything declared it in the world");
 
-                Declaration.Reserve(World);
-                Declaration.Apply(World);
-
-                Reconcile(World, Identity<Component>::Value);
-            }
-            else
-            {
-                ZY_ASSERT(false, "Component was reached before anything declared it in the world");
-            }
-        }
         return Identity<Component>::Value;
     }
 
     /// \brief Gets the identifier a relation pair formed by two component types resolves to.
     ///
-    /// \param World The world the components belong to.
     /// \return The identifier of the pair.
     template<typename Relation, typename Component>
-    ZY_INLINE ecs_id_t Identify(Ptr<ecs_world_t> World)
+    ZY_INLINE ecs_id_t Identify()
     {
-        return ecs_pair(Identify<Relation>(World), Identify<Component>(World));
+        return ecs_pair(Identify<Relation>(), Identify<Component>());
     }
 
     /// \brief Gets the identifier a relation pair with a runtime target resolves to.
     ///
-    /// \param World     The world the relation belongs to.
     /// \param Component The target of the relation.
     /// \return The identifier of the pair.
     template<typename Relation>
-    ZY_INLINE ecs_id_t Identify(Ptr<ecs_world_t> World, ecs_entity_t Component)
+    ZY_INLINE ecs_id_t Identify(ecs_entity_t Component)
     {
-        return ecs_pair(Identify<Relation>(World), Component);
+        return ecs_pair(Identify<Relation>(), Component);
     }
 }

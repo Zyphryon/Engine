@@ -50,7 +50,7 @@ namespace ZyScene
             // back as it came in and the component lands the moment something does name it.
             if (!Second.IsValid() || (!Pair.IsEmpty() && !First.IsValid()))
             {
-                const Entity Keeper(World, _::Identify<Salvage>(World));
+                const Entity Keeper(World, _::Identify<Salvage>());
 
                 if (const Ptr<Salvage> Kept = static_cast<Ptr<Salvage>>(Actor.Ensure(Keeper)))
                 {

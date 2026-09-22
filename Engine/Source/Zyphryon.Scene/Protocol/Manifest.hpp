@@ -56,7 +56,7 @@ namespace ZyScene::Protocol
         {
             using Component = StripAll<Type>;
 
-            const ZyScene::Component<Component> Handle(World, _::Identify<Component>(World));
+            const ZyScene::Component<Component> Handle(World, _::Identify<Component>());
             Handle.Grant(Trait::Serializable);
 
             // A second world declaring the same type keeps the place the first one was given.

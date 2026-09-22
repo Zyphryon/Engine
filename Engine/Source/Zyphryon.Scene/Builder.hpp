@@ -96,7 +96,7 @@ namespace ZyScene::DSL::_
         template<typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(ZyScene::_::Identify<Component>(mWorld));
+            return With(ZyScene::_::Identify<Component>());
         }
 
         /// \brief Adds a term matching a relation pair formed by two component types.
@@ -105,7 +105,7 @@ namespace ZyScene::DSL::_
         template<typename Relation, typename Component>
         ZY_INLINE Ref<Descriptor> With()
         {
-            return With(ZyScene::_::Identify<Relation>(mWorld), ZyScene::_::Identify<Component>(mWorld));
+            return With(ZyScene::_::Identify<Relation>(), ZyScene::_::Identify<Component>());
         }
 
         /// \brief Adds a term matching an identifier resolved at runtime.
@@ -212,7 +212,7 @@ namespace ZyScene::DSL::_
         template<typename Type, typename Comparator>
         ZY_INLINE Ref<Descriptor> OrderBy(Comparator Comparison)
         {
-            mQuery.order_by          = ZyScene::_::Identify<Type>(mWorld);
+            mQuery.order_by          = ZyScene::_::Identify<Type>();
             mQuery.order_by_callback = reinterpret_cast<ecs_order_by_action_t>(Comparison);
             return (* this);
         }
@@ -1064,7 +1064,7 @@ namespace ZyScene::DSL
         {
             if constexpr (!Data)
             {
-                Builder.GroupBy(ZyScene::_::Identify<Relation>(Builder.GetWorld()));
+                Builder.GroupBy(ZyScene::_::Identify<Relation>());
             }
         }
     };
@@ -1082,7 +1082,7 @@ namespace ZyScene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            Component<Type>(World, ZyScene::_::Identify<Type>(World)).Grant(Values...);
+            Component<Type>(World, ZyScene::_::Identify<Type>()).Grant(Values...);
         }
     };
 
@@ -1135,7 +1135,7 @@ namespace ZyScene::DSL
         template<typename Type>
         ZY_INLINE static void Apply(Ptr<ecs_world_t> World)
         {
-            const Component<Type> Handle(World, ZyScene::_::Identify<Type>(World));
+            const Component<Type> Handle(World, ZyScene::_::Identify<Type>());
 
             (Handle.template With<Types>(), ...);
         }
@@ -1163,7 +1163,7 @@ namespace ZyScene::DSL
         {
             const ecs_entity_t Action = Policy == Cleanup::Remove ? EcsRemove : Policy == Cleanup::Delete ? EcsDelete : EcsPanic;
 
-            ecs_add_id(World, ZyScene::_::Identify<Type>(World), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
+            ecs_add_id(World, ZyScene::_::Identify<Type>(), ecs_pair(Target ? EcsOnDeleteTarget : EcsOnDelete, Action));
         }
     };
 

@@ -146,7 +146,7 @@ namespace ZyScene
         template<typename Type>
         ZY_INLINE Component<Type> GetComponent() const
         {
-            return Component<Type>(mWorld, _::Identify<Type>(mWorld));
+            return Component<Type>(mWorld, _::Identify<Type>());
         }
 
         /// \brief Registers every component a set of declarations describes.

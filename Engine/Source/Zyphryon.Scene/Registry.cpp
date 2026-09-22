@@ -24,6 +24,22 @@ namespace ZyScene::_
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Ref<ecs_entity_t> Slot(Text Name)
+    {
+        static Table<Digest, Unique<ecs_entity_t>> Registry;
+
+        Ref<Unique<ecs_entity_t>> Held = Registry.FindOrInsert(Digest(Hash(Name)));
+
+        if (!Held)
+        {
+            Held = Unique<ecs_entity_t>::Create(0);
+        }
+        return (* Held);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Reconcile(Ptr<ecs_world_t> World, ecs_entity_t Component)
     {
         const ecs_entity_t Keeper = Identity<Salvage>::Value;
