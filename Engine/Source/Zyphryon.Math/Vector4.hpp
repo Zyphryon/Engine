@@ -29,7 +29,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents a generic vector with (x, y, z, w) floating-point components.
-    class ZY_ALIGN(16) Vector4 final
+    class ZY_API ZY_ALIGN(16) Vector4 final
     {
     public:
  

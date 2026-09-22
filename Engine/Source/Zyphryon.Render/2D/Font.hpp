@@ -22,7 +22,7 @@
 namespace ZyRender
 {
     /// \brief A font resource containing glyph metrics, kerning data, and a material for rendering text.
-    class Font final : public ZyContent::AbstractResource<Font>
+    class ZY_API Font final : public ZyContent::AbstractResource<Font>
     {
     public:
 

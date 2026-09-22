@@ -21,7 +21,7 @@
 namespace ZyInput
 {
     /// \brief Represents a touch surface and every point resting on it.
-    class Touch final
+    class ZY_API Touch final
     {
     public:
 

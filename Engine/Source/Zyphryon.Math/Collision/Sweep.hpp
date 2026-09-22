@@ -22,7 +22,7 @@
 inline namespace ZyMath
 {
     /// \brief Finds where a moving volume first meets a standing one.
-    class Sweep final
+    class ZY_API Sweep final
     {
     public:
 

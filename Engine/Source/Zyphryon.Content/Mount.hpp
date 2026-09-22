@@ -17,7 +17,7 @@ namespace ZyContent
     /// \brief Interface for a virtual mount point providing read, write, and delete access to asset files.
     ///
     /// A mount abstracts an underlying storage system (e.g., filesystem directory, archive file, or remote source).
-    class Mount : public Retainable<Mount>
+    class ZY_API Mount : public Retainable<Mount>
     {
     public:
 

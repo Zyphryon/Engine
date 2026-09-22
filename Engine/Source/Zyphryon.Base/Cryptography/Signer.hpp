@@ -21,7 +21,7 @@
 inline namespace ZyBase
 {
     /// \brief Represents a key that signs a run of bytes, and tells its own signature from anybody else's.
-    class Signer final
+    class ZY_API Signer final
     {
     public:
 

@@ -23,7 +23,7 @@
 namespace ZyScene
 {
     /// \brief Provides static methods for serializing and deserializing components to and from binary data streams.
-    class Codec final
+    class ZY_API Codec final
     {
     public:
 

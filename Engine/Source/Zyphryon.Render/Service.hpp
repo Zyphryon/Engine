@@ -21,7 +21,7 @@
 namespace ZyRender
 {
     /// \brief Provides the engine-wide services of the render module.
-    class Service final : public ZyEngine::Subsystem
+    class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
 

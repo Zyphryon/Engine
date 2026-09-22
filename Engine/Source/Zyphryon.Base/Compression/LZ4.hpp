@@ -44,7 +44,7 @@ inline namespace ZyBase
     /// \param Destination The output buffer receiving the compressed bytes.
     /// \param Capacity    The capacity of the output buffer, in bytes (must be at least `LZ4Bound(Source size)`).
     /// \return The number of compressed bytes written.
-    UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
+    ZY_API UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
 
     /// \brief Encodes a buffer into a single LZ4 block, searching much harder for matches.
     ///
@@ -55,7 +55,7 @@ inline namespace ZyBase
     /// \param Capacity    The capacity of the output buffer, in bytes (must be at least `LZ4Bound(Source size)`).
     /// \param Level       How far to walk each chain, clamped to [`kLZ4LevelMin`, `kLZ4LevelMax`].
     /// \return The number of compressed bytes written.
-    UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity, UInt32 Level);
+    ZY_API UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity, UInt32 Level);
 
     /// \brief Decodes a single LZ4 block into the destination buffer.
     ///
@@ -63,12 +63,12 @@ inline namespace ZyBase
     /// \param Destination The output buffer receiving the decompressed bytes.
     /// \param Capacity    The capacity of the output buffer, in bytes.
     /// \return The number of bytes written, or `0` on malformed input or overflow.
-    UInt32 LZ4Decode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
+    ZY_API UInt32 LZ4Decode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
 
     /// \brief Expands a payload into a buffer of its own, copying it when it was stored uncompressed.
     ///
     /// \param Source The payload to expand.
     /// \param Size   The uncompressed byte count the payload expands to.
     /// \return The expanded bytes, or an empty blob when the payload is malformed.
-    Blob LZ4Expand(ConstSpan<Byte> Source, UInt32 Size);
+    ZY_API Blob LZ4Expand(ConstSpan<Byte> Source, UInt32 Size);
 }

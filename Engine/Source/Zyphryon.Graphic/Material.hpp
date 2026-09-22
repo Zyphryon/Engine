@@ -21,7 +21,7 @@
 namespace ZyGraphic
 {
     /// \brief Represents a material resource combining textures, samplers, and uniform data.
-    class Material final : public ZyContent::AbstractResource<Material>
+    class ZY_API Material final : public ZyContent::AbstractResource<Material>
     {
     public:
 

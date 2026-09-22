@@ -23,7 +23,7 @@
 namespace ZyRender
 {
     /// \brief Represents a renderable model combining geometry, materials, and an optional rig to deform on.
-    class Model final : public ZyContent::AbstractResource<Model>
+    class ZY_API Model final : public ZyContent::AbstractResource<Model>
     {
     public:
 

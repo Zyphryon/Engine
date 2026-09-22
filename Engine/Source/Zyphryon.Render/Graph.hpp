@@ -24,7 +24,7 @@ namespace ZyRender
     /// \brief One realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
     ///
     /// \note A view is a graph, so drawing the same scene from another camera costs just another set of buffers.
-    class Graph final
+    class ZY_API Graph final
     {
     public:
 

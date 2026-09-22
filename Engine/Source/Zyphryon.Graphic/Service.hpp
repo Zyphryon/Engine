@@ -25,7 +25,7 @@ namespace ZyGraphic
     /// \brief Manages all GPU resources and rendering operations.
     ///
     /// Dispatch commands to the active driver through a double-buffered \ref Journal for asynchronous GPU execution.
-    class Service final : public ZyEngine::Subsystem, public Switchable<Driver>
+    class ZY_API Service final : public ZyEngine::Subsystem, public Switchable<Driver>
     {
     public:
 

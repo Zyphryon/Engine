@@ -21,7 +21,7 @@
 namespace ZyPlatform
 {
     /// \brief Encapsulate a platform-specific window used as output and receive input.
-    class Window final : public Retainable<Window>
+    class ZY_API Window final : public Retainable<Window>
     {
         friend class Service;
 

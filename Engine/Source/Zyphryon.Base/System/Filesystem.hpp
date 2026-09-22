@@ -23,7 +23,7 @@
 inline namespace ZyBase
 {
     /// \brief Provides platform-independent interface for file system operations.
-    class Filesystem final
+    class ZY_API Filesystem final
     {
     public:
 

@@ -24,7 +24,7 @@ inline namespace ZyMath
     /// \brief Finds whether two standing volumes share a spot, and the shortest way one has to move to be clear.
     ///
     /// \note This is the case \ref Sweep declines: a pair already overlapping has no face the motion came in through.
-    class Collide final
+    class ZY_API Collide final
     {
     public:
 

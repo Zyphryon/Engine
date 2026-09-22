@@ -23,7 +23,7 @@
 namespace ZyGraphic
 {
     /// \brief Represents a GPU-backed geometry asset: one shared vertex/index buffer split into drawable primitives.
-    class Mesh final : public ZyContent::AbstractResource<Mesh>
+    class ZY_API Mesh final : public ZyContent::AbstractResource<Mesh>
     {
     public:
 

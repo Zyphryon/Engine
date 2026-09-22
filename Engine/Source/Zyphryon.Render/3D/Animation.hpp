@@ -23,7 +23,7 @@
 namespace ZyRender
 {
     /// \brief Represents a clip of keyframed motion, played over a skeleton.
-    class Animation final : public ZyContent::AbstractResource<Animation>
+    class ZY_API Animation final : public ZyContent::AbstractResource<Animation>
     {
     public:
 

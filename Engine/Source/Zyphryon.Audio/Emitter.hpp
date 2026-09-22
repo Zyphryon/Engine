@@ -22,7 +22,7 @@
 namespace ZyAudio
 {
     /// \brief Represents a sound emitter with spatial properties for 3D audio.
-    class Emitter final
+    class ZY_API Emitter final
     {
     public:
 

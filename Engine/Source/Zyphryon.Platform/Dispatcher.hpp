@@ -21,7 +21,7 @@
 namespace ZyPlatform
 {
     /// \brief Collects and queues platform input events for processing by the input service.
-    class Dispatcher final
+    class ZY_API Dispatcher final
     {
     public:
 

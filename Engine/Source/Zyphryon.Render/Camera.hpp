@@ -23,7 +23,7 @@
 namespace ZyRender
 {
     /// \brief Represents a 3D camera with view and projection transforms.
-    class Camera final
+    class ZY_API Camera final
     {
     public:
 

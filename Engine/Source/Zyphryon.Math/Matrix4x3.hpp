@@ -21,7 +21,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents an affine 3D transformation matrix, stored as the three non-constant rows of a 3x4.
-    class ZY_ALIGN(16) Matrix4x3 final
+    class ZY_API ZY_ALIGN(16) Matrix4x3 final
     {
     public:
 

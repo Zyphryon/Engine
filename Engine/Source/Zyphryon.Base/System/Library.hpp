@@ -21,7 +21,7 @@
 inline namespace ZyBase
 {
     /// \brief Holds a library the system loaded, and answers for the symbols it was built with.
-    class Library final
+    class ZY_API Library final
     {
     public:
 

@@ -21,7 +21,7 @@
 namespace ZyInput
 {
     /// \brief Represents a standard keyboard input device and its state.
-    class Keyboard final
+    class ZY_API Keyboard final
     {
     public:
 

@@ -22,7 +22,7 @@
 namespace ZyAudio
 {
     /// \brief Represents an audio sound resource containing raw audio data and its associated metadata.
-    class Sound final : public ZyContent::AbstractResource<Sound>
+    class ZY_API Sound final : public ZyContent::AbstractResource<Sound>
     {
     public:
 

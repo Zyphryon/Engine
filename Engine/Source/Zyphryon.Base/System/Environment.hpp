@@ -25,7 +25,7 @@ inline namespace ZyBase
     /// \brief A parsed command line, exposed as named switches plus ordered operands.
     ///
     /// A switch is written as `--name`, `--name=value`, `--name value`, or `--no-name`.
-    class Environment final
+    class ZY_API Environment final
     {
     public:
 

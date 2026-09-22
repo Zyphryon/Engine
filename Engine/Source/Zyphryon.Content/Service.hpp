@@ -26,7 +26,7 @@
 namespace ZyContent
 {
     /// \brief Central coordinator for content I/O, caching, and lifecycle management.
-    class Service final : public ZyEngine::Subsystem, public ZyEngine::Locator<ZyJob::Service>
+    class ZY_API Service final : public ZyEngine::Subsystem, public ZyEngine::Locator<ZyJob::Service>
     {
     public:
 

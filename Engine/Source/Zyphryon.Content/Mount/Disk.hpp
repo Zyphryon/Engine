@@ -21,7 +21,7 @@
 namespace ZyContent
 {
     /// \brief Virtual filesystem mount backed by the host operating system's filesystem.
-    class Disk final : public Mount
+    class ZY_API Disk final : public Mount
     {
     public:
 

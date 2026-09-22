@@ -21,7 +21,7 @@
 inline namespace ZyBase
 {
     /// \brief Provides bytes taken from wherever the system gathers what nothing can foresee.
-    class Entropy final
+    class ZY_API Entropy final
     {
     public:
 

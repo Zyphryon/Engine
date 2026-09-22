@@ -24,7 +24,7 @@
 namespace ZyRender
 {
     /// \brief Builds graphic draw commands with automatic resource binding.
-    class Encoder final
+    class ZY_API Encoder final
     {
     public:
 

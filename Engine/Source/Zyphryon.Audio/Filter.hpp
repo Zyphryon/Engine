@@ -15,7 +15,7 @@
 namespace ZyAudio
 {
     /// \brief Represents a second-order low-pass section applied to one stream of samples.
-    class Filter final
+    class ZY_API Filter final
     {
     public:
 

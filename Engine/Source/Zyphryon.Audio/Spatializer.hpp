@@ -22,7 +22,7 @@
 namespace ZyAudio
 {
     /// \brief Computes stereo placement gains for a spatial source.
-    class Spatializer final
+    class ZY_API Spatializer final
     {
     public:
 

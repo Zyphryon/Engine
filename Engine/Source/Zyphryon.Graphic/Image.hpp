@@ -22,7 +22,7 @@
 namespace ZyGraphic
 {
     /// \brief Represents an immutable, GPU-backed texture asset intended for sampling.
-    class Image final : public ZyContent::AbstractResource<Image>
+    class ZY_API Image final : public ZyContent::AbstractResource<Image>
     {
     public:
 

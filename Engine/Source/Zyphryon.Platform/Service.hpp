@@ -23,7 +23,7 @@
 namespace ZyPlatform
 {
     /// \brief Manages platform windows and pumps OS events each frame.
-    class Service : public ZyEngine::Subsystem
+    class ZY_API Service : public ZyEngine::Subsystem
     {
     public:
 

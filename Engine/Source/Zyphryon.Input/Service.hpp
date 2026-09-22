@@ -24,7 +24,7 @@
 namespace ZyInput
 {
     /// \brief Provides high-level management of the input subsystem.
-    class Service final : public ZyEngine::Subsystem
+    class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
 

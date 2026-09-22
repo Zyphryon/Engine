@@ -23,7 +23,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents a column-major 4x4 floating-point transformation matrix.
-    class ZY_ALIGN(16) Matrix4x4 final
+    class ZY_API ZY_ALIGN(16) Matrix4x4 final
     {
     public:
 

@@ -21,7 +21,7 @@
 namespace ZyPlatform
 {
     /// \brief Represents a display system that manages monitors.
-    class Display final
+    class ZY_API Display final
     {
     public:
 

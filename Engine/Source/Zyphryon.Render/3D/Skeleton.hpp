@@ -22,7 +22,7 @@
 namespace ZyRender
 {
     /// \brief Represents the bone hierarchy a model's geometry is skinned to.
-    class Skeleton final : public ZyContent::AbstractResource<Skeleton>
+    class ZY_API Skeleton final : public ZyContent::AbstractResource<Skeleton>
     {
     public:
 

@@ -21,7 +21,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents a quaternion for 3D rotations.
-    class ZY_ALIGN(16) Quaternion final
+    class ZY_API ZY_ALIGN(16) Quaternion final
     {
         friend class Matrix4x4;
 

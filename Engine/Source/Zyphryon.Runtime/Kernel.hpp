@@ -23,7 +23,7 @@
 namespace ZyRuntime
 {
     /// \brief Entry point and main coordinator of the application runtime.
-    class Kernel : public ZyEngine::Subsystem::Host
+    class ZY_API Kernel : public ZyEngine::Subsystem::Host
     {
     public:
 
@@ -32,6 +32,12 @@ namespace ZyRuntime
 
         /// \brief Destructs the kernel and releases all associated resources.
         virtual ~Kernel() = default;
+
+        /// \brief Kernels are not copied, since each one owns the modules it was handed.
+        Kernel(ConstRef<Kernel> Other) = delete;
+
+        /// \brief Kernels are not copied, since each one owns the modules it was handed.
+        Ref<Kernel> operator=(ConstRef<Kernel> Other) = delete;
 
         /// \brief Writes the parameters a user is allowed to change, as they currently stand.
         ///

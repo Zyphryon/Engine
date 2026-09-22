@@ -15,7 +15,7 @@
 namespace ZyPlatform
 {
     /// \brief Represents a physical display monitor and its properties.
-    class Monitor final
+    class ZY_API Monitor final
     {
     public:
 

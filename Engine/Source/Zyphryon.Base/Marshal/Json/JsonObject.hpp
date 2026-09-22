@@ -24,7 +24,7 @@ inline namespace ZyBase
     class JsonArray;
 
     /// \brief Provides a convenient interface for manipulating JSON objects.
-    class JsonObject final
+    class ZY_API JsonObject final
     {
     public:
 

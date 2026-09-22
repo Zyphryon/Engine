@@ -21,7 +21,7 @@
 namespace ZyInput
 {
     /// \brief Represents a standard mouse input device.
-    class Mouse final
+    class ZY_API Mouse final
     {
     public:
 

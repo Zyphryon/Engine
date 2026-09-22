@@ -23,7 +23,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents the six planes a view-projection closes the world off with, for asking what lies inside them.
-    class Frustum final
+    class ZY_API Frustum final
     {
     public:
 

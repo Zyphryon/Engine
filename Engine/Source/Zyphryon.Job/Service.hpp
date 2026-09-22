@@ -26,7 +26,7 @@ namespace ZyJob
     class Future;
 
     /// \brief A lane-based job scheduler with dependency tracking and helping waits.
-    class Service final : public ZyEngine::Subsystem
+    class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
 

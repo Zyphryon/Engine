@@ -24,7 +24,7 @@
 namespace ZyGraphic
 {
     /// \brief Represents a rendering technique containing a configured pipeline.
-    class Technique final : public ZyContent::AbstractResource<Technique>
+    class ZY_API Technique final : public ZyContent::AbstractResource<Technique>
     {
     public:
 

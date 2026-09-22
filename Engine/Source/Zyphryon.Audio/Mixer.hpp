@@ -23,7 +23,7 @@
 namespace ZyAudio
 {
     /// \brief The engine's software audio mixer: voices, submixes, spatialization, and effects.
-    class Mixer final
+    class ZY_API Mixer final
     {
     public:
 

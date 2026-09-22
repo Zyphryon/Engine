@@ -31,7 +31,7 @@
 namespace ZyScene
 {
     /// \brief Manages the world lifecycle, entity allocation, and scene serialization.
-    class Service final : public ZyEngine::Subsystem
+    class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
 

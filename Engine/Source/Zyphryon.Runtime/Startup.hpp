@@ -21,7 +21,7 @@
 namespace ZyRuntime
 {
     /// \brief Encapsulates the parameters the engine is brought up with, before any service exists.
-    class Startup final
+    class ZY_API Startup final
     {
     public:
 

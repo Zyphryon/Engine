@@ -21,7 +21,7 @@
 inline namespace ZyBase
 {
     /// \brief Provides JSON parsing and serialization utilities.
-    class JsonDocument final
+    class ZY_API JsonDocument final
     {
     public:
 

@@ -21,7 +21,7 @@
 namespace ZyContent
 {
     /// \brief Virtual filesystem mount backed by a location this machine has to ask another one for.
-    class Remote final : public Mount
+    class ZY_API Remote final : public Mount
     {
     public:
 
