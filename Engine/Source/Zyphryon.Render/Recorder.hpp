@@ -152,21 +152,35 @@ namespace ZyRender
             return mBatches[Commands.GetFront().Entry.Slot];
         }
 
-        /// \brief Writes one batch as a single instanced draw through the encoder.
+        /// \brief Writes one batch as instanced draws through the encoder, one for each run of a single variant.
         ///
-        /// \param Encoder  The encoder that builds the resulting draw command.
+        /// \param Encoder  The encoder that builds the resulting draw commands.
         /// \param Commands The batch the collector handed back.
         /// \param Uniform  The per-instance uniform stream the batch reads, where it reads one at all.
         ZY_INLINE void Write(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands,
             ConstRef<ZyGraphic::Stream> Uniform = ZyGraphic::Stream())
         {
-            ConstRef<Batch> First = GetLeader(Commands);
+            for (UInt Start = 0, Count = Commands.GetSize(); Start < Count;)
+            {
+                ConstRef<Batch> First = mBatches[Commands[Start].Entry.Slot];
 
-            const ZyGraphic::Invocation Invocation {
-                .Count     = mVertices,
-                .Instances = static_cast<UInt32>(Commands.GetSize())
-            };
-            Encoder.Draw(* First.Technique, First.Material, Gather(Commands), Uniform, Invocation, First.Variant);
+                UInt End = Start + 1;
+
+                while (End < Count && mBatches[Commands[End].Entry.Slot].Variant == First.Variant)
+                {
+                    ++End;
+                }
+
+                const ConstSpan<Collector::Command> Run = Commands.Slice(Start, End - Start);
+
+                const ZyGraphic::Invocation Invocation {
+                    .Count     = mVertices,
+                    .Instances = static_cast<UInt32>(Run.GetSize())
+                };
+                Encoder.Draw(* First.Technique, First.Material, Gather(Run), Uniform, Invocation, First.Variant);
+
+                Start = End;
+            }
         }
 
     private:
