@@ -71,8 +71,23 @@ namespace ZyGraphic
                     ZY_ASSERT(JsonTexture.GetNumber<UInt8>("Register", Index) == Register,
                         "Texture registers must be dense and ordered");
 
-                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
-                        Resource::Texture, Register, 1, Visibility);
+                    // A fallback is one texel, given as four bytes, bound wherever a material leaves the texture out.
+                    if (const JsonArray JsonFallback = JsonTexture.GetArray("Fallback"); !JsonFallback.IsNullOrEmpty())
+                    {
+                        const UInt32 Texel = (JsonFallback.GetNumber<UInt32>(0) & 0xFFu)
+                                           | (JsonFallback.GetNumber<UInt32>(1) & 0xFFu) << 8
+                                           | (JsonFallback.GetNumber<UInt32>(2) & 0xFFu) << 16
+                                           | (JsonFallback.GetNumber<UInt32>(3) & 0xFFu) << 24;
+
+                        const TextureFormat Format = JsonTexture.GetEnum("Format", TextureFormat::RGBA8UIntNorm);
+
+                        ZY_ASSERT(Format == TextureFormat::RGBA8UIntNorm || Format == TextureFormat::RGBA8UIntNorm_sRGB,
+                            "A fallback texel is four bytes of colour, stored linear or sRGB");
+
+                        Schema.SetFallback(Register, Texel, JsonTexture.GetEnum("Layout", TextureLayout::Texture2D), Format);
+                    }
+
+                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(Resource::Texture, Register, 1, Visibility);
                 }
             }
 

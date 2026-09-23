@@ -151,8 +151,13 @@ namespace ZyPipeline::Baker::Texture
             return Exporter::Export(mScheduler, Move(Slices), ZyGraphic::TextureLayout::Texture2DArray, Profile);
         }
 
-        // A lone slice keeps the layout it was decoded as, so a one-layer array does not come back as a plain 2D.
-        return Exporter::Export(mScheduler, Move(Decoded.Slices), Decoded.Layout, Profile);
+        // A lone slice keeps the layout it was decoded as, so a one-layer array does not come back as a plain 2D,
+        // unless the profile asks for every image as an array.
+        const ZyGraphic::TextureLayout Layout = (Profile.Layered && Decoded.Layout == ZyGraphic::TextureLayout::Texture2D)
+            ? ZyGraphic::TextureLayout::Texture2DArray
+            : Decoded.Layout;
+
+        return Exporter::Export(mScheduler, Move(Decoded.Slices), Layout, Profile);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -35,6 +35,9 @@ namespace ZyPipeline::Baker::Texture
         /// LZ4-compress the pixel payload.
         Bool                     Compress = true;
 
+        /// Write a lone 2D image as a one-slice array, for programs that only sample arrays.
+        Bool                     Layered  = false;
+
         /// \brief A pair of numbers naming how an atlas divides, left zeroed when it was not asked for.
         struct Extent final
         {

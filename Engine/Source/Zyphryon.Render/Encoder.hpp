@@ -42,7 +42,7 @@ namespace ZyRender
             /// \brief Binds an image to the texture the signature declares under the given name.
             ///
             /// \param Name  The hash of the texture's name.
-            /// \param Image The image to bind, or zero to leave the texture unbound.
+            /// \param Image The image to bind, or zero to fall back to the technique's own, or leave it unbound.
             /// \return This binder, so the bindings of a draw read as one statement.
             ZY_INLINE Ref<Binder> SetImage(UInt64 Name, ZyGraphic::Object Image)
             {
@@ -52,7 +52,7 @@ namespace ZyRender
                 {
                     if (Textures[Index] == Name)
                     {
-                        mCommand.Textures[Index] = Image;
+                        mCommand.Textures[Index] = Image ? Image : mTechnique.GetSchema().GetFallback(Index);
                         break;
                     }
                 }

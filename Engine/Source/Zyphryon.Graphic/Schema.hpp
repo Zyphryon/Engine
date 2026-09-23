@@ -67,12 +67,36 @@ namespace ZyGraphic
             Object             Handle = 0;
         };
 
+        /// \brief Describes the one-texel texture bound where a material supplies no image of its own.
+        struct Fallback final
+        {
+            /// The colour of the texel, packed with red in the lowest byte.
+            UInt32        Texel  = 0;
+
+            /// The layout the texture is created with, which must match what the program samples.
+            TextureLayout Layout = TextureLayout::Texture2D;
+
+            /// The format the texel is stored in, which settles whether it reads back as linear or as sRGB.
+            TextureFormat Format = TextureFormat::RGBA8UIntNorm;
+
+            /// Whether the texture declares a fallback at all.
+            Bool          Active = false;
+
+            /// The texture resource created from the texel, or zero until the technique is uploaded.
+            Object        Handle = 0;
+        };
+
     public:
 
-        /// \brief Resolves every declared sampler into the resource backing its descriptor.
+        /// \brief Resolves every declared sampler, and creates every declared fallback texture.
         ///
-        /// \param Service The graphic service used to obtain each sampler resource.
+        /// \param Service The graphic service used to obtain each resource.
         void Resolve(Ref<Service> Service);
+
+        /// \brief Deletes the fallback textures created by \ref Resolve.
+        ///
+        /// \param Service The graphic service the textures were created through.
+        void Release(Ref<Service> Service);
 
         /// \brief Declares a texture the program samples, taking the next texture register.
         ///
@@ -83,7 +107,30 @@ namespace ZyGraphic
             ZY_ASSERT(mTextures.GetSize() < Command::kMaxTextures, "Schema declares more textures than a draw binds");
 
             mTextures.Append(Hash(Name));
+            mFallbacks.Append();
             return static_cast<UInt8>(mTextures.GetSize() - 1);
+        }
+
+        /// \brief Declares the texture bound at a register when a material supplies none.
+        ///
+        /// \param Register The register the texture was declared at.
+        /// \param Texel    The colour of the fallback's single texel, packed with red in the lowest byte.
+        /// \param Layout   The layout the fallback is created with.
+        /// \param Format   The format the texel is stored in, one of the four-byte colour formats.
+        ZY_INLINE void SetFallback(UInt8 Register, UInt32 Texel, TextureLayout Layout, TextureFormat Format)
+        {
+            ZY_ASSERT(Register < mFallbacks.GetSize(), "Fallback set on an undeclared texture");
+
+            mFallbacks[Register] = Fallback(Texel, Layout, Format, true, 0);
+        }
+
+        /// \brief Gets the texture bound at a register when a material supplies none.
+        ///
+        /// \param Register The register the texture was declared at.
+        /// \return The fallback texture resource, or zero when the texture declares none.
+        ZY_INLINE Object GetFallback(UInt32 Register) const
+        {
+            return Register < mFallbacks.GetSize() ? mFallbacks[Register].Handle : 0;
         }
 
         /// \brief Declares a sampler a material may supply, taking the next sampler register.
@@ -144,8 +191,9 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Block, ZyEnum::Count<Frequency>()> mUniforms;
-        Sequence<UInt64, Command::kMaxTextures>  mTextures;
-        Sequence<Sampler, Command::kMaxSamplers> mSamplers;
+        Array<Block, ZyEnum::Count<Frequency>()>  mUniforms;
+        Sequence<UInt64, Command::kMaxTextures>   mTextures;
+        Sequence<Fallback, Command::kMaxTextures> mFallbacks;
+        Sequence<Sampler, Command::kMaxSamplers>  mSamplers;
     };
 }

@@ -27,5 +27,32 @@ namespace ZyGraphic
         {
             Field.Handle = Service.ObtainSampler(Field.Descriptor);
         }
+
+        for (Ref<Schema::Fallback> Field : mFallbacks)
+        {
+            if (Field.Active && Field.Handle == 0)
+            {
+                Blob Texel = Blob::Allocate<UInt32>(1);
+                Texel.Copy(AddressOf(Field.Texel), sizeof(UInt32));
+
+                Field.Handle = Service.CreateTexture(Field.Layout, Field.Format, 1, 1, 1, 1, Move(Texel));
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Schema::Release(Ref<Service> Service)
+    {
+        for (Ref<Schema::Fallback> Field : mFallbacks)
+        {
+            if (Field.Handle != 0)
+            {
+                Service.DeleteTexture(Field.Handle);
+
+                Field.Handle = 0;
+            }
+        }
     }
 }

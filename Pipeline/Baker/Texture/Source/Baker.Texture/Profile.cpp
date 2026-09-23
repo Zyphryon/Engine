@@ -64,6 +64,7 @@ namespace ZyPipeline::Baker::Texture
         Result.Mipmaps  = Environment.GetBool("mipmaps",    Result.Mipmaps);
         Result.Linear   = Environment.GetBool("linear",     Result.Linear);
         Result.Compress = Environment.GetBool("compressed", Result.Compress);
+        Result.Layered  = Environment.GetBool("layered",    Result.Layered);
 
         // The two divisions differ in unit: a cube is counted in faces, an array in texels.
         Result.Cube     = Measure(Environment, "cube");

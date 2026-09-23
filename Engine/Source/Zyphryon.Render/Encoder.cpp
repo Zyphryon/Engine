@@ -33,10 +33,10 @@ namespace ZyRender
         mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]  = Encoder.mPass;
         mCommand.Scissor = Encoder.mScissor;
 
-        // Every texture the signature declares holds its slot, so one left unbound still reads as zero.
+        // Every texture the signature declares holds its slot, starting at its fallback, or zero where it has none.
         for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
         {
-            mCommand.Textures.Append(0);
+            mCommand.Textures.Append(Schema.GetFallback(Index));
         }
 
         // Samplers start at the technique's own, which a caller replaces only where it wants to.
@@ -226,7 +226,9 @@ namespace ZyRender
 
         for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
         {
-            Command.Textures.Append(Index < Textures.GetSize() ? Textures[Index] : 0);
+            const ZyGraphic::Object Given = (Index < Textures.GetSize() ? Textures[Index] : 0);
+
+            Command.Textures.Append(Given ? Given : Schema.GetFallback(Index));
         }
 
         for (ConstRef<ZyGraphic::Schema::Sampler> Field : Schema.GetSamplers())
