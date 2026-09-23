@@ -12,7 +12,7 @@
 
 #include "ANMLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Render/3D/Animation.hpp"
+#include "Zyphryon.Render/3D/Animation3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -63,7 +63,7 @@ namespace ZyRender
         const Sphere Extent   = Input.Read<Sphere>();
         const UInt32 Total    = Input.Read<UInt32>();
 
-        Sequence<Animation::Lane> Lanes;
+        Sequence<Animation3D::Lane> Lanes;
         Lanes.Reserve(Total);
 
         for (UInt32 Index = 0; Index < Total; ++Index)
@@ -82,7 +82,7 @@ namespace ZyRender
             }
 
             // One lane per bone is a must.
-            const auto IsPresent = [Name](ConstRef<Animation::Lane> Entry)
+            const auto IsPresent = [Name](ConstRef<Animation3D::Lane> Entry)
             {
                 return Entry.Name == Name;
             };
@@ -120,7 +120,7 @@ namespace ZyRender
                 return false;
             }
 
-            Ref<Animation::Lane> Entry = Lanes.Append();
+            Ref<Animation3D::Lane> Entry = Lanes.Append();
             Entry.Name   = Name;
             Entry.Timing = Cadence(Rate, Count);
 
@@ -140,7 +140,7 @@ namespace ZyRender
             }
         }
 
-        const Retainer<Animation> Asset = Retainer<Animation>::Cast(Scope.GetResource());
+        const Retainer<Animation3D> Asset = Retainer<Animation3D>::Cast(Scope.GetResource());
         Asset->Arrange(Move(Lanes));
         Asset->SetExtent(Extent);
 

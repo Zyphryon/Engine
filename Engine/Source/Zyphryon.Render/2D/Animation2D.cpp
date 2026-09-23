@@ -10,13 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Service.hpp"
-#include "3D/Loader/MDLLoader.hpp"
-#include "2D/Loader/FNTLoader.hpp"
-#include "3D/Loader/SKLLoader.hpp"
-#include "3D/Loader/ANMLoader.hpp"
-#include "2D/Loader/SH2Loader.hpp"
-#include "Zyphryon.Content/Service.hpp"
+#include "Animation2D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,22 +21,29 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Service::Service(Ref<ZyEngine::Subsystem::Host> Host)
-        : Subsystem { Host }
+    UInt8 Animation2D::Turn(Angle Facing, UInt8 Current) const
     {
-        RegisterBuiltinLoaders();
-    }
+        if (mDirections <= 1)
+        {
+            return 0;
+        }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        const Angle Step = Angle::FromRadians(2.0f * kPI<Real32> / mDirections);
 
-    void Service::RegisterBuiltinLoaders()
-    {
-        ConstRetainer<ZyContent::Service> Content = GetHost().GetService<ZyContent::Service>();
-        Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
-        Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
-        Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
-        Content->AddLoader(ANMLoader::kTypes, Retainer<ANMLoader>::Create());
-        Content->AddLoader(SH2Loader::kTypes, Retainer<SH2Loader>::Create());
+        // Keeping the current direction near its boundary stops a facing on the seam flickering between two.
+        if (Current < mDirections)
+        {
+            const Angle Apart = Angle::Between(mHeading + Step * Current, Facing);
+
+            // Half a step reaches the boundary; the hysteresis is the slack allowed past it.
+            if (Abs(Apart.GetRadians()) <= Step.GetRadians() * (0.5f + mHysteresis))
+            {
+                return Current;
+            }
+        }
+
+        const Angle Wound = Angle::Normalize(Facing - mHeading + Step * 0.5f);
+
+        return static_cast<UInt8>(Wound.GetRadians() / Step.GetRadians()) % mDirections;
     }
 }

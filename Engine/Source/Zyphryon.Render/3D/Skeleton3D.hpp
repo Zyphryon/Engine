@@ -22,7 +22,7 @@
 namespace ZyRender
 {
     /// \brief Represents the bone hierarchy a model's geometry is skinned to.
-    class ZY_API Skeleton final : public ZyContent::AbstractResource<Skeleton>
+    class ZY_API Skeleton3D final : public ZyContent::AbstractResource<Skeleton3D>
     {
     public:
 
@@ -83,7 +83,7 @@ namespace ZyRender
         /// \brief Constructs a skeleton resource with the given content key.
         ///
         /// \param Key The unique content key identifying this skeleton.
-        explicit Skeleton(AnyRef<ZyContent::Uri> Key);
+        explicit Skeleton3D(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Replaces the bone hierarchy.
         ///

@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Skeleton.hpp"
+#include "Skeleton3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,7 +21,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Skeleton::Skeleton(AnyRef<ZyContent::Uri> Key)
+    Skeleton3D::Skeleton3D(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) }
     {
     }
@@ -29,7 +29,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::SetBones(AnyRef<Sequence<Bone>> Bones)
+    void Skeleton3D::SetBones(AnyRef<Sequence<Bone>> Bones)
     {
         mBones = Move(Bones);
 
@@ -48,7 +48,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::Rest(ConstRef<Pose> Output) const
+    void Skeleton3D::Rest(ConstRef<Pose> Output) const
     {
         ZY_ASSERT(Output.GetSize() >= mBones.GetSize(), "Rest pose output must have room for every bone");
 
@@ -65,7 +65,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::Compose(ConstRef<Pose> Local, Span<Matrix4x3> Output) const
+    void Skeleton3D::Compose(ConstRef<Pose> Local, Span<Matrix4x3> Output) const
     {
         ZY_ASSERT(Local.GetSize()  >= mBones.GetSize() && Output.GetSize() >= mBones.GetSize(),
             "Pose composition needs a local transform and an output slot for every bone");
@@ -90,7 +90,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::Skin(Span<Matrix4x3> Palette) const
+    void Skeleton3D::Skin(Span<Matrix4x3> Palette) const
     {
         ZY_ASSERT(Palette.GetSize() >= mBones.GetSize(), "Bind palette needs an output slot for every bone");
 
@@ -121,7 +121,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::Skin(ConstSpan<Matrix4x3> Composed, Span<Matrix4x3> Palette) const
+    void Skeleton3D::Skin(ConstSpan<Matrix4x3> Composed, Span<Matrix4x3> Palette) const
     {
         ZY_ASSERT(Composed.GetSize() >= mBones.GetSize() && Palette.GetSize() >= mBones.GetSize(),
             "Skinning needs a composed transform and an output slot for every bone");
@@ -136,7 +136,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Skeleton::Blend(Ref<Pose> Destination, ConstRef<Pose> Source, Real32 Weight)
+    void Skeleton3D::Blend(Ref<Pose> Destination, ConstRef<Pose> Source, Real32 Weight)
     {
         ZY_ASSERT(Destination.GetSize() == Source.GetSize(), "Blending needs both poses to cover the same bones");
 

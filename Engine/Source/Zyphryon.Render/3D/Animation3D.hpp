@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Skeleton.hpp"
+#include "Skeleton3D.hpp"
 #include "Zyphryon.Math/Motion/Cadence.hpp"
 #include "Zyphryon.Math/Geometry/Sphere.hpp"
 
@@ -23,14 +23,14 @@
 namespace ZyRender
 {
     /// \brief Represents a clip of keyframed motion, played over a skeleton.
-    class ZY_API Animation final : public ZyContent::AbstractResource<Animation>
+    class ZY_API Animation3D final : public ZyContent::AbstractResource<Animation3D>
     {
     public:
 
         /// \brief The motion of one bone: what it is called, and where it goes over time.
         struct Lane final
         {
-            /// The hash of the driven bone's name, matching \ref Skeleton::Bone::Name.
+            /// The hash of the driven bone's name, matching \ref Skeleton3D::Bone::Name.
             UInt64            Name = 0;
 
             /// The cadence every component that varies is sampled on.
@@ -59,7 +59,7 @@ namespace ZyRender
         /// \brief Constructs an animation resource with the given content key.
         ///
         /// \param Key The unique content key identifying this animation.
-        explicit Animation(AnyRef<ZyContent::Uri> Key);
+        explicit Animation3D(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Checks whether the clip drives anything at all.
         ///
@@ -117,16 +117,16 @@ namespace ZyRender
         /// \brief Pairs the clip with a skeleton, resolving everything a frame would otherwise rediscover.
         ///
         /// \param Skeleton The skeleton to resolve against.
-        /// \param Binding  Receives one bone index per lane, \ref Skeleton::kMissing where there is no such bone.
+        /// \param Binding  Receives one bone index per lane, \ref Skeleton3D::kMissing where there is no such bone.
         /// \return `true` when the clip writes every component of every bone, so the caller may skip the rest pose.
-        Bool Resolve(ConstRef<Skeleton> Skeleton, Ref<Sequence<SInt32>> Binding) const;
+        Bool Resolve(ConstRef<Skeleton3D> Skeleton, Ref<Sequence<SInt32>> Binding) const;
 
         /// \brief Samples every lane at the given time, layering the result over a pose.
         ///
         /// \param Time    The time to sample at, in seconds, already wrapped into the clip's range.
         /// \param Binding The lane-to-bone resolution from \ref Resolve.
         /// \param Output  Receives the sampled local transforms.
-        void Sample(Real64 Time, ConstSpan<SInt32> Binding, ConstRef<Skeleton::Pose> Output) const;
+        void Sample(Real64 Time, ConstSpan<SInt32> Binding, ConstRef<Skeleton3D::Pose> Output) const;
 
     private:
 

@@ -10,13 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Service.hpp"
-#include "3D/Loader/MDLLoader.hpp"
-#include "2D/Loader/FNTLoader.hpp"
-#include "3D/Loader/SKLLoader.hpp"
-#include "3D/Loader/ANMLoader.hpp"
-#include "2D/Loader/SH2Loader.hpp"
-#include "Zyphryon.Content/Service.hpp"
+#include "Sheet2D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -27,22 +21,33 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Service::Service(Ref<ZyEngine::Subsystem::Host> Host)
-        : Subsystem { Host }
+    Sheet2D::Sheet2D(AnyRef<ZyContent::Uri> Key)
+        : AbstractResource { Move(Key) }
     {
-        RegisterBuiltinLoaders();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::RegisterBuiltinLoaders()
+    Bool Sheet2D::Arrange()
     {
-        ConstRetainer<ZyContent::Service> Content = GetHost().GetService<ZyContent::Service>();
-        Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
-        Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
-        Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
-        Content->AddLoader(ANMLoader::kTypes, Retainer<ANMLoader>::Create());
-        Content->AddLoader(SH2Loader::kTypes, Retainer<SH2Loader>::Create());
+        const UInt32 Bones = static_cast<UInt32>(mSkeleton.GetBones().GetSize());
+
+        Sequence<SInt32> Binding;
+        Bool             Complete = true;
+
+        for (Ref<Clip> Entry : mClips)
+        {
+            Binding.Clear();
+
+            for (ConstRef<Motion2D::Lane> Lane : Entry.Motion.GetLanes())
+            {
+                Binding.Append(mSkeleton.Find(Lane.Bone));
+            }
+
+            // Every clip is laid out even after one fails, so the loss is reported once and not compounded.
+            Complete = Entry.Motion.Arrange(Binding, Bones) && Complete;
+        }
+        return Complete;
     }
 }

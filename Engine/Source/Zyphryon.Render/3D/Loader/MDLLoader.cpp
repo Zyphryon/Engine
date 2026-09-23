@@ -13,7 +13,7 @@
 #include "MDLLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Loader/MTLLoader.hpp"
-#include "Zyphryon.Render/3D/Model.hpp"
+#include "Zyphryon.Render/3D/Model3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -26,7 +26,7 @@ namespace ZyRender
 
     Bool MDLLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
-        const Retainer<Model> Asset = Retainer<Model>::Cast(Scope.GetResource());
+        const Retainer<Model3D> Asset = Retainer<Model3D>::Cast(Scope.GetResource());
 
         JsonValue        Document = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
         const JsonObject Root(Document);
@@ -51,7 +51,7 @@ namespace ZyRender
         // Resolve the bone hierarchy, when the model deforms. Absent means static geometry.
         if (const Text Path = Root.GetString("Skeleton"); !Path.IsEmpty())
         {
-            Asset->SetSkeleton(Service.Load<Skeleton>(Path, AddressOf(Scope)));
+            Asset->SetSkeleton(Service.Load<Skeleton3D>(Path, AddressOf(Scope)));
         }
 
         // Resolve the material table, in the slot order primitives reference by index.

@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Skeleton.hpp"
+#include "Skeleton3D.hpp"
 #include "Zyphryon.Graphic/Mesh.hpp"
 #include "Zyphryon.Graphic/Material.hpp"
 
@@ -23,14 +23,14 @@
 namespace ZyRender
 {
     /// \brief Represents a renderable model combining geometry, materials, and an optional rig to deform on.
-    class ZY_API Model final : public ZyContent::AbstractResource<Model>
+    class ZY_API Model3D final : public ZyContent::AbstractResource<Model3D>
     {
     public:
 
         /// \brief Constructs a model resource with the given content key.
         ///
         /// \param Key The unique content key identifying this model.
-        explicit Model(AnyRef<ZyContent::Uri> Key);
+        explicit Model3D(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets the geometry of this model.
         ///
@@ -51,7 +51,7 @@ namespace ZyRender
         /// \brief Sets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \param Skeleton The skeleton resource to reference.
-        ZY_INLINE void SetSkeleton(ConstRetainer<ZyRender::Skeleton> Skeleton)
+        ZY_INLINE void SetSkeleton(ConstRetainer<ZyRender::Skeleton3D> Skeleton)
         {
             mSkeleton = Skeleton;
         }
@@ -59,7 +59,7 @@ namespace ZyRender
         /// \brief Gets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \return The referenced skeleton resource, or null when the model does not deform.
-        ZY_INLINE ConstRetainer<ZyRender::Skeleton> GetSkeleton() const
+        ZY_INLINE ConstRetainer<ZyRender::Skeleton3D> GetSkeleton() const
         {
             return mSkeleton;
         }
@@ -131,7 +131,7 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Retainer<ZyGraphic::Mesh>               mMesh;
-        Retainer<ZyRender::Skeleton>            mSkeleton;
+        Retainer<ZyRender::Skeleton3D>          mSkeleton;
         Sequence<Retainer<ZyGraphic::Material>> mMaterials;
     };
 }

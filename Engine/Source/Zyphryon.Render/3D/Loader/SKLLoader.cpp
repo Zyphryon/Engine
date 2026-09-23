@@ -12,7 +12,7 @@
 
 #include "SKLLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
-#include "Zyphryon.Render/3D/Skeleton.hpp"
+#include "Zyphryon.Render/3D/Skeleton3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -44,7 +44,7 @@ namespace ZyRender
         const SInt16 Count = Input.Read<SInt16>();
 
         // The table is stored exactly as it sits in memory, so the whole rig lands in one copy.
-        const UInt Length = Count * sizeof(Skeleton::Bone);
+        const UInt Length = Count * sizeof(Skeleton3D::Bone);
 
         if (Input.GetAvailable() < Length)
         {
@@ -52,15 +52,15 @@ namespace ZyRender
             return false;
         }
 
-        Sequence<Skeleton::Bone> Bones;
+        Sequence<Skeleton3D::Bone> Bones;
         Bones.Advance(Count);
 
         if (Count > 0)
         {
-            Blit(Bones.GetData(), Length, Input.Read<ConstPtr<Skeleton::Bone>>(static_cast<UInt32>(Length)));
+            Blit(Bones.GetData(), Length, Input.Read<ConstPtr<Skeleton3D::Bone>>(static_cast<UInt32>(Length)));
         }
 
-        const Retainer<Skeleton> Asset = Retainer<Skeleton>::Cast(Scope.GetResource());
+        const Retainer<Skeleton3D> Asset = Retainer<Skeleton3D>::Cast(Scope.GetResource());
         Asset->SetBones(Move(Bones));
         return true;
     }

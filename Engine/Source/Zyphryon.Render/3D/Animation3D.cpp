@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Animation.hpp"
+#include "Animation3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,7 +21,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Animation::Animation(AnyRef<ZyContent::Uri> Key)
+    Animation3D::Animation3D(AnyRef<ZyContent::Uri> Key)
         : AbstractResource { Move(Key) },
           mLockstep        { false },
           mDuration        { 0.0 },
@@ -32,7 +32,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animation::Arrange(AnyRef<Sequence<Lane>> Lanes)
+    void Animation3D::Arrange(AnyRef<Sequence<Lane>> Lanes)
     {
         mLockstep = !Lanes.IsEmpty();
         mLanes    = Move(Lanes);
@@ -51,7 +51,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Animation::Resolve(ConstRef<Skeleton> Skeleton, Ref<Sequence<SInt32>> Binding) const
+    Bool Animation3D::Resolve(ConstRef<Skeleton3D> Skeleton, Ref<Sequence<SInt32>> Binding) const
     {
         Binding.Clear();
         Binding.Reserve(mLanes.GetSize());
@@ -64,7 +64,7 @@ namespace ZyRender
 
             Binding.Append(Bone);
 
-            if (Bone != Skeleton::kMissing && !Entry.Position.IsEmpty() && !Entry.Scale.IsEmpty() && !Entry.Rotation.IsEmpty())
+            if (Bone != Skeleton3D::kMissing && !Entry.Position.IsEmpty() && !Entry.Scale.IsEmpty() && !Entry.Rotation.IsEmpty())
             {
                 ++Reached;
             }
@@ -75,7 +75,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animation::Sample(Real64 Time, ConstSpan<SInt32> Binding, ConstRef<Skeleton::Pose> Output) const
+    void Animation3D::Sample(Real64 Time, ConstSpan<SInt32> Binding, ConstRef<Skeleton3D::Pose> Output) const
     {
         ZY_ASSERT(Binding.GetSize() >= mLanes.GetSize(), "Sampling needs a resolution for every lane");
 
@@ -83,7 +83,7 @@ namespace ZyRender
         {
             for (UInt Index = 0; Index < mLanes.GetSize(); ++Index)
             {
-                if (const SInt32 Bone = Binding[Index]; Bone != Skeleton::kMissing)
+                if (const SInt32 Bone = Binding[Index]; Bone != Skeleton3D::kMissing)
                 {
                     ConstRef<Lane> Entry  = mLanes[Index];
                     const Cursor   Cursor = Entry.Timing.Locate(Time);
@@ -98,7 +98,7 @@ namespace ZyRender
         {
             for (UInt Index = 0; Index < mLanes.GetSize(); ++Index)
             {
-                if (const SInt32 Bone = Binding[Index]; Bone != Skeleton::kMissing)
+                if (const SInt32 Bone = Binding[Index]; Bone != Skeleton3D::kMissing)
                 {
                     ConstRef<Lane> Entry = mLanes[Index];
 

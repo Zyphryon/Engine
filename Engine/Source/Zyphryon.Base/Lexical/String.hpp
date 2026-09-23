@@ -115,7 +115,14 @@ inline namespace ZyBase
         /// \return A maximum character count the string can hold without reallocation.
         ZY_INLINE constexpr UInt GetCapacity() const
         {
-            return mBuffer.GetCapacity();
+            if constexpr (Capacity > 0)
+            {
+                return Capacity;
+            }
+            else
+            {
+                return mBuffer.GetCapacity();
+            }
         }
 
         /// \brief Checks if the string is empty.
@@ -815,7 +822,7 @@ inline namespace ZyBase
 
             if constexpr (Capacity > 0)
             {
-                ZY_ASSERT(Capacity >= Size + 1, "Requested reserve length exceeds fixed capacity");
+                ZY_ASSERT(Capacity >= Size, "Requested reserve length exceeds fixed capacity");
             }
             else
             {

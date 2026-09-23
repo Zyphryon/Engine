@@ -256,11 +256,9 @@ inline namespace ZyMath
             return mRepeat == Repeat::Once && GetElapsed() >= mDuration;
         }
 
-    private:
-
-        /// \brief Computes the unwrapped local time from the absolute clock.
+        /// \brief Gets the local time before the repeat policy wraps, mirrors or clamps it.
         ///
-        /// \return The local time before applying the repeat policy, in seconds.
+        /// \return The unwrapped local time, in seconds, which counts every lap run so far.
         ZY_INLINE Real64 GetElapsed() const
         {
             return mPlaying ? mOffset + mSpeed * (mClock - mEpoch) : mOffset;

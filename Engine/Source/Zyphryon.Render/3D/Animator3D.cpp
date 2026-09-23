@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Animator.hpp"
+#include "Animator3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,7 +21,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Skeleton::Pose Animator::Scratch::Acquire(UInt Bones, UInt Slot)
+    Skeleton3D::Pose Animator3D::Scratch::Acquire(UInt Bones, UInt Slot)
     {
         ZY_ASSERT(Slot < kSources, "Scratch hands out one pose per source");
 
@@ -35,7 +35,7 @@ namespace ZyRender
 
         const UInt Offset = Slot * Bones;
 
-        return Skeleton::Pose(
+        return Skeleton3D::Pose(
             Span(mPosition.GetData() + Offset, Bones),
             Span(mScale.GetData() + Offset, Bones),
             Span(mRotation.GetData() + Offset, Bones));
@@ -44,7 +44,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Animator::Animator()
+    Animator3D::Animator3D()
         : mClock  { 0.0 },
           mEpoch  { 0.0 },
           mFade   { 0.0 },
@@ -55,7 +55,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator::SetModel(ConstRetainer<Model> Model)
+    void Animator3D::SetModel(ConstRetainer<Model3D> Model)
     {
         mModel = Model;
 
@@ -75,7 +75,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator::Play(ConstRetainer<Animation> Animation, Repeat Mode, Real64 Fade)
+    void Animator3D::Play(ConstRetainer<Animation3D> Animation, Repeat Mode, Real64 Fade)
     {
         // Only a clip already paired with the rig has a pose worth fading out of.
         if (Fade > 0.0 && mSources[mActive].Clip && mSources[mActive].Bound)
@@ -101,7 +101,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator::Update(Real64 Time, Ref<Scratch> Scratch)
+    void Animator3D::Update(Real64 Time, Ref<Scratch> Scratch)
     {
         mClock = Time;
 
@@ -110,7 +110,7 @@ namespace ZyRender
             return;
         }
 
-        ConstRetainer<Skeleton> Rig = mModel->GetSkeleton();
+        ConstRetainer<Skeleton3D> Rig = mModel->GetSkeleton();
 
         // Model and rig both load in the background; there is no pose to build until the bones arrive.
         if (!Rig || Rig->IsEmpty())
@@ -165,17 +165,17 @@ namespace ZyRender
             Retire(Outgoing);
         }
 
-        Skeleton::Pose Pose = Scratch.Acquire(Bones, 0);
+        Skeleton3D::Pose Pose = Scratch.Acquire(Bones, 0);
         Evaluate(Active, * Rig, Pose);
 
         if (Blending)
         {
-            const Skeleton::Pose Fading = Scratch.Acquire(Bones, 1);
+            const Skeleton3D::Pose Fading = Scratch.Acquire(Bones, 1);
 
             Evaluate(Outgoing, * Rig, Fading);
 
             // Toward the outgoing clip by what is left of the fade.
-            Skeleton::Blend(Pose, Fading, 1.0f - Weight);
+            Skeleton3D::Blend(Pose, Fading, 1.0f - Weight);
         }
 
         // Folded in place, since skinning reads only each slot's own transform.
@@ -186,7 +186,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Animator::Rebind(Ref<Source> Entry, ConstRef<Skeleton> Rig)
+    Bool Animator3D::Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig)
     {
         if (Entry.Bound)
         {
@@ -220,7 +220,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator::Evaluate(ConstRef<Source> Entry, ConstRef<Skeleton> Rig, ConstRef<Skeleton::Pose> Output) const
+    void Animator3D::Evaluate(ConstRef<Source> Entry, ConstRef<Skeleton3D> Rig, ConstRef<Skeleton3D::Pose> Output) const
     {
         // Seeded first, so a bone the clip never names rests where the hierarchy puts it.
         if (!Entry.Covered)
@@ -233,11 +233,11 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator::Retire(Ref<Source> Entry)
+    void Animator3D::Retire(Ref<Source> Entry)
     {
         mFade = 0.0;
 
-        Entry.Clip = Retainer<Animation>();
+        Entry.Clip = Retainer<Animation3D>();
         Entry.Binding.Clear();
         Entry.Bound   = false;
         Entry.Covered = false;

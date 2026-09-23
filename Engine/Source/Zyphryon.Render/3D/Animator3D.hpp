@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Math/Motion/Playback.hpp"
-#include "Animation.hpp"
-#include "Model.hpp"
+#include "Animation3D.hpp"
+#include "Model3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -23,7 +23,7 @@
 namespace ZyRender
 {
     /// \brief One playing instance of a model, holding its clip position and the palette posed from it.
-    class ZY_API Animator final
+    class ZY_API Animator3D final
     {
     public:
 
@@ -43,7 +43,7 @@ namespace ZyRender
             /// \param Bones The number of bones the caller is about to pose.
             /// \param Slot  Which of the \ref kSources poses to hand out.
             /// \return A pose covering exactly \p Bones, whose contents are indeterminate.
-            Skeleton::Pose Acquire(UInt Bones, UInt Slot = 0);
+            Skeleton3D::Pose Acquire(UInt Bones, UInt Slot = 0);
 
         private:
 
@@ -58,17 +58,17 @@ namespace ZyRender
     public:
 
         /// \brief Constructs an animator that is not yet wearing a model.
-        Animator();
+        Animator3D();
 
         /// \brief Attaches the model to be posed.
         ///
         /// \param Model The model to wear.
-        void SetModel(ConstRetainer<Model> Model);
+        void SetModel(ConstRetainer<Model3D> Model);
 
         /// \brief Gets the model being posed.
         ///
         /// \return The model, or an empty retainer when none was attached.
-        ZY_INLINE ConstRetainer<Model> GetModel() const
+        ZY_INLINE ConstRetainer<Model3D> GetModel() const
         {
             return mModel;
         }
@@ -78,7 +78,7 @@ namespace ZyRender
         /// \param Animation The clip to play.
         /// \param Mode      How the clip behaves once it reaches its end.
         /// \param Fade      How long to blend out of the clip already playing, in seconds.
-        void Play(ConstRetainer<Animation> Animation, Repeat Mode = Repeat::Loop, Real64 Fade = 0.0);
+        void Play(ConstRetainer<Animation3D> Animation, Repeat Mode = Repeat::Loop, Real64 Fade = 0.0);
 
         /// \brief Gets the cursor tracking where the playing clip has reached.
         ///
@@ -110,12 +110,12 @@ namespace ZyRender
         struct Source final
         {
             /// The clip being played, or empty when the source holds none.
-            Retainer<Animation> Clip;
+            Retainer<Animation3D> Clip;
 
             /// The cursor tracking where the clip has reached.
             Playback            Cursor;
 
-            /// One bone index per lane, as resolved by \ref Animation::Resolve.
+            /// One bone index per lane, as resolved by \ref Animation3D::Resolve.
             Sequence<SInt32>    Binding;
 
             /// Whether the clip has been paired with the rig, so a frame need not rediscover it.
@@ -130,14 +130,14 @@ namespace ZyRender
         /// \param Entry The source to pair.
         /// \param Rig   The skeleton the clip is playing over.
         /// \return `true` once the clip has been paired with the rig, `false` while it is still loading.
-        Bool Rebind(Ref<Source> Entry, ConstRef<Skeleton> Rig);
+        Bool Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig);
 
         /// \brief Seeds a pose and samples one source's clip over it.
         ///
         /// \param Entry  The source to sample, which must be paired and carrying a clip.
         /// \param Rig    The skeleton the clip is playing over.
         /// \param Output Receives the local transform of every bone.
-        void Evaluate(ConstRef<Source> Entry, ConstRef<Skeleton> Rig, ConstRef<Skeleton::Pose> Output) const;
+        void Evaluate(ConstRef<Source> Entry, ConstRef<Skeleton3D> Rig, ConstRef<Skeleton3D::Pose> Output) const;
 
         /// \brief Lets a source go, ending whatever fade it was taking part in.
         ///
@@ -149,7 +149,7 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Model>     mModel;
+        Retainer<Model3D>   mModel;
         Source              mSources[kSources];
         Sequence<Matrix4x3> mPalette;
         Real64              mClock;
