@@ -855,6 +855,23 @@ inline namespace ZyMath
             return AnyRect(OffsetX, OffsetY, OffsetX + Source.GetWidth(), OffsetY + Source.GetHeight());
         }
 
+        /// \brief Places a rectangle given in shares of a region into the region's own space.
+        ///
+        /// \param Region The region the shares are taken of.
+        /// \param Share  The rectangle, in shares of the region, where zero is its minimum and one its maximum.
+        /// \return The rectangle in the region's own space.
+        ZY_INLINE static constexpr AnyRect Within(AnyRect Region, AnyRect Share)
+            requires (IsReal<Type>)
+        {
+            const Type Width  = Region.GetWidth();
+            const Type Height = Region.GetHeight();
+
+            return AnyRect(Region.GetMinimumX() + Share.GetMinimumX() * Width,
+                           Region.GetMinimumY() + Share.GetMinimumY() * Height,
+                           Region.GetMinimumX() + Share.GetMaximumX() * Width,
+                           Region.GetMinimumY() + Share.GetMaximumY() * Height);
+        }
+
         /// \brief Transform a rectangle using an affine transformation matrix.
         ///
         /// \param Source The rectangle to transform.
