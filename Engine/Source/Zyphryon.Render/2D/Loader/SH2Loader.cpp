@@ -58,7 +58,7 @@ namespace ZyRender
         Frames.SetHeading(Angle::FromDegrees(Definition.GetNumber<Real32>("Heading", 270.0f)));
         Frames.SetHysteresis(Definition.GetNumber<Real32>("Hysteresis", Animation2D::kHysteresis));
 
-        if (const JsonArray Stride = Definition.GetArray("Stride"); Stride.GetSize() == 2)
+        if (const JsonArray Stride = Definition.GetArray("Stride"); !Stride.IsNullOrEmpty() && Stride.GetSize() == 2)
         {
             Frames.SetStride(Vector2(Stride.GetNumber<Real32>(0), Stride.GetNumber<Real32>(1)));
         }
@@ -95,19 +95,20 @@ namespace ZyRender
     {
         Motion.SetCycle(Definition.GetNumber<UInt32>("Cycle"));
 
-        const JsonArray Lanes = Definition.GetArray("Lanes");
-
-        for (UInt Slot = 0; Slot < Lanes.GetSize(); ++Slot)
+        if (const JsonArray Lanes = Definition.GetArray("Lanes"); !Lanes.IsNullOrEmpty())
         {
-            const JsonObject Track = Lanes.GetObject(Slot);
-            const JsonArray  Keys  = Track.GetArray("Keys");
-
-            Ref<Motion2D::Lane> Lane = Motion.AddLane(Hash(Track.GetString("Bone")));
-            Lane.Keys.Reserve(Keys.GetSize());
-
-            for (UInt Step = 0; Step < Keys.GetSize(); ++Step)
+            for (UInt Slot = 0; Slot < Lanes.GetSize(); ++Slot)
             {
-                Lane.Keys.Append(ReadKey(Keys.GetObject(Step)));
+                const JsonObject Track = Lanes.GetObject(Slot);
+                const JsonArray  Keys  = Track.GetArray("Keys");
+
+                Ref<Motion2D::Lane> Lane = Motion.AddLane(Hash(Track.GetString("Bone")));
+                Lane.Keys.Reserve(Keys.GetSize());
+
+                for (UInt Step = 0; Step < Keys.GetSize(); ++Step)
+                {
+                    Lane.Keys.Append(ReadKey(Keys.GetObject(Step)));
+                }
             }
         }
     }
