@@ -39,19 +39,6 @@ you enable the module that needs it.
 | [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
 | [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |
 
-### What doesn't
-
-The offline bakers under `Pipeline/Baker/` are standalone executables you run on your own machine. Nothing links
-against them, and they only build with `ZY_BUILD_PIPELINE` *(OFF)*.
-
-| Library | Used by | Used for |
-|---------|---------|----------|
-| [dr_libs](https://github.com/mackron/dr_libs) | Audio baker | WAV / MP3 decode |
-| [msdfgen](https://github.com/Chlumsky/msdfgen) | Font baker | MSDF glyph generation |
-| [stb](https://github.com/nothings/stb) | Font, Texture bakers | Image decode |
-
-Ship the baked assets and these stay on your workstation.
-
 ---
 
 ## 🛠️ Building
