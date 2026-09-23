@@ -133,7 +133,7 @@ inline namespace ZyBase
             ZY_ASSERT(mData != nullptr, "Blob is empty");
             ZY_ASSERT(Offset + Size <= mSize, "Copy range exceeds Blob size");
 
-            ::Copy(mData + Offset, Size, Source);
+            ::Copy(mData + Offset, Size, reinterpret_cast<ConstPtr<Byte>>(Source));
         }
 
         /// \brief Copy-assigning a blob is not allowed.
