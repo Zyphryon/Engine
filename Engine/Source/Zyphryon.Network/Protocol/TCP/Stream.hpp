@@ -90,6 +90,12 @@ namespace ZyNetwork::TCP
             Pong,    ///< Answers a ping.
         };
 
+        /// \brief Frames a payload behind the byte that says what it carries, at the back of the outbound queue.
+        ///
+        /// \param Kind    What the frame carries.
+        /// \param Payload The bytes behind the tag, which are copied.
+        void Enqueue(Tag Kind, ConstSpan<Byte> Payload);
+
         /// \brief Posts the write that empties the outbound queue, if one is not out already.
         ///
         /// \param Watcher The proactor the write is posted to.
@@ -133,5 +139,6 @@ namespace ZyNetwork::TCP
         Real64     mExpiry;
         Real64     mProbe;
         Real64     mCompact;
+        Real64     mTrim;
     };
 }

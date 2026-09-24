@@ -94,7 +94,7 @@ namespace ZyNetwork::UDP
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Socket                       mSocket;
-        Sequence<Byte, kMaxRead>     mInbound;
+        Array<Byte, kMaxRead>        mInbound;
         Sequence<Byte, kMaxDatagram> mTransmit;
         Session                      mSession;
         UInt64                       mCookie;

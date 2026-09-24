@@ -248,6 +248,12 @@ namespace ZyNetwork
 
             ZY_ASSERT(Slot > 0 && Slot <= kMaxEndpoints, "An endpoint was admitted under a slot that names none");
 
+            if (Revoke(Entry.Link))
+            {
+                mReport.Disconnect(Entry.Link, Reason::Closed);
+                continue;
+            }
+
             if (!Entry.Remote.IsValid())
             {
                 mReport.Disconnect(Entry.Link, Reason::Unreachable);
@@ -296,30 +302,53 @@ namespace ZyNetwork
     {
         for (ConstRef<Command> Entry : Batch.Entries)
         {
-            if (const Ptr<Retainer<Channel>> Endpoint = mChannels.TryGet(Entry.Link.GetChannel()); Endpoint)
-            {
-                switch (Entry.Kind)
-                {
-                case Order::Send:
-                    (* Endpoint)->Send(Entry.Link, Entry.Mode, Batch.GetPayload(Entry));
-                    break;
-                case Order::Broadcast:
-                    (* Endpoint)->Broadcast(Entry.Mode, Batch.GetPayload(Entry));
-                    break;
-                case Order::Close:
-                    (* Endpoint)->Retire(mWatcher, Entry.Link, Reason::Closed, mReport);
-                    break;
-                case Order::Timeout:
-                {
-                    Real64 Seconds = 0.0;
-                    Blit(reinterpret_cast<Ptr<Byte>>(AddressOf(Seconds)), sizeof(Seconds), Batch.GetPayload(Entry).GetData());
+            const Ptr<Retainer<Channel>> Endpoint = mChannels.TryGet(Entry.Link.GetChannel());
 
-                    (* Endpoint)->SetTimeout(Entry.Link, Seconds);
-                    break;
+            if (Endpoint == nullptr)
+            {
+                // An endpoint still waiting on its address has no channel yet, so a close for it waits for it to arrive.
+                if (Entry.Kind == Order::Close && !Entry.Link.IsPeer() && !IsRevoked(Entry.Link))
+                {
+                    mRevoked.Append(Entry.Link);
                 }
-                }
+                continue;
+            }
+
+            switch (Entry.Kind)
+            {
+            case Order::Send:
+                (* Endpoint)->Send(Entry.Link, Entry.Mode, Batch.GetPayload(Entry));
+                break;
+            case Order::Broadcast:
+                (* Endpoint)->Broadcast(Entry.Mode, Batch.GetPayload(Entry));
+                break;
+            case Order::Close:
+                (* Endpoint)->Retire(mWatcher, Entry.Link, Reason::Closed, mReport);
+                break;
+            case Order::Timeout:
+            {
+                Real64 Seconds = 0.0;
+                Blit(reinterpret_cast<Ptr<Byte>>(AddressOf(Seconds)), sizeof(Seconds), Batch.GetPayload(Entry).GetData());
+
+                (* Endpoint)->SetTimeout(Entry.Link, Seconds);
+                break;
+            }
             }
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Executor::Revoke(Connection Link)
+    {
+        const Bool Revoked = IsRevoked(Link);
+
+        mRevoked.RemoveFastSomeIf([Slot = Link.GetChannel().GetSlot()](ConstRef<Connection> Entry)
+        {
+            return Entry.GetChannel().GetSlot() == Slot;
+        });
+        return Revoked;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

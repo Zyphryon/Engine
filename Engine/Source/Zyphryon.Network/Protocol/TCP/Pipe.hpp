@@ -215,15 +215,7 @@ namespace ZyNetwork
         {
             const UInt Left = GetSize();
 
-            if (mReader > 0)
-            {
-                if (Left > 0)
-                {
-                    Blit(mData.GetData(), Left, mData.GetData() + mReader);
-                }
-                mReader = 0;
-                mWriter = Left;
-            }
+            Rewind();
 
             if (const UInt Room = Max(mMarker, Left, static_cast<UInt>(kMaxRead)); mData.GetSize() > Room)
             {
@@ -264,6 +256,17 @@ namespace ZyNetwork
                 return;
             }
 
+            Rewind();
+
+            if (const UInt Required = mWriter + Count; Required > mData.GetSize())
+            {
+                mData.Advance(Required - mData.GetSize());
+            }
+        }
+
+        /// \brief Slides whatever is waiting down to the front, so the room already taken is written over next.
+        ZY_INLINE void Rewind()
+        {
             if (const UInt Left = GetSize(); mReader > 0)
             {
                 if (Left > 0)
@@ -272,11 +275,6 @@ namespace ZyNetwork
                 }
                 mReader = 0;
                 mWriter = Left;
-            }
-
-            if (const UInt Required = mWriter + Count; Required > mData.GetSize())
-            {
-                mData.Advance(Required - mData.GetSize());
             }
         }
 

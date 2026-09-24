@@ -184,7 +184,7 @@ namespace ZyNetwork::UDP
         Pool<Peer, kMaxPeers>           mPeers;
         Pool<Flight, kMaxFlight>        mFlights;
         Table<Digest, Connection::Peer> mRegistry;
-        Sequence<Byte, kMaxRead>        mInbound;
+        Array<Byte, kMaxRead>           mInbound;
         Real64                          mClock;
         UInt                            mCursor;
     };

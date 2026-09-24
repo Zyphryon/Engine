@@ -30,7 +30,7 @@ namespace ZyNetwork
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnTick(Real64 Time)
+    void Service::OnTick(Real64 Delta)
     {
         ZY_PROFILE_SCOPE("Network::Tick");
 
@@ -147,7 +147,8 @@ namespace ZyNetwork
 
         const Retainer<Service> Self(this);
 
-        GetHost().GetService<ZyJob::Service>()->Dispatch(ZyJob::Lane::IO, [Self, Link, Origin, Transport, Listener, Server]
+        GetHost().GetService<ZyJob::Service>()->Dispatch(ZyJob::Lane::IO,
+            [Self, Link, Origin, Transport, Listener, Server]
         {
             Executor::Request Entry;
             Entry.Link      = Link;

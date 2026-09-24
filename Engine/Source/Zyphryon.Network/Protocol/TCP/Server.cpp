@@ -100,7 +100,15 @@ namespace ZyNetwork::TCP
 
             if (Event.Cause == Reason::None)
             {
-                Admit(Watcher, Event.Peer, Event.Origin, Output);
+                if (mState == State::Live)
+                {
+                    Admit(Watcher, Event.Peer, Event.Origin, Output);
+                }
+                else
+                {
+                    Socket Late = Event.Peer;
+                    Late.Close();
+                }
             }
 
             Invite(Watcher);

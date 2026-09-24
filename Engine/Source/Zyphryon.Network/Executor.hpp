@@ -35,7 +35,7 @@ namespace ZyNetwork
             /// The transport the endpoint carries.
             Transport         Transport = Transport::TCP;
 
-            /// Whether the endpoint accepts peers rather than reaching for one.
+            /// `true` when the endpoint accepts peers, `false` when it reaches for one.
             Bool              Server    = false;
 
             /// The resolved address the endpoint is opened against.
@@ -190,6 +190,24 @@ namespace ZyNetwork
         /// \brief Waits until the platform has given back every operation still out on the endpoints.
         void Settle();
 
+        /// \brief Takes back every close written down for an endpoint's slot before the endpoint arrived to be opened.
+        ///
+        /// \param Link The endpoint being opened.
+        /// \return `true` if the application closed this very endpoint while its address was being resolved.
+        Bool Revoke(Connection Link);
+
+        /// \brief Checks whether a close is written down for an endpoint that has not arrived to be opened yet.
+        ///
+        /// \param Link The endpoint to ask about.
+        /// \return `true` if the application closed it while its address was being resolved, `false` otherwise.
+        ZY_INLINE Bool IsRevoked(Connection Link) const
+        {
+            return mRevoked.Contains([Link](ConstRef<Connection> Entry)
+            {
+                return Entry == Link;
+            });
+        }
+
         /// \brief Gives every endpoint its moment, and lets go of the ones that ended and have gone quiet.
         ///
         /// \param Time The current time, in seconds.
@@ -219,5 +237,6 @@ namespace ZyNetwork
         Mailbox                                mReport;
         Outbox                                 mScratch;
         Sequence<Request>                      mAdmit;
+        Sequence<Connection>                   mRevoked;
     };
 }

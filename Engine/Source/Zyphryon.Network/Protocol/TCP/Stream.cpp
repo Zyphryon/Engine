@@ -25,7 +25,8 @@ namespace ZyNetwork::TCP
         : Channel { Link, Address, Listener },
           mExpiry  { 0.0 },
           mProbe   { 0.0 },
-          mCompact { 0.0 }
+          mCompact { 0.0 },
+          mTrim    { 0.0 }
     {
     }
 
@@ -33,12 +34,9 @@ namespace ZyNetwork::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Stream::Stream(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener, ConstRef<Socket> Socket)
-        : Channel { Link, Address, Listener },
-          mSocket { Socket },
-          mExpiry  { 0.0 },
-          mProbe   { 0.0 },
-          mCompact { 0.0 }
+        : Stream { Link, Address, Listener }
     {
+        mSocket = Socket;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -154,19 +152,19 @@ namespace ZyNetwork::TCP
             }
             else if (mState == State::Live && Time >= mProbe)
             {
-                mOutbound.Frame(1 + sizeof(Time));
-                mOutbound.Append(ZyEnum::Cast(Tag::Ping));
-                mOutbound.Append(ConstSpan(reinterpret_cast<ConstPtr<Byte>>(AddressOf(Time)), sizeof(Time)));
+                Enqueue(Tag::Ping, ConstSpan(reinterpret_cast<ConstPtr<Byte>>(AddressOf(Time)), sizeof(Time)));
 
                 mProbe = Time + Budget / 3.0;
             }
         }
 
         // Given back only while nothing is out on it, since a write in flight is reading straight out of it.
-        if (Time >= mCompact && !IsAwaiting(Operation::Send))
+        if (Time >= mTrim && !IsAwaiting(Operation::Send))
         {
             mTransmit.Compact();
             mOutbound.Compact();
+            
+            mTrim = Time + kMaxHoard;
         }
 
         Drain(Watcher);
@@ -185,9 +183,7 @@ namespace ZyNetwork::TCP
                 return;
             }
 
-            mOutbound.Frame(static_cast<UInt32>(Message.GetSize()) + 1);
-            mOutbound.Append(ZyEnum::Cast(Tag::Message));
-            mOutbound.Append(Message);
+            Enqueue(Tag::Message, Message);
 
             mStats.Pending = mTransmit.GetSize() + mOutbound.GetSize();
         }
@@ -222,6 +218,16 @@ namespace ZyNetwork::TCP
     {
         Metrics = mStats;
         Origin  = mAddress;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Stream::Enqueue(Tag Kind, ConstSpan<Byte> Payload)
+    {
+        mOutbound.Frame(static_cast<UInt32>(Payload.GetSize()) + 1);
+        mOutbound.Append(ZyEnum::Cast(Kind));
+        mOutbound.Append(Payload);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -303,9 +309,7 @@ namespace ZyNetwork::TCP
                     return;
                 }
 
-                mOutbound.Frame(static_cast<UInt32>(Frame.GetSize()));
-                mOutbound.Append(ZyEnum::Cast(Tag::Pong));
-                mOutbound.Append(ConstSpan(Frame.GetData() + 1, Frame.GetSize() - 1));
+                Enqueue(Tag::Pong, ConstSpan(Frame.GetData() + 1, Frame.GetSize() - 1));
 
                 Drain(Watcher);
                 break;

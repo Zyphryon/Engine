@@ -51,7 +51,7 @@ namespace ZyNetwork
               mState    { State::Latent },
               mCause    { Reason::Closed },
               mAwaiting { 0u },
-              mTimeout  { 10.0 },
+              mTimeout  { kMaxSilence },
               mAddress  { Address },
               mListener { Listener }
         {
@@ -162,7 +162,7 @@ namespace ZyNetwork
         /// \brief Records whether an operation reached the platform at all.
         ///
         /// \param Kind    The operation that was posted.
-        /// \param Success The answer to whether the platform took it.
+        /// \param Success `true` if the platform took it, `false` if it never reached the platform.
         ZY_INLINE constexpr void Await(Operation Kind, Bool Success)
         {
             mAwaiting = SetOrClearBit(mAwaiting, 1u << ZyEnum::Cast(Kind), Success);

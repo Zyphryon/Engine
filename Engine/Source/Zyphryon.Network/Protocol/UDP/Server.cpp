@@ -261,7 +261,7 @@ namespace ZyNetwork::UDP
 
     void Server::Forget(ConstRef<Peer> Entry)
     {
-        mRegistry.Erase(Digest(Hash(Entry.Remote)));
+        mRegistry.Erase(Digest(Entry.Remote.Hash()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

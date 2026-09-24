@@ -21,7 +21,7 @@
 
 namespace ZyNetwork
 {
-    /// \brief Names every endpoint the application opens, and speaks for them on the application's own thread.
+    /// \brief Represents the network layer, naming every endpoint and speaking for them on the application's thread.
     class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
@@ -33,8 +33,8 @@ namespace ZyNetwork
 
         /// \brief Tells the application everything the endpoints have had to say since the last frame.
         ///
-        /// \param Time The current time in seconds.
-        void OnTick(Real64 Time) override;
+        /// \param Delta The elapsed time in seconds since the previous tick.
+        void OnTick(Real64 Delta) override;
 
         /// \brief Ends every endpoint and stops the thread that runs them.
         void OnTeardown() override;
@@ -94,7 +94,7 @@ namespace ZyNetwork
         /// \param Origin    The address the endpoint is opened against.
         /// \param Transport The transport the endpoint carries.
         /// \param Listener  The handler told about the endpoint and its peers.
-        /// \param Server    The answer to whether the endpoint accepts peers rather than reaching for one.
+        /// \param Server    `true` if the endpoint accepts peers, `false` if it reaches for one.
         /// \return The connection naming the endpoint, or an invalid connection if no room was left for it.
         Connection Open(ConstRef<Address> Origin, Transport Transport, ConstRetainer<Handler> Listener, Bool Server);
 
