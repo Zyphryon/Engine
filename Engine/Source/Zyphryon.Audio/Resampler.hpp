@@ -94,7 +94,7 @@ namespace ZyAudio
         ///
         /// \param Output   The destination buffer; its size is the maximum number of output frames to produce.
         /// \param Limit    The total output-frame length of the stream; production stops once the cursor reaches it.
-        /// \param Provider A callable that writes one interleaved source frame and returns `false` at end-of-stream.
+        /// \param Provider The callable that writes one interleaved source frame and returns `false` at end-of-stream.
         /// \return The number of output frames written into \p Output.
         template<typename Callable>
         ZY_INLINE UInt64 Generate(Span<Real32> Output, UInt64 Limit, AnyRef<Callable> Provider)
@@ -166,7 +166,8 @@ namespace ZyAudio
         /// \param Target   The sample rate to convert to, in Hz.
         /// \param Produced Receives the number of output frames written into the returned buffer.
         /// \return A newly allocated buffer holding the resampled interleaved PCM.
-        ZY_INLINE static Blob Convert(ConstSpan<Real32> Input, UInt16 Stride, UInt64 Frames, UInt32 Source, UInt32 Target, Ref<UInt64> Produced)
+        ZY_INLINE static Blob Convert(
+            ConstSpan<Real32> Input, UInt16 Stride, UInt64 Frames, UInt32 Source, UInt32 Target, Ref<UInt64> Produced)
         {
             const UInt64 Total  = Estimate(Frames, Source, Target);
             Blob         Result = Blob::Allocate<Real32>(Total * Stride);

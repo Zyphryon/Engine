@@ -28,11 +28,11 @@ namespace ZyAudio
 
         /// \brief Constructs a spatializer with default parameters.
         ZY_INLINE Spatializer()
-            : mRight             { Vector3::UnitX() },
-              mForward           { -Vector3::UnitZ() },
-              mListenerHalfInner { kPI<Real32> },
-              mListenerHalfOuter { kPI<Real32> },
-              mListenerGain      { 1.0f }
+            : mRight      { Vector3::UnitX() },
+              mForward    { -Vector3::UnitZ() },
+              mInnerAngle { Angle::FromDegrees(360.0f) },
+              mOuterAngle { Angle::FromDegrees(360.0f) },
+              mOuterGain  { 1.0f }
         {
         }
 
@@ -55,9 +55,9 @@ namespace ZyAudio
         /// \param OuterGain  The gain applied outside the outer cone (range [0, 1]).
         ZY_INLINE void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
         {
-            mListenerHalfInner = InnerAngle.GetRadians() * 0.5f;
-            mListenerHalfOuter = OuterAngle.GetRadians() * 0.5f;
-            mListenerGain      = OuterGain;
+            mInnerAngle = InnerAngle;
+            mOuterAngle = OuterAngle;
+            mOuterGain  = OuterGain;
         }
 
         /// \brief Computes the stereo placement of a source relative to the current listener.
@@ -76,8 +76,8 @@ namespace ZyAudio
         Vector3 mPosition;
         Vector3 mRight;
         Vector3 mForward;
-        Real32  mListenerHalfInner;
-        Real32  mListenerHalfOuter;
-        Real32  mListenerGain;
+        Angle   mInnerAngle;
+        Angle   mOuterAngle;
+        Real32  mOuterGain;
     };
 }

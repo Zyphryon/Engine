@@ -31,14 +31,14 @@ namespace ZyAudio
         /// The fixed Web Audio render quantum: 128 interleaved frames per worklet process call.
         static constexpr UInt32 kBlock = 128;
 #else
-        /// Frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
+        /// The frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
         static constexpr UInt32 kBlock = kMixerPeriod;
 #endif
 
         /// The render callback the service installs; the mixer fills \c Mix through it each block.
         Driver::Callback Callback;
 
-        /// Interleaved stereo scratch the mixer fills each block before it is handed to Web Audio.
+        /// The interleaved stereo scratch the mixer fills each block before it is handed to Web Audio.
         Real32           Mix[kBlock * kMixerStride];
 
 #if defined(ZY_WEB_THREAD)
@@ -46,16 +46,16 @@ namespace ZyAudio
         /// The stack size, in bytes, handed to the dedicated audio worklet thread.
         static constexpr UInt32 kStackSize = 64 * 1024;
 
-        /// Handle to the Web Audio context that owns the worklet graph.
+        /// The handle to the Web Audio context that owns the worklet graph.
         EMSCRIPTEN_WEBAUDIO_T Context = 0;
 
-        /// Handle to the worklet node that drives the mixer render callback.
+        /// The handle to the worklet node that drives the mixer render callback.
         EMSCRIPTEN_WEBAUDIO_T Node    = 0;
 
-        /// Signals the worklet callback to render audio; \c false makes it emit silence.
+        /// `true` to have the worklet render audio, `false` to have it emit silence.
         Atomic<Bool>          Running = false;
 
-        /// Dedicated stack for the audio worklet thread (must stay alive for the driver's lifetime).
+        /// The dedicated stack for the audio worklet thread, alive for as long as the driver is.
         ZY_ALIGN(16) Byte     Stack[kStackSize];
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -173,10 +173,10 @@ namespace ZyAudio
 
 #else
 
-        /// Seconds of audio kept scheduled ahead of the context clock to absorb main-loop jitter.
+        /// The seconds of audio kept scheduled ahead of the context clock to absorb main-loop jitter.
         static constexpr Real64 kLookahead = 0.150;
 
-        /// Context-clock time, in seconds, up to which audio blocks have already been scheduled.
+        /// The context-clock time, in seconds, up to which audio blocks have already been scheduled.
         Real64 Scheduled = 0.0;
 
 #endif

@@ -75,7 +75,7 @@ namespace ZyAudio
         const Vector3 Delta    = Position - mPosition;
         const Real32  Distance = Delta.GetLength();
 
-        // Sources at the listener's position collapse to an equal-power centered image.
+        // A source on top of the listener has no direction, so it plays centered.
         if (Distance < kEpsilon<Real32>)
         {
             return Vector2(0.70710678f, 0.70710678f);
@@ -83,25 +83,30 @@ namespace ZyAudio
 
         const Vector3 Normal = Delta / Distance;
 
-        // Distance attenuation.
+        // Fade with distance.
         Real32 Attenuation = Attenuate(
             Emitter.GetAttenuation(), Distance, Emitter.GetInnerRadius(), Emitter.GetOuterRadius());
 
-        // Emitter cone: angle between the source's forward axis and the direction toward the listener.
+        // Quieter when the source faces away from the listener.
         const Real32 EmitterCos   = Clamp(Vector3::Dot(Forward, -Normal), -1.0f, 1.0f);
         const Real32 EmitterAngle = Angle::FromCosine(EmitterCos).GetRadians();
+
         Attenuation *= Cone(
             EmitterAngle,
             Emitter.GetInnerAngle().GetRadians() * 0.5f,
             Emitter.GetOuterAngle().GetRadians() * 0.5f,
             Emitter.GetOuterGain());
 
-        // Listener cone: angle between the listener's forward axis and the direction toward the source.
+        // Quieter when the listener faces away from the source.
         const Real32 ListenerCos   = Clamp(Vector3::Dot(mForward, Normal), -1.0f, 1.0f);
         const Real32 ListenerAngle = Angle::FromCosine(ListenerCos).GetRadians();
-        Attenuation *= Cone(ListenerAngle, mListenerHalfInner, mListenerHalfOuter, mListenerGain);
+        Attenuation *= Cone(
+            ListenerAngle,
+            mInnerAngle.GetRadians() * 0.5f,
+            mOuterAngle.GetRadians() * 0.5f,
+            mOuterGain);
 
-        // Constant-power stereo pan from the source's position along the listener's right axis.
+        // Pan left or right, keeping the same loudness across the sweep.
         const Real32 Pan = Clamp((Vector3::Dot(Normal, mRight) + 1.0f) * 0.5f, 0.0f, 1.0f);
         return Vector2(Sqrt(1.0f - Pan) * Attenuation, Sqrt(Pan) * Attenuation);
     }

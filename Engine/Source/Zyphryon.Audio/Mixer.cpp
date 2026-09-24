@@ -94,7 +94,7 @@ namespace ZyAudio
             Offset += Count;
         }
 
-        /// Frees voices that finished during the current render and reports why each one ended.
+        // Free the voices that finished this render and report why each one ended.
         mVoices.ForEach([this](Ref<Voice> Voice)
         {
             if (Voice.Finished && mCompletions.Push(Completion(Voice.Handle, Voice.Reason)))

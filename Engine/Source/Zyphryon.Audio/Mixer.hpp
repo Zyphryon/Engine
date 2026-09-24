@@ -212,8 +212,8 @@ namespace ZyAudio
         /// \brief Reads a voice's decoded PCM into planar scratch, handling looping (audio thread).
         ///
         /// \param Voice  The voice to read from.
-        /// \param Left   Destination buffer for the left channel, or for the image of a spatial voice.
-        /// \param Right  Destination buffer for the right channel, left untouched by a spatial voice.
+        /// \param Left   Receives the left channel, or the whole image of a spatial voice.
+        /// \param Right  Receives the right channel, left untouched by a spatial voice.
         /// \param Frames The number of frames to read.
         /// \return The number of frames actually read; fewer than \p Frames indicates the stream ended.
         UInt32 Read(Ref<Voice> Voice, Ptr<Real32> Left, Ptr<Real32> Right, UInt32 Frames);
@@ -272,10 +272,10 @@ namespace ZyAudio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ZY_ALIGN(16) Array<Real32, kMixerBlock>        mMasterLeft;
-        ZY_ALIGN(16) Array<Real32, kMixerBlock>        mMasterRight;
-        ZY_ALIGN(16) Array<Real32, kMixerBlock>        mScratchLeft;
-        ZY_ALIGN(16) Array<Real32, kMixerBlock>        mScratchRight;
-        Array<Real32, kMixerBlock * kMixerStride>      mDecode;
+        ZY_ALIGN(16) Array<Real32, kMixerBlock>          mMasterLeft;
+        ZY_ALIGN(16) Array<Real32, kMixerBlock>          mMasterRight;
+        ZY_ALIGN(16) Array<Real32, kMixerBlock>          mScratchLeft;
+        ZY_ALIGN(16) Array<Real32, kMixerBlock>          mScratchRight;
+        Array<Real32, kMixerBlock * kMixerStride>        mDecode;
     };
 }

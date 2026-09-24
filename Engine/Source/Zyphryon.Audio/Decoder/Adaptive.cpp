@@ -136,6 +136,35 @@ namespace ZyAudio::Codec
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    UInt8 Adaptive::Compress(Ref<Channel> State, SInt16 Value)
+    {
+        SInt32 Delta  = Value - State.Predictor;
+        UInt8  Nibble = 0;
+
+        if (Delta < 0)
+        {
+            Nibble = 0x8;
+            Delta  = -Delta;
+        }
+
+        SInt32 Size = kStepTable[State.Step];
+
+        for (UInt8 Bit = 0x4; Bit > 0; Bit >>= 1, Size >>= 1)
+        {
+            if (Delta >= Size)
+            {
+                Nibble |= Bit;
+                Delta  -= Size;
+            }
+        }
+
+        Expand(State, Nibble);
+        return Nibble;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Adaptive::Prime(UInt64 Block)
     {
         for (UInt16 Index = 0; Index < mStride; ++Index)

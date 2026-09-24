@@ -27,32 +27,19 @@ namespace ZyAudio::Codec
     public:
 
         /// \brief The number of frames one ADPCM block carries for a single channel.
-        static constexpr UInt32 kBlockFrames   = 512;
+        static constexpr UInt32 kBlockFrames = 512;
 
         /// \brief The bytes one ADPCM block occupies for a single channel.
-        static constexpr UInt32 kBlockStride   = 4 + kBlockFrames / 2;
+        static constexpr UInt32 kBlockStride = 4 + kBlockFrames / 2;
 
-        /// \brief The step index adjustment each nibble applies, as defined by IMA ADPCM.
-        static constexpr SInt32 kStepIndex[16] =
+        /// \brief Holds the state one channel's decoder carries from each sample to the next.
+        struct Channel final
         {
-            -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8
-        };
+            /// The most recently reconstructed sample.
+            SInt32 Predictor = 0;
 
-        /// \brief The largest index the step table accepts.
-        static constexpr SInt32 kStepLimit     = 88;
-
-        /// \brief The quantiser step each index selects, as defined by IMA ADPCM.
-        static constexpr SInt32 kStepTable[89] =
-        {
-            7,     8,     9,     10,    11,    12,    13,    14,    16,    17,
-            19,    21,    23,    25,    28,    31,    34,    37,    41,    45,
-            50,    55,    60,    66,    73,    80,    88,    97,    107,   118,
-            130,   143,   157,   173,   190,   209,   230,   253,   279,   307,
-            337,   371,   408,   449,   494,   544,   598,   658,   724,   796,
-            876,   963,   1060,  1166,  1282,  1411,  1552,  1707,  1878,  2066,
-            2272,  2499,  2749,  3024,  3327,  3660,  4026,  4428,  4871,  5358,
-            5894,  6484,  7132,  7845,  8630,  9493,  10442, 11487, 12635, 13899,
-            15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
+            /// The index into the step table the next nibble is scaled by.
+            SInt32 Step      = 0;
         };
 
     public:
@@ -80,16 +67,38 @@ namespace ZyAudio::Codec
         /// \see Decoder::Skip(UInt64)
         UInt64 Skip(UInt64 Frames) override;
 
+    public:
+
+        /// \brief Encodes one sample as four bits, updating the channel just as decoding them would.
+        ///
+        /// \param State The channel state to advance.
+        /// \param Value The sample to quantize.
+        /// \return The four bits that encode the sample.
+        static UInt8 Compress(Ref<Channel> State, SInt16 Value);
+
     private:
 
-        /// \brief Holds the state one channel's decoder carries from each sample to the next.
-        struct Channel final
+        /// \brief The step index adjustment each nibble applies, as defined by IMA ADPCM.
+        static constexpr SInt32 kStepIndex[16] =
         {
-            /// The most recently reconstructed sample.
-            SInt32 Predictor = 0;
+            -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8
+        };
 
-            /// The index into the step table the next nibble is scaled by.
-            SInt32 Step      = 0;
+        /// \brief The largest index the step table accepts.
+        static constexpr SInt32 kStepLimit     = 88;
+
+        /// \brief The quantiser step each index selects, as defined by IMA ADPCM.
+        static constexpr SInt32 kStepTable[89] =
+        {
+            7,     8,     9,     10,    11,    12,    13,    14,    16,    17,
+            19,    21,    23,    25,    28,    31,    34,    37,    41,    45,
+            50,    55,    60,    66,    73,    80,    88,    97,    107,   118,
+            130,   143,   157,   173,   190,   209,   230,   253,   279,   307,
+            337,   371,   408,   449,   494,   544,   598,   658,   724,   796,
+            876,   963,   1060,  1166,  1282,  1411,  1552,  1707,  1878,  2066,
+            2272,  2499,  2749,  3024,  3327,  3660,  4026,  4428,  4871,  5358,
+            5894,  6484,  7132,  7845,  8630,  9493,  10442, 11487, 12635, 13899,
+            15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
         };
 
         /// \brief Restarts every channel from the preamble of the given block.
