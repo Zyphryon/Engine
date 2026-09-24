@@ -73,6 +73,8 @@ namespace ZyInput
             }
         }
 
+        mMapping.Update(mKeyboard, mMouse);
+
         // Processes high-level input events for each device.
         for (ConstRef<Event> Event : Frame)
         {
@@ -86,6 +88,11 @@ namespace ZyInput
             }
             Invoke(Event);
         }
+
+        mMapping.ForEachChange([this](UInt64 Action, ZyInput::Action State)
+        {
+            OnAction.Propagate(Action, State);
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

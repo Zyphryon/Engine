@@ -34,6 +34,8 @@ namespace ZyInput
         ZY_INLINE Mouse()
             : mThisX       { 0 },
               mThisY       { 0 },
+              mThisDeltaX  { 0 },
+              mThisDeltaY  { 0 },
               mThisScrollX { 0 },
               mThisScrollY { 0 }
         {
@@ -67,6 +69,22 @@ namespace ZyInput
         ZY_INLINE Real32 GetY() const
         {
             return mThisY;
+        }
+
+        /// \brief Gets how far the mouse moved along the X axis during the current frame.
+        ///
+        /// \return The sum of every move along the X axis since the frame began.
+        ZY_INLINE Real32 GetDeltaX() const
+        {
+            return mThisDeltaX;
+        }
+
+        /// \brief Gets how far the mouse moved along the Y axis during the current frame.
+        ///
+        /// \return The sum of every move along the Y axis since the frame began.
+        ZY_INLINE Real32 GetDeltaY() const
+        {
+            return mThisDeltaY;
         }
 
         /// \brief Gets the current scroll offset along the X axis.
@@ -119,6 +137,8 @@ namespace ZyInput
 
         Real32              mThisX;
         Real32              mThisY;
+        Real32              mThisDeltaX;
+        Real32              mThisDeltaY;
         Real32              mThisScrollX;
         Real32              mThisScrollY;
         Bitset<kMaxButtons> mLastButtons;

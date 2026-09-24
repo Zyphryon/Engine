@@ -23,6 +23,8 @@ namespace ZyInput
 
     void Mouse::Begin()
     {
+        mThisDeltaX  = 0.0f;
+        mThisDeltaY  = 0.0f;
         mThisScrollX = 0.0f;
         mThisScrollY = 0.0f;
         mLastButtons = mThisButtons;
@@ -36,8 +38,10 @@ namespace ZyInput
         switch (Event.Kind)
         {
         case Event::Type::MouseMove:
-            mThisX = Event.MouseAxis.X;
-            mThisY = Event.MouseAxis.Y;
+            mThisX       = Event.MouseAxis.X;
+            mThisY       = Event.MouseAxis.Y;
+            mThisDeltaX += Event.MouseAxis.DeltaX;
+            mThisDeltaY += Event.MouseAxis.DeltaY;
             break;
         case Event::Type::MouseScroll:
             mThisScrollX += Event.MouseScroll.DeltaX;
@@ -61,6 +65,8 @@ namespace ZyInput
     {
         mThisX       = 0.0f;
         mThisY       = 0.0f;
+        mThisDeltaX  = 0.0f;
+        mThisDeltaY  = 0.0f;
         mThisScrollX = 0.0f;
         mThisScrollY = 0.0f;
         mLastButtons.Reset();

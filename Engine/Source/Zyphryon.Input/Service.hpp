@@ -12,8 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Keyboard.hpp"
-#include "Mouse.hpp"
+#include "Mapping.hpp"
 #include "Touch.hpp"
 #include "Zyphryon.Engine/Subsystem.hpp"
 
@@ -60,6 +59,9 @@ namespace ZyInput
 
         /// \brief Event triggered when the system takes a touch away before it was lifted.
         MulticastDelegate<Bool(UInt32)>                                 OnTouchCancel;
+
+        /// \brief Event triggered when a bound action is pressed or released, after the frame's other events.
+        MulticastDelegate<Bool(UInt64, Action)>                         OnAction;
 
         /// \brief Event triggered when the window gains or loses focus.
         MulticastDelegate<Bool(Bool)>                                   OnWindowFocus;
@@ -240,6 +242,50 @@ namespace ZyInput
             return mTouch.Find(ID);
         }
 
+        /// \brief Gets the actions and the bindings that drive them.
+        ///
+        /// \return The mapping, read every frame after the devices update.
+        ZY_INLINE Ref<Mapping> GetMapping()
+        {
+            return mMapping;
+        }
+
+        /// \brief Checks if an action was pressed in the current frame.
+        ///
+        /// \param Action The identifier of the action, from \ref Mapping::Identify.
+        /// \return `true` if the action went from released to held this frame, otherwise `false`.
+        ZY_INLINE Bool IsActionPressed(UInt64 Action) const
+        {
+            return mMapping.IsPressed(Action);
+        }
+
+        /// \brief Checks if an action is being held down.
+        ///
+        /// \param Action The identifier of the action, from \ref Mapping::Identify.
+        /// \return `true` if the action is held this frame, otherwise `false`.
+        ZY_INLINE Bool IsActionHeld(UInt64 Action) const
+        {
+            return mMapping.IsHeld(Action);
+        }
+
+        /// \brief Checks if an action was released in the current frame.
+        ///
+        /// \param Action The identifier of the action, from \ref Mapping::Identify.
+        /// \return `true` if the action went from held to released this frame, otherwise `false`.
+        ZY_INLINE Bool IsActionReleased(UInt64 Action) const
+        {
+            return mMapping.IsReleased(Action);
+        }
+
+        /// \brief Gets the value an action reads in the current frame.
+        ///
+        /// \param Action The identifier of the action, from \ref Mapping::Identify.
+        /// \return The action's value, zero when nothing bound to it is active.
+        ZY_INLINE Real32 GetActionValue(UInt64 Action) const
+        {
+            return mMapping.GetValue(Action);
+        }
+
     private:
 
         /// \brief Resets the input state when the application window loses focus.
@@ -254,5 +300,6 @@ namespace ZyInput
         Mouse           mMouse;
         Keyboard        mKeyboard;
         Touch           mTouch;
+        Mapping         mMapping;
     };
 }

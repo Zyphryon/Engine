@@ -31,7 +31,6 @@ namespace ZyJob
         /// \brief Constructs a future no job has been launched into.
         ZY_INLINE Future()
             : mService { nullptr },
-              mJob     { },
               mValue   { }
         {
         }
