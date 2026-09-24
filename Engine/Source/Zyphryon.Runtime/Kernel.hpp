@@ -22,12 +22,12 @@
 
 namespace ZyRuntime
 {
-    /// \brief Entry point and main coordinator of the application runtime.
+    /// \brief Represents the application itself, bringing the services up, running the frame loop and tearing them down.
     class ZY_API Kernel : public ZyEngine::Subsystem::Host
     {
     public:
 
-        /// \brief Default constructor.
+        /// \brief Constructs a kernel that is not running yet.
         Kernel();
 
         /// \brief Destructs the kernel and releases all associated resources.
@@ -98,16 +98,31 @@ namespace ZyRuntime
 
     private:
 
-        /// \brief Performs internal setup before the application loop begins.
-        void Initialize();
+        /// \brief Brings every service up, attaches the modules, then initializes the application.
+        ///
+        /// \param Modules The modules to attach, kept by the kernel once they are.
+        /// \return `true` once the application has been initialized, `false` when a service it needs failed first.
+        Bool Initialize(AnyRef<ZyEngine::Modules> Modules);
 
         /// \brief Advances the application by one frame.
         ///
         /// \return `true` if the application should continue running, `false` if termination was requested.
         Bool Tick();
 
-        /// \brief Performs internal cleanup after the application loop ends.
+        /// \brief Terminates the application, then shuts every service down.
         void Terminate();
+
+        /// \brief Detaches the modules that were attached and tears down every service that was registered.
+        void Shutdown();
+
+#if defined(ZY_PLATFORM_WEB)
+
+        /// \brief Advances one frame from the browser's main loop, tearing everything down once the kernel stops.
+        ///
+        /// \param Instance The kernel being run.
+        static void OnFrame(Ptr<void> Instance);
+
+#endif
 
     private:
 

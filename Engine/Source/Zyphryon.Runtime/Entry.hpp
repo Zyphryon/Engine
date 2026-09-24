@@ -37,7 +37,7 @@ namespace ZyRuntime
     template<typename Type>
     SInt32 Launch(UInt Count, ConstPtr<ConstPtr<Char>> Arguments)
     {
-        static_assert(IsDerived<Kernel, Type>, "ZY_APPLICATION expects a type that derives from Runtime::Kernel");
+        static_assert(IsDerived<Kernel, Type>, "ZY_APPLICATION expects a type that derives from ZyRuntime::Kernel");
 
         Type Application;
         Application.Run(Count, Arguments, ZyRegisterModules());

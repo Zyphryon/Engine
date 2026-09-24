@@ -20,7 +20,7 @@
 
 namespace ZyRuntime
 {
-    /// \brief Encapsulates the parameters the engine is brought up with, before any service exists.
+    /// \brief Holds the parameters the engine is brought up with, before any service exists.
     class ZY_API Startup final
     {
     public:
@@ -193,7 +193,7 @@ namespace ZyRuntime
         /// \brief Gets the selected graphics adapter.
         ///
         /// \return The identifier of the graphics adapter.
-        ZY_INLINE Text GetGraphicsDevice() const
+        ZY_INLINE Text GetGraphicsAdapter() const
         {
             return mGraphicsAdapter;
         }

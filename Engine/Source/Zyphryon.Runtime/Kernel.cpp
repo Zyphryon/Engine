@@ -78,42 +78,41 @@ namespace ZyRuntime
     {
         ZY_PROFILE_THREAD("Main Thread");
 
-        mModules = Move(Modules);
-
         // Parse the command line first, so the application can consult it while it configures itself.
         mEnvironment.Parse(Count, Arguments);
 
         // Let the application overwrite the defaults before any service reads them.
         OnConfigure(mStartup);
 
-        // Initialize all services, modules, and the application before entering the main loop.
-        Initialize();
+        // A service the application needs failed, so the application never started and is not told to stop.
+        if (!Initialize(Move(Modules)))
+        {
+            Shutdown();
+            return;
+        }
 
         // Capture the current time in seconds using high-resolution nanosecond timer.
         mTimer.Reset();
 
 #if !defined(ZY_PLATFORM_WEB)
 
-        while (Tick())
+        // An application that failed to initialize is terminated without ever being ticked.
+        while (mAlive && Tick())
         {
             // Intentionally empty - all logic runs inside Tick()
         }
-        Terminate();
 
 #else
 
-        const auto OnLoop = [](Ptr<void> Instance)
+        // The browser owns the loop from here, and never returns to this frame.
+        if (mAlive)
         {
-            const Ptr<Kernel> Executor = static_cast<Ptr<Kernel>>(Instance);
-
-            if (const Bool Continue = Executor->Tick(); !Continue)
-            {
-                Executor->Terminate();
-            }
-        };
-        emscripten_set_main_loop_arg(OnLoop, this, 0, true);
+            emscripten_set_main_loop_arg(& Kernel::OnFrame, this, 0, true);
+        }
 
 #endif
+
+        Terminate();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -127,7 +126,7 @@ namespace ZyRuntime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Kernel::Initialize()
+    Bool Kernel::Initialize(AnyRef<ZyEngine::Modules> Modules)
     {
 #if !defined(ZY_MODE_HEADLESS)
 
@@ -141,8 +140,8 @@ namespace ZyRuntime
             mStartup.IsWindowBorderless(),
             mStartup.IsWindowFullscreen()))
         {
-            LOG_D("Kernel: Failed to initialize platform service");
-            return;
+            LOG_E("Kernel: Failed to initialize platform service");
+            return false;
         }
 
         LOG_I("Kernel: Creating input service");
@@ -184,11 +183,14 @@ namespace ZyRuntime
 #endif
 
         // Attaches external modules to the engine, allowing them to register their own services and systems.
-        for (Ref<Unique<ZyEngine::Module>> Module : mModules)
+        for (Ref<Unique<ZyEngine::Module>> Module : Modules)
         {
             LOG_I("Kernel: Attaching module '{0}' v.{1}", Module->GetName(), Module->GetVersion());
             Module->OnAttach(* this);
         }
+
+        // Only attached modules are kept, so a startup that fails before this point has none to detach.
+        mModules = Move(Modules);
 
 #if !defined(ZY_MODE_HEADLESS)
 
@@ -211,10 +213,19 @@ namespace ZyRuntime
                 : ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB;
         }
 
-        Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig);
+        if (!Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig))
+        {
+            LOG_E("Kernel: Failed to initialize graphic service");
+            return false;
+        }
 
         LOG_I("Kernel: Initializing audio service");
-        Audio->Initialize(mStartup.GetAudioAdapter());
+
+        // Plenty of machines have no output device, and a game without sound still plays.
+        if (!Audio->Initialize(mStartup.GetAudioAdapter()))
+        {
+            LOG_W("Kernel: Failed to initialize audio service, continuing without sound");
+        }
 
 #endif
 
@@ -227,6 +238,8 @@ namespace ZyRuntime
         Window.SetVisible(mAlive);
 
 #endif
+
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -254,6 +267,14 @@ namespace ZyRuntime
         // Invoke the application-defined shutdown logic before services are torn down.
         OnTerminate();
 
+        Shutdown();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Kernel::Shutdown()
+    {
         // Detaches external modules to the engine, allowing them to clean up any resources they allocated.
         for (Ref<Unique<ZyEngine::Module>> Module : mModules)
         {
@@ -273,6 +294,23 @@ namespace ZyRuntime
 
 #endif
     }
+
+#if defined(ZY_PLATFORM_WEB)
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Kernel::OnFrame(Ptr<void> Instance)
+    {
+        const Ptr<Kernel> Executor = static_cast<Ptr<Kernel>>(Instance);
+
+        if (!Executor->Tick())
+        {
+            Executor->Terminate();
+        }
+    }
+
+#endif
 
 #if !defined(ZY_MODE_HEADLESS)
 
@@ -302,18 +340,17 @@ namespace ZyRuntime
 
     Bool Kernel::OnWindowFocus(Bool Focused)
     {
-        if (mStartup.IsAudioPauseOnFocusLost())
+        ConstRetainer<ZyAudio::Service> Audio = GetService<ZyAudio::Service>();
+
+        if (Audio && mStartup.IsAudioPauseOnFocusLost())
         {
-            if (ConstRetainer<ZyAudio::Service> Audio = GetService<ZyAudio::Service>())
+            if (Focused)
             {
-                if (Focused)
-                {
-                    Audio->Restore();
-                }
-                else
-                {
-                    Audio->Suspend();
-                }
+                Audio->Restore();
+            }
+            else
+            {
+                Audio->Suspend();
             }
         }
         return false;
