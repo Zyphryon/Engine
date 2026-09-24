@@ -31,7 +31,7 @@ namespace ZyJob
             /// The work to execute, cleared as soon as it returns so captures do not outlive the job.
             Task   Work;
 
-            /// Links the job into either its lane's queue or the successor chain of the job it depends on.
+            /// Links the job into the successor chain of the job it depends on.
             Slot   Next       = 0;
 
             /// Head of the chain of jobs that this one gates.

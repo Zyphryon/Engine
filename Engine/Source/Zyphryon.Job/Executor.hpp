@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Registry.hpp"
+#include "Types.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -24,9 +24,6 @@ namespace ZyJob
     class Executor final
     {
     public:
-
-        /// \brief Constructs an executor with an empty queue and no workers.
-        Executor();
 
         /// \brief Starts the workers that drain this executor.
         ///
@@ -50,38 +47,57 @@ namespace ZyJob
 
         /// \brief Appends a slot to the tail of the queue.
         ///
-        /// \param Jobs  The registry holding the link the queue threads slots through.
         /// \param Value The slot to enqueue.
-        void Push(Ref<Registry> Jobs, Slot Value);
+        ZY_INLINE void Push(Slot Value)
+        {
+            if (mQueue.IsFull())
+            {
+                mQueue.Compact();
+            }
+            mQueue.Append(Value);
+        }
 
         /// \brief Removes the slot at the head of the queue.
         ///
-        /// \param Jobs The registry holding the link the queue threads slots through.
         /// \return The dequeued slot, or `0` if the executor is empty.
-        Slot Pop(Ref<Registry> Jobs);
+        ZY_INLINE Slot Pop()
+        {
+            if (mQueue.IsEmpty())
+            {
+                return 0;
+            }
+
+            const Slot Value = mQueue.Peek();
+            mQueue.Pop();
+
+            // Rewinding once the queue runs dry keeps compaction for the rare queue that never empties.
+            if (mQueue.IsEmpty())
+            {
+                mQueue.Clear();
+            }
+            return Value;
+        }
 
         /// \brief Checks whether the executor holds no queued job.
         ///
         /// \return `true` if nothing is queued, otherwise `false`.
         ZY_INLINE Bool IsEmpty() const
         {
-            return mHead == 0;
+            return mQueue.IsEmpty();
         }
 
-        /// \brief Takes the whole queue at once, leaving the executor empty.
+        /// \brief Gets how many jobs are queued.
         ///
-        /// \note This is what keeps a drain bounded: work queued while the chain runs lands on the fresh queue.
-        ZY_INLINE Slot Drain()
+        /// \return The number of slots waiting to be taken.
+        ZY_INLINE UInt GetSize() const
         {
-            mTail = 0;
-            return Exchange(mHead, 0);
+            return mQueue.GetSize();
         }
 
         /// \brief Forgets every queued job without running it.
         ZY_INLINE void Clear()
         {
-            mHead = 0;
-            mTail = 0;
+            mQueue.Clear();
         }
 
         /// \brief Wakes one worker after a job was queued.
@@ -113,9 +129,8 @@ namespace ZyJob
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Slot             mHead;
-        Slot             mTail;
-        Gate             mGate;
-        Sequence<Thread> mThreads;
+        Spool<Slot, kMaxJobs> mQueue;
+        Gate                  mGate;
+        Sequence<Thread>      mThreads;
     };
 }

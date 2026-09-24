@@ -26,8 +26,7 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem { Host },
-          mResidue  { 0 }
+        : Subsystem { Host }
     {
 #if defined(ZY_HAS_THREADS)
         const UInt Cores = Max(1u, std::thread::hardware_concurrency());
@@ -57,28 +56,12 @@ namespace ZyJob
     {
         ZY_PROFILE_SCOPE("Job::Tick");
 
-        // What the last tick left over runs first, and only then whatever was queued since.
-        Slot Pending = mResidue;
+        // Only what was queued before the tick began runs now, so work a job queues waits for the next tick.
+        UInt Count;
 
         {
             Guard Guard(mMutex);
-
-            const Slot Queued = GetExecutor(Lane::Main).Drain();
-
-            if (Pending == 0)
-            {
-                Pending = Queued;
-            }
-            else if (Queued != 0)
-            {
-                Slot Last = Pending;
-
-                while (mRegistry[Last].Next != 0)
-                {
-                    Last = mRegistry[Last].Next;
-                }
-                mRegistry[Last].Next = Queued;
-            }
+            Count = GetExecutor(Lane::Main).GetSize();
         }
 
 #if !defined(ZY_HAS_THREADS)
@@ -87,23 +70,31 @@ namespace ZyJob
         const Real64          Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
 #endif
 
-        while (Pending != 0)
+        for (; Count > 0; --Count)
         {
-            const Slot Following = mRegistry[Pending].Next;
+            Slot Value;
 
-            Execute(Pending);
+            {
+                Guard Guard(mMutex);
+                Value = GetExecutor(Lane::Main).Pop();
+            }
 
-            Pending = Following;
+            // A helping wait inside a job may already have taken the rest, since without threads every lane is this one.
+            if (Value == 0)
+            {
+                break;
+            }
+
+            Execute(Value);
 
 #if !defined(ZY_HAS_THREADS)
-            if (Pending != 0 && Clock.GetSeconds() >= Deadline)
+            // What is left stays queued, and runs ahead of anything queued after it next tick.
+            if (Clock.GetSeconds() >= Deadline)
             {
                 break;
             }
 #endif
         }
-
-        mResidue = Pending;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -160,7 +151,7 @@ namespace ZyJob
 
                 if (Queued)
                 {
-                    GetExecutor(Actual).Push(mRegistry, Value);
+                    GetExecutor(Actual).Push(Value);
                 }
             }
             else
@@ -205,7 +196,7 @@ namespace ZyJob
             // Rather than idle, drain the lane this thread is allowed to run; this is what keeps a waiting
             // thread from wasting a core, and on a platform without workers it is the only thing that makes
             // progress at all.
-            if (const Slot Stolen = GetExecutor(Reconcile(Lane::Compute)).Pop(mRegistry); Stolen != 0)
+            if (const Slot Stolen = GetExecutor(Reconcile(Lane::Compute)).Pop(); Stolen != 0)
             {
                 Lock.unlock();
 
@@ -291,7 +282,7 @@ namespace ZyJob
                 const Slot Following = mRegistry[Next].Next;
                 const Lane Target    = mRegistry[Next].Target;
 
-                GetExecutor(Target).Push(mRegistry, Next);
+                GetExecutor(Target).Push(Next);
 
                 Woken[static_cast<UInt32>(Target)] = true;
 
@@ -337,7 +328,7 @@ namespace ZyJob
                     return;
                 }
 
-                Value = Source.Pop(mRegistry);
+                Value = Source.Pop();
             }
 
             if (Value != 0)
