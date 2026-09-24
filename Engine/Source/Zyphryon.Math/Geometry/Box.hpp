@@ -64,12 +64,8 @@ inline namespace ZyMath
         /// \param Other The source box to convert from.
         template<typename Base>
         ZY_INLINE constexpr explicit AnyBox(AnyBox<Base> Other)
-            : mMinimum { static_cast<Type>(Other.GetMinimumX()),
-                         static_cast<Type>(Other.GetMinimumY()),
-                         static_cast<Type>(Other.GetMinimumZ()) },
-              mMaximum { static_cast<Type>(Other.GetMaximumX()),
-                         static_cast<Type>(Other.GetMaximumY()),
-                         static_cast<Type>(Other.GetMaximumZ()) }
+            : mMinimum { AnyVector3<Type>(Other.GetMinimum()) },
+              mMaximum { AnyVector3<Type>(Other.GetMaximum()) }
         {
         }
 
@@ -78,9 +74,7 @@ inline namespace ZyMath
         /// \return `true` if the box is valid, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
-            return mMinimum.GetX() <= mMaximum.GetX() &&
-                   mMinimum.GetY() <= mMaximum.GetY() &&
-                   mMinimum.GetZ() <= mMaximum.GetZ();
+            return mMinimum.IsComponentWiseLessOrEqual(mMaximum);
         }
 
         /// \brief Checks if the box is approximately zero.
@@ -322,10 +316,7 @@ inline namespace ZyMath
         /// \return The point clamped to the box's boundaries.
         ZY_INLINE constexpr AnyVector3<Type> GetNearest(AnyVector3<Type> Point) const
         {
-            return AnyVector3<Type>(
-                ::Clamp(Point.GetX(), mMinimum.GetX(), mMaximum.GetX()),
-                ::Clamp(Point.GetY(), mMinimum.GetY(), mMaximum.GetY()),
-                ::Clamp(Point.GetZ(), mMinimum.GetZ(), mMaximum.GetZ()));
+            return AnyVector3<Type>::Clamp(Point, mMinimum, mMaximum);
         }
 
         /// \brief Expands the box by the given amount in all directions.
@@ -334,7 +325,7 @@ inline namespace ZyMath
         /// \return The expanded box.
         ZY_INLINE constexpr AnyBox Expand(Type Amount) const
         {
-            return AnyBox(mMinimum - AnyVector3<Type>(Amount), mMaximum + AnyVector3<Type>(Amount));
+            return Expand(Amount, Amount, Amount);
         }
 
         /// \brief Expands the box by the given amounts on each axis.
@@ -356,7 +347,7 @@ inline namespace ZyMath
         /// \return The contracted box.
         ZY_INLINE constexpr AnyBox Contract(Type Amount) const
         {
-            return AnyBox(mMinimum + AnyVector3<Type>(Amount), mMaximum - AnyVector3<Type>(Amount));
+            return AnyBox(mMinimum + Amount, mMaximum - Amount);
         }
 
         /// \brief Checks if this box completely contains another box.
@@ -365,9 +356,7 @@ inline namespace ZyMath
         /// \return `true` if this box contains the other, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(ConstRef<AnyBox> Other) const
         {
-            return mMinimum.GetX() <= Other.mMinimum.GetX() && mMaximum.GetX() >= Other.mMaximum.GetX() &&
-                   mMinimum.GetY() <= Other.mMinimum.GetY() && mMaximum.GetY() >= Other.mMaximum.GetY() &&
-                   mMinimum.GetZ() <= Other.mMinimum.GetZ() && mMaximum.GetZ() >= Other.mMaximum.GetZ();
+            return mMinimum.IsComponentWiseLessOrEqual(Other.mMinimum) && mMaximum.IsComponentWiseGreaterOrEqual(Other.mMaximum);
         }
 
         /// \brief Checks if this box contains a point.
@@ -378,9 +367,7 @@ inline namespace ZyMath
         /// \return `true` if the point is inside the box, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Type X, Type Y, Type Z) const
         {
-            return X >= mMinimum.GetX() && X < mMaximum.GetX() &&
-                   Y >= mMinimum.GetY() && Y < mMaximum.GetY() &&
-                   Z >= mMinimum.GetZ() && Z < mMaximum.GetZ();
+            return Contains(AnyVector3<Type>(X, Y, Z));
         }
 
         /// \brief Checks if this box contains a point.
@@ -389,7 +376,7 @@ inline namespace ZyMath
         /// \return `true` if the point is inside the box, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(AnyVector3<Type> Point) const
         {
-            return Contains(Point.GetX(), Point.GetY(), Point.GetZ());
+            return Point.IsComponentWiseGreaterOrEqual(mMinimum) && Point.IsComponentWiseLess(mMaximum);
         }
 
         /// \brief Checks if this box intersects with another box.
@@ -398,9 +385,7 @@ inline namespace ZyMath
         /// \return `true` if the two boxes intersect, `false` otherwise.
         ZY_INLINE constexpr Bool Test(AnyBox Other) const
         {
-            return mMinimum.GetX() < Other.mMaximum.GetX() && mMaximum.GetX() > Other.mMinimum.GetX() &&
-                   mMinimum.GetY() < Other.mMaximum.GetY() && mMaximum.GetY() > Other.mMinimum.GetY() &&
-                   mMinimum.GetZ() < Other.mMaximum.GetZ() && mMaximum.GetZ() > Other.mMinimum.GetZ();
+            return mMinimum.IsComponentWiseLess(Other.mMaximum) && mMaximum.IsComponentWiseGreater(Other.mMinimum);
         }
 
         /// \brief Checks if this box is equal to another box.
@@ -481,7 +466,7 @@ inline namespace ZyMath
         /// \return A new box with all coordinates scaled.
         ZY_INLINE constexpr AnyBox operator*(Type Scalar) const
         {
-            return AnyBox(mMinimum * AnyVector3<Type>(Scalar), mMaximum * AnyVector3<Type>(Scalar));
+            return AnyBox(mMinimum * Scalar, mMaximum * Scalar);
         }
 
         /// \brief Multiplies all coordinates of this box by a 3D vector.
@@ -499,9 +484,7 @@ inline namespace ZyMath
         /// \return A new box with all coordinates divided by the scalar.
         ZY_INLINE constexpr AnyBox operator/(Type Scalar) const
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            return AnyBox(mMinimum / AnyVector3<Type>(Scalar), mMaximum / AnyVector3<Type>(Scalar));
+            return AnyBox(mMinimum / Scalar, mMaximum / Scalar);
         }
 
         /// \brief Divides all coordinates of this box by a 3D vector.
@@ -510,10 +493,6 @@ inline namespace ZyMath
         /// \return A new box with coordinates divided per-axis.
         ZY_INLINE constexpr AnyBox operator/(AnyVector3<Type> Vector) const
         {
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
-
             return AnyBox(mMinimum / Vector, mMaximum / Vector);
         }
 
@@ -534,8 +513,8 @@ inline namespace ZyMath
         /// \return A reference to the updated box.
         ZY_INLINE constexpr Ref<AnyBox> operator+=(Type Scalar)
         {
-            mMinimum += AnyVector3<Type>(Scalar);
-            mMaximum += AnyVector3<Type>(Scalar);
+            mMinimum += Scalar;
+            mMaximum += Scalar;
             return (* this);
         }
 
@@ -567,8 +546,8 @@ inline namespace ZyMath
         /// \return A reference to the updated box.
         ZY_INLINE constexpr Ref<AnyBox> operator-=(Type Scalar)
         {
-            mMinimum -= AnyVector3<Type>(Scalar);
-            mMaximum -= AnyVector3<Type>(Scalar);
+            mMinimum -= Scalar;
+            mMaximum -= Scalar;
             return (* this);
         }
 
@@ -589,8 +568,8 @@ inline namespace ZyMath
         /// \return A reference to the updated box.
         ZY_INLINE constexpr Ref<AnyBox> operator*=(Type Scalar)
         {
-            mMinimum *= AnyVector3<Type>(Scalar);
-            mMaximum *= AnyVector3<Type>(Scalar);
+            mMinimum *= Scalar;
+            mMaximum *= Scalar;
             return (* this);
         }
 
@@ -611,10 +590,8 @@ inline namespace ZyMath
         /// \return A reference to the updated box.
         ZY_INLINE constexpr Ref<AnyBox> operator/=(Type Scalar)
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            mMinimum /= AnyVector3<Type>(Scalar);
-            mMaximum /= AnyVector3<Type>(Scalar);
+            mMinimum /= Scalar;
+            mMaximum /= Scalar;
             return (* this);
         }
 
@@ -624,10 +601,6 @@ inline namespace ZyMath
         /// \return A reference to the updated box.
         ZY_INLINE constexpr Ref<AnyBox> operator/=(AnyVector3<Type> Vector)
         {
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetZ()), "Division by zero (Z)");
-
             mMinimum /= Vector;
             mMaximum /= Vector;
             return (* this);
@@ -717,15 +690,8 @@ inline namespace ZyMath
         /// \return A canonicalized box.
         ZY_INLINE static constexpr AnyBox Canonicalize(AnyBox Source)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Min(Source.mMinimum.GetX(), Source.mMaximum.GetX()),
-                    ::Min(Source.mMinimum.GetY(), Source.mMaximum.GetY()),
-                    ::Min(Source.mMinimum.GetZ(), Source.mMaximum.GetZ())),
-                AnyVector3<Type>(
-                    ::Max(Source.mMinimum.GetX(), Source.mMaximum.GetX()),
-                    ::Max(Source.mMinimum.GetY(), Source.mMaximum.GetY()),
-                    ::Max(Source.mMinimum.GetZ(), Source.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Min(Source.mMinimum, Source.mMaximum),
+                          AnyVector3<Type>::Max(Source.mMinimum, Source.mMaximum));
         }
 
         /// \brief Gets the component-wise minimum of two boxes.
@@ -735,15 +701,8 @@ inline namespace ZyMath
         /// \return A box with the component-wise minimum values.
         ZY_INLINE static constexpr AnyBox Min(AnyBox First, AnyBox Second)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Min(First.mMinimum.GetX(), Second.mMinimum.GetX()),
-                    ::Min(First.mMinimum.GetY(), Second.mMinimum.GetY()),
-                    ::Min(First.mMinimum.GetZ(), Second.mMinimum.GetZ())),
-                AnyVector3<Type>(
-                    ::Min(First.mMaximum.GetX(), Second.mMaximum.GetX()),
-                    ::Min(First.mMaximum.GetY(), Second.mMaximum.GetY()),
-                    ::Min(First.mMaximum.GetZ(), Second.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Min(First.mMinimum, Second.mMinimum),
+                          AnyVector3<Type>::Min(First.mMaximum, Second.mMaximum));
         }
 
         /// \brief Gets the component-wise maximum of two boxes.
@@ -753,15 +712,8 @@ inline namespace ZyMath
         /// \return A box with the component-wise maximum values.
         ZY_INLINE static constexpr AnyBox Max(AnyBox First, AnyBox Second)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Max(First.mMinimum.GetX(), Second.mMinimum.GetX()),
-                    ::Max(First.mMinimum.GetY(), Second.mMinimum.GetY()),
-                    ::Max(First.mMinimum.GetZ(), Second.mMinimum.GetZ())),
-                AnyVector3<Type>(
-                    ::Max(First.mMaximum.GetX(), Second.mMaximum.GetX()),
-                    ::Max(First.mMaximum.GetY(), Second.mMaximum.GetY()),
-                    ::Max(First.mMaximum.GetZ(), Second.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Max(First.mMinimum, Second.mMinimum),
+                          AnyVector3<Type>::Max(First.mMaximum, Second.mMaximum));
         }
 
         /// \brief Gets a box with all coordinates floored to the nearest integer.
@@ -771,15 +723,7 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyBox Floor(AnyBox Source)
             requires (IsReal<Type>)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Floor(Source.mMinimum.GetX()),
-                    ::Floor(Source.mMinimum.GetY()),
-                    ::Floor(Source.mMinimum.GetZ())),
-                AnyVector3<Type>(
-                    ::Floor(Source.mMaximum.GetX()),
-                    ::Floor(Source.mMaximum.GetY()),
-                    ::Floor(Source.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Floor(Source.mMinimum), AnyVector3<Type>::Floor(Source.mMaximum));
         }
 
         /// \brief Gets a box with all coordinates ceiled to the nearest integer.
@@ -789,15 +733,7 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyBox Ceil(AnyBox Source)
             requires (IsReal<Type>)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Ceil(Source.mMinimum.GetX()),
-                    ::Ceil(Source.mMinimum.GetY()),
-                    ::Ceil(Source.mMinimum.GetZ())),
-                AnyVector3<Type>(
-                    ::Ceil(Source.mMaximum.GetX()),
-                    ::Ceil(Source.mMaximum.GetY()),
-                    ::Ceil(Source.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Ceil(Source.mMinimum), AnyVector3<Type>::Ceil(Source.mMaximum));
         }
 
         /// \brief Checks whether two world-space volumes overlap, treating contact as an overlap.
@@ -807,9 +743,8 @@ inline namespace ZyMath
         /// \return `true` if the volumes overlap or touch, `false` otherwise.
         ZY_INLINE static constexpr Bool Overlaps(AnyBox First, AnyBox Second)
         {
-            return First.GetMinimumX() <= Second.GetMaximumX() && First.GetMaximumX() >= Second.GetMinimumX()
-                && First.GetMinimumY() <= Second.GetMaximumY() && First.GetMaximumY() >= Second.GetMinimumY()
-                && First.GetMinimumZ() <= Second.GetMaximumZ() && First.GetMaximumZ() >= Second.GetMinimumZ();
+            return First.mMinimum.IsComponentWiseLessOrEqual(Second.mMaximum)
+                && First.mMaximum.IsComponentWiseGreaterOrEqual(Second.mMinimum);
         }
         
         /// \brief Gets the intersection of two boxes.
@@ -821,18 +756,10 @@ inline namespace ZyMath
         /// \return A box representing the overlapping region.
         ZY_INLINE static constexpr AnyBox Intersection(AnyBox First, AnyBox Second)
         {
-            const Type MinimumX = ::Max(First.mMinimum.GetX(), Second.mMinimum.GetX());
-            const Type MinimumY = ::Max(First.mMinimum.GetY(), Second.mMinimum.GetY());
-            const Type MinimumZ = ::Max(First.mMinimum.GetZ(), Second.mMinimum.GetZ());
-            const Type MaximumX = ::Min(First.mMaximum.GetX(), Second.mMaximum.GetX());
-            const Type MaximumY = ::Min(First.mMaximum.GetY(), Second.mMaximum.GetY());
-            const Type MaximumZ = ::Min(First.mMaximum.GetZ(), Second.mMaximum.GetZ());
+            const AnyVector3<Type> Minimum = AnyVector3<Type>::Max(First.mMinimum, Second.mMinimum);
+            const AnyVector3<Type> Maximum = AnyVector3<Type>::Min(First.mMaximum, Second.mMaximum);
 
-            if (MaximumX > MinimumX && MaximumY > MinimumY && MaximumZ > MinimumZ)
-            {
-                return AnyBox(MinimumX, MinimumY, MinimumZ, MaximumX, MaximumY, MaximumZ);
-            }
-            return AnyBox::Zero();
+            return Maximum.IsComponentWiseGreater(Minimum) ? AnyBox(Minimum, Maximum) : AnyBox::Zero();
         }
 
         /// \brief Gets the union (bounding box) of two boxes.
@@ -842,15 +769,8 @@ inline namespace ZyMath
         /// \return A box that fully contains both inputs.
         ZY_INLINE static constexpr AnyBox Union(AnyBox First, AnyBox Second)
         {
-            return AnyBox(
-                AnyVector3<Type>(
-                    ::Min(First.mMinimum.GetX(), Second.mMinimum.GetX()),
-                    ::Min(First.mMinimum.GetY(), Second.mMinimum.GetY()),
-                    ::Min(First.mMinimum.GetZ(), Second.mMinimum.GetZ())),
-                AnyVector3<Type>(
-                    ::Max(First.mMaximum.GetX(), Second.mMaximum.GetX()),
-                    ::Max(First.mMaximum.GetY(), Second.mMaximum.GetY()),
-                    ::Max(First.mMaximum.GetZ(), Second.mMaximum.GetZ())));
+            return AnyBox(AnyVector3<Type>::Min(First.mMinimum, Second.mMinimum),
+                          AnyVector3<Type>::Max(First.mMaximum, Second.mMaximum));
         }
 
         /// \brief Computes an integer-aligned box that fully encloses the given box.
@@ -861,15 +781,8 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyBox<Target> Enclose(AnyBox Source)
             requires(IsReal<Type> && IsIntegral<Target>)
         {
-            return AnyBox<Target>(
-                AnyVector3<Target>(
-                    static_cast<Target>(::Floor(Source.mMinimum.GetX())),
-                    static_cast<Target>(::Floor(Source.mMinimum.GetY())),
-                    static_cast<Target>(::Floor(Source.mMinimum.GetZ()))),
-                AnyVector3<Target>(
-                    static_cast<Target>(::Ceil(Source.mMaximum.GetX())),
-                    static_cast<Target>(::Ceil(Source.mMaximum.GetY())),
-                    static_cast<Target>(::Ceil(Source.mMaximum.GetZ()))));
+            return AnyBox<Target>(AnyVector3<Target>(AnyVector3<Type>::Floor(Source.mMinimum)),
+                                  AnyVector3<Target>(AnyVector3<Type>::Ceil(Source.mMaximum)));
         }
 
         /// \brief Gets the cells of a grid a box reaches into, both boxes inclusive of their maximum.

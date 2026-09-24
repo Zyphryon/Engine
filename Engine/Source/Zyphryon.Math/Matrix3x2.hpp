@@ -33,11 +33,11 @@ inline namespace ZyMath
 
         /// \brief Constructs a matrix from six scalar values.
         ///
-        /// \param M00 The X scale component of the first basis vector ([0,0]).
-        /// \param M10 The Y scale component of the first basis vector ([1,0]).
+        /// \param M00 The X component of the first basis vector ([0,0]).
+        /// \param M10 The X component of the second basis vector ([1,0]).
         /// \param M20 The X translation component ([2,0]).
-        /// \param M01 The X shear component of the second basis vector ([0,1]).
-        /// \param M11 The Y scale component of the second basis vector ([1,1]).
+        /// \param M01 The Y component of the first basis vector ([0,1]).
+        /// \param M11 The Y component of the second basis vector ([1,1]).
         /// \param M21 The Y translation component ([2,1]).
         ZY_INLINE constexpr Matrix3x2(Real32 M00, Real32 M10, Real32 M20, Real32 M01, Real32 M11, Real32 M21)
             : mColumns { Vector3(M00, M10, M20), Vector3(M01, M11, M21) }
@@ -134,11 +134,11 @@ inline namespace ZyMath
             const Vector3 B0 = Other.mColumns[0];
             const Vector3 B1 = Other.mColumns[1];
 
-            const Real32 M00 = A0.GetX() * B0.GetX() + A1.GetX() * B0.GetY();
-            const Real32 M10 = A0.GetY() * B0.GetX() + A1.GetY() * B0.GetY();
+            const Real32 M00 = A0.GetX() * B0.GetX() + A0.GetY() * B1.GetX();
+            const Real32 M10 = A0.GetX() * B0.GetY() + A0.GetY() * B1.GetY();
             const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A0.GetY() * B1.GetZ();
-            const Real32 M01 = A0.GetX() * B1.GetX() + A1.GetX() * B1.GetY();
-            const Real32 M11 = A0.GetY() * B1.GetX() + A1.GetY() * B1.GetY();
+            const Real32 M01 = A1.GetX() * B0.GetX() + A1.GetY() * B1.GetX();
+            const Real32 M11 = A1.GetX() * B0.GetY() + A1.GetY() * B1.GetY();
             const Real32 M21 = A1.GetZ() + A1.GetX() * B0.GetZ() + A1.GetY() * B1.GetZ();
 
             return Matrix3x2(M00, M10, M20, M01, M11, M21);
@@ -150,22 +150,7 @@ inline namespace ZyMath
         /// \return A reference to the updated matrix.
         ZY_INLINE constexpr Ref<Matrix3x2> operator*=(ConstRef<Matrix3x2> Other)
         {
-            const Vector3 A0 = mColumns[0];
-            const Vector3 A1 = mColumns[1];
-            const Vector3 B0 = Other.mColumns[0];
-            const Vector3 B1 = Other.mColumns[1];
-
-            const Real32 M00 = A0.GetX() * B0.GetX() + A1.GetX() * B0.GetY();
-            const Real32 M10 = A0.GetY() * B0.GetX() + A1.GetY() * B0.GetY();
-            const Real32 M20 = A0.GetZ() + A0.GetX() * B0.GetZ() + A0.GetY() * B1.GetZ();
-            const Real32 M01 = A0.GetX() * B1.GetX() + A1.GetX() * B1.GetY();
-            const Real32 M11 = A0.GetY() * B1.GetX() + A1.GetY() * B1.GetY();
-            const Real32 M21 = A1.GetZ() + A1.GetX() * B0.GetZ() + A1.GetY() * B1.GetZ();
-
-            mColumns[0].Set(M00, M10, M20);
-            mColumns[1].Set(M01, M11, M21);
-
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Checks if this matrix is equal to another matrix.
@@ -374,11 +359,11 @@ inline namespace ZyMath
             const Real32 U = Angle::Tangent(Skew.GetX());
             const Real32 T = Angle::Tangent(Skew.GetY());
 
-            const Real32 M00 =  C * Scale.GetX() + U * S * Scale.GetY();
-            const Real32 M10 = -S * Scale.GetY() + U * C * Scale.GetY();
+            const Real32 M00 = (C - S * T) * Scale.GetX();
+            const Real32 M10 = (C * U - S) * Scale.GetY();
             const Real32 M20 = Translation.GetX() - (Origin.GetX() * M00 + Origin.GetY() * M10);
-            const Real32 M01 =  S * Scale.GetX() + T * C * Scale.GetY();
-            const Real32 M11 =  C * Scale.GetY() + T * S * Scale.GetY();
+            const Real32 M01 = (S + C * T) * Scale.GetX();
+            const Real32 M11 = (S * U + C) * Scale.GetY();
             const Real32 M21 = Translation.GetY() - (Origin.GetX() * M01 + Origin.GetY() * M11);
 
             return Matrix3x2(M00, M10, M20, M01, M11, M21);

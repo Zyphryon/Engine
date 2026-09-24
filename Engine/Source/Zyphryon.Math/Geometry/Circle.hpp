@@ -137,7 +137,7 @@ inline namespace ZyMath
         /// \return The circumference of the circle.
         ZY_INLINE constexpr Real32 GetCircumference() const
         {
-            return 2.0f * kPI<Real32> * mRadius;
+            return kTwoPI<Real32> * mRadius;
         }
 
         /// \brief Calculates the area of the circle.

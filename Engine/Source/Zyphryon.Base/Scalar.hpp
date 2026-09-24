@@ -26,6 +26,10 @@ inline namespace ZyBase
     template<typename Type>
     inline constexpr Type kPI        = Type(3.141592653589793238462643383279502884e+00);
 
+    /// \brief Mathematical constant representing two pi, the radians in one whole turn.
+    template<typename Type>
+    inline constexpr Type kTwoPI     = Type(6.283185307179586476925286766559005768e+00);
+
     /// \brief Mathematical constant representing positive infinity.
     template<typename Type>
     inline constexpr Type kInfinity  = std::numeric_limits<Type>::infinity();

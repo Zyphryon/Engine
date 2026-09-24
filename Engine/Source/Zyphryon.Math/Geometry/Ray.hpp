@@ -205,15 +205,9 @@ inline namespace ZyMath
         /// \return `true` if the ray meets the volume within the limit, `false` otherwise.
         ZY_INLINE static Bool Intersects(ConstRef<Ray> Source, ConstRef<Box> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
         {
-            Real32 Entry = 0.0f;
-            Real32 Exit  = 0.0f;
+            Real32 Exit = 0.0f;
 
-            if (Traverse(Source, Volume, Entry, Exit, Limit))
-            {
-                Distance = Entry;
-                return true;
-            }
-            return false;
+            return Traverse(Source, Volume, Distance, Exit, Limit);
         }
 
         /// \brief Finds the interval of a ray that lies inside an axis-aligned volume.
@@ -234,14 +228,10 @@ inline namespace ZyMath
             Real32 Near = 0.0f;
             Real32 Far  = Limit;
 
-            if (!Clip(Origin.GetX(), Inverse.GetX(), Minimum.GetX(), Maximum.GetX(), Near, Far)
-             || !Clip(Origin.GetY(), Inverse.GetY(), Minimum.GetY(), Maximum.GetY(), Near, Far)
-             || !Clip(Origin.GetZ(), Inverse.GetZ(), Minimum.GetZ(), Maximum.GetZ(), Near, Far))
-            {
-                return false;
-            }
-
-            if (Near <= Far)
+            if (Clip(Origin.GetX(), Inverse.GetX(), Minimum.GetX(), Maximum.GetX(), Near, Far)
+             && Clip(Origin.GetY(), Inverse.GetY(), Minimum.GetY(), Maximum.GetY(), Near, Far)
+             && Clip(Origin.GetZ(), Inverse.GetZ(), Minimum.GetZ(), Maximum.GetZ(), Near, Far)
+             && Near <= Far)
             {
                 Entry = Near;
                 Exit  = Far;
@@ -275,15 +265,9 @@ inline namespace ZyMath
         /// \return `true` if the ray meets the sphere within the limit, `false` otherwise.
         ZY_INLINE static Bool Intersects(ConstRef<Ray> Source, ConstRef<Sphere> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
         {
-            Real32 Entry = 0.0f;
-            Real32 Exit  = 0.0f;
+            Real32 Exit = 0.0f;
 
-            if (Traverse(Source, Volume, Entry, Exit, Limit))
-            {
-                Distance = Entry;
-                return true;
-            }
-            return false;
+            return Traverse(Source, Volume, Distance, Exit, Limit);
         }
 
         /// \brief Finds the interval of a ray that lies inside a sphere.

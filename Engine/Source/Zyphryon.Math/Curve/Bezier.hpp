@@ -121,37 +121,47 @@ inline namespace ZyMath
             const Vector2 B = mControl[2] - mControl[1] * 2.0f + mControl[0];
             const Vector2 C = mControl[1] - mControl[0];
 
-            Real32 Roots[2] { };
+            Widen(A.GetX(), B.GetX(), C.GetX(), true,  MinimumX, MaximumX);
+            Widen(A.GetY(), B.GetY(), C.GetY(), false, MinimumY, MaximumY);
 
-            const UInt32 AlongX = SolveQuadratic(Span(Roots, 2), A.GetX(), 2.0f * B.GetX(), C.GetX());
-
-            for (UInt32 Index = 0; Index < AlongX; ++Index)
-            {
-                if (Roots[Index] > 0.0f && Roots[Index] < 1.0f)
-                {
-                    const Real32 Turn = Point(Roots[Index]).GetX();
-
-                    MinimumX = Min(MinimumX, Turn);
-                    MaximumX = Max(MaximumX, Turn);
-                }
-            }
-
-            const UInt32 AlongY = SolveQuadratic(Span(Roots, 2), A.GetY(), 2.0f * B.GetY(), C.GetY());
-
-            for (UInt32 Index = 0; Index < AlongY; ++Index)
-            {
-                if (Roots[Index] > 0.0f && Roots[Index] < 1.0f)
-                {
-                    const Real32 Turn = Point(Roots[Index]).GetY();
-
-                    MinimumY = Min(MinimumY, Turn);
-                    MaximumY = Max(MaximumY, Turn);
-                }
-            }
             return Rect(MinimumX, MinimumY, MaximumX, MaximumY);
         }
 
     private:
+
+        /// \brief Widens one axis of a range to every point inside the segment where that axis turns back.
+        ///
+        /// \param Quadratic  The axis's coefficient of the squared term in the derivative.
+        /// \param Linear     The axis's coefficient of the linear term, halved.
+        /// \param Constant   The axis's constant term.
+        /// \param Horizontal The axis to widen, `true` for X and `false` for Y.
+        /// \param Minimum    Receives the lowest value the axis reaches.
+        /// \param Maximum    Receives the highest value the axis reaches.
+        ZY_INLINE void Widen(
+            Real32      Quadratic,
+            Real32      Linear,
+            Real32      Constant,
+            Bool        Horizontal,
+            Ref<Real32> Minimum,
+            Ref<Real32> Maximum) const
+            requires IsAnyOf<Type, Vector2>
+        {
+            Real32 Roots[2] { };
+
+            const UInt32 Count = SolveQuadratic(Span(Roots, 2), Quadratic, 2.0f * Linear, Constant);
+
+            for (UInt32 Index = 0; Index < Count; ++Index)
+            {
+                if (Roots[Index] > 0.0f && Roots[Index] < 1.0f)
+                {
+                    const Vector2 Turn  = Point(Roots[Index]);
+                    const Real32  Value = Horizontal ? Turn.GetX() : Turn.GetY();
+
+                    Minimum = Min(Minimum, Value);
+                    Maximum = Max(Maximum, Value);
+                }
+            }
+        }
 
         /// \brief Interpolates between two values.
         ///

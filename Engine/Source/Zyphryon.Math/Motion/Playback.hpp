@@ -29,14 +29,7 @@ inline namespace ZyMath
 
         /// \brief Constructs a stopped cursor with no duration.
         ZY_INLINE Playback()
-            : mDuration { 0 },
-              mOffset   { 0 },
-              mEpoch    { 0 },
-              mClock    { 0 },
-              mSpeed    { 1 },
-              mRepeat   { Repeat::Once },
-              mPlaying  { false },
-              mFresh    { false }
+            : Playback(0.0)
         {
         }
 
@@ -66,11 +59,12 @@ inline namespace ZyMath
 
             if (mPlaying && mRepeat == Repeat::Once)
             {
-                const Real64 Local = GetElapsed();
+                const Real64 Local   = GetElapsed();
+                const Bool   Forward = mSpeed >= 0.0f;
 
-                if (mSpeed >= 0.0f ? Local >= mDuration : Local <= 0.0)
+                if (Forward ? Local >= mDuration : Local <= 0.0)
                 {
-                    mOffset  = mSpeed >= 0.0f ? mDuration : 0.0;
+                    mOffset  = Forward ? mDuration : 0.0;
                     mPlaying = false;
                 }
             }
@@ -162,19 +156,11 @@ inline namespace ZyMath
             case Repeat::Once:
                 return Clamp(Local, 0.0, mDuration);
             case Repeat::Loop:
-            {
-                const Real64 Wrapped = Mod(Local, mDuration);
-                return Wrapped < 0.0 ? Wrapped + mDuration : Wrapped;
-            }
+                return Wrap(Local, mDuration);
             case Repeat::Mirror:
             {
                 const Real64 Cycle = mDuration * 2.0;
-                Real64       Phase = Mod(Local, Cycle);
-
-                if (Phase < 0.0)
-                {
-                    Phase += Cycle;
-                }
+                const Real64 Phase = Wrap(Local, Cycle);
                 return Phase <= mDuration ? Phase : Cycle - Phase;
             }
             }
@@ -220,14 +206,7 @@ inline namespace ZyMath
         {
             if (mRepeat == Repeat::Mirror && mDuration > 0.0)
             {
-                const Real64 Cycle = mDuration * 2.0;
-                Real64       Phase = Mod(GetElapsed(), Cycle);
-
-                if (Phase < 0.0)
-                {
-                    Phase += Cycle;
-                }
-                return Phase <= mDuration;
+                return Wrap(GetElapsed(), mDuration * 2.0) <= mDuration;
             }
             return mSpeed >= 0.0f;
         }
@@ -262,6 +241,19 @@ inline namespace ZyMath
         ZY_INLINE Real64 GetElapsed() const
         {
             return mPlaying ? mOffset + mSpeed * (mClock - mEpoch) : mOffset;
+        }
+
+    private:
+
+        /// \brief Wraps a time into one period, so a time before zero lands as far from the end as it was.
+        ///
+        /// \param Time   The time to wrap, in seconds.
+        /// \param Period The length of one period, in seconds.
+        /// \return The wrapped time, in [0, Period).
+        ZY_INLINE static Real64 Wrap(Real64 Time, Real64 Period)
+        {
+            const Real64 Wrapped = Mod(Time, Period);
+            return Wrapped < 0.0 ? Wrapped + Period : Wrapped;
         }
 
     private:

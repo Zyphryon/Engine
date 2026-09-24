@@ -95,7 +95,7 @@ inline namespace ZyMath
         /// \return `true` if all components are within \p Tolerance of each other, `false` otherwise.
         ZY_INLINE constexpr Bool IsUniform(Type Tolerance = kEpsilon<Type>) const
         {
-            return (Abs(GetX() - GetY()) <= Tolerance);
+            return (::Abs(GetX() - GetY()) <= Tolerance);
         }
 
         /// \brief Checks if this vector is component-wise less than another vector.
@@ -236,7 +236,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Type GetDistanceChebyshev(AnyVector2 Target) const
         {
             const AnyVector2 Difference = (* this) - Target;
-            return Max(Abs(Difference.GetX()), Abs(Difference.GetY()));
+            return ::Max(::Abs(Difference.GetX()), ::Abs(Difference.GetY()));
         }
 
         /// \brief Calculates the squared distance between this vector and another vector.
@@ -384,9 +384,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator++()
         {
-            ++mX;
-            ++mY;
-            return (* this);
+            return (* this) += Type(1);
         }
 
         /// \brief Pre-decrements all components of the vector.
@@ -394,9 +392,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator--()
         {
-            --mX;
-            --mY;
-            return (* this);
+            return (* this) -= Type(1);
         }
 
         /// \brief Adds another vector to the current vector.
@@ -405,9 +401,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator+=(AnyVector2 Other)
         {
-            mX += Other.mX;
-            mY += Other.mY;
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Adds a scalar value to all components of the vector.
@@ -416,9 +410,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator+=(Type Scalar)
         {
-            mX += Scalar;
-            mY += Scalar;
-            return (* this);
+            return (* this) = (* this) + Scalar;
         }
 
         /// \brief Subtracts another vector from the current vector.
@@ -427,9 +419,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator-=(AnyVector2 Other)
         {
-            mX -= Other.mX;
-            mY -= Other.mY;
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Subtracts a scalar value from all components of the vector.
@@ -438,9 +428,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator-=(Type Scalar)
         {
-            mX -= Scalar;
-            mY -= Scalar;
-            return (* this);
+            return (* this) = (* this) - Scalar;
         }
 
         /// \brief Multiplies all components of the vector by another vector.
@@ -449,9 +437,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator*=(AnyVector2 Other)
         {
-            mX *= Other.mX;
-            mY *= Other.mY;
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Multiplies all components of the vector by a scalar value.
@@ -460,9 +446,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator*=(Type Scalar)
         {
-            mX *= Scalar;
-            mY *= Scalar;
-            return (* this);
+            return (* this) = (* this) * Scalar;
         }
 
         /// \brief Divides all components of the vector by another vector.
@@ -471,12 +455,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator/=(AnyVector2 Other)
         {
-            ZY_ASSERT(!::IsAlmostZero(Other.GetX()), "Division by zero (X)");
-            ZY_ASSERT(!::IsAlmostZero(Other.GetY()), "Division by zero (Y)");
-
-            mX /= Other.mX;
-            mY /= Other.mY;
-            return (* this);
+            return (* this) = (* this) / Other;
         }
 
         /// \brief Divides all components of the vector by a scalar value.
@@ -485,11 +464,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator/=(Type Scalar)
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            mX /= Scalar;
-            mY /= Scalar;
-            return (* this);
+            return (* this) = (* this) / Scalar;
         }
 
         /// \brief Shifts left all components of the vector by a scalar value.
@@ -499,12 +474,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyVector2> operator<<=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mX <<= Scalar;
-            mY <<= Scalar;
-
-            return (* this);
+            return (* this) = (* this) << Scalar;
         }
 
         /// \brief Shifts right all components of the vector by a scalar value.
@@ -514,12 +484,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyVector2> operator>>=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mX >>= Scalar;
-            mY >>= Scalar;
-
-            return (* this);
+            return (* this) = (* this) >> Scalar;
         }
 
         /// \brief Checks if this vector is equal to another vector.
@@ -564,7 +529,7 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically greater than the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator>(AnyVector2 Other) const
         {
-            return (mX > Other.mX) || (mX == Other.mX && mY > Other.mY);
+            return Other < (* this);
         }
 
         /// \brief Compares this vector with another for greater-than or equal relationship (lexicographic ordering).
@@ -573,7 +538,7 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically greater than or equal to the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator>=(AnyVector2 Other) const
         {
-            return (mX > Other.mX) || (mX == Other.mX && mY >= Other.mY);
+            return Other <= (* this);
         }
 
         /// \brief Gets a string representation of this object.
@@ -620,6 +585,15 @@ inline namespace ZyMath
             return AnyVector2(Type(0), Type(1));
         }
 
+        /// \brief Gets the unit vector pointing at the given angle, the inverse of `GetAngle`.
+        ///
+        /// \param Direction The angle measured from the X-axis toward the Y-axis.
+        /// \return The unit vector (cos, sin) of the angle.
+        ZY_INLINE static AnyVector2 FromAngle(Angle Direction)
+            requires (IsReal<Type>)
+        {
+            return AnyVector2(Angle::Cosine(Direction), Angle::Sine(Direction));
+        }
 
         /// \brief Gets a vector perpendicular to the given vector.
         ///

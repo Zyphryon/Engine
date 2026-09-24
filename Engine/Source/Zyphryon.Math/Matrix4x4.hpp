@@ -329,11 +329,7 @@ inline namespace ZyMath
         /// \return A reference to the updated matrix.
         ZY_INLINE Ref<Matrix4x4> operator+=(ConstRef<Matrix4x4> Other)
         {
-            mColumns[0] += Other.mColumns[0];
-            mColumns[1] += Other.mColumns[1];
-            mColumns[2] += Other.mColumns[2];
-            mColumns[3] += Other.mColumns[3];
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Subtracts another matrix from this matrix in-place.
@@ -342,11 +338,7 @@ inline namespace ZyMath
         /// \return A reference to the updated matrix.
         ZY_INLINE Ref<Matrix4x4> operator-=(ConstRef<Matrix4x4> Other)
         {
-            mColumns[0] -= Other.mColumns[0];
-            mColumns[1] -= Other.mColumns[1];
-            mColumns[2] -= Other.mColumns[2];
-            mColumns[3] -= Other.mColumns[3];
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Multiplies this matrix by another matrix in-place.
@@ -364,10 +356,7 @@ inline namespace ZyMath
         /// \return `true` if all corresponding elements are exactly equal, `false` otherwise.
         ZY_INLINE Bool operator==(ConstRef<Matrix4x4> Other) const
         {
-            return mColumns[0].IsAlmostEqual(Other.mColumns[0])
-                && mColumns[1].IsAlmostEqual(Other.mColumns[1])
-                && mColumns[2].IsAlmostEqual(Other.mColumns[2])
-                && mColumns[3].IsAlmostEqual(Other.mColumns[3]);
+            return IsAlmostEqual(Other);
         }
 
         /// \brief Checks if this matrix is not equal to another matrix.

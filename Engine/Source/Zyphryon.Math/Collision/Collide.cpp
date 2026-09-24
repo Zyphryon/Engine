@@ -88,7 +88,7 @@ inline namespace ZyMath
             return false;
         }
 
-        const Vector2 Center(First.GetCenter().GetX(), First.GetCenter().GetZ());
+        const Vector2 Center = First.GetCenter().GetXZ();
         const Vector2 Corner(
             Clamp(Center.GetX(), Second.GetMinimumX(), Second.GetMaximumX()),
             Clamp(Center.GetY(), Second.GetMinimumZ(), Second.GetMaximumZ()));
@@ -160,14 +160,13 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Escapes(
-        Vector2 Apart, Real32 Span, Real32 Ground, Real32 Standing, Bool Under, Ref<Manifold> Contact)
+    Bool Collide::Escapes(Vector2 Apart, Real32 Span, Real32 Ground, Real32 Standing, Bool Under, Ref<Manifold> Contact)
     {
         if (Ground <= Standing)
         {
             const Vector2 Facing = IsAlmostZero(Span) ? Vector2(1.0f, 0.0f) : Apart * (1.0f / Span);
 
-            Contact = Manifold(Vector3(Facing.GetX(), 0.0f, Facing.GetY()), 0.0f, Ground);
+            Contact = Manifold(Vector3::FromXZ(Facing), 0.0f, Ground);
         }
         else
         {

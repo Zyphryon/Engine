@@ -74,17 +74,13 @@ inline namespace ZyMath
 
     Bool Sweep::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact)
     {
-        const Vector3 Apart   = First.GetCenter() - Second.GetCenter();
-        const Vector3 Extents = First.GetExtents();
-
-        Interval Result;
-
-        // The pair grows into the same shape either way round, so it is the box's extents that are grown again.
-        const Bool Met =
-            NarrowSlab(Apart.GetY(), Extents.GetY() + Second.GetExtent(), Motion.GetY(), Vector3::UnitY(), Result)
-         && NarrowGrown(Apart.GetXZ(), Extents.GetXZ(), Second.GetRadius(), Motion.GetXZ(), Result);
-
-        return Close(Result, Met, Contact);
+        // Swapping the pair turns both the gap and the motion around, which meets at the same time on the opposite face.
+        if (Test(Second, First, -Motion, Contact))
+        {
+            Contact.SetNormal(-Contact.GetNormal());
+            return true;
+        }
+        return false;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -184,7 +180,8 @@ inline namespace ZyMath
         Vector3 Facing = Vector3::Zero();
         Bool    Found  = false;
 
-        const auto OnPiece = [&](ConstRef<Interval> Piece)
+        // The motion is in the grown rectangle from the first piece it enters until the last piece it leaves.
+        const auto Merge  = [&](ConstRef<Interval> Piece)
         {
             if (Piece.Entry < Entry)
             {
@@ -195,31 +192,34 @@ inline namespace ZyMath
             Found = true;
         };
 
-        for (const Vector2 Grown : {
-            Vector2(Extent.GetX() + Reach, Extent.GetY()),
-            Vector2(Extent.GetX(), Extent.GetY() + Reach) })
+        const auto Side   = [&](Real32 ReachX, Real32 ReachY)
         {
             Interval Piece = Result;
 
-            if (NarrowSlab(Apart.GetX(), Grown.GetX(), Motion.GetX(), Vector3::UnitX(), Piece)
-             && NarrowSlab(Apart.GetY(), Grown.GetY(), Motion.GetY(), Vector3::UnitZ(), Piece))
+            if (NarrowSlab(Apart.GetX(), ReachX, Motion.GetX(), Vector3::UnitX(), Piece)
+             && NarrowSlab(Apart.GetY(), ReachY, Motion.GetY(), Vector3::UnitZ(), Piece))
             {
-                OnPiece(Piece);
+                Merge(Piece);
             }
-        }
+        };
 
-        for (const Real32 SideX : { -Extent.GetX(), Extent.GetX() })
+        const auto Corner = [&](Real32 X, Real32 Y)
         {
-            for (const Real32 SideY : { -Extent.GetY(), Extent.GetY() })
-            {
-                Interval Piece = Result;
+            Interval Piece = Result;
 
-                if (NarrowRound(Apart - Vector2(SideX, SideY), Reach, Motion, Piece))
-                {
-                    OnPiece(Piece);
-                }
+            if (NarrowRound(Apart - Vector2(X, Y), Reach, Motion, Piece))
+            {
+                Merge(Piece);
             }
-        }
+        };
+
+        Side(Extent.GetX() + Reach, Extent.GetY());
+        Side(Extent.GetX(), Extent.GetY() + Reach);
+
+        Corner(-Extent.GetX(), -Extent.GetY());
+        Corner(-Extent.GetX(),  Extent.GetY());
+        Corner( Extent.GetX(), -Extent.GetY());
+        Corner( Extent.GetX(),  Extent.GetY());
 
         if (!Found)
         {

@@ -385,11 +385,7 @@ inline namespace ZyMath
         /// \return The projected 2D point, translation included, with the Z result discarded.
         ZY_INLINE static Vector2 Project(ConstRef<Matrix4x3> Matrix, Vector2 Vector)
         {
-            const Basis Columns(Matrix);
-
-            return (Columns.AxisX * Vector4(Vector.GetX())
-                  + Columns.AxisY * Vector4(Vector.GetY())
-                  + Columns.Offset).GetXY();
+            return Basis(Matrix).Project(Vector);
         }
 
         /// \brief Projects a 3D point using the matrix.
@@ -399,12 +395,7 @@ inline namespace ZyMath
         /// \return The projected 3D point, translation included.
         ZY_INLINE static Vector3 Project(ConstRef<Matrix4x3> Matrix, Vector3 Vector)
         {
-            const Basis Columns(Matrix);
-
-            return (Columns.AxisX * Vector4(Vector.GetX())
-                  + Columns.AxisY * Vector4(Vector.GetY())
-                  + Columns.AxisZ * Vector4(Vector.GetZ())
-                  + Columns.Offset).GetXYZ();
+            return Basis(Matrix).Project(Vector);
         }
 
         /// \brief Projects many 2D points using the matrix, treating them as lying on the Z = 0 plane.
@@ -420,9 +411,7 @@ inline namespace ZyMath
 
             for (UInt Index = 0; Index < Source.GetSize(); ++Index)
             {
-                Output[Index] = (Columns.AxisX * Vector4(Source[Index].GetX())
-                               + Columns.AxisY * Vector4(Source[Index].GetY())
-                               + Columns.Offset).GetXY();
+                Output[Index] = Columns.Project(Source[Index]);
             }
         }
 
@@ -439,10 +428,7 @@ inline namespace ZyMath
 
             for (UInt Index = 0; Index < Source.GetSize(); ++Index)
             {
-                Output[Index] = (Columns.AxisX * Vector4(Source[Index].GetX())
-                               + Columns.AxisY * Vector4(Source[Index].GetY())
-                               + Columns.AxisZ * Vector4(Source[Index].GetZ())
-                               + Columns.Offset).GetXYZ();
+                Output[Index] = Columns.Project(Source[Index]);
             }
         }
 

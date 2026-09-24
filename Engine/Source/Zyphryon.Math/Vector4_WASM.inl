@@ -103,27 +103,6 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    template<Real32 Tolerance>
-    Bool Vector4::IsAlmostEqual(Vector4 Other) const
-    {
-        const Type Difference    = wasm_f32x4_sub(mData, Other.mData);
-        const Type AbsDifference = wasm_f32x4_abs(Difference);
-        return wasm_i32x4_bitmask(wasm_f32x4_le(AbsDifference, wasm_f32x4_splat(Tolerance))) == 0x0F;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Vector4::IsFinite() const
-    {
-        const Type Temp0 = wasm_f32x4_abs(mData);
-        const Type Temp1 = wasm_f32x4_lt(Temp0, wasm_f32x4_splat(INFINITY));
-        return wasm_i32x4_bitmask(Temp1) == 0x0F;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Real32 Vector4::GetLength() const
     {
         return ZyBase::Sqrt(GetLengthSquared());
@@ -147,26 +126,6 @@ inline namespace ZyMath
         const Type Temp0 = wasm_f32x4_sub(mData, wasm_i32x4_shuffle(mData, mData, 2, 3, 0, 1));
         const Type Temp1 = wasm_f32x4_sub(Temp0, wasm_i32x4_shuffle(Temp0, Temp0, 1, 0, 3, 2));
         return wasm_f32x4_extract_lane(Temp1, 0);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Real32 Vector4::ReduceMin() const
-    {
-        Type Temp0 = wasm_f32x4_min(mData, wasm_i32x4_shuffle(mData, mData, 2, 3, 0, 1));
-        Temp0      = wasm_f32x4_min(Temp0, wasm_i32x4_shuffle(Temp0, Temp0, 1, 0, 3, 2));
-        return wasm_f32x4_extract_lane(Temp0, 0);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Real32 Vector4::ReduceMax() const
-    {
-        Type Temp0 = wasm_f32x4_max(mData, wasm_i32x4_shuffle(mData, mData, 2, 3, 0, 1));
-        Temp0      = wasm_f32x4_max(Temp0, wasm_i32x4_shuffle(Temp0, Temp0, 1, 0, 3, 2));
-        return wasm_f32x4_extract_lane(Temp0, 0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -292,20 +251,9 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector4 Vector4::Normalize(Vector4 Vector)
-    {
-        return Vector4(wasm_f32x4_mul(Vector.mData, wasm_f32x4_splat(1.0f / Vector.GetLength())));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Real32 Vector4::Dot(Vector4 P0, Vector4 P1)
     {
-        const Type V0 = wasm_f32x4_mul(P0.mData, P1.mData);
-        const Type V1 = wasm_f32x4_add(V0, wasm_i32x4_shuffle(V0, V0, 2, 3, 0, 1));
-        const Type V2 = wasm_f32x4_add(V1, wasm_i32x4_shuffle(V1, V1, 1, 0, 3, 2));
-        return wasm_f32x4_extract_lane(V2, 0);
+        return (P0 * P1).ReduceSum();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

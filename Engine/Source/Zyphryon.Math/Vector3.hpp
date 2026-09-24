@@ -113,8 +113,8 @@ inline namespace ZyMath
         /// \return `true` if all components are within \p Tolerance of each other, `false` otherwise.
         ZY_INLINE constexpr Bool IsUniform(Type Tolerance = kEpsilon<Type>) const
         {
-            return (Abs(GetX() - GetY()) <= Tolerance) &&
-                   (Abs(GetY() - GetZ()) <= Tolerance);
+            return (::Abs(GetX() - GetY()) <= Tolerance) &&
+                   (::Abs(GetY() - GetZ()) <= Tolerance);
         }
 
         /// \brief Checks if this vector is component-wise less than another vector.
@@ -183,10 +183,7 @@ inline namespace ZyMath
         template<typename Base>
         ZY_INLINE constexpr Ref<AnyVector3> Set(AnyVector2<Base> XY, Type Z = Type(0))
         {
-            mX = static_cast<Type>(XY.GetX());
-            mY = static_cast<Type>(XY.GetY());
-            mZ = Z;
-            return (* this);
+            return (* this) = AnyVector3(XY, Z);
         }
 
         /// \brief Sets the x-component of the vector.
@@ -427,10 +424,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator++()
         {
-            ++mX;
-            ++mY;
-            ++mZ;
-            return (* this);
+            return (* this) += Type(1);
         }
 
         /// \brief Pre-decrements all components of the vector.
@@ -438,10 +432,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator--()
         {
-            --mX;
-            --mY;
-            --mZ;
-            return (* this);
+            return (* this) -= Type(1);
         }
 
         /// \brief Adds another vector to the current vector.
@@ -450,10 +441,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator+=(AnyVector3 Other)
         {
-            mX += Other.mX;
-            mY += Other.mY;
-            mZ += Other.mZ;
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Adds a scalar value to all components of the vector.
@@ -462,10 +450,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator+=(Type Scalar)
         {
-            mX += Scalar;
-            mY += Scalar;
-            mZ += Scalar;
-            return (* this);
+            return (* this) = (* this) + Scalar;
         }
 
         /// \brief Subtracts another vector from the current vector.
@@ -474,10 +459,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator-=(AnyVector3 Other)
         {
-            mX -= Other.mX;
-            mY -= Other.mY;
-            mZ -= Other.mZ;
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Subtracts a scalar value from all components of the vector.
@@ -486,10 +468,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator-=(Type Scalar)
         {
-            mX -= Scalar;
-            mY -= Scalar;
-            mZ -= Scalar;
-            return (* this);
+            return (* this) = (* this) - Scalar;
         }
 
         /// \brief Multiplies all components of the vector by another vector.
@@ -498,10 +477,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator*=(AnyVector3 Other)
         {
-            mX *= Other.mX;
-            mY *= Other.mY;
-            mZ *= Other.mZ;
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Multiplies all components of the vector by a scalar value.
@@ -510,10 +486,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator*=(Type Scalar)
         {
-            mX *= Scalar;
-            mY *= Scalar;
-            mZ *= Scalar;
-            return (* this);
+            return (* this) = (* this) * Scalar;
         }
 
         /// \brief Divides all components of the vector by another vector.
@@ -522,14 +495,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator/=(AnyVector3 Other)
         {
-            ZY_ASSERT(!::IsAlmostZero(Other.GetX()), "Division by zero (X)");
-            ZY_ASSERT(!::IsAlmostZero(Other.GetY()), "Division by zero (Y)");
-            ZY_ASSERT(!::IsAlmostZero(Other.GetZ()), "Division by zero (Z)");
-
-            mX /= Other.mX;
-            mY /= Other.mY;
-            mZ /= Other.mZ;
-            return (* this);
+            return (* this) = (* this) / Other;
         }
 
         /// \brief Divides all components of the vector by a scalar value.
@@ -538,12 +504,7 @@ inline namespace ZyMath
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector3> operator/=(Type Scalar)
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            mX /= Scalar;
-            mY /= Scalar;
-            mZ /= Scalar;
-            return (* this);
+            return (* this) = (* this) / Scalar;
         }
 
         /// \brief Shifts left all components of the vector by a scalar value.
@@ -553,13 +514,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyVector3> operator<<=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mX <<= Scalar;
-            mY <<= Scalar;
-            mZ <<= Scalar;
-
-            return (* this);
+            return (* this) = (* this) << Scalar;
         }
 
         /// \brief Shifts right all components of the vector by a scalar value.
@@ -569,13 +524,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyVector3> operator>>=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mX >>= Scalar;
-            mY >>= Scalar;
-            mZ >>= Scalar;
-
-            return (* this);
+            return (* this) = (* this) >> Scalar;
         }
 
         /// \brief Checks if this vector is equal to another vector.
@@ -620,7 +569,7 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically greater than the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator>(AnyVector3 Other) const
         {
-            return (mX > Other.mX) || (mX == Other.mX && mY > Other.mY) || (mX == Other.mX && mY == Other.mY && mZ > Other.mZ);
+            return Other < (* this);
         }
 
         /// \brief Compares this vector with another for greater-than or equal relationship (lexicographic ordering).
@@ -629,7 +578,7 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically greater than or equal to the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator>=(AnyVector3 Other) const
         {
-            return (mX > Other.mX) || (mX == Other.mX && mY > Other.mY) || (mX == Other.mX && mY == Other.mY && mZ >= Other.mZ);
+            return Other <= (* this);
         }
 
         /// \brief Gets a string representation of this object.

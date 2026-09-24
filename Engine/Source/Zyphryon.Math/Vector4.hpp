@@ -92,7 +92,10 @@ inline namespace ZyMath
         /// \param Other The vector to compare to.
         /// \return `true` if all components are within the tolerance, `false` otherwise.
         template<Real32 Tolerance = kEpsilon<Real32>>
-        ZY_INLINE Bool IsAlmostEqual(Vector4 Other) const;
+        ZY_INLINE Bool IsAlmostEqual(Vector4 Other) const
+        {
+            return (Abs((* this) - Other) <= Vector4(Tolerance)).IsAllTrue();
+        }
 
         /// \brief Checks if the vector is normalized.
         ///
@@ -115,7 +118,10 @@ inline namespace ZyMath
         /// \brief Checks if all components are finite values.
         ///
         /// \return `true` if all components are finite (not infinity or NaN), `false` otherwise.
-        ZY_INLINE Bool IsFinite() const;
+        ZY_INLINE Bool IsFinite() const
+        {
+            return (Abs(* this) < Vector4(kInfinity<Real32>)).IsAllTrue();
+        }
 
         /// \brief Gets the x-component of the vector.
         ///
@@ -209,12 +215,20 @@ inline namespace ZyMath
         /// \brief Reduces the vector by finding the minimum component.
         ///
         /// \return The minimum value among all four components.
-        ZY_INLINE Real32 ReduceMin() const;
+        ZY_INLINE Real32 ReduceMin() const
+        {
+            const Vector4 Pair = Min(* this, Swizzle<1, 0, 3, 2>(* this));
+            return Min(Pair, Swizzle<2, 3, 0, 1>(Pair)).GetX();
+        }
 
         /// \brief Reduces the vector by finding the maximum component.
         ///
         /// \return The maximum value among all four components.
-        ZY_INLINE Real32 ReduceMax() const;
+        ZY_INLINE Real32 ReduceMax() const
+        {
+            const Vector4 Pair = Max(* this, Swizzle<1, 0, 3, 2>(* this));
+            return Max(Pair, Swizzle<2, 3, 0, 1>(Pair)).GetX();
+        }
 
         /// \brief Adds a scalar to all components of this vector.
         ///
@@ -519,7 +533,13 @@ inline namespace ZyMath
         ///
         /// \param Vector The vector to normalize.
         /// \return A normalized vector with magnitude 1.0f.
-        ZY_INLINE static Vector4 Normalize(Vector4 Vector);
+        ZY_INLINE static Vector4 Normalize(Vector4 Vector)
+        {
+            const Real32 Length = Vector.GetLength();
+            ZY_ASSERT(!::IsAlmostZero(Length), "Cannot normalize a zero-length vector");
+
+            return Vector * (1.0f / Length);
+        }
 
         /// \brief Normalizes the XYZ components of a vector to unit length, scaling W along with them.
         ///

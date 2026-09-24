@@ -254,7 +254,7 @@ inline namespace ZyMath
         /// \return The expanded rectangle.
         ZY_INLINE constexpr AnyRect Expand(Type Amount) const
         {
-            return AnyRect(mMinimumX - Amount, mMinimumY - Amount, mMaximumX + Amount, mMaximumY + Amount);
+            return Expand(Amount, Amount);
         }
 
         /// \brief Expands the rectangle by the given amounts in the X and Y directions.
@@ -485,11 +485,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator+=(AnyRect Other)
         {
-            mMinimumX += Other.mMinimumX;
-            mMinimumY += Other.mMinimumY;
-            mMaximumX += Other.mMaximumX;
-            mMaximumY += Other.mMaximumY;
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Adds a scalar value to the rectangle.
@@ -498,11 +494,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator+=(Type Scalar)
         {
-            mMinimumX += Scalar;
-            mMinimumY += Scalar;
-            mMaximumX += Scalar;
-            mMaximumY += Scalar;
-            return (* this);
+            return (* this) = (* this) + Scalar;
         }
 
         /// \brief Adds a vector to the rectangle.
@@ -511,12 +503,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator+=(AnyVector2<Type> Vector)
         {
-            mMinimumX += Vector.GetX();
-            mMinimumY += Vector.GetY();
-            mMaximumX += Vector.GetX();
-            mMaximumY += Vector.GetY();
-
-            return (* this);
+            return (* this) = (* this) + Vector;
         }
 
         /// \brief Subtracts another rectangle from the current rectangle.
@@ -525,11 +512,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator-=(AnyRect Other)
         {
-            mMinimumX -= Other.mMinimumX;
-            mMinimumY -= Other.mMinimumY;
-            mMaximumX -= Other.mMaximumX;
-            mMaximumY -= Other.mMaximumY;
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Subtracts a scalar value from the rectangle.
@@ -538,11 +521,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator-=(Type Scalar)
         {
-            mMinimumX -= Scalar;
-            mMinimumY -= Scalar;
-            mMaximumX -= Scalar;
-            mMaximumY -= Scalar;
-            return (* this);
+            return (* this) = (* this) - Scalar;
         }
 
         /// \brief Subtracts a vector from the rectangle.
@@ -551,12 +530,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator-=(AnyVector2<Type> Vector)
         {
-            mMinimumX -= Vector.GetX();
-            mMinimumY -= Vector.GetY();
-            mMaximumX -= Vector.GetX();
-            mMaximumY -= Vector.GetY();
-
-            return (* this);
+            return (* this) = (* this) - Vector;
         }
 
         /// \brief Multiplies the rectangle coordinates by a scalar value.
@@ -565,12 +539,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator*=(Type Scalar)
         {
-            mMinimumX *= Scalar;
-            mMinimumY *= Scalar;
-            mMaximumX *= Scalar;
-            mMaximumY *= Scalar;
-
-            return (* this);
+            return (* this) = (* this) * Scalar;
         }
 
         /// \brief Multiplies the rectangle coordinates by a vector.
@@ -579,12 +548,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator*=(AnyVector2<Type> Vector)
         {
-            mMinimumX *= Vector.GetX();
-            mMinimumY *= Vector.GetY();
-            mMaximumX *= Vector.GetX();
-            mMaximumY *= Vector.GetY();
-
-            return (* this);
+            return (* this) = (* this) * Vector;
         }
 
         /// \brief Divides the rectangle coordinates by a scalar value.
@@ -593,14 +557,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator/=(Type Scalar)
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            mMinimumX /= Scalar;
-            mMinimumY /= Scalar;
-            mMaximumX /= Scalar;
-            mMaximumY /= Scalar;
-
-            return (* this);
+            return (* this) = (* this) / Scalar;
         }
 
         /// \brief Divides the rectangle coordinates by a vector.
@@ -609,15 +566,7 @@ inline namespace ZyMath
         /// \return A reference to the updated rectangle.
         ZY_INLINE constexpr Ref<AnyRect> operator/=(AnyVector2<Type> Vector)
         {
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
-            ZY_ASSERT(!::IsAlmostZero(Vector.GetY()), "Division by zero (Y)");
-
-            mMinimumX /= Vector.GetX();
-            mMinimumY /= Vector.GetY();
-            mMaximumX /= Vector.GetX();
-            mMaximumY /= Vector.GetY();
-
-            return (* this);
+            return (* this) = (* this) / Vector;
         }
 
         /// \brief Shifts left all coordinates of the rectangle by a scalar value.
@@ -627,14 +576,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyRect> operator<<=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mMinimumX <<= Scalar;
-            mMinimumY <<= Scalar;
-            mMaximumX <<= Scalar;
-            mMaximumY <<= Scalar;
-
-            return (* this);
+            return (* this) = (* this) << Scalar;
         }
 
         /// \brief Shifts right all coordinates of the rectangle by a scalar value.
@@ -644,14 +586,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Ref<AnyRect> operator>>=(Type Scalar)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Scalar >= 0, "Shift amount must be non-negative");
-
-            mMinimumX >>= Scalar;
-            mMinimumY >>= Scalar;
-            mMaximumX >>= Scalar;
-            mMaximumY >>= Scalar;
-
-            return (* this);
+            return (* this) = (* this) >> Scalar;
         }
 
     public:

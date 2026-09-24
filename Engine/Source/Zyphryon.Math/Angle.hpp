@@ -38,7 +38,7 @@ inline namespace ZyMath
         /// \return `true` if the angle is valid, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
-            return IsBetween(GetRadians(), 0.0f, kPI<Real32> * 2.0f);
+            return IsBetween(GetRadians(), 0.0f, kTwoPI<Real32>);
         }
 
         /// \brief Gets the angle in radians.
@@ -90,8 +90,7 @@ inline namespace ZyMath
         /// \return A reference to the updated angle.
         ZY_INLINE constexpr Ref<Angle> operator+=(Angle Other)
         {
-            mRadians += Other.mRadians;
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Subtracts another angle from the current angle.
@@ -100,8 +99,7 @@ inline namespace ZyMath
         /// \return A reference to the updated angle.
         ZY_INLINE constexpr Ref<Angle> operator-=(Angle Other)
         {
-            mRadians -= Other.mRadians;
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Multiplies the angle by a scalar value.
@@ -110,8 +108,7 @@ inline namespace ZyMath
         /// \return A reference to the updated angle.
         ZY_INLINE constexpr Ref<Angle> operator*=(Real32 Scalar)
         {
-            mRadians *= Scalar;
-            return (* this);
+            return (* this) = (* this) * Scalar;
         }
 
         /// \brief Checks if two angles are equal.
@@ -189,6 +186,15 @@ inline namespace ZyMath
             return Angle(Degrees * (kPI<Real32> / 180.0f));
         }
 
+        /// \brief Creates an angle from a fraction of a full turn.
+        ///
+        /// \param Turns The angle in turns, where one is the whole way round.
+        /// \return The angle in radians.
+        ZY_INLINE static constexpr Angle FromTurns(Real32 Turns)
+        {
+            return Angle(Turns * kTwoPI<Real32>);
+        }
+
         /// \brief Creates an angle from the cosine ratio.
         ///
         /// \param Ratio The cosine ratio (adjacent/hypotenuse).
@@ -232,16 +238,10 @@ inline namespace ZyMath
         /// \return The normalized angle.
         ZY_INLINE static Angle Normalize(Angle Value)
         {
-            constexpr Real32 kTwoPi = 2.0f * kPI<Real32>;
+            const Real32 Radians = Mod(Value.GetRadians(), kTwoPI<Real32>);
+            const Real32 Wrapped = (Radians < 0.0f ? Radians + kTwoPI<Real32> : Radians);
 
-            if (const Real32 Radians = Mod(Value.GetRadians(), kTwoPi); Radians < 0.0f)
-            {
-                return FromRadians(Radians + kTwoPi);
-            }
-            else
-            {
-                return FromRadians(Radians);
-            }
+            return FromRadians(Wrapped < kTwoPI<Real32> ? Wrapped : 0.0f);
         }
 
         /// \brief Calculates the cosine of the given angle.
@@ -278,11 +278,9 @@ inline namespace ZyMath
         /// \return The turn, in the range [-π, π), negative when the shortest way round runs backwards.
         ZY_INLINE static Angle Between(Angle Origin, Angle Target)
         {
-            constexpr Real32 kTwoPi = 2.0f * kPI<Real32>;
-
             const Real32 Apart = Target.GetRadians() - Origin.GetRadians();
 
-            return FromRadians(Apart - kTwoPi * Floor(Apart / kTwoPi + 0.5f));
+            return FromRadians(Apart - kTwoPI<Real32> * Floor(Apart / kTwoPI<Real32> + 0.5f));
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.

@@ -152,15 +152,15 @@ inline namespace ZyMath
         {
             ZY_ASSERT(mStart != mEnd, "Cannot compute normal of a zero-length line");
 
-            const Vector2 Direction = GetDirection();
+            const Vector2 Normal = Vector2::Perpendicular(GetDirection());
 
             if constexpr (Clockwise)
             {
-                return Vector2(-Direction.GetY(), Direction.GetX());
+                return Normal;
             }
             else
             {
-                return Vector2(Direction.GetY(), -Direction.GetX());
+                return -Normal;
             }
         }
 

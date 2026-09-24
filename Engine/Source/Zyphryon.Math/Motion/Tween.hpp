@@ -29,11 +29,7 @@ inline namespace ZyMath
 
         /// \brief Creates a tween that stands still at nothing.
         ZY_INLINE Tween()
-            : mStart       { },
-              mEnd         { },
-              mTime        { 0 },
-              mAccumulator { 0 },
-              mEasing      { Easing::Linear }
+            : Tween(Type(), Type(), 0.0)
         {
         }
 
@@ -89,14 +85,15 @@ inline namespace ZyMath
         ZY_INLINE Type GetValue() const
         {
             const Real32 Progress = mTime > 0.0 ? static_cast<Real32>(mAccumulator / mTime) : 1.0f;
+            const Real32 Eased    = Ease(mEasing, Progress);
 
             if constexpr (IsLerpable<Type>)
             {
-                return Type::Lerp(mStart, mEnd, Ease(mEasing, Progress));
+                return Type::Lerp(mStart, mEnd, Eased);
             }
             else
             {
-                return Lerp<Type>(mStart, mEnd, Ease(mEasing, Progress));
+                return Lerp<Type>(mStart, mEnd, Eased);
             }
         }
 

@@ -27,12 +27,10 @@ inline namespace ZyMath
         ZY_INLINE constexpr explicit Random(UInt64 Seed = 0)
             : mState { }
         {
-            UInt64 Value = Seed;
-
-            mState[0] = SplitMix64(Value);
-            mState[1] = SplitMix64(Value);
-            mState[2] = SplitMix64(Value);
-            mState[3] = SplitMix64(Value);
+            mState[0] = SplitMix64(Seed);
+            mState[1] = SplitMix64(Seed);
+            mState[2] = SplitMix64(Seed);
+            mState[3] = SplitMix64(Seed);
         }
 
         /// \brief Generates the next random integer of the specified type.
@@ -160,17 +158,10 @@ inline namespace ZyMath
         /// \return A generator seeded from platform entropy, or one seeded from the clock where none was had.
         ZY_INLINE static Random Seeded()
         {
-            UInt64 Seed[4];
-
-            const Bool Success = Entropy::Gather(Span(reinterpret_cast<Ptr<Byte>>(Seed), sizeof(Seed)));
-            ZY_ASSERT(Success, "Seed must not be null");
-
             Random Generator;
 
-            Generator.mState[0] = Seed[0];
-            Generator.mState[1] = Seed[1];
-            Generator.mState[2] = Seed[2];
-            Generator.mState[3] = Seed[3];
+            const Bool Success = Entropy::Gather(Span(reinterpret_cast<Ptr<Byte>>(Generator.mState), sizeof(Generator.mState)));
+            ZY_ASSERT(Success, "The platform had no entropy to seed from");
 
             return Generator;
         }

@@ -41,6 +41,24 @@ inline namespace ZyMath
 
         /// How far the time sits between the two samples, in the range `[0, 1]`.
         Real32 Delta = 0.0f;
+
+        /// \brief Finds where a moment in time falls on samples laid out at a fixed rate, clamping to the ends.
+        ///
+        /// \param Time The time to locate, in seconds.
+        /// \param Rate The number of samples per second.
+        /// \param Last The index of the last sample.
+        /// \return The bracketing samples and the fraction between them.
+        ZY_INLINE static Cursor FromUniform(Real64 Time, Real32 Rate, UInt Last)
+        {
+            const Real64 Scaled = Clamp(Time * static_cast<Real64>(Rate), 0.0, static_cast<Real64>(Last));
+            const UInt   Index  = static_cast<UInt>(Scaled);
+
+            Cursor Result;
+            Result.Lower = Index;
+            Result.Upper = Min(Index + 1, Last);
+            Result.Delta = static_cast<Real32>(Scaled - static_cast<Real64>(Index));
+            return Result;
+        }
     };
 
     /// \brief A time-ordered sequence of values sampled to produce a value at any point in time.
@@ -95,7 +113,7 @@ inline namespace ZyMath
         ZY_INLINE void Add(Real64 Time, AnyRef<Type> Value)
         {
             ZY_ASSERT(!IsUniform(), "A track on a fixed cadence takes its times from the cadence");
-            ZY_ASSERT(mTimes.IsEmpty() || Time >= mTimes[mTimes.GetSize() - 1],
+            ZY_ASSERT(mTimes.IsEmpty() || Time >= mTimes.GetBack(),
                 "Samples must be added in ascending time order");
 
             mTimes.Append(Time);
@@ -240,7 +258,7 @@ inline namespace ZyMath
             {
                 return static_cast<Real64>(mValues.GetSize() - 1) / static_cast<Real64>(mRate);
             }
-            return mTimes[mTimes.GetSize() - 1];
+            return mTimes.GetBack();
         }
 
         /// \brief Finds where a moment in time falls within the track, clamping to the endpoints outside its range.
@@ -258,23 +276,17 @@ inline namespace ZyMath
 
             const UInt Last = mValues.GetSize() - 1;
 
-            UInt   Index;
-            Real32 Delta;
-
             if (IsUniform())
             {
-                const Real64 Scaled = Clamp(Time * static_cast<Real64>(mRate), 0.0, static_cast<Real64>(Last));
+                return Cursor::FromUniform(Time, mRate, Last);
+            }
 
-                Index = static_cast<UInt>(Scaled);
-                Delta = static_cast<Real32>(Scaled - static_cast<Real64>(Index));
-            }
-            else
-            {
-                Search(Time, Index, Delta);
-            }
+            UInt   Index;
+            Real32 Delta;
+            Search(Time, Index, Delta);
 
             Result.Lower = Index;
-            Result.Upper = Index < Last ? Index + 1 : Last;
+            Result.Upper = Min(Index + 1, Last);
             Result.Delta = Delta;
             return Result;
         }
@@ -323,7 +335,7 @@ inline namespace ZyMath
                     const UInt Last = mValues.GetSize() - 1;
 
                     Type Before = mValues[Where.Lower     >= 1    ? Where.Lower - 1 : 0];
-                    Type After  = mValues[Where.Upper + 1 <= Last ? Where.Upper + 1 : Last];
+                    Type After  = mValues[Min(Where.Upper + 1, Last)];
                     Type End    = Next;
 
                     if constexpr (IsSlerpable<Type>)
@@ -340,17 +352,13 @@ inline namespace ZyMath
             {
                 return Type::Slerp(Previous, Next, Where.Delta);
             }
+            else if constexpr (IsLerpable<Type>)
+            {
+                return Type::Lerp(Previous, Next, Where.Delta);
+            }
             else
             {
-
-                if constexpr (IsLerpable<Type>)
-                {
-                    return Type::Lerp(Previous, Next, Where.Delta);
-                }
-                else
-                {
-                    return Lerp<Type>(Previous, Next, Where.Delta);
-                }
+                return Lerp<Type>(Previous, Next, Where.Delta);
             }
         }
 

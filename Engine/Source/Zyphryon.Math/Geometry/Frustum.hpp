@@ -47,10 +47,7 @@ inline namespace ZyMath
         ///
         /// \param Plane The side to get.
         /// \return The plane, its normal in the first three components and its distance in the fourth.
-        ZY_INLINE Vector4 GetPlane(Side Plane) const
-        {
-            return mPlanes[ZyEnum::Cast(Plane)];
-        }
+        Vector4 GetPlane(Side Plane) const;
 
         /// \brief Checks whether a point lies inside every plane.
         ///
@@ -80,9 +77,30 @@ inline namespace ZyMath
 
     private:
 
+        /// \brief Four planes side by side, one register per coefficient, so all four are tested at once.
+        ///
+        /// \note The registers hold the X, Y and Z of the four normals, then the four distances.
+        using Quartet = Array<Vector4, 4>;
+
+        /// \brief Scales four planes so each normal has unit length, leaving a plane with no normal as it is.
+        ///
+        /// \param Group The four planes to normalize in place.
+        static void Normalize(Ref<Quartet> Group);
+
+        /// \brief Measures how far a point lies inside each of four planes at once.
+        ///
+        /// \param Group The four planes.
+        /// \param X     The X coordinate of the point, in every lane.
+        /// \param Y     The Y coordinate of the point, in every lane.
+        /// \param Z     The Z coordinate of the point, in every lane.
+        /// \return The signed distance to each plane, negative on the outside.
+        static Vector4 Measure(ConstRef<Quartet> Group, Vector4 X, Vector4 Y, Vector4 Z);
+
+    private:
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Vector4, ZyEnum::Count<Side>()> mPlanes;
+        Array<Quartet, 2> mQuartets;
     };
 }

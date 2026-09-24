@@ -103,26 +103,6 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    template<Real32 Tolerance>
-    Bool Vector4::IsAlmostEqual(Vector4 Other) const
-    {
-        const Type AbsDifference = _mm_andnot_ps(_mm_set1_ps(-0.0f), _mm_sub_ps(mData, Other.mData));
-        return _mm_movemask_ps(_mm_cmple_ps(AbsDifference, _mm_set1_ps(Tolerance))) == 0x0F;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Vector4::IsFinite() const
-    {
-        const Type Temp0 = _mm_and_ps(mData, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
-        const Type Temp1 = _mm_cmplt_ps(Temp0, _mm_set1_ps(INFINITY));
-        return (_mm_movemask_ps(Temp1) == 0xF);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Real32 Vector4::GetLength() const
     {
         return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(GetLengthSquared())));
@@ -144,26 +124,6 @@ inline namespace ZyMath
     {
         const Type Temp0 = _mm_hsub_ps(mData, mData);
         return _mm_cvtss_f32(_mm_hsub_ps(Temp0, Temp0));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Real32 Vector4::ReduceMin() const
-    {
-        Type Temp0 = _mm_min_ps(mData, _mm_shuffle_ps(mData, mData, _MM_SHUFFLE(2, 3, 0, 1)));
-        Temp0      = _mm_min_ps(Temp0, _mm_shuffle_ps(Temp0, Temp0, _MM_SHUFFLE(1, 0, 3, 2)));
-        return _mm_cvtss_f32(Temp0);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Real32 Vector4::ReduceMax() const
-    {
-        Type Temp0 = _mm_max_ps(mData, _mm_shuffle_ps(mData, mData, _MM_SHUFFLE(2, 3, 0, 1)));
-        Temp0      = _mm_max_ps(Temp0, _mm_shuffle_ps(Temp0, Temp0, _MM_SHUFFLE(1, 0, 3, 2)));
-        return _mm_cvtss_f32(Temp0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -284,14 +244,6 @@ inline namespace ZyMath
     Vector4 Vector4::operator!=(Vector4 Other) const
     {
         return _mm_cmpneq_ps(mData, Other.mData);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Vector4 Vector4::Normalize(Vector4 Vector)
-    {
-        return Vector4(_mm_mul_ps(Vector.mData, _mm_set1_ps(1.0f / Vector.GetLength())));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

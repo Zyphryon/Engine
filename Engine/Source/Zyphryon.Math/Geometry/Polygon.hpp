@@ -224,19 +224,15 @@ inline namespace ZyMath
                 return Rect();
             }
 
-            Real32 MinimumX = mVertices[0].GetX();
-            Real32 MinimumY = mVertices[0].GetY();
-            Real32 MaximumX = MinimumX;
-            Real32 MaximumY = MinimumY;
+            Vector2 Minimum = mVertices[0];
+            Vector2 Maximum = Minimum;
 
             for (UInt Index = 1; Index < mVertices.GetSize(); ++Index)
             {
-                MinimumX = Min(MinimumX, mVertices[Index].GetX());
-                MinimumY = Min(MinimumY, mVertices[Index].GetY());
-                MaximumX = Max(MaximumX, mVertices[Index].GetX());
-                MaximumY = Max(MaximumY, mVertices[Index].GetY());
+                Minimum = Vector2::Min(Minimum, mVertices[Index]);
+                Maximum = Vector2::Max(Maximum, mVertices[Index]);
             }
-            return Rect(MinimumX, MinimumY, MaximumX, MaximumY);
+            return Rect(Minimum, Maximum);
         }
 
         /// \brief Checks whether the ring turns the same way at every vertex.

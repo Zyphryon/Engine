@@ -21,6 +21,33 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    template<SInt I, SInt J>
+    static Vector4 Minors(Vector4 Col1, Vector4 Col2, Vector4 Col3)
+    {
+        const Vector4 Swap0A = Vector4::Shuffle<J, J, J, J>(Col3,   Col2);
+        const Vector4 Swap0B = Vector4::Shuffle<I, I, I, I>(Col3,   Col2);
+
+        const Vector4 Swap00 = Vector4::Shuffle<I, I, I, I>(Col2,   Col1);
+        const Vector4 Swap01 = Vector4::Shuffle<0, 0, 0, 2>(Swap0A, Swap0A);
+        const Vector4 Swap02 = Vector4::Shuffle<0, 0, 0, 2>(Swap0B, Swap0B);
+        const Vector4 Swap03 = Vector4::Shuffle<J, J, J, J>(Col2,   Col1);
+
+        return Swap00 * Swap01 - Swap02 * Swap03;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    template<SInt K>
+    static Vector4 Spread(Vector4 Col0, Vector4 Col1)
+    {
+        const Vector4 Temp = Vector4::Shuffle<K, K, K, K>(Col1, Col0);
+        return Vector4::Shuffle<0, 2, 2, 2>(Temp, Temp);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Matrix4x4 Matrix4x4::Inverse(ConstRef<Matrix4x4> Matrix)
     {
         Vector4 Col0 = Matrix.mColumns[0];
@@ -28,93 +55,20 @@ inline namespace ZyMath
         Vector4 Col2 = Matrix.mColumns[2];
         Vector4 Col3 = Matrix.mColumns[3];
 
-        Vector4 Fac0, Fac1, Fac2, Fac3, Fac4, Fac5;
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<2, 2, 2, 2>(Col3, Col2);
-            const Vector4 Swp00 = Vector4::Shuffle<2, 2, 2, 2>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<3, 3, 3, 3>(Col2, Col1);
-
-            Fac0 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<1, 1, 1, 1>(Col3, Col2);
-
-            const Vector4 Swp00 = Vector4::Shuffle<1, 1, 1, 1>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<3, 3, 3, 3>(Col2, Col1);
-
-            Fac1 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<2, 2, 2, 2>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<1, 1, 1, 1>(Col3, Col2);
-
-            const Vector4 Swp00 = Vector4::Shuffle<1, 1, 1, 1>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<2, 2, 2, 2>(Col2, Col1);
-
-            Fac2 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<3, 3, 3, 3>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<0, 0, 0, 0>(Col3, Col2);
-
-            const Vector4 Swp00 = Vector4::Shuffle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<3, 3, 3, 3>(Col2, Col1);
-
-            Fac3 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<2, 2, 2, 2>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<0, 0, 0, 0>(Col3, Col2);
-
-            const Vector4 Swp00 = Vector4::Shuffle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<2, 2, 2, 2>(Col2, Col1);
-
-            Fac4 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
-
-        {
-            const Vector4 Swp0a = Vector4::Shuffle<1, 1, 1, 1>(Col3, Col2);
-            const Vector4 Swp0b = Vector4::Shuffle<0, 0, 0, 0>(Col3, Col2);
-
-            const Vector4 Swp00 = Vector4::Shuffle<0, 0, 0, 0>(Col2, Col1);
-            const Vector4 Swp01 = Vector4::Shuffle<0, 0, 0, 2>(Swp0a, Swp0a);
-            const Vector4 Swp02 = Vector4::Shuffle<0, 0, 0, 2>(Swp0b, Swp0b);
-            const Vector4 Swp03 = Vector4::Shuffle<1, 1, 1, 1>(Col2, Col1);
-
-            Fac5 = Swp00 * Swp01 - Swp02 * Swp03;
-        }
+        const Vector4 Fac0 = Minors<2, 3>(Col1, Col2, Col3);
+        const Vector4 Fac1 = Minors<1, 3>(Col1, Col2, Col3);
+        const Vector4 Fac2 = Minors<1, 2>(Col1, Col2, Col3);
+        const Vector4 Fac3 = Minors<0, 3>(Col1, Col2, Col3);
+        const Vector4 Fac4 = Minors<0, 2>(Col1, Col2, Col3);
+        const Vector4 Fac5 = Minors<0, 1>(Col1, Col2, Col3);
 
         const Vector4 SignA(-1.0f, 1.0f, -1.0f, 1.0f);
         const Vector4 SignB( 1.0f,-1.0f,  1.0f,-1.0f);
 
-        const Vector4 Temp0 = Vector4::Shuffle<0, 0, 0, 0>(Col1, Col0);
-        const Vector4 Vec0  = Vector4::Shuffle<0, 2, 2, 2>(Temp0, Temp0);
-
-        const Vector4 Temp1 = Vector4::Shuffle<1, 1, 1, 1>(Col1, Col0);
-        const Vector4 Vec1  = Vector4::Shuffle<0, 2, 2, 2>(Temp1, Temp1);
-
-        const Vector4 Temp2 = Vector4::Shuffle<2, 2, 2, 2>(Col1, Col0);
-        const Vector4 Vec2  = Vector4::Shuffle<0, 2, 2, 2>(Temp2, Temp2);
-
-        const Vector4 Temp3 = Vector4::Shuffle<3, 3, 3, 3>(Col1, Col0);
-        const Vector4 Vec3  = Vector4::Shuffle<0, 2, 2, 2>(Temp3, Temp3);
+        const Vector4 Vec0 = Spread<0>(Col0, Col1);
+        const Vector4 Vec1 = Spread<1>(Col0, Col1);
+        const Vector4 Vec2 = Spread<2>(Col0, Col1);
+        const Vector4 Vec3 = Spread<3>(Col0, Col1);
 
         const Vector4 Inv0 = SignB * ((Vec1 * Fac0) - (Vec2 * Fac1) + (Vec3 * Fac2));
         const Vector4 Inv1 = SignA * ((Vec0 * Fac0) - (Vec2 * Fac3) + (Vec3 * Fac4));

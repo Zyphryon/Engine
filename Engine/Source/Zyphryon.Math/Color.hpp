@@ -114,7 +114,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr AnyColor<UInt8> ToColor8() const
             requires(IsReal<Type>)
         {
-            return AnyColor<UInt8>(
+            return AnyColor(
                 static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[0])),
                 static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[1])),
                 static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[2])),
@@ -161,10 +161,7 @@ inline namespace ZyMath
         /// \return A new color with the scalar added to all channels.
         ZY_INLINE constexpr AnyColor operator+(Type Scalar) const
         {
-            return AnyColor(mComponents[0] + Scalar,
-                            mComponents[1] + Scalar,
-                            mComponents[2] + Scalar,
-                            mComponents[3] + Scalar);
+            return (* this) + AnyColor(Scalar, Scalar, Scalar, Scalar);
         }
 
         /// \brief Subtracts another color from this color (component-wise RGBA).
@@ -185,10 +182,7 @@ inline namespace ZyMath
         /// \return A new color with the scalar subtracted from all channels.
         ZY_INLINE constexpr AnyColor operator-(Type Scalar) const
         {
-            return AnyColor(mComponents[0] - Scalar,
-                            mComponents[1] - Scalar,
-                            mComponents[2] - Scalar,
-                            mComponents[3] - Scalar);
+            return (* this) - AnyColor(Scalar, Scalar, Scalar, Scalar);
         }
 
         /// \brief Multiplies this color by another color (component-wise RGBA).
@@ -209,10 +203,7 @@ inline namespace ZyMath
         /// \return A new color with all channels multiplied by the scalar.
         ZY_INLINE constexpr AnyColor operator*(Type Scalar) const
         {
-            return AnyColor(mComponents[0] * Scalar,
-                            mComponents[1] * Scalar,
-                            mComponents[2] * Scalar,
-                            mComponents[3] * Scalar);
+            return (* this) * AnyColor(Scalar, Scalar, Scalar, Scalar);
         }
 
         /// \brief Divides this color by another color (component-wise RGBA).
@@ -238,12 +229,7 @@ inline namespace ZyMath
         /// \return A new color with all channels divided by the scalar.
         ZY_INLINE constexpr AnyColor operator/(Type Scalar) const
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            return AnyColor(mComponents[0] / Scalar,
-                            mComponents[1] / Scalar,
-                            mComponents[2] / Scalar,
-                            mComponents[3] / Scalar);
+            return (* this) / AnyColor(Scalar, Scalar, Scalar, Scalar);
         }
 
         /// \brief Adds another color to the current color (component-wise RGBA).
@@ -252,11 +238,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator+=(AnyColor Other)
         {
-            mComponents[0] += Other.mComponents[0];
-            mComponents[1] += Other.mComponents[1];
-            mComponents[2] += Other.mComponents[2];
-            mComponents[3] += Other.mComponents[3];
-            return (* this);
+            return (* this) = (* this) + Other;
         }
 
         /// \brief Adds a scalar value to all channels of the color.
@@ -265,11 +247,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator+=(Type Scalar)
         {
-            mComponents[0] += Scalar;
-            mComponents[1] += Scalar;
-            mComponents[2] += Scalar;
-            mComponents[3] += Scalar;
-            return (* this);
+            return (* this) = (* this) + Scalar;
         }
 
         /// \brief Subtracts another color from the current color (component-wise RGBA).
@@ -278,11 +256,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator-=(AnyColor Other)
         {
-            mComponents[0] -= Other.mComponents[0];
-            mComponents[1] -= Other.mComponents[1];
-            mComponents[2] -= Other.mComponents[2];
-            mComponents[3] -= Other.mComponents[3];
-            return (* this);
+            return (* this) = (* this) - Other;
         }
 
         /// \brief Subtracts a scalar value from all channels of the color.
@@ -291,11 +265,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator-=(Type Scalar)
         {
-            mComponents[0] -= Scalar;
-            mComponents[1] -= Scalar;
-            mComponents[2] -= Scalar;
-            mComponents[3] -= Scalar;
-            return (* this);
+            return (* this) = (* this) - Scalar;
         }
 
         /// \brief Multiplies all channels of the color by another color (component-wise RGBA).
@@ -304,11 +274,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator*=(AnyColor Other)
         {
-            mComponents[0] *= Other.mComponents[0];
-            mComponents[1] *= Other.mComponents[1];
-            mComponents[2] *= Other.mComponents[2];
-            mComponents[3] *= Other.mComponents[3];
-            return (* this);
+            return (* this) = (* this) * Other;
         }
 
         /// \brief Multiplies all channels of the color by a scalar value.
@@ -317,11 +283,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator*=(Type Scalar)
         {
-            mComponents[0] *= Scalar;
-            mComponents[1] *= Scalar;
-            mComponents[2] *= Scalar;
-            mComponents[3] *= Scalar;
-            return (* this);
+            return (* this) = (* this) * Scalar;
         }
 
         /// \brief Divides all channels of the color by another color (component-wise RGBA).
@@ -330,16 +292,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator/=(AnyColor Other)
         {
-            ZY_ASSERT(!::IsAlmostZero(Other.mComponents[0]), "Division by zero (Red)");
-            ZY_ASSERT(!::IsAlmostZero(Other.mComponents[1]), "Division by zero (Green)");
-            ZY_ASSERT(!::IsAlmostZero(Other.mComponents[2]), "Division by zero (Blue)");
-            ZY_ASSERT(!::IsAlmostZero(Other.mComponents[3]), "Division by zero (Alpha)");
-
-            mComponents[0] /= Other.mComponents[0];
-            mComponents[1] /= Other.mComponents[1];
-            mComponents[2] /= Other.mComponents[2];
-            mComponents[3] /= Other.mComponents[3];
-            return (* this);
+            return (* this) = (* this) / Other;
         }
 
         /// \brief Divides all channels of the color by a scalar value.
@@ -348,13 +301,7 @@ inline namespace ZyMath
         /// \return A reference to the updated color.
         ZY_INLINE constexpr Ref<AnyColor> operator/=(Type Scalar)
         {
-            ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
-
-            mComponents[0] /= Scalar;
-            mComponents[1] /= Scalar;
-            mComponents[2] /= Scalar;
-            mComponents[3] /= Scalar;
-            return (* this);
+            return (* this) = (* this) / Scalar;
         }
 
         /// \brief Checks if this color is equal to another color.
@@ -363,10 +310,7 @@ inline namespace ZyMath
         /// \return `true` if all channels are equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(AnyColor Other) const
         {
-            return mComponents[0] == Other.mComponents[0] &&
-                   mComponents[1] == Other.mComponents[1] &&
-                   mComponents[2] == Other.mComponents[2] &&
-                   mComponents[3] == Other.mComponents[3];
+            return mComponents == Other.mComponents;
         }
 
         /// \brief Checks if this color is not equal to another color.
@@ -731,16 +675,16 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyColor Modulate(AnyColor First, AnyColor<Real32> Second)
             requires(!IsReal<Type>)
         {
-            constexpr auto Channel = [](Type Value, Real32 Amount)
-            {
-                return static_cast<Type>(
-                    ::Clamp(static_cast<Real32>(Value) * Amount, 0.0f, static_cast<Real32>(Limit())));
-            };
+            constexpr Real32 Maximum = static_cast<Real32>(Limit());
+
+            const Real32 Red   = static_cast<Real32>(First.GetRed())   * Second.GetRed();
+            const Real32 Green = static_cast<Real32>(First.GetGreen()) * Second.GetGreen();
+            const Real32 Blue  = static_cast<Real32>(First.GetBlue())  * Second.GetBlue();
 
             return AnyColor(
-                Channel(First.GetRed(),   Second.GetRed()),
-                Channel(First.GetGreen(), Second.GetGreen()),
-                Channel(First.GetBlue(),  Second.GetBlue()),
+                ::Clamp(Red,   0.0f, Maximum),
+                ::Clamp(Green, 0.0f, Maximum),
+                ::Clamp(Blue,  0.0f, Maximum),
                 First.GetAlpha());
         }
 
@@ -761,16 +705,16 @@ inline namespace ZyMath
         /// \return The color value interpolated between \a Start and \a End.
         ZY_INLINE static constexpr AnyColor Lerp(ConstRef<AnyColor> Start, ConstRef<AnyColor> End, Real32 Percentage)
         {
-            const auto Channel = [Percentage](Type From, Type To)
+            const auto Blend = [Percentage](Type From, Type To)
             {
                 return static_cast<Type>(::Lerp(static_cast<Real32>(From), static_cast<Real32>(To), Percentage));
             };
 
             return AnyColor(
-                Channel(Start.GetRed(),   End.GetRed()),
-                Channel(Start.GetGreen(), End.GetGreen()),
-                Channel(Start.GetBlue(),  End.GetBlue()),
-                Channel(Start.GetAlpha(), End.GetAlpha()));
+                Blend(Start.GetRed(),   End.GetRed()),
+                Blend(Start.GetGreen(), End.GetGreen()),
+                Blend(Start.GetBlue(),  End.GetBlue()),
+                Blend(Start.GetAlpha(), End.GetAlpha()));
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.

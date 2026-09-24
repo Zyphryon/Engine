@@ -240,7 +240,7 @@ inline namespace ZyMath
     {
         ZY_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        return Time == 0 ? 0 : Time == 1 ? 1 : -Pow(Type(2), 10 * Time - 10) * Angle::Sine((Time * 10 - 10.75) * (2 * kPI<Type> / 3));
+        return Time == 0 ? 0 : Time == 1 ? 1 : -Pow(Type(2), 10 * Time - 10) * Angle::Sine((Time * 10 - 10.75) * (kTwoPI<Type> / 3));
     }
 
     /// \brief Elastic easing function (decelerating to zero velocity with overshoot).
@@ -252,7 +252,7 @@ inline namespace ZyMath
     {
         ZY_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        constexpr Type C4 = (2 * kPI<Type>) / 3;
+        constexpr Type C4 = kTwoPI<Type> / 3;
         return Time == 0 ? 0 : Time == 1 ? 1 : Pow(Type(2), -10 * Time) * Angle::Sine((Time * 10 - 0.75) * C4) + 1;
     }
 
@@ -265,7 +265,7 @@ inline namespace ZyMath
     {
         ZY_ASSERT(Time >= Type(0) && Time <= Type(1), "Easing time must be normalized in [0, 1]");
 
-        constexpr Type C5 = (2 * kPI<Type>) / 4.5;
+        constexpr Type C5 = kTwoPI<Type> / 4.5;
         return Time == 0 ? 0 : Time == 1 ? 1 : Time < 0.5
             ? -(Pow(Type(2), 20 * Time - 10) * Angle::Sine((20 * Time - 11.125) * C5)) / 2
             : (Pow(Type(2), -20 * Time + 10) * Angle::Sine((20 * Time - 11.125) * C5 )) / 2 + 1;

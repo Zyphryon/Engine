@@ -23,8 +23,6 @@ inline namespace ZyMath
     /// \brief Represents a quaternion for 3D rotations.
     class ZY_API ZY_ALIGN(16) Quaternion final
     {
-        friend class Matrix4x4;
-
     public:
 
         /// \brief Constructs an identity quaternion.
@@ -255,15 +253,13 @@ inline namespace ZyMath
         {
             ZY_ASSERT(IsNormalized(), "Quaternion must be normalized before rotating");
 
-            const Vector4 V1 = Vector4::Select<0b1000>(mData, Vector4::Zero());
-            const Vector4 V2 = Vector4::Select<0b1000>(Other.mData, Vector4::Zero());
             const Vector4 W1 = Vector4::SplatW(mData);
             const Vector4 W2 = Vector4::SplatW(Other.mData);
 
-            const Vector4 XYZ = W1 * V2 + W2 * V1 + Vector4::Cross3(V1, V2);
-            const Vector4 W   = W1 * W2 - Vector4(Vector4::Dot3(V1, V2));
+            const Vector4 XYZ = W1 * Other.mData + W2 * mData + Vector4::Cross3(mData, Other.mData);
+            const Vector4 W   = W1 * W2 - Vector4(Vector4::Dot3(mData, Other.mData));
 
-            return Quaternion(Vector4::Select<0b1000>(XYZ, W * Vector4::UnitW()));
+            return Quaternion(Vector4::Select<0b1000>(XYZ, W));
         }
 
         /// \brief Multiplies all components of this quaternion by a scalar.
@@ -404,10 +400,9 @@ inline namespace ZyMath
         {
             ZY_ASSERT(Rotation.IsNormalized(), "Quaternion must be normalized before rotating");
 
-            const Vector4 AV = Vector4::Select<0b1000>(Rotation.mData, Vector4::Zero());
             const Vector4 BV = Vector4(Vector.GetX(), Vector.GetY(), Vector.GetZ(), 0.0f);
-            const Vector4 T  = Vector4::Cross3(AV, BV) * 2.0f;
-            const Vector4 VP = BV + Vector4::SplatW(Rotation.mData) * T + Vector4::Cross3(AV, T);
+            const Vector4 T  = Vector4::Cross3(Rotation.mData, BV) * 2.0f;
+            const Vector4 VP = BV + Vector4::SplatW(Rotation.mData) * T + Vector4::Cross3(Rotation.mData, T);
 
             return VP.GetXYZ();
         }

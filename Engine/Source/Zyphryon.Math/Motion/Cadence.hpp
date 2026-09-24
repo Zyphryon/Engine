@@ -27,8 +27,7 @@ inline namespace ZyMath
 
         /// \brief Constructs an empty cadence, carrying neither a rate nor a length.
         ZY_INLINE Cadence()
-            : mRate { 0.0f },
-              mSize { 0 }
+            : Cadence(0.0f, 0)
         {
         }
 
@@ -82,15 +81,7 @@ inline namespace ZyMath
         /// \return The bracketing samples and the fraction between them.
         ZY_INLINE Cursor Locate(Real64 Time) const
         {
-            const UInt   Last   = mSize > 0 ? mSize - 1 : 0;
-            const Real64 Scaled = Clamp(Time * static_cast<Real64>(mRate), 0.0, static_cast<Real64>(Last));
-            const UInt   Index  = static_cast<UInt>(Scaled);
-
-            Cursor Result;
-            Result.Lower = Index;
-            Result.Upper = Index < Last ? Index + 1 : Last;
-            Result.Delta = static_cast<Real32>(Scaled - static_cast<Real64>(Index));
-            return Result;
+            return Cursor::FromUniform(Time, mRate, mSize > 0 ? mSize - 1 : 0);
         }
 
     private:

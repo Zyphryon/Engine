@@ -28,7 +28,7 @@ namespace ZyRender
             return 0;
         }
 
-        const Angle Step = Angle::FromRadians(2.0f * kPI<Real32> / mDirections);
+        const Angle Step = Angle::FromTurns(1.0f / mDirections);
 
         // Keeping the current direction near its boundary stops a facing on the seam flickering between two.
         if (Current < mDirections)

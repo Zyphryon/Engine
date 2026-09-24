@@ -31,19 +31,16 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Copy constructor for Transform.
-        ZY_INLINE Transform(ConstRef<Transform> Other) = default;
-
         /// \brief Constructs a Transform with the specified 3D translation, scale, and rotation.
         ///
         /// \param Translation The 3D translation vector to set.
         /// \param Scale       The 3D scale vector to set.
         /// \param Rotation    The quaternion representing the rotation to set.
         ZY_INLINE Transform(Vector3 Translation, Vector3 Scale, Quaternion Rotation)
+            : mTranslation { Translation },
+              mScale       { Scale },
+              mRotation    { Rotation }
         {
-            SetTranslation(Translation);
-            SetScale(Scale);
-            SetRotation(Rotation);
         }
 
         /// \brief Constructs a Transform with the specified 2D translation (Z = 0), scale (Z = 1), and rotation.
@@ -52,10 +49,8 @@ inline namespace ZyMath
         /// \param Scale       The 2D scale vector to set (Z component will be set to 1).
         /// \param Rotation    The quaternion representing the rotation to set.
         ZY_INLINE Transform(Vector2 Translation, Vector2 Scale, Quaternion Rotation)
+            : Transform(Vector3(Translation, 0.0f), Vector3(Scale, 1.0f), Rotation)
         {
-            SetTranslation(Translation);
-            SetScale(Scale);
-            SetRotation(Rotation);
         }
 
         /// \brief Constructs a Transform with the specified 3D translation and rotation.
@@ -63,10 +58,8 @@ inline namespace ZyMath
         /// \param Translation The 3D translation vector to set.
         /// \param Rotation    The quaternion representing the rotation to set.
         ZY_INLINE Transform(Vector3 Translation, Quaternion Rotation)
-            : Transform()
+            : Transform(Translation, Vector3::One(), Rotation)
         {
-            SetTranslation(Translation);
-            SetRotation(Rotation);
         }
 
         /// \brief Constructs a Transform with the specified 2D translation (Z = 0) and rotation.
@@ -74,28 +67,24 @@ inline namespace ZyMath
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
         /// \param Rotation    The quaternion representing the rotation.
         ZY_INLINE Transform(Vector2 Translation, Quaternion Rotation)
-            : Transform()
+            : Transform(Vector3(Translation, 0.0f), Rotation)
         {
-            SetTranslation(Translation);
-            SetRotation(Rotation);
         }
 
         /// \brief Constructs a Transform with the specified 3D translation.
         ///
         /// \param Translation The 3D translation vector to set.
         ZY_INLINE explicit Transform(Vector3 Translation)
-            : Transform()
+            : Transform(Translation, Quaternion())
         {
-            SetTranslation(Translation);
         }
 
         /// \brief Constructs a Transform with the specified 2D translation (Z = 0).
         ///
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
         ZY_INLINE explicit Transform(Vector2 Translation)
-            : Transform()
+            : Transform(Vector3(Translation, 0.0f))
         {
-            SetTranslation(Translation);
         }
 
         /// \brief Computes the final transformation matrix.

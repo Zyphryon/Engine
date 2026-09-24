@@ -201,9 +201,9 @@ inline namespace ZyMath
         /// \return The bounding volume.
         ZY_INLINE constexpr Box GetBoundaries() const
         {
-            return Box(
-                Vector3(mCenter.GetX() - mRadius, GetBottom(), mCenter.GetZ() - mRadius),
-                Vector3(mCenter.GetX() + mRadius, GetTop(),    mCenter.GetZ() + mRadius));
+            const Vector3 Reach(mRadius, mExtent, mRadius);
+
+            return Box(mCenter - Reach, mCenter + Reach);
         }
 
         /// \brief Grows the cylinder by an amount, on every side alike.

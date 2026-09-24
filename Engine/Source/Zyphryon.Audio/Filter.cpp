@@ -24,7 +24,7 @@ namespace ZyAudio
 
     Filter::Filter(Real32 Cutoff)
     {
-        const Real32 Omega   = 2.0f * kPI<Real32> * Max(Cutoff, kMinimumCutoff) / static_cast<Real32>(kMixerFrequency);
+        const Real32 Omega   = kTwoPI<Real32> * Max(Cutoff, kMinimumCutoff) / static_cast<Real32>(kMixerFrequency);
         const Real32 Cos     = Cosine(Omega);
         const Real32 Alpha   = Sine(Omega) * kQuality;
         const Real32 Inverse = 1.0f / (1.0f + Alpha);
