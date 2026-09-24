@@ -283,16 +283,6 @@ namespace ZyPlatform
 
     struct Window::Backend
     {
-        /// \brief The window geometry captured before entering fullscreen, so it can be restored afterwards.
-        struct Snapshot
-        {
-            /// The cursor position observed by the previous motion event.
-            SInt32 CursorX = 0;
-
-            /// The cursor position observed by the previous motion event.
-            SInt32 CursorY = 0;
-        };
-
         /// The connection to the X server, owned for the lifetime of the window.
         Ptr<::Display> Connection = nullptr;
 
@@ -314,8 +304,11 @@ namespace ZyPlatform
         /// The `WM_DELETE_WINDOW` atom, delivered as a client message when the frame's close button is used.
         Atom           Close      = None;
 
-        /// The most recent cursor position, used to derive relative motion.
-        Snapshot       Cursor;
+        /// The horizontal cursor position seen by the previous motion event, which relative motion is measured from.
+        SInt32         CursorX    = 0;
+
+        /// The vertical cursor position seen by the previous motion event, which relative motion is measured from.
+        SInt32         CursorY    = 0;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -545,11 +538,11 @@ namespace ZyPlatform
                 const SInt32 X = Event.xmotion.x;
                 const SInt32 Y = Event.xmotion.y;
 
-                const SInt32 DeltaX = X - Cursor.CursorX;
-                const SInt32 DeltaY = Y - Cursor.CursorY;
+                const SInt32 DeltaX = X - CursorX;
+                const SInt32 DeltaY = Y - CursorY;
 
-                Cursor.CursorX = X;
-                Cursor.CursorY = Y;
+                CursorX = X;
+                CursorY = Y;
 
                 if (Window->IsCursorLocked())
                 {
@@ -715,19 +708,21 @@ namespace ZyPlatform
         ::XWarpPointer(mBackend->Connection, 0, mBackend->Handle, 0, 0, 0, 0, X, Y);
         ::XFlush(mBackend->Connection);
 
-        mBackend->Cursor.CursorX = X;
-        mBackend->Cursor.CursorY = Y;
+        mBackend->CursorX = X;
+        mBackend->CursorY = Y;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Window::SetCursorLock(Bool State)
+    void Window::SetCursorLock(Bool Lock)
     {
-        mBackend->ApplyCursorLock(State);
+        ZY_ASSERT(Lock != IsCursorLocked(), "The cursor is already in the requested lock state");
+
+        mBackend->ApplyCursorLock(Lock);
         ::XFlush(mBackend->Connection);
 
-        mStates = SetOrClearBit(mStates, State::Locked, State);
+        mStates = SetOrClearBit(mStates, State::Locked, Lock);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

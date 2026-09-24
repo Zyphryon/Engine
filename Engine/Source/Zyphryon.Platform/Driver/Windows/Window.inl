@@ -12,6 +12,7 @@
 
 #include <windows.h>
 #include <windowsx.h>
+#include <shellscalingapi.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -22,8 +23,11 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static ZyInput::Key ConvertVirtualKey(UInt32 Key)
+    static ZyInput::Key ConvertVirtualKey(UInt32 Key, LPARAM Flags)
     {
+        const UINT Scancode = (Flags >> 16) & 0xFF;
+        const Bool Extended = (HIWORD(Flags) & KF_EXTENDED) != 0;
+
         switch (Key)
         {
         case 'A':
@@ -163,23 +167,18 @@ namespace ZyPlatform
         case VK_PAUSE:
             return ZyInput::Key::Pause;
         case VK_SHIFT:
-            if (GetKeyState(VK_LSHIFT) & 0x8000)
+            if (::MapVirtualKeyW(Scancode, MAPVK_VSC_TO_VK_EX) == VK_RSHIFT)
+            {
+                return ZyInput::Key::RightShift;
+            }
+            else
             {
                 return ZyInput::Key::LeftShift;
             }
-            return ZyInput::Key::RightShift;
         case VK_CONTROL:
-            if (GetKeyState(VK_LCONTROL) & 0x8000)
-            {
-                return ZyInput::Key::LeftCtrl;
-            }
-            return ZyInput::Key::RightCtrl;
+            return Extended ? ZyInput::Key::RightCtrl : ZyInput::Key::LeftCtrl;
         case VK_MENU:
-            if (GetKeyState(VK_LMENU) & 0x8000)
-            {
-                return ZyInput::Key::LeftAlt;
-            }
-            return ZyInput::Key::RightAlt;
+            return Extended ? ZyInput::Key::RightAlt : ZyInput::Key::LeftAlt;
         case VK_LWIN:
             return ZyInput::Key::LeftSuper;
         case VK_RWIN:
@@ -276,23 +275,17 @@ namespace ZyPlatform
 
     struct Window::Backend
     {
-        struct States
-        {
-            /// Cursor position before lock.
-            POINT Cursor;
-
-            /// Window area (position + size) before fullscreen.
-            RECT  Region;
-
-            /// The current character from the WM_CHAR message.
-            WCHAR Surrogate = '\0';
-        };
-
         /// The native Win32 window handle (HWND) associated with the window.
-        HWND   Handle = nullptr;
+        HWND  Handle    = nullptr;
 
-        /// The snapshot of the window state for later restoration.
-        States Snapshot;
+        /// The cursor position seen by the last motion message, which is also where the cursor returns when unlocked.
+        POINT Cursor    = { };
+
+        /// The window area (position and size) before entering fullscreen.
+        RECT  Region    = { };
+
+        /// The high half of a surrogate pair, held until its low half arrives in the next `WM_CHAR`.
+        WCHAR Surrogate = L'\0';
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -310,9 +303,9 @@ namespace ZyPlatform
             }
             else
             {
-                POINT Cursor = Snapshot.Cursor;
-                ::ClientToScreen(Handle, AddressOf(Cursor));
-                ::SetCursorPos(Cursor.x, Cursor.y);
+                POINT Point = Cursor;
+                ::ClientToScreen(Handle, AddressOf(Point));
+                ::SetCursorPos(Point.x, Point.y);
 
                 ::ClipCursor(nullptr);
                 ::ShowCursor(TRUE);
@@ -435,7 +428,7 @@ namespace ZyPlatform
             {
                 if ((HIWORD(Arg1) & KF_REPEAT) == 0)
                 {
-                    const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0));
+                    const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0), Arg1);
 
                     if (Key != ZyInput::Key::Unknown)
                     {
@@ -447,7 +440,7 @@ namespace ZyPlatform
             case WM_KEYUP:
             case WM_SYSKEYUP:
             {
-                const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0));
+                const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0), Arg1);
 
                 if (Key != ZyInput::Key::Unknown)
                 {
@@ -523,11 +516,11 @@ namespace ZyPlatform
                 {
                     const UInt32 X = GET_X_LPARAM(Arg1);
                     const UInt32 Y = GET_Y_LPARAM(Arg1);
-                    const SInt32 DeltaX = X - Snapshot.Cursor.x;
-                    const SInt32 DeltaY = Y - Snapshot.Cursor.y;
+                    const SInt32 DeltaX = X - Cursor.x;
+                    const SInt32 DeltaY = Y - Cursor.y;
 
-                    Snapshot.Cursor.x = X;
-                    Snapshot.Cursor.y = Y;
+                    Cursor.x = X;
+                    Cursor.y = Y;
                     Dispatcher.QueueMouseMove(X, Y, DeltaX, DeltaY);
                 }
                 break;
@@ -555,17 +548,17 @@ namespace ZyPlatform
             {
                 if (IS_HIGH_SURROGATE(Arg0))
                 {
-                    Snapshot.Surrogate = static_cast<WCHAR>(Arg0);
+                    Surrogate = static_cast<WCHAR>(Arg0);
                 }
                 else
                 {
-                    const WCHAR Surrogate = Exchange(Snapshot.Surrogate, 0);
+                    const WCHAR High = Exchange(Surrogate, 0);
 
                     Str16 Buffer;
 
-                    if (IS_LOW_SURROGATE(Arg0) && Surrogate)
+                    if (IS_LOW_SURROGATE(Arg0) && High)
                     {
-                        Buffer.AppendCodepoint(((Surrogate - 0xD800) << 10) + (Arg0 - 0xDC00) + 0x10000);
+                        Buffer.AppendCodepoint(((High - 0xD800) << 10) + (Arg0 - 0xDC00) + 0x10000);
                     }
                     else if (Arg0 >= 0x20 || Arg0 == '\t' || Arg0 == '\r' || Arg0 == '\n')
                     {
@@ -618,6 +611,11 @@ namespace ZyPlatform
 
     Window::~Window()
     {
+        if (!mBackend)
+        {
+            return;
+        }
+
         if (mBackend->Handle)
         {
             ::DestroyWindow(mBackend->Handle);
@@ -700,7 +698,7 @@ namespace ZyPlatform
 
         if (Fullscreen)
         {
-            ::GetWindowRect(mBackend->Handle, AddressOf(mBackend->Snapshot.Region));
+            ::GetWindowRect(mBackend->Handle, AddressOf(mBackend->Region));
 
             const HMONITOR Monitor     = ::MonitorFromWindow(mBackend->Handle, MONITOR_DEFAULTTONEAREST);
             MONITORINFO    MonitorInfo = { .cbSize = sizeof(MONITORINFO) };
@@ -726,10 +724,10 @@ namespace ZyPlatform
             ::SetWindowPos(
                 mBackend->Handle,
                 HWND_NOTOPMOST,
-                mBackend->Snapshot.Region.left,
-                mBackend->Snapshot.Region.top,
-                mBackend->Snapshot.Region.right - mBackend->Snapshot.Region.left,
-                mBackend->Snapshot.Region.bottom - mBackend->Snapshot.Region.top,
+                mBackend->Region.left,
+                mBackend->Region.top,
+                mBackend->Region.right - mBackend->Region.left,
+                mBackend->Region.bottom - mBackend->Region.top,
                 SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
         }
 
@@ -768,29 +766,25 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Window::SetCursorLock(Bool State)
+    void Window::SetCursorLock(Bool Lock)
     {
-        mBackend->ApplyCursorLock(State);
+        ZY_ASSERT(Lock != IsCursorLocked(), "The cursor is already in the requested lock state");
 
-        if (State)
+        // Focus changes apply and release the lock themselves, so an unfocused window only records it for later.
+        if (IsFocused())
         {
-            RAWINPUTDEVICE Device { };
-            Device.usUsagePage = 0x01;
-            Device.usUsage     = 0x02;
-            Device.dwFlags     = 0x00;
-            Device.hwndTarget  = mBackend->Handle;
-            ::RegisterRawInputDevices(AddressOf(Device), 1, sizeof(RAWINPUTDEVICE));
+            mBackend->ApplyCursorLock(Lock);
         }
-        else
-        {
-            RAWINPUTDEVICE Device { };
-            Device.usUsagePage = 0x01;
-            Device.usUsage     = 0x02;
-            Device.dwFlags     = RIDEV_REMOVE;
-            Device.hwndTarget  = nullptr;
-            ::RegisterRawInputDevices(AddressOf(Device), 1, sizeof(RAWINPUTDEVICE));
-        }
-        mStates = State ? SetBit(mStates, State::Locked) : ClearBit(mStates, State::Locked);
+
+        const RAWINPUTDEVICE Device {
+            .usUsagePage = 0x01,
+            .usUsage     = 0x02,
+            .dwFlags     = Lock ? 0u : RIDEV_REMOVE,
+            .hwndTarget  = Lock ? mBackend->Handle : nullptr
+        };
+        ::RegisterRawInputDevices(AddressOf(Device), 1, sizeof(RAWINPUTDEVICE));
+
+        mStates = SetOrClearBit(mStates, State::Locked, Lock);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -810,47 +804,57 @@ namespace ZyPlatform
 
         Sequence<Wide, MAX_PATH> InTitle = StrConvertUTF16<MAX_PATH>(Title);
 
+        mBackend = Unique<Backend>::Create();
 
-        // Calculate required window size for desired client area.
-        const DWORD Style0 = ConvertStyle(Fullscreen, Borderless);
-        const DWORD Style1 = WS_EX_APPWINDOW | (Fullscreen ? WS_EX_TOPMOST : 0);
+        // The frame is sized at the DPI of the monitor the window opens on.
+        const HMONITOR Monitor = ::MonitorFromPoint(POINT { .x = X, .y = Y }, MONITOR_DEFAULTTONEAREST);
+        UINT           DpiX    = USER_DEFAULT_SCREEN_DPI;
+        UINT           DpiY    = USER_DEFAULT_SCREEN_DPI;
+        ::GetDpiForMonitor(Monitor, MDT_EFFECTIVE_DPI, AddressOf(DpiX), AddressOf(DpiY));
 
-        RECT Rect = {
-            .left = 0,
-            .top = 0,
-            .right = static_cast<LONG>(Width),
+        // Leaving fullscreen restores the windowed frame, so it is worked out even when the window opens fullscreen.
+        RECT Frame {
+            .left   = 0,
+            .top    = 0,
+            .right  = static_cast<LONG>(Width),
             .bottom = static_cast<LONG>(Height)
         };
-        ::AdjustWindowRectEx(AddressOf(Rect), Style0, FALSE, Style1);
+        ::AdjustWindowRectExForDpi(AddressOf(Frame), ConvertStyle(false, Borderless), FALSE, WS_EX_APPWINDOW, DpiX);
 
-        mStates = SetOrClearBit(mStates, State::Borderless, Borderless);
-        mTitle  = Title;
+        mBackend->Region = {
+            .left   = X,
+            .top    = Y,
+            .right  = X + (Frame.right - Frame.left),
+            .bottom = Y + (Frame.bottom - Frame.top)
+        };
 
-        mWidth  = Rect.right - Rect.left;
-        mHeight = Rect.bottom - Rect.top;
+        RECT Bounds = mBackend->Region;
 
         if (Fullscreen)
         {
-            const HMONITOR Monitor     = ::MonitorFromPoint(POINT{ .x = X, .y = Y }, MONITOR_DEFAULTTONEAREST);
-            MONITORINFO    MonitorInfo = { .cbSize = sizeof(MONITORINFO) };
+            MONITORINFO MonitorInfo {
+                .cbSize = sizeof(MONITORINFO) 
+            };
             ::GetMonitorInfoW(Monitor, AddressOf(MonitorInfo));
 
-            X       = 0;
-            Y       = 0;
-            mWidth  = MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left;
-            mHeight = MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top;
+            Bounds = MonitorInfo.rcMonitor;
         }
 
-        mBackend = Unique<Backend>::Create();
+        mTitle  = Title;
+        mWidth  = Fullscreen ? static_cast<UInt32>(Bounds.right - Bounds.left) : Width;
+        mHeight = Fullscreen ? static_cast<UInt32>(Bounds.bottom - Bounds.top) : Height;
+        mStates = SetOrClearBit(mStates, State::Borderless, Borderless);
+        mStates = SetOrClearBit(mStates, State::Fullscreen, Fullscreen);
+
         mBackend->Handle = ::CreateWindowExW(
-            Style1,
+            WS_EX_APPWINDOW | (Fullscreen ? WS_EX_TOPMOST : 0),
             L"ZyWindowClass",
             InTitle.GetData(),
-            Style0,
-            X,
-            Y,
-            mWidth,
-            mHeight,
+            ConvertStyle(Fullscreen, Borderless),
+            Bounds.left,
+            Bounds.top,
+            Bounds.right - Bounds.left,
+            Bounds.bottom - Bounds.top,
             nullptr,
             nullptr,
             Win32Class.hInstance,

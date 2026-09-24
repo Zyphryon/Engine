@@ -20,12 +20,12 @@
 
 namespace ZyPlatform
 {
-    /// \brief Collects and queues platform input events for processing by the input service.
+    /// \brief Represents the queue of platform events a frame gathers for the input service.
     class ZY_API Dispatcher final
     {
     public:
 
-        /// \brief Represents the types of notifications from the system that requires attention.
+        /// \brief Specifies the system changes that need attention after the events are polled.
         enum class Notification : UInt8
         {
             None,       ///< No notifications.
@@ -208,7 +208,7 @@ namespace ZyPlatform
 
         /// \brief Queues a window focus event.
         ///
-        /// \param Focused The focus state (true if gained, false if lost).
+        /// \param Focused `true` if the window gained focus, `false` if it lost it.
         ZY_INLINE void QueueWindowFocus(Bool Focused)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::WindowFocus);

@@ -20,7 +20,7 @@
 
 namespace ZyPlatform
 {
-    /// \brief Encapsulate a platform-specific window used as output and receive input.
+    /// \brief Represents the platform window, the surface frames are presented to and input arrives through.
     class ZY_API Window final : public Retainable<Window>
     {
         friend class Service;
@@ -171,8 +171,8 @@ namespace ZyPlatform
 
         /// \brief Sets the cursor lock state.
         ///
-        /// \param State `true` to lock the cursor, otherwise `false`.
-        void SetCursorLock(Bool State);
+        /// \param Lock `true` to lock the cursor, otherwise `false`.
+        void SetCursorLock(Bool Lock);
 
         /// \brief Checks whether the cursor is locked.
         ///

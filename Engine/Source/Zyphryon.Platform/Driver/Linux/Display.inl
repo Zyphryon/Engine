@@ -86,6 +86,7 @@ namespace ZyPlatform
         }
 
         const RROutput Primary = ::XRRGetOutputPrimary(Connection, Root);
+        Bool           Marked  = false;
 
         for (SInt32 Index = 0; Index < Resources->noutput; ++Index)
         {
@@ -117,6 +118,7 @@ namespace ZyPlatform
                     if (Identity == Primary)
                     {
                         Monitor.SetAttribute(Monitor::Attribute::Primary);
+                        Marked = true;
                     }
 
                     ::XRRFreeCrtcInfo(Region);
@@ -126,7 +128,8 @@ namespace ZyPlatform
             ::XRRFreeOutputInfo(Output);
         }
 
-        if (Primary == None && !mMonitors.IsEmpty())
+        // RandR may name no primary output, or one that is not connected, and then the first monitor takes its place.
+        if (!Marked && !mMonitors.IsEmpty())
         {
             mMonitors.GetFront().SetAttribute(Monitor::Attribute::Primary);
         }

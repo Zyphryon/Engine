@@ -13,6 +13,14 @@
 #include "Service.hpp"
 #include "Zyphryon.Input/Service.hpp"
 
+#if   defined(ZY_PLATFORM_WINDOWS)
+#include "Driver/Windows/Service.inl"
+#elif defined(ZY_PLATFORM_LINUX)
+#include "Driver/Linux/Service.inl"
+#elif defined(ZY_PLATFORM_WEB)
+#include "Driver/Emscripten/Service.inl"
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -26,6 +34,9 @@ namespace ZyPlatform
         : Subsystem { Host },
           mWindow   { mDispatcher }
     {
+        // What the monitors report can depend on how the process was prepared, so it comes before they are polled.
+        Prepare();
+
         mDisplay.Poll();
 
         for (ConstRef<Monitor> Monitor : mDisplay.GetMonitors())
@@ -72,15 +83,21 @@ namespace ZyPlatform
 
     Bool Service::Initialize(Text Target, Text Title, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
     {
+        if (mDisplay.GetMonitors().IsEmpty())
+        {
+            LOG_W("Platform: No monitor was reported, placing the window at the origin");
+            return mWindow.Initialize(Title, 0, 0, Width, Height, Borderless, Fullscreen);
+        }
+
         ConstRef<Monitor> Monitor = mDisplay.GetMonitor(Target);
 
         if (!Target.IsEmpty() && Target != Monitor.GetName())
         {
-            LOG_W("Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
+            LOG_W("Platform: Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
         }
 
-        Width  = static_cast<UInt32>(Round(Width * Monitor.GetScale())), Monitor.GetWidth();
-        Height = static_cast<UInt32>(Round(Height * Monitor.GetScale())), Monitor.GetHeight();
+        Width  = Min(static_cast<UInt32>(Round(Width * Monitor.GetScale())), Monitor.GetWidth());
+        Height = Min(static_cast<UInt32>(Round(Height * Monitor.GetScale())), Monitor.GetHeight());
 
         const SInt32 PositionX = Monitor.GetX() + static_cast<SInt32>(Monitor.GetWidth() - Width) / 2;
         const SInt32 PositionY = Monitor.GetY() + static_cast<SInt32>(Monitor.GetHeight() - Height) / 2;

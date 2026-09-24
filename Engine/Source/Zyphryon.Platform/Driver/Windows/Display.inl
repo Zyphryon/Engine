@@ -22,43 +22,46 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static BOOL CALLBACK OnEnumerateMonitor(HMONITOR Handle, HDC, LPRECT, LPARAM Context)
+    {
+        const Ptr<Sequence<Monitor>> Output = reinterpret_cast<Ptr<Sequence<Monitor>>>(Context);
+
+        MONITORINFOEXW Info { };
+        Info.cbSize = sizeof(Info);
+
+        if (GetMonitorInfoW(Handle, AddressOf(Info)))
+        {
+            Ref<Monitor> Monitor = Output->Append(Handle);
+            Monitor.SetName(Str::ConvertFromUTF16(StrConvert(Info.szDevice)));
+            Monitor.SetX(Info.rcMonitor.left);
+            Monitor.SetY(Info.rcMonitor.top);
+            Monitor.SetWidth(Info.rcMonitor.right - Info.rcMonitor.left);
+            Monitor.SetHeight(Info.rcMonitor.bottom - Info.rcMonitor.top);
+
+            if (HasBit(Info.dwFlags, MONITORINFOF_PRIMARY))
+            {
+                Monitor.SetAttribute(Monitor::Attribute::Primary);
+            }
+
+            DEVICE_SCALE_FACTOR Factor;
+            if (FAILED(::GetScaleFactorForMonitor(Handle, AddressOf(Factor))))
+            {
+                Factor = DEVICE_SCALE_FACTOR::SCALE_100_PERCENT;
+            }
+            Monitor.SetScale(static_cast<Real32>(Factor) * 0.01f);
+        }
+        return TRUE;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Display::Poll()
     {
         mMonitors.Clear();
 
         // Enumerate all monitors and populate basic information.
-
-        static constexpr auto OnEnumerate = [](HMONITOR Handle, HDC, LPRECT, LPARAM Context) -> BOOL
-        {
-            const Ptr<Sequence<Monitor>> Output = reinterpret_cast<Ptr<Sequence<Monitor>>>(Context);
-
-            MONITORINFOEXW Info { };
-            Info.cbSize = sizeof(Info);
-
-            if (GetMonitorInfoW(Handle, AddressOf(Info)))
-            {
-                Ref<Monitor> Monitor = Output->Append(Handle);
-                Monitor.SetName(Str::ConvertFromUTF16(StrConvert(Info.szDevice)));
-                Monitor.SetX(Info.rcMonitor.left);
-                Monitor.SetY(Info.rcMonitor.top);
-                Monitor.SetWidth(Info.rcMonitor.right - Info.rcMonitor.left);
-                Monitor.SetHeight(Info.rcMonitor.bottom - Info.rcMonitor.top);
-
-                if (HasBit(Info.dwFlags, MONITORINFOF_PRIMARY))
-                {
-                    Monitor.SetAttribute(Monitor::Attribute::Primary);
-                }
-
-                DEVICE_SCALE_FACTOR Factor;
-                if (FAILED(::GetScaleFactorForMonitor(Handle, AddressOf(Factor))))
-                {
-                    Factor = DEVICE_SCALE_FACTOR::SCALE_100_PERCENT;
-                }
-                Monitor.SetScale(static_cast<Real32>(Factor) * 0.01f);
-            }
-            return TRUE;
-        };
-        EnumDisplayMonitors(nullptr, nullptr, OnEnumerate, reinterpret_cast<LPARAM>(AddressOf(mMonitors)));
+        EnumDisplayMonitors(nullptr, nullptr, OnEnumerateMonitor, reinterpret_cast<LPARAM>(AddressOf(mMonitors)));
 
         // Query advanced display configuration to retrieve detailed properties using the DisplayConfig API.
 
@@ -95,9 +98,9 @@ namespace ZyPlatform
             }
 
             const Str  Name = Str::ConvertFromUTF16(StrConvert(SourceName.viewGdiDeviceName));
-            const SInt Slot = mMonitors.Find([Identity = Hash(Name)](ConstRef<Monitor> Monitor) -> Bool
+            const SInt Slot = mMonitors.Find([&](ConstRef<Monitor> Monitor)
             {
-                return Hash(Monitor.GetName()) == Identity;
+                return Monitor.GetName() == Name;
             });
 
             if (Slot >= 0)

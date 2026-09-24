@@ -22,7 +22,7 @@
 
 namespace ZyPlatform
 {
-    /// \brief Manages platform windows and pumps OS events each frame.
+    /// \brief Represents the platform layer, owning the window and the display and pumping the OS events each frame.
     class ZY_API Service : public ZyEngine::Subsystem
     {
     public:
@@ -51,8 +51,8 @@ namespace ZyPlatform
         /// \param Title      The title to display in the window's title bar.
         /// \param Width      The width of the window in pixels.
         /// \param Height     The height of the window in pixels.
-        /// \param Borderless Whether to create the window without borders or title bar.
-        /// \param Fullscreen Whether to create the window in fullscreen mode.
+        /// \param Borderless `true` to create the window without borders or title bar.
+        /// \param Fullscreen `true` to create the window in fullscreen mode.
         /// \return `true` if the window was successfully initialized, otherwise `false`.
         Bool Initialize(Text Target, Text Title, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 
@@ -63,6 +63,11 @@ namespace ZyPlatform
         {
             return mWindow;
         }
+
+    private:
+
+        /// \brief Readies the process for the platform before any monitor or window is read, such as how it is scaled.
+        void Prepare();
 
     private:
 

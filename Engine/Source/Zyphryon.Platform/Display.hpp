@@ -30,29 +30,26 @@ namespace ZyPlatform
 
         /// \brief Gets a monitor by its name.
         ///
-        /// \param Name The name of the monitor to retrieve.
+        /// \note A display server may report no primary monitor, in which case the first one stands in for it.
+        ///
+        /// \param Name The name of the monitor to retrieve, or empty for the primary monitor.
         /// \return A reference to the monitor if found, otherwise the primary monitor.
         ZY_INLINE ConstRef<Monitor> GetMonitor(Text Name) const
         {
-            ConstPtr<Monitor> Primary = nullptr;
+            ZY_ASSERT(!mMonitors.IsEmpty(), "The display has no monitor to choose from");
+
+            ConstPtr<Monitor> Primary = AddressOf(mMonitors.GetFront());
 
             for (ConstRef<Monitor> Monitor : mMonitors)
             {
+                if (!Name.IsEmpty() && Name == Monitor.GetName())
+                {
+                    return Monitor;
+                }
+
                 if (Monitor.IsPrimary())
                 {
                     Primary = AddressOf(Monitor);
-
-                    if (Name.IsEmpty() || Name == Primary->GetName())
-                    {
-                        return (* Primary);
-                    }
-                }
-                else
-                {
-                    if (Name == Monitor.GetName())
-                    {
-                        return (* AddressOf(Monitor));
-                    }
                 }
             }
             return (* Primary);
@@ -67,8 +64,10 @@ namespace ZyPlatform
         {
             for (ConstRef<Monitor> Monitor : mMonitors)
             {
-                if (X >= Monitor.GetX() && X < Monitor.GetX() + Monitor.GetWidth() &&
-                    Y >= Monitor.GetY() && Y < Monitor.GetY() + Monitor.GetHeight())
+                const SInt32 Right  = Monitor.GetX() + static_cast<SInt32>(Monitor.GetWidth());
+                const SInt32 Bottom = Monitor.GetY() + static_cast<SInt32>(Monitor.GetHeight());
+
+                if (X >= Monitor.GetX() && X < Right && Y >= Monitor.GetY() && Y < Bottom)
                 {
                     return AddressOf(Monitor);
                 }

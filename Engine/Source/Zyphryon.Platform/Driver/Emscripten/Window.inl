@@ -272,9 +272,15 @@ namespace ZyPlatform
                     }
                 }
 
-                if (const Text Data = StrConvert(Event->key); Data.GetSize() == 1)
+                if (const Text Data = StrConvert(Event->key); !Data.IsEmpty())
                 {
-                    Canvas->mDispatcher.QueueKeyType(Data);
+                    UInt Cursor = 0;
+                    StrExtractUTF8(Data, Cursor);
+
+                    if (Cursor == Data.GetSize())
+                    {
+                        Canvas->mDispatcher.QueueKeyType(Data);
+                    }
                 }
             }
             return EM_TRUE;
@@ -314,23 +320,12 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasMouseDown(SInt32, ConstPtr<EmscriptenMouseEvent> Event, Ptr<void> Context)
+        template<void (Dispatcher::* Queue)(ZyInput::Button)>
+        static EM_BOOL OnCanvasMouseButton(SInt32, ConstPtr<EmscriptenMouseEvent> Event, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                Canvas->mDispatcher.QueueMouseButtonDown(ConvertWebButton(Event->button));
-            }
-            return EM_TRUE;
-        }
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        static EM_BOOL OnCanvasMouseUp(SInt32, ConstPtr<EmscriptenMouseEvent> Event, Ptr<void> Context)
-        {
-            if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
-            {
-                Canvas->mDispatcher.QueueMouseButtonUp(ConvertWebButton(Event->button));
+                (Canvas->mDispatcher.*Queue)(ConvertWebButton(Event->button));
             }
             return EM_TRUE;
         }
@@ -370,7 +365,8 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasTouchStart(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
+        template<void (Dispatcher::* Queue)(UInt32, Real32, Real32)>
+        static EM_BOOL OnCanvasTouch(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
@@ -378,49 +374,7 @@ namespace ZyPlatform
                 {
                     if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
                     {
-                        Canvas->mDispatcher.QueueTouchDown(
-                            static_cast<UInt32>(Touch.identifier),
-                            static_cast<Real32>(Touch.targetX),
-                            static_cast<Real32>(Touch.targetY));
-                    }
-                }
-            }
-            return EM_TRUE;
-        }
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        static EM_BOOL OnCanvasTouchMove(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
-        {
-            if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
-            {
-                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
-                {
-                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
-                    {
-                        Canvas->mDispatcher.QueueTouchMove(
-                            static_cast<UInt32>(Touch.identifier),
-                            static_cast<Real32>(Touch.targetX),
-                            static_cast<Real32>(Touch.targetY));
-                    }
-                }
-            }
-            return EM_TRUE;
-        }
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        static EM_BOOL OnCanvasTouchEnd(SInt32, ConstPtr<EmscriptenTouchEvent> Event, Ptr<void> Context)
-        {
-            if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
-            {
-                for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
-                {
-                    if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
-                    {
-                        Canvas->mDispatcher.QueueTouchUp(
+                        (Canvas->mDispatcher.*Queue)(
                             static_cast<UInt32>(Touch.identifier),
                             static_cast<Real32>(Touch.targetX),
                             static_cast<Real32>(Touch.targetY));
@@ -600,7 +554,7 @@ namespace ZyPlatform
 
     void Window::SetVisible(Bool Visible)
     {
-        mStates = Visible ? SetBit(mStates, State::Visible) : ClearBit(mStates, State::Visible);
+        mStates = SetOrClearBit(mStates, State::Visible, Visible);
 
         EM_ASM(
         {
@@ -681,9 +635,9 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Window::SetCursorLock(Bool State)
+    void Window::SetCursorLock(Bool Lock)
     {
-        if (State)
+        if (Lock)
         {
             emscripten_request_pointerlock("!ZyWindowHTML5", EM_TRUE);
         }
@@ -724,12 +678,12 @@ namespace ZyPlatform
         emscripten_set_keydown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasKeyDown);
         emscripten_set_keyup_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasKeyUp);
         emscripten_set_mousemove_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseMove);
-        emscripten_set_mousedown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseDown);
-        emscripten_set_mouseup_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseUp);
+        emscripten_set_mousedown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonDown>);
+        emscripten_set_mouseup_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonUp>);
         emscripten_set_wheel_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseWheel);
-        emscripten_set_touchstart_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouchStart);
-        emscripten_set_touchend_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouchEnd);
-        emscripten_set_touchmove_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouchMove);
+        emscripten_set_touchstart_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchDown>);
+        emscripten_set_touchend_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchUp>);
+        emscripten_set_touchmove_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchMove>);
         emscripten_set_touchcancel_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouchCancel);
         emscripten_set_focus_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Window::Backend::OnTabFocus);
         emscripten_set_blur_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Window::Backend::OnTabFocus);

@@ -14,7 +14,7 @@
 
 namespace ZyPlatform
 {
-    /// \brief High-precision timer for measuring elapsed time across all platforms.
+    /// \brief Represents a high-precision monotonic clock that measures the time between steps.
     class ZY_API Timer final
     {
     public:
@@ -25,15 +25,15 @@ namespace ZyPlatform
         /// \brief Resets the timer's starting point to the current time.
         ZY_INLINE void Reset()
         {
-            mStart = GetTime();
+            mStart = GetSeconds();
         }
 
-        /// \brief Gets the elapsed time since the last reset and atomically resets the timer.
+        /// \brief Gets the time elapsed since the last reset or step, and starts measuring again from now.
         ///
-        /// \return Elapsed time in seconds since the last reset.
+        /// \return Elapsed time in seconds since the last reset or step.
         ZY_INLINE Real64 Step()
         {
-            const Real64 Current = GetTime();
+            const Real64 Current = GetSeconds();
             const Real64 Elapsed = Current - mStart;
             mStart = Current;
 
@@ -43,17 +43,14 @@ namespace ZyPlatform
         /// \brief Gets the current time in seconds since an arbitrary starting point.
         ///
         /// \return Monotonic time in seconds.
-        ZY_INLINE Real64 GetSeconds() const
-        {
-            return GetTime();
-        }
+        Real64 GetSeconds() const;
 
         /// \brief Gets the current time in milliseconds since an arbitrary starting point.
         ///
         /// \return Monotonic time in milliseconds.
         ZY_INLINE UInt64 GetMilliseconds() const
         {
-            return static_cast<UInt64>(GetTime() * 1000.0);
+            return static_cast<UInt64>(GetSeconds() * 1000.0);
         }
 
         /// \brief Gets the current time in microseconds since an arbitrary starting point.
@@ -61,15 +58,8 @@ namespace ZyPlatform
         /// \return Monotonic time in microseconds.
         ZY_INLINE UInt64 GetMicroseconds() const
         {
-            return static_cast<UInt64>(GetTime() * 1'000'000.0);
+            return static_cast<UInt64>(GetSeconds() * 1'000'000.0);
         }
-
-    private:
-
-        /// \brief Gets the current raw time value from the platform.
-        ///
-        /// \return Raw time value in seconds.
-        Real64 GetTime() const;
 
     private:
 
