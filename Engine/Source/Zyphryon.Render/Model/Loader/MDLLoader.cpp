@@ -13,7 +13,7 @@
 #include "MDLLoader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Graphic/Loader/MTLLoader.hpp"
-#include "Zyphryon.Render/3D/Model3D.hpp"
+#include "Zyphryon.Render/Model/Model3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]

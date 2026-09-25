@@ -12,13 +12,13 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Service.hpp"
+#include "Zyphryon.Graphic/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyGraphic
+namespace ZyRender
 {
     /// \brief Represents a store of same-sized pages spread across texture arrays, lent out one page at a time.
     ///
@@ -35,7 +35,12 @@ namespace ZyGraphic
         /// \param Width   The width of one page, in texels.
         /// \param Height  The height of one page, in texels.
         /// \param Count   The number of pages one bank holds, which is the depth of its texture array.
-        ZY_INLINE Album(ConstRetainer<Service> Service, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Count)
+        ZY_INLINE Album(
+            ConstRetainer<ZyGraphic::Service> Service,
+            ZyGraphic::TextureFormat          Format,
+            UInt16                            Width,
+            UInt16                            Height,
+            UInt16                            Count)
             : mService { Service },
               mFormat  { Format },
               mWidth   { Width },
@@ -48,7 +53,7 @@ namespace ZyGraphic
         /// \brief Destroys the album and every bank it made.
         ZY_INLINE ~Album()
         {
-            for (const Object Bank : mBanks)
+            for (const ZyGraphic::Object Bank : mBanks)
             {
                 mService->DeleteTexture(Bank);
             }
@@ -69,15 +74,15 @@ namespace ZyGraphic
             if (GetBank(Page) >= mBanks.GetSize())
             {
                 mBanks.Append(mService->CreateTexture(
-                    TextureLayout::Texture2DArray,
+                    ZyGraphic::TextureLayout::Texture2DArray,
                     mFormat,
-                    Storage::Stream,
-                    Usage::Sample,
+                    ZyGraphic::Storage::Stream,
+                    ZyGraphic::Usage::Sample,
                     mWidth,
                     mHeight,
                     mCount,
                     1,
-                    Multisample::X1,
+                    ZyGraphic::Multisample::X1,
                     Blob()));
             }
             return Page;
@@ -102,7 +107,7 @@ namespace ZyGraphic
         {
             ZY_ASSERT(Page != 0, "Cannot write an invalid page");
 
-            const Object Texture = mBanks[GetBank(Page)];
+            const ZyGraphic::Object Texture = mBanks[GetBank(Page)];
             mService->UpdateTexture(Texture, 0, GetSlice(Page), 0, 0, mWidth, mHeight, Pitch, Move(Data));
         }
 
@@ -118,7 +123,7 @@ namespace ZyGraphic
         ///
         /// \param Bank The bank.
         /// \return The array.
-        ZY_INLINE Object GetTexture(UInt32 Bank) const
+        ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Bank) const
         {
             return mBanks[Bank];
         }
@@ -146,12 +151,12 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<Service>      mService;
-        TextureFormat          mFormat;
-        UInt16                 mWidth;
-        UInt16                 mHeight;
-        UInt16                 mCount;
-        Freelist<Capacity, 0>  mPages;
-        Sequence<Object>       mBanks;
+        Retainer<ZyGraphic::Service> mService;
+        ZyGraphic::TextureFormat     mFormat;
+        UInt16                       mWidth;
+        UInt16                       mHeight;
+        UInt16                       mCount;
+        Freelist<Capacity, 0>        mPages;
+        Sequence<ZyGraphic::Object>  mBanks;
     };
 }
