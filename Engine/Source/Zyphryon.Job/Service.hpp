@@ -199,5 +199,7 @@ namespace ZyJob
         Gate                       mGate;
         Registry                   mRegistry;
         Array<Executor, kMaxLanes> mExecutors;
+        ThreadID                   mMain;
+        Sequence<Task>             mOverflow;
     };
 }

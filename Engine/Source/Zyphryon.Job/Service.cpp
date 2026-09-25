@@ -26,7 +26,8 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem { Host }
+        : Subsystem { Host },
+          mMain     { GetThreadID() }
     {
 #if defined(ZY_HAS_THREADS)
         const UInt Cores = Max(1u, std::thread::hardware_concurrency());
@@ -95,6 +96,21 @@ namespace ZyJob
             }
 #endif
         }
+
+        // Work a worker handed over while the table was full runs after what the table had queued.
+        Sequence<Task> Overflow;
+
+        {
+            Guard Guard(mMutex);
+            Overflow = Move(mOverflow);
+            
+            mOverflow.Clear();
+        }
+
+        for (Ref<Task> Work : Overflow)
+        {
+            Work();
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -113,6 +129,7 @@ namespace ZyJob
         Guard Guard(mMutex);
 
         mRegistry.Clear();
+        mOverflow.Clear();
 
         for (Ref<Executor> Each : mExecutors)
         {
@@ -153,6 +170,10 @@ namespace ZyJob
                 {
                     GetExecutor(Actual).Push(Value);
                 }
+            }
+            else if (Actual == Lane::Main && GetThreadID() != mMain)
+            {
+                mOverflow.Append(Forward<Task>(Work));
             }
             else
             {
