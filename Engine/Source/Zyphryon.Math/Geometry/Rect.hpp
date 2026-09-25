@@ -716,16 +716,8 @@ inline namespace ZyMath
         /// \return A rectangle representing the overlapping region. If they don't overlap, the rect may be invalid.
         ZY_INLINE static constexpr AnyRect Intersection(AnyRect First, AnyRect Second)
         {
-            const Type MinimumX = ::Max(First.mMinimumX, Second.mMinimumX);
-            const Type MinimumY = ::Max(First.mMinimumY, Second.mMinimumY);
-            const Type MaximumX = ::Min(First.mMaximumX, Second.mMaximumX);
-            const Type MaximumY = ::Min(First.mMaximumY, Second.mMaximumY);
-
-            if (MaximumX > MinimumX && MaximumY > MinimumY)
-            {
-                return AnyRect(MinimumX, MinimumY, MaximumX, MaximumY);
-            }
-            return AnyRect::Zero();
+            return AnyRect(::Max(First.mMinimumX, Second.mMinimumX), ::Max(First.mMinimumY, Second.mMinimumY),
+                           ::Min(First.mMaximumX, Second.mMaximumX), ::Min(First.mMaximumY, Second.mMaximumY));
         }
 
         /// \brief Gets the union (bounding box) of two rectangles.
@@ -871,7 +863,7 @@ inline namespace ZyMath
             const AnyRect Intersect = AnyRect::Intersection(First, Second);
 
             // No intersection, so just return the first rect as-is.
-            if (Intersect.IsAlmostZero())
+            if (!Intersect.IsValid() || Intersect.GetArea() == 0)
             {
                 Action(First);
                 return;

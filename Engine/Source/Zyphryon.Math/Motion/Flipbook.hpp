@@ -21,7 +21,7 @@
 inline namespace ZyMath
 {
     /// \brief Represents a run of frames, each held for as long as it says and each optionally showing a value.
-    template<typename Type = void, UInt Count = 0>
+    template<typename Type = Empty, UInt Count = 0>
     class Flipbook final
     {
     public:
@@ -210,7 +210,7 @@ inline namespace ZyMath
         /// \param Time     The time to sample at, in seconds.
         /// \param Function The easing to warp the pass with, which leaves the frames evenly spaced when linear.
         /// \return The value of the frame showing then.
-        ZY_INLINE ConstRef<Type> Sample(Real64 Time, Easing Function = Easing::Linear)
+        ZY_INLINE ConstRef<Type> Sample(Real64 Time, Easing Function = Easing::Linear) const
             requires (!::IsEmpty<Type>)
         {
             return mFrames[Locate(Time, Function)].Data;

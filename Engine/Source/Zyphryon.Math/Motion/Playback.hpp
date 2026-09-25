@@ -232,7 +232,12 @@ inline namespace ZyMath
         /// \return `true` if the cursor is complete, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
-            return mRepeat == Repeat::Once && GetElapsed() >= mDuration;
+            if (mRepeat == Repeat::Once)
+            {
+                const Real64 Elapsed = GetElapsed();
+                return mSpeed >= 0.0f ? Elapsed >= mDuration : Elapsed <= 0.0;
+            }
+            return false;
         }
 
         /// \brief Gets the local time before the repeat policy wraps, mirrors or clamps it.

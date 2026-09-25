@@ -289,14 +289,10 @@ inline namespace ZyMath
         /// \return A circle anchored according to the pivot.
         ZY_INLINE static constexpr Circle Anchor(Circle Source, Pivot2D Origin)
         {
-            const Real32 Radius   = Source.GetRadius();
-            const Real32 Diameter = Radius * 2;
+            const Real32 Diameter = Source.GetRadius() * 2;
 
-            const Vector2 Translation = -Source.GetCenter() - Vector2(
-                (Origin.GetX() * Diameter) - Radius,
-                (Origin.GetY() * Diameter) - Radius
-            );
-            return ::Circle(Source.GetCenter() + Translation, Radius);
+            const Vector2 Translation(Origin.GetX() * Diameter, Origin.GetY() * Diameter);
+            return ::Circle(Source.GetCenter() - Translation, Source.GetRadius());
         }
 
         /// \brief Linearly interpolates between two circles.
@@ -320,20 +316,14 @@ inline namespace ZyMath
         /// \return A circle resulting from transforming the circle with the matrix.
         ZY_INLINE static Circle Transform(Circle Source, ConstRef<Matrix4x3> Matrix)
         {
-            // Transposed once and reused: the two axis lengths and both projections all read the columns.
+            // Transposed once, since the projection and both axis lengths read the columns.
             const Matrix4x3::Basis Columns(Matrix);
 
             const Vector2 Center = Columns.Project(Source.GetCenter());
             const Real32  ScaleX = Columns.AxisX.GetXYZ().GetLength();
             const Real32  ScaleY = Columns.AxisY.GetXYZ().GetLength();
 
-            if (IsAlmostEqual(ScaleX, ScaleY))
-            {
-                return ::Circle(Center, Source.GetRadius() * ScaleX);
-            }
-
-            const Vector2 Edge = Columns.Project(Source.GetCenter() + Vector2(Source.mRadius, 0));
-            return Circle(Center, (Edge - Center).GetLength());
+            return ::Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
         }
 
         /// \brief Transform a circle using a 3x2 transformation matrix.
@@ -348,13 +338,7 @@ inline namespace ZyMath
             const Real32 ScaleX = Matrix.GetBasisX().GetLength();
             const Real32 ScaleY = Matrix.GetBasisY().GetLength();
 
-            if (IsAlmostEqual(ScaleX, ScaleY))
-            {
-                return ::Circle(Center, Source.GetRadius() * ScaleX);
-            }
-
-            const Vector2 Edge = Matrix3x2::Project(Matrix, Source.GetCenter() + Vector2(Source.GetRadius(), 0.0f));
-            return Circle(Center, (Edge - Center).GetLength());
+            return ::Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.

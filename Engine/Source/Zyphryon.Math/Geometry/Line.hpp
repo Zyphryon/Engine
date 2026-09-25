@@ -268,10 +268,8 @@ inline namespace ZyMath
         /// \return A line anchored according to the pivot.
         ZY_INLINE static constexpr Line Anchor(Line Source, Pivot2D Origin)
         {
-            const Vector2 MinPoint    = Vector2::Min(Source.GetStart(), Source.GetEnd());
-            const Vector2 MaxPoint    = Vector2::Max(Source.GetStart(), Source.GetEnd());
-            const Vector2 Size        = MaxPoint - MinPoint;
-            const Vector2 Translation = MinPoint + Vector2(Origin.GetX() * Size.GetX(), Origin.GetY() * Size.GetY());
+            const Vector2 Size = Vector2::Max(Source.GetStart(), Source.GetEnd()) - Vector2::Min(Source.GetStart(), Source.GetEnd());
+            const Vector2 Translation(Origin.GetX() * Size.GetX(), Origin.GetY() * Size.GetY());
 
             return Line(Source.GetStart() - Translation, Source.GetEnd() - Translation);
         }

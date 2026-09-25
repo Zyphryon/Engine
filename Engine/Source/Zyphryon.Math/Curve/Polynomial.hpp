@@ -9,12 +9,6 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Zyphryon.Math/Angle.hpp"
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -111,13 +105,15 @@ inline namespace ZyMath
 
         if (Discriminant < 0)
         {
-            const Real32 Ratio = static_cast<Real32>(Clamp(-Offset / Sqrt(-Cubed), Type(-1), Type(1)));
-            const Angle  Phi   = Angle::FromCosine(Ratio) * (1.0f / 3.0f);
-            const Type   Ray   = 2 * Sqrt(-Pressure);
+            constexpr Type kSixth = kPI<Type> / Type(3);
 
-            Result[0] =  Ray * Angle::Cosine(Phi) - Shift;
-            Result[1] = -Ray * Angle::Cosine(Phi + Angle(kPI<Real32> / 3.0f)) - Shift;
-            Result[2] = -Ray * Angle::Cosine(Phi - Angle(kPI<Real32> / 3.0f)) - Shift;
+            const Type Ratio = Clamp(-Offset / Sqrt(-Cubed), Type(-1), Type(1));
+            const Type Phi   = InvCosine(Ratio) * kThird;
+            const Type Ray   = 2 * Sqrt(-Pressure);
+
+            Result[0] =  Ray * Cosine(Phi) - Shift;
+            Result[1] = -Ray * Cosine(Phi + kSixth) - Shift;
+            Result[2] = -Ray * Cosine(Phi - kSixth) - Shift;
             return 3;
         }
 
@@ -130,6 +126,12 @@ inline namespace ZyMath
         }
 
         const Type Single = -Cbrt(Offset);
+
+        if (Single == Type(0))
+        {
+            Result[0] = -Shift;
+            return 1;
+        }
 
         Result[0] = 2 * Single - Shift;
         Result[1] = -Single - Shift;

@@ -749,17 +749,13 @@ inline namespace ZyMath
         
         /// \brief Gets the intersection of two boxes.
         ///
-        /// If the boxes do not overlap, the result may be invalid or zero.
-        ///
         /// \param First  The first box.
         /// \param Second The second box.
-        /// \return A box representing the overlapping region.
+        /// \return A box representing the overlapping region. If they don't overlap, the box may be invalid.
         ZY_INLINE static constexpr AnyBox Intersection(AnyBox First, AnyBox Second)
         {
-            const AnyVector3<Type> Minimum = AnyVector3<Type>::Max(First.mMinimum, Second.mMinimum);
-            const AnyVector3<Type> Maximum = AnyVector3<Type>::Min(First.mMaximum, Second.mMaximum);
-
-            return Maximum.IsComponentWiseGreater(Minimum) ? AnyBox(Minimum, Maximum) : AnyBox::Zero();
+            return AnyBox(AnyVector3<Type>::Max(First.mMinimum, Second.mMinimum),
+                          AnyVector3<Type>::Min(First.mMaximum, Second.mMaximum));
         }
 
         /// \brief Gets the union (bounding box) of two boxes.
