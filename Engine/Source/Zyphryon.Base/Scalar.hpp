@@ -622,7 +622,7 @@ inline namespace ZyBase
     /// \param Value The value to encode, which is held to the range the type spans.
     /// \return The value spread over the integer's range, rounded to the nearest step.
     template<IsIntegral Type>
-    ZY_INLINE Type EncodeNormalized(Real32 Value)
+    constexpr Type EncodeNormalized(Real32 Value)
     {
         if constexpr (std::is_signed_v<Type>)
         {
@@ -639,7 +639,7 @@ inline namespace ZyBase
     /// \param Value The encoded value.
     /// \return The value it stands for, over zero through one or negative one through one.
     template<IsIntegral Type>
-    ZY_INLINE Real32 DecodeNormalized(Type Value)
+    constexpr Real32 DecodeNormalized(Type Value)
     {
         const Real32 Result = static_cast<Real32>(Value) / static_cast<Real32>(kMaximum<Type>);
 

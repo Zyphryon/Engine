@@ -101,10 +101,10 @@ inline namespace ZyMath
         /// \return A 32-bit unsigned integer representing the packed RGBA value.
         ZY_INLINE constexpr UInt32 ToRGBA8() const
         {
-            const UInt32 R = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[0]));
-            const UInt32 G = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[1]));
-            const UInt32 B = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[2]));
-            const UInt32 A = static_cast<UInt32>(Scale<Limit<UInt8>()>(mComponents[3]));
+            const UInt32 R = Narrow(mComponents[0]);
+            const UInt32 G = Narrow(mComponents[1]);
+            const UInt32 B = Narrow(mComponents[2]);
+            const UInt32 A = Narrow(mComponents[3]);
             return (A << 24) | (B  << 16) | (G << 8) | R;
         }
 
@@ -114,11 +114,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr AnyColor<UInt8> ToColor8() const
             requires(IsReal<Type>)
         {
-            return AnyColor(
-                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[0])),
-                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[1])),
-                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[2])),
-                static_cast<UInt8>(Scale<Limit<UInt8>()>(mComponents[3])));
+            return AnyColor(Narrow(mComponents[0]), Narrow(mComponents[1]), Narrow(mComponents[2]), Narrow(mComponents[3]));
         }
 
         /// \brief Converts the color from sRGB into linear space.
@@ -350,21 +346,19 @@ inline namespace ZyMath
             }
         }
 
-        /// \brief Scales a channel value into the target numeric range defined by \p Value.
+        /// \brief Narrows a channel to the eight bits a packed colour stores it in.
         ///
-        /// \param Channel The channel value to scale.
-        /// \return The scaled channel value clamped to [0, Limit] then multiplied by \p Value for real types,
-        ///         or the unmodified channel for integral types.
-        template<UInt Value>
-        ZY_INLINE static constexpr auto Scale(Type Channel)
+        /// \param Channel The channel to narrow.
+        /// \return The channel spread over zero through 255 and rounded to the nearest step for real types.
+        ZY_INLINE static constexpr UInt8 Narrow(Type Channel)
         {
             if constexpr (IsReal<Type>)
             {
-                return ::Clamp(Channel, Type(0), Limit()) * Value;
+                return ::EncodeNormalized<UInt8>(static_cast<Real32>(Channel));
             }
             else
             {
-                return Channel;
+                return static_cast<UInt8>(Channel);
             }
         }
 
