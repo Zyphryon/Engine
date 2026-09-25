@@ -198,6 +198,64 @@ inline namespace ZyBase
         std::memset(Destination, 0, Count * sizeof(Output));
     }
 
+    /// \brief Allocates uninitialized storage for a run of elements on the element's alignment.
+    ///
+    /// \tparam Type  The element type, bytes when left out.
+    /// \param  Count The number of elements.
+    /// \return The first element of the storage, which \ref Free releases.
+    template<typename Type = Byte>
+    ZY_INLINE Ptr<Type> Allocate(UInt Count)
+    {
+        if constexpr (alignof(Type) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+        {
+            return static_cast<Ptr<Type>>(::operator new(sizeof(Type) * Count));
+        }
+        else
+        {
+            return static_cast<Ptr<Type>>(::operator new(sizeof(Type) * Count, std::align_val_t { alignof(Type) }));
+        }
+    }
+
+    /// \brief Allocates uninitialized storage for a run of elements on a boundary known only at runtime.
+    ///
+    /// \tparam Type      The element type, bytes when left out.
+    /// \param  Count     The number of elements.
+    /// \param  Alignment The boundary in bytes, a power of two.
+    /// \return The first element of the storage, which \ref Free releases with the same boundary.
+    template<typename Type = Byte>
+    ZY_INLINE Ptr<Type> Allocate(UInt Count, UInt Alignment)
+    {
+        return static_cast<Ptr<Type>>(::operator new(sizeof(Type) * Count, std::align_val_t { Alignment }));
+    }
+
+    /// \brief Releases storage \ref Allocate handed out on the element's alignment.
+    ///
+    /// \tparam Type   The element type the storage was allocated for.
+    /// \param  Memory The first element of the storage, or `nullptr` for none.
+    template<typename Type>
+    ZY_INLINE void Free(Ptr<Type> Memory)
+    {
+        if constexpr (alignof(Type) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+        {
+            ::operator delete(Memory);
+        }
+        else
+        {
+            ::operator delete(Memory, std::align_val_t { alignof(Type) });
+        }
+    }
+
+    /// \brief Releases storage \ref Allocate handed out on a boundary known only at runtime.
+    ///
+    /// \tparam Type      The element type the storage was allocated for.
+    /// \param  Memory    The first element of the storage, or `nullptr` for none.
+    /// \param  Alignment The boundary it was allocated on, the same one \ref Allocate was given.
+    template<typename Type>
+    ZY_INLINE void Free(Ptr<Type> Memory, UInt Alignment)
+    {
+        ::operator delete(Memory, std::align_val_t { Alignment });
+    }
+
     /// \brief Compares two ranges of elements for equality.
     ///
     /// \param Left  The pointer to the first range.

@@ -27,24 +27,23 @@ namespace ZyReflection
 
         /// \brief Constructs a schema over no fields.
         ZY_INLINE constexpr Schema()
-            : mFields { },
-              mName   { },
-              mSize   { 0 },
-              mAlign  { 0 }
+            : mSize      { 0 },
+              mAlignment { 0 }
         {
         }
 
         /// \brief Constructs a schema over the fields of a type of the given shape.
         ///
-        /// \param Fields The fields to view, which must outlive the schema.
-        /// \param Size   The width of the type the fields are reached through, or zero when it is not known.
-        /// \param Align  The alignment of the type the fields are reached through, or zero when it is not known.
+        /// \param Fields    The fields to view, which must outlive the schema.
+        /// \param Name      The name of the field.
+        /// \param Size      The width of the type the fields are reached through, or zero when it is not known.
+        /// \param Alignment The alignment of the type the fields are reached through, or zero when it is not known.
         ZY_INLINE constexpr explicit Schema(
-            Span<const Field> Fields, Text Name = Text::Empty(), UInt Size = 0, UInt Align = 0)
-            : mFields { Fields },
-              mName   { Name },
-              mSize   { static_cast<UInt16>(Size) },
-              mAlign  { static_cast<UInt8>(Align) }
+            ConstSpan<Field> Fields, Text Name = Text::Empty(), UInt Size = 0, UInt Alignment = 0)
+            : mFields    { Fields },
+              mName      { Name },
+              mSize      { static_cast<UInt16>(Size) },
+              mAlignment { static_cast<UInt8>(Alignment) }
         {
         }
 
@@ -78,6 +77,14 @@ namespace ZyReflection
         ZY_INLINE constexpr UInt GetWidth() const
         {
             return mSize;
+        }
+
+        /// \brief Gets the alignment of the type the schema describes.
+        ///
+        /// \return The alignment in bytes, or zero when the schema was taken from a field rather than from a type.
+        ZY_INLINE constexpr UInt GetAlignment() const
+        {
+            return mAlignment;
         }
 
         /// \brief Gets the fields the schema describes, in the order they were declared.
@@ -142,10 +149,10 @@ namespace ZyReflection
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Span<const Field> mFields;
-        Text              mName;
-        UInt16            mSize;
-        UInt8             mAlign;
+        ConstSpan<Field> mFields;
+        Text             mName;
+        UInt16           mSize;
+        UInt8            mAlignment;
     };
 }
 

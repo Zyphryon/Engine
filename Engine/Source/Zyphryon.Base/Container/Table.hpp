@@ -429,7 +429,7 @@ inline namespace ZyBase
         ZY_INLINE void Allocate(UInt Capacity)
         {
             const UInt Offset      = Align<UInt>(2u * Capacity * sizeof(UInt32), alignof(Pair));
-            const Ptr<Byte> Memory = static_cast<Ptr<Byte>>(::operator new(Offset + Capacity * sizeof(Pair)));
+            const Ptr<Byte> Memory = ZyBase::Allocate(Offset + Capacity * sizeof(Pair));
 
             mControl   = reinterpret_cast<Ptr<UInt32>>(Memory);
             mIndices   = reinterpret_cast<Ptr<UInt32>>(Memory + Capacity * sizeof(UInt32));
@@ -445,7 +445,7 @@ inline namespace ZyBase
         {
             if (mControl)
             {
-                ::operator delete(mControl);
+                ZyBase::Free(mControl);
             }
 
             mControl   = nullptr;
@@ -677,7 +677,7 @@ inline namespace ZyBase
                 }
 
                 mSize = OldSize;
-                ::operator delete(OldControl);
+                ZyBase::Free(OldControl);
             }
         }
 

@@ -100,7 +100,7 @@ inline namespace ZyBase
 
             if (mData)
             {
-                ::operator delete(mData);
+                Free(mData);
             }
         }
 
@@ -719,7 +719,7 @@ inline namespace ZyBase
 
                 if (mData)
                 {
-                    ::operator delete(mData);
+                    Free(mData);
                 }
 
                 mData     = Exchange(Other.mData,     nullptr);
@@ -759,7 +759,7 @@ inline namespace ZyBase
         /// \param Capacity The new minimum number of elements the buffer must accommodate.
         ZY_INLINE void Grow(UInt Capacity)
         {
-            const Ptr<Type> Data = static_cast<Ptr<Type>>(::operator new(sizeof(Type) * Capacity));
+            const Ptr<Type> Data = Allocate<Type>(Capacity);
 
             if constexpr (IsTriviallyCopyable<Type>)
             {
@@ -775,7 +775,7 @@ inline namespace ZyBase
 
             if (mData)
             {
-                ::operator delete(mData);
+                Free(mData);
             }
 
             mData     = Data;
