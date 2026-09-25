@@ -59,6 +59,9 @@ namespace ZyGraphic
         /// \see Driver::UnmapBuffer(Object)
         void UnmapBuffer(Object ID) override;
 
+        /// \see Driver::ReadBuffer(Object, UInt32, UInt32)
+        Blob ReadBuffer(Object ID, UInt32 Offset, UInt32 Size) override;
+
         /// \see Driver::CreatePass(Object, ConstSpan<ColorAttachment>, DepthAttachment)
         void CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth) override;
 
@@ -88,6 +91,9 @@ namespace ZyGraphic
 
         /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16)
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
+
+        /// \see Driver::ReadTexture(Object, UInt8, UInt16)
+        Blob ReadTexture(Object ID, UInt8 Level, UInt16 Layer) override;
 
         /// \see Driver::Prepare(Object, Text, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
         void Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;

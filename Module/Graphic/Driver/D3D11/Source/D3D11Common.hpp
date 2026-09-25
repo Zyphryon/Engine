@@ -102,6 +102,7 @@ namespace ZyGraphic
             D3D11_USAGE_IMMUTABLE,           // Storage::Immutable
             D3D11_USAGE_DYNAMIC,             // Storage::Dynamic
             D3D11_USAGE_DEFAULT,             // Storage::Stream
+            D3D11_USAGE_STAGING,             // Storage::Readback
         };
         return kMapping[ZyEnum::Cast(Value)];
     }

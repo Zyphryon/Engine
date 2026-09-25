@@ -117,6 +117,17 @@ namespace ZyGraphic
 
         }
 
+        /// \brief Reads a region of a readback buffer back, without waiting on the GPU.
+        ///
+        /// \param ID     The identifier of the readback buffer to read.
+        /// \param Offset The byte offset within the buffer to start reading from.
+        /// \param Size   The number of bytes to read.
+        /// \return The bytes read, or an empty blob if the GPU has not finished writing them.
+        virtual Blob ReadBuffer(Object ID, UInt32 Offset, UInt32 Size)
+        {
+            return Blob();
+        }
+
         /// \brief Creates a render pass resource with the specified color and depth attachments.
         ///
         /// \param ID     The identifier for the render pass resource.
@@ -230,6 +241,17 @@ namespace ZyGraphic
         virtual void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
         {
 
+        }
+
+        /// \brief Reads one level of one slice of a readback texture back, without waiting on the GPU.
+        ///
+        /// \param ID    The identifier of the readback texture to read.
+        /// \param Level The mipmap level to read.
+        /// \param Layer The array slice to read.
+        /// \return The level's rows packed tightly, or an empty blob if the GPU has not finished writing them.
+        virtual Blob ReadTexture(Object ID, UInt8 Level, UInt16 Layer)
+        {
+            return Blob();
         }
 
         /// \brief Prepares the specified render pass for rendering by setting the viewport and clearing attachments.

@@ -29,6 +29,11 @@ namespace ZyGraphic
     {
     public:
 
+        /// \brief A callback invoked on the main thread with the bytes a read brought back.
+        using OnRead = Delegate<void(Blob)>;
+
+    public:
+
         /// \brief Constructs the graphic service and starts the background GPU worker thread.
         ///
         /// \param Host The system context that owns and manages this service.
@@ -212,6 +217,14 @@ namespace ZyGraphic
         /// \param Size      The number of bytes to copy.
         void CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size);
 
+        /// \brief Reads a region of a readback buffer back once the GPU has written it, some frames later.
+        ///
+        /// \param ID       The identifier of the readback buffer, filled through \ref CopyBuffer.
+        /// \param Offset   The byte offset within the buffer to start reading from.
+        /// \param Size     The number of bytes to read.
+        /// \param Callback The callback handed the bytes on the main thread; dropped if the buffer is deleted first.
+        void ReadBuffer(Object ID, UInt32 Offset, UInt32 Size, AnyRef<OnRead> Callback);
+
         /// \brief Creates a material slot and returns its identifier.
         ///
         /// \return The identifier of the created material slot, or zero if creation failed.
@@ -342,6 +355,14 @@ namespace ZyGraphic
         /// \param Height     The height of the region to copy in pixels.
         void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height);
 
+        /// \brief Reads one level of one slice of a readback texture back once the GPU has written it, some frames later.
+        ///
+        /// \param ID       The identifier of the readback texture, filled through \ref CopyTexture.
+        /// \param Level    The mipmap level to read.
+        /// \param Layer    The array slice to read.
+        /// \param Callback The callback handed the rows, packed tightly, on the main thread; dropped if the texture is deleted first.
+        void ReadTexture(Object ID, UInt8 Level, UInt16 Layer, AnyRef<OnRead> Callback);
+
         /// \brief Prepares the specified render pass for rendering by setting the viewport and clearing attachments.
         ///
         /// \param Pass     The render pass to prepare.
@@ -426,26 +447,51 @@ namespace ZyGraphic
             UInt32         Capacity = 0;
         };
 
+        /// \brief Represents a read of a readback resource, waiting on the GPU or on the main thread.
+        struct InFlightRead final
+        {
+            /// The identifier of the readback buffer or texture.
+            Object ID;
+
+            /// Whether \ref ID names a texture rather than a buffer.
+            Bool   Texture;
+
+            /// The byte offset for a buffer, or the mipmap level for a texture.
+            UInt32 Offset;
+
+            /// The number of bytes for a buffer, or the array slice for a texture.
+            UInt32 Size;
+
+            /// The callback handed the bytes.
+            OnRead Callback;
+
+            /// The bytes read, empty until the GPU has written them.
+            Blob   Data;
+        };
+
         /// \brief Groups all per-frame resources required to record and execute one GPU frame.
         struct InFlightFrame final
         {
             /// The command journal for this frame.
-            Journal            Journal;
+            Journal                Journal;
 
             /// The transient vertex buffer arena for this frame.
-            InFlightArena      Vertices;
+            InFlightArena          Vertices;
 
             /// The transient index buffer arena for this frame.
-            InFlightArena      Indices;
+            InFlightArena          Indices;
 
             /// The transient uniform buffer arena for this frame.
-            InFlightArena      Uniforms;
+            InFlightArena          Uniforms;
 
             /// The submission arena for this frame, which accumulates draw commands to submit.
-            Sequence<Command>  Commands;
+            Sequence<Command>      Commands;
 
             /// The in-flight render pass for this frame.
-            InFlightPass       Pass;
+            InFlightPass           Pass;
+
+            /// The reads this frame tries once its commands have run.
+            Sequence<InFlightRead> Reads;
         };
 
         /// \brief Returns a reference to the consumer journal currently being processed by the GPU thread.
@@ -558,6 +604,14 @@ namespace ZyGraphic
         ///
         /// \param Frame The in-flight frame the CPU is about to write.
         void MapInFlightFrame(Ref<InFlightFrame> Frame);
+
+        /// \brief Tries every read of a frame the GPU has not answered yet.
+        ///
+        /// \param Frame The in-flight frame whose commands just ran.
+        void ReadInFlightFrame(Ref<InFlightFrame> Frame);
+
+        /// \brief Hands every answered read of the consumer frame to its callback, and moves the rest onto the producer.
+        void DeliverInFlightReads();
 
         /// \brief Registers built-in resource loaders for graphic resources.
         void RegisterBuiltinLoaders();

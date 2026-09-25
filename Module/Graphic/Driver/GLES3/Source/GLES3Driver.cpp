@@ -61,6 +61,54 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static void Mark(Ref<GLsync> Fence)
+    {
+        if (Fence)
+        {
+            glDeleteSync(Fence);
+        }
+        Fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool Poll(Ref<GLsync> Fence)
+    {
+        if (Fence)
+        {
+            if (glClientWaitSync(Fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0) == GL_TIMEOUT_EXPIRED)
+            {
+                return false;
+            }
+            glDeleteSync(Fence);
+            Fence = nullptr;
+        }
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Blob Fetch(GLuint Object, UInt32 Offset, UInt32 Size)
+    {
+        Blob Output = Blob::Allocate<Byte>(Size);
+
+        glBindBuffer(GL_COPY_READ_BUFFER, Object);
+
+#if defined(ZY_PLATFORM_WEB)
+        glGetBufferSubData(GL_COPY_READ_BUFFER, Offset, Size, Output.GetData());
+#else
+        const Ptr<void> Memory = glMapBufferRange(GL_COPY_READ_BUFFER, Offset, Size, GL_MAP_READ_BIT);
+        Output.Copy(static_cast<ConstPtr<Byte>>(Memory), Size);
+        glUnmapBuffer(GL_COPY_READ_BUFFER);
+#endif
+        return Output;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     GLES3Driver::~GLES3Driver()
     {
         for (Ref<GLES3Buffer> Buffer : mBuffers)
@@ -69,15 +117,28 @@ namespace ZyGraphic
             {
                 glDeleteBuffers(1, AddressOf(Buffer.Object));
             }
+            if (Buffer.Fence)
+            {
+                glDeleteSync(Buffer.Fence);
+            }
         }
 
         for (Ref<GLES3Texture> Texture : mTextures)
         {
+            if (Texture.Fence)
+            {
+                glDeleteSync(Texture.Fence);
+            }
+
             if (Texture.Object)
             {
                 if (Texture.Target == GL_RENDERBUFFER)
                 {
                     glDeleteRenderbuffers(1, AddressOf(Texture.Object));
+                }
+                else if (Texture.Target == GL_PIXEL_PACK_BUFFER)
+                {
+                    glDeleteBuffers(1, AddressOf(Texture.Object));
                 }
                 else
                 {
@@ -253,6 +314,11 @@ namespace ZyGraphic
             mSnapshot.Vertices = 0;
         }
 
+        if (mBuffers[ID].Fence)
+        {
+            glDeleteSync(mBuffers[ID].Fence);
+        }
+
         glDeleteBuffers(1, AddressOf(mBuffers[ID].Object));
         mBuffers[ID] = GLES3Buffer();
     }
@@ -267,6 +333,11 @@ namespace ZyGraphic
         glBindBuffer(GL_COPY_READ_BUFFER,  mBuffers[SrcBuffer].Object);
         glBindBuffer(Target, mBuffers[DstBuffer].Object);
         glCopyBufferSubData(GL_COPY_READ_BUFFER, Target, SrcOffset, DstOffset, Size);
+
+        if (mBuffers[DstBuffer].Usage == GL_STREAM_READ)
+        {
+            Mark(mBuffers[DstBuffer].Fence);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -296,6 +367,20 @@ namespace ZyGraphic
         glBindBuffer(GL_COPY_WRITE_BUFFER, mBuffers[ID].Object);
         glUnmapBuffer(GL_COPY_WRITE_BUFFER);
 #endif
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob GLES3Driver::ReadBuffer(Object ID, UInt32 Offset, UInt32 Size)
+    {
+        Ref<GLES3Buffer> Buffer = mBuffers[ID];
+
+        if (!Buffer.Object || !Poll(Buffer.Fence))
+        {
+            return Blob();
+        }
+        return Fetch(Buffer.Object, Offset, Size);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -562,7 +647,21 @@ namespace ZyGraphic
         Texture.Width   = Width;
         Texture.Height  = Height;
         Texture.Layers  = Slices;
+        Texture.Levels  = Max<UInt8>(1, Levels);
         Texture.Samples = ZyEnum::Cast(Samples);
+
+        if (Storage == Storage::Readback)
+        {
+            const UInt32 Chain = GetLevelOffset(Format, Width, Height, Texture.Levels);
+
+            Texture.Target = GL_PIXEL_PACK_BUFFER;
+
+            glGenBuffers(1, AddressOf(Texture.Object));
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, Texture.Object);
+            glBufferData(GL_PIXEL_PACK_BUFFER, Chain * Slices, nullptr, GL_STREAM_READ);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            return;
+        }
 
         const GLES3Format Description = GLES3Convert(Format);
 
@@ -705,9 +804,18 @@ namespace ZyGraphic
     {
         Ref<GLES3Texture> Texture = mTextures[ID];
 
+        if (Texture.Fence)
+        {
+            glDeleteSync(Texture.Fence);
+        }
+
         if (Texture.Target == GL_RENDERBUFFER)
         {
             glDeleteRenderbuffers(1, AddressOf(Texture.Object));
+        }
+        else if (Texture.Target == GL_PIXEL_PACK_BUFFER)
+        {
+            glDeleteBuffers(1, AddressOf(Texture.Object));
         }
         else
         {
@@ -727,10 +835,49 @@ namespace ZyGraphic
         glBindFramebuffer(GL_READ_FRAMEBUFFER, mGlobalReadFramebuffer);
         AttachTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Source.Object, Source.Target, SrcLevel, SrcLayer);
 
+        if (Target.Target == GL_PIXEL_PACK_BUFFER)
+        {
+            const GLES3Format Description = GLES3Convert(Target.Format);
+
+            const UInt32 Chain  = GetLevelOffset(Target.Format, Target.Width, Target.Height, Target.Levels);
+            const UInt32 Pitch  = GetLevelPitch(Target.Format, Target.Width, DstLevel);
+            const UInt32 Texel  = GetTextureMetadata(Target.Format).BitsPerPixel / 8;
+            const UInt32 Offset = Chain * DstLayer
+                + GetLevelOffset(Target.Format, Target.Width, Target.Height, DstLevel)
+                + DstY * Pitch
+                + DstX * Texel;
+
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, Target.Object);
+            glPixelStorei(GL_PACK_ROW_LENGTH, GetLevelExtent(Target.Width, DstLevel));
+            glReadPixels(SrcX, SrcY, Width, Height, Description.External, Description.Type, reinterpret_cast<Ptr<void>>(static_cast<UInt>(Offset)));
+            glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+            Mark(Target.Fence);
+            return;
+        }
+
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mGlobalDrawFramebuffer);
         AttachTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Target.Object, Target.Target, DstLevel, DstLayer);
 
         glBlitFramebuffer(SrcX, SrcY, SrcX + Width, SrcY + Height, DstX, DstY, DstX + Width, DstY + Height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob GLES3Driver::ReadTexture(Object ID, UInt8 Level, UInt16 Layer)
+    {
+        Ref<GLES3Texture> Texture = mTextures[ID];
+
+        if (Texture.Target != GL_PIXEL_PACK_BUFFER || !Poll(Texture.Fence))
+        {
+            return Blob();
+        }
+
+        const UInt32 Chain  = GetLevelOffset(Texture.Format, Texture.Width, Texture.Height, Texture.Levels);
+        const UInt32 Offset = Chain * Layer + GetLevelOffset(Texture.Format, Texture.Width, Texture.Height, Level);
+        return Fetch(Texture.Object, Offset, GetLevelSize(Texture.Format, Texture.Width, Texture.Height, Level));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -190,6 +190,7 @@ namespace ZyGraphic
         Immutable, ///< Initialized once at creation; read-only by the GPU.
         Dynamic,   ///< Written frequently by the CPU; read by the GPU (mapped access).
         Stream,    ///< Written occasionally by the CPU via explicit uploads; read by the GPU.
+        Readback,  ///< Filled by the GPU through a copy; read by the CPU.
     };
 
     /// \brief Specifies the action to perform when a test (e.g., stencil) passes or fails.

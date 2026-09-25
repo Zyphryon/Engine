@@ -19,6 +19,7 @@
 #elif   defined(ZY_PLATFORM_WEB)
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
+#include <webgl/webgl2.h>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -76,6 +77,7 @@ namespace ZyGraphic
             static_cast<GLenum>(GL_STATIC_DRAW),    // Storage::Immutable
             static_cast<GLenum>(GL_DYNAMIC_DRAW),   // Storage::Dynamic
             static_cast<GLenum>(GL_STREAM_DRAW),    // Storage::Stream
+            static_cast<GLenum>(GL_STREAM_READ),    // Storage::Readback
         };
         return kMapping[ZyEnum::Cast(Value)];
     }

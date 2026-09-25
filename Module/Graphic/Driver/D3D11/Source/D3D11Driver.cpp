@@ -243,9 +243,12 @@ namespace ZyGraphic
 
     void D3D11Driver::CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
     {
+        const Bool IsReadback = (Storage == Storage::Readback);
+
         const UInt Size   = (Usage == Usage::Uniform) ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment) : Capacity;
-        const UInt Access = (Storage == Storage::Dynamic) ? D3D11_CPU_ACCESS_WRITE : 0;
-        const CD3D11_BUFFER_DESC Descriptor(Size, D3D11Convert(Usage), D3D11Convert(Storage),Access);
+        const UInt Bind   = IsReadback ? 0 : D3D11Convert(Usage);
+        const UInt Access = IsReadback ? D3D11_CPU_ACCESS_READ : (Storage == Storage::Dynamic) ? D3D11_CPU_ACCESS_WRITE : 0;
+        const CD3D11_BUFFER_DESC Descriptor(Size, Bind, D3D11Convert(Storage), Access);
 
         D3D11_SUBRESOURCE_DATA Content {
             .pSysMem     = Data.GetData(),
@@ -309,6 +312,33 @@ namespace ZyGraphic
     void D3D11Driver::UnmapBuffer(Object ID)
     {
         mDeviceImmediate->Unmap(mBuffers[ID].Get(), 0);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob D3D11Driver::ReadBuffer(Object ID, UInt32 Offset, UInt32 Size)
+    {
+        const Ptr<ID3D11Buffer> Buffer = mBuffers[ID].Get();
+
+        if (!Buffer)
+        {
+            return Blob();
+        }
+
+        // Still drawing means the copy has not landed yet, and the read is tried again next frame.
+        D3D11_MAPPED_SUBRESOURCE Memory;
+
+        const HRESULT Result = mDeviceImmediate->Map(Buffer, 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, AddressOf(Memory));
+
+        if (Result == DXGI_ERROR_WAS_STILL_DRAWING || !D3D11Check(Result))
+        {
+            return Blob();
+        }
+
+        Blob Output = Blob::Copy(ConstSpan(static_cast<ConstPtr<Byte>>(Memory.pData) + Offset, Size));
+        mDeviceImmediate->Unmap(Buffer, 0);
+        return Output;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -559,8 +589,9 @@ namespace ZyGraphic
 
     void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
     {
-        const Bool   IsCube = (Layout == TextureLayout::TextureCube);
-        const UInt16 Slices = IsCube ? 6 : Max<UInt16>(1, Layers);
+        const Bool   IsReadback = (Storage == Storage::Readback);
+        const Bool   IsCube     = (Layout == TextureLayout::TextureCube);
+        const UInt16 Slices     = IsCube ? 6 : Max<UInt16>(1, Layers);
 
         CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, Slices, Levels);
         Description.Usage      = D3D11Convert(Storage);
@@ -571,7 +602,13 @@ namespace ZyGraphic
             .Quality = mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Samples)]
         };
 
-        if (HasBit(Usage, Usage::Target))
+        if (IsReadback)
+        {
+            Description.BindFlags      = 0;
+            Description.MiscFlags      = 0;
+            Description.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        }
+        else if (HasBit(Usage, Usage::Target))
         {
             switch (Format)
             {
@@ -620,7 +657,7 @@ namespace ZyGraphic
         }
         D3D11Check(mDevice->CreateTexture2D(AddressOf(Description), Memory, Texture.Object.GetAddressOf()));
 
-        if (HasBit(Usage, Usage::Sample))
+        if (HasBit(Usage, Usage::Sample) && !IsReadback)
         {
             D3D11_SRV_DIMENSION Dimension;
 
@@ -684,6 +721,47 @@ namespace ZyGraphic
         const CD3D11_BOX Offset(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
         mDeviceImmediate->CopySubresourceRegion1(
             Target.Object.Get(), DstSubresource, DstX, DstY, 0, Source.Object.Get(), SrcSubresource, AddressOf(Offset), Flags);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Blob D3D11Driver::ReadTexture(Object ID, UInt8 Level, UInt16 Layer)
+    {
+        ConstRef<D3D11Texture> Texture = mTextures[ID];
+
+        if (!Texture.Object)
+        {
+            return Blob();
+        }
+
+        // Still drawing means the copy has not landed yet, and the read is tried again next frame.
+        const UINT               Subresource = D3D11CalcSubresource(Level, Layer, Texture.Levels);
+        D3D11_MAPPED_SUBRESOURCE Memory;
+
+        const HRESULT Result = mDeviceImmediate->Map(
+            Texture.Object.Get(), Subresource, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, AddressOf(Memory));
+
+        if (Result == DXGI_ERROR_WAS_STILL_DRAWING || !D3D11Check(Result))
+        {
+            return Blob();
+        }
+
+        D3D11_TEXTURE2D_DESC Description;
+        Texture.Object->GetDesc(AddressOf(Description));
+
+        const UInt32 Pitch = GetLevelPitch(Texture.Format, static_cast<UInt16>(Description.Width), Level);
+        const UInt32 Rows  = GetLevelRows(Texture.Format, static_cast<UInt16>(Description.Height), Level);
+
+        // The driver pads each row as it likes, and the caller gets them packed tightly.
+        Blob Output = Blob::Allocate<Byte>(Pitch * Rows);
+
+        for (UInt32 Row = 0; Row < Rows; ++Row)
+        {
+            Output.Copy(static_cast<ConstPtr<Byte>>(Memory.pData) + Row * Memory.RowPitch, Pitch, Row * Pitch);
+        }
+        mDeviceImmediate->Unmap(Texture.Object.Get(), Subresource);
+        return Output;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
