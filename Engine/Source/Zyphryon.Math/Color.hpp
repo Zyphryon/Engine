@@ -114,7 +114,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr AnyColor<UInt8> ToColor8() const
             requires(IsReal<Type>)
         {
-            return AnyColor(Narrow(mComponents[0]), Narrow(mComponents[1]), Narrow(mComponents[2]), Narrow(mComponents[3]));
+            return AnyColor<UInt8>(Narrow(mComponents[0]), Narrow(mComponents[1]), Narrow(mComponents[2]), Narrow(mComponents[3]));
         }
 
         /// \brief Converts the color from sRGB into linear space.
