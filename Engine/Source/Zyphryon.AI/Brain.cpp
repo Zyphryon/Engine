@@ -99,6 +99,18 @@ namespace ZyAI
             Result = Compare(Current) ? Status::Success : Status::Failure;
             break;
         }
+        case Behaviour::Kind::Set:
+        {
+            mBoard.Set(Current.Name, Current.Value);
+            Result = Status::Success;
+            break;
+        }
+        case Behaviour::Kind::Clear:
+        {
+            mBoard.Erase(Current.Name);
+            Result = Status::Success;
+            break;
+        }
         case Behaviour::Kind::Sequence:
         case Behaviour::Kind::Selector:
         {

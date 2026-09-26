@@ -38,6 +38,8 @@ namespace ZyAI
             Chance,   ///< Runs its child with a probability of `Value`, from `0` to `1`, and fails otherwise.
             Leaf,     ///< Runs the host action named by `Name`.
             Compare,  ///< Succeeds when the blackboard entry `Name` passes `Check` against `Value`, and fails otherwise.
+            Set,      ///< Sets the blackboard entry `Name` to `Value`, and succeeds.
+            Clear,    ///< Removes the blackboard entry `Name`, and succeeds whether or not it existed.
         };
 
         /// \brief Enumerates the tests a compare node applies to a blackboard entry.
@@ -67,7 +69,7 @@ namespace ZyAI
             /// The count a parallel or repeat reads.
             UInt16    Count     = 0;
 
-            /// The seconds, probability or operand a cooldown, timeout, chance or compare reads.
+            /// The seconds, probability or operand a cooldown, timeout, chance, compare or set reads.
             Real64    Value     = 0.0;
 
             /// The slot of a leaf's arguments in the argument list, counted from `1`, or `0` when it has none.
@@ -76,7 +78,7 @@ namespace ZyAI
             /// The test a compare node applies.
             Test      Check     = Test::Exists;
 
-            /// The name of the host action a leaf runs, or of the blackboard entry a compare node reads.
+            /// The name of the host action a leaf runs, or of the blackboard entry a compare, set or clear node works on.
             Str32     Name;
         };
 

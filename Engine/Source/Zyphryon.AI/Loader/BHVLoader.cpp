@@ -57,15 +57,21 @@ namespace ZyAI
             Node.Name  = Definition.GetString("Key");
             Node.Check = Definition.GetEnum("Test", Behaviour::Test::Exists);
         }
+        else if (Node.Type == Behaviour::Kind::Set || Node.Type == Behaviour::Kind::Clear)
+        {
+            Node.Name = Definition.GetString("Key");
+        }
 
         const JsonArray List     = Definition.GetArray("Children");
         const UInt32    Children = List.IsNullOrEmpty() ? 0 : static_cast<UInt32>(List.GetSize());
 
-        // A leaf or a compare has no children, a decorator has exactly one, and a composite has at least one.
+        // A leaf or a blackboard node has no children, a decorator has exactly one, and a composite has at least one.
         switch (Node.Type)
         {
         case Behaviour::Kind::Leaf:
         case Behaviour::Kind::Compare:
+        case Behaviour::Kind::Set:
+        case Behaviour::Kind::Clear:
             if (Children != 0 || Node.Name.IsEmpty())
             {
                 return false;
