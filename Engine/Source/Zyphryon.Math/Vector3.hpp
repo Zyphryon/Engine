@@ -706,6 +706,19 @@ inline namespace ZyMath
             return Incident - Normal * (Type(2) * Dot(Incident, Normal));
         }
 
+        /// \brief Slides the incident vector along the surface the given normal faces out of.
+        ///
+        /// \param Incident The incoming vector to slide.
+        /// \param Normal   The surface normal to slide along (should be normalized).
+        /// \return The part of the incident vector that runs along the surface.
+        ZY_INLINE static constexpr AnyVector3 Slide(AnyVector3 Incident, AnyVector3 Normal)
+            requires(IsReal<Type>)
+        {
+            ZY_ASSERT(Normal.IsNormalized(), "Normal vector must be normalized");
+
+            return Incident - Normal * Dot(Incident, Normal);
+        }
+
         /// \brief Encodes a vector into the whole range of an integer per lane, the way a normalized vertex attribute reads it back.
         ///
         /// \param Value The vector to encode, each lane held to the range the integer spans.
