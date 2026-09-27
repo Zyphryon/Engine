@@ -365,20 +365,18 @@ namespace ZyScene::Protocol
 
             if (const Mask Held = Wire::Encode(mScratch, World, Changed, mSlices); Held.Any())
             {
-                for (Ref<Table<UInt64, Unique<Member>>::Pair> Entry : mMembers)
+                mMembers.ForEach([&](UInt64, Ref<Unique<Member>> Peer)
                 {
-                    Ref<Member> Peer = (* Entry.Second);
-
-                    Peer.Reliable.Write<UInt8>(static_cast<UInt8>(Opcode::World));
-                    Wire::Compose(Peer.Reliable, mScratch, mSlices, Held, Mask());
-                }
+                    Peer->Reliable.Write<UInt8>(static_cast<UInt8>(Opcode::World));
+                    Wire::Compose(Peer->Reliable, mScratch, mSlices, Held, Mask());
+                });
             }
         }
 
-        for (Ref<Table<UInt64, Unique<Member>>::Pair> Entry : mMembers)
+        mMembers.ForEach([&](UInt64, Ref<Unique<Member>> Peer)
         {
-            Flush(* Entry.Second);
-        }
+            Flush(* Peer);
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -469,20 +467,18 @@ namespace ZyScene::Protocol
 
     void Publisher::Sweep()
     {
-        for (Ref<Table<UInt64, Group>::Pair> Entry : mGroups)
+        mGroups.ForEach([&](UInt64, Ref<Group> Group)
         {
-            Ref<Group> Group = Entry.Second;
-
             if (!Group.Actor.IsAlive())
             {
-                continue;
+                return;
             }
 
             for (const Ptr<Member> Peer : Group.Subscribers)
             {
                 Announce(Group.Actor, * Peer, false);
             }
-        }
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

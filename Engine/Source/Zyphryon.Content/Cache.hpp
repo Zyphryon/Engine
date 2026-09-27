@@ -35,10 +35,10 @@ namespace ZyContent
 
             UInt64 Total = 0;
 
-            for (const auto [_, Asset] : mRegistry)
+            mRegistry.ForEach([&](ConstRef<Digest>, ConstRef<Retainer<Type>> Asset)
             {
                 Total += Asset->GetFootprint();
-            }
+            });
             return Total;
         }
 

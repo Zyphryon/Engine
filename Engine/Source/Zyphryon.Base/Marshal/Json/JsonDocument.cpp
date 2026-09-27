@@ -440,7 +440,7 @@ inline namespace ZyBase
 
         Bool First = true;
 
-        for (ConstRef<JsonValue::Object::Pair> Entry: Value)
+        Value.ForEach([&](ConstRef<Str> Key, ConstRef<JsonValue> Member)
         {
             if (!First)
             {
@@ -450,11 +450,11 @@ inline namespace ZyBase
             First = false;
 
             WriteIndent(Output, Indent, Level + 1);
-            WriteString(Output, Entry.First);
+            WriteString(Output, Key);
             Output.Append(':');
             Output.Append(' ');
-            WriteValue(Output, Entry.Second, Indent, Level + 1);
-        }
+            WriteValue(Output, Member, Indent, Level + 1);
+        });
 
         Output.Append('\n');
         WriteIndent(Output, Indent, Level);
