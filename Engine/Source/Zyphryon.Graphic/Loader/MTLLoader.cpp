@@ -48,21 +48,31 @@ namespace ZyGraphic
         // Parse 'Images' section, keyed by the texture name the technique declares.
         if (const JsonObject JsonImages = Root.GetObject("Images"); JsonImages.IsValid())
         {
-            for (ConstRef<JsonValue::Object::Pair> Entry : JsonImages.GetNode()->GetObject())
+            JsonImages.ForEach([&](ConstRef<Str> Key, Ref<JsonValue> Node)
             {
-                const JsonObject JsonImage = JsonImages.GetObject(Entry.First);
-                const Text       Path      = JsonImage.GetString("Path");
+                if (!Node.IsObject())
+                {
+                    return;
+                }
 
-                Asset.SetImage(Hash(Entry.First), Service.Load<Image>(Path, AddressOf(Scope)));
-            }
+                const JsonObject JsonImage(Node);
+                const Text       Path(JsonImage.GetString("Path"));
+
+                Asset.SetImage(Hash(Key), Service.Load<Image>(Path, AddressOf(Scope)));
+            });
         }
 
         // Parse 'Samplers' section, keyed by the sampler name the technique declares.
         if (const JsonObject JsonSamplers = Root.GetObject("Samplers"); JsonSamplers.IsValid())
         {
-            for (ConstRef<JsonValue::Object::Pair> Entry : JsonSamplers.GetNode()->GetObject())
+            JsonSamplers.ForEach([&](ConstRef<Str> Key, Ref<JsonValue> Node)
             {
-                const JsonObject JsonSampler = JsonSamplers.GetObject(Entry.First);
+                if (!Node.IsObject())
+                {
+                    return;
+                }
+
+                const JsonObject JsonSampler(Node);
 
                 Sampler Descriptor;
                 Descriptor.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
@@ -72,18 +82,23 @@ namespace ZyGraphic
                 Descriptor.Comparison   = JsonSampler.GetEnum("Comparison",   TestCondition::None);
                 Descriptor.Border       = JsonSampler.GetEnum("Border",       TextureBorder::OpaqueBlack);
 
-                Asset.SetSampler(Hash(Entry.First), Descriptor);
-            }
+                Asset.SetSampler(Hash(Key), Descriptor);
+            });
         }
 
         // Parse 'Parameters' section
         if (const JsonObject JsonParameters = Root.GetObject("Parameters"); JsonParameters.IsValid())
         {
-            for (ConstRef<JsonValue::Object::Pair> Entry : JsonParameters.GetNode()->GetObject())
+            JsonParameters.ForEach([&](ConstRef<Str> Key, Ref<JsonValue> Node)
             {
-                const JsonObject JsonParameter = JsonParameters.GetObject(Entry.First);
+                if (!Node.IsObject())
+                {
+                    return;
+                }
 
-                const Text Name = Entry.First;
+                const JsonObject JsonParameter(Node);
+
+                const Text Name = Key;
                 const Text Type = JsonParameter.GetString("Type");
 
                 switch (ZyEnum::Cast(Type, Uniform::Float))
@@ -271,7 +286,7 @@ namespace ZyGraphic
                     break;
                 }
                 }
-            }
+            });
         }
     }
 }

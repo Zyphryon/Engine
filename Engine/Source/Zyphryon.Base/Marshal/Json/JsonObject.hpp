@@ -245,6 +245,15 @@ inline namespace ZyBase
             return JsonObject();
         }
 
+        /// \brief Visits every member of the object, in storage order.
+        ///
+        /// \param Callback The callback invoked with each key and a reference to its value.
+        template<typename Function>
+        ZY_INLINE void ForEach(AnyRef<Function> Callback) const
+        {
+            mNode->GetObject().ForEach(Forward<Function>(Callback));
+        }
+
         /// \brief Formats the JSON value into an output buffer.
         ///
         /// \param Buffer The buffer to format into.

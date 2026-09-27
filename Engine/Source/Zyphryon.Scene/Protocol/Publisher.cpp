@@ -136,14 +136,14 @@ namespace ZyScene::Protocol
             "Scene::Publisher::Timekeeper",
             EcsPostFrame,
             Execution::Immediate,
-            [this]
+            [this](ConstRef<Clock> Now)
             {
-                if (ConstRef<Clock> Now = GetService<Service>().GetWorld().Get<const Clock>(); Now.IsEvery(kClock))
+                if (Now.IsEvery(kClock))
                 {
-                    for (Ref<Table<UInt64, Unique<Member>>::Pair> Entry : mMembers)
+                    mMembers.ForEach([&](UInt64, Ref<Unique<Member>> Peer)
                     {
-                        WriteTime(* Entry.Second, Now);
-                    }
+                        WriteTime(* Peer, Now);
+                    });
                 }
             });
     }
