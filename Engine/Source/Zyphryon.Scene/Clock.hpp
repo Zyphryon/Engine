@@ -19,11 +19,28 @@ namespace ZyScene
     {
     public:
 
+        /// \brief Lead over a leader, in seconds, past which \ref Follow jumps back instead of easing.
+        static constexpr Real64 kRewind = 2.0;
+
+        /// \brief Lag behind a leader, in seconds, past which \ref Follow jumps forward instead of easing.
+        static constexpr Real64 kLeap   = 0.5;
+
+        /// \brief Fraction of the gap \ref Follow eases away when the clock is behind its leader.
+        static constexpr Real64 kCatch  = 0.5;
+
+        /// \brief Fraction of the gap \ref Follow eases away when the clock is ahead of its leader.
+        static constexpr Real64 kEase   = 0.1;
+
+    public:
+
         /// \brief Constructs a clock starting at zero with a neutral multiplier of \c 1.
         ZY_INLINE Clock()
             : mAbsolute   { 0.0 },
               mDelta      { 0.0 },
-              mMultiplier { 1.0 }
+              mElapsed    { 0.0 },
+              mStep       { 0.0 },
+              mMultiplier { 1.0 },
+              mSlew       { 0.0 }
         {
         }
 
@@ -35,7 +52,10 @@ namespace ZyScene
         ZY_INLINE Clock(Real64 Absolute, Real64 Delta, Real32 Multiplier)
             : mAbsolute   { Absolute },
               mDelta      { Delta },
-              mMultiplier { Multiplier }
+              mElapsed    { 0.0 },
+              mStep       { 0.0 },
+              mMultiplier { Multiplier },
+              mSlew       { 0.0 }
         {
         }
 
@@ -44,12 +64,77 @@ namespace ZyScene
         /// \param Delta The elapsed real time in seconds since the last tick.
         ZY_INLINE void Tick(Real64 Delta)
         {
+            mElapsed += Delta;
+            mStep     = Delta;
+
             const Real64 Scale = Delta * mMultiplier;
-            mAbsolute += Scale;
-            mDelta     = Scale;
+            const Real64 Room  = Scale * 0.05;
+            const Real64 Step  = Clamp(mSlew, -Room, Room);
+
+            mSlew     -= Step;
+            mAbsolute += Scale + Step;
+            mDelta     = Scale + Step;
         }
 
-        /// \brief Returns the total scaled time accumulated since the clock was created.
+        /// \brief Eases the clock by an offset over the following ticks, replacing any easing in progress.
+        ///
+        /// \param Offset The time to gain in seconds, or to lose when negative.
+        ZY_INLINE void Slew(Real64 Offset)
+        {
+            mSlew = Offset;
+        }
+
+        /// \brief Follows another clock, adopting its multiplier and closing the gap to its time.
+        ///
+        /// \note Gaps beyond \ref kLeap behind or \ref kRewind ahead are jumped; smaller ones are eased.
+        ///
+        /// \param Leader The clock to follow, usually as last received from the publisher.
+        ZY_INLINE void Follow(ConstRef<Clock> Leader)
+        {
+            mMultiplier = Leader.mMultiplier;
+
+            const Real64 Behind = Leader.mAbsolute - mAbsolute;
+
+            // Jumping back breaks timers already set, so it is reserved for a clock that starts far ahead.
+            if (Behind > kLeap || Behind < -kRewind)
+            {
+                SetAbsolute(Leader.mAbsolute);
+                return;
+            }
+
+            // A delayed message only makes the clock look ahead, so a lead is closed more slowly than a lag.
+            Slew(Behind * (Behind > 0.0 ? kCatch : kEase));
+        }
+
+        /// \brief Sets the total scaled time, cancelling any easing in progress.
+        ///
+        /// \param Absolute The absolute time in seconds.
+        ZY_INLINE void SetAbsolute(Real64 Absolute)
+        {
+            mAbsolute = Absolute;
+            mSlew     = 0.0;
+        }
+
+        /// \brief Checks whether the last tick crossed a multiple of a real-time period.
+        ///
+        /// \note Counts unscaled time, so it keeps firing while the clock is paused.
+        ///
+        /// \param Period The period in seconds of real time.
+        /// \return `true` if the last tick crossed a multiple of the period, otherwise `false`.
+        ZY_INLINE Bool IsEvery(Real64 Period) const
+        {
+            return Floor(mElapsed / Period) != Floor((mElapsed - mStep) / Period);
+        }
+
+        /// \brief Gets the unscaled time accumulated since the clock was created.
+        ///
+        /// \return The elapsed real time in seconds, unaffected by the multiplier.
+        ZY_INLINE Real64 GetElapsed() const
+        {
+            return mElapsed;
+        }
+
+        /// \brief Gets the total scaled time accumulated since the clock was created.
         ///
         /// \return The absolute elapsed time in seconds.
         ZY_INLINE Real64 GetAbsolute() const
@@ -57,7 +142,7 @@ namespace ZyScene
             return mAbsolute;
         }
 
-        /// \brief Returns the scaled time elapsed during the last tick.
+        /// \brief Gets the scaled time elapsed during the last tick.
         ///
         /// \return The delta time in seconds for the most recent frame.
         ZY_INLINE Real64 GetDelta() const
@@ -78,7 +163,7 @@ namespace ZyScene
             mMultiplier = Multiplier;
         }
 
-        /// \brief Returns the current timescale multiplier.
+        /// \brief Gets the current timescale multiplier.
         ///
         /// \return The timescale multiplier applied to each tick.
         ZY_INLINE Real32 GetMultiplier() const
@@ -93,6 +178,9 @@ namespace ZyScene
 
         Real64 mAbsolute;
         Real64 mDelta;
+        Real64 mElapsed;
+        Real64 mStep;
         Real32 mMultiplier;
+        Real64 mSlew;
     };
 }

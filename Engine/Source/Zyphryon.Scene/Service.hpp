@@ -53,7 +53,7 @@ namespace ZyScene
         /// \param Multiplier The timescale, where \c 1 runs at real time and \c 0 pauses the scene.
         ZY_INLINE void SetTimescale(Real32 Multiplier)
         {
-            mClock.SetMultiplier(Multiplier);
+            GetWorld().Get<Clock>().SetMultiplier(Multiplier);
         }
 
         /// \brief Gets the rate the scene simulation advances at.
@@ -61,7 +61,7 @@ namespace ZyScene
         /// \return The timescale, where \c 1 runs at real time and \c 0 means the scene is paused.
         ZY_INLINE Real32 GetTimescale() const
         {
-            return mClock.GetMultiplier();
+            return GetWorld().Get<const Clock>().GetMultiplier();
         }
 
         /// \brief Batches all world mutations performed by the callback into a single deferred flush.
@@ -88,7 +88,7 @@ namespace ZyScene
         /// \brief Gets a world handle that provides access to singleton components.
         ///
         /// \return The world wrapper for the world.
-        ZY_INLINE World GetWorld()
+        ZY_INLINE World GetWorld() const
         {
             return World(mWorld);
         }
@@ -492,7 +492,6 @@ namespace ZyScene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ptr<ecs_world_t>                 mWorld;
-        Clock                            mClock;
         Freelist<kMaxCountArchetypes, 0> mArchetypes;
     };
 }

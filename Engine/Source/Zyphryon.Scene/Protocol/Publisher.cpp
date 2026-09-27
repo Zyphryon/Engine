@@ -130,6 +130,22 @@ namespace ZyScene::Protocol
                     }
                 }, DSL::In(Component)));
         }
+
+        // System that sends every peer the clock once per second of real time, so a pause still reaches them.
+        mTimekeeper = Scene.CreateSystem<>(
+            "Scene::Publisher::Timekeeper",
+            EcsPostFrame,
+            Execution::Immediate,
+            [this]
+            {
+                if (ConstRef<Clock> Now = GetService<Service>().GetWorld().Get<const Clock>(); Now.IsEvery(kClock))
+                {
+                    for (Ref<Table<UInt64, Unique<Member>>::Pair> Entry : mMembers)
+                    {
+                        WriteTime(* Entry.Second, Now);
+                    }
+                }
+            });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -137,6 +153,8 @@ namespace ZyScene::Protocol
 
     Publisher::~Publisher()
     {
+        mTimekeeper.Destruct();
+
         for (UInt Index = 0; Index < mObservers.GetSize(); ++Index)
         {
             mObservers[Index].Destruct();
@@ -173,6 +191,9 @@ namespace ZyScene::Protocol
         Peer.Reliable.Write<UInt8>(static_cast<UInt8>(Opcode::Hello));
         Peer.Reliable.Write<UInt64>(Table.GetHash());
         Peer.Reliable.Write<UInt64>(Key);
+
+        // The clock goes first, so the peer is aligned before anything stamped with it arrives.
+        WriteTime(Peer, GetService<Service>().GetWorld().Get<const Clock>());
 
         // Every replicated singleton the world holds, so the peer starts from the same world as everyone else.
         const World World = GetService<Service>().GetWorld();
@@ -732,6 +753,16 @@ namespace ZyScene::Protocol
         }
 
         Peer.Datagram.Write<Byte>(Entry.GetData(), Entry.GetSize());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Publisher::WriteTime(Ref<Member> Peer, ConstRef<Clock> Time)
+    {
+        Peer.Reliable.Write<UInt8>(static_cast<UInt8>(Opcode::Time));
+        Peer.Reliable.Write<Real64>(Time.GetAbsolute());
+        Peer.Reliable.Write<Real32>(Time.GetMultiplier());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

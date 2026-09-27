@@ -156,6 +156,9 @@ namespace ZyScene::Protocol
             case Opcode::Stream:
                 OnStream(Input);
                 break;
+            case Opcode::Time:
+                OnTime(Input);
+                break;
             default:
                 LOG_W("Scene: A message this build does not know was received and the rest of the frame dropped");
                 return true;
@@ -270,6 +273,17 @@ namespace ZyScene::Protocol
             Reader Reader(Body);
             Wire::Decode(Reader, Actor);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::OnTime(Ref<Reader> Input)
+    {
+        const Real64 Absolute   = Input.Read<Real64>();
+        const Real32 Multiplier = Input.Read<Real32>();
+
+        GetService<Service>().GetWorld().Get<Clock>().Follow(Clock(Absolute, 0.0, Multiplier));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

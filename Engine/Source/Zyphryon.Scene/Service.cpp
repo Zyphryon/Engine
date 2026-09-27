@@ -56,14 +56,12 @@ namespace ZyScene
     {
         ZY_PROFILE_SCOPE("Scene::Tick");
 
-        // Scale the frame delta by the time multiplier to allow for time dilation effects.
-        mClock.Tick(Delta);
-
-        // Update the world time component.
-        GetWorld().Set(Clock(mClock));
+        // The world's clock is the only one, so whatever steers it, such as a subscriber, is ticked here too.
+        Ref<Clock> Time = GetWorld().Get<Clock>();
+        Time.Tick(Delta);
 
         // Advance the ECS world simulation by the frame delta.
-        ecs_progress(mWorld, static_cast<Real32>(mClock.GetDelta()));
+        ecs_progress(mWorld, static_cast<Real32>(Time.GetDelta()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -402,6 +400,9 @@ namespace ZyScene
 
         // The ledger always exists, so a touch never has to ask whether the world has one yet.
         GetWorld().Set(Protocol::Ledger());
+
+        // The clock always exists, so a tick or a timescale never has to ask whether the world has one yet.
+        GetWorld().Set(Clock());
 
         // Periodically reclaims memory by removing empty internal storage tables.
         CreateSystem<DSL::Interval<15>>("_Compact", EcsPostFrame, Execution::Immediate,

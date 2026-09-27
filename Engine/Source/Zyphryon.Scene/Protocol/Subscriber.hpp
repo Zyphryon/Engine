@@ -110,6 +110,11 @@ namespace ZyScene::Protocol
         /// \param Input The stream positioned after the opcode.
         void OnStream(Ref<Reader> Input);
 
+        /// \brief Applies the publisher's clock, which the world's clock follows.
+        ///
+        /// \param Input The stream positioned after the opcode.
+        void OnTime(Ref<Reader> Input);
+
         /// \brief Creates the entity a spawn describes beneath its scope.
         ///
         /// \param Scope The entity carrying the scope.

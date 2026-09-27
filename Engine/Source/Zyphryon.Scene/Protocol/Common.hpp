@@ -54,6 +54,7 @@ namespace ZyScene::Protocol
         Forget, ///< An entity a peer no longer sees, whether it was destroyed or left the peer's scopes.
         Update, ///< The reliable components of one entity that changed or were removed.
         Stream, ///< The streamed components of many entities that changed, under one sequence number.
+        Time,   ///< The publisher's clock time and timescale, sent on greeting and once per second of real time.
     };
 
     /// \brief Names a set of replicated components, one bit per place in the manifest.

@@ -35,6 +35,9 @@ namespace ZyScene::Protocol
         /// \brief Number of publishes between two sweeps of the visibility rule over everything a peer sees.
         static constexpr UInt32 kSweep    = 8;
 
+        /// \brief Seconds of real time between two sends of the clock to every peer.
+        static constexpr Real64 kClock    = 1.0;
+
         /// \brief Represents the rule that says whether a peer may see a replica at all, over the scopes it subscribes to.
         using Visibility = Delegate<Bool(ZyNetwork::Connection, Entity)>;
 
@@ -230,6 +233,12 @@ namespace ZyScene::Protocol
         /// \param Entry The entry, which must fit a datagram on its own.
         void WriteStream(Ref<Member> Peer, ConstSpan<Byte> Entry);
 
+        /// \brief Writes a clock's absolute time and multiplier into a peer's reliable stream.
+        ///
+        /// \param Peer The peer being told, whose reliable stream the time lands in.
+        /// \param Time The clock to send.
+        void WriteTime(Ref<Member> Peer, ConstRef<Clock> Time);
+
         /// \brief Sends a peer's reliable stream if it grew past the chunk size.
         ///
         /// \param Peer The peer whose reliable stream is looked at.
@@ -251,6 +260,7 @@ namespace ZyScene::Protocol
         Visibility                    mVisibility;
         UInt32                        mSweep;
         Array<Entity, 4>              mObservers;
+        System                        mTimekeeper;
         Sequence<Entity>              mWatchers;
         Writer                        mScratch;
         Writer                        mEntry;
