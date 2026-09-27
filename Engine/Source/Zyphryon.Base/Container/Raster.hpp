@@ -259,6 +259,28 @@ inline namespace ZyBase
         template<typename Distance, typename FSolid>
         void Measure(Ref<Raster<Distance, Width, Height>> Result, AnyRef<FSolid> Solid) const
         {
+            Measure(Result, 0, 0, static_cast<SInt32>(Width) - 1, static_cast<SInt32>(Height) - 1, Solid);
+        }
+
+        /// \brief Measures how far every cell of a box lies from the nearest cell of it a predicate holds for.
+        ///
+        /// \param Result   The raster the distance of every cell of the box is written into, in cells either way.
+        /// \param MinimumX The first column of the box.
+        /// \param MinimumY The first row of the box.
+        /// \param MaximumX The last column of the box, which lies inside it.
+        /// \param MaximumY The last row of the box, which lies inside it.
+        /// \param Solid    The callback asked whether a cell is one the distance is measured to, given the cell.
+        template<typename Distance, typename FSolid>
+        void Measure(
+            Ref<Raster<Distance, Width, Height>> Result,
+            SInt32                               MinimumX,
+            SInt32                               MinimumY,
+            SInt32                               MaximumX,
+            SInt32                               MaximumY,
+            AnyRef<FSolid>                       Solid) const
+        {
+            ZY_ASSERT(Contains(MinimumX, MinimumY) && Contains(MaximumX, MaximumY), "The box must lie in the raster");
+
             constexpr UInt32 kFarthest = static_cast<UInt32>(kMaximum<Distance>);
 
             const auto Chamfer = [&](SInt32 X, SInt32 Y, SInt32 Toward)
@@ -274,19 +296,20 @@ inline namespace ZyBase
 
                 for (UInt32 Each = 0; Each < 4; ++Each)
                 {
-                    if (Contains(Behind[Each][0], Behind[Each][1]))
-                    {
-                        const UInt32 Near = Result[GetIndex(Behind[Each][0], Behind[Each][1])];
+                    const SInt32 NearX = Behind[Each][0];
+                    const SInt32 NearY = Behind[Each][1];
 
-                        Nearest = Min(Nearest, Near + 1u);
+                    if (NearX >= MinimumX && NearX <= MaximumX && NearY >= MinimumY && NearY <= MaximumY)
+                    {
+                        Nearest = Min(Nearest, Result[GetIndex(NearX, NearY)] + 1u);
                     }
                 }
                 return static_cast<Distance>(Min(Nearest, kFarthest));
             };
 
-            for (SInt32 Y = 0; Y < static_cast<SInt32>(Height); ++Y)
+            for (SInt32 Y = MinimumY; Y <= MaximumY; ++Y)
             {
-                for (SInt32 X = 0; X < static_cast<SInt32>(Width); ++X)
+                for (SInt32 X = MinimumX; X <= MaximumX; ++X)
                 {
                     const UInt32 Index = GetIndex(X, Y);
 
@@ -294,9 +317,9 @@ inline namespace ZyBase
                 }
             }
 
-            for (SInt32 Y = static_cast<SInt32>(Height) - 1; Y >= 0; --Y)
+            for (SInt32 Y = MaximumY; Y >= MinimumY; --Y)
             {
-                for (SInt32 X = static_cast<SInt32>(Width) - 1; X >= 0; --X)
+                for (SInt32 X = MaximumX; X >= MinimumX; --X)
                 {
                     const UInt32 Index = GetIndex(X, Y);
 

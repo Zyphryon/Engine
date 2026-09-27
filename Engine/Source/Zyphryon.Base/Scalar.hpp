@@ -60,6 +60,16 @@ inline namespace ZyBase
         return Value < Type(0) ? -Value : Value;
     }
 
+    /// \brief Computes the sign of the given number.
+    ///
+    /// \param Value The value to compute the sign of.
+    /// \return `1` when \p Value is above zero, `-1` when it is below, and `0` when it is zero.
+    template<IsSigned Type>
+    constexpr Type Sign(Type Value)
+    {
+        return Type(Value > Type(0)) - Type(Value < Type(0));
+    }
+
     /// \brief Computes the largest integer less than or equal to the given value.
     ///
     /// \param Value The value to floor.
