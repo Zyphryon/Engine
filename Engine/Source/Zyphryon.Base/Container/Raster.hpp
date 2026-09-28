@@ -39,6 +39,11 @@ inline namespace ZyBase
         /// \brief The number of cells in all.
         static constexpr UInt32 kCount  = Width * Height;
 
+        /// \brief The steps to the eight cells beside any one, the four sharing an edge first.
+        static constexpr SInt32 kSteps[8][2] = {
+            { -1,  0 }, {  1,  0 }, {  0, -1 }, {  0,  1 },
+            { -1, -1 }, {  1, -1 }, { -1,  1 }, {  1,  1 } };
+
         /// \brief Specifies which cells count as beside a cell.
         enum class Neighbourhood : UInt8
         {
@@ -388,13 +393,6 @@ inline namespace ZyBase
         {
             return X >= 0 && X < static_cast<SInt32>(Width) && Y >= 0 && Y < static_cast<SInt32>(Height);
         }
-
-    private:
-
-        /// \brief The steps to the eight cells beside any one, the four sharing an edge first.
-        static constexpr SInt32 kSteps[8][2] = {
-            { -1,  0 }, {  1,  0 }, {  0, -1 }, {  0,  1 },
-            { -1, -1 }, {  1, -1 }, { -1,  1 }, {  1,  1 } };
 
     private:
 

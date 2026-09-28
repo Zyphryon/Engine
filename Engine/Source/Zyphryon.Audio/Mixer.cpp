@@ -39,13 +39,13 @@ namespace ZyAudio
         const Real32 Step       = (End - Start) / static_cast<Real32>(Count);
         const UInt32 Vectorized = Count & ~3u;
 
-        Vector4       Gain    = Vector4(Start, Start + Step, Start + 2.0f * Step, Start + 3.0f * Step);
-        const Vector4 Advance = Vector4(Step * 4.0f);
+        Vector4       Gain(Start, Start + Step, Start + 2.0f * Step, Start + 3.0f * Step);
+        const Vector4 Advance(Step * 4.0f);
 
         UInt32 Index = 0;
         for (; Index < Vectorized; Index += 4)
         {
-            const Vector4 Samples     = Vector4(Src + Index);
+            const Vector4 Samples(Src + Index);
             const Vector4 Accumulated = Vector4(Dst + Index) + Samples * Gain;
             Accumulated.Store(Dst + Index);
 
@@ -134,7 +134,14 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Mixer::Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform)
+    Bool Mixer::Play(
+        Object              Handle,
+        Category            Category,
+        Ptr<Decoder>        Decoder,
+        UInt32              Stride,
+        Real32              Volume,
+        ConstRef<Emitter>   Emitter,
+        ConstRef<Matrix4x3> Transform)
     {
         Command Command { };
         Command.Kind      = Op::Play;
@@ -275,22 +282,22 @@ namespace ZyAudio
 
             mVoices.Acquire(Command.Handle);
 
-            Ref<Voice> Voice   = mVoices[Command.Handle];
-            Voice.Handle       = Command.Handle;
-            Voice.Decoder      = Unique(Command.Decoder);
-            Voice.Category     = Command.Category;
-            Voice.Stride       = static_cast<UInt16>(Command.Stride);
-            Voice.Spatial      = Command.Spatial;
-            Voice.Volume       = Command.Volume;
-            Voice.Looping      = false;
-            Voice.Paused       = false;
-            Voice.Finished     = false;
-            Voice.Primed       = false;
-            Voice.Reason       = Reason::Completed;
+            Ref<Voice> Voice = mVoices[Command.Handle];
+            Voice.Handle     = Command.Handle;
+            Voice.Decoder    = Unique(Command.Decoder);
+            Voice.Category   = Command.Category;
+            Voice.Stride     = static_cast<UInt16>(Command.Stride);
+            Voice.Spatial    = Command.Spatial;
+            Voice.Volume     = Command.Volume;
+            Voice.Looping    = false;
+            Voice.Paused     = false;
+            Voice.Finished   = false;
+            Voice.Primed     = false;
+            Voice.Reason     = Reason::Completed;
+            Voice.Gain       = Vector2(1.0f, 1.0f);
 
             // A voice ranks at nothing until it has mixed once, so a sound is never stolen before it is heard.
             mRanks[Command.Handle.GetSlot() - 1].store(0.0f, std::memory_order_relaxed);
-            Voice.Gain         = Vector2(1.0f, 1.0f);
 
             if (Command.Spatial)
             {

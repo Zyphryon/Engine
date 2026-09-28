@@ -113,7 +113,7 @@ namespace ZyAudio::Codec
 
     UInt64 Adaptive::Skip(UInt64 Frames)
     {
-        constexpr UInt32 kChunk = 64;
+        constexpr UInt64 kChunk = 64;
 
         Array<Real32, kChunk * kMixerStride> Discard;
 
@@ -121,7 +121,7 @@ namespace ZyAudio::Codec
 
         while (Done < Frames)
         {
-            const UInt64 Request = Min(Frames - Done, static_cast<UInt64>(kChunk)) * mStride;
+            const UInt64 Request = Min(Frames - Done, kChunk) * mStride;
             const UInt64 Decoded = Read(Span(Discard.GetData(), Request));
 
             if (Decoded == 0)

@@ -584,7 +584,7 @@ inline namespace ZyMath
         /// \return A vector containing the cross product of the XYZ components, with W = 0.
         ZY_INLINE static Vector4 Cross3(Vector4 P0, Vector4 P1);
 
-        /// \brief Encodes a vector into the whole range of an integer per lane, the way a normalized vertex attribute reads it back.
+        /// \brief Encodes a vector into the whole range of an integer per lane.
         ///
         /// \param Value The vector to encode, each lane held to the range the integer spans.
         /// \return The lanes in order, each spread over the integer's range.

@@ -277,6 +277,22 @@ inline namespace ZyMath
             return (mX * mX + mY * mY + mZ * mZ);
         }
 
+        /// \brief Gets the largest of the vector's components.
+        ///
+        /// \return The largest component.
+        ZY_INLINE constexpr Type GetMaxComponent() const
+        {
+            return ::Max(mX, mY, mZ);
+        }
+
+        /// \brief Gets the smallest of the vector's components.
+        ///
+        /// \return The smallest component.
+        ZY_INLINE constexpr Type GetMinComponent() const
+        {
+            return ::Min(mX, mY, mZ);
+        }
+
         /// \brief Calculates the distance between this vector and another vector.
         ///
         /// \param Target The vector to calculate the distance to.
@@ -551,7 +567,9 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically less than the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator<(AnyVector3 Other) const
         {
-            return (mX < Other.mX) || (mX == Other.mX && mY < Other.mY) || (mX == Other.mX && mY == Other.mY && mZ < Other.mZ);
+            return (mX < Other.mX)
+                || (mX == Other.mX && mY < Other.mY)
+                || (mX == Other.mX && mY == Other.mY && mZ < Other.mZ);
         }
 
         /// \brief Compares this vector with another for less-than or equal relationship (lexicographic ordering).
@@ -560,7 +578,9 @@ inline namespace ZyMath
         /// \return `true` if this vector is lexicographically less than or equal to the other vector, otherwise `false`.
         ZY_INLINE constexpr Bool operator<=(AnyVector3 Other) const
         {
-            return (mX < Other.mX) || (mX == Other.mX && mY < Other.mY) || (mX == Other.mX && mY == Other.mY && mZ <= Other.mZ);
+            return (mX < Other.mX)
+                || (mX == Other.mX && mY < Other.mY)
+                || (mX == Other.mX && mY == Other.mY && mZ <= Other.mZ);
         }
 
         /// \brief Compares this vector with another for greater-than relationship (lexicographic ordering).
@@ -719,7 +739,7 @@ inline namespace ZyMath
             return Incident - Normal * Dot(Incident, Normal);
         }
 
-        /// \brief Encodes a vector into the whole range of an integer per lane, the way a normalized vertex attribute reads it back.
+        /// \brief Encodes a vector into the whole range of an integer per lane.
         ///
         /// \param Value The vector to encode, each lane held to the range the integer spans.
         /// \return The lanes in order, each spread over the integer's range.

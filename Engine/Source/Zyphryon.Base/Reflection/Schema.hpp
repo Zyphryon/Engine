@@ -131,8 +131,7 @@ namespace ZyReflection
         {
             static_assert(IsDescribed<Type>, "The type has no Reflection::Describe of its own");
 
-            return Schema(
-                ConstSpan<Field>(Describe<Type>::kFields), Detail::TagOf<Type>(), sizeof(Type), alignof(Type));
+            return Schema(ConstSpan(Describe<Type>::kFields), Detail::TagOf<Type>(), sizeof(Type), alignof(Type));
         }
 
         /// \brief Gets the schema of the value a nested field steps into.
@@ -155,33 +154,3 @@ namespace ZyReflection
         UInt8            mAlignment;
     };
 }
-
-/// \def ZY_REFLECT
-/// \brief Lays down the fields of a type, once, in storage that lasts as long as the program does.
-///
-/// \note A type spelled with a comma in it, such as a template with two arguments, needs a `using` alias first.
-///
-/// \param Type The type being described, spelled as it is from the global namespace.
-/// \param ...  The fields of the type, in the order they are shown.
-#define ZY_REFLECT(Type, ...)                             \
-    template<>                                            \
-    struct ZyReflection::Describe<Type> final               \
-    {                                                     \
-        static constexpr Array kFields = { __VA_ARGS__ }; \
-    }
-
-/// \def ZY_REFLECT_CLASSIFIED
-/// \brief Names a type reflection cannot name of its own accord, which then travels as its own bytes under a tag.
-///
-/// \note The type has to be trivially copyable and no wider than a value carries inline.
-///
-/// \param Type The type being named, spelled as it is from the global namespace.
-/// \param Name The tag whoever edits the value matches on.
-#define ZY_REFLECT_CLASSIFIED(Type, Name)                                     \
-    template<>                                                                \
-    struct ZyReflection::Classify<Type> final                                   \
-    {                                                                         \
-        static constexpr ZyReflection::Kind kValue = ZyReflection::Kind::Foreign; \
-                                                                              \
-        static constexpr Char             kTag[] = Name;                      \
-    }

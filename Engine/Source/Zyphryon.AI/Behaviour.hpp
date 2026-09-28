@@ -58,28 +58,28 @@ namespace ZyAI
         struct Node final
         {
             /// The kind of the node.
-            Kind      Type      = Kind::Leaf;
+            Kind   Type      = Kind::Leaf;
 
             /// The number of direct children.
-            UInt16    Children  = 0;
+            UInt16 Children  = 0;
 
             /// The number of nodes in its subtree, itself included, which is the offset to its next sibling.
-            UInt16    Span      = 1;
+            UInt16 Span      = 1;
 
             /// The count a parallel or repeat reads.
-            UInt16    Count     = 0;
+            UInt16 Count     = 0;
 
             /// The seconds, probability or operand a cooldown, timeout, chance, compare or set reads.
-            Real64    Value     = 0.0;
+            Real64 Value     = 0.0;
 
             /// The slot of a leaf's arguments in the argument list, counted from `1`, or `0` when it has none.
-            UInt16    Arguments = 0;
+            UInt16 Arguments = 0;
 
             /// The test a compare node applies.
-            Test      Check     = Test::Exists;
+            Test   Check     = Test::Exists;
 
             /// The name of the host action a leaf runs, or of the blackboard entry a compare, set or clear node works on.
-            Str32     Name;
+            Str32  Name;
         };
 
         /// \brief The maximum number of nodes in a behaviour.

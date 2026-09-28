@@ -72,7 +72,8 @@ namespace ZyRender
 
         for (UInt Index = 0; Index < mBones.GetSize(); ++Index)
         {
-            const Matrix4x3 Transform = Matrix4x3::FromTransform(Local.Position[Index], Local.Scale[Index], Local.Rotation[Index]);
+            const Matrix4x3 Transform
+                = Matrix4x3::FromTransform(Local.Position[Index], Local.Scale[Index], Local.Rotation[Index]);
 
             // The parent is already final, since the ordering guarantees it was reached first, so a single
             // multiply carries this bone the whole way into skeleton space.

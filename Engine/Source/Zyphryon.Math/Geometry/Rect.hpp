@@ -872,25 +872,41 @@ inline namespace ZyMath
             // Top band (above intersection)
             if (Intersect.GetMinimumY() > First.GetMinimumY())
             {
-                Action(AnyRect(First.GetMinimumX(), First.GetMinimumY(), First.GetMaximumX(), Intersect.GetMinimumY()));
+                Action(AnyRect(
+                    First.GetMinimumX(),
+                    First.GetMinimumY(),
+                    First.GetMaximumX(),
+                    Intersect.GetMinimumY()));
             }
 
             // Bottom band (below intersection)
             if (Intersect.GetMaximumY() < First.GetMaximumY())
             {
-                Action(AnyRect(First.GetMinimumX(), Intersect.GetMaximumY(), First.GetMaximumX(), First.GetMaximumY()));
+                Action(AnyRect(
+                    First.GetMinimumX(),
+                    Intersect.GetMaximumY(),
+                    First.GetMaximumX(),
+                    First.GetMaximumY()));
             }
 
             // Left band (left of intersection)
             if (Intersect.GetMinimumX() > First.GetMinimumX())
             {
-                Action(AnyRect(First.GetMinimumX(), Intersect.GetMinimumY(), Intersect.GetMinimumX(), Intersect.GetMaximumY()));
+                Action(AnyRect(
+                    First.GetMinimumX(),
+                    Intersect.GetMinimumY(),
+                    Intersect.GetMinimumX(),
+                    Intersect.GetMaximumY()));
             }
 
             // Right band (right of intersection)
             if (Intersect.GetMaximumX() < First.GetMaximumX())
             {
-                Action(AnyRect(Intersect.GetMaximumX(), Intersect.GetMinimumY(), First.GetMaximumX(), Intersect.GetMaximumY()));
+                Action(AnyRect(
+                    Intersect.GetMaximumX(),
+                    Intersect.GetMinimumY(),
+                    First.GetMaximumX(),
+                    Intersect.GetMaximumY()));
             }
         }
 
@@ -959,8 +975,13 @@ inline namespace ZyMath
             requires(IsIntegral<Type>)
         {
             const Type Quotient = Value / Cell;
-            return static_cast<Target>((Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0))) ? Quotient - Type(1) : Quotient);
+            return static_cast<Target>(
+                (Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0)))
+                    ? Quotient - Type(1)
+                    : Quotient);
         }
+
+    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

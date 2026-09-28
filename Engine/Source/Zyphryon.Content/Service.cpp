@@ -162,7 +162,8 @@ namespace ZyContent
             }
             else
             {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[Source, Destination, Mount, Callback = Move(Callback)] mutable
+                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,
+                    [Source, Destination, Mount, Callback = Move(Callback)] mutable
                 {
                     Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
                 });
@@ -208,7 +209,8 @@ namespace ZyContent
 
         Read(Key, [this, Lane, Callback = Move(Callback)](Filesystem::Result Result, Blob Data) mutable
         {
-            GetService<ZyJob::Service>().Dispatch(Lane, [this, Result, Data = Move(Data), Callback = Move(Callback)] mutable
+            GetService<ZyJob::Service>().Dispatch(Lane,
+                [this, Result, Data = Move(Data), Callback = Move(Callback)] mutable
             {
                 Callback(Result, Move(Data));
 
@@ -230,7 +232,8 @@ namespace ZyContent
             }
             else
             {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
+                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,
+                    [Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
                 {
                     Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
                 });

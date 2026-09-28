@@ -29,8 +29,7 @@ inline namespace ZyMath
 
         /// \brief Initializes the circle to center (0.0f, 0.0f) with radius 0.0f.
         ZY_INLINE constexpr Circle()
-            : mCenter { 0.0f, 0.0f },
-              mRadius { 0.0f }
+            : mRadius { 0.0f }
         {
         }
 

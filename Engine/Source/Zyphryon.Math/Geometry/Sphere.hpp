@@ -28,8 +28,7 @@ inline namespace ZyMath
 
         /// \brief Initializes the sphere to center (0.0f, 0.0f, 0.0f) with radius 0.0f.
         ZY_INLINE constexpr Sphere()
-            : mCenter { 0.0f, 0.0f, 0.0f },
-              mRadius { 0.0f }
+            : mRadius { 0.0f }
         {
         }
 

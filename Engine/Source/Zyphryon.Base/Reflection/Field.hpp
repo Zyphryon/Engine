@@ -52,15 +52,13 @@ namespace ZyReflection
 
         /// \brief Constructs a field describing nothing.
         ZY_INLINE constexpr Field()
-            : mName       { },
-              mHint       { },
-              mReader     { nullptr },
-              mWriter     { nullptr },
-              mExtra      { .Limit = { } },
-              mKind       { Kind::None },
-              mTraits     { },
-              mOwnerSize  { 0 },
-              mOwnerAlign { 0 }
+            : mReader    { nullptr },
+              mWriter    { nullptr },
+              mExtra     { .Limit = { } },
+              mKind      { Kind::None },
+              mTraits    { },
+              mSize      { 0 },
+              mAlignment { 0 }
         {
         }
 
@@ -89,9 +87,6 @@ namespace ZyReflection
         }
 
         /// \brief Gets the tag naming who understands a value this module cannot describe.
-        ///
-        /// \note A run of characters carries one too, which is how a path keeps the name of what writes it
-        ///       while still reading and writing as plain text.
         ///
         /// \return The tag of the field, empty unless the value was given one.
         ZY_INLINE constexpr Text GetTag() const
@@ -126,17 +121,17 @@ namespace ZyReflection
         /// \brief Gets the named values an enumerated field chooses between.
         ///
         /// \return The options of the field, empty unless it is a `Kind::Enumeration`.
-        ZY_INLINE constexpr Span<const Option> GetOptions() const
+        ZY_INLINE constexpr ConstSpan<Option> GetOptions() const
         {
-            return mKind == Kind::Enumeration ? mExtra.Options : Span<const Option>();
+            return mKind == Kind::Enumeration ? mExtra.Options : ConstSpan<Option>();
         }
 
         /// \brief Gets the fields of the value a nested field steps into.
         ///
         /// \return The fields of the value, empty unless the field is a `Kind::Structure`.
-        ZY_INLINE constexpr Span<const Field> GetNested() const
+        ZY_INLINE constexpr ConstSpan<Field> GetNested() const
         {
-            return mKind == Kind::Structure ? mExtra.Nested : Span<const Field>();
+            return mKind == Kind::Structure ? mExtra.Nested : ConstSpan<Field>();
         }
 
         /// \brief Gets what a run of elements holds.
@@ -170,7 +165,7 @@ namespace ZyReflection
         template<typename Type>
         ZY_INLINE constexpr Bool Owns() const
         {
-            return sizeof(Type) == mOwnerSize && alignof(Type) == mOwnerAlign;
+            return sizeof(Type) == mSize && alignof(Type) == mAlignment;
         }
 
         /// \brief Checks whether the field carries the specified trait.
@@ -360,8 +355,9 @@ namespace ZyReflection
 
             Detail::Borrow<Getter, Kind::Structure>();
 
-            const Extra Slot { .Nested = Span<const Field>(Describe<Content>::kFields) };
-
+            const Extra Slot {
+                .Nested = ConstSpan<Field>(Describe<Content>::kFields)
+            };
             return Compose<Getter, Setter, Kind::Structure>(Text(Name, Count - 1), Slot);
         }
 
@@ -377,8 +373,9 @@ namespace ZyReflection
         {
             Detail::Borrow<Getter, Kind::Opaque>();
 
-            const Extra Slot { .Label = Text(Tag, Length - 1) };
-
+            const Extra Slot {
+                .Label = Text(Tag, Length - 1)
+            };
             return Compose<Getter, Setter, Kind::Opaque>(Text(Name, Count - 1), Slot);
         }
 
@@ -408,8 +405,9 @@ namespace ZyReflection
                 Detail::Borrow<Getter, Tag>();
             }
 
-            const Extra Slot { .Label = Text(Filter, Length - 1) };
-
+            const Extra Slot {
+                .Label = Text(Filter, Length - 1)
+            };
             return Compose<Getter, Setter, Tag, Flat, Trait::Tagged | Trait::Format>(Text(Name, Count - 1), Slot);
         }
 
@@ -427,8 +425,9 @@ namespace ZyReflection
 
             Detail::Borrow<Getter, Kind::List>();
 
-            const Extra Slot { .Elements = AddressOf(Detail::kListing<Content>) };
-
+            const Extra Slot {
+                .Elements = AddressOf(Detail::kListing<Content>)
+            };
             return Compose<Getter, nullptr, Kind::List>(Text(Name, Count - 1), Slot);
         }
 
@@ -446,10 +445,10 @@ namespace ZyReflection
             }                  Limit;
 
             /// The named values an enumerated field chooses between.
-            Span<const Option> Options;
+            ConstSpan<Option> Options;
 
             /// The fields of the value a nested field steps into.
-            Span<const Field>  Nested;
+            ConstSpan<Field>  Nested;
 
             /// The tag naming who understands a value this module cannot describe.
             Text               Label;
@@ -471,14 +470,13 @@ namespace ZyReflection
         ZY_INLINE constexpr Field(
             Kind Tag, Text Name, Reader Read, Writer Write, Extra Slot, Trait Traits, UInt Size, UInt Align)
             : mName       { Name },
-              mHint       { },
               mReader     { Read },
               mWriter     { Write },
               mExtra      { Slot },
               mKind       { Tag },
               mTraits     { Traits },
-              mOwnerSize  { static_cast<UInt16>(Size) },
-              mOwnerAlign { static_cast<UInt8>(Align) }
+              mSize  { static_cast<UInt16>(Size) },
+              mAlignment { static_cast<UInt8>(Align) }
         {
             ZY_ASSERT(Size <= 65535 && Align <= 255, "A described type is at most 65535 bytes wide");
         }
@@ -521,7 +519,7 @@ namespace ZyReflection
         {
             if constexpr (Tag == Kind::Enumeration)
             {
-                return Extra { .Options = Span<const Option>(Detail::kOptions<Content>) };
+                return Extra { .Options = ConstSpan<Option>(Detail::kOptions<Content>) };
             }
             else if constexpr (Detail::IsNamed<Content>)
             {
@@ -703,6 +701,7 @@ namespace ZyReflection
 
             (static_cast<Ptr<typename Access::Owner>>(Instance)->*Handle)(Move(Whole));
         }
+        
         /// \brief Write handler for a value shown in place of the one part it holds.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
@@ -737,7 +736,7 @@ namespace ZyReflection
         Extra  mExtra;
         Kind   mKind;
         Trait  mTraits;
-        UInt16 mOwnerSize;
-        UInt8  mOwnerAlign;
+        UInt16 mSize;
+        UInt8  mAlignment;
     };
 }

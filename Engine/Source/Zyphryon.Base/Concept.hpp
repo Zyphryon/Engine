@@ -88,6 +88,10 @@ inline namespace ZyBase
     template<class Type, class ...Types>
     concept IsAnyOf     = (std::same_as<Type, Types> || ...);
 
+    /// \brief Concept that is satisfied when \p Type can be invoked with \p Arguments.
+    template<class Type, class ...Arguments>
+    concept IsInvocable = std::is_invocable_v<Type, Arguments...>;
+
     /// \brief Concept that is satisfied when \p Type is const-qualified.
     template<class Type>
     concept IsImmutable = std::is_const_v<Type>;

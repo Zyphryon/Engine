@@ -31,6 +31,9 @@ inline namespace ZyBase
 
         static_assert(Capacity > 0 && (Capacity & (Capacity - 1)) == 0, "Ring capacity must be a power of two");
 
+        /// \brief The mask that wraps a running index into a slot, which works since the capacity is a power of two.
+        static constexpr UInt32 kMask = Capacity - 1;
+
     public:
 
         /// \brief Constructs an empty ring.
@@ -83,11 +86,6 @@ inline namespace ZyBase
         {
             return mRead.load(std::memory_order_acquire) == mWrite.load(std::memory_order_acquire);
         }
-
-    private:
-
-        /// \brief
-        static constexpr UInt32 kMask = Capacity - 1;
 
     private:
 

@@ -201,7 +201,7 @@ namespace ZyNetwork
 
         if (Message.GetSize() > kMaxFrame)
         {
-            LOG_W("Network: a message of {0} byte(s) was dropped for being longer than a peer may announce", Message.GetSize());
+            LOG_W("Network: a message of {0} byte(s) was dropped for being large", Message.GetSize());
             return;
         }
 

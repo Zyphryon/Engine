@@ -24,8 +24,9 @@ inline namespace ZyBase
 
     Bool Entropy::Gather(Span<Byte> Output)
     {
-        const NTSTATUS Result
-            = BCryptGenRandom(nullptr, Output.GetData(), Output.GetSize(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        constexpr ULONG Mode = BCRYPT_USE_SYSTEM_PREFERRED_RNG;
+
+        const NTSTATUS Result = BCryptGenRandom(nullptr, Output.GetData(), Output.GetSize(), Mode);
         return Result >= 0;
     }
 }

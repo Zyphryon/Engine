@@ -87,7 +87,7 @@ inline namespace ZyMath
 
         /// \brief Checks if this matrix is the identity matrix.
         ///
-        /// \return `true` if all diagonal elements are approximately 1 and all off-diagonal elements are approximately 0, `false` otherwise.
+        /// \return `true` if all diagonal elements are approximately 1, `false` otherwise.
         ZY_INLINE Bool IsIdentity() const
         {
             return mColumns[0].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitX())

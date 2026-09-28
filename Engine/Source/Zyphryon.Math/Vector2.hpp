@@ -208,6 +208,22 @@ inline namespace ZyMath
             return (mX * mX + mY * mY);
         }
 
+        /// \brief Gets the largest of the vector's components.
+        ///
+        /// \return The largest component.
+        ZY_INLINE constexpr Type GetMaxComponent() const
+        {
+            return ::Max(mX, mY);
+        }
+
+        /// \brief Gets the smallest of the vector's components.
+        ///
+        /// \return The smallest component.
+        ZY_INLINE constexpr Type GetMinComponent() const
+        {
+            return ::Min(mX, mY);
+        }
+
         /// \brief Calculates the Euclidean distance between this vector and another vector.
         ///
         /// \param Target The vector to calculate the distance to.
@@ -236,7 +252,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Type GetDistanceChebyshev(AnyVector2 Target) const
         {
             const AnyVector2 Difference = (* this) - Target;
-            return ::Max(::Abs(Difference.GetX()), ::Abs(Difference.GetY()));
+            return AnyVector2(::Abs(Difference.GetX()), ::Abs(Difference.GetY())).GetMaxComponent();
         }
 
         /// \brief Calculates the squared distance between this vector and another vector.
@@ -657,7 +673,7 @@ inline namespace ZyMath
             return AnyVector2(Vector.GetX() * C - Vector.GetY() * S, Vector.GetX() * S + Vector.GetY() * C);
         }
 
-        /// \brief Encodes a vector into the whole range of an integer per lane, the way a normalized vertex attribute reads it back.
+        /// \brief Encodes a vector into the whole range of an integer per lane.
         ///
         /// \param Value The vector to encode, each lane held to the range the integer spans.
         /// \return The lanes in order, each spread over the integer's range.

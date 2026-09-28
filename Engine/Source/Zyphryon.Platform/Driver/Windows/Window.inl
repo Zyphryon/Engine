@@ -530,7 +530,11 @@ namespace ZyPlatform
                 UINT Size = sizeof(RAWINPUT);
 
                 RAWINPUT Data;
-                ::GetRawInputData(reinterpret_cast<HRAWINPUT>(Arg1), RID_INPUT, AddressOf(Data), AddressOf(Size), sizeof(RAWINPUTHEADER));
+                ::GetRawInputData(
+                    reinterpret_cast<HRAWINPUT>(Arg1),
+                    RID_INPUT,
+                    AddressOf(Data),
+                    AddressOf(Size), sizeof(RAWINPUTHEADER));
 
                 if (Data.header.dwType == RIM_TYPEMOUSE && Window->IsCursorLocked())
                 {

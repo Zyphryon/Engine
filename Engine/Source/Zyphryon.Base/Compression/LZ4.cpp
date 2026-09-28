@@ -420,7 +420,8 @@ inline namespace ZyBase
                     Match = Later;
                 }
 
-                while (Position > static_cast<UInt32>(Anchor - Origin) && Match > 0
+                while (Position > static_cast<UInt32>(Anchor - Origin)
+                    && Match > 0
                     && Origin[Position - 1] == Origin[Match - 1])
                 {
                     --Position;
@@ -428,7 +429,8 @@ inline namespace ZyBase
                     ++Found;
                 }
 
-                const Ptr<Byte> Token = LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>((Origin + Position) - Anchor));
+                const Ptr<Byte> Token
+                    = LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>((Origin + Position) - Anchor));
 
                 LZ4WriteMatch(Output, Token, Position - Match, Found - kLZ4MinMatch);
 

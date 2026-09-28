@@ -224,6 +224,17 @@ namespace ZyGraphic
         /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
         void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
+    public:
+
+        /// \brief Gets the bitmask selecting a single state block.
+        ///
+        /// \param Block The state block to select.
+        /// \return The bitmask holding the block's bit.
+        ZY_INLINE static constexpr UInt8 GetBlockMask(Block Block)
+        {
+            return (1u << ZyEnum::Cast(Block));
+        }
+
     private:
 
         /// \brief Assembles everything the driver needs to create a variant's pipeline.
@@ -247,17 +258,6 @@ namespace ZyGraphic
         /// \param Key     The bitmask of the features the variant compiles with.
         /// \return The variant's GPU pipeline object handle, or zero if it failed to compile.
         Object Compile(Ref<Service> Service, Key Key);
-
-    public:
-
-        /// \brief Gets the bitmask selecting a single state block.
-        ///
-        /// \param Block The state block to select.
-        /// \return The bitmask holding the block's bit.
-        ZY_INLINE static constexpr UInt8 GetBlockMask(Block Block)
-        {
-            return (1u << ZyEnum::Cast(Block));
-        }
 
     private:
 

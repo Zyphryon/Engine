@@ -222,7 +222,7 @@ namespace ZyAudio
         {
             const Vector2 Placement = mListener.Compute(
                 Transform.GetTranslation(), Vector3::Normalize(Transform.GetForward()), Emitter);
-            const Real32 Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.GetX(), Placement.GetY());
+            const Real32  Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.GetX(), Placement.GetY());
 
             if (const Object Playback = Reserve(Category, Gain))
             {

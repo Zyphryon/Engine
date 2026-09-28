@@ -283,7 +283,8 @@ namespace ZyNetwork::UDP
 
             for (UInt Step = 0; Step < Top && !mFlights.IsFull(); ++Step)
             {
-                const Connection::Peer Slot = mPeers.GetKey(static_cast<Connection::Peer::Slot>(1 + (mCursor + Step) % Top));
+                const Connection::Peer Slot
+                    = mPeers.GetKey(static_cast<Connection::Peer::Slot>(1 + (mCursor + Step) % Top));
 
                 if (const Ptr<Peer> Entry = mPeers.TryGet(Slot))
                 {

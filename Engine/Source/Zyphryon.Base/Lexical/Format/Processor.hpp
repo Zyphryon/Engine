@@ -59,7 +59,8 @@ namespace ZyFormat
         /// \param Pattern    The format pattern containing literal text and placeholders.
         /// \param Parameters The arguments to substitute into the pattern.
         template<typename Input, typename... Arguments>
-        ZY_INLINE static constexpr void Format(Ref<Output> Buffer, ConstRef<Input> Pattern, AnyRef<Arguments>... Parameters)
+        ZY_INLINE static constexpr void Format(
+            Ref<Output> Buffer, ConstRef<Input> Pattern, AnyRef<Arguments>... Parameters)
         {
             for (ConstRef<Expression> Expression : ConstSpan<Expression>(Pattern))
             {
@@ -92,8 +93,8 @@ namespace ZyFormat
         /// \brief Stores left and right padding counts for alignment.
         struct Padding
         {
-            UInt Left;
-            UInt Right;
+            UInt Left  = 0;
+            UInt Right = 0;
         };
 
         /// \brief Computes left and right padding based on placeholder properties and required width.
@@ -107,28 +108,28 @@ namespace ZyFormat
 
             if (Width == 0 || Width <= Required)
             {
-                return { 0, 0 };
+                return Padding();
             }
 
             const UInt Count = Width - Required;
 
             if (Properties.Padding == '0')
             {
-                return { Count, 0 };
+                return Padding { .Left = Count };
             }
 
             switch (Properties.Alignment)
             {
             case '<':
-                return { 0, Count };
+                return Padding { .Right = Count };
             case '^':
             {
                 const UInt Left = Count / 2;
-                return { Left, Count - Left };
+                return Padding(Left, Count - Left);
             }
             case '>':
             default:
-                return { Count, 0 };
+                return Padding { .Left = Count };
             }
         }
 
@@ -142,7 +143,14 @@ namespace ZyFormat
         /// \param Base       The numeric base (2, 10, 16).
         /// \param Uppercase  Whether to use uppercase letters for bases > 10.
         template<typename Unsigned>
-        ZY_INLINE static constexpr void AppendInt(Ref<Output> Buffer, Placeholder Properties, Char Prefix, Unsigned Number, UInt Digits, UInt Base, Bool Uppercase)
+        ZY_INLINE static constexpr void AppendInt(
+            Ref<Output> Buffer,
+            Placeholder Properties,
+            Char        Prefix,
+            Unsigned    Number,
+            UInt        Digits,
+            UInt        Base,
+            Bool        Uppercase)
         {
             const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Digits);
 
@@ -184,7 +192,8 @@ namespace ZyFormat
         /// \param Value      The floating-point value to format.
         /// \param Precision  The number of decimal places.
         template<typename Argument>
-        ZY_INLINE static constexpr void AppendReal(Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, Argument Value, UInt Precision)
+        ZY_INLINE static constexpr void AppendReal(
+            Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, Argument Value, UInt Precision)
         {
             const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Length);
 
@@ -219,7 +228,8 @@ namespace ZyFormat
         /// \param Length     The length of the text.
         /// \param Parameter  The text to append.
         template<typename Argument>
-        ZY_INLINE static constexpr void AppendText(Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, AnyRef<Argument> Parameter)
+        ZY_INLINE static constexpr void AppendText(
+            Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, AnyRef<Argument> Parameter)
         {
             const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Length);
 
@@ -247,7 +257,8 @@ namespace ZyFormat
         /// \param Properties The placeholder formatting properties.
         /// \param Parameter  The argument to format and append.
         template<typename Argument>
-        ZY_INLINE static constexpr void AppendArgument(Ref<Output> Buffer, Placeholder Properties, AnyRef<Argument> Parameter)
+        ZY_INLINE static constexpr void AppendArgument(
+            Ref<Output> Buffer, Placeholder Properties, AnyRef<Argument> Parameter)
         {
             using Value = StripAll<Argument>;
 
@@ -268,8 +279,13 @@ namespace ZyFormat
                     IsNegative = Parameter < Value(0);
                 }
 
-                const Unsigned Number = IsNegative ? Unsigned(0) - static_cast<Unsigned>(Parameter) : static_cast<Unsigned>(Parameter);
-                const Char     Prefix = IsNegative ? '-' : (Properties.Sign == '+' ? '+' : (Properties.Sign == ' ' ? ' ' : '\0'));
+                const Unsigned Number = IsNegative
+                    ? Unsigned(0) - static_cast<Unsigned>(Parameter)
+                    : static_cast<Unsigned>(Parameter);
+
+                const Char     Prefix = IsNegative
+                    ? '-'
+                    : (Properties.Sign == '+' ? '+' : (Properties.Sign == ' ' ? ' ' : '\0'));
 
                 switch (Properties.Type)
                 {
@@ -294,7 +310,9 @@ namespace ZyFormat
             {
                 const auto Number = Abs(Parameter);
                 const UInt Length = CountDigits(Number, Properties.Precision);
-                const Char Prefix = (Parameter < 0) ? '-' : (Properties.Sign == '+' ? '+' : (Properties.Sign == ' ' ? ' ' : '\0'));
+                const Char Prefix = (Parameter < 0)
+                    ? '-'
+                    : (Properties.Sign == '+' ? '+' : (Properties.Sign == ' ' ? ' ' : '\0'));
 
                 AppendReal(Buffer, Properties, Prefix, Length, Number, Properties.Precision);
             }
@@ -377,7 +395,12 @@ namespace ZyFormat
         /// \param First      The first argument in the parameter pack.
         /// \param Parameters The remaining arguments.
         template<typename Argument, typename... Arguments>
-        ZY_INLINE static constexpr void AppendPlaceholder(Ref<Output> Buffer, Placeholder Properties, UInt Index, AnyRef<Argument> First, AnyRef<Arguments>... Parameters)
+        ZY_INLINE static constexpr void AppendPlaceholder(
+            Ref<Output>          Buffer,
+            Placeholder          Properties,
+            UInt                 Index,
+            AnyRef<Argument>     First,
+            AnyRef<Arguments>... Parameters)
         {
             if (Index == 0)
             {

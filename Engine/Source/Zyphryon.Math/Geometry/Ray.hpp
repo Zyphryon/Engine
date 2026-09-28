@@ -28,8 +28,7 @@ inline namespace ZyMath
 
         /// \brief Initializes the ray at the origin, pointing along the elevation axis.
         ZY_INLINE constexpr Ray()
-            : mOrigin    { 0.0f, 0.0f, 0.0f },
-              mDirection { Vector3::UnitY() },
+            : mDirection { Vector3::UnitY() },
               mInverse   { Reciprocal(Vector3::UnitY()) }
         {
         }
@@ -150,6 +149,21 @@ inline namespace ZyMath
             return !(* this == Other);
         }
 
+        /// \brief Serializes the state of the ray to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the ray with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mOrigin);
+            Archive.Serialize(mDirection);
+
+            if constexpr (Serializer::IsReader)
+            {
+                mInverse = Reciprocal(mDirection);
+            }
+        }
+
     public:
 
         /// \brief Gets a ray that travels nowhere and hits nothing.
@@ -203,7 +217,8 @@ inline namespace ZyMath
         /// \param Distance Receives the distance to the entry point, unchanged when the ray misses.
         /// \param Limit    The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the volume within the limit, `false` otherwise.
-        ZY_INLINE static Bool Intersects(ConstRef<Ray> Source, ConstRef<Box> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
+        ZY_INLINE static Bool Intersects(
+            ConstRef<Ray> Source, ConstRef<Box> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
         {
             Real32 Exit = 0.0f;
 
@@ -218,7 +233,12 @@ inline namespace ZyMath
         /// \param Exit   Receives the distance the ray comes out at, unchanged when the ray misses.
         /// \param Limit  The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the volume within the limit, `false` otherwise.
-        ZY_INLINE static Bool Traverse(ConstRef<Ray> Source, ConstRef<Box> Volume, Ref<Real32> Entry, Ref<Real32> Exit, Real32 Limit = kInfinity<Real32>)
+        ZY_INLINE static Bool Traverse(
+            ConstRef<Ray> Source,
+            ConstRef<Box> Volume,
+            Ref<Real32>   Entry,
+            Ref<Real32>   Exit,
+            Real32        Limit = kInfinity<Real32>)
         {
             const Vector3 Origin  = Source.mOrigin;
             const Vector3 Inverse = Source.mInverse;
@@ -263,7 +283,8 @@ inline namespace ZyMath
         /// \param Distance Receives the distance to the entry point, unchanged when the ray misses.
         /// \param Limit    The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the sphere within the limit, `false` otherwise.
-        ZY_INLINE static Bool Intersects(ConstRef<Ray> Source, ConstRef<Sphere> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
+        ZY_INLINE static Bool Intersects(
+            ConstRef<Ray> Source, ConstRef<Sphere> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
         {
             Real32 Exit = 0.0f;
 
@@ -278,7 +299,12 @@ inline namespace ZyMath
         /// \param Exit   Receives the distance the ray comes out at, unchanged when the ray misses.
         /// \param Limit  The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the sphere within the limit, `false` otherwise.
-        ZY_INLINE static Bool Traverse(ConstRef<Ray> Source, ConstRef<Sphere> Volume, Ref<Real32> Entry, Ref<Real32> Exit, Real32 Limit = kInfinity<Real32>)
+        ZY_INLINE static Bool Traverse(
+            ConstRef<Ray>    Source,
+            ConstRef<Sphere> Volume,
+            Ref<Real32>      Entry,
+            Ref<Real32>      Exit,
+            Real32           Limit = kInfinity<Real32>)
         {
             const Vector3 Offset  = Volume.GetCenter() - Source.mOrigin;
             const Real32  Closest = Vector3::Dot(Offset, Source.mDirection);
@@ -302,21 +328,6 @@ inline namespace ZyMath
                 return true;
             }
             return false;
-        }
-
-        /// \brief Serializes the state of the ray to or from the specified archive.
-        ///
-        /// \param Archive The archive to serialize the ray with.
-        template<typename Serializer>
-        ZY_INLINE void Serialize(Serializer Archive)
-        {
-            Archive.Serialize(mOrigin);
-            Archive.Serialize(mDirection);
-
-            if constexpr (Serializer::IsReader)
-            {
-                mInverse = Reciprocal(mDirection);
-            }
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.
@@ -379,7 +390,8 @@ inline namespace ZyMath
         /// \param Near    The entry distance, pushed forward in place.
         /// \param Far     The exit distance, pulled back in place.
         /// \return `false` once the interval collapses, meaning the ray misses the volume.
-        ZY_INLINE static Bool Clip(Real32 Origin, Real32 Inverse, Real32 Minimum, Real32 Maximum, Ref<Real32> Near, Ref<Real32> Far)
+        ZY_INLINE static Bool Clip(
+            Real32 Origin, Real32 Inverse, Real32 Minimum, Real32 Maximum, Ref<Real32> Near, Ref<Real32> Far)
         {
             // A ray that does not travel along this axis clips nothing, since its interval is unbounded.
             if (Abs(Inverse) >= kUnbounded)

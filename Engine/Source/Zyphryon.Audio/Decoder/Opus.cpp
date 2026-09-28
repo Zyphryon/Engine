@@ -67,7 +67,8 @@ namespace ZyAudio::Codec
         for (UInt32 Index = 0, Origin = 0; Index < Count; ++Index)
         {
             mOffsets.GetData<UInt32>()[Index] = Origin;
-            Origin                           += mLengths[Index];
+
+            Origin += mLengths[Index];
         }
 
         SInt32 Result = 0;

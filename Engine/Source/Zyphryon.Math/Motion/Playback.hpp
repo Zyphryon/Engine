@@ -211,7 +211,7 @@ inline namespace ZyMath
             return mSpeed >= 0.0f;
         }
 
-        /// \brief Checks whether the cursor was stood somewhere, by playing, seeking or stopping, and not advanced since.
+        /// \brief Checks whether the cursor was stood somewhere, and not advanced since.
         ///
         /// \return `true` until the next advance, `false` after it.
         ZY_INLINE Bool IsFresh() const

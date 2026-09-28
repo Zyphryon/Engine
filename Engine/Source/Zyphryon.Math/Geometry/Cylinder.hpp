@@ -28,8 +28,7 @@ inline namespace ZyMath
 
         /// \brief Initializes the cylinder to center (0.0f, 0.0f, 0.0f) with radius and half height 0.0f.
         ZY_INLINE constexpr Cylinder()
-            : mCenter { 0.0f, 0.0f, 0.0f },
-              mRadius { 0.0f },
+            : mRadius { 0.0f },
               mExtent { 0.0f }
         {
         }

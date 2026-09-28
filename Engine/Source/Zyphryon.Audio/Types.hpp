@@ -98,5 +98,4 @@ namespace ZyAudio
         /// The reason the playback ended.
         Reason Reason = Reason::Completed;
     };
-
 }

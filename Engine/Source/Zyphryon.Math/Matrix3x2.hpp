@@ -352,7 +352,8 @@ inline namespace ZyMath
         /// \param Skew        The shear angles: X skew shears horizontally, Y skew shears vertically.
         ///
         /// \return The transformation matrix combining scale, rotation, skew, and translation around the given origin.
-        ZY_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
+        ZY_INLINE static Matrix3x2 FromTransform(
+            Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
         {
             const Real32 C = Angle::Cosine(Rotation);
             const Real32 S = Angle::Sine(Rotation);

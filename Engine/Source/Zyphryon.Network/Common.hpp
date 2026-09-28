@@ -24,7 +24,7 @@ namespace ZyNetwork
     inline constexpr UInt16 kMaxDatagram  = 1200;
 
     /// \brief Maximum size, in bytes, a peer may have waiting to go out before anything further is dropped.
-    inline constexpr UInt32 kMaxBacklog   = 32 * 1024;
+    inline constexpr UInt32 kMaxBacklog   = 1024 * 1024;
 
     /// \brief Maximum size, in bytes, a peer may announce a single framed message to be.
     inline constexpr UInt32 kMaxFrame     = 1024 * 1024;

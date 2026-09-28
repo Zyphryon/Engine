@@ -61,7 +61,14 @@ namespace ZyAudio
         /// \param Emitter   The spatial configuration of the source.
         /// \param Transform The source's world transform.
         /// \return `true` if the command was enqueued, `false` if the queue was full.
-        Bool Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform);
+        Bool Play(
+            Object              Handle,
+            Category            Category,
+            Ptr<Decoder>        Decoder,
+            UInt32              Stride,
+            Real32              Volume,
+            ConstRef<Emitter>   Emitter,
+            ConstRef<Matrix4x3> Transform);
 
         /// \brief Enqueues a command to set whether a voice loops.
         ///

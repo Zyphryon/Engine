@@ -236,6 +236,5 @@ inline namespace ZyBase
         ///
         /// \param Handle The handle to close.
         static void Close(Ref<Handle> Handle);
-
     };
 }

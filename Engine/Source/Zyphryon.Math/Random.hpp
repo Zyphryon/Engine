@@ -160,7 +160,8 @@ inline namespace ZyMath
         {
             Random Generator;
 
-            const Bool Success = Entropy::Gather(Span(reinterpret_cast<Ptr<Byte>>(Generator.mState), sizeof(Generator.mState)));
+            const Bool Success = Entropy::Gather(
+                Span(reinterpret_cast<Ptr<Byte>>(Generator.mState), sizeof(Generator.mState)));
             ZY_ASSERT(Success, "The platform had no entropy to seed from");
 
             return Generator;

@@ -197,7 +197,8 @@ namespace ZyRender
         /// \param Mesh     The mesh used for the draw call.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that encodes rendering state for optimal draw call ordering.
-        ZY_INLINE static constexpr UInt64 GenerateOrderKey(Priority Priority, UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+        ZY_INLINE static constexpr UInt64 GenerateOrderKey(
+            Priority Priority, UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
         {
             switch (Priority)
             {
@@ -217,7 +218,8 @@ namespace ZyRender
         /// \param Mesh     The mesh used for the draw call.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort opaque draw calls for optimal rendering order.
-        ZY_INLINE static constexpr UInt64 GenerateOpaqueOrderKey(UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+        ZY_INLINE static constexpr UInt64 GenerateOpaqueOrderKey(
+            UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
         {
             return (static_cast<UInt64>(Pipeline & 0x3FFu)  << 54) |    // [10:Pipeline]
                    (static_cast<UInt64>(Material & 0x3FFFu) << 40) |    // [14:Material]
@@ -232,7 +234,8 @@ namespace ZyRender
         /// \param Mesh     The mesh used for the draw call.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort transparent draw calls for correct back-to-front rendering order.
-        ZY_INLINE static constexpr UInt64 GenerateAlphaOrderKey(UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+        ZY_INLINE static constexpr UInt64 GenerateAlphaOrderKey(
+            UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
         {
             return (static_cast<UInt64>(DepthToBits(1.0f - Depth))  << 40) |   // [24:Depth]
                    (static_cast<UInt64>(Pipeline & 0x3FFu)          << 30) |   // [10:Pipeline]
@@ -279,7 +282,8 @@ namespace ZyRender
         {
             ConstRef<ZyGraphic::States> States = Technique.GetDescription().Base.States;
 
-            const Bool Opaque = (States.BlendSrcColor == ZyGraphic::BlendFactor::One && States.BlendDstColor == ZyGraphic::BlendFactor::Zero);
+            const Bool Opaque = (States.BlendSrcColor == ZyGraphic::BlendFactor::One
+                              && States.BlendDstColor == ZyGraphic::BlendFactor::Zero);
             return Opaque ? Priority::Opaque : Priority::Transparent;
         }
 

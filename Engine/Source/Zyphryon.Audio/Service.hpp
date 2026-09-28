@@ -191,10 +191,6 @@ namespace ZyAudio
         Spatializer                    mListener;
         Sequence<Completion>           mNotifications;
         Table<Object, Callback>        mSubscriptions;
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
         Table<Object, Retainer<Sound>> mResources;
         Freelist<kMaxInstances>        mInstances;
     };

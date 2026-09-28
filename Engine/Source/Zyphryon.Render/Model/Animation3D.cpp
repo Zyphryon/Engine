@@ -64,7 +64,10 @@ namespace ZyRender
 
             Binding.Append(Bone);
 
-            if (Bone != Skeleton3D::kMissing && !Entry.Position.IsEmpty() && !Entry.Scale.IsEmpty() && !Entry.Rotation.IsEmpty())
+            if (Bone != Skeleton3D::kMissing
+                && !Entry.Position.IsEmpty()
+                && !Entry.Scale.IsEmpty()
+                && !Entry.Rotation.IsEmpty())
             {
                 ++Reached;
             }

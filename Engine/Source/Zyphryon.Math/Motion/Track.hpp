@@ -171,7 +171,8 @@ inline namespace ZyMath
         /// \param Count  The number of samples.
         ZY_INLINE void SetValues(ConstPtr<Type> Values, UInt Count)
         {
-            ZY_ASSERT(IsUniform() || mTimes.GetSize() == Count, "A track carrying its own times needs one for every sample");
+            ZY_ASSERT(IsUniform() || mTimes.GetSize() == Count,
+                "A track carrying its own times needs one for every sample");
 
             // Tangents belong to the samples they were authored for, so they do not survive a new block.
             mIncoming.Clear();
@@ -476,10 +477,6 @@ inline namespace ZyMath
         Sequence<Real64> mTimes;
         Real32           mRate;
         Interpolation    mInterpolation;
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
         Sequence<Type>   mIncoming;
         Sequence<Type>   mOutgoing;
     };

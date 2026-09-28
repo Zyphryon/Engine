@@ -128,7 +128,6 @@ namespace ZyContent
         // The bytes are wanted whole rather than in pieces, which is what a blob is.
         Attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
         Attributes.userData   = Handle;
-
         Attributes.onsuccess  = [](Ptr<emscripten_fetch_t> Fetch)
         {
             const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);
@@ -141,7 +140,6 @@ namespace ZyContent
 
             Close(Handle, Filesystem::Result::Success, Data, Size);
         };
-
         Attributes.onerror    = [](Ptr<emscripten_fetch_t> Fetch)
         {
             const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);

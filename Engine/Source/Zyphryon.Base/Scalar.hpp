@@ -401,6 +401,20 @@ inline namespace ZyBase
         return Abs(Range) < kEpsilon<Value> ? Value(0) : (Position - Start) / Range;
     }
 
+    /// \brief Maps a scalar value from one range onto another, clamped to the target range.
+    ///
+    /// \param Position The scalar value to map.
+    /// \param Start    The scalar value the source range begins at.
+    /// \param End      The scalar value the source range ends at.
+    /// \param From     The scalar value the target range begins at.
+    /// \param To       The scalar value the target range ends at.
+    /// \return The mapped value, `From` at or before `Start` and `To` at or past `End`, or `From` for an empty range.
+    template<IsReal Value>
+    constexpr Value Remap(Value Position, Value Start, Value End, Value From, Value To)
+    {
+        return Lerp(From, To, Clamp(InverseLerp(Start, End, Position), Value(0), Value(1)));
+    }
+
     /// \brief Checks if a floating-point number is approximately zero within a specified tolerance.
     ///
     /// \param Value     The floating-point number to check.

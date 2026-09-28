@@ -552,6 +552,7 @@ inline namespace ZyBase
         /// \return The index of the first matching element, or -1 if not found.
         template<typename Callable>
         ZY_INLINE SInt Find(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -593,6 +594,7 @@ inline namespace ZyBase
         /// \return `true` if a matching element is found, otherwise `false`.
         template<typename Callable>
         ZY_INLINE Bool Contains(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
         {
             return Find(Predicate) != -1;
         }
@@ -1187,6 +1189,7 @@ inline namespace ZyBase
         /// \return The index of the first matching element, or -1 if not found.
         template<typename Callable>
         ZY_INLINE constexpr SInt Find(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -1228,6 +1231,7 @@ inline namespace ZyBase
         /// \return `true` if a matching element is found, otherwise `false`.
         template<typename Callable>
         ZY_INLINE constexpr Bool Contains(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
         {
             return Find(Predicate) != -1;
         }

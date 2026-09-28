@@ -79,7 +79,14 @@ namespace ZyInput
             // Two keys on one action read as one key held, while mouse movement keeps its full distance.
             for (ConstRef<Binding> Item : Entry.Bindings)
             {
-                (Item.Kind == Source::Axis ? Analog : Digital) += Read(Item, Keyboard, Mouse);
+                if (Item.Kind == Source::Axis)
+                {
+                    Analog += Read(Item, Keyboard, Mouse);
+                }
+                else
+                {
+                    Digital += Read(Item, Keyboard, Mouse);
+                }
             }
 
             Entry.WasDown = Entry.Down;

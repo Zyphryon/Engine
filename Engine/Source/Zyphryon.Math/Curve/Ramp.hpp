@@ -22,7 +22,7 @@ inline namespace ZyMath
 {
     /// \brief Represents a run of values keyed by the moment each is worn, read by blending the pair either side of one.
     ///
-    /// \tparam Type     The value the run carries, blended by its own `Lerp` where it has one and by arithmetic otherwise.
+    /// \tparam Type     The value the run carries, blended by its own `Lerp`.
     /// \tparam Capacity The number of stops held inline, or zero to hold them on the heap.
     template<typename Type, UInt Capacity = 0>
     class Ramp final
@@ -177,9 +177,6 @@ inline namespace ZyMath
         }
 
     private:
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         /// \brief Blends two values of the run, by whichever means the value itself provides.
         ///

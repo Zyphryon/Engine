@@ -28,11 +28,7 @@ inline namespace ZyMath
     public:
 
         /// \brief Initializes the line to points (0.0f, 0.0f) and (0.0f, 0.0f).
-        ZY_INLINE constexpr Line()
-            : mStart { Vector2::Zero() },
-              mEnd   { Vector2::Zero() }
-        {
-        }
+        ZY_INLINE constexpr Line() = default;
 
         /// \brief Constructor initializing the line with specified start and end points.
         ///

@@ -39,9 +39,7 @@ namespace ZyFormat
         ///
         /// \param Properties The placeholder properties.
         ZY_INLINE constexpr Expression(Placeholder Properties)
-            : Offset     { 0 },
-              Length     { 0 },
-              Properties { Properties }
+            : Properties { Properties }
         {
         }
 

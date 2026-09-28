@@ -68,7 +68,7 @@ namespace ZyJob
 #if !defined(ZY_HAS_THREADS)
         // Every lane lands here, so a load burst is spread over frames rather than run to the end in one callback.
         const ZyPlatform::Timer Clock    = ZyPlatform::Timer();
-        const Real64          Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
+        const Real64            Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
 #endif
 
         for (; Count > 0; --Count)
@@ -80,7 +80,7 @@ namespace ZyJob
                 Value = GetExecutor(Lane::Main).Pop();
             }
 
-            // A helping wait inside a job may already have taken the rest, since without threads every lane is this one.
+            // A helping wait inside a job may already have taken the rest.
             if (Value == 0)
             {
                 break;

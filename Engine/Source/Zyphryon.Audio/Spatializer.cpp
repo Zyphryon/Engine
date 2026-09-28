@@ -78,14 +78,17 @@ namespace ZyAudio
         // A source on top of the listener has no direction, so it plays centered.
         if (Distance < kEpsilon<Real32>)
         {
-            return Vector2(0.70710678f, 0.70710678f);
+            return Vector2(0.70710678f);
         }
 
         const Vector3 Normal = Delta / Distance;
 
         // Fade with distance.
         Real32 Attenuation = Attenuate(
-            Emitter.GetAttenuation(), Distance, Emitter.GetInnerRadius(), Emitter.GetOuterRadius());
+            Emitter.GetAttenuation(),
+            Distance,
+            Emitter.GetInnerRadius(),
+            Emitter.GetOuterRadius());
 
         // Quieter when the source faces away from the listener.
         const Real32 EmitterCos   = Clamp(Vector3::Dot(Forward, -Normal), -1.0f, 1.0f);

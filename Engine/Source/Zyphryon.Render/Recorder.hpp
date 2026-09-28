@@ -33,40 +33,16 @@ namespace ZyRender
         struct Batch final
         {
             /// The technique the batch is drawn with.
-            ConstPtr<ZyGraphic::Technique> Technique;
+            ConstPtr<ZyGraphic::Technique> Technique = nullptr;
 
             /// The material the batch binds.
-            ConstPtr<ZyGraphic::Material>  Material;
+            ConstPtr<ZyGraphic::Material>  Material  = nullptr;
 
             /// The features the draw turns on beyond the ones its material implies.
-            ZyGraphic::Technique::Key      Variant;
+            ZyGraphic::Technique::Key      Variant   = 0;
 
             /// What else keeps the draw out of a batch it does not belong in.
-            UInt16                         Group;
-
-            /// \brief Constructs a batch bound to no technique and no material.
-            ZY_INLINE constexpr Batch()
-                : Technique { nullptr },
-                  Material  { nullptr },
-                  Variant   { 0 },
-                  Group     { 0 }
-            {
-            }
-
-            /// \brief Constructs a batch with everything its draws share.
-            ///
-            /// \param Technique The technique the batch is drawn with.
-            /// \param Material  The material the batch binds.
-            /// \param Variant   The features the draw turns on beyond the ones its material implies.
-            /// \param Group     What else keeps the draw out of a batch it does not belong in.
-            ZY_INLINE constexpr Batch(ConstPtr<ZyGraphic::Technique> Technique,
-                ConstPtr<ZyGraphic::Material> Material, ZyGraphic::Technique::Key Variant, UInt16 Group)
-                : Technique { Technique },
-                  Material  { Material },
-                  Variant   { Variant },
-                  Group     { Group }
-            {
-            }
+            UInt16                         Group     = 0;
         };
 
     public:
@@ -157,8 +133,8 @@ namespace ZyRender
         /// \param Encoder  The encoder that builds the resulting draw commands.
         /// \param Commands The batch the collector handed back.
         /// \param Uniform  The per-instance uniform stream the batch reads, where it reads one at all.
-        ZY_INLINE void Write(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands,
-            ConstRef<ZyGraphic::Stream> Uniform = ZyGraphic::Stream())
+        ZY_INLINE void Write(
+            Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands,  ConstRef<ZyGraphic::Stream> Uniform = {})
         {
             for (UInt Start = 0, Count = Commands.GetSize(); Start < Count;)
             {

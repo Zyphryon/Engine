@@ -42,21 +42,6 @@ namespace ZyReflection
 
     /// \brief Customization point that lists the fields of a type.
     ///
-    /// \code
-    /// // A plain type: every member is read and written through whatever accessor it already has.
-    /// ZY_REFLECT(Timer,
-    ///     ZyReflection::Field::Property<&Timer::mElapsed>("Elapsed").Between(0.0f, 60.0f),
-    ///     ZyReflection::Field::Property<&Timer::IsPaused, &Timer::SetPaused>("Paused"));
-    ///
-    /// // A type holding another described type, which a walk steps into rather than flattening.
-    /// ZY_REFLECT(Profile,
-    ///     ZyReflection::Field::Property<&Profile::GetName, &Profile::SetName>("Name"),
-    ///     ZyReflection::Field::Nested<&Profile::GetTimer, &Profile::SetTimer>("Timer"));
-    ///
-    /// // A value no schema can express, handed on under the tag its own module gave it.
-    /// ZY_REFLECT(Palette,
-    ///     ZyReflection::Field::Custom<&Palette::mGradient>("Gradient", "Palette.Gradient"));
-    /// \endcode
     /// \brief Concept satisfied when a type lays out its own fields rather than having them laid out for it.
     template<typename Type>
     struct Describe
@@ -86,7 +71,7 @@ namespace ZyReflection
     /// struct ZyReflection::Classify<Timestamp>
     /// {
     ///     static constexpr ZyReflection::Kind kValue = ZyReflection::Kind::Foreign;
-    ///     static constexpr Char             kTag[] = "Chrono.Timestamp";
+    ///     static constexpr Char               kTag[] = "Chrono.Timestamp";
     /// };
     /// \endcode
     template<typename Type>
@@ -126,16 +111,16 @@ namespace ZyReflection
     struct Listing final
     {
         /// The fields of one element, empty unless the elements are described.
-        Span<const Field> Fields;
+        ConstSpan<Field> Fields;
 
         /// The number of elements the run holds.
-        UInt32            Count;
+        UInt32           Count;
 
         /// The distance in bytes from one element to the next.
-        UInt32            Stride;
+        UInt32           Stride;
 
         /// The kind one element carries.
-        Kind              Content;
+        Kind             Content;
     };
 
     namespace Detail
@@ -494,11 +479,11 @@ namespace ZyReflection
 
             if constexpr (Tag == Kind::Structure)
             {
-                return Listing(Span<const Field>(Describe<Element>::kFields), Count, Stride, Tag);
+                return Listing(ConstSpan<Field>(Describe<Element>::kFields), Count, Stride, Tag);
             }
             else
             {
-                return Listing(Span<const Field>(), Count, Stride, Tag);
+                return Listing(ConstSpan<Field>(), Count, Stride, Tag);
             }
         }
 

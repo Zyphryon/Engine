@@ -287,7 +287,6 @@ inline namespace ZyBase
             ZY_INLINE constexpr Block()
                 : mData { }
             {
-
             }
         };
 
