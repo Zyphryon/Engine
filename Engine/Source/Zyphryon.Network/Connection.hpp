@@ -79,6 +79,14 @@ namespace ZyNetwork
             return mPeer;
         }
 
+        /// \brief Gets the handle packed into one integer, for a caller that has to store or key by it.
+        ///
+        /// \return The endpoint half in the upper 32 bits, the peer half in the lower 32.
+        ZY_INLINE constexpr UInt64 GetValue() const
+        {
+            return (static_cast<UInt64>(mEndpoint.GetValue()) << 32) | static_cast<UInt64>(mPeer.GetValue());
+        }
+
         /// \brief Checks whether the handle names anything.
         ///
         /// \return `true` if the handle names an endpoint or a peer, otherwise `false`.
