@@ -75,6 +75,20 @@ namespace ZyScene
 
             Blueprint::Declare(* mState);
 
+            // A callback reading only singletons, asked for nothing else, matches the world alone that holds them.
+            if constexpr (!Blueprint::kEntity)
+            {
+                const Bool Unasked = mState->Owned.IsEmpty() && mState->Required.IsEmpty() && mState->Alternatives.IsEmpty();
+
+                if (Unasked && !mState->Globals.IsEmpty() && mState->Globals.GetSize() == mState->Fields.GetSize())
+                {
+                    for (const UInt32 Identifier : mState->Globals)
+                    {
+                        mState->Required.Append(Identifier);
+                    }
+                }
+            }
+
             // Whether the walk spreads never changes, so it is settled here rather than on every run.
             if constexpr (!Blueprint::kBatched)
             {
