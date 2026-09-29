@@ -77,16 +77,16 @@ namespace ZyScene
 
     /// \brief Represents the fields a callback asks a walk for, in the order it takes them.
     ///
-    /// \tparam Fields The fields.
-    template<typename... Fields>
+    /// \tparam Parts The fields.
+    template<typename... Parts>
     struct Fieldset
     {
         /// The number of fields.
-        static constexpr UInt kCount = sizeof...(Fields);
+        static constexpr UInt kCount = sizeof...(Parts);
 
         /// The loops of a walk made for these fields, handed their positions in the callback alongside.
         template<template<typename, typename...> class Target>
-        using Apply = Target<MakeIntegerSequence<UInt, kCount>, Fields...>;
+        using Apply = Target<MakeIntegerSequence<UInt, kCount>, Parts...>;
 
         /// \brief Gets what stands for these fields, the same for every callback asking for them.
         ///
@@ -110,7 +110,7 @@ namespace ZyScene
             State.Gathered.Clear();
             State.Snapshot.Clear();
 
-            (AddField<Fields>(State), ...);
+            (AddField<Parts>(State), ...);
             State.Declared = GetKey();
         }
 

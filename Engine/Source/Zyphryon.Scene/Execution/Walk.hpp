@@ -148,18 +148,18 @@ namespace ZyScene
         };
 
         /// \brief Represents the loops of a walk for one list of fields, spelled out only with their positions.
-        template<typename Positions, typename... Fields>
+        template<typename Positions, typename... Parts>
         struct Kernel;
 
         /// \brief Represents the loops of a walk for one list of fields, each known by its position in the callback.
         ///
         /// \tparam Index  The position of each field.
-        /// \tparam Fields The fields, in the order the callback takes them.
-        template<UInt... Index, typename... Fields>
-        struct Kernel<IntegerSequence<UInt, Index...>, Fields...> final
+        /// \tparam Parts The fields, in the order the callback takes them.
+        template<UInt... Index, typename... Parts>
+        struct Kernel<IntegerSequence<UInt, Index...>, Parts...> final
         {
             /// The number of fields.
-            static constexpr UInt kCount = sizeof...(Fields);
+            static constexpr UInt kCount = sizeof...(Parts);
 
             /// \brief Represents where each field of one matched chunk is read from, one extra slot so none is empty.
             struct Places final
@@ -254,8 +254,8 @@ namespace ZyScene
             /// \param Into  Receives where each field is read from.
             static void Prepare(Ref<Storage> Owner, ConstRef<Selection> State, UInt32 Match, Ref<Places> Into)
             {
-                constexpr Bool kTags[kCount + 1]   = { Fields::kTag..., false };
-                constexpr Bool kWrites[kCount + 1] = { Fields::kWritten..., false };
+                constexpr Bool kTags[kCount + 1]   = { Parts::kTag..., false };
+                constexpr Bool kWrites[kCount + 1] = { Parts::kWritten..., false };
 
                 ConstRef<Chunk> Target = * State.Chunks[Match];
 
@@ -339,9 +339,9 @@ namespace ZyScene
 
                     if constexpr (Plan<Callable>::kBatched)
                     {
-                        static_assert(!(Fields::kTag || ...), "A tag has no span to hand over");
+                        static_assert(!(Parts::kTag || ...), "A tag has no span to hand over");
 
-                        Callback(SpanOf<Fields>(Bases[Index], Where.Steps[Index], First, Last)...);
+                        Callback(SpanOf<Parts>(Bases[Index], Where.Steps[Index], First, Last)...);
                     }
                     else if (Where.Dense)
                     {
@@ -392,7 +392,7 @@ namespace ZyScene
 
                     const Handle Actor = Target->GetHandle(Row);
 
-                    if constexpr ((Fields::kPointer || ...))
+                    if constexpr ((Parts::kPointer || ...))
                     {
                         const UInt32 Parent = Owner.mDirectory[Actor.GetIndex()].Parent;
 
@@ -407,7 +407,7 @@ namespace ZyScene
                     const Ptr<Byte> Base  = Target->GetPage(Row);
                     const UInt      Place = Target->GetPlace(Row);
 
-                    Call(Owner, Callback, Actor, Fetch<Fields>(Where.Start(Base, Index), Where.Steps[Index], Place)...);
+                    Call(Owner, Callback, Actor, Fetch<Parts>(Where.Start(Base, Index), Where.Steps[Index], Place)...);
                 }
             }
 
@@ -430,14 +430,14 @@ namespace ZyScene
                 ConstRef<Places>    Where,
                 UInt                First,
                 UInt                Last,
-                Address<Fields>...  Bases)
+                Address<Parts>...   Bases)
             {
                 // The parent the ancestor fields last climbed from, which siblings share.
                 UInt32 Above = ~0u;
 
                 for (UInt Row = First; Row < Last; ++Row)
                 {
-                    if constexpr (Mode == Stride::Chunk && (Fields::kPointer || ...))
+                    if constexpr (Mode == Stride::Chunk && (Parts::kPointer || ...))
                     {
                         const UInt32 Parent = Owner.mDirectory[Handles[Row].GetIndex()].Parent;
 
@@ -452,7 +452,7 @@ namespace ZyScene
                         Owner,
                         Callback,
                         Handles[Row],
-                        Fetch<Fields>(Bases, StepOf<Mode, Fields>(Where, Index), Row)...);
+                        Fetch<Parts>(Bases, StepOf<Mode, Parts>(Where, Index), Row)...);
                 }
             }
 
@@ -470,13 +470,13 @@ namespace ZyScene
                 Ref<Callable>       Callback)
             {
                 // One extra slot, so a callback taking no field still makes a valid array.
-                const Ptr<Byte> Found[kCount + 1] = { Locate<Fields>(Owner, State, Actor, Index)... };
+                const Ptr<Byte> Found[kCount + 1] = { Locate<Parts>(Owner, State, Actor, Index)... };
 
-                if (((!Fields::kPointer && !Fields::kTag && !Found[Index]) || ...))
+                if (((!Parts::kPointer && !Parts::kTag && !Found[Index]) || ...))
                 {
                     return;
                 }
-                Call(Owner, Callback, Actor, Fetch<Fields>(Found[Index], 0, 0)...);
+                Call(Owner, Callback, Actor, Fetch<Parts>(Found[Index], 0, 0)...);
             }
 
             /// \brief Finds where one field of an entity is, held, lent, an ancestor's or the world's.
