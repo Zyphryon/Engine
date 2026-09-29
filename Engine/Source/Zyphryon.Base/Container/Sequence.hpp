@@ -787,15 +787,16 @@ inline namespace ZyBase
         /// \param Capacity The new minimum number of elements the buffer must accommodate.
         ZY_INLINE void Grow(UInt Capacity)
         {
+            const UInt      Size = mSize;
             const Ptr<Type> Data = Allocate<Type>(Capacity);
 
             if constexpr (IsTriviallyCopyable<Type>)
             {
-                Copy(Data, mSize, mData);
+                Copy(Data, Size, mData);
             }
             else
             {
-                for (UInt Index = 0; Index < mSize; ++Index)
+                for (UInt Index = 0; Index < Size; ++Index)
                 {
                     Relocate(Data[Index], Move(mData[Index]));
                 }
