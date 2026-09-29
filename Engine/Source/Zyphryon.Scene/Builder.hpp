@@ -41,7 +41,8 @@ namespace ZyScene
               mName  { Name },
               mPhase { Phase },
               mRate  { 1 },
-              mMode  { Schedule::Serial }
+              mMode  { Schedule::Serial },
+              mShown { false, false }
         {
         }
 
@@ -116,8 +117,14 @@ namespace ZyScene
         /// \return The terms.
         ZY_INLINE Unique<Selection> Take()
         {
-            Hide(IdentifierOf<Prefab>());
-            Hide(IdentifierOf<Asleep>());
+            if (!mShown.Prefab)
+            {
+                Hide(IdentifierOf<Prefab>());
+            }
+            if (!mShown.Asleep)
+            {
+                Hide(IdentifierOf<Asleep>());
+            }
             return Move(mState);
         }
 
@@ -131,6 +138,16 @@ namespace ZyScene
                 mState->Excluded.Append(Marker);
             }
         }
+
+        /// \brief Represents the markers a description lets in, which it would leave out otherwise.
+        struct Shown final
+        {
+            /// `true` to match archetypes alongside everything else.
+            Bool Prefab;
+
+            /// `true` to match sleepers alongside everything else.
+            Bool Asleep;
+        };
 
     private:
 
@@ -186,6 +203,7 @@ namespace ZyScene
         UInt32            mPhase;
         UInt16            mRate;
         Schedule          mMode;
+        Shown             mShown;
     };
 
     /// \brief Represents a query or system described with chained calls and made from its callback.
@@ -224,6 +242,19 @@ namespace ZyScene
         ZY_INLINE AnyRef<Builder> With() &&
         {
             (mState->Required.Append(IdentifierOf<Types>()), ...);
+            return Move(* this);
+        }
+
+        /// \brief Lets archetypes or sleepers in alongside everything else, rather than only them as \ref With does.
+        ///
+        /// \return This description.
+        template<typename... Types>
+        ZY_INLINE AnyRef<Builder> Also() &&
+        {
+            static_assert(((IsAnyOf<Types, Prefab, Asleep>) && ...), "Also lets in archetypes or sleepers only");
+
+            mShown.Prefab |= (IsAnyOf<Types, Prefab> || ...);
+            mShown.Asleep |= (IsAnyOf<Types, Asleep> || ...);
             return Move(* this);
         }
 
@@ -299,7 +330,7 @@ namespace ZyScene
         ZY_INLINE Builder<ZyScene::Cursor<List>> Reads() &&
             requires IsAnyOf<Kind, System>
         {
-            return Builder<ZyScene::Cursor<List>>(mWorld, Move(mState), mName, mPhase);
+            return Builder<ZyScene::Cursor<List>>(Move(static_cast<Ref<Draft>>(* this)));
         }
 
         /// \brief Makes the system, handing it the callback whose parameters give its fields.
@@ -331,14 +362,11 @@ namespace ZyScene
 
     private:
 
-        /// \brief Constructs a description taking over the terms another one asked for.
+        /// \brief Constructs a description taking over everything another one asked for, whatever it made.
         ///
-        /// \param Owner The world it is made in.
-        /// \param State The terms asked for so far.
-        /// \param Name  The name profiles and logs show.
-        /// \param Phase The phase the system runs in.
-        ZY_INLINE Builder(Ptr<World> Owner, AnyRef<Unique<Selection>> State, Text Name, UInt32 Phase)
-            : Draft(Owner, Move(State), Name, Phase)
+        /// \param Other The description to take over, which describes nothing afterwards.
+        ZY_INLINE explicit Builder(AnyRef<Draft> Other)
+            : Draft(Move(Other))
         {
         }
 
