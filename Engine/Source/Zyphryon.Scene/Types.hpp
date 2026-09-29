@@ -65,38 +65,36 @@ namespace ZyScene
     /// \brief Represents the tag that leaves an entity out of every save.
     using Transient = Tag<"Transient">;
 
+    /// \brief Represents the list of entities that went through some changes of a component.
+    ///
+    /// \tparam Type  The component to observe.
+    /// \tparam Kinds The changes, additions and changes in any mix (additions read first), or removals alone.
+    template<typename Type, Pull Kinds>
+    struct Pulled final
+    {
+        static_assert(Kinds == Pull::Removed || (Kinds != Pull() && (Kinds & Pull::Removed) == Pull()));
+
+        /// The component whose changes the list records, and whose fields a reader of it may ask for.
+        using Value = Type;
+
+        /// The changes the list records, each read from a list of its own.
+        static constexpr Pull kKind = Kinds;
+
+        /// The number of lists a reader of it reads, one per change in \ref kKind.
+        static constexpr UInt kSize = CountBits(static_cast<UInt>(Kinds));
+    };
+
     /// \brief Represents the list of entities that came to see a component.
     template<typename Type>
-    struct Added final
-    {
-        /// The component.
-        using Value = Type;
-
-        /// The change.
-        static constexpr Pull kKind = Pull::Added;
-    };
-
-    /// \brief Represents the list of entities whose value of a component was written while they kept seeing one.
-    template<typename Type>
-    struct Changed final
-    {
-        /// The component.
-        using Value = Type;
-
-        /// The change.
-        static constexpr Pull kKind = Pull::Changed;
-    };
+    using Added   = Pulled<Type, Pull::Added>;
 
     /// \brief Represents the list of entities that stopped seeing a component, destroyed ones included.
     template<typename Type>
-    struct Removed final
-    {
-        /// The component.
-        using Value = Type;
+    using Removed = Pulled<Type, Pull::Removed>;
 
-        /// The change.
-        static constexpr Pull kKind = Pull::Removed;
-    };
+    /// \brief Represents the list of entities whose value of a component was written while they kept seeing one.
+    template<typename Type>
+    using Changed = Pulled<Type, Pull::Changed>;
 
     /// \brief Represents the name an entity is looked up by among its siblings, and what tools show for it.
     struct Named final

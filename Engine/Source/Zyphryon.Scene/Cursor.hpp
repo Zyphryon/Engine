@@ -23,7 +23,7 @@ namespace ZyScene
 {
     /// \brief Represents a reader of a pull list with a position of its own, which must not outlive its world.
     ///
-    /// \tparam List The list, as \ref Added, \ref Changed or \ref Removed name it.
+    /// \tparam List The list, as \ref Pulled names it, or \ref Added, \ref Changed and \ref Removed for one change.
     template<typename List>
     class Cursor final
     {
@@ -36,7 +36,7 @@ namespace ZyScene
             : mOwner      { nullptr },
               mArchetypes { false },
               mState      { nullptr },
-              mHandle     { 0 }
+              mHandles    { }
         {
         }
 
@@ -55,17 +55,21 @@ namespace ZyScene
             : mOwner      { Exchange(Other.mOwner, nullptr) },
               mArchetypes { Other.mArchetypes },
               mState      { Exchange(Other.mState, nullptr) },
-              mHandle     { Exchange(Other.mHandle, 0u) }
+              mHandles    { Exchange(Other.mHandles, Array<UInt32, List::kSize>()) }
         {
         }
 
         /// \brief Lets go of the position, so the list drops what only this cursor had left to read.
         ZY_INLINE ~Cursor()
         {
-            if (mHandle)
+            for (const UInt32 Handle : mHandles)
             {
-                mOwner->mLedger.Unsubscribe(mHandle);
+                if (Handle)
+                {
+                    mOwner->mLedger.Unsubscribe(Handle);
+                }
             }
+
             if (mState)
             {
                 mOwner->mLayout.RemoveSelection(mState);
@@ -80,7 +84,7 @@ namespace ZyScene
         /// \return `true` if it does, `false` if it reads nothing.
         ZY_INLINE Bool IsValid() const
         {
-            return mHandle != 0;
+            return mHandles.GetFront() != 0;
         }
 
         /// \brief Hands every entry recorded since the last call to a callback.
@@ -89,7 +93,7 @@ namespace ZyScene
         template<typename Callable>
         void Each(AnyRef<Callable> Callback)
         {
-            ZY_ASSERT(mHandle, "The cursor reads nothing");
+            ZY_ASSERT(mHandles.GetFront(), "The cursor reads nothing");
 
             if constexpr (List::kKind == Pull::Removed)
             {
@@ -117,8 +121,25 @@ namespace ZyScene
             : mOwner      { AddressOf(Owner) },
               mArchetypes { WantsArchetypes(Owner, * State) },
               mState      { Adopt(Owner, Move(State)) },
-              mHandle     { Owner.mLedger.Subscribe(IdentifierOf<Type>(), List::kKind) }
+              mHandles    { Subscribe(Owner) }
         {
+        }
+
+        /// \brief Subscribes to the list of each change the reader asks for, additions first.
+        ///
+        /// \param Owner The world.
+        /// \return The handle of each subscription.
+        ZY_INLINE static Array<UInt32, List::kSize> Subscribe(Ref<Storage> Owner)
+        {
+            if constexpr (List::kSize == 2)
+            {
+                const UInt32 Added = Owner.mLedger.Subscribe(IdentifierOf<Type>(), Pull::Added);
+                return Array<UInt32, List::kSize>(Added, Owner.mLedger.Subscribe(IdentifierOf<Type>(), Pull::Changed));
+            }
+            else
+            {
+                return Array<UInt32, List::kSize>(Owner.mLedger.Subscribe(IdentifierOf<Type>(), List::kKind));
+            }
         }
 
         /// \brief Makes a selection that leaves archetypes and sleepers out.
@@ -187,14 +208,14 @@ namespace ZyScene
                 "A removal hands its value only when the component is declared to keep it");
 
             Ref<Ledger>  Lists = mOwner->mLedger;
-            const UInt64 End   = Lists.GetEnd(mHandle);
+            const UInt64 End   = Lists.GetEnd(mHandles.GetFront());
 
             // What the callback changes waits like in any walk.
             mOwner->Enter();
 
-            for (UInt64 Next = Lists.GetPosition(mHandle); Next < End; ++Next)
+            for (UInt64 Next = Lists.GetPosition(mHandles.GetFront()); Next < End; ++Next)
             {
-                const Handle Actor = Lists.GetActor(mHandle, Next);
+                const Handle Actor = Lists.GetActor(mHandles.GetFront(), Next);
 
                 // Archetypes go only to a reader that asked for them, and then nothing else does.
                 if (Directory::IsArchetype(Actor.GetIndex()) != mArchetypes)
@@ -204,7 +225,8 @@ namespace ZyScene
 
                 if constexpr (kValue)
                 {
-                    Callback(Entity(mOwner, Actor), * reinterpret_cast<ConstPtr<Type>>(Lists.GetValue(mHandle, Next)));
+                    const ConstPtr<Byte> Bytes = Lists.GetValue(mHandles.GetFront(), Next);
+                    Callback(Entity(mOwner, Actor), * reinterpret_cast<ConstPtr<Type>>(Bytes));
                 }
                 else
                 {
@@ -212,7 +234,7 @@ namespace ZyScene
                 }
             }
 
-            Lists.SetPosition(mHandle, End);
+            Lists.SetPosition(mHandles.GetFront(), End);
             mOwner->Leave();
         }
 
@@ -232,23 +254,32 @@ namespace ZyScene
                 mOwner->mLayout.Populate(* mState, mOwner->mDirectory);
             }
 
-            Ref<Ledger>  Lists = mOwner->mLedger;
-            const UInt64 End   = Lists.GetEnd(mHandle);
+            // Every end is taken first, so what reading the additions causes waits for the next read like the rest.
+            Ref<Ledger>                Lists = mOwner->mLedger;
+            Array<UInt64, List::kSize> Ends;
+
+            for (UInt Index = 0; Index < List::kSize; ++Index)
+            {
+                Ends[Index] = Lists.GetEnd(mHandles[Index]);
+            }
 
             // What the callback changes waits like in any walk, and entries it causes wait for the next read.
             mOwner->Enter();
 
-            for (UInt64 Next = Lists.GetPosition(mHandle); Next < End; ++Next)
+            for (UInt Index = 0; Index < List::kSize; ++Index)
             {
-                const Handle Actor = Lists.GetActor(mHandle, Next);
-
-                if (Matches(Actor))
+                for (UInt64 Next = Lists.GetPosition(mHandles[Index]); Next < Ends[Index]; ++Next)
                 {
-                    Blueprint::template Apply<Walk::Kernel>::RunEntry(* mOwner, * mState, Actor, Callback);
+                    const Handle Actor = Lists.GetActor(mHandles[Index], Next);
+
+                    if (Matches(Actor))
+                    {
+                        Blueprint::template Apply<Walk::Kernel>::RunEntry(* mOwner, * mState, Actor, Callback);
+                    }
                 }
+                Lists.SetPosition(mHandles[Index], Ends[Index]);
             }
 
-            Lists.SetPosition(mHandle, End);
             mOwner->Leave();
         }
 
@@ -267,9 +298,9 @@ namespace ZyScene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ptr<Storage>   mOwner;
-        Bool           mArchetypes;
-        Ptr<Selection> mState;
-        UInt32         mHandle;
+        Ptr<Storage>               mOwner;
+        Bool                       mArchetypes;
+        Ptr<Selection>             mState;
+        Array<UInt32, List::kSize> mHandles;
     };
 }
