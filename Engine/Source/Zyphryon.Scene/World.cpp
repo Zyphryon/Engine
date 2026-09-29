@@ -155,6 +155,24 @@ namespace ZyScene
 
     Sequence<Entity> World::Load(ConstSpan<Byte> Input, Entity Parent)
     {
+        return Decode(Input, Parent, Entity());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool World::Merge(ConstSpan<Byte> Input, Entity Root)
+    {
+        ZY_ASSERT(Root.IsAlive(), "A save can only be read over an entity that is alive");
+
+        return !Decode(Input, Entity(), Root).IsEmpty();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Sequence<Entity> World::Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root)
+    {
         ZY_ASSERT(!mDeferral.IsWalking(), "A save cannot be read while a query walks");
 
         Sequence<Entity> Roots;
@@ -168,7 +186,8 @@ namespace ZyScene
             return Roots;
         }
 
-        const UInt32              Home = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
+        const UInt32              Home   = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
+        Handle                    Target = Root.IsAlive() ? Root.GetHandle() : Handle();
         Sequence<UInt32>          Types;
         Sequence<UInt32>          Made;
         Sequence<UInt32>          Identifiers;
@@ -190,14 +209,16 @@ namespace ZyScene
             for (UInt32 Count = 0; Count < Records && Scope.GetAvailable() > 0; ++Count)
             {
                 const UInt32 Owner = Scope.Read<UInt32>();
-                Made.Append(
-                    Make(Scope, Types, Owner && Owner <= Made.GetSize()
-                        ? Made[Owner - 1]
-                        : Home, Identifiers, Payloads));
 
                 if (Owner == 0)
                 {
-                    Roots.Append(Entity(this, mDirectory.GetHandle(Made.GetBack())));
+                    Made.Append(Make(Scope, Types, Home, Exchange(Target, Handle()), Identifiers, Payloads));
+                    Roots.Append(this, mDirectory.GetHandle(Made.GetBack()));
+                }
+                else
+                {
+                    const UInt32 Above = Owner <= Made.GetSize() ? Made[Owner - 1] : Home;
+                    Made.Append(Make(Scope, Types, Above, Handle(), Identifiers, Payloads));
                 }
             }
         }
@@ -293,6 +314,7 @@ namespace ZyScene
         Ref<Reader>                    Input,
         ConstRef<Sequence<UInt32>>     Types,
         UInt32                         Parent,
+        Handle                         Target,
         Ref<Sequence<UInt32>>          Identifiers,
         Ref<Sequence<ConstSpan<Byte>>> Payloads)
     {
@@ -302,15 +324,14 @@ namespace ZyScene
             && mDirectory.IsAlive(Base)
             && mDirectory[Base.GetIndex()].Holder->IsArchetype();
 
-        if (Base.IsValid() && !Known)
+        if (Base.IsValid() && !Known && !Target.IsValid())
         {
             LOG_W("Scene: An entity reads from archetype {0}, which is not loaded", Base.GetValue());
         }
 
-        // The world is read over itself, and an archetype returns to its saved slot so instances saved apart find it.
-        Handle Actor = Identity;
+        Handle Actor = Target.IsValid() ? Target : Identity;
 
-        if (Identity != kWorld)
+        if (!Target.IsValid() && Identity != kWorld)
         {
             if (Identity.IsValid() && mDirectory[Identity.GetIndex()].Holder)
             {

@@ -198,6 +198,13 @@ namespace ZyScene
         /// \return The entities made at the root of the save.
         Sequence<Entity> Load(ConstSpan<Byte> Input, Entity Parent = Entity());
 
+        /// \brief Reads a save over an existing entity, which takes the first root's values and what stands beneath it.
+        ///
+        /// \param Input The bytes of the save.
+        /// \param Root  The entity to read the first root over, alive, keeping its place, parent and archetype.
+        /// \return `true` if the save was read, `false` if the bytes were not a save this version reads.
+        Bool Merge(ConstSpan<Byte> Input, Entity Root);
+
     private:
 
         /// The characters every scene save opens with.
@@ -246,11 +253,20 @@ namespace ZyScene
             Ref<Sequence<Text>>        Names,
             Ref<UInt32>                Count);
 
+        /// \brief Reads a save, making every entity but the first root, which is read over one given when it is alive.
+        ///
+        /// \param Input  The bytes of the save.
+        /// \param Parent The entity to attach every root made to, or one that names nothing.
+        /// \param Root   The entity to read the first root over, or one that names nothing.
+        /// \return The entities at the root of the save.
+        Sequence<Entity> Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root);
+
         /// \brief Makes one entity from its record.
         ///
         /// \param Input       The reader, at the record's identifier.
         /// \param Types       The component each type index of the save answers to.
         /// \param Parent      The slot to make it beneath, or zero.
+        /// \param Target      The entity to read the record over, or an invalid handle to make one.
         /// \param Identifiers The room the record's components are gathered in, reused from record to record.
         /// \param Payloads    The room the record's values are gathered in, reused from record to record.
         /// \return The slot of the entity.
@@ -258,6 +274,7 @@ namespace ZyScene
             Ref<Reader>                    Input,
             ConstRef<Sequence<UInt32>>     Types,
             UInt32                         Parent,
+            Handle                         Target,
             Ref<Sequence<UInt32>>          Identifiers,
             Ref<Sequence<ConstSpan<Byte>>> Payloads);
 
