@@ -81,6 +81,14 @@ namespace ZyScene
             return IsAlive() && Directory::IsArchetype(GetIndex());
         }
 
+        /// \brief Checks whether the entity is a part, an archetype built into another or a copy of one.
+        ///
+        /// \return `true` if it is, `false` otherwise or when it is not alive.
+        ZY_INLINE Bool IsPart() const
+        {
+            return Has<Part>();
+        }
+
         /// \brief Destroys the entity, every component it carries and everything that stands beneath it.
         ZY_INLINE void Destruct() const
         {
@@ -521,6 +529,14 @@ namespace ZyScene
 
             mStorage->Attach(GetHandle(), Parent.GetHandle());
             return true;
+        }
+
+        /// \brief Gets the entity a part was built into, which it stands, goes and comes with.
+        ///
+        /// \return The whole, or one that names nothing for an entity that is not a part.
+        ZY_INLINE Entity GetWhole() const
+        {
+            return IsPart() ? GetParent() : Entity();
         }
 
         /// \brief Gets the parent of the entity.

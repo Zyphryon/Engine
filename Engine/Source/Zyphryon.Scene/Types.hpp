@@ -65,6 +65,9 @@ namespace ZyScene
     /// \brief Represents the tag that leaves an entity out of every save.
     using Transient = Tag<"Transient">;
 
+    /// \brief Represents the tag an archetype built into another carries, lent to every entity made from it.
+    using Part      = Tag<"Part">;
+
     /// \brief Represents the list of entities that went through some changes of a component.
     ///
     /// \tparam Type  The component to observe.
@@ -95,6 +98,10 @@ namespace ZyScene
     /// \brief Represents the list of entities whose value of a component was written while they kept seeing one.
     template<typename Type>
     using Changed = Pulled<Type, Pull::Changed>;
+
+    /// \brief Represents the list of entities that came to see a component or had its value written, additions first.
+    template<typename Type>
+    using Set     = Pulled<Type, Pull::Added | Pull::Changed>;
 
     /// \brief Represents the name an entity is looked up by among its siblings, and what tools show for it.
     struct Named final

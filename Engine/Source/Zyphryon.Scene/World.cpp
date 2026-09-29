@@ -29,6 +29,7 @@ namespace ZyScene
         Declare<Prefab>();
         Declare<Asleep>().Local();
         Declare<Transient>();
+        Declare<Part>().Inheritable();
         Declare<Named>().Local().Serializable();
 
         const UInt32 Update = CreatePhase("Update");
@@ -377,6 +378,13 @@ namespace ZyScene
                 Payloads.Append(Data);
                 Shape = Shape->Has(Types[Type]) ? Shape : FindOrCreateAddition(* Shape, Types[Type]);
             }
+        }
+
+        // Saves never carry the part marker, so an archetype read beneath another is marked from where it lands.
+        if (const UInt32 Above = mDirectory[Index].Parent;
+            Directory::IsArchetype(Index) && Above && mDirectory[Above].Holder->IsArchetype() && !Shape->Has(mPart))
+        {
+            Shape = FindOrCreateAddition(* Shape, mPart);
         }
 
         PlaceOrTransfer(Index, * Shape);

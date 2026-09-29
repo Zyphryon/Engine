@@ -25,11 +25,12 @@ namespace ZyScene
     Storage::Storage(Ref<ZyEngine::Subsystem::Host> Host)
         : Locator { Host },
           mPrefab { IdentifierOf<Prefab>() },
-          mAsleep { IdentifierOf<Asleep>() }
+          mAsleep { IdentifierOf<Asleep>() },
+          mPart   { IdentifierOf<Part>() }
     {
-        // Neither marker reaches an entity made from an archetype.
-        Registry::Get().SetTrait(mPrefab, Trait::Local, true);
-        Registry::Get().SetTrait(mAsleep, Trait::Local, true);
+        Registry::Get().SetTrait(mPrefab, Trait::Local,       true);
+        Registry::Get().SetTrait(mAsleep, Trait::Local,       true);
+        Registry::Get().SetTrait(mPart  , Trait::Inheritable, true);
 
         Place(kWorld.GetIndex(), * mLayout.GetRoot());
     }
@@ -157,9 +158,14 @@ namespace ZyScene
             RecordGain(Made[Index - 1], nullptr);
         }
 
+        // The copies beneath are parts like their sources, while the copy itself is one only where it is put.
         if (Parent.IsAlive())
         {
             SetParent(Made[0], Parent.GetHandle().GetIndex());
+        }
+        else
+        {
+            Remove(mDirectory.GetHandle(Made[0]), mPart);
         }
         return Entity(this, mDirectory.GetHandle(Made[0]));
     }
@@ -1038,9 +1044,11 @@ namespace ZyScene
 
         mDirectory.Link(Index, Parent);
 
-        // A part attached to an archetype reaches every entity already made from it.
+        // A part attached to an archetype is marked one, and reaches every entity already made from it.
         if (mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype())
         {
+            Add(mDirectory.GetHandle(Index), mPart);
+
             for (const Handle Heir : GetHeirs(Parent))
             {
                 const Bool   Keep = mDirectory[Heir.GetIndex()].Holder->IsArchetype();
@@ -1057,12 +1065,19 @@ namespace ZyScene
     void Storage::ClearParent(UInt32 Index)
     {
         const UInt32 Parent = mDirectory[Index].Parent;
+        const Bool   Part   = mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype();
 
-        if (mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype())
+        if (Part)
         {
             DestroyPartCopies(Index, Parent);
         }
+        
         mDirectory.Unlink(Index);
+
+        if (Part)
+        {
+            Remove(mDirectory.GetHandle(Index), mPart);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
