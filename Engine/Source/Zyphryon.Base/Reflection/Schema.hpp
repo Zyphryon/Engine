@@ -38,12 +38,20 @@ namespace ZyReflection
         /// \param Name      The name of the field.
         /// \param Size      The width of the type the fields are reached through, or zero when it is not known.
         /// \param Alignment The alignment of the type the fields are reached through, or zero when it is not known.
-        ZY_INLINE constexpr explicit Schema(
-            ConstSpan<Field> Fields, Text Name = Text::Empty(), UInt Size = 0, UInt Alignment = 0)
+        ZY_INLINE constexpr explicit Schema(ConstSpan<Field> Fields, Text Name, UInt Size = 0, UInt Alignment = 0)
             : mFields    { Fields },
               mName      { Name },
               mSize      { static_cast<UInt16>(Size) },
               mAlignment { static_cast<UInt8>(Alignment) }
+        {
+        }
+
+        /// \brief Constructs a schema over the fields of a type of the given shape.
+        ///
+        /// \param Size      The width of the type the fields are reached through, or zero when it is not known.
+        /// \param Alignment The alignment of the type the fields are reached through, or zero when it is not known.
+        ZY_INLINE constexpr explicit Schema(UInt Size, UInt Alignment)
+            : Schema(ConstSpan<Field>(), Text::Empty(), Size, Alignment)
         {
         }
 
@@ -131,7 +139,7 @@ namespace ZyReflection
         {
             static_assert(IsDescribed<Type>, "The type has no Reflection::Describe of its own");
 
-            return Schema(ConstSpan(Describe<Type>::kFields), Detail::TagOf<Type>(), sizeof(Type), alignof(Type));
+            return Schema(ConstSpan<Field>(Describe<Type>::kFields), Detail::TagOf<Type>(), sizeof(Type), alignof(Type));
         }
 
         /// \brief Gets the schema of the value a nested field steps into.
@@ -140,7 +148,7 @@ namespace ZyReflection
         /// \return The schema of the value, empty when the field steps into nothing.
         ZY_INLINE static constexpr Schema Of(ConstRef<Field> Value)
         {
-            return Schema(Value.GetNested());
+            return Schema(Value.GetNested(), Text::Empty());
         }
 
     private:

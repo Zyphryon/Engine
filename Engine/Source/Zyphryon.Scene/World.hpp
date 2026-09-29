@@ -12,7 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Entity.hpp"
+#include "Builder.hpp"
+#include "Type/Declaration.hpp"
+#include "Execution/Scheduler.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,578 +22,258 @@
 
 namespace ZyScene
 {
-    /// \brief Represents the world entity within the ECS, acting as a bridge to singleton components.
-    class World final
+    /// \brief Represents a world, its entities, and the queries, systems, pull lists, modules and saves over them.
+    class ZY_API World : public Storage
     {
+        friend class Draft;
+        friend class Enrollment;
+        friend class System;
+
     public:
 
-        /// \brief Underlying handle type used to represent the world internally.
-        using Handle = Ptr<ecs_world_t>;
+        /// The phase every world makes first, which systems run in unless they ask for another.
+        static constexpr UInt32 kUpdate = 1;
 
     public:
 
-        /// \brief Constructs a world from an existing handle.
+        /// \brief Constructs a world holding only the world entity, the built-in components and the update phase.
         ///
-        /// \param Handle The handle of this world.
-        ZY_INLINE World(Handle Handle)
-            : mHandle { Handle }
-        {
-        }
+        /// \param Host The host holding the job service spread walks run on.
+        explicit World(Ref<ZyEngine::Subsystem::Host> Host);
 
-        /// \brief Gets the internal handle representing this world.
+        /// \brief Destroys every entity, dropping systems first so no callback runs meanwhile.
+        ~World();
+
+        /// \brief Worlds are not copied, since every entity points back into its own.
+        World(ConstRef<World> Other) = delete;
+
+        /// \brief Creates an entity holding a set of components, placed straight where it belongs.
         ///
-        /// \return The world internal handle.
-        ZY_INLINE Handle GetHandle() const
+        /// \param Values The components, moved into place.
+        /// \return The entity, which waits outside every query until the running walk ends when there is one.
+        template<typename... Types>
+        Entity Spawn(AnyRef<Types>... Values)
         {
-            return mHandle;
-        }
-
-        /// \brief Attaches a singleton component or tag to the world.
-        ///
-        /// \tparam Component The component or tag type to attach.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Add() const
-        {
-            Singleton<Component>().template Add<Component>();
-            return (* this);
-        }
-
-        /// \brief Attaches a component or tag to the world using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to attach.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Add(Entity Component) const
-        {
-            Component.Add(Component);
-            return (* this);
-        }
-
-        /// \brief Attaches a singleton relation pair to the world using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE World Add() const
-        {
-            Singleton<Relation>().template Add<Relation, Component>();
-            return (* this);
-        }
-
-        /// \brief Attaches a singleton relation pair using a compile-time relation and a runtime target entity.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity of the relation.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE World Add(Entity Component) const
-        {
-            Singleton<Relation>().template Add<Relation>(Component);
-            return (* this);
-        }
-
-        /// \brief Attaches a singleton relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Add(Entity Relation, Entity Component) const
-        {
-            Relation.Add(Relation, Component);
-            return (* this);
-        }
-
-        /// \brief Sets the value of a singleton component on the world.
-        ///
-        /// \tparam Component The component type to set.
-        /// \param  Data      The data to assign.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Set(AnyRef<Component> Data) const
-        {
-            Singleton<Component>().Set(Forward<Component>(Data));
-            return (* this);
-        }
-
-        /// \brief Sets the value of a singleton component on a relation pair using a compile-time relation.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to set.
-        /// \param  Data      The data to assign.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE World Set(AnyRef<Component> Data) const
-        {
-            Singleton<Relation>().template Set<Relation, Component>(Forward<Component>(Data));
-            return (* this);
-        }
-
-        /// \brief Sets the value of a singleton component on a relation pair using a runtime relation entity.
-        ///
-        /// \tparam Component The component type to set.
-        /// \param  Relation  The relation entity.
-        /// \param  Data      The data to assign.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Set(Entity Relation, AnyRef<Component> Data) const
-        {
-            Singleton<Component>().template Set<Component>(Relation, Forward<Component>(Data));
-            return (* this);
-        }
-
-        /// \brief Constructs a singleton component directly on the world, forwarding arguments to its constructor.
-        ///
-        /// \tparam Component  The component type to construct.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This world, allowing for method chaining.
-        template<typename Component, typename... Arguments>
-        ZY_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
-            requires (!IsAnyOf<StripAll<Arguments>, Entity> && ...)
-        {
-            Singleton<Component>().template Emplace<Component>(Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Constructs a singleton component on a relation pair, forwarding arguments to its constructor.
-        ///
-        /// \tparam Relation   The relation type.
-        /// \tparam Component  The component type to construct.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component, typename... Arguments>
-        ZY_INLINE World Emplace(AnyRef<Arguments>... Parameters) const
-        {
-            Singleton<Component>().template Emplace<Relation, Component>(Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Constructs a singleton component using a runtime relation, forwarding arguments to its constructor.
-        ///
-        /// \tparam Component  The component type to construct.
-        /// \param  Relation   The relation entity.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This world, allowing for method chaining.
-        template<typename Component, typename... Arguments>
-        ZY_INLINE World Emplace(Entity Relation, AnyRef<Arguments>... Parameters) const
-        {
-            Singleton<Component>().template Emplace<Component>(Relation, Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Gets a writable pointer to a singleton component, creating it if it does not exist.
-        ///
-        /// \tparam Component The component type to retrieve or create.
-        /// \return A pointer to the component data.
-        template<typename Component>
-        ZY_INLINE Ptr<StripAll<Component>> Ensure() const
-        {
-            return Singleton<Component>().template Ensure<Component>();
-        }
-
-        /// \brief Gets a writable pointer to a singleton component by runtime entity, creating it if it does not exist.
-        ///
-        /// \param Component The component entity to retrieve or create.
-        /// \return A pointer to the component data.
-        ZY_INLINE Ptr<void> Ensure(Entity Component) const
-        {
-            return Component.Ensure(Component);
-        }
-
-        /// \brief Gets a writable pointer to a singleton component on a relation pair using a runtime relation.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity of the relation.
-        /// \return A pointer to the component data.
-        template<typename Relation>
-        ZY_INLINE Ptr<void> Ensure(Entity Component) const
-        {
-            return Component.template Ensure<Relation>(Component);
-        }
-
-        /// \brief Gets a writable pointer to a singleton component on a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return A pointer to the component data.
-        ZY_INLINE Ptr<void> Ensure(Entity Relation, Entity Component) const
-        {
-            return Component.Ensure(Relation, Component);
-        }
-
-        /// \brief Checks if the world has a singleton component or tag.
-        ///
-        /// \tparam Component The component or tag type to check.
-        /// \return `true` if it exists, `false` otherwise.
-        template<typename Component>
-        ZY_INLINE Bool Has() const
-        {
-            return Singleton<Component>().template Has<Component>();
-        }
-
-        /// \brief Checks if the world has a given singleton component using a runtime entity.
-        ///
-        /// \param Component The component entity to check.
-        /// \return `true` if it exists, `false` otherwise.
-        ZY_INLINE Bool Has(Entity Component) const
-        {
-            return Component.Has(Component);
-        }
-
-        /// \brief Checks if the world has a singleton relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return `true` if the pair exists, `false` otherwise.
-        template<typename Relation, typename Component>
-        ZY_INLINE Bool Has() const
-        {
-            return Singleton<Relation>().template Has<Relation, Component>();
-        }
-
-        /// \brief Checks if the world has a singleton relation pair using a compile-time relation and a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to check.
-        /// \return `true` if the pair exists, `false` otherwise.
-        template<typename Relation>
-        ZY_INLINE Bool Has(Entity Component) const
-        {
-            return Singleton<Relation>().template Has<Relation>(Component);
-        }
-
-        /// \brief Checks if the world has a singleton relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return `true` if the pair exists, `false` otherwise.
-        ZY_INLINE Bool Has(Entity Relation, Entity Component) const
-        {
-            return Relation.Has(Relation, Component);
-        }
-
-        /// \brief Removes a singleton component or tag from the world.
-        ///
-        /// \tparam Component The component or tag type to remove.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Remove() const
-        {
-            Singleton<Component>().template Remove<Component>();
-            return (* this);
-        }
-
-        /// \brief Removes a singleton component or tag from the world using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to remove.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Remove(Entity Component) const
-        {
-            Component.Remove(Component);
-            return (* this);
-        }
-
-        /// \brief Removes a singleton relation pair from the world using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE World Remove() const
-        {
-            Singleton<Relation>().template Remove<Relation, Component>();
-            return (* this);
-        }
-
-        /// \brief Removes a singleton relation pair using a compile-time relation and a runtime target entity.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to remove.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE World Remove(Entity Component) const
-        {
-            Singleton<Relation>().template Remove<Relation>(Component);
-            return (* this);
-        }
-
-        /// \brief Removes a singleton relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Remove(Entity Relation, Entity Component) const
-        {
-            Relation.Remove(Relation, Component);
-            return (* this);
-        }
-
-        /// \brief Removes all occurrences of a component.
-        ///
-        /// \tparam Component The component or tag type to remove.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Purge() const
-        {
-            ecs_remove_all(mHandle, _::Identify<Component>());
-            return (* this);
-        }
-
-        /// \brief Removes all occurrences of a component using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to remove.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Purge(Entity Component) const
-        {
-            ecs_remove_all(mHandle, Component.GetID());
-            return (* this);
-        }
-
-        /// \brief Removes all occurrences of a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE World Purge() const
-        {
-            ecs_remove_all(mHandle, (_::Identify<Relation, Component>()));
-            return (* this);
-        }
-
-        /// \brief Removes all occurrences of a relation pair using a compile-time relation and a runtime target entity.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to remove.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE World Purge(Entity Component) const
-        {
-            ecs_remove_all(mHandle, _::Identify<Relation>(Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Removes all occurrences of a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Purge(Entity Relation, Entity Component) const
-        {
-            ecs_remove_all(mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Gets a reference to a singleton component on the world.
-        ///
-        /// \tparam Component The component type to retrieve.
-        /// \return A reference to the component data.
-        template<typename Component>
-        ZY_INLINE Ref<Component> Get() const
-        {
-            return Singleton<Component>().template Get<Component>();
-        }
-
-        /// \brief Gets a reference to a singleton component on a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to retrieve.
-        /// \return A reference to the component data.
-        template<typename Relation, typename Component>
-        ZY_INLINE Ref<Component> Get() const
-        {
-            return Singleton<Relation>().template Get<Relation, Component>();
-        }
-
-        /// \brief Gets a pointer to a singleton component, or null if it does not exist.
-        ///
-        /// \tparam Component The component type to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Component>
-        ZY_INLINE Ptr<Component> TryGet() const
-        {
-            return Singleton<Component>().template TryGet<Component>();
-        }
-
-        /// \brief Gets a raw pointer to a singleton component by runtime entity, or null if not found.
-        ///
-        /// \param Component The component entity to look up.
-        /// \return A pointer to the component data, or null if not found.
-        ZY_INLINE Ptr<void> TryGet(Entity Component) const
-        {
-            return Component.TryGet(Component);
-        }
-
-        /// \brief Gets a pointer to a singleton component on a relation pair, or null if not found.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Relation, typename Component>
-        ZY_INLINE Ptr<Component> TryGet() const
-        {
-            return Singleton<Relation>().template TryGet<Relation, Component>();
-        }
-
-        /// \brief Gets a raw pointer to a singleton component on a relation pair using a runtime target, or null if not found.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Relation>
-        ZY_INLINE Ptr<void> TryGet(Entity Component) const
-        {
-            return Singleton<Relation>().template TryGet<Relation>(Component);
-        }
-
-        /// \brief Gets a raw pointer to a singleton component on a relation pair using two runtime entities, or null if not found.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return A pointer to the component data, or null if not found.
-        ZY_INLINE Ptr<void> TryGet(Entity Relation, Entity Component) const
-        {
-            return Relation.TryGet(Relation, Component);
-        }
-
-        /// \brief Notifies systems that a singleton component on the world has changed.
-        ///
-        /// \tparam Component The component type that was modified.
-        /// \return This world, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE World Notify() const
-        {
-            Singleton<Component>().template Notify<Component>();
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a singleton component has changed using a runtime entity.
-        ///
-        /// \param Component The component entity that was modified.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Notify(Entity Component) const
-        {
-            Component.Notify(Component);
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a singleton component on a relation pair has changed.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type that was modified.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE World Notify() const
-        {
-            Singleton<Relation>().template Notify<Relation, Component>();
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a singleton component on a relation pair has changed using a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity that was modified.
-        /// \return This world, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE World Notify(Entity Component) const
-        {
-            Singleton<Relation>().template Notify<Relation>(Component);
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a singleton component on a relation pair has changed using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity that was modified.
-        /// \return This world, allowing for method chaining.
-        ZY_INLINE World Notify(Entity Relation, Entity Component) const
-        {
-            Component.Notify(Relation, Component);
-            return (* this);
-        }
-
-        /// \brief Iterates over all child entities of the world and invokes a callback for each one.
-        ///
-        /// \param Callback The function to call for each child entity.
-        template<typename Callable>
-        ZY_INLINE void Children(AnyRef<Callable> Callback) const
-        {
-            Root().Children(Forward<Callable>(Callback));
-        }
-
-        /// \brief Iterates over all child entities related via a specific relation and invokes a callback for each one.
-        ///
-        /// \tparam Relation The relation type to filter children by.
-        /// \param  Callback The function to call for each matching child entity.
-        template<typename Relation, typename Callable>
-        ZY_INLINE void Children(AnyRef<Callable> Callback) const
-        {
-            Root().template Children<Relation>(Forward<Callable>(Callback));
-        }
-
-        /// \brief Iterates over every entity holding a relation that points at the given target.
-        ///
-        /// \tparam Relation The relation the entities are held by.
-        /// \param  Component The target the relation points at.
-        /// \param  Callback  The function to call for each entity holding it.
-        template<typename Relation, typename Callable>
-        ZY_INLINE void Each(Entity Component, AnyRef<Callable> Callback) const
-        {
-            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
-
-            for (ecs_iter_t Iterator = ecs_each_id(mHandle, Pair); ecs_each_next(& Iterator);)
+            if (mDeferral.IsWalking())
             {
-                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
-                {
-                    Callback(Entity(mHandle, Iterator.entities[Element]));
-                }
+                const Entity Actor = CreateEntity();
+                (Actor.Set(Forward<Types>(Values)), ...);
+                return Actor;
             }
-        }
 
-        /// \brief Iterates over every component and tag the world itself holds and invokes a callback for each one.
-        ///
-        /// \param Callback The function to call for each component or tag.
-        template<typename Callable>
-        ZY_INLINE void Each(AnyRef<Callable> Callback) const
-        {
-            ecs_iter_t Iterator = ecs_each_id(mHandle, ecs_id(EcsComponent));
-            
-            while (ecs_each_next(AddressOf(Iterator)))
+            // Along the add edges from the root, which also bring along what the components imply.
+            Ptr<Chunk> Target = mLayout.GetRoot();
+            ((Target = FindOrCreateAddition(* Target, IdentifierOf<StripAll<Types>>())), ...);
+
+            const Handle Actor = mDirectory.Allocate(false);
+            Place(Actor.GetIndex(), * Target);
+
+            const UInt32 Row = mDirectory[Actor.GetIndex()].Row;
+            (Chunk::Emplace<StripAll<Types>>(* Target, Row, Forward<Types>(Values)), ...);
+
+            if (Target->GetSignature().GetSize() != sizeof...(Types))
             {
-                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
+                const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()... };
+
+                for (UInt32 Column = 0; Column < Target->GetColumns().GetSize(); ++Column)
                 {
-                    if (const Entity Component(mHandle, Iterator.entities[Element]); Has(Component))
+                    if (!ZyBase::Find(Given, sizeof...(Types), Target->GetColumns()[Column].Identifier))
                     {
-                        Callback(Component);
+                        Chunk::Construct(* Target->GetColumns()[Column].Info, Target->At(Column, Row), 1);
                     }
                 }
             }
+
+            RecordGain(Actor.GetIndex(), nullptr);
+            return Entity(this, Actor);
         }
+
+        /// \brief Hands every archetype to a callback, in slot order.
+        ///
+        /// \param Callback The callable, taking each archetype.
+        template<typename Callable>
+        void QueryArchetypes(AnyRef<Callable> Callback)
+        {
+            mDirectory.ForEachArchetype([this, &Callback](Handle Archetype)
+            {
+                Callback(Entity(this, Archetype));
+            });
+        }
+
+        /// \brief Starts a query over the entities holding some components, the writable ones as their own.
+        ///
+        /// \return The description, which becomes the query when it is converted to one.
+        template<typename... Types>
+        ZY_INLINE Builder<ZyScene::Query> Query()
+        {
+            Builder<ZyScene::Query> Outline(this, Text(), 0);
+            (Outline.template Ask<Types>(), ...);
+            return Outline;
+        }
+
+        /// \brief Starts a system, which a phase runs each progress over what its callback asks for or a list it reads.
+        ///
+        /// \param Name  The name profiles and logs show.
+        /// \param Phase The phase it runs in.
+        /// \return The description, which becomes the system once it is handed its callback.
+        ZY_INLINE Builder<ZyScene::System> System(Text Name, UInt32 Phase = kUpdate)
+        {
+            return Builder<ZyScene::System>(this, Name, Phase);
+        }
+
+        /// \brief Creates a phase, which runs every system in it, in the order they were created, when its turn comes.
+        ///
+        /// \param Name  The name of the phase, which profiles and logs show.
+        /// \param After The phase it runs right after, or zero to run after every phase made so far.
+        /// \return The handle of the phase, never zero.
+        ZY_INLINE UInt32 CreatePhase(Text Name, UInt32 After = 0)
+        {
+            return mScheduler.CreatePhase(Name, After, mImporting);
+        }
+
+        /// \brief Runs every phase once, in order, and every system in each, in the order they were created.
+        void Progress();
+
+        /// \brief Declares components, each named after its type.
+        ///
+        /// \return The declaration, which takes their traits by chained calls and tells the world when it ends.
+        template<typename... Types>
+        ZY_INLINE Declaration<Types...> Declare()
+        {
+            return Declaration<Types...>(this, Text());
+        }
+
+        /// \brief Declares one component under a name of its own.
+        ///
+        /// \param Name The name saves know it by.
+        /// \return The declaration, which takes its traits by chained calls and tells the world when it ends.
+        template<typename Type>
+        ZY_INLINE Declaration<Type> Declare(Text Name)
+        {
+            return Declaration<Type>(this, Name);
+        }
+
+        /// \brief Declares every component that declares itself.
+        template<typename... Types>
+        ZY_INLINE void Register()
+            requires (requires (Ref<World> Scene) { Types::OnDeclare(Scene); } && ...)
+        {
+            (Types::OnDeclare(* this), ...);
+        }
+
+        /// \brief Imports a module, recording every component, phase and system the callback declares.
+        ///
+        /// \param Name     The name of the module, which logs show.
+        /// \param Callback The code that declares the module's contents, run once.
+        /// \return The handle of the module, never zero.
+        template<typename Callable>
+        ZY_INLINE UInt32 Import(Text Name, AnyRef<Callable> Callback)
+        {
+            ZY_ASSERT(mImporting == 0, "A module cannot be imported while another one is");
+
+            mModules.Append(Name, Sequence<UInt32>(), true);
+            mImporting = static_cast<UInt32>(mModules.GetSize());
+
+            const UInt32 Package = mImporting;
+            Callback();
+            mImporting = 0;
+            return Package;
+        }
+
+        /// \brief Discards a module, taking out its systems and keeping its values as the bytes they save to.
+        ///
+        /// \param Package The module.
+        void Discard(UInt32 Package);
+
+        /// \brief Writes entities, each with everything beneath it, as one save.
+        ///
+        /// \param Output The writer to append the save to.
+        /// \param Roots  The entities to write, the world entity among them for its singletons.
+        void Save(Ref<Writer> Output, ConstSpan<Entity> Roots);
+
+        /// \brief Reads a save, making each entity from the archetype it names, the world entity read over itself.
+        ///
+        /// \param Input  The bytes of the save.
+        /// \param Parent The entity to attach every root to, or one that names nothing.
+        /// \return The entities made at the root of the save.
+        Sequence<Entity> Load(ConstSpan<Byte> Input, Entity Parent = Entity());
 
     private:
 
-        /// \brief Gets the entity a singleton component of a given type is stored on.
-        ///
-        /// \return The entity that represents the component.
-        template<typename Component>
-        ZY_INLINE Entity Singleton() const
-        {
-            return Entity(mHandle, _::Identify<Component>());
-        }
+        /// The characters every scene save opens with.
+        static constexpr UInt32 kMagic    = 'Z' | ('S' << 8) | ('C' << 16) | ('N' << 24);
 
-        /// \brief Gets the entity that stands for the root of the hierarchy.
-        ///
-        /// \return The root entity.
-        ZY_INLINE Entity Root() const
+        /// The version of the layout saves are written and read in.
+        static constexpr UInt16 kVersion  = 2;
+
+        /// The chunk listing the type names a save uses.
+        static constexpr UInt32 kTypes    = 'T' | ('Y' << 8) | ('P' << 16) | ('E' << 24);
+
+        /// The chunk holding the records, each after its parent's.
+        static constexpr UInt32 kEntities = 'E' | ('N' << 8) | ('T' << 16) | ('S' << 24);
+
+        /// \brief Represents one module the world imported, and the components it registered.
+        struct Module final
         {
-            return Entity(mHandle, 0);
-        }
+            /// The name logs show.
+            Str              Name;
+
+            /// The components it registered.
+            Sequence<UInt32> Types;
+
+            /// `true` while the module is in the world.
+            Bool             Alive;
+        };
+
+        /// \brief Records components a declaration is done with, reading back the values kept as bytes for them.
+        ///
+        /// \param Identifiers The components.
+        void Registered(ConstSpan<UInt32> Identifiers);
+
+        /// \brief Writes one entity's record, then everything beneath it, naming each component it saves once.
+        ///
+        /// \param Output  The writer.
+        /// \param Index   The slot of the entity.
+        /// \param Parent  The position of the parent's record plus one, or zero for a root.
+        /// \param Indices The index each component written so far is written under.
+        /// \param Names   The name of each component written so far, by index.
+        /// \param Count   The records written so far.
+        void Emit(
+            Ref<Writer>                Output,
+            UInt32                     Index,
+            UInt32                     Parent,
+            Ref<Table<UInt32, UInt32>> Indices,
+            Ref<Sequence<Text>>        Names,
+            Ref<UInt32>                Count);
+
+        /// \brief Makes one entity from its record.
+        ///
+        /// \param Input       The reader, at the record's identifier.
+        /// \param Types       The component each type index of the save answers to.
+        /// \param Parent      The slot to make it beneath, or zero.
+        /// \param Identifiers The room the record's components are gathered in, reused from record to record.
+        /// \param Payloads    The room the record's values are gathered in, reused from record to record.
+        /// \return The slot of the entity.
+        UInt32 Make(
+            Ref<Reader>                    Input,
+            ConstRef<Sequence<UInt32>>     Types,
+            UInt32                         Parent,
+            Ref<Sequence<UInt32>>          Identifiers,
+            Ref<Sequence<ConstSpan<Byte>>> Payloads);
+
+        /// \brief Gets the root of the hierarchy holding the archetype an archetype reads from.
+        ///
+        /// \param Index The slot of the archetype.
+        /// \return The slot of the root, or zero when it reads from none.
+        UInt32 GetOrigin(UInt32 Index) const;
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Handle mHandle;
+        Scheduler        mScheduler;
+        Sequence<Module> mModules;
+        UInt32           mImporting;
     };
 }

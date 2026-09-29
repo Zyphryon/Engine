@@ -213,6 +213,20 @@ inline namespace ZyBase
             return DoErase(Needle);
         }
 
+        /// \brief Removes a key-value pair from the table if the key still maps to the given value.
+        ///
+        /// \param Needle   The key to remove from the table.
+        /// \param Expected The value the key must map to for the entry to be removed.
+        /// \return `true` if the key was found mapping to the value and removed, `false` otherwise.
+        template<typename KeyType = Key>
+        ZY_INLINE Bool Erase(AnyRef<KeyType> Needle, ConstRef<Value> Expected)
+        {
+            return DoEraseIf(Needle, [& Expected](ConstRef<Value> Current)
+            {
+                return Current == Expected;
+            });
+        }
+
         /// \brief Removes a key-value pair from the table if it exists and satisfies the given predicate.
         ///
         /// \param Needle    The key to search for in the table.

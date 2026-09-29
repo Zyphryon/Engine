@@ -9,98 +9,60 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include "Common.hpp"
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 namespace ZyScene
 {
-    /// \brief Represents a system that operates on entities matching queries within the ECS (Entity-Component System).
-    ///
-    /// Systems define logic that runs automatically or can be executed manually.
-    class System
+    class World;
+
+    /// \brief Represents a system, which a phase runs each time the world progresses.
+    class ZY_API System final
     {
     public:
 
-        /// \brief Underlying handle type for the ECS system.
-        using Handle = ecs_entity_t;
-
-    public:
-
-        /// \brief Constructs an empty system with no associated handle.
-        ZY_INLINE System()
+        /// \brief Constructs a system that names nothing.
+        ZY_INLINE constexpr System()
             : mWorld  { nullptr },
               mHandle { 0 }
         {
         }
 
-        /// \brief Constructs a system from an existing handle.
+        /// \brief Constructs a system of a world.
         ///
-        /// \param World  The world the system belongs to.
-        /// \param Handle The handle of this system.
-        ZY_INLINE System(Ptr<ecs_world_t> World, Handle Handle)
-            : mWorld  { World },
+        /// \param Owner  The world the system runs in.
+        /// \param Handle The handle the world knows it by.
+        ZY_INLINE constexpr System(Ptr<World> Owner, UInt32 Handle)
+            : mWorld  { Owner },
               mHandle { Handle }
         {
         }
 
-        /// \brief Destroys the system and releases its underlying resources.
+        /// \brief Checks whether the system names one of a world.
         ///
-        /// \note The system becomes invalid after destruction.
-        ZY_INLINE void Destruct()
+        /// \return `true` if it does, `false` for one that names nothing.
+        ZY_INLINE constexpr Bool IsValid() const
         {
-            if (mHandle)
-            {
-                ecs_delete(mWorld, mHandle);
-                mHandle = 0;
-            }
+            return mHandle != 0;
         }
 
-        /// \brief Checks if the system is currently enabled.
+        /// \brief Gets the handle the world knows the system by.
         ///
-        /// \return `true` if the system is enabled and can be executed, `false` otherwise.
-        ZY_INLINE Bool IsEnabled() const
+        /// \return The handle, or zero for none.
+        ZY_INLINE constexpr UInt32 GetHandle() const
         {
-            return !ecs_has_id(mWorld, mHandle, EcsDisabled);
+            return mHandle;
         }
 
-        /// \brief Executes the system logic.
-        ///
-        /// \param Delta The time step to pass to the system.
-        ZY_INLINE void Run(Real32 Delta) const
-        {
-            ecs_run(mWorld, mHandle, Delta, nullptr);
-        }
-
-        /// \brief Enables the system, allowing it to be executed.
-        ///
-        /// \return This system, allowing for method chaining.
-        ZY_INLINE System Enable() const
-        {
-            ecs_enable(mWorld, mHandle, true);
-            return (* this);
-        }
-
-        /// \brief Disables the system, preventing it from being executed.
-        ///
-        /// \return This system, allowing for method chaining.
-        ZY_INLINE System Disable() const
-        {
-            ecs_enable(mWorld, mHandle, false);
-            return (* this);
-        }
+        /// \brief Destroys the system, which runs no more.
+        void Destruct();
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ptr<ecs_world_t> mWorld;
-        Handle           mHandle;
+        Ptr<World> mWorld;
+        UInt32     mHandle;
     };
 }

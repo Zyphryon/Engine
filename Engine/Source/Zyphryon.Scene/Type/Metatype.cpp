@@ -10,8 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "System.hpp"
-#include "World.hpp"
+#include "Metatype.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -22,13 +21,28 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void System::Destruct()
+    ConstRef<Metatype> Metatype::Unitialized()
     {
-        if (mHandle)
+        static const Metatype Info = []
         {
-            mWorld->mScheduler.DestroySystem(mHandle);
-            mWorld->mScheduler.Purge();
-            mHandle = 0;
-        }
+            Metatype Result = Of<Sequence<Byte>>();
+
+            Result.Save = [](Ref<Writer> Output, ConstPtr<void> Source)
+            {
+                ConstRef<Sequence<Byte>> Bytes = * static_cast<ConstPtr<Sequence<Byte>>>(Source);
+
+                Output.Write(Bytes.GetData(), static_cast<UInt32>(Bytes.GetSize()));
+            };
+            Result.Load = [](Ref<Reader> Input, Ptr<void> Target)
+            {
+                const Reader        Rest  = Input.Split(Input.GetAvailable());
+                Ref<Sequence<Byte>> Bytes = * static_cast<Ptr<Sequence<Byte>>>(Target);
+
+                Bytes.Clear();
+                Bytes.Append(Rest);
+            };
+            return Result;
+        }();
+        return Info;
     }
 }

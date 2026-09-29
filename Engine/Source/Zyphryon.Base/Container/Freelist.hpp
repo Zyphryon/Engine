@@ -221,6 +221,18 @@ inline namespace ZyBase
             return Index > 0 && Index <= Capacity && mMask.Test(Index - 1);
         }
 
+        /// \brief Invokes a callback with every allocated slot, lowest first.
+        ///
+        /// \param Callback The function invoked with each slot, counted from one.
+        template<typename Callable>
+        ZY_INLINE constexpr void ForEach(AnyRef<Callable> Callback) const
+        {
+            mMask.ForEach([&Callback](UInt Index)
+            {
+                Callback(static_cast<Slot>(Index + 1));
+            });
+        }
+
         /// \brief Gets the key naming whatever occupies a slot.
         ///
         /// \param Index The slot to name, counted from one.

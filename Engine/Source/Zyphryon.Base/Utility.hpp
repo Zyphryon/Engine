@@ -185,7 +185,24 @@ inline namespace ZyBase
     template<typename Output, typename Input>
     ZY_INLINE void Blit(Ptr<Output> Destination, UInt Size, ConstPtr<Input> Source)
     {
-        std::memcpy(Destination, Source, Size);
+        switch (Size)
+        {
+        case 4:
+            std::memcpy(Destination, Source, 4);
+            break;
+        case 8:
+            std::memcpy(Destination, Source, 8);
+            break;
+        case 12:
+            std::memcpy(Destination, Source, 12);
+            break;
+        case 16:
+            std::memcpy(Destination, Source, 16);
+            break;
+        default:
+            std::memcpy(Destination, Source, Size);
+            break;
+        }
     }
 
     /// \brief Zero-fills a contiguous range of elements, including any padding bytes.

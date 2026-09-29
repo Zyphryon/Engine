@@ -60,6 +60,14 @@ inline namespace ZyBase
 #   define ZY_PROFILE_SCOPE(Name)
 #endif
 
+/// \def ZY_PROFILE_NAMED(Data, Size)
+/// \brief Marks a profiling zone named at runtime, without a callstack so it stays cheap in a loop.
+#if defined(ZY_PROFILE_BACKEND_TRACY)
+#   define ZY_PROFILE_NAMED(Data, Size) ZoneScoped; ZoneName(Data, Size)
+#else
+#   define ZY_PROFILE_NAMED(Data, Size)
+#endif
+
 /// \def ZY_PROFILE_FRAME(x)
 /// \brief Marks the beginning of a new frame in the profiler.
 #if defined(ZY_PROFILE_BACKEND_TRACY)

@@ -10,8 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "System.hpp"
-#include "World.hpp"
+#include "Zyphryon.Scene/World.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -22,13 +21,15 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void System::Destruct()
+    void Enrollment::Finish(ConstSpan<UInt32> Identifiers)
     {
-        if (mHandle)
+        if (!mPresentation.Label.IsEmpty())
         {
-            mWorld->mScheduler.DestroySystem(mHandle);
-            mWorld->mScheduler.Purge();
-            mHandle = 0;
+            for (const UInt32 Identifier : Identifiers)
+            {
+                Registry::Get().SetDescription(Identifier, mPresentation);
+            }
         }
+        mWorld->Registered(Identifiers);
     }
 }

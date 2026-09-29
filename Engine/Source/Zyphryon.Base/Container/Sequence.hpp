@@ -426,6 +426,32 @@ inline namespace ZyBase
             return Removed;
         }
 
+        /// \brief Removes the first element equal to the given one, shifting subsequent elements left.
+        ///
+        /// \param Element The element to remove, compared with `==`.
+        /// \return `true` if an element was found and removed, otherwise `false`.
+        template<typename Value = Type>
+        ZY_INLINE Bool Erase(ConstRef<Value> Element)
+        {
+            return RemoveIf([& Element](ConstRef<Type> Other)
+            {
+                return Other == Element;
+            });
+        }
+
+        /// \brief Removes every element equal to the given one, keeping the order of the survivors.
+        ///
+        /// \param Element The element to remove, compared with `==`.
+        /// \return The number of elements removed.
+        template<typename Value = Type>
+        ZY_INLINE UInt EraseAll(ConstRef<Value> Element)
+        {
+            return RemoveSomeIf([& Element](ConstRef<Type> Other)
+            {
+                return Other == Element;
+            });
+        }
+
         /// \brief Removes the element at the given index by swapping it with the last element.
         ///
         /// \param Index The zero-based index of the element to remove. Does not preserve insertion order.
@@ -1099,6 +1125,32 @@ inline namespace ZyBase
                 Remove(Kept, Removed);
             }
             return Removed;
+        }
+
+        /// \brief Removes the first element equal to the given one, shifting subsequent elements left.
+        ///
+        /// \param Element The element to remove, compared with `==`.
+        /// \return `true` if an element was found and removed, otherwise `false`.
+        template<typename Value = Type>
+        ZY_INLINE constexpr Bool Erase(ConstRef<Value> Element)
+        {
+            return RemoveIf([& Element](ConstRef<Type> Other)
+            {
+                return Other == Element;
+            });
+        }
+
+        /// \brief Removes every element equal to the given one, keeping the order of the survivors.
+        ///
+        /// \param Element The element to remove, compared with `==`.
+        /// \return The number of elements removed.
+        template<typename Value = Type>
+        ZY_INLINE constexpr UInt EraseAll(ConstRef<Value> Element)
+        {
+            return RemoveSomeIf([& Element](ConstRef<Type> Other)
+            {
+                return Other == Element;
+            });
         }
 
         /// \brief Removes the element at the given index by swapping it with the last element.

@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Builder.hpp"
+#include "Execution/Walk.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,152 +20,109 @@
 
 namespace ZyScene
 {
-    /// \brief Represents a query over entities within the ECS (Entity-Component System).
-    class Query
+    /// \brief Represents a cached query, the entities carrying some components, kept current until it is let go.
+    class ZY_API Query final
     {
-    public:
-
-        /// \brief Underlying handle to the ECS query object.
-        using Handle  = Ptr<ecs_query_t>;
+        friend class Draft;
 
     public:
 
-        /// \brief Constructs an invalid query with no associated world or filters.
-        ZY_INLINE Query()
-            : mHandle { nullptr }
-        {
-        }
+        /// \brief Constructs a query that matches nothing.
+        Query();
 
-        /// \brief Constructs a query from an existing handle.
+        /// \brief Constructs a query over a selection the storage keeps current.
         ///
-        /// \param Handle The handle of this query.
-        ZY_INLINE Query(Handle Handle) noexcept
-            : mHandle { Handle }
-        {
-        }
+        /// \param Owner The storage the query belongs to.
+        /// \param State The selection, which the query owns from here on.
+        Query(Ptr<Storage> Owner, Ptr<Selection> State);
 
-        /// \brief Move-constructs a query from another query instance.
+        /// \brief Takes over another query.
         ///
-        /// \param Other The query to move from.
-        ZY_INLINE Query(AnyRef<Query> Other) noexcept
-            : mHandle { Exchange(Other.mHandle, Handle()) }
-        {
-        }
+        /// \param Other The query to take over, which matches nothing afterwards.
+        Query(AnyRef<Query> Other);
 
-        /// \brief Destroys the query and releases its underlying resources.
-        ZY_INLINE ~Query()
-        {
-            // An anonymous query belongs to whoever built it, so nothing else would ever release it.
-            if (mHandle && !mHandle->entity)
-            {
-                ecs_query_fini(mHandle);
+        /// \brief Lets go of what the query matches.
+        ~Query();
 
-                mHandle = Handle();
-            }
-        }
+        /// \brief Queries are not copied, since each owns what it matches.
+        Query(ConstRef<Query> Other) = delete;
 
-        /// \brief Explicitly destroys the query and resets its handle.
+        /// \brief Takes over another query, letting go of what this one matched.
         ///
-        /// \note The query becomes invalid after destruction.
-        ZY_INLINE void Destruct() const
+        /// \param Other The query to take over, which matches nothing afterwards.
+        /// \return This query.
+        Ref<Query> operator=(AnyRef<Query> Other);
+
+        /// \brief Queries are not copied, since each owns what it matches.
+        Ref<Query> operator=(ConstRef<Query> Other) = delete;
+
+        /// \brief Checks whether the query was made by a world.
+        ///
+        /// \return `true` if it matches entities of a world, `false` if it matches nothing.
+        ZY_INLINE Bool IsValid() const
         {
-            if (mHandle && mHandle->entity)
-            {
-                ecs_query_fini(mHandle);
-                mHandle = Handle();
-            }
+            return mState != nullptr;
         }
 
-        /// \brief Gets the number of entities matching the query.
+        /// \brief Gets the number of entities the query matches right now.
         ///
-        /// \return The count of matching entities.
+        /// \return The number of matching entities.
         ZY_INLINE UInt Matches() const
         {
-            return mHandle ? static_cast<UInt>(ecs_query_count(mHandle).entities) : 0;
+            return mState ? mState->Count() : 0;
         }
 
-        /// \brief Checks whether what the query matches changed since it was last iterated.
+        /// \brief Hands every match to a callback, holding every structural change it asks for until the walk ends.
         ///
-        /// \note Only a query created with \ref Cache::Watched keeps the bookkeeping this asks.
-        ///
-        /// \return `true` when something matched was written, added or removed, otherwise `false`.
-        ZY_INLINE Bool IsChanged() const
+        /// \param Each The callable, taking the entity first when it asks for it, then its fields.
+        template<typename Callable>
+        ZY_INLINE void Run(AnyRef<Callable> Each) const
         {
-            return mHandle ? ecs_query_changed(mHandle) : false;
+            Walk::Run(* mOwner, Prepare<StripAll<Callable>>(), Each);
         }
 
-        /// \brief Executes the query, invoking a callback for each matching entity.
+        /// \brief Hands every matching entity to a callback, spread over the compute workers when the work is worth it.
         ///
-        /// \note The world is deferred for the walk, so the callback may add and remove what it visits.
-        ///
-        /// \param Each The function or functor to execute for every matching entity.
-        template<typename... Types, typename FEach>
-        ZY_INLINE void Run(AnyRef<FEach> Each) const
+        /// \param Each The callable, safe to call from many threads at once and writing only in place.
+        template<typename Callable>
+        ZY_INLINE void Spread(AnyRef<Callable> Each) const
         {
-            using Declared  = DSL::_::TypeList<Types...>;
-            using Trimmed   = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
-            using Inferred  = typename DSL::_::Infer<Trimmed>::Fields;
-            using Signature = Select<sizeof...(Types) == 0, Inferred, Declared>;
-            using Runner    = DSL::_::RunnerFactory<Signature, StripAll<FEach>>;
+            Walk::Spread(* mOwner, Prepare<StripAll<Callable>>(), Each);
+        }
 
-            ecs_iter_t     Handle = ecs_query_iter(mHandle->world, mHandle);
-            const Iterator Cursor(AddressOf(Handle));
+        /// \brief Checks whether the last walk that could spread did.
+        ///
+        /// \return `true` if it was spread over the workers, `false` if it stayed on one thread.
+        ZY_INLINE Bool IsSpreading() const
+        {
+            return mState && mState->Spread;
+        }
 
-            Cursor.Reset();
+    private:
 
-            ecs_defer_begin(mHandle->world);
+        /// \brief Gets the selection, declared for a callback's fields when it was declared for others.
+        ///
+        /// \return The selection.
+        template<typename Callable>
+        ZY_INLINE Ref<Selection> Prepare() const
+        {
+            ZY_ASSERT(mState, "The query matches nothing");
+
+            if (mState->Declared != Plan<Callable>::GetKey())
             {
-                Runner::Make(Move(Each))(Cursor);
+                Plan<Callable>::Declare(* mState);
+
+                mOwner->mLayout.Populate(* mState, mOwner->mDirectory);
             }
-            ecs_defer_end(mHandle->world);
+            return * mState;
         }
-
-        /// \brief Executes the query over one group alone, invoking a callback for each matching entity in it.
-        ///
-        /// \note The world is deferred for the walk, so the callback may add and remove what it visits.
-        ///
-        /// \param Group The target whose group is walked, as the query was grouped by \ref DSL::GroupBy.
-        /// \param Each  The function or functor to execute for every matching entity.
-        template<typename... Types, typename FEach>
-        ZY_INLINE void Run(Entity Group, AnyRef<FEach> Each) const
-        {
-            using Declared  = DSL::_::TypeList<Types...>;
-            using Trimmed   = DSL::_::StripContext<typename DSL::_::SignatureOf<StripAll<FEach>>::Type>::Type;
-            using Inferred  = typename DSL::_::Infer<Trimmed>::Fields;
-            using Signature = Select<sizeof...(Types) == 0, Inferred, Declared>;
-            using Runner    = DSL::_::RunnerFactory<Signature, StripAll<FEach>>;
-
-            ecs_iter_t     Handle = ecs_query_iter(mHandle->world, mHandle);
-            const Iterator Cursor(AddressOf(Handle));
-
-            Cursor.Reset();
-            ecs_iter_set_group(AddressOf(Handle), Group.GetID());
-
-            ecs_defer_begin(mHandle->world);
-            {
-                Runner::Make(Move(Each))(Cursor);
-            }
-            ecs_defer_end(mHandle->world);
-        }
-
-        /// \brief Move-assigns a query from another query instance, transferring ownership.
-        ZY_INLINE Ref<Query> operator=(AnyRef<Query> Other) noexcept
-        {
-            if (this != AddressOf(Other))
-            {
-                mHandle = Exchange(Other.mHandle, Handle());
-            }
-            return (* this);
-        }
-
-        /// \brief Deleted copy assignment operator to prevent copying of queries.
-        ZY_INLINE Ref<Query> operator=(ConstRef<Query>) = delete;
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        mutable Handle mHandle;
+        Ptr<Storage>   mOwner;
+        Ptr<Selection> mState;
     };
 }

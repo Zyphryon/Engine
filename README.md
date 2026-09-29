@@ -14,8 +14,7 @@
     `<cstdint>`, `<limits>`
   - *math* — `<cmath>`
   - *concurrency* — `<atomic>`, `<thread>`, `<mutex>`, `<condition_variable>`
-- **Minimal dependencies** — The runtime carries two third-party libraries: the
-  [flecs](https://github.com/SanderMertens/flecs) ECS and
+- **Minimal dependencies** — The runtime carries one third-party library,
   [libopus](https://opus-codec.org/) for audio decoding. Anything else lives in the
   tools, never ships with the engine.
 - **Data-oriented design** — Cache-friendly layouts, SIMD math, structures shaped by
@@ -29,12 +28,11 @@
 
 ### What ships in your game
 
-A game built on Zyphryon links **two** third-party libraries by default. Everything else below arrives only if
+A game built on Zyphryon links **one** third-party library by default. Everything else below arrives only if
 you enable the module that needs it.
 
 | Library | Pulled in by | Used for |
 |---------|--------------|----------|
-| [flecs](https://github.com/SanderMertens/flecs) | always (core) | The ECS behind the `Scene` module |
 | [libopus](https://opus-codec.org/) | always (core) | Opus decoding for the `.snd` container |
 | [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
 | [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |

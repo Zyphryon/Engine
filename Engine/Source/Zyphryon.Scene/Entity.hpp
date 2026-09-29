@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Registry.hpp"
+#include "Storage/Storage.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,765 +20,552 @@
 
 namespace ZyScene
 {
-    /// \brief Represents an entity within the ECS (Entity-Component System).
-    ///
-    /// An entity is a lightweight handle or identifier that serves as a container for components.
-    class Entity
+    class World;
+
+    /// \brief Represents an entity of a world, named there by its handle.
+    class ZY_API Entity final
     {
     public:
 
-        /// \brief Underlying handle type used to represent the entity internally.
-        using Handle = ecs_entity_t;
-
-    public:
-
-        /// \brief Constructs an invalid entity with no associated world or components.
-        ZY_INLINE Entity()
-            : mWorld  { nullptr },
-              mHandle { 0 }
+        /// \brief Constructs an entity that names nothing.
+        ZY_INLINE constexpr Entity()
+            : mStorage { nullptr },
+              mID      { 0 }
         {
         }
 
-        /// \brief Constructs an entity from a raw identifier that carries no world of its own.
+        /// \brief Constructs an entity of a world.
         ///
-        /// \note This is how a built-in flecs identifier reaches the wrapper, since those need no world to resolve.
-        ///
-        /// \param Handle The raw entity identifier.
-        ZY_INLINE Entity(Handle Handle)
-            : mWorld  { nullptr },
-              mHandle { Handle }
+        /// \param Owner  The world the entity lives in.
+        /// \param Handle The handle naming it there.
+        ZY_INLINE constexpr Entity(Ptr<Storage> Owner, Handle Handle)
+            : mStorage { Owner },
+              mID      { Handle.GetValue() }
         {
         }
 
-        /// \brief Constructs an entity bound to the world that issued it.
+        /// \brief Gets the number naming the entity, slot in the low half and generation in the high one.
         ///
-        /// \param World  The world the entity belongs to.
-        /// \param Handle The raw entity identifier.
-        ZY_INLINE Entity(Ptr<ecs_world_t> World, Handle Handle)
-            : mWorld  { World },
-              mHandle { Handle }
+        /// \return The identifier, the form an entity is saved and sent in.
+        ZY_INLINE constexpr UInt64 GetID() const
         {
+            return mID;
         }
 
-        /// \brief Gets the unique numeric identifier of this entity.
+        /// \brief Gets the handle naming the entity in its world.
         ///
-        /// \return The entity's unique identifier.
-        ZY_INLINE UInt64 GetID() const
+        /// \return The handle.
+        ZY_INLINE constexpr Handle GetHandle() const
         {
-            return mHandle;
+            return Handle(mID);
         }
 
-        /// \brief Gets the internal handle representing this entity.
+        /// \brief Gets the world the entity lives in.
         ///
-        /// \return The entity internal handle.
-        ZY_INLINE Handle GetHandle() const
-        {
-            return mHandle;
-        }
+        /// \return The world, or `nullptr` for an entity that names nothing.
+        Ptr<World> GetWorld() const;
 
-        /// \brief Gets the world this entity belongs to.
+        /// \brief Checks whether the entity names a living entity of its world.
         ///
-        /// \return The world of this entity, or null if the entity carries none.
-        ZY_INLINE Ptr<ecs_world_t> GetWorld() const
-        {
-            return mWorld;
-        }
-
-        /// \brief Checks if this entity is valid (exists in the world).
-        ///
-        /// \return `true` if the entity is valid, `false` otherwise.
-        ZY_INLINE Bool IsValid() const
-        {
-            return mWorld && ecs_is_valid(mWorld, mHandle);
-        }
-
-        /// \brief Checks if this entity is currently alive (not destroyed).
-        ///
-        /// \return `true` if the entity is alive, `false` otherwise.
+        /// \return `true` if it does, `false` for one destroyed or never made.
         ZY_INLINE Bool IsAlive() const
         {
-            return mWorld && ecs_is_alive(mWorld, mHandle);
+            return mStorage && mStorage->mDirectory.IsAlive(GetHandle());
         }
 
-        /// \brief Checks if this entity represents an archetype.
+        /// \brief Checks whether the entity is an archetype.
         ///
-        /// \return `true` if the entity is an archetype, `false` otherwise.
+        /// \return `true` if it is, `false` otherwise or when it is not alive.
         ZY_INLINE Bool IsArchetype() const
         {
-            return ecs_has_id(mWorld, mHandle, EcsPrefab);
+            return IsAlive() && Directory::IsArchetype(GetIndex());
         }
 
-        /// \brief Checks if this entity represents a component type.
-        ///
-        /// \return `true` if the entity is a component, `false` otherwise.
-        ZY_INLINE Bool IsComponent() const
-        {
-            return ecs_has_id(mWorld, mHandle, ecs_id(EcsComponent));
-        }
-
-        /// \brief Checks if this entity represents a tag.
-        ///
-        /// \return `true` if the entity is a tag, `false` otherwise.
-        ZY_INLINE Bool IsTag() const
-        {
-            return ecs_id_is_tag(mWorld, mHandle);
-        }
-
-        /// \brief Checks if this entity represents a relation pair.
-        ///
-        /// \return `true` if the entity is a pair, `false` otherwise.
-        ZY_INLINE Bool IsPair() const
-        {
-            return ecs_id_is_pair(mHandle);
-        }
-
-        /// \brief Checks if this entity represents an overridable component.
-        ///
-        /// \return `true` if the entity is overridable, `false` otherwise.
-        ZY_INLINE Bool IsOverridable() const
-        {
-            return !ecs_has_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsInherit))
-                && !ecs_has_id(mWorld, mHandle, ecs_pair(EcsOnInstantiate, EcsDontInherit));
-        }
-
-        /// \brief Destroys this entity and all of its components.
-        ///
-        /// \note The entity becomes invalid after destruction.
+        /// \brief Destroys the entity, every component it carries and everything that stands beneath it.
         ZY_INLINE void Destruct() const
         {
-            ZY_ASSERT(IsValid(), "Attempted to destroy an invalid entity");
-
-            ecs_delete(mWorld, mHandle);
+            mStorage->Destroy(GetHandle());
         }
 
-        /// \brief Enables this entity, allowing it to be processed by systems that require it to be awake.
+        /// \brief Wakes the entity or puts it to sleep, where no query that does not ask for it sees it.
         ///
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Awake() const
+        /// \param Awake     `true` to wake it, `false` to put it to sleep.
+        /// \param Recursive `true` to do the same to everything beneath it, all at once when the call ends.
+        /// \return This entity.
+        ZY_INLINE Entity SetAwake(Bool Awake, Bool Recursive = false) const
         {
-            ecs_enable(mWorld, mHandle, true);
+            mStorage->SetAwake(GetHandle(), Awake, Recursive);
             return (* this);
         }
 
-        /// \brief Enables this entity and everything hanging from it, allowing systems to process them.
+        /// \brief Checks whether the entity is awake.
         ///
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity AwakeRecursively() const
-        {
-            EnableRecursively(* this, true);
-            return (* this);
-        }
-
-        /// \brief Disables this entity, preventing it from being processed by systems that require it to be awake.
-        ///
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Sleep() const
-        {
-            ecs_enable(mWorld, mHandle, false);
-            return (* this);
-        }
-
-        /// \brief Disables this entity and everything hanging from it, so no system processes them.
-        ///
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity SleepRecursively() const
-        {
-            EnableRecursively(* this, false);
-            return (* this);
-        }
-
-        /// \brief Checks if this entity is currently awake (enabled).
-        ///
-        /// \return `true` if the entity is awake, `false` otherwise.
+        /// \return `true` if it is, `false` while it sleeps or when it is not alive.
         ZY_INLINE Bool IsAwake() const
         {
-            return !ecs_has_id(mWorld, mHandle, EcsDisabled);
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+            return Entry && !Entry->Holder->Has(mStorage->mAsleep);
         }
 
-        /// \brief Attaches a component or tag to this entity.
+        /// \brief Gives the entity a component of its own, or overwrites the one it holds.
         ///
-        /// \tparam Component The component or tag type to attach.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Add() const
+        /// \param Data The component, moved into place.
+        /// \return This entity.
+        template<typename Value>
+        ZY_INLINE Entity Set(AnyRef<Value> Data) const
         {
-            ecs_add_id(mWorld, mHandle, _::Identify<Component>());
-            return (* this);
-        }
+            using Type = StripAll<Value>;
 
-        /// \brief Attaches a component or tag to this entity using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to attach.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Add(Entity Component) const
-        {
-            ecs_add_id(mWorld, mHandle, Component.GetID());
-            return (* this);
-        }
-
-        /// \brief Attaches a relation pair to this entity using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Add() const
-        {
-            ecs_add_id(mWorld, mHandle, _::Identify<Relation, Component>());
-            return (* this);
-        }
-
-        /// \brief Attaches a relation pair using a compile-time relation and a runtime target entity.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity of the relation.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE Entity Add(Entity Component) const
-        {
-            ecs_add_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Attaches a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity of the relation.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Add(Entity Relation, Entity Component) const
-        {
-            ecs_add_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Sets the value of a component on this entity.
-        ///
-        /// \tparam Component The component type to set.
-        /// \param  Data      The data to assign to the component.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Set(AnyRef<Component> Data) const
-        {
-            Assign<StripAll<Component>>(_::Identify<Component>(), Data);
-            return (* this);
-        }
-
-        /// \brief Sets the value of a component on a relation pair using a compile-time relation.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to set.
-        /// \param  Data      The data to assign to the component.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Set(AnyRef<Component> Data) const
-        {
-            Assign<StripAll<Component>>(_::Identify<Relation, Component>(), Data);
-            return (* this);
-        }
-
-        /// \brief Sets the value of a component on a relation pair using a runtime relation entity.
-        ///
-        /// \tparam Component The component type to set.
-        /// \param  Relation  The relation entity.
-        /// \param  Data      The data to assign to the component.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Set(Entity Relation, AnyRef<Component> Data) const
-        {
-            Assign<StripAll<Component>>(ecs_pair(Relation.GetID(), _::Identify<Component>()), Data);
-            return (* this);
-        }
-
-        /// \brief Constructs a component directly on this entity, forwarding arguments to its constructor.
-        ///
-        /// \tparam Component  The component type to construct.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component, typename... Arguments>
-        ZY_INLINE Entity Emplace(AnyRef<Arguments>... Parameters) const
-            requires (!IsAnyOf<StripAll<Arguments>, Entity> && ...)
-        {
-            Construct<Component>(_::Identify<Component>(), Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Constructs a component on this entity within a relation pair, forwarding arguments to its constructor.
-        ///
-        /// \tparam Relation   The relation type.
-        /// \tparam Component  The component type to construct.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component, typename... Arguments>
-        ZY_INLINE Entity Emplace(AnyRef<Arguments>... Parameters) const
-        {
-            Construct<Component>(_::Identify<Relation, Component>(), Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Constructs a component on this entity using a runtime relation, forwarding arguments to its constructor.
-        ///
-        /// \tparam Component  The component type to construct.
-        /// \param  Relation   The relation entity.
-        /// \param  Parameters Arguments forwarded to the component constructor.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component, typename... Arguments>
-        ZY_INLINE Entity Emplace(Entity Relation, AnyRef<Arguments>... Parameters) const
-        {
-            Construct<Component>(
-                ecs_pair(Relation.GetID(), _::Identify<Component>()), Forward<Arguments>(Parameters)...);
-            return (* this);
-        }
-
-        /// \brief Gets a writable pointer to a component, creating it if it does not exist.
-        ///
-        /// \tparam Component The component type to retrieve or create.
-        /// \return A pointer to the component data.
-        template<typename Component>
-        ZY_INLINE Ptr<StripAll<Component>> Ensure() const
-        {
-            return static_cast<Ptr<StripAll<Component>>>(
-                ecs_ensure_id(mWorld, mHandle, _::Identify<Component>(), sizeof(StripAll<Component>)));
-        }
-
-        /// \brief Gets a writable pointer to a component by runtime entity, creating it if it does not exist.
-        ///
-        /// \param Component The component entity to retrieve or create.
-        /// \return A pointer to the component data.
-        ZY_INLINE Ptr<void> Ensure(Entity Component) const
-        {
-            return ecs_ensure_id(mWorld, mHandle, Component.GetID(), Measure(Component.GetID()));
-        }
-
-        /// \brief Gets a writable pointer to a component on a relation pair using a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity of the relation.
-        /// \return A pointer to the component data.
-        template<typename Relation>
-        ZY_INLINE Ptr<void> Ensure(Entity Component) const
-        {
-            const ecs_id_t Pair = _::Identify<Relation>(Component.GetID());
-            return ecs_ensure_id(mWorld, mHandle, Pair, Measure(Pair));
-        }
-
-        /// \brief Gets a writable pointer to a component on a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return A pointer to the component data.
-        ZY_INLINE Ptr<void> Ensure(Entity Relation, Entity Component) const
-        {
-            const ecs_id_t Pair = ecs_pair(Relation.GetID(), Component.GetID());
-            return ecs_ensure_id(mWorld, mHandle, Pair, Measure(Pair));
-        }
-
-        /// \brief Removes a component or tag from this entity.
-        ///
-        /// \tparam Component The component or tag type to remove.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Remove() const
-        {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Component>());
-            return (* this);
-        }
-
-        /// \brief Removes a component or tag from this entity using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to remove.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Remove(Entity Component) const
-        {
-            ecs_remove_id(mWorld, mHandle, Component.GetID());
-            return (* this);
-        }
-
-        /// \brief Removes a relation pair from this entity using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Remove() const
-        {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Relation, Component>());
-            return (* this);
-        }
-
-        /// \brief Removes a relation pair using a compile-time relation and a runtime target entity.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to remove.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE Entity Remove(Entity Component) const
-        {
-            ecs_remove_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Removes a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity to remove.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Remove(Entity Relation, Entity Component) const
-        {
-            ecs_remove_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Checks if this entity has a given component or tag.
-        ///
-        /// \tparam Component The component or tag type to check.
-        /// \return `true` if the entity has it, `false` otherwise.
-        template<typename Component>
-        ZY_INLINE Bool Has() const
-        {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Component>());
-        }
-
-        /// \brief Checks if this entity has a given component or tag using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to check.
-        /// \return `true` if the entity has it, `false` otherwise.
-        ZY_INLINE Bool Has(Entity Component) const
-        {
-            return ecs_has_id(mWorld, mHandle, Component.GetID());
-        }
-
-        /// \brief Checks if this entity has a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return `true` if the entity has the pair, `false` otherwise.
-        template<typename Relation, typename Component>
-        ZY_INLINE Bool Has() const
-        {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Relation, Component>());
-        }
-
-        /// \brief Checks if this entity has a relation pair using a compile-time relation and a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to check.
-        /// \return `true` if the entity has the pair, `false` otherwise.
-        template<typename Relation>
-        ZY_INLINE Bool Has(Entity Component) const
-        {
-            return ecs_has_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-        }
-
-        /// \brief Checks if this entity has a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return `true` if the entity has the pair, `false` otherwise.
-        ZY_INLINE Bool Has(Entity Relation, Entity Component) const
-        {
-            return ecs_has_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-        }
-
-        /// \brief Checks if this entity owns a given component or tag directly, rather than inheriting it.
-        ///
-        /// \tparam Component The component or tag type to check.
-        /// \return `true` if the entity owns it directly, `false` otherwise.
-        template<typename Component>
-        ZY_INLINE Bool Owns() const
-        {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Component>());
-        }
-
-        /// \brief Checks if this entity owns a given component or tag directly using a runtime entity.
-        ///
-        /// \param Component The component or tag entity to check.
-        /// \return `true` if the entity owns it directly, `false` otherwise.
-        ZY_INLINE Bool Owns(Entity Component) const
-        {
-            return ecs_owns_id(mWorld, mHandle, Component.GetID());
-        }
-
-        /// \brief Checks if this entity owns a relation pair directly using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The target type of the relation.
-        /// \return `true` if the entity owns the pair directly, `false` otherwise.
-        template<typename Relation, typename Component>
-        ZY_INLINE Bool Owns() const
-        {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation, Component>());
-        }
-
-        /// \brief Checks if this entity owns a relation pair directly using a compile-time relation and a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to check.
-        /// \return `true` if the entity owns the pair directly, `false` otherwise.
-        template<typename Relation>
-        ZY_INLINE Bool Owns(Entity Component) const
-        {
-            return ecs_owns_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-        }
-
-        /// \brief Checks if this entity owns a relation pair directly using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return `true` if the entity owns the pair directly, `false` otherwise.
-        ZY_INLINE Bool Owns(Entity Relation, Entity Component) const
-        {
-            return ecs_owns_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-        }
-
-        /// \brief Gets a reference to a component on this entity.
-        ///
-        /// \tparam Component The component type to retrieve.
-        /// \return A reference to the component data.
-        template<typename Component>
-        ZY_INLINE Ref<Component> Get() const
-        {
-            return (* TryGet<Component>());
-        }
-
-        /// \brief Gets a reference to a component on a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to retrieve.
-        /// \return A reference to the component data.
-        template<typename Relation, typename Component>
-        ZY_INLINE Ref<Component> Get() const
-        {
-            return (* TryGet<Relation, Component>());
-        }
-
-        /// \brief Gets a pointer to a component, or null if the entity does not have it.
-        ///
-        /// \tparam Component The component type to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Component>
-        ZY_INLINE Ptr<Component> TryGet() const
-        {
-            return Fetch<Component>(_::Identify<Component>());
-        }
-
-        /// \brief Gets a raw pointer to a component by runtime entity, or null if not found.
-        ///
-        /// \param Component The component entity to look up.
-        /// \return A pointer to the component data, or null if not found.
-        ZY_INLINE Ptr<void> TryGet(Entity Component) const
-        {
-            return ecs_get_mut_id(mWorld, mHandle, Component.GetID());
-        }
-
-        /// \brief Gets a pointer to a component on a relation pair, or null if not found.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Relation, typename Component>
-        ZY_INLINE Ptr<Component> TryGet() const
-        {
-            return Fetch<Component>(_::Identify<Relation, Component>());
-        }
-
-        /// \brief Gets a raw pointer to a component on a relation pair using a runtime target, or null if not found.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Relation>
-        ZY_INLINE Ptr<void> TryGet(Entity Component) const
-        {
-            return ecs_get_mut_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-        }
-
-        /// \brief Gets a raw pointer to a component on a relation pair using two runtime entities, or null if not found.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity.
-        /// \return A pointer to the component data, or null if not found.
-        ZY_INLINE Ptr<void> TryGet(Entity Relation, Entity Component) const
-        {
-            return ecs_get_mut_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-        }
-
-        /// \brief Notifies systems that a component on this entity has changed.
-        ///
-        /// \tparam Component The component type that was modified.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Notify() const
-        {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Component>());
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a component has changed using a runtime entity.
-        ///
-        /// \param Component The component entity that was modified.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Notify(Entity Component) const
-        {
-            ecs_modified_id(mWorld, mHandle, Component.GetID());
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a component on a relation pair has changed.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type that was modified.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Notify() const
-        {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Relation, Component>());
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a component on a relation pair has changed using a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity that was modified.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE Entity Notify(Entity Component) const
-        {
-            ecs_modified_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Notifies systems that a component on a relation pair has changed using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity that was modified.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Notify(Entity Relation, Entity Component) const
-        {
-            ecs_modified_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()));
-            return (* this);
-        }
-
-        /// \brief Enables a specific component on this entity, allowing systems to process it.
-        ///
-        /// \tparam Component The component type to enable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Enable() const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(), true);
-            return (* this);
-        }
-
-        /// \brief Enables a specific component on this entity using a runtime entity.
-        ///
-        /// \param Component The component entity to enable.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Enable(Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, Component.GetID(), true);
-            return (* this);
-        }
-
-        /// \brief Enables a component on a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to enable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Enable() const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(), true);
-            return (* this);
-        }
-
-        /// \brief Enables a component on a relation pair using a compile-time relation and a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to enable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE Entity Enable(Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()), true);
-            return (* this);
-        }
-
-        /// \brief Enables a component on a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity to enable.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Enable(Entity Relation, Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()), true);
-            return (* this);
-        }
-
-        /// \brief Disables a specific component on this entity, preventing systems from processing it.
-        ///
-        /// \tparam Component The component type to disable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Component>
-        ZY_INLINE Entity Disable() const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Component>(), false);
-            return (* this);
-        }
-
-        /// \brief Disables a specific component on this entity using a runtime entity.
-        ///
-        /// \param Component The component entity to disable.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Disable(Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, Component.GetID(), false);
-            return (* this);
-        }
-
-        /// \brief Disables a component on a relation pair using two compile-time types.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \tparam Component The component type to disable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation, typename Component>
-        ZY_INLINE Entity Disable() const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation, Component>(), false);
-            return (* this);
-        }
-
-        /// \brief Disables a component on a relation pair using a compile-time relation and a runtime target.
-        ///
-        /// \tparam Relation  The relation type.
-        /// \param  Component The target entity to disable.
-        /// \return This entity, allowing for method chaining.
-        template<typename Relation>
-        ZY_INLINE Entity Disable(Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, _::Identify<Relation>(Component.GetID()), false);
-            return (* this);
-        }
-
-        /// \brief Disables a component on a relation pair using two runtime entities.
-        ///
-        /// \param Relation  The relation entity.
-        /// \param Component The target entity to disable.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Disable(Entity Relation, Entity Component) const
-        {
-            ecs_enable_id(mWorld, mHandle, ecs_pair(Relation.GetID(), Component.GetID()), false);
-            return (* this);
-        }
-
-        /// \brief Checks whether this entity is the given ancestor or stands anywhere beneath it.
-        ///
-        /// \param Ancestor The entity to look for up the parent chain.
-        /// \return `true` if this entity is the ancestor or descends from it, `false` otherwise.
-        ZY_INLINE Bool IsWithin(Entity Ancestor) const
-        {
-            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
+            if constexpr (IsEmpty<Type>)
             {
-                if (Cursor == Ancestor)
+                return Add<Type>();
+            }
+            else
+            {
+                const UInt32              Identifier = IdentifierOf<Type>();
+                ConstRef<Directory::Slot> Entry      = mStorage->mDirectory[GetIndex()];
+                const SInt16              Column     = Entry.Holder->Find(Identifier);
+
+                // In place, even mid-walk, unless a reader watches changes or a change of this entity waits already.
+                if (Column >= 0
+                    && !mStorage->IsWatched(Identifier, Pull::Changed)
+                    && !mStorage->mDeferral.IsMarked(GetIndex()))
+                {
+                    * reinterpret_cast<Ptr<Type>>(Entry.Holder->At(Column, Entry.Row)) = Forward<Value>(Data);
+                }
+                else
+                {
+                    Store<Type>(Identifier, Column, Forward<Value>(Data));
+                }
+                return (* this);
+            }
+        }
+
+        /// \brief Gives the entity a default component, unless it holds or inherits one already.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity Add() const
+        {
+            const UInt32 Identifier = IdentifierOf<Type>();
+
+            if (mStorage->mDeferral.IsWalking() || mStorage->IsWatched(Identifier, Pull::Added))
+            {
+                mStorage->Add(GetHandle(), Identifier);
+            }
+            else
+            {
+                ConstRef<Chunk> Holder = GetChunk();
+
+                if (!Holder.Has(Identifier) && !mStorage->mDirectory.FindLent(Holder.GetBase(), Identifier))
+                {
+                    mStorage->Insert<StripAll<Type>>(GetIndex(), Identifier, StripAll<Type>());
+                }
+            }
+            return (* this);
+        }
+
+        /// \brief Gives the entity a default component named at runtime, unless it holds or inherits one already.
+        ///
+        /// \param Type The component.
+        /// \return This entity.
+        ZY_INLINE Entity Add(Component Type) const
+        {
+            mStorage->Add(GetHandle(), Type.GetID());
+            return (* this);
+        }
+
+        /// \brief Takes a component the entity holds off it, which then reads its archetype's again if it has one.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity Remove() const
+        {
+            const UInt32 Identifier = IdentifierOf<Type>();
+
+            if (mStorage->mDeferral.IsWalking() || mStorage->IsWatched(Identifier, Pull::Changed | Pull::Removed))
+            {
+                mStorage->Remove(GetHandle(), Identifier);
+            }
+            else
+            {
+                Ref<Chunk> Holder = GetChunk();
+
+                if (Holder.Has(Identifier))
+                {
+                    mStorage->Transfer(GetIndex(), * mStorage->FindOrCreateRemoval(Holder, Identifier));
+                }
+            }
+            return (* this);
+        }
+
+        /// \brief Takes a component named at runtime off the entity.
+        ///
+        /// \param Type The component.
+        /// \return This entity.
+        ZY_INLINE Entity Remove(Component Type) const
+        {
+            mStorage->Remove(GetHandle(), Type.GetID());
+            return (* this);
+        }
+
+        /// \brief Checks whether the entity carries a component, held or inherited.
+        ///
+        /// \return `true` if it does, `false` otherwise.
+        template<typename Type>
+        ZY_INLINE Bool Has() const
+        {
+            return Has(Component(IdentifierOf<Type>()));
+        }
+
+        /// \brief Checks whether the entity carries a component named at runtime, held or inherited.
+        ///
+        /// \param Type The component.
+        /// \return `true` if it does, `false` otherwise or when it is not alive.
+        ZY_INLINE Bool Has(Component Type) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+
+            return Entry && (Entry->Holder->Has(Type.GetID())
+                || mStorage->mDirectory.FindLent(Entry->Holder->GetBase(), Type.GetID()));
+        }
+
+        /// \brief Checks whether the entity holds a component itself rather than inheriting it.
+        ///
+        /// \return `true` if it holds it, `false` if it inherits it or lacks it.
+        template<typename Type>
+        ZY_INLINE Bool Owns() const
+        {
+            return Owns(Component(IdentifierOf<Type>()));
+        }
+
+        /// \brief Checks whether the entity holds a component named at runtime itself rather than inheriting it.
+        ///
+        /// \param Type The component.
+        /// \return `true` if it holds it, `false` if it inherits it, lacks it or is not alive.
+        ZY_INLINE Bool Owns(Component Type) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+            return Entry && Entry->Holder->Has(Type.GetID());
+        }
+
+        /// \brief Hands every component the entity holds itself to a callback, leaving out those it inherits.
+        ///
+        /// \param Callback The callable, taking each one, tags and markers like `Prefab`, `Asleep` or `Named` too.
+        template<typename Callable>
+        ZY_INLINE void Each(AnyRef<Callable> Callback) const
+        {
+            if (const ConstPtr<Directory::Slot> Entry = GetSlot())
+            {
+                for (const UInt32 Identifier : Entry->Holder->GetSignature())
+                {
+                    Callback(Component(Identifier));
+                }
+            }
+        }
+
+        /// \brief Gives the entity its own copy of a component it only inherits, recorded as a change of it.
+        ///
+        /// \param Type The component, left alone when the entity holds it already or its archetype lends none.
+        /// \return This entity.
+        ZY_INLINE Entity Override(Component Type) const
+        {
+            mStorage->Override(GetHandle(), Type.GetID());
+            return (* this);
+        }
+
+        /// \brief Gets a component the entity carries, the one it inherits included only when asked as `const`.
+        ///
+        /// \return The component, or `nullptr` when the entity does not carry it or is not alive, and for a tag.
+        template<typename Type>
+        ZY_INLINE Ptr<Type> Get() const
+        {
+            if constexpr (IsEmpty<StripAll<Type>>)
+            {
+                return nullptr;
+            }
+            else
+            {
+                const UInt32                    Identifier = IdentifierOf<Type>();
+                const ConstPtr<Directory::Slot> Entry      = GetSlot();
+
+                if (!Entry)
+                {
+                    return nullptr;
+                }
+
+                if (const SInt16 Column = Entry->Holder->Find(Identifier); Column >= 0)
+                {
+                    return reinterpret_cast<Ptr<Type>>(Entry->Holder->At(Column, Entry->Row));
+                }
+
+                if constexpr (IsImmutable<Type>)
+                {
+                    const ConstPtr<Byte> Lent = mStorage->mDirectory.FindLent(Entry->Holder->GetBase(), Identifier);
+                    return reinterpret_cast<Ptr<Type>>(const_cast<Ptr<Byte>>(Lent));
+                }
+                else
+                {
+                    return nullptr;
+                }
+            }
+        }
+
+        /// \brief Gets a component named at runtime the entity carries, held or inherited.
+        ///
+        /// \param Type The component.
+        /// \return The first byte of the component, or `nullptr` when it is missing, a tag, or the entity is not alive.
+        ZY_INLINE Ptr<void> Get(Component Type) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+
+            if (!Entry)
+            {
+                return nullptr;
+            }
+
+            const ConstPtr<Byte> Found = mStorage->mDirectory.FindValue(* Entry->Holder, Entry->Row, Type.GetID());
+            return Found == AddressOf(Directory::kPresent) ? nullptr : const_cast<Ptr<Byte>>(Found);
+        }
+
+        /// \brief Writes a component the entity holds in place, then records the change for readers of its changes.
+        ///
+        /// \param Callback The callable, taking the component to write.
+        /// \return `true` when it ran, `false` when the entity does not hold the component or is not alive.
+        template<typename Type, typename Callable>
+        ZY_INLINE Bool Modify(AnyRef<Callable> Callback) const
+        {
+            static_assert(!IsImmutable<Type>, "A component is modified through a writable type");
+
+            const Ptr<Type> Value = Get<Type>();
+
+            if (!Value)
+            {
+                return false;
+            }
+
+            Callback(* Value);
+            Notify<Type>();
+            return true;
+        }
+
+        /// \brief Records that a component written in place changed, for readers of its changes.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity Notify() const
+        {
+            return Notify(Component(IdentifierOf<Type>()));
+        }
+
+        /// \brief Records that a component named at runtime and written in place changed, for readers of its changes.
+        ///
+        /// \param Type The component.
+        /// \return This entity, which records nothing once it is gone, like a load finishing after it.
+        ZY_INLINE Entity Notify(Component Type) const
+        {
+            if (IsAlive() && mStorage->IsWatched(Type.GetID(), Pull::Changed))
+            {
+                mStorage->MarkChanged(GetHandle(), Type.GetID());
+            }
+            return (* this);
+        }
+
+        /// \brief Writes the bytes of a component the entity holds itself, as saves carry it, behind their length.
+        ///
+        /// \param Output The writer.
+        /// \return `true` when written, `false` when the entity does not hold it or saves never carry it.
+        template<typename Type>
+        ZY_INLINE Bool Write(Ref<Writer> Output) const
+        {
+            return Write(Component(IdentifierOf<Type>()), Output);
+        }
+
+        /// \brief Writes the bytes of a component named at runtime the entity holds itself, behind their length.
+        ///
+        /// \param Type   The component.
+        /// \param Output The writer.
+        /// \return `true` when written, `false` when the entity does not hold it, saves never carry it or it is gone.
+        ZY_INLINE Bool Write(Component Type, Ref<Writer> Output) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+
+            if (!Entry)
+            {
+                return false;
+            }
+
+            ConstRef<Chunk> Holder = * Entry->Holder;
+            const UInt32    Row    = Entry->Row;
+            const SInt16    Column = Holder.Find(Type.GetID());
+
+            if (Column == Chunk::kAbsent || !(Holder.GetFlags(Type.GetID()) & Chunk::kSaves))
+            {
+                return false;
+            }
+
+            Output.WriteBlock<UInt32>([&Holder, Row, Column](Ref<Writer> Block)
+            {
+                if (Column >= 0)
+                {
+                    Holder.GetColumns()[Column].Info->Save(Block, Holder.At(Column, Row));
+                }
+            });
+            return true;
+        }
+
+        /// \brief Reads what \ref Write wrote over the component, adding it when the entity lacks it.
+        ///
+        /// \param Input The reader, at the length.
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity Read(Ref<Reader> Input) const
+        {
+            return Read(Component(IdentifierOf<Type>()), Input);
+        }
+
+        /// \brief Reads what \ref Write wrote over a component named at runtime, adding it when the entity lacks it.
+        ///
+        /// \param Type  The component.
+        /// \param Input The reader, at the length.
+        /// \return This entity.
+        ZY_INLINE Entity Read(Component Type, Ref<Reader> Input) const
+        {
+            Reader Block(Input.ReadBlock<UInt32, Byte>());
+            mStorage->Read(GetHandle(), Type.GetID(), Block);
+            return (* this);
+        }
+
+        /// \brief Makes the entity the last child of another, taking it from any parent it had.
+        ///
+        /// \param Parent The entity to attach it to, which must not stand beneath it, or one naming nothing to detach.
+        /// \return This entity.
+        ZY_INLINE Entity Attach(Entity Parent) const
+        {
+            ZY_ASSERT(IsFree(Parent.IsAlive() ? Parent.GetIndex() : 0, GetName()), "A name is duplicated");
+
+            mStorage->Attach(GetHandle(), Parent.GetHandle());
+            return (* this);
+        }
+
+        /// \brief Gets the parent of the entity.
+        ///
+        /// \return The parent, or one that names nothing for a root or an entity that is not alive.
+        ZY_INLINE Entity GetParent() const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+            return Entry && Entry->Parent ? Entity(mStorage, mStorage->mDirectory.GetHandle(Entry->Parent)) : Entity();
+        }
+
+        /// \brief Hands every child of the entity to a callback, in the order they were attached.
+        ///
+        /// \param Callback The callable, taking each child.
+        template<typename Callable>
+        ZY_INLINE void Children(AnyRef<Callable> Callback) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+
+            for (UInt32 Cursor = Entry ? Entry->First : 0; Cursor;)
+            {
+                // Read ahead, so the callback can detach or destroy the child.
+                const UInt32 Next = mStorage->mDirectory[Cursor].Next;
+                Callback(Entity(mStorage, mStorage->mDirectory.GetHandle(Cursor)));
+                Cursor = Next;
+            }
+        }
+
+        /// \brief Hands everything beneath the entity to a callback, each entity before what stands beneath it.
+        ///
+        /// \param Callback The callable, taking each descendant, which may destroy it along with what stands beneath.
+        template<typename Callable>
+        ZY_INLINE void Descendants(AnyRef<Callable> Callback) const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+
+            for (UInt32 Cursor = Entry ? Entry->First : 0; Cursor;)
+            {
+                // Read ahead, so the callback can detach or destroy the child.
+                const UInt32 Next  = mStorage->mDirectory[Cursor].Next;
+                const Entity Child = Entity(mStorage, mStorage->mDirectory.GetHandle(Cursor));
+
+                Callback(Child);
+                Child.Descendants(Callback);
+                Cursor = Next;
+            }
+        }
+
+        /// \brief Finds a child of the entity by the name it was given.
+        ///
+        /// \param Name The name of the child.
+        /// \return The child, or one that names nothing when none answers to the name or the entity is not alive.
+        ZY_INLINE Entity Lookup(Text Name) const
+        {
+            const UInt32 Found = IsAlive() ? mStorage->FindChild(GetIndex(), Name) : 0;
+            return Found ? Entity(mStorage, mStorage->mDirectory.GetHandle(Found)) : Entity();
+        }
+
+        /// \brief Finds the nearest ancestor that carries a component, held or lent.
+        ///
+        /// \return The ancestor, or one that names nothing when no ancestor carries it.
+        template<typename Type>
+        ZY_INLINE Entity Find() const
+        {
+            UInt32 Found = IsAlive() ? mStorage->mDirectory[GetIndex()].Parent : 0;
+
+            if (Found && mStorage->mDirectory.FindAncestor(Found, IdentifierOf<Type>()))
+            {
+                return Entity(mStorage, mStorage->mDirectory.GetHandle(Found));
+            }
+            return Entity();
+        }
+
+        /// \brief Makes the entity read from another archetype, or from none, keeping what it holds itself.
+        ///
+        /// \param Archetype The archetype, or one that names nothing to read from none.
+        /// \return This entity.
+        ZY_INLINE Entity SetArchetype(Entity Archetype) const
+        {
+            mStorage->SetArchetype(GetHandle(), Archetype.GetHandle());
+            return (* this);
+        }
+
+        /// \brief Gets the archetype the entity reads from.
+        ///
+        /// \return The archetype, or one that names nothing for an entity made from none or not alive.
+        ZY_INLINE Entity GetArchetype() const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+            const UInt32                    Base  = Entry ? Entry->Holder->GetBase() : 0;
+            return Base ? Entity(mStorage, mStorage->mDirectory.GetHandle(Base)) : Entity();
+        }
+
+        /// \brief Hands every entity made straight from this archetype to a callback, archetypes made from it included.
+        ///
+        /// \param Callback The callable, taking each heir, which never runs for an entity that is not an archetype.
+        template<typename Callable>
+        ZY_INLINE void Heirs(AnyRef<Callable> Callback) const
+        {
+            if (!IsArchetype())
+            {
+                return;
+            }
+
+            // Gathered first, so the callback can change or destroy the heirs.
+            for (const Handle Heir : mStorage->GetHeirs(GetIndex()))
+            {
+                Callback(Entity(mStorage, Heir));
+            }
+        }
+
+        /// \brief Checks whether the entity reads from an archetype.
+        ///
+        /// \param Base The archetype to look for.
+        /// \return `true` if the entity reads from it at any remove, `false` otherwise.
+        ZY_INLINE Bool IsInstanceOf(Entity Base) const
+        {
+            for (Entity Cursor = GetArchetype(); Cursor.IsAlive(); Cursor = Cursor.GetArchetype())
+            {
+                if (Cursor == Base)
                 {
                     return true;
                 }
@@ -786,467 +573,44 @@ namespace ZyScene
             return false;
         }
 
-        /// \brief Resolves the nearest entity up the parent chain that carries a component, this one included.
+        /// \brief Gives the entity the name it is looked up by among its siblings, and that tools show for it.
         ///
-        /// \tparam Component The component to look for.
-        /// \return The nearest entity carrying it, or an invalid entity when nothing up the chain does.
-        template<typename Component>
-        ZY_INLINE Entity FindRecursively() const
-        {
-            for (Entity Cursor(* this); Cursor.IsValid(); Cursor = Cursor.GetParent())
-            {
-                if (Cursor.Has<Component>())
-                {
-                    return Cursor;
-                }
-            }
-            return Entity();
-        }
-
-        /// \brief Sends an event to this entity, with an optional payload.
-        ///
-        /// If `Immediately` is `true`, the event is delivered right away. Otherwise, it is queued
-        /// and processed at the end of the current frame.
-        ///
-        /// \tparam Event       The event type to dispatch.
-        /// \param  Payload     The event data to send.
-        /// \param  Immediately `true` to send immediately, `false` to queue.
-        /// \return This entity, allowing for method chaining.
-        template<typename Event>
-        ZY_INLINE Entity Dispatch(ConstRef<Event> Payload, Bool Immediately = false) const
-        {
-            ecs_event_desc_t Description { };
-            Description.event       = _::Identify<Event>();
-            Description.entity      = mHandle;
-            Description.const_param = AddressOf(Payload);
-            Description.observable  = const_cast<Ptr<ecs_world_t>>(ecs_get_world(mWorld));
-
-            if (Immediately)
-            {
-                ecs_emit(mWorld, AddressOf(Description));
-            }
-            else
-            {
-                ecs_enqueue(mWorld, AddressOf(Description));
-            }
-            return (* this);
-        }
-
-        /// \brief Subscribes to an event on this entity and invokes a callback when it fires.
-        ///
-        /// \tparam Event    The event type to listen for.
-        /// \param  Callback The function to call when the event fires.
-        /// \return This entity, allowing for method chaining.
-        template<typename Event, typename Callable>
-        ZY_INLINE Entity Subscribe(AnyRef<Callable> Callback) const
-        {
-            using Handler = Listener<StripAll<Callable>>;
-
-            ecs_observer_desc_t Description { };
-            Description.events[0]           = _::Identify<Event>();
-            Description.query.terms->id     = EcsAny;
-            Description.query.terms->src.id = mHandle;
-            Description.callback            = Handler::OnInvoke;
-            Description.callback_ctx        = new Handler(Forward<Callable>(Callback));
-            Description.callback_ctx_free   = Handler::OnRelease;
-
-            const ecs_entity_t Observer = ecs_observer_init(mWorld, AddressOf(Description));
-            ecs_add_id(mWorld, Observer, ecs_pair(EcsChildOf, mHandle));
-
-            return (* this);
-        }
-
-        /// \brief Looks up a child of this entity by its name.
-        ///
-        /// \param Name The name of the child to find.
-        /// \return The child entity, or an invalid entity if not found.
-        ZY_INLINE Entity Lookup(Text Name) const
-        {
-            ZY_ASSERT(mHandle, "Attempted to look up a child of an invalid entity");
-
-            return Entity(mWorld, ecs_lookup_path_w_sep(mWorld, mHandle, Name.GetData(), "::", "::", false));
-        }
-
-        /// \brief Iterates over all child entities and invokes a callback for each one.
-        ///
-        /// \param Callback The function to call for each child.
-        template<typename Callable>
-        ZY_INLINE void Children(AnyRef<Callable> Callback) const
-        {
-            Children(EcsChildOf, Forward<Callable>(Callback));
-        }
-
-        /// \brief Iterates over all children related via a specific relation and invokes a callback for each one.
-        ///
-        /// \tparam Relation The relation type to filter children by.
-        /// \param  Callback The function to call for each matching child.
-        template<typename Relation, typename Callable>
-        ZY_INLINE void Children(AnyRef<Callable> Callback) const
-        {
-            Children(_::Identify<Relation>(), Forward<Callable>(Callback));
-        }
-
-        /// \brief Iterates over all components and tags on this entity and invokes a callback for each one.
-        ///
-        /// \param Callback The function to call for each component or tag.
-        template<typename Callable>
-        ZY_INLINE void Each(AnyRef<Callable> Callback) const
-        {
-            if (const ConstPtr<ecs_type_t> Type = ecs_get_type(mWorld, mHandle))
-            {
-                for (SInt32 Element = 0; Element < Type->count; ++Element)
-                {
-                    Callback(Entity(mWorld, Type->array[Element]));
-                }
-            }
-
-            // A component that does not fragment lives outside the entity's table, so it needs its own sweep.
-            EachSparse(0, Forward<Callable>(Callback));
-        }
-
-        /// \brief Iterates over all targets of a specific relation on this entity and invokes a callback for each one.
-        ///
-        /// \tparam Relation The relation type to iterate targets for.
-        /// \param  Callback The function to call for each target.
-        template<typename Relation, typename Callable>
-        ZY_INLINE void Each(AnyRef<Callable> Callback) const
-        {
-            const ecs_id_t Pattern = ecs_pair(_::Identify<Relation>(), EcsWildcard);
-
-            const auto OnMatch = [&](Entity Pair)
-            {
-                Callback(Pair.GetComponent());
-            };
-
-            if (const Ptr<ecs_table_t> Table = ecs_get_table(mWorld, mHandle))
-            {
-                const ConstPtr<ecs_type_t> Type = ecs_table_get_type(Table);
-
-                for (SInt32 Cursor = 0; (Cursor = ecs_search_offset(ecs_get_world(mWorld), Table, Cursor, Pattern, nullptr)) != -1; ++Cursor)
-                {
-                    OnMatch(Entity(mWorld, Type->array[Cursor]));
-                }
-            }
-            EachSparse(Pattern, OnMatch);
-        }
-
-        /// \brief Attaches this entity to a parent, making it a child in the hierarchy.
-        ///
-        /// \param Parent    The entity to become the parent.
-        /// \param Hierarchy The hierarchy type of the parent-child relationship.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Attach(Entity Parent, Hierarchy Hierarchy) const
-        {
-            switch (Hierarchy)
-            {
-            case Hierarchy::Open:
-                ecs_add_id(mWorld, mHandle, ecs_pair(EcsChildOf, Parent.GetID()));
-                break;
-            case Hierarchy::Fixed:
-            {
-                const EcsParent Value(Parent.GetID());
-
-                Assign<EcsParent>(ecs_id(EcsParent), Value);
-            }
-            break;
-            }
-            return (*this);
-        }
-
-        /// \brief Detaches this entity from its parent, promoting it to a root in the hierarchy.
-        ///
-        /// Clears both open (\ref Hierarchy::Open) and fixed (\ref Hierarchy::Fixed) parent relationships.
-        ///
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity Detach() const
-        {
-            ecs_remove_id(mWorld, mHandle, ecs_pair(EcsChildOf, EcsWildcard));
-            ecs_remove_id(mWorld, mHandle, ecs_id(EcsParent));
-            return (* this);
-        }
-
-        /// \brief Gets the parent entity of this entity in the hierarchy.
-        ///
-        /// \return The parent entity, or an invalid entity if there is none.
-        ZY_INLINE Entity GetParent() const
-        {
-            return Entity(mWorld, ecs_get_parent(mWorld, mHandle));
-        }
-
-        /// \brief Gets the immediate parent of this entity within a specific hierarchy type.
-        ///
-        /// Unlike \ref GetParent(), which returns whichever parent exists, this follows only the requested
-        /// relationship and ignores the other.
-        ///
-        /// \param Hierarchy The hierarchy type whose parent to retrieve.
-        /// \return The parent entity for that hierarchy, or an invalid entity if there is none.
-        ZY_INLINE Entity GetParent(Hierarchy Hierarchy) const
-        {
-            switch (Hierarchy)
-            {
-            case Hierarchy::Open:
-                return Entity(mWorld, ecs_get_target(mWorld, mHandle, EcsChildOf, 0));
-            case Hierarchy::Fixed:
-                if (const ConstPtr<EcsParent> Parent = Fetch<const EcsParent>(ecs_id(EcsParent)))
-                {
-                    return Entity(mWorld, Parent->value);
-                }
-                break;
-            }
-            return Entity();
-        }
-
-        /// \brief Assigns an archetype to this entity, inheriting its components and default values.
-        ///
-        /// \param Archetype The archetype entity to inherit from.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity SetArchetype(Entity Archetype) const
-        {
-            ecs_add_id(mWorld, mHandle, ecs_pair(EcsIsA, Archetype.GetID()));
-            return (* this);
-        }
-
-        /// \brief Gets the archetype this entity inherits from, if any.
-        ///
-        /// \return The archetype entity, or an invalid entity if there is none.
-        ZY_INLINE Entity GetArchetype() const
-        {
-            return Entity(mWorld, ecs_get_target(mWorld, mHandle, EcsIsA, 0));
-        }
-
-        /// \brief Gets the whole path the entity is named by, every scope it stands under included.
-        ///
-        /// \return The path, or an empty string when the entity carries no name.
-        ZY_INLINE Str128 GetPath() const
-        {
-            Str128 Result;
-
-            if (const Ptr<Char> Path = ecs_get_path_w_sep(mWorld, 0, mHandle, "::", nullptr))
-            {
-                const Text Content = Describe(Path);
-                ZY_ASSERT(Content.GetSize() <= Result.GetCapacity(), "An entity's path outgrows what holds it");
-
-                Result = Content;
-
-                ecs_os_free(Path);
-            }
-            return Result;
-        }
-
-        /// \brief Sets the internal name of this entity, used for lookups and identification.
-        ///
-        /// \param Name The name to assign.
-        /// \return This entity, allowing for method chaining.
+        /// \param Name The name, which no sibling may already answer to, or empty to take it away.
+        /// \return This entity.
         ZY_INLINE Entity SetName(Text Name) const
         {
-            ecs_set_name(mWorld, mHandle, Name.GetData());
-            return (* this);
+            ZY_ASSERT(IsFree(mStorage->mDirectory[GetIndex()].Parent, Name), "A name is duplicated");
+
+            return Name.IsEmpty() ? Remove<Named>() : Set(Named(Name));
         }
 
-        /// \brief Gets the internal name of this entity.
+        /// \brief Gets the name the entity is looked up by.
         ///
-        /// \return The entity's name, or an empty string if it has none.
+        /// \return The name, or empty when it has none.
         ZY_INLINE Text GetName() const
         {
-            return Describe(ecs_get_name(mWorld, mHandle));
+            const ConstPtr<Named> Found = Get<const Named>();
+            return Found ? Text(Found->Value) : Text();
         }
 
-        /// \brief Sets a human-readable display name (alias) for this entity, separate from its internal name.
+        /// \brief Gets a hash value for the entity based on its identifier.
         ///
-        /// \param Name The display name to assign.
-        /// \return This entity, allowing for method chaining.
-        ZY_INLINE Entity SetAlias(Text Name) const
+        /// \return The identifier, used as its hash.
+        ZY_INLINE constexpr UInt64 Hash(UInt64) const
         {
-            ecs_doc_set_name(mWorld, mHandle, Name.GetData());
-            return (* this);
+            return mID;
         }
 
-        /// \brief Gets the human-readable display name (alias) of this entity.
+        /// \brief Checks whether two entities name the same generation of the same slot.
         ///
-        /// \return The alias string, or an empty string if none was set.
-        ZY_INLINE Text GetAlias() const
+        /// \param Other The entity to compare against.
+        /// \return `true` if both name the same entity, `false` otherwise.
+        ZY_INLINE constexpr Bool operator==(ConstRef<Entity> Other) const
         {
-            return Describe(ecs_doc_get_name(mWorld, mHandle));
+            return mID == Other.mID;
         }
-
-        /// \brief Gets the relation side of a pair entity.
-        ///
-        /// \return The entity representing the relation (first element of the pair).
-        ZY_INLINE Entity GetRelation() const
-        {
-            ZY_ASSERT(IsPair(), "Attempted to read the relation of an entity that is not a pair");
-
-            return Resolve(ECS_PAIR_FIRST(mHandle));
-        }
-
-        /// \brief Gets the target side of a pair entity.
-        ///
-        /// \return The entity representing the component or target (second element of the pair).
-        ZY_INLINE Entity GetComponent() const
-        {
-            ZY_ASSERT(IsPair(), "Attempted to read the target of an entity that is not a pair");
-
-            return Resolve(ECS_PAIR_SECOND(mHandle));
-        }
-
-        /// \brief Loads this entity's components from a binary data stream.
-        ///
-        /// \param Archive The binary data reader to read the component data from.
-        void Load(Ref<Reader> Archive) const;
-
-        /// \brief Saves this entity's components to a binary data stream.
-        ///
-        /// \param Archive The binary data writer to write the component data to.
-        /// \return `true` if at least one component was written, `false` otherwise.
-        Bool Save(Ref<Writer> Archive) const;
-
-        /// \brief Copies this entity's components into a destination entity.
-        ///
-        /// \param Destination The entity to copy data into. If invalid, a new entity is created.
-        /// \param Copy        `true` to copy component values, `false` to copy only component types.
-        ZY_INLINE void Clone(Entity Destination = Entity(), Bool Copy = true) const
-        {
-            const Handle Target = Destination.GetHandle() ? Destination.GetHandle() : ecs_new(mWorld);
-
-            ecs_clone(mWorld, Target, mHandle, Copy);
-        }
-
-        /// \brief Gets a hash value for this entity based on its unique identifier.
-        ///
-        /// \return The entity's unique identifier used as its hash.
-        ZY_INLINE UInt64 Hash(UInt64) const
-        {
-            return GetID();
-        }
-
-        /// \brief Equals operator comparing two entities by their unique identifiers.
-        ZY_INLINE Bool operator==(ConstRef<Entity> Other) const
-        {
-            return GetID() == Other.GetID();
-        }
-
-        /// \brief Inequality operator comparing two entities by their unique identifiers.
-        ZY_INLINE Bool operator!=(ConstRef<Entity> Other) const = default;
 
     public:
-
-        /// \brief Recursively attaches a tag to an entity and all of its descendants.
-        ///
-        /// \tparam Tag   The tag type to attach.
-        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
-        template<typename Tag>
-        ZY_INLINE static void AddRecursively(Entity Actor)
-        {
-            const Ptr<ecs_world_t> World = Actor.GetWorld();
-
-            const Bool Deferred = !ecs_is_deferred(World);
-
-            if (Deferred)
-            {
-                ecs_defer_begin(World);
-            }
-
-            AddRecursivelyDeferred<Tag>(Actor);
-
-            if (Deferred)
-            {
-                ecs_defer_end(World);
-            }
-        }
-
-        /// \brief Recursively removes a tag from an entity and all of its descendants.
-        ///
-        /// \tparam Tag   The tag type to remove.
-        /// \param  Actor The root entity to remove the tag from, along with its entire subtree.
-        template<typename Tag>
-        ZY_INLINE static void RemoveRecursively(Entity Actor)
-        {
-            const Ptr<ecs_world_t> World = Actor.GetWorld();
-
-            const Bool Deferred = !ecs_is_deferred(World);
-
-            if (Deferred)
-            {
-                ecs_defer_begin(World);
-            }
-
-            RemoveRecursivelyDeferred<Tag>(Actor);
-
-            if (Deferred)
-            {
-                ecs_defer_end(World);
-            }
-        }
-
-        /// \brief Attaches a tag to an entity and every ancestor it hangs from.
-        ///
-        /// \tparam Tag   The tag type to add.
-        /// \param  Actor The entity to attach the tag to, along with everything above it.
-        template<typename Tag>
-        ZY_INLINE static void AddAncestrally(Entity Actor)
-        {
-            const Ptr<ecs_world_t> World = Actor.GetWorld();
-
-            const Bool Deferred = !ecs_is_deferred(World);
-
-            if (Deferred)
-            {
-                ecs_defer_begin(World);
-            }
-
-            for (Entity Cursor = Actor; Cursor.IsValid(); Cursor = Cursor.GetParent())
-            {
-                Cursor.Add<Tag>();
-            }
-
-            if (Deferred)
-            {
-                ecs_defer_end(World);
-            }
-        }
-
-        /// \brief Removes a tag from an entity and every ancestor it hangs from.
-        ///
-        /// \tparam Tag   The tag type to remove.
-        /// \param  Actor The entity to remove the tag from, along with everything above it.
-        template<typename Tag>
-        ZY_INLINE static void RemoveAncestrally(Entity Actor)
-        {
-            const Ptr<ecs_world_t> World = Actor.GetWorld();
-
-            const Bool Deferred = !ecs_is_deferred(World);
-
-            if (Deferred)
-            {
-                ecs_defer_begin(World);
-            }
-
-            for (Entity Cursor = Actor; Cursor.IsValid(); Cursor = Cursor.GetParent())
-            {
-                Cursor.Remove<Tag>();
-            }
-
-            if (Deferred)
-            {
-                ecs_defer_end(World);
-            }
-        }
-
-        /// \brief Resolves the topmost ancestor of an entity within a specific hierarchy type.
-        ///
-        /// \param Actor     The entity to resolve from.
-        /// \param Hierarchy The hierarchy type whose parent chain to follow.
-        /// \return The topmost ancestor in that hierarchy, or the actor itself if it has no such parent.
-        ZY_INLINE static Entity ResolveRecursively(Entity Actor, Hierarchy Hierarchy)
-        {
-            Entity Root = Actor;
-
-            for (Entity Parent = Root.GetParent(Hierarchy); Parent.IsValid(); Parent = Root.GetParent(Hierarchy))
-            {
-                Root = Parent;
-            }
-            return Root;
-        }
 
         /// \brief Provides the name this type is registered under in the reflection system.
         ///
@@ -1261,249 +625,80 @@ namespace ZyScene
         /// \return The set of reflected fields.
         ZY_INLINE static constexpr auto OnDescribe()
         {
-            return Array(ZyReflection::Field::Property<&Entity::mHandle>("Id"));
+            return Array(ZyReflection::Field::Property<&Entity::mID>("Id"));
         }
 
     private:
 
-        /// \brief Holds the callback an observer created by \ref Subscribe owns.
-        template<typename Callable>
-        struct Listener final
-        {
-            Callable Callback;
-
-            /// \brief Constructs a listener taking ownership of a callable.
-            ///
-            /// \param Callback The callable the observer invokes.
-            ZY_INLINE explicit Listener(AnyRef<Callable> Callback)
-                : Callback { Move(Callback) }
-            {
-            }
-
-            /// \brief Invokes the callback of the listener the result was created for.
-            ///
-            /// \param Handle The result flecs hands to the observer.
-            ZY_INLINE static void OnInvoke(Ptr<ecs_iter_t> Handle)
-            {
-                ConstRef<Listener> Self = (* static_cast<ConstPtr<Listener>>(Handle->callback_ctx));
-
-                if constexpr (requires { Self.Callback(Entity()); })
-                {
-                    Self.Callback(Entity(Handle->world, ecs_field_src(Handle, 0)));
-                }
-                else
-                {
-                    Self.Callback();
-                }
-            }
-
-            /// \brief Releases the listener once flecs is done with the observer that owns it.
-            ///
-            /// \param Context The listener to release.
-            ZY_INLINE static void OnRelease(Ptr<void> Context)
-            {
-                delete static_cast<Ptr<Listener>>(Context);
-            }
-        };
-
-        /// \brief Enables or disables an entity and everything hanging from it.
+        /// \brief Writes a component that cannot be written in place.
         ///
-        /// \param Actor The root entity to walk, along with its entire subtree.
-        /// \param Awake The choice to enable rather than disable.
-        ZY_INLINE static void EnableRecursively(Entity Actor, Bool Awake)
+        /// \param Identifier The component.
+        /// \param Column     The column the entity holds it in, or negative when it holds none.
+        /// \param Data       The value.
+        template<typename Type, typename Value>
+        void Store(UInt32 Identifier, SInt16 Column, AnyRef<Value> Data) const
         {
-            const Ptr<ecs_world_t> World = Actor.GetWorld();
-
-            const Bool Deferred = !ecs_is_deferred(World);
-
-            if (Deferred)
+            if (Column < 0
+                && !mStorage->mDeferral.IsWalking()
+                && !mStorage->IsWatched(Identifier, Pull::Added | Pull::Changed))
             {
-                ecs_defer_begin(World);
-            }
-
-            EnableRecursivelyDeferred(Actor, Awake);
-
-            if (Deferred)
-            {
-                ecs_defer_end(World);
-            }
-        }
-
-        /// \brief Recursive worker for \ref EnableRecursively, run inside an already-open defer scope.
-        ///
-        /// \param Actor The root entity to walk, along with its entire subtree.
-        /// \param Awake The choice to enable rather than disable.
-        static void EnableRecursivelyDeferred(Entity Actor, Bool Awake)
-        {
-            ecs_enable(Actor.GetWorld(), Actor.GetHandle(), Awake);
-
-            Actor.Children([Awake](Entity Child)
-            {
-                EnableRecursivelyDeferred(Child, Awake);
-            });
-        }
-
-        /// \brief Recursive worker for \ref AddRecursively, run inside an already-open defer scope.
-        ///
-        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
-        template<typename Tag>
-        ZY_INLINE static void AddRecursivelyDeferred(Entity Actor)
-        {
-            Actor.Add<Tag>();
-
-            Actor.Children([](Entity Child)
-            {
-                AddRecursivelyDeferred<Tag>(Child);
-            });
-        }
-
-        /// \brief Recursive worker for \ref RemoveRecursively, run inside an already-open defer scope.
-        ///
-        /// \param  Actor The root entity to attach the tag to, along with its entire subtree.
-        template<typename Tag>
-        ZY_INLINE static void RemoveRecursivelyDeferred(Entity Actor)
-        {
-            Actor.Remove<Tag>();
-
-            Actor.Children([](Entity Child)
-            {
-                RemoveRecursivelyDeferred<Tag>(Child);
-            });
-        }
-
-        /// \brief Wraps a string flecs owns, which is null whenever the entity carries no such name.
-        ///
-        /// \param Value The string to wrap, or null.
-        /// \return A view over \p Value, or an empty view when there is nothing to name.
-        ZY_INLINE static Text Describe(ConstPtr<Char> Value)
-        {
-            return Value ? StrConvert(Value) : Text();
-        }
-
-        /// \brief Gets the size a component was registered with.
-        ///
-        /// \param Component The component to measure.
-        /// \return The size of the component in bytes, or zero when it carries none.
-        ZY_INLINE UInt32 Measure(ecs_id_t Component) const
-        {
-            const ConstPtr<ecs_type_info_t> Info = ecs_get_type_info(mWorld, Component);
-            return Info ? static_cast<UInt32>(Info->size) : 0;
-        }
-
-        /// \brief Resolves a half of a pair back to the live entity it names.
-        ///
-        /// \param Handle The identifier stored in the pair, which carries no generation of its own.
-        /// \return The live entity the half refers to.
-        ZY_INLINE Entity Resolve(Handle Handle) const
-        {
-            return mWorld ? Entity(mWorld, ecs_get_alive(mWorld, Handle)) : Entity(Handle);
-        }
-
-        /// \brief Gets a pointer to a component, honouring whether the type was spelled as read-only.
-        ///
-        /// \param Identifier The identifier of the component to look up.
-        /// \return A pointer to the component data, or null if not found.
-        template<typename Component>
-        ZY_INLINE Ptr<Component> Fetch(ecs_id_t Identifier) const
-        {
-            if constexpr (IsImmutable<Component>)
-            {
-                return static_cast<Ptr<Component>>(ecs_get_id(mWorld, mHandle, Identifier));
+                mStorage->Insert<Type>(GetIndex(), Identifier, Forward<Value>(Data));
             }
             else
             {
-                return static_cast<Ptr<Component>>(ecs_get_mut_id(mWorld, mHandle, Identifier));
+                alignas(Type) Byte Fresh[sizeof(Type)];
+                ::Construct(reinterpret_cast<Ptr<Type>>(Fresh), Forward<Value>(Data));
+
+                mStorage->Commit(GetHandle(), Identifier, Fresh);
             }
         }
 
-        /// \brief Writes a value into a component's storage, notifying whatever watches it.
+        /// \brief Gets the slot number of the entity.
         ///
-        /// \param Identifier The identifier of the component to write.
-        /// \param Data       The value written into the component.
-        template<typename Component>
-        ZY_INLINE void Assign(ecs_id_t Identifier, ConstRef<Component> Data) const
+        /// \return The slot number.
+        ZY_INLINE constexpr UInt32 GetIndex() const
         {
-            ecs_set_id(mWorld, mHandle, Identifier, sizeof(Component), AddressOf(Data));
+            return static_cast<UInt32>(mID);
         }
 
-        /// \brief Builds a component in place from its constructor arguments and marks it as modified.
+        /// \brief Gets the chunk the entity sits in.
         ///
-        /// \param Identifier The identifier of the component to build.
-        /// \param Parameters Arguments forwarded to the component constructor.
-        template<typename Component, typename... Arguments>
-        ZY_INLINE void Construct(ecs_id_t Identifier, AnyRef<Arguments>... Parameters) const
+        /// \return The chunk.
+        ZY_INLINE Ref<Chunk> GetChunk() const
         {
-            Bool            Created = false;
-            const Ptr<void> Memory  = ecs_emplace_id(mWorld, mHandle, Identifier, sizeof(Component), AddressOf(Created));
-
-            if (Created)
-            {
-                new (Memory) Component(Forward<Arguments>(Parameters)...);
-            }
-            ecs_modified_id(mWorld, mHandle, Identifier);
+            ZY_ASSERT(IsAlive(), "The entity is not alive");
+            return * mStorage->mDirectory[GetIndex()].Holder;
         }
 
-        /// \brief Iterates over the children reached through one relation and invokes a callback for each one.
+        /// \brief Gets the directory slot of the entity, which reads answer nothing without.
         ///
-        /// \param Relation The relation whose children are visited.
-        /// \param Callback The function to call for each child.
-        template<typename Callable>
-        ZY_INLINE void Children(Handle Relation, AnyRef<Callable> Callback) const
+        /// \return The slot, or `nullptr` for an entity destroyed or never made.
+        ZY_INLINE ConstPtr<Directory::Slot> GetSlot() const
         {
-            // A wildcard names every entity rather than one, so asking for its children would match the world.
-            if (mHandle == EcsWildcard || mHandle == EcsAny)
-            {
-                return;
-            }
-
-            for (ecs_iter_t Iterator = ecs_children_w_rel(mWorld, Relation, mHandle); ecs_children_next(& Iterator);)
-            {
-                for (SInt32 Element = 0; Element < Iterator.count; ++Element)
-                {
-                    Callback(Entity(mWorld, Iterator.entities[Element]));
-                }
-            }
+            return mStorage ? mStorage->mDirectory.FindSlot(GetHandle()) : nullptr;
         }
 
-        /// \brief Iterates over the components this entity holds outside its table and matches them to a pattern.
+        /// \brief Checks whether a name is free among the children of a parent.
         ///
-        /// \param Pattern  The identifier pattern a component has to match, or `0` to accept every one of them.
-        /// \param Callback The function to call for each matching component.
-        template<typename Callable>
-        ZY_INLINE void EachSparse(ecs_id_t Pattern, AnyRef<Callable> Callback) const
+        /// \param Parent The slot number of the parent, or zero for a root, whose name nothing looks up.
+        /// \param Name   The name, or empty for none.
+        /// \return `true` if no other child answers to it, `false` otherwise.
+        ZY_INLINE Bool IsFree(UInt32 Parent, Text Name) const
         {
-            const Ptr<ecs_world_t>       World  = const_cast<Ptr<ecs_world_t>>(ecs_get_world(mWorld));
-            const ConstPtr<ecs_record_t> Record = ecs_record_find(World, mHandle);
-
-            if (!Record || !(Record->row & EcsEntityHasDontFragment))
+            if (Parent != 0 && !Name.IsEmpty())
             {
-                return;
+                const UInt32 Holder = mStorage->FindChild(Parent, Name);
+                return Holder == 0 || Holder == GetIndex();
             }
-
-            for (Ptr<ecs_component_record_t> Cursor = flecs_component_dont_fragment_first(World);
-                 Cursor; Cursor = flecs_component_dont_fragment_next(Cursor))
-            {
-                const ecs_id_t Identifier = flecs_component_get_id(Cursor);
-
-                if (ecs_id_is_wildcard(Identifier) || (Pattern && !ecs_id_match(Identifier, Pattern)))
-                {
-                    continue;
-                }
-
-                if (const Ptr<ecs_sparse_t> Storage = flecs_component_get_sparse(Cursor);
-                    Storage && flecs_sparse_has(Storage, mHandle))
-                {
-                    Callback(Entity(mWorld, Identifier));
-                }
-            }
+            return true;
         }
 
-    protected:
+    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ptr<ecs_world_t> mWorld;
-        Handle           mHandle;
+        Ptr<Storage> mStorage;
+        UInt64       mID;
     };
 }
