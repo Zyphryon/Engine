@@ -395,13 +395,18 @@ namespace ZyScene
 
         /// \brief Writes a component the entity holds, or the one it would hold, then records the change.
         ///
-        /// \param Callback The callable, taking the component to write.
+        /// \param Callback The callable, taking the component to write, never called when the entity is not alive.
         /// \return This entity.
         template<typename Type, typename Callable>
         ZY_INLINE Entity Modify(AnyRef<Callable> Callback) const
         {
             static_assert(!IsImmutable<Type>, "A component is modified through a writable type");
-            ZY_ASSERT(IsAlive(), "The entity is not alive");
+
+            // A stale handle may name a reused slot, so nothing is written through it.
+            if (!IsAlive())
+            {
+                return (* this);
+            }
 
             if (const Ptr<Type> Held = Get<Type>())
             {
