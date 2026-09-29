@@ -138,33 +138,23 @@ namespace ZyScene
             return Move(* this);
         }
 
-        /// \brief Gives the components the label a tool shows.
+        /// \brief Gives the components how a tool shows them and where it may put them.
         ///
-        /// \param Label The label.
+        /// \param Label  The label.
+        /// \param Group  The heading they are listed under, or empty for none.
+        /// \param Icon   The codepoint of the glyph shown beside their label, or zero for none.
+        /// \param Policy The places a tool may put them.
         /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Describe(Text Label) &&
+        ZY_INLINE AnyRef<Declaration> Describe(
+            Text      Label,
+            Text      Group  = Text(),
+            UInt32    Icon   = 0,
+            Authoring Policy = Authoring::Anywhere) &&
         {
-            mPresentation.Label = Label;
-            return Move(* this);
-        }
-
-        /// \brief Gives the described components the heading they are listed under.
-        ///
-        /// \param Group The heading.
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Under(Text Group) &&
-        {
-            mPresentation.Group = Group;
-            return Move(* this);
-        }
-
-        /// \brief Gives the described components the glyph shown beside their label.
-        ///
-        /// \param Icon The codepoint of the glyph.
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Iconed(UInt32 Icon) &&
-        {
-            mPresentation.Icon = Icon;
+            mPresentation.Label  = Label;
+            mPresentation.Group  = Group;
+            mPresentation.Icon   = Icon;
+            mPresentation.Policy = Policy;
             return Move(* this);
         }
 
@@ -175,16 +165,6 @@ namespace ZyScene
         ZY_INLINE AnyRef<Declaration> Hinted(Text Tooltip) &&
         {
             mPresentation.Tooltip = Tooltip;
-            return Move(* this);
-        }
-
-        /// \brief Sets the places a tool may put the described components.
-        ///
-        /// \param Policy The places.
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Placed(Authoring Policy) &&
-        {
-            mPresentation.Policy = Policy;
             return Move(* this);
         }
 
