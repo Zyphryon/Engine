@@ -165,6 +165,33 @@ namespace ZyScene
             return (* this);
         }
 
+        /// \brief Gives the entity and everything beneath it a default component, like \ref Add.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity AddRecursively() const
+        {
+            Add<Type>();
+            Descendants([](Entity Child)
+            {
+                Child.Add<Type>();
+            });
+            return (* this);
+        }
+
+        /// \brief Gives the entity and every ancestor above it a default component, like \ref Add.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity AddAncestrally() const
+        {
+            for (Entity Cursor = (* this); Cursor.IsAlive(); Cursor = Cursor.GetParent())
+            {
+                Cursor.Add<Type>();
+            }
+            return (* this);
+        }
+
         /// \brief Gives the entity a default component named at runtime, unless it holds or inherits one already.
         ///
         /// \param Type The component.
@@ -196,6 +223,20 @@ namespace ZyScene
                     mStorage->Transfer(GetIndex(), * mStorage->FindOrCreateRemoval(Holder, Identifier));
                 }
             }
+            return (* this);
+        }
+
+        /// \brief Takes a component off the entity and everything beneath it, like \ref Remove.
+        ///
+        /// \return This entity.
+        template<typename Type>
+        ZY_INLINE Entity RemoveRecursively() const
+        {
+            Remove<Type>();
+            Descendants([](Entity Child)
+            {
+                Child.Remove<Type>();
+            });
             return (* this);
         }
 
@@ -311,6 +352,16 @@ namespace ZyScene
             }
         }
 
+        /// \brief Gets a copy of a component the entity carries, held or inherited, or a default one when it carries none.
+        ///
+        /// \return The component, or a default one when the entity does not carry it or is not alive.
+        template<typename Type>
+        ZY_INLINE StripAll<Type> GetOrDefault() const
+        {
+            const ConstPtr<StripAll<Type>> Found = Get<const StripAll<Type>>();
+            return Found ? * Found : StripAll<Type>();
+        }
+
         /// \brief Gets a component named at runtime the entity carries, held or inherited.
         ///
         /// \param Type The component.
@@ -328,25 +379,41 @@ namespace ZyScene
             return Found == AddressOf(Directory::kPresent) ? nullptr : const_cast<Ptr<Byte>>(Found);
         }
 
-        /// \brief Writes a component the entity holds in place, then records the change for readers of its changes.
+        /// \brief Gets the entity's own copy of a component, adding a default one or overriding the inherited one first.
+        ///
+        /// \return The component the entity holds.
+        template<typename Type>
+        ZY_INLINE Ref<Type> Ensure() const
+        {
+            static_assert(!IsImmutable<Type> && !IsEmpty<StripAll<Type>>, "A component is ensured as a writable value");
+            ZY_ASSERT(!mStorage->mDeferral.IsWalking(), "A component cannot be ensured while a query walks");
+
+            Override(Component(IdentifierOf<Type>()));
+            Add<Type>();
+            return * Get<Type>();
+        }
+
+        /// \brief Writes a component the entity holds, or the one it would hold, then records the change.
         ///
         /// \param Callback The callable, taking the component to write.
-        /// \return `true` when it ran, `false` when the entity does not hold the component or is not alive.
+        /// \return This entity.
         template<typename Type, typename Callable>
-        ZY_INLINE Bool Modify(AnyRef<Callable> Callback) const
+        ZY_INLINE Entity Modify(AnyRef<Callable> Callback) const
         {
             static_assert(!IsImmutable<Type>, "A component is modified through a writable type");
+            ZY_ASSERT(IsAlive(), "The entity is not alive");
 
-            const Ptr<Type> Value = Get<Type>();
-
-            if (!Value)
+            if (const Ptr<Type> Held = Get<Type>())
             {
-                return false;
+                Callback(* Held);
+                return Notify<Type>();
             }
 
-            Callback(* Value);
-            Notify<Type>();
-            return true;
+            const ConstPtr<Type> Lent  = Get<const Type>();
+            Type                 Value = Lent ? * Lent : Type();
+
+            Callback(Value);
+            return Set(Move(Value));
         }
 
         /// \brief Records that a component written in place changed, for readers of its changes.
@@ -438,14 +505,17 @@ namespace ZyScene
 
         /// \brief Makes the entity the last child of another, taking it from any parent it had.
         ///
-        /// \param Parent The entity to attach it to, which must not stand beneath it, or one naming nothing to detach.
-        /// \return This entity.
-        ZY_INLINE Entity Attach(Entity Parent) const
+        /// \param Parent The entity to attach it to, or one naming nothing to detach.
+        /// \return `true` if it stands there now, `false` otherwise.
+        ZY_INLINE Bool Attach(Entity Parent) const
         {
-            ZY_ASSERT(IsFree(Parent.IsAlive() ? Parent.GetIndex() : 0, GetName()), "A name is duplicated");
+            if (!IsFree(Parent.IsAlive() ? Parent.GetIndex() : 0, GetName()) || Parent.IsDescendantOf(* this, true))
+            {
+                return false;
+            }
 
             mStorage->Attach(GetHandle(), Parent.GetHandle());
-            return (* this);
+            return true;
         }
 
         /// \brief Gets the parent of the entity.
@@ -506,17 +576,42 @@ namespace ZyScene
 
         /// \brief Finds the nearest ancestor that carries a component, held or lent.
         ///
+        /// \param Inclusive `true` to look at the entity itself first, `false` to start at its parent.
         /// \return The ancestor, or one that names nothing when no ancestor carries it.
         template<typename Type>
-        ZY_INLINE Entity Find() const
+        ZY_INLINE Entity Find(Bool Inclusive = false) const
         {
-            UInt32 Found = IsAlive() ? mStorage->mDirectory[GetIndex()].Parent : 0;
+            UInt32 Found = IsAlive() ? (Inclusive ? GetIndex() : mStorage->mDirectory[GetIndex()].Parent) : 0;
 
             if (Found && mStorage->mDirectory.FindAncestor(Found, IdentifierOf<Type>()))
             {
                 return Entity(mStorage, mStorage->mDirectory.GetHandle(Found));
             }
             return Entity();
+        }
+
+        /// \brief Checks whether the entity stands anywhere beneath another.
+        ///
+        /// \param Ancestor  The entity to look for up the parent chain.
+        /// \param Inclusive `true` to count the entity itself as beneath itself, `false` to start at its parent.
+        /// \return `true` if the ancestor is found up the chain, `false` otherwise or when either is not alive.
+        ZY_INLINE Bool IsDescendantOf(Entity Ancestor, Bool Inclusive = false) const
+        {
+            if (!IsAlive() || !Ancestor.IsAlive())
+            {
+                return false;
+            }
+
+            ConstRef<Directory> Slots = mStorage->mDirectory;
+
+            for (UInt32 Cursor = Inclusive ? GetIndex() : Slots[GetIndex()].Parent; Cursor; Cursor = Slots[Cursor].Parent)
+            {
+                if (Cursor == Ancestor.GetIndex())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// \brief Makes the entity read from another archetype, or from none, keeping what it holds itself.
@@ -575,13 +670,24 @@ namespace ZyScene
 
         /// \brief Gives the entity the name it is looked up by among its siblings, and that tools show for it.
         ///
-        /// \param Name The name, which no sibling may already answer to, or empty to take it away.
-        /// \return This entity.
-        ZY_INLINE Entity SetName(Text Name) const
+        /// \param Name The name, or empty to take it away.
+        /// \return `true` if the entity answers to the name now, `false` when a sibling already does and nothing changed.
+        ZY_INLINE Bool SetName(Text Name) const
         {
-            ZY_ASSERT(IsFree(mStorage->mDirectory[GetIndex()].Parent, Name), "A name is duplicated");
+            if (!IsFree(mStorage->mDirectory[GetIndex()].Parent, Name))
+            {
+                return false;
+            }
 
-            return Name.IsEmpty() ? Remove<Named>() : Set(Named(Name));
+            if (Name.IsEmpty())
+            {
+                Remove<Named>();
+            }
+            else
+            {
+                Set(Named(Name));
+            }
+            return true;
         }
 
         /// \brief Gets the name the entity is looked up by.
