@@ -67,7 +67,7 @@ namespace ZyScene
 
     Entity Storage::CreateEntity()
     {
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread");
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
 
         // Made during a walk, it waits where no query sees it until the walk ends.
         const Handle Actor = mDirectory.Allocate(false);
@@ -80,7 +80,7 @@ namespace ZyScene
 
     Entity Storage::CreateArchetype()
     {
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread");
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread; Postpone the making");
 
         // Placed at once even mid-walk, since walks skip archetypes unless they ask for them.
         const Handle Actor = mDirectory.Allocate(true);
@@ -94,7 +94,7 @@ namespace ZyScene
     Entity Storage::Instantiate(Entity Archetype)
     {
         ZY_ASSERT(Archetype.IsArchetype(), "Only an archetype can be instantiated");
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread");
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
 
         if (mDeferral.IsWalking())
         {
@@ -114,7 +114,7 @@ namespace ZyScene
     Entity Storage::CloneArchetype(Entity Source, Entity Parent)
     {
         ZY_ASSERT(Source.IsArchetype(), "Only an archetype can be cloned");
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread");
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread; Postpone the making");
 
         // The copy sits in the source's own chunk, every column copied, its parts copied beneath it.
         Sequence<UInt32> Pending;
@@ -207,6 +207,14 @@ namespace ZyScene
         {
             Record(Identifier, Pull::Changed, Actor.GetIndex(), nullptr);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Hold(UInt32 Identifier, UInt32 Index)
+    {
+        Queue(Deferral::Operation::Notify, mDirectory.GetHandle(Index), Identifier, Handle(), nullptr, false);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -560,7 +568,6 @@ namespace ZyScene
     void Storage::Attach(Handle Actor, Handle Parent)
     {
         ZY_ASSERT(mDirectory.IsAlive(Actor), "The entity is not alive");
-        ZY_ASSERT(!mDeferral.IsSpreading(), "A spread walk only writes components in place");
 
         const UInt32 Index    = Actor.GetIndex();
         const UInt32 Above    = mDirectory.IsAlive(Parent) ? Parent.GetIndex() : 0;
@@ -576,12 +583,13 @@ namespace ZyScene
             ZY_ASSERT(Cursor != Index, "An entity cannot be attached beneath itself");
         }
 
-        // Moving a part copies or destroys entities under every heir, which waits like any structural change.
+        // Moving a part copies or destroys entities under every heir, which waits like any structural change, and so
+        // does every move a spread walk asks for.
         const Bool Part = mDirectory[Index].Holder->IsArchetype()
             && ((Above && mDirectory[Above].Holder->IsArchetype())
                 || (Previous && mDirectory[Previous].Holder->IsArchetype()));
 
-        if (mDeferral.IsWalking() && Part)
+        if (mDeferral.IsWalking() && (Part || mDeferral.IsSpreading()))
         {
             Queue(Deferral::Operation::Attach, Actor, 0, Above ? Parent : Handle(), nullptr);
         }
@@ -930,6 +938,19 @@ namespace ZyScene
                 Override(Change.Actor, Change.Identifier);
             }
             break;
+        case Deferral::Operation::Notify:
+            if (Alive)
+            {
+                MarkChanged(Change.Actor, Change.Identifier);
+            }
+            break;
+        case Deferral::Operation::Invoke:
+        {
+            Ref<Deferral::Task> Work = * reinterpret_cast<Ptr<Deferral::Task>>(Change.Payload);
+            Work();
+            Destruct(Work);
+            break;
+        }
         }
     }
 

@@ -115,7 +115,8 @@ namespace ZyScene
             }
             else
             {
-                State.Cost = Measure(Owner, State, 0, Total, Callback);
+                const Real64 Row = Measure(Owner, State, 0, Total, Callback);
+                State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
             }
 
             Owner.Leave();
@@ -567,7 +568,7 @@ namespace ZyScene
             {
             }
 
-            /// \brief Takes the next share, when one is left.
+            /// \brief Takes the next share, when one is left, and holds what the calling thread changes in it apart.
             ///
             /// \param Begin Receives the first row of the share.
             /// \param Until Receives the row past the last one.
@@ -580,6 +581,8 @@ namespace ZyScene
                 {
                     return false;
                 }
+                Owner->mDeferral.Bind(Share);
+
                 Begin = First + Share * Grain;
                 Until = Min(Begin + Grain, End);
                 return true;
@@ -715,7 +718,7 @@ namespace ZyScene
         /// \param State    The query, whose offsets are laid out and whose cost per row is known.
         /// \param Begin    The first row.
         /// \param End      The row past the last one.
-        /// \param Callback The callable.
+        /// \param Callback The callable, thread-safe and changing only its own entity.
         /// \return The seconds one row took on the share the caller timed.
         template<typename Callable>
         static Real64 Distribute(
@@ -735,7 +738,8 @@ namespace ZyScene
 
             Array<ZyJob::Handle, kMaxHelpers> Tasks;
 
-            Owner.mDeferral.SetSpreading(true);
+            // Each share holds its changes apart, and they are appended in share order once every worker is done.
+            Owner.mDeferral.Spread(Work.Shares, Owner.mDirectory.GetSize());
 
             for (UInt32 Helper = 0; Helper < Helpers; ++Helper)
             {
@@ -761,7 +765,7 @@ namespace ZyScene
                 Jobs.Wait(Tasks[Helper]);
             }
 
-            Owner.mDeferral.SetSpreading(false);
+            Owner.mDeferral.Gather();
             return Cost;
         }
 

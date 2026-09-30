@@ -83,7 +83,7 @@ namespace ZyScene
 
         /// \brief Hands every matching entity to a callback, spread over the compute workers when the work is worth it.
         ///
-        /// \param Each The callable, safe to call from many threads at once and writing only in place.
+        /// \param Each The callable, thread-safe and changing only its own entity.
         template<typename Callable>
         ZY_INLINE void Spread(AnyRef<Callable> Each) const
         {

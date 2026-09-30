@@ -106,6 +106,25 @@ namespace ZyScene
             Leave();
         }
 
+        /// \brief Runs a task once the running walk ends, in order with the changes it held, or at once outside a walk.
+        ///
+        /// \note This is how a spread walk makes entities or does work that is not safe on many threads at once.
+        ///
+        /// \param Callback The task, moved into the held change.
+        template<typename Callable>
+        ZY_INLINE void Postpone(AnyRef<Callable> Callback)
+        {
+            if (!mDeferral.IsWalking())
+            {
+                Callback();
+                return;
+            }
+
+            const Ptr<Byte> Payload = mDeferral.Allocate(sizeof(Deferral::Task), alignof(Deferral::Task));
+            ::Construct(reinterpret_cast<Ptr<Deferral::Task>>(Payload), Forward<Callable>(Callback));
+            Queue(Deferral::Operation::Invoke, Handle(), 0, Handle(), Payload, false);
+        }
+
     protected:
 
         /// \brief Constructs storage holding nothing but the world entity, as part of a world.
@@ -135,9 +154,10 @@ namespace ZyScene
         /// \param Identifier The component it is about, or zero.
         /// \param Other      The other entity it involves, or one naming nothing.
         /// \param Payload    The value it carries, taken from \ref Deferral::Allocate, or `nullptr`.
-        ZY_INLINE void Queue(Deferral::Operation Kind, Handle Actor, UInt32 Identifier, Handle Other, Ptr<Byte> Payload)
+        /// \param Mark       `true` to mark its entity, so every change of it waits behind this one, `false` otherwise.
+        ZY_INLINE void Queue(Deferral::Operation Kind, Handle Actor, UInt32 Identifier, Handle Other, Ptr<Byte> Payload, Bool Mark = true)
         {
-            mDeferral.Queue(Deferral::Command(Kind, Identifier, Actor, Other, Payload));
+            mDeferral.Queue(Deferral::Command(Kind, Identifier, Actor, Other, Payload), Mark);
         }
 
         /// \brief Checks whether any reader watches a component for some changes.
@@ -160,12 +180,20 @@ namespace ZyScene
         {
             if (mLedger.IsWatched(Identifier, Kind))
             {
-                ZY_ASSERT(!mDeferral.IsSpreading(), "A spread walk writes nothing a reader watches");
-                mLedger.Record(Identifier, Kind, mDirectory.GetHandle(Index), Value, mDirectory[Index].Holder->GetIndex());
-
-                if (Directory::IsArchetype(Index))
+                // A spread walk only writes in place, and its record waits with its other changes.
+                if (mDeferral.IsSpreading())
                 {
-                    RecordHeirs(Identifier, Kind, Index, Value);
+                    Hold(Identifier, Index);
+                }
+                else
+                {
+                    mLedger.Record(
+                        Identifier, Kind, mDirectory.GetHandle(Index), Value, mDirectory[Index].Holder->GetIndex());
+
+                    if (Directory::IsArchetype(Index))
+                    {
+                        RecordHeirs(Identifier, Kind, Index, Value);
+                    }
                 }
             }
         }
@@ -187,6 +215,12 @@ namespace ZyScene
         /// \param Actor      The entity, which must be alive.
         /// \param Identifier The component.
         void MarkChanged(Handle Actor, UInt32 Identifier);
+
+        /// \brief Holds the record of a write in place a spread walk made, which is made once the walk ends.
+        ///
+        /// \param Identifier The component.
+        /// \param Index      The slot of the entity.
+        void Hold(UInt32 Identifier, UInt32 Index);
 
         /// \brief Places an entity whose slot sits in no chunk at the end of one.
         ///
