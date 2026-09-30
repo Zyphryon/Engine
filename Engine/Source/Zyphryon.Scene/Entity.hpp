@@ -548,6 +548,15 @@ namespace ZyScene
             return Entry && Entry->Parent ? Entity(mStorage, mStorage->mDirectory.GetHandle(Entry->Parent)) : Entity();
         }
 
+        /// \brief Checks whether anything is attached beneath the entity, without visiting it.
+        ///
+        /// \return `true` if the entity has at least one child, `false` otherwise.
+        ZY_INLINE Bool IsParent() const
+        {
+            const ConstPtr<Directory::Slot> Entry = GetSlot();
+            return Entry && Entry->First != 0;
+        }
+
         /// \brief Hands every child of the entity to a callback, in the order they were attached.
         ///
         /// \param Callback The callable, taking each child.
