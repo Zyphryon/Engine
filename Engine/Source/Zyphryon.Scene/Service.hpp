@@ -36,5 +36,29 @@ namespace ZyScene
         ///
         /// \param Delta The elapsed time since the last tick.
         void OnTick(Real64 Delta) override;
+
+        /// \brief Gets the world's time, scaled by the timescale.
+        ///
+        /// \return The absolute time of the world's clock, in seconds.
+        ZY_INLINE Real64 GetTime() const
+        {
+            return GetWorld().Get<const Clock>()->GetAbsolute();
+        }
+        
+        /// \brief Sets how fast the world's clock runs against real time, where zero holds it still.
+        ///
+        /// \param Timescale The multiplier applied to each tick.
+        ZY_INLINE void SetTimescale(Real32 Timescale)
+        {
+            GetWorld().Get<Clock>()->SetMultiplier(Timescale);
+        }
+
+        /// \brief Gets how fast the world's clock runs against real time.
+        ///
+        /// \return The multiplier applied to each tick, zero while it is held still.
+        ZY_INLINE Real32 GetTimescale() const
+        {
+            return GetWorld().Get<const Clock>()->GetMultiplier();
+        }
     };
 }
