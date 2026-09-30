@@ -9,6 +9,12 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [  HEADER  ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#include "Vector2.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -110,6 +116,61 @@ inline namespace ZyMath
             return Minimum + (Maximum - Minimum) * NextReal<Type>();
         }
 
+        /// \brief Generates a random angle, anywhere round the circle.
+        ///
+        /// \return A random angle in the range [0, 2π).
+        ZY_INLINE Angle NextAngle()
+        {
+            return Angle::FromTurns(NextReal<Real32>());
+        }
+
+        /// \brief Generates a random point within a circle, every part of it as likely as any other.
+        ///
+        /// \param Radius The radius of the circle.
+        /// \return The point, relative to the center of the circle.
+        ZY_INLINE Vector2 NextPoint(Real32 Radius)
+        {
+            const Angle  Facing = NextAngle();
+            const Real32 Reach  = Radius * Sqrt(NextReal<Real32>());
+
+            return Vector2(Reach * Angle::Cosine(Facing), Reach * Angle::Sine(Facing));
+        }
+
+        /// \brief Picks one element of a span, every one as likely as any other.
+        ///
+        /// \param Values The span to pick from.
+        /// \return The element picked, or `nullptr` when the span is empty.
+        template<typename Type>
+        ZY_INLINE ConstPtr<Type> Pick(ConstSpan<Type> Values)
+        {
+            if (Values.IsEmpty())
+            {
+                return nullptr;
+            }
+            return AddressOf(Values[NextInteger<UInt32>(0, static_cast<UInt32>(Values.GetSize()) - 1)]);
+        }
+
+        /// \brief Scatters the bits of a number, so numbers lying close together come out far apart.
+        ///
+        /// \param Value The number to scatter.
+        /// \return The scattered number, the same every time for the same one.
+        ZY_INLINE static constexpr UInt64 Mix(UInt64 Value)
+        {
+            Value = (Value ^ (Value >> 30)) * 0xBF58476D1CE4E5B9;
+            Value = (Value ^ (Value >> 27)) * 0x94D049BB133111EB;
+            return Value ^ (Value >> 31);
+        }
+
+        /// \brief Scatters the bits of a point on a grid, so neighbouring points come out far apart.
+        ///
+        /// \param Value The point to scatter.
+        /// \return The scattered number, the same every time for the same point.
+        ZY_INLINE static constexpr UInt64 Mix(IntVector2 Value)
+        {
+            return Mix(static_cast<UInt64>(static_cast<UInt32>(Value.GetX())) << 32
+                     | static_cast<UInt64>(static_cast<UInt32>(Value.GetY())));
+        }
+
     private:
 
         /// \brief Generates the next raw 64-bit unsigned integer using the xoshiro256++ state.
@@ -145,10 +206,7 @@ inline namespace ZyMath
         /// \return The 64-bit pseudo-random output derived from the updated state.
         ZY_INLINE static constexpr UInt64 SplitMix64(Ref<UInt64> State)
         {
-            UInt64 Result = (State += 0x9E3779B97F4A7C15);
-            Result = (Result ^ (Result >> 30)) * 0xBF58476D1CE4E5B9;
-            Result = (Result ^ (Result >> 27)) * 0x94D049BB133111EB;
-            return Result ^ (Result >> 31);
+            return Mix(State += 0x9E3779B97F4A7C15);
         }
 
     public:

@@ -420,6 +420,21 @@ inline namespace ZyMath
             return Quaternion(Axis * Angle::Sine(HalfAngle), Angle::Cosine(HalfAngle));
         }
 
+        /// \brief Creates a quaternion from a rotation vector, whose direction is the axis and whose length the angle.
+        ///
+        /// \param Rotation The rotation vector, such as an angular velocity times the time it acted for, in radians.
+        /// \return The quaternion representing the rotation, or the identity when the vector is zero.
+        ZY_INLINE static Quaternion FromAngles(Vector3 Rotation)
+        {
+            const Real32 Magnitude = Rotation.GetLength();
+
+            if (::IsAlmostZero(Magnitude))
+            {
+                return Quaternion();
+            }
+            return FromAngles(Angle(Magnitude), Rotation / Magnitude);
+        }
+
         /// \brief Creates a quaternion from Euler angles.
         /// 
         /// \param Angles A vector where X = pitch, Y = yaw, Z = roll (in radians).

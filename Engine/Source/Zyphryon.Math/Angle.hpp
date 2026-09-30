@@ -283,6 +283,19 @@ inline namespace ZyMath
             return FromRadians(Apart - kTwoPI<Real32> * Floor(Apart / kTwoPI<Real32> + 0.5f));
         }
 
+        /// \brief Turns one angle toward another the shortest way round, by no more than a given step.
+        ///
+        /// \param Origin The angle to turn from.
+        /// \param Target The angle to turn toward.
+        /// \param Step   The most it may turn, never negative.
+        /// \return The angle turned to, which is the target once it lies within the step.
+        ZY_INLINE static Angle Toward(Angle Origin, Angle Target, Angle Step)
+        {
+            const Real32 Most = Step.GetRadians();
+
+            return FromRadians(Origin.GetRadians() + Clamp(Between(Origin, Target).GetRadians(), -Most, Most));
+        }
+
         /// \brief Provides the name this type is registered under in the reflection system.
         ///
         /// \return The fully qualified reflection name of the type, and how it is shown.
