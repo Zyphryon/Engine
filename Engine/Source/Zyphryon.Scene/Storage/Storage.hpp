@@ -161,7 +161,7 @@ namespace ZyScene
             if (mLedger.IsWatched(Identifier, Kind))
             {
                 ZY_ASSERT(!mDeferral.IsSpreading(), "A spread walk writes nothing a reader watches");
-                mLedger.Record(Identifier, Kind, mDirectory.GetHandle(Index), Value);
+                mLedger.Record(Identifier, Kind, mDirectory.GetHandle(Index), Value, mDirectory[Index].Holder->GetIndex());
 
                 if (Directory::IsArchetype(Index))
                 {

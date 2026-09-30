@@ -154,43 +154,36 @@ namespace ZyScene
             return State;
         }
 
-        /// \brief Checks whether a reader of removals asked for archetypes, the only term it may take.
+        /// \brief Checks whether a reader of removals asked for archetypes.
         ///
         /// \param Owner The world.
         /// \param State The selection the reader was described with.
         /// \return `true` if it reads archetypes alone, `false` if it reads everything else.
         ZY_INLINE static Bool WantsArchetypes(Ref<Storage> Owner, ConstRef<Selection> State)
         {
-            if constexpr (List::kKind == Pull::Removed)
-            {
-                const Bool Wanted = State.Required.Contains(Owner.mPrefab);
-
-                ZY_ASSERT(
-                    State.Required.GetSize() == (Wanted ? 1u : 0u) && State.Alternatives.IsEmpty(),
-                    "A reader of removals takes no terms but archetypes, since the entity may be gone");
-                return Wanted;
-            }
-            else
-            {
-                return false;
-            }
+            return List::kKind == Pull::Removed && State.Required.Contains(Owner.mPrefab);
         }
 
-        /// \brief Keeps the selection of a list other than removals, whose entries are matched against it.
+        /// \brief Keeps the selection of a list, whose entries are matched against it.
         ///
         /// \param Owner The world.
         /// \param State The selection.
-        /// \return The selection kept current by the world, or `nullptr` for removals.
+        /// \return The selection kept current by the world, or `nullptr` for removals asking for nothing more.
         ZY_INLINE static Ptr<Selection> Adopt(Ref<Storage> Owner, AnyRef<Unique<Selection>> State)
         {
             if constexpr (List::kKind == Pull::Removed)
             {
-                return nullptr;
+                // Sleepers were always seen, and the archetype marker alone is settled by the handle.
+                State->Required.Erase(Owner.mPrefab);
+                State->Excluded.Erase(Owner.mPrefab);
+                State->Excluded.Erase(Owner.mAsleep);
+
+                if (State->Required.IsEmpty() && State->Excluded.IsEmpty() && State->Alternatives.IsEmpty())
+                {
+                    return nullptr;
+                }
             }
-            else
-            {
-                return Owner.mLayout.AddSelection(Move(State), Owner.mDirectory);
-            }
+            return Owner.mLayout.AddSelection(Move(State), Owner.mDirectory);
         }
 
         /// \brief Hands every removal since the last call to a callback taking the entity, and maybe its lost value.
@@ -221,6 +214,17 @@ namespace ZyScene
                 if (Directory::IsArchetype(Actor.GetIndex()) != mArchetypes)
                 {
                     continue;
+                }
+
+                // Terms are matched against the chunk the entity left, which a gone entity no longer has.
+                if (mState)
+                {
+                    const UInt32 Source = Lists.GetSource(mHandles.GetFront(), Next);
+
+                    if (Source >= mState->Positions.GetSize() || mState->Positions[Source] == 0)
+                    {
+                        continue;
+                    }
                 }
 
                 if constexpr (kValue)

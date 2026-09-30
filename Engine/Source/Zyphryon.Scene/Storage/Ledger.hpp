@@ -74,7 +74,8 @@ namespace ZyScene
         /// \param Kind       The change, exactly one.
         /// \param Actor      The entity.
         /// \param Value      The value leaving on a removal, copied when the component keeps it, or `nullptr`.
-        void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value);
+        /// \param Source     The index of the chunk the entity sits in before the change.
+        void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source);
 
         /// \brief Gets the position of the first entry a reader has not read, counted from the list's first ever.
         ///
@@ -118,6 +119,17 @@ namespace ZyScene
             return Index < Target.Values.GetSize() ? Target.Values[Index] : nullptr;
         }
 
+        /// \brief Gets the chunk an entity sat in when an entry of the removals a reader watches was recorded.
+        ///
+        /// \param Subscription The handle of the subscription, which reads removals.
+        /// \param Position     The position of the entry, which the reader has not read yet.
+        /// \return The index of the chunk, which may have been destroyed since.
+        ZY_INLINE UInt32 GetSource(UInt32 Subscription, UInt64 Position) const
+        {
+            ConstRef<List> Target = * mLists[mSubscriptions[Subscription - 1].List];
+            return Target.Sources[Position - Target.First];
+        }
+
         /// \brief Moves a reader past what it read, dropping what every reader of the list is past.
         ///
         /// \param Subscription The handle of the subscription.
@@ -151,6 +163,9 @@ namespace ZyScene
 
             /// The value each entry kept, held only by removals of a component that keeps them and never longer.
             Sequence<Ptr<Byte>> Values;
+
+            /// The chunk each entry's entity sat in before the change, held only by removals.
+            Sequence<UInt32>    Sources;
 
             /// \brief Constructs a list that holds no entry yet.
             ///

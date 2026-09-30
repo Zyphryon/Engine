@@ -1016,7 +1016,7 @@ namespace ZyScene
             {
                 const ConstPtr<Byte> Value = mDirectory.FindValue(* Entry.Holder, Entry.Row, Identifier);
 
-                mLedger.Record(Identifier, Pull::Removed, mDirectory.GetHandle(Index), Value);
+                mLedger.Record(Identifier, Pull::Removed, mDirectory.GetHandle(Index), Value, Entry.Holder->GetIndex());
             }
         }
 

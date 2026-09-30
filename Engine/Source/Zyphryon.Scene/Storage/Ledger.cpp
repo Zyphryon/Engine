@@ -111,12 +111,20 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Ledger::Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value)
+    void Ledger::Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source)
     {
         Ref<List> Target = * mLists[GetListIndex(Identifier, Kind)];
         Target.Actors.Append(Actor);
 
-        if (!Value || Kind != Pull::Removed)
+        if (Kind != Pull::Removed)
+        {
+            return;
+        }
+
+        // Kept for every removal, since a reader with terms can only match what the entity was as it left.
+        Target.Sources.Append(Source);
+
+        if (!Value)
         {
             return;
         }
@@ -199,6 +207,11 @@ namespace ZyScene
 
         DropFront(Target.Actors, Count);
         Target.First += Count;
+
+        if (!Target.Sources.IsEmpty())
+        {
+            DropFront(Target.Sources, Count);
+        }
 
         // Only a list keeping values holds any, and never for more entries than it has.
         if (const UInt Kept = Min(Count, Target.Values.GetSize()))
