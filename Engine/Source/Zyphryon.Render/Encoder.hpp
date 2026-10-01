@@ -393,14 +393,19 @@ namespace ZyRender
             Sequence<ZyGraphic::Object, ZyGraphic::Command::kMaxSamplers> Samplers;
         };
 
-        /// \brief Resolves a material under a technique, reusing the last resolution while both are unchanged.
+        /// \brief Resolves a material under into \ref mBinding, keeping the last resolution while both are unchanged.
         ///
         /// \note The cache holds one entry and is dropped by \ref Reset and \ref SetFrame.
         ///
         /// \param Technique The technique whose schema names what to bind.
         /// \param Material  The material to source the variant, block, images and samplers from.
-        /// \return The resolved bindings.
-        ConstRef<Binding> Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
+        void Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
+
+        /// \brief Binds the material \ref Resolve last resolved to a draw.
+        ///
+        /// \param Command The draw to bind the material to, whose textures are still empty.
+        /// \param Schema  The schema of the technique the material was resolved under.
+        void Bind(Ref<ZyGraphic::Command> Command, ConstRef<ZyGraphic::Schema> Schema) const;
 
     private:
 
