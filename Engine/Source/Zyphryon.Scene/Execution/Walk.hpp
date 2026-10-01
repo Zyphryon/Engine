@@ -72,19 +72,26 @@ namespace ZyScene
 
         /// \brief Hands every match to a callback, spread over the workers when the last walk says it pays.
         ///
+        /// \note A cascade is spread one depth at a time, every parent done before the first of its children.
+        ///
         /// \param Owner    The storage the query belongs to.
-        /// \param State    The query, whose fields are declared for the callback and which is not ordered.
+        /// \param State    The query, whose fields are declared for the callback.
         /// \param Callback The callable, safe to call from many threads at once and writing only in place.
         template<typename Callable>
         static void Spread(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
         {
-            ZY_ASSERT(!State.Ordered, "A cascade visits parents first, which a spread walk cannot promise");
             ZY_ASSERT(!Owner.mDeferral.IsSpreading(), "A spread walk cannot start inside another");
 
             State.Spread = false;
 
             if (!HasGlobals(Owner, State))
             {
+                return;
+            }
+
+            if (State.Ordered)
+            {
+                SpreadOrdered(Owner, State, Callback);
                 return;
             }
 
@@ -519,28 +526,31 @@ namespace ZyScene
         struct SpreadWork final
         {
             /// The storage the query belongs to.
-            Ptr<Storage>   Owner;
+            Ptr<Storage>     Owner;
 
             /// The query.
-            Ptr<Selection> State;
+            Ptr<Selection>   State;
 
             /// The callable.
-            Ptr<Callable>  Callback;
+            Ptr<Callable>    Callback;
 
             /// The next share to hand out.
-            Atomic<UInt32> Next;
+            Atomic<UInt32>   Next;
 
             /// The rows of each share.
-            UInt32         Grain;
+            UInt32           Grain;
 
             /// The number of shares.
-            UInt32         Shares;
+            UInt32           Shares;
 
             /// The first row the shares cover.
-            UInt32         First;
+            UInt32           First;
 
             /// The row past the last one they cover.
-            UInt32         End;
+            UInt32           End;
+
+            /// The rows of an ordered walk, sorted parents first, or `nullptr` for the matches laid end to end.
+            ConstPtr<UInt64> Sorted;
 
             /// \brief Constructs the work of a spread walk, cut into shares of as many rows each.
             ///
@@ -550,13 +560,15 @@ namespace ZyScene
             /// \param Begin    The first row.
             /// \param End      The row past the last one.
             /// \param Shares   The number of shares to aim at, never zero.
+            /// \param Sorted   The rows of an ordered walk, or `nullptr` for the matches laid end to end.
             ZY_INLINE SpreadWork(
-                Ref<Storage>   Owner,
-                Ref<Selection> State,
-                Ref<Callable>  Callback,
-                UInt32         Begin,
-                UInt32         End,
-                UInt32         Shares)
+                Ref<Storage>     Owner,
+                Ref<Selection>   State,
+                Ref<Callable>    Callback,
+                UInt32           Begin,
+                UInt32           End,
+                UInt32           Shares,
+                ConstPtr<UInt64> Sorted)
                 : Owner    { AddressOf(Owner) },
                   State    { AddressOf(State) },
                   Callback { AddressOf(Callback) },
@@ -564,7 +576,8 @@ namespace ZyScene
                   Grain    { (End - Begin + Shares - 1) / Shares },
                   Shares   { (End - Begin + Grain - 1) / Grain },
                   First    { Begin },
-                  End      { End }
+                  End      { End },
+                  Sorted   { Sorted }
             {
             }
 
@@ -596,7 +609,7 @@ namespace ZyScene
 
                 while (Take(Begin, Until))
                 {
-                    RunRange(* Owner, * State, Begin, Until, * Callback);
+                    RunStretch(* Owner, * State, Sorted, Begin, Until, * Callback);
                 }
             }
         };
@@ -684,6 +697,36 @@ namespace ZyScene
             }
         }
 
+        /// \brief Hands a stretch of rows to a callback, out of the sorted rows of an ordered walk or the matches.
+        ///
+        /// \param Owner    The storage.
+        /// \param State    The query, whose offsets are laid out when the rows are not sorted.
+        /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
+        /// \param Begin    The first row.
+        /// \param End      The row past the last one.
+        /// \param Callback The callable.
+        template<typename Callable>
+        ZY_INLINE static void RunStretch(
+            Ref<Storage>        Owner,
+            ConstRef<Selection> State,
+            ConstPtr<UInt64>    Sorted,
+            UInt32              Begin,
+            UInt32              End,
+            Ref<Callable>       Callback)
+        {
+            if constexpr (!Plan<Callable>::kBatched)
+            {
+                if (Sorted)
+                {
+                    const ConstSpan Rows(Sorted + Begin, End - Begin);
+
+                    Plan<Callable>::template Apply<Kernel>::RunSorted(Owner, State, Rows, Callback);
+                    return;
+                }
+            }
+            RunRange(Owner, State, Begin, End, Callback);
+        }
+
         /// \brief Finds the match a row of the matches laid end to end falls in.
         ///
         /// \param State The query, whose offsets are laid out.
@@ -694,10 +737,11 @@ namespace ZyScene
         /// \brief Hands a stretch of rows to a callback on this thread, timing it.
         ///
         /// \param Owner    The storage.
-        /// \param State    The query, whose offsets are laid out.
+        /// \param State    The query, whose offsets are laid out when the rows are not sorted.
         /// \param Begin    The first row.
         /// \param End      The row past the last one, which is past the first.
         /// \param Callback The callable.
+        /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         /// \return The seconds one row took.
         template<typename Callable>
         static Real64 Measure(
@@ -705,34 +749,37 @@ namespace ZyScene
             ConstRef<Selection> State,
             UInt32              Begin,
             UInt32              End,
-            Ref<Callable>       Callback)
+            Ref<Callable>       Callback,
+            ConstPtr<UInt64>    Sorted = nullptr)
         {
             const Real64 Start = GetTime();
-            RunRange(Owner, State, Begin, End, Callback);
+            RunStretch(Owner, State, Sorted, Begin, End, Callback);
             return Max(GetTime() - Start, 1e-9) / (End - Begin);
         }
 
         /// \brief Spreads a stretch of rows over the caller and the compute workers, in shares of a few microseconds.
         ///
         /// \param Owner    The storage.
-        /// \param State    The query, whose offsets are laid out and whose cost per row is known.
+        /// \param State    The query, whose cost per row is known and whose offsets are laid out when not sorted.
         /// \param Begin    The first row.
         /// \param End      The row past the last one.
         /// \param Callback The callable, thread-safe and changing only its own entity.
+        /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         /// \return The seconds one row took on the share the caller timed.
         template<typename Callable>
         static Real64 Distribute(
-            Ref<Storage>   Owner,
-            Ref<Selection> State,
-            UInt32         Begin,
-            UInt32         End,
-            Ref<Callable>  Callback)
+            Ref<Storage>     Owner,
+            Ref<Selection>   State,
+            UInt32           Begin,
+            UInt32           End,
+            Ref<Callable>    Callback,
+            ConstPtr<UInt64> Sorted = nullptr)
         {
             Ref<ZyJob::Service> Jobs    = Owner.GetService<ZyJob::Service>();
             const UInt32        Threads = Jobs.GetConcurrency(ZyJob::Lane::Compute) + 1;
             const UInt32        Shares  = GetShares(State, End - Begin, Threads);
 
-            SpreadWork<Callable> Work(Owner, State, Callback, Begin, End, Shares);
+            SpreadWork<Callable> Work(Owner, State, Callback, Begin, End, Shares, Sorted);
 
             const UInt32 Helpers = Min(Min(Threads - 2, Work.Shares - 1), kMaxHelpers);
 
@@ -756,7 +803,7 @@ namespace ZyScene
 
             if (Work.Take(First, Until))
             {
-                Cost = Measure(Owner, State, First, Until, Callback);
+                Cost = Measure(Owner, State, First, Until, Callback, Sorted);
             }
             Work.Drain();
 
@@ -789,10 +836,61 @@ namespace ZyScene
 
             if constexpr (!Plan<Callable>::kBatched)
             {
-                const UInt32            First = Sort(Owner, State);
-                const ConstSpan<UInt64> Rows(State.Gathered.GetData() + First, State.Gathered.GetSize() - First);
+                const UInt32    First = Sort(Owner, State);
+                const ConstSpan Rows(State.Gathered.GetData() + First, State.Gathered.GetSize() - First);
 
                 Plan<Callable>::template Apply<Kernel>::RunSorted(Owner, State, Rows, Callback);
+            }
+        }
+
+        /// \brief Hands every match to a callback parents first, each depth spread over the workers when it pays.
+        ///
+        /// \param Owner    The storage.
+        /// \param State    The query, which is ordered.
+        /// \param Callback The callable, reading only what the depths above it wrote and writing only in place.
+        template<typename Callable>
+        static void SpreadOrdered(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
+        {
+            ZY_ASSERT(!Plan<Callable>::kBatched, "A cascade hands one row at a time, parents before their children");
+
+            if constexpr (!Plan<Callable>::kBatched)
+            {
+                // A walk with no row to visit holds nothing, which is what most idle systems cost.
+                if (State.Count() == 0)
+                {
+                    return;
+                }
+
+                Owner.Enter();
+
+                const UInt32           First = Sort(Owner, State);
+                const ConstPtr<UInt64> Rows  = State.Gathered.GetData() + First;
+
+                // A depth reads only what the depths above it wrote, so each one is a walk of its own, timed alike.
+                for (UInt32 Level = 0, Begin = 0; Level < State.Offsets.GetSize(); ++Level)
+                {
+                    const UInt32 End = State.Offsets[Level];
+
+                    if (End == Begin)
+                    {
+                        continue;
+                    }
+
+                    if (State.Cost * (End - Begin) > kSpreadSeconds)
+                    {
+                        State.Pace   = Distribute(Owner, State, Begin, End, Callback, Rows);
+                        State.Cost   = Min(State.Cost, State.Pace);
+                        State.Spread = true;
+                    }
+                    else
+                    {
+                        const Real64 Row = Measure(Owner, State, Begin, End, Callback, Rows);
+                        State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
+                    }
+                    Begin = End;
+                }
+
+                Owner.Leave();
             }
         }
 

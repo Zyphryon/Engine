@@ -92,7 +92,7 @@ namespace ZyScene
             // Whether the walk spreads never changes, so it is settled here rather than on every run.
             if constexpr (!Blueprint::kBatched)
             {
-                if (mMode == Schedule::Adaptive && !mState->Ordered)
+                if (mMode == Schedule::Adaptive)
                 {
                     return Install(Chore<Function, true> { Enlist(), Forward<Callable>(Callback) });
                 }

@@ -79,7 +79,7 @@ namespace ZyScene
         /// The position of each chunk among the matches plus one, indexed by chunk.
         Sequence<UInt32>           Positions;
 
-        /// The first row of each matched chunk laid end to end for a spread walk, or of each depth for an ordered one.
+        /// The first row of each matched chunk for a spread walk, or the row past each depth for a sorted one.
         Sequence<UInt32>           Offsets;
 
         /// How deep each row an ordered walk gathered stands.
