@@ -22,22 +22,33 @@ namespace ZyRender
 {
     /// \brief Represents a store of same-sized pages spread across texture arrays, lent out one page at a time.
     ///
+    /// \note A page may span several layers, each its own texture array in its own format, all lent as one number.
+    ///
     /// \tparam Capacity The number of pages the album can lend in total.
-    template<UInt Capacity>
+    /// \tparam Layers   The number of texture arrays every page spans.
+    template<UInt Capacity, UInt Layers = 1>
     class Album final
     {
+    public:
+
+        /// \brief The texture arrays one bank is made of, one per layer.
+        using Bank   = Array<ZyGraphic::Object, Layers>;
+
+        /// \brief The Format the layers of every page are stored in, in layer order.
+        using Format = Array<ZyGraphic::TextureFormat, Layers>;
+
     public:
 
         /// \brief Constructs an album that has lent nothing and made no bank yet.
         ///
         /// \param Service The graphic service the banks are made on.
-        /// \param Format  The format every page is stored in.
+        /// \param Format  The format each layer of every page is stored in.
         /// \param Width   The width of one page, in texels.
         /// \param Height  The height of one page, in texels.
-        /// \param Count   The number of pages one bank holds, which is the depth of its texture array.
+        /// \param Count   The number of pages one bank holds, which is the depth of its texture arrays.
         ZY_INLINE Album(
             ConstRetainer<ZyGraphic::Service> Service,
-            ZyGraphic::TextureFormat          Format,
+            ConstRef<Format>                  Format,
             UInt16                            Width,
             UInt16                            Height,
             UInt16                            Count)
@@ -50,12 +61,32 @@ namespace ZyRender
             ZY_ASSERT(Count > 0, "A bank must hold at least one page");
         }
 
+        /// \brief Constructs an album of single-layer pages that has lent nothing and made no bank yet.
+        ///
+        /// \param Service The graphic service the banks are made on.
+        /// \param Format  The format every page is stored in.
+        /// \param Width   The width of one page, in texels.
+        /// \param Height  The height of one page, in texels.
+        /// \param Count   The number of pages one bank holds, which is the depth of its texture array.
+        ZY_INLINE Album(
+            ConstRetainer<ZyGraphic::Service> Service,
+            ZyGraphic::TextureFormat          Format,
+            UInt16                            Width,
+            UInt16                            Height,
+            UInt16                            Count)
+            : Album(Service, { Format }, Width, Height, Count)
+        {
+        }
+
         /// \brief Destroys the album and every bank it made.
         ZY_INLINE ~Album()
         {
-            for (const ZyGraphic::Object Bank : mBanks)
+            for (ConstRef<Bank> Arrays : mBanks)
             {
-                mService->DeleteTexture(Bank);
+                for (const ZyGraphic::Object Texture : Arrays)
+                {
+                    mService->DeleteTexture(Texture);
+                }
             }
         }
 
@@ -73,17 +104,22 @@ namespace ZyRender
 
             if (GetBank(Page) >= mBanks.GetSize())
             {
-                mBanks.Append(mService->CreateTexture(
-                    ZyGraphic::TextureLayout::Texture2DArray,
-                    mFormat,
-                    ZyGraphic::Storage::Stream,
-                    ZyGraphic::Usage::Sample,
-                    mWidth,
-                    mHeight,
-                    mCount,
-                    1,
-                    ZyGraphic::Multisample::X1,
-                    Blob()));
+                Ref<Bank> Arrays = mBanks.Append();
+
+                for (UInt Layer = 0; Layer < Layers; ++Layer)
+                {
+                    Arrays[Layer] = mService->CreateTexture(
+                        ZyGraphic::TextureLayout::Texture2DArray,
+                        mFormat[Layer],
+                        ZyGraphic::Storage::Stream,
+                        ZyGraphic::Usage::Sample,
+                        mWidth,
+                        mHeight,
+                        mCount,
+                        1,
+                        ZyGraphic::Multisample::X1,
+                        Blob());
+                }
             }
             return Page;
         }
@@ -98,49 +134,52 @@ namespace ZyRender
             mPages.Release(Page);
         }
 
-        /// \brief Writes a whole page into its slice of its bank.
+        /// \brief Writes one layer of a whole page into its slice of its bank.
         ///
         /// \param Page  The page to write.
+        /// \param Layer The layer of the page to write.
         /// \param Data  The texels, which the service takes ownership of.
         /// \param Pitch The number of bytes one row of texels spans.
-        ZY_INLINE void Write(UInt16 Page, AnyRef<Blob> Data, UInt32 Pitch)
+        ZY_INLINE void Write(UInt16 Page, UInt32 Layer, AnyRef<Blob> Data, UInt32 Pitch)
         {
             ZY_ASSERT(Page != 0, "Cannot write an invalid page");
+            ZY_ASSERT(Layer < Layers, "A page has no such layer");
 
-            const ZyGraphic::Object Texture = mBanks[GetBank(Page)];
+            const ZyGraphic::Object Texture = mBanks[GetBank(Page)][Layer];
             mService->UpdateTexture(Texture, 0, GetSlice(Page), 0, 0, mWidth, mHeight, Pitch, Move(Data));
         }
 
         /// \brief Gets how many banks the pages are spread across.
         ///
-        /// \return The number of banks.
+        /// \return The number of banks made so far, each holding as many pages as the album was built with.
         ZY_INLINE UInt32 GetBanks() const
         {
             return mBanks.GetSize();
         }
 
-        /// \brief Gets the texture array of a bank.
+        /// \brief Gets the texture array one layer of a bank is stored in.
         ///
-        /// \param Bank The bank.
-        /// \return The array.
-        ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Bank) const
+        /// \param Bank  The bank to read, below \ref GetBanks.
+        /// \param Layer The layer to read, in the order the Format were given.
+        /// \return The array, a slice per page of the bank, in that layer's format.
+        ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Bank, UInt32 Layer = 0) const
         {
-            return mBanks[Bank];
+            return mBanks[Bank][Layer];
         }
 
         /// \brief Gets the bank a page lives in.
         ///
-        /// \param Page The page.
-        /// \return The bank.
+        /// \param Page The page \ref Acquire lent, never zero.
+        /// \return The bank whose arrays hold the page.
         ZY_INLINE UInt16 GetBank(UInt16 Page) const
         {
             return (Page - 1) / mCount;
         }
 
-        /// \brief Gets the slice a page takes of its bank's array.
+        /// \brief Gets the slice a page takes of its bank's arrays.
         ///
-        /// \param Page The page.
-        /// \return The slice.
+        /// \param Page The page \ref Acquire lent, never zero.
+        /// \return The layer of the bank's arrays the page is stored in, the same in every one of them.
         ZY_INLINE UInt16 GetSlice(UInt16 Page) const
         {
             return (Page - 1) % mCount;
@@ -152,11 +191,11 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Retainer<ZyGraphic::Service> mService;
-        ZyGraphic::TextureFormat     mFormat;
+        Format                       mFormat;
         UInt16                       mWidth;
         UInt16                       mHeight;
         UInt16                       mCount;
         Freelist<Capacity, 0>        mPages;
-        Sequence<ZyGraphic::Object>  mBanks;
+        Sequence<Bank>               mBanks;
     };
 }
