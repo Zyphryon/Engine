@@ -255,6 +255,19 @@ inline namespace ZyMath
             return AnyVector2(::Abs(Difference.GetX()), ::Abs(Difference.GetY())).GetMaxComponent();
         }
 
+        /// \brief Calculates the octile distance between this vector and another, where a diagonal step costs √2.
+        ///
+        /// \param Target The vector to calculate the distance to.
+        /// \return The distance walking the shorter axis on the diagonal and what is left of the longer one straight.
+        ZY_INLINE constexpr Real32 GetDistanceOctile(AnyVector2 Target) const
+        {
+            const AnyVector2 Difference = (* this) - Target;
+            const Real32     Across     = static_cast<Real32>(::Abs(Difference.GetX()));
+            const Real32     Along      = static_cast<Real32>(::Abs(Difference.GetY()));
+
+            return ::Max(Across, Along) + (1.41421356f - 1.0f) * ::Min(Across, Along);
+        }
+
         /// \brief Calculates the squared distance between this vector and another vector.
         ///
         /// \param Target The vector to calculate the squared distance to.
@@ -787,6 +800,61 @@ inline namespace ZyMath
             requires(IsReal<Type>)
         {
             return AnyVector2(::Ceil(Vector.mX), ::Ceil(Vector.mY));
+        }
+
+        /// \brief Walks every cell of a grid that a line between the middles of two cells passes through, a step at a time.
+        ///
+        /// \param From  The cell the line starts in.
+        /// \param Into  The cell the line ends in.
+        /// \param Visit The callback handed the cell stepped off and the step taken, returning `false` to stop.
+        /// \return `true` when the walk reached the last cell, `false` when a step stopped it.
+        template<typename Callable>
+        ZY_INLINE static constexpr Bool Walk(AnyVector2 From, AnyVector2 Into, AnyRef<Callable> Visit)
+            requires (IsIntegral<Type>)
+        {
+            const SInt64 SpanX = ::Abs(static_cast<SInt64>(Into.GetX()) - From.GetX());
+            const SInt64 SpanY = ::Abs(static_cast<SInt64>(Into.GetY()) - From.GetY());
+
+            const AnyVector2 Across(::Sign(Into.GetX() - From.GetX()), Type(0));
+            const AnyVector2 Along(Type(0), ::Sign(Into.GetY() - From.GetY()));
+
+            AnyVector2 Where = From;
+
+            for (SInt64 X = 0, Y = 0; X < SpanX || Y < SpanY; )
+            {
+                const SInt64 Behind = (1 + 2 * X) * SpanY - (1 + 2 * Y) * SpanX;
+
+                if (Behind < 0)
+                {
+                    if (!Visit(Where, Across))
+                    {
+                        return false;
+                    }
+                    Where = Where + Across;
+                    ++X;
+                }
+                else if (Behind > 0)
+                {
+                    if (!Visit(Where, Along))
+                    {
+                        return false;
+                    }
+                    Where = Where + Along;
+                    ++Y;
+                }
+                else
+                {
+                    if (!Visit(Where, Across) || !Visit(Where, Along) || !Visit(Where, Across + Along))
+                    {
+                        return false;
+                    }
+                    
+                    Where = Where + Across + Along;
+                    ++X;
+                    ++Y;
+                }
+            }
+            return true;
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.
