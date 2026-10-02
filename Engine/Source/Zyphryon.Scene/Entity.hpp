@@ -438,6 +438,22 @@ namespace ZyScene
             return Notify(Component(IdentifierOf<Type>()));
         }
 
+        /// \brief Checks whether a resource has finished loading, and otherwise records a change of a component once it has.
+        ///
+        /// \param Content The content service the resource is loaded through.
+        /// \param Asset   The resource to wait on, or empty for nothing to wait on.
+        /// \return `true` when the resource has already finished loading, `false` when it is still on its way or absent.
+        template<typename Type, typename Service, typename Handle>
+        ZY_INLINE Bool Await(Ref<Service> Content, ConstRef<Handle> Asset) const
+        {
+            const Entity Actor = (* this);
+
+            return Content.Await(Asset, [Actor]<typename Resource>(Ref<Resource>)
+            {
+                Actor.Notify<Type>();
+            });
+        }
+
         /// \brief Records that a component named at runtime and written in place changed, for readers of its changes.
         ///
         /// \param Type The component.

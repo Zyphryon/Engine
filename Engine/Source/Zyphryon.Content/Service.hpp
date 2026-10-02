@@ -187,6 +187,28 @@ namespace ZyContent
         /// \param Function The callback to invoke.
         void Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function);
 
+        /// \brief Checks whether a resource has finished loading, and otherwise calls back once it has.
+        ///
+        /// \param Asset    The resource to wait on, or empty for nothing to wait on.
+        /// \param Function The callback to invoke once the resource finishes, never when it already has.
+        /// \return `true` when the resource has already finished loading, `false` when it is still on its way or absent.
+        template<typename Handle>
+        ZY_INLINE Bool Await(ConstRef<Handle> Asset, AnyRef<Callback> Function)
+        {
+            if (Asset == nullptr)
+            {
+                return false;
+            }
+
+            if (Asset->HasFinished())
+            {
+                return true;
+            }
+
+            Subscribe(Asset->GetKey(), Move(Function));
+            return false;
+        }
+
         /// \brief Unsubscribes any callback associated with the given URI.
         ///
         /// \param Key The URI to unsubscribe from.
