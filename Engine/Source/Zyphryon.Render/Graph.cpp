@@ -222,6 +222,12 @@ namespace ZyRender
 
             mEncoder.Reset();
 
+            // Whatever the pass reads is handed to every draw it records, under the name its techniques declare.
+            for (ConstRef<Pass::InputAttachment> Input : Stage.GetInputs())
+            {
+                mEncoder.SetInput(Input.Name, GetTexture(Input.Target));
+            }
+
             Stage.Run(mEncoder, * this);
 
             mService->Commit();

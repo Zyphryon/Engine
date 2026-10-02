@@ -72,6 +72,16 @@ namespace ZyRender
             UInt8             Stencil      = 0;
         };
 
+        /// \brief A declared input, a target the pass reads under the name its techniques declare the texture by.
+        struct InputAttachment final
+        {
+            /// The hash of the texture's name, as every technique drawn in the pass declares it.
+            UInt64 Name   = 0;
+
+            /// The slot of the target read.
+            UInt32 Target = kNone;
+        };
+
     public:
 
         /// \brief Constructs a pass that is active and draws into the display surface.
@@ -156,6 +166,22 @@ namespace ZyRender
             return mDepthAttachment;
         }
 
+        /// \brief Declares an input, which every draw of the pass reads wherever it binds no image of its own.
+        ///
+        /// \param Input The input to append.
+        ZY_INLINE void AddInput(ConstRef<InputAttachment> Input)
+        {
+            mInputAttachment.Append(Input);
+        }
+
+        /// \brief Gets the pass's inputs.
+        ///
+        /// \return A read-only reference to the input list.
+        ZY_INLINE ConstSpan<InputAttachment> GetInputs() const
+        {
+            return mInputAttachment;
+        }
+
         /// \brief Executes the pass, recording its draw commands through the encoder.
         ///
         /// \param Encoder The encoder used to build this pass's draw commands.
@@ -171,5 +197,6 @@ namespace ZyRender
         Bool                                                  mActive;
         Sequence<ColorAttachment, ZyGraphic::kMaxAttachments> mColorAttachment;
         DepthAttachment                                       mDepthAttachment;
+        Sequence<InputAttachment>                             mInputAttachment;
     };
 }

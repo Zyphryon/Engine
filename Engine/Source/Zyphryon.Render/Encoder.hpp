@@ -42,7 +42,7 @@ namespace ZyRender
             /// \brief Binds an image to the texture the signature declares under the given name.
             ///
             /// \param Name  The hash of the texture's name.
-            /// \param Image The image to bind, or zero to fall back to the technique's own, or leave it unbound.
+            /// \param Image The image to bind, or zero to fall back to the pass's input or the technique's own.
             /// \return This binder, so the bindings of a draw read as one statement.
             ZY_INLINE Ref<Binder> SetImage(UInt64 Name, ZyGraphic::Object Image)
             {
@@ -52,7 +52,7 @@ namespace ZyRender
                 {
                     if (Textures[Index] == Name)
                     {
-                        mCommand.Textures[Index] = Image ? Image : mTechnique.GetSchema().GetFallback(Index);
+                        mCommand.Textures[Index] = Image ? Image : mEncoder.Fallback(mTechnique.GetSchema(), Index);
                         break;
                     }
                 }
@@ -175,8 +175,14 @@ namespace ZyRender
         /// \param Service The graphic service used to allocate transient commands and uniforms.
         Encoder(Ref<ZyGraphic::Service> Service);
 
-        /// \brief Resets the per-pass scratch, forgetting the material last resolved.
+        /// \brief Resets the per-pass scratch, forgetting the material last resolved and the pass's inputs.
         void Reset();
+
+        /// \brief Hands the pass an input, which every draw reads wherever it binds no image of its own.
+        ///
+        /// \param Name  The hash of the texture's name, as the techniques drawn declare it.
+        /// \param Image The image read under that name.
+        void SetInput(UInt64 Name, ZyGraphic::Object Image);
 
         /// \brief Sets the frame's uniform block bound to every subsequent draw.
         ///
@@ -393,6 +399,16 @@ namespace ZyRender
             Sequence<ZyGraphic::Object, ZyGraphic::Command::kMaxSamplers> Samplers;
         };
 
+        /// \brief Represents an image the pass hands every draw under one name.
+        struct Input final
+        {
+            /// The hash of the texture's name.
+            UInt64            Name  = 0;
+
+            /// The image read under that name.
+            ZyGraphic::Object Image = 0;
+        };
+
         /// \brief Resolves a material under into \ref mBinding, keeping the last resolution while both are unchanged.
         ///
         /// \note The cache holds one entry and is dropped by \ref Reset and \ref SetFrame.
@@ -400,6 +416,13 @@ namespace ZyRender
         /// \param Technique The technique whose schema names what to bind.
         /// \param Material  The material to source the variant, block, images and samplers from.
         void Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
+
+        /// \brief Gets what a texture slot reads when nothing binds it: the pass's input of its name, or its fallback.
+        ///
+        /// \param Schema The schema of the technique drawn.
+        /// \param Index  The texture slot, in the schema's declaration order.
+        /// \return The image to bind, which is zero when neither the pass nor the technique supplies one.
+        ZyGraphic::Object Fallback(ConstRef<ZyGraphic::Schema> Schema, UInt32 Index) const;
 
         /// \brief Binds the material \ref Resolve last resolved to a draw.
         ///
@@ -412,10 +435,11 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<ZyGraphic::Service> mService;
-        ZyGraphic::Stream       mFrame;
-        ZyGraphic::Stream       mPass;
-        ZyGraphic::Scissor      mScissor;
-        Binding                 mBinding;
+        Ref<ZyGraphic::Service>                           mService;
+        ZyGraphic::Stream                                 mFrame;
+        ZyGraphic::Stream                                 mPass;
+        ZyGraphic::Scissor                                mScissor;
+        Binding                                           mBinding;
+        Sequence<Input, ZyGraphic::Command::kMaxTextures> mInputs;
     };
 }

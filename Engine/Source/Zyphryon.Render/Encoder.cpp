@@ -33,10 +33,10 @@ namespace ZyRender
         mCommand.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Pass)]  = Encoder.mPass;
         mCommand.Scissor = Encoder.mScissor;
 
-        // Every texture the signature declares holds its slot, starting at its fallback, or zero where it has none.
+        // Every texture the signature declares holds its slot, starting at the pass's input or its fallback.
         for (UInt32 Index = 0, Limit = Schema.GetTextures().GetSize(); Index < Limit; ++Index)
         {
-            mCommand.Textures.Append(Schema.GetFallback(Index));
+            mCommand.Textures.Append(Encoder.Fallback(Schema, Index));
         }
 
         // Samplers start at the technique's own, which a caller replaces only where it wants to.
@@ -124,6 +124,15 @@ namespace ZyRender
         mPass    = ZyGraphic::Stream();
         mScissor = ZyGraphic::Scissor();
         mBinding = Binding();
+        mInputs.Clear();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Encoder::SetInput(UInt64 Name, ZyGraphic::Object Image)
+    {
+        mInputs.Append(Name, Image);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -231,7 +240,7 @@ namespace ZyRender
         {
             const ZyGraphic::Object Given = (Index < Textures.GetSize() ? Textures[Index] : 0);
 
-            Command.Textures.Append(Given ? Given : Schema.GetFallback(Index));
+            Command.Textures.Append(Given ? Given : Fallback(Schema, Index));
         }
 
         for (ConstRef<ZyGraphic::Schema::Sampler> Field : Schema.GetSamplers())
@@ -379,6 +388,23 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ZyGraphic::Object Encoder::Fallback(ConstRef<ZyGraphic::Schema> Schema, UInt32 Index) const
+    {
+        const UInt64 Name = Schema.GetTextures()[Index];
+
+        for (ConstRef<Input> Given : mInputs)
+        {
+            if (Given.Name == Name && Given.Image)
+            {
+                return Given.Image;
+            }
+        }
+        return Schema.GetFallback(Index);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Encoder::Bind(Ref<ZyGraphic::Command> Command, ConstRef<ZyGraphic::Schema> Schema) const
     {
         Command.Uniforms[ZyEnum::Cast(ZyGraphic::Frequency::Material)] = mBinding.Uniforms;
@@ -389,7 +415,7 @@ namespace ZyRender
         {
             const ZyGraphic::Object Image = mBinding.Textures[Index];
 
-            Command.Textures.Append(Image ? Image : Schema.GetFallback(Index));
+            Command.Textures.Append(Image ? Image : Fallback(Schema, Index));
         }
     }
 }
