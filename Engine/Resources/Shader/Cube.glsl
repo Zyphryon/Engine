@@ -20,11 +20,17 @@
 /// The widest a light's penumbra spreads, in texels.
 #define ZY_CUBE_WIDEST 16.0
 
-/// The taps the blocker search reads.
+/// The 2x2 blocks the blocker search gathers, where the driver can gather.
+#define ZY_CUBE_GATHER 3
+
+/// The taps the blocker search reads one at a time, where it cannot.
 #define ZY_CUBE_SEARCH 8
 
 /// The taps the filter reads.
 #define ZY_CUBE_TAPS   12
+
+/// The taps a fixed spread of comparisons reads.
+#define ZY_CUBE_SPREAD 4
 
 /// \brief Picks the face a direction from the light lands on, by its longest axis.
 int ZyCubeFace(vec3 Reach)
@@ -88,22 +94,33 @@ vec4 ZyCubeClip(vec3 Seen)
     return Seen.z - vec4(Seen.x, -Seen.x, Seen.y, -Seen.y);
 }
 
-/// Returns how much of a light reaches a point past what stands in its way, softer the further the point lies
-/// behind the blocker and the wider the light's source.
+/// \brief Finds where a point lands on the face of a light it is seen from, and the part of the atlas that face holds.
 ///
-/// \param Atlas Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
-float ZyCubeShadow(
-    sampler2D Depths, sampler2DShadow Map, vec4 Atlas,
-    vec3 World, vec3 Normal, vec4 Light, float Source, vec4 Faces0, vec2 Faces1, vec2 Pixel)
+/// \param Atlas    Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
+/// \param Uv       The point on the atlas.
+/// \param Depth    The point's depth on the face, held in front of what the face recorded.
+/// \param Least    The lowest coordinate a read may take and stay within the tile.
+/// \param Most     The highest coordinate a read may take and stay within the tile.
+/// \param Distance The point's distance from the light along the face's own depth, in world units.
+/// \return `false` when the face was given no tile, which leaves the point lit.
+bool ZyCubeLocate(
+    vec4 Atlas, vec3 World, vec3 Normal, vec4 Light, vec4 Faces0, vec2 Faces1,
+    out vec2 Uv, out float Depth, out vec2 Least, out vec2 Most, out float Distance)
 {
     vec3  Reach    = World - Light.xyz;
     int   Face     = ZyCubeFace(Reach);
     float Tiles[6] = float[6](Faces0.x, Faces0.y, Faces0.z, Faces0.w, Faces1.x, Faces1.y);
     float Tile     = Tiles[Face];
 
+    Uv       = vec2(0.0);
+    Depth    = 0.0;
+    Least    = vec2(0.0);
+    Most     = vec2(0.0);
+    Distance = 0.0;
+
     if (Tile < 0.0)
     {
-        return 1.0;
+        return false;
     }
 
     float Per   = Atlas.x;
@@ -115,22 +132,83 @@ float ZyCubeShadow(
     float Grain = 2.0 * ZyCubeView(Reach, Face).z / (Scale * Atlas.w);
     vec3  View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     vec2  Mid   = ZyCubeTile(Tile, Per);
-    vec2  Uv    = (View.xy * Scale / (View.z * Per) + Mid) * 0.5 + 0.5;
-    vec2  Least = Mid * 0.5 + 0.5 - (0.5 / Per - Texel);
-    vec2  Most  = Mid * 0.5 + 0.5 + (0.5 / Per - Texel);
 
+    Uv       = (View.xy * Scale / (View.z * Per) + Mid) * 0.5 + 0.5;
+    Least    = Mid * 0.5 + 0.5 - (0.5 / Per - Texel);
+    Most     = Mid * 0.5 + 0.5 + (0.5 / Per - Texel);
+    Depth    = (Far / (Far - Near) - Far * Near / (Far - Near) / max(View.z - ZY_CUBE_BIAS, Near)) * 0.5 + 0.5;
+    Distance = View.z;
+    return true;
+}
+
+/// \brief Reads a fixed spread of comparisons about a point of a light's face, kept within its tile.
+///
+/// \param Radius The spread, as a share of the atlas.
+/// \param Spin   The angle the taps are carried around by, as its cosine and sine.
+/// \return The share of the taps the point is lit through, from none at zero to all of them at one.
+float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 Most, float Radius, vec2 Spin)
+{
+    float Lit = 0.0;
+
+    for (int Tap = 0; Tap < ZY_CUBE_SPREAD; ++Tap)
+    {
+        Lit += texture(Map, vec3(clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_SPREAD), Spin) * Radius, Least, Most), Depth));
+    }
+    return Lit / float(ZY_CUBE_SPREAD);
+}
+
+/// Returns how much of a light reaches a point past what stands in its way, softer the further the point lies
+/// behind the blocker and the wider the light's source.
+///
+/// \param Atlas Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
+float ZyCubeShadow(
+    sampler2D Depths, sampler2DShadow Map, vec4 Atlas,
+    vec3 World, vec3 Normal, vec4 Light, float Source, vec4 Faces0, vec2 Faces1, vec2 Pixel)
+{
+    vec2  Uv;
+    float Depth;
+    vec2  Least;
+    vec2  Most;
+    float Distance;
+
+    if (!ZyCubeLocate(Atlas, World, Normal, Light, Faces0, Faces1, Uv, Depth, Least, Most, Distance))
+    {
+        return 1.0;
+    }
+
+    float Per   = Atlas.x;
+    float Near  = Atlas.z;
+    float Texel = 1.0 / (Per * Atlas.w);
+    float Far   = Light.w;
     float A     = Far / (Far - Near);
     float B     = -Far * Near / (Far - Near);
-    float Depth = (A + B / max(View.z - ZY_CUBE_BIAS, Near)) * 0.5 + 0.5;
 
     // A world unit at the receiver's depth, as a share of the atlas.
-    float Spread = Scale * 0.5 / (Per * View.z);
+    float Spread = Atlas.y * 0.5 / (Per * Distance);
     float Turn   = ZyGradientNoise(Pixel) * 6.28318530718;
     vec2  Spin   = vec2(cos(Turn), sin(Turn));
     float Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
 
     float Found = 0.0;
     float Count = 0.0;
+
+#ifdef GL_ARB_texture_gather
+
+    const float Taps = float(ZY_CUBE_GATHER * 4);
+
+    for (int Tap = 0; Tap < ZY_CUBE_GATHER; ++Tap)
+    {
+        vec2 At      = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
+        vec4 Stored  = textureGather(Depths, At);
+        vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
+
+        Found += dot(B / (Stored * 2.0 - 1.0 - A), Blocked);
+        Count += dot(Blocked, vec4(1.0));
+    }
+
+#else
+
+    const float Taps = float(ZY_CUBE_SEARCH);
 
     for (int Tap = 0; Tap < ZY_CUBE_SEARCH; ++Tap)
     {
@@ -144,13 +222,21 @@ float ZyCubeShadow(
         }
     }
 
+#endif
+
     if (Count == 0.0)
     {
         return 1.0;
     }
 
+    // A search blocked all round is taken to lie deep in the shadow, which spares the filter where most pixels stand.
+    if (Count == Taps)
+    {
+        return 0.0;
+    }
+
     float Blocker  = max(Found / Count, Near);
-    float Penumbra = clamp(Source * 0.5 * (View.z - Blocker) / Blocker * Spread, Texel, Texel * ZY_CUBE_WIDEST);
+    float Penumbra = clamp(Source * 0.5 * (Distance - Blocker) / Blocker * Spread, Texel, Texel * ZY_CUBE_WIDEST);
 
     float Lit = 0.0;
 
