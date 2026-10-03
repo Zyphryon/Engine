@@ -11,7 +11,10 @@
 
 #include "Embedded://Shader/Noise.glsl"
 
-/// The taps the blocker search reads.
+/// The 2x2 blocks the blocker search gathers, where the driver can gather.
+#define ZY_SHADOW_GATHER 4
+
+/// The taps the blocker search reads one at a time, where it cannot.
 #define ZY_SHADOW_SEARCH 12
 
 /// The taps the filter reads.
@@ -40,6 +43,23 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
     float Found = 0.0;
     float Count = 0.0;
 
+#ifdef GL_ARB_texture_gather
+
+    const float Taps = float(ZY_SHADOW_GATHER * 4);
+
+    for (int Tap = 0; Tap < ZY_SHADOW_GATHER; ++Tap)
+    {
+        vec4 Stored  = textureGather(Depths, Uv + ZySpiral(Tap, float(ZY_SHADOW_GATHER), Turn) * Search);
+        vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
+
+        Found += dot(Stored, Blocked);
+        Count += dot(Blocked, vec4(1.0));
+    }
+
+#else
+
+    const float Taps = float(ZY_SHADOW_SEARCH);
+
     for (int Tap = 0; Tap < ZY_SHADOW_SEARCH; ++Tap)
     {
         float Stored = textureLod(Depths, Uv + ZySpiral(Tap, float(ZY_SHADOW_SEARCH), Turn) * Search, 0.0).r;
@@ -51,13 +71,15 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
         }
     }
 
+#endif
+
     if (Count == 0.0)
     {
         return 1.0;
     }
 
     // The penumbra never reaches past the search, so a search blocked all round leaves the filter nothing to find.
-    if (Count == float(ZY_SHADOW_SEARCH))
+    if (Count == Taps)
     {
         return 0.0;
     }

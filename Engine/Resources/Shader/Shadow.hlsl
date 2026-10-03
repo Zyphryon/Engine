@@ -11,8 +11,8 @@
 
 #include "Embedded://Shader/Noise.hlsl"
 
-/// The taps the blocker search reads.
-#define ZY_SHADOW_SEARCH 12
+/// The 2x2 blocks the blocker search gathers.
+#define ZY_SHADOW_GATHER 4
 
 /// The taps the filter reads.
 #define ZY_SHADOW_TAPS   16
@@ -52,15 +52,13 @@ float ZyShadow(
     float Count = 0.0;
 
     [unroll]
-    for (int Tap = 0; Tap < ZY_SHADOW_SEARCH; ++Tap)
+    for (int Tap = 0; Tap < ZY_SHADOW_GATHER; ++Tap)
     {
-        const float Stored = Depths.SampleLevel(Point, Uv + ZySpiral(Tap, ZY_SHADOW_SEARCH, Turn) * Search, 0).r;
+        const float4 Stored  = Depths.GatherRed(Point, Uv + ZySpiral(Tap, ZY_SHADOW_GATHER, Turn) * Search);
+        const float4 Blocked = float4(Stored < Depth);
 
-        if (Stored < Depth)
-        {
-            Found += Stored;
-            Count += 1.0;
-        }
+        Found += dot(Stored, Blocked);
+        Count += dot(Blocked, 1.0);
     }
 
     if (Count == 0.0)
@@ -69,7 +67,7 @@ float ZyShadow(
     }
 
     // The penumbra never reaches past the search, so a search blocked all round leaves the filter nothing to find.
-    if (Count == float(ZY_SHADOW_SEARCH))
+    if (Count == float(ZY_SHADOW_GATHER * 4))
     {
         return 0.0;
     }

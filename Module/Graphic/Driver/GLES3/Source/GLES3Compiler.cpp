@@ -285,6 +285,7 @@ namespace ZyGraphic
 
         Preamble.Append("#version 330 core\n");
         Preamble.Append("#extension GL_ARB_shading_language_420pack : enable\n");
+        Preamble.Append("#extension GL_ARB_texture_gather : enable\n");
 
 #endif
 
