@@ -102,7 +102,7 @@ inline namespace ZyBase
         /// \return A reference to this retainer.
         ZY_INLINE Ref<Retainer> operator=(ConstRef<Retainer> Other)
         {
-            if (this != AddressOf(Other))
+            if (mInstance != Other.mInstance)
             {
                 Release();
                 mInstance = Other.mInstance;
