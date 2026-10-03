@@ -720,6 +720,17 @@ inline namespace ZyMath
                            ::Min(First.mMaximumX, Second.mMaximumX), ::Min(First.mMaximumY, Second.mMaximumY));
         }
 
+        /// \brief Checks whether two rectangles overlap.
+        ///
+        /// \param First  The first rectangle.
+        /// \param Second The second rectangle.
+        /// \return `true` if the rectangles overlap or touch, `false` otherwise.
+        ZY_INLINE static constexpr Bool Overlaps(AnyRect First, AnyRect Second)
+        {
+            return First.mMinimumX <= Second.mMaximumX && Second.mMinimumX <= First.mMaximumX
+                && First.mMinimumY <= Second.mMaximumY && Second.mMinimumY <= First.mMaximumY;
+        }
+
         /// \brief Gets the union (bounding box) of two rectangles.
         ///
         /// \param First  The first rectangle.
@@ -748,6 +759,22 @@ inline namespace ZyMath
             const Target MaximumY = static_cast<Target>(::Ceil(Source.mMaximumY));
 
             return AnyRect<Target>(MinimumX, MinimumY, MaximumX, MaximumY);
+        }
+
+        /// \brief Divides a coordinate by a cell, rounding toward negative infinity.
+        ///
+        /// \param Value The coordinate.
+        /// \param Cell  The size of one cell.
+        /// \return The cell the coordinate falls in.
+        template<typename Target>
+        ZY_INLINE static constexpr Target Divide(Type Value, Type Cell)
+            requires(IsIntegral<Type>)
+        {
+            const Type Quotient = Value / Cell;
+            return static_cast<Target>(
+                (Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0)))
+                    ? Quotient - Type(1)
+                    : Quotient);
         }
 
         /// \brief Gets the cells of a grid a rectangle reaches into, both rectangles inclusive of their maximum.
@@ -963,22 +990,6 @@ inline namespace ZyMath
             {
                 return kMinimum<Type>;
             }
-        }
-
-        /// \brief Divides a coordinate by a cell, rounding toward negative infinity.
-        ///
-        /// \param Value The coordinate.
-        /// \param Cell  The size of one cell.
-        /// \return The cell the coordinate falls in.
-        template<typename Target>
-        ZY_INLINE static constexpr Target Divide(Type Value, Type Cell)
-            requires(IsIntegral<Type>)
-        {
-            const Type Quotient = Value / Cell;
-            return static_cast<Target>(
-                (Value % Cell != Type(0) && (Value < Type(0)) != (Cell < Type(0)))
-                    ? Quotient - Type(1)
-                    : Quotient);
         }
 
     private:
