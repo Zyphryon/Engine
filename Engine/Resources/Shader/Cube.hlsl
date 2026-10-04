@@ -169,9 +169,10 @@ float ZyCubeSpread(
 /// behind the blocker and the wider the light's source.
 ///
 /// \param Atlas Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
+/// \param Spin  The angle the taps are carried around by, as its cosine and sine.
 float ZyCubeShadow(
     Texture2D Depths, SamplerState Point, Texture2D Map, SamplerComparisonState Compare, float4 Atlas,
-    float3 World, float3 Normal, float4 Light, float Source, float4 Faces0, float2 Faces1, float2 Pixel)
+    float3 World, float3 Normal, float4 Light, float Source, float4 Faces0, float2 Faces1, float2 Spin)
 {
     float2 Uv;
     float  Depth;
@@ -193,8 +194,6 @@ float ZyCubeShadow(
 
     // A world unit at the receiver's depth, as a share of the atlas.
     const float  Spread = Atlas.y * 0.5 / (Per * Distance);
-    const float  Turn   = ZyGradientNoise(Pixel) * 6.28318530718;
-    const float2 Spin   = float2(cos(Turn), sin(Turn));
     const float  Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
 
     float Found = 0.0;

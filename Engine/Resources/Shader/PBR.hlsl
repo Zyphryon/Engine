@@ -83,30 +83,58 @@ float ZyBounces(float Roughness, float NoV)
     return max(dot(float4(1.0, Rough, Rough * Rough, Rough * Rough * Rough), Terms), 0.0);
 }
 
+/// \brief Holds what the BRDF of a point seen from one way shares between every light that reaches it.
+struct ZyLobe
+{
+    float  NoV;         ///< The cosine between the normal and the way to the eye, held above zero.
+    float  Alpha;       ///< The roughness past its floor, squared.
+    float3 Environment; ///< The share the surface reflects of light arriving from every side.
+    float3 Scatter;     ///< The colour the diffuse sends back per unit of light, less what the specular took.
+    float3 Gain;        ///< The factor the single bounce is scaled by to carry the bounces GGX leaves out.
+};
+
+/// Returns what the BRDF of a point seen from one way shares between every light that reaches it.
+ZyLobe ZyPrepareLobe(float3 Normal, float3 Sight, float3 Diffuse, float3 Specular, float Roughness)
+{
+    ZyLobe Result;
+    Result.NoV         = max(dot(Normal, Sight), ZY_EPSILON);
+    Result.Alpha       = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
+    Result.Environment = ZyEnvironment(Specular, Roughness, Result.NoV);
+
+    // What the specular sends towards the eye is light the diffuse never gets to scatter.
+    Result.Scatter     = Diffuse * ZY_INV_PI * (1.0 - Result.Environment);
+
+    // GGX follows one bounce among the microfacets, so what a rough surface loses to the others is put back.
+    Result.Gain        = 1.0 + Specular * ZyBounces(Roughness, Result.NoV);
+    return Result;
+}
+
+/// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
+/// arriving along its normal, the part every light shares already in its lobe.
+float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 Specular, float Spread)
+{
+    const float3 Halfway = normalize(Sight + Incident);
+    const float  NoL     = saturate(dot(Normal, Incident));
+    const float  NoH     = saturate(dot(Normal, Halfway));
+    const float  VoH     = saturate(dot(Sight, Halfway));
+
+    // A light of some size turns the half vector across half its angle, which widens the lobe it lands in, the two
+    // spreads adding in quadrature so the distribution keeps its whole energy.
+    const float  Widened = sqrt(Lobe.Alpha * Lobe.Alpha + ZySquare(Spread * 0.5));
+
+    const float3 Fresnel = ZyFresnel(Specular, VoH);
+    const float3 Single  = Fresnel * (ZyDistribution(NoH, Widened) * ZyVisibility(Lobe.NoV, NoL, Lobe.Alpha));
+
+    return (Lobe.Scatter + Single * Lobe.Gain) * NoL;
+}
+
 /// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
 /// arriving along its normal.
 float3 ZyBrdf(float3 Normal, float3 Sight, float3 Incident, float3 Diffuse, float3 Specular, float Roughness, float Spread)
 {
-    const float3 Halfway = normalize(Sight + Incident);
-    const float  NoL     = saturate(dot(Normal, Incident));
-    const float  NoV     = max(dot(Normal, Sight), ZY_EPSILON);
-    const float  NoH     = saturate(dot(Normal, Halfway));
-    const float  VoH     = saturate(dot(Sight, Halfway));
-    const float  Alpha   = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
+    const ZyLobe Lobe = ZyPrepareLobe(Normal, Sight, Diffuse, Specular, Roughness);
 
-    // A light of some size turns the half vector across half its angle, which widens the lobe it lands in, the two
-    // spreads adding in quadrature so the distribution keeps its whole energy.
-    const float  Widened = sqrt(Alpha * Alpha + ZySquare(Spread * 0.5));
-
-    // GGX follows one bounce among the microfacets, so what a rough surface loses to the others is put back.
-    const float3 Fresnel   = ZyFresnel(Specular, VoH);
-    const float3 Single    = Fresnel * (ZyDistribution(NoH, Widened) * ZyVisibility(NoV, NoL, Alpha));
-    const float3 Reflected = Single * (1.0 + Specular * ZyBounces(Roughness, NoV));
-
-    // What the specular sends towards the eye is light the diffuse never gets to scatter.
-    const float3 Scattered = Diffuse * ZY_INV_PI * (1.0 - ZyEnvironment(Specular, Roughness, NoV));
-
-    return (Scattered + Reflected) * NoL;
+    return ZyBrdf(Lobe, Normal, Sight, Incident, Specular, Spread);
 }
 
 /// Returns how much of the light from every side an occluded surface still reflects, after Lagarde, which the

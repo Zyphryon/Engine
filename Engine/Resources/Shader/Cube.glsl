@@ -152,7 +152,9 @@ float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 M
 
     for (int Tap = 0; Tap < ZY_CUBE_SPREAD; ++Tap)
     {
-        Lit += texture(Map, vec3(clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_SPREAD), Spin) * Radius, Least, Most), Depth));
+        vec2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_SPREAD), Spin) * Radius, Least, Most);
+
+        Lit += textureLod(Map, vec3(At, Depth), 0.0);
     }
     return Lit / float(ZY_CUBE_SPREAD);
 }
@@ -161,9 +163,10 @@ float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 M
 /// behind the blocker and the wider the light's source.
 ///
 /// \param Atlas Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
+/// \param Spin  The angle the taps are carried around by, as its cosine and sine.
 float ZyCubeShadow(
     sampler2D Depths, sampler2DShadow Map, vec4 Atlas,
-    vec3 World, vec3 Normal, vec4 Light, float Source, vec4 Faces0, vec2 Faces1, vec2 Pixel)
+    vec3 World, vec3 Normal, vec4 Light, float Source, vec4 Faces0, vec2 Faces1, vec2 Spin)
 {
     vec2  Uv;
     float Depth;
@@ -185,8 +188,6 @@ float ZyCubeShadow(
 
     // A world unit at the receiver's depth, as a share of the atlas.
     float Spread = Atlas.y * 0.5 / (Per * Distance);
-    float Turn   = ZyGradientNoise(Pixel) * 6.28318530718;
-    vec2  Spin   = vec2(cos(Turn), sin(Turn));
     float Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
 
     float Found = 0.0;
@@ -244,7 +245,7 @@ float ZyCubeShadow(
     {
         vec2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_TAPS), Spin) * Penumbra, Least, Most);
 
-        Lit += texture(Map, vec3(At, Depth));
+        Lit += textureLod(Map, vec3(At, Depth), 0.0);
     }
     return Lit / float(ZY_CUBE_TAPS);
 }

@@ -101,6 +101,22 @@ float ZyValueNoise(vec2 Position)
     return mix(Lower, Upper, Weight.y);
 }
 
+/// \brief Reads a field a tile of lattice values scatters every whole point of.
+///
+/// \param Lattice  The tile holding one texel per whole point, filtered linearly and wrapped around every edge.
+/// \param Position The point to read the field at, in whole points of the lattice.
+/// \param Texel    The share of the tile one texel spans, one over the texels along each side.
+///
+/// \return The value the field carries there, over zero through one.
+float ZyValueNoise(sampler2D Lattice, vec2 Position, float Texel)
+{
+    vec2 Cell   = floor(Position);
+    vec2 Offset = Position - Cell;
+    vec2 Weight = Offset * Offset * (3.0 - 2.0 * Offset);
+
+    return textureLod(Lattice, (Cell + Weight + 0.5) * Texel, 0.0).r;
+}
+
 /// \brief Reads the interleaved gradient field, which spreads its values evenly over any small neighbourhood.
 ///
 /// \param Position The pixel to read the field at.

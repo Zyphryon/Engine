@@ -83,30 +83,58 @@ float ZyBounces(float Roughness, float NoV)
     return max(dot(vec4(1.0, Rough, Rough * Rough, Rough * Rough * Rough), Terms), 0.0);
 }
 
+/// \brief Holds what the BRDF of a point seen from one way shares between every light that reaches it.
+struct ZyLobe
+{
+    float NoV;         ///< The cosine between the normal and the way to the eye, held above zero.
+    float Alpha;       ///< The roughness past its floor, squared.
+    vec3  Environment; ///< The share the surface reflects of light arriving from every side.
+    vec3  Scatter;     ///< The colour the diffuse sends back per unit of light, less what the specular took.
+    vec3  Gain;        ///< The factor the single bounce is scaled by to carry the bounces GGX leaves out.
+};
+
+/// Returns what the BRDF of a point seen from one way shares between every light that reaches it.
+ZyLobe ZyPrepareLobe(vec3 Normal, vec3 Sight, vec3 Diffuse, vec3 Specular, float Roughness)
+{
+    ZyLobe Result;
+    Result.NoV         = max(dot(Normal, Sight), ZY_EPSILON);
+    Result.Alpha       = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
+    Result.Environment = ZyEnvironment(Specular, Roughness, Result.NoV);
+
+    // What the specular sends towards the eye is light the diffuse never gets to scatter.
+    Result.Scatter     = Diffuse * ZY_INV_PI * (1.0 - Result.Environment);
+
+    // GGX follows one bounce among the microfacets, so what a rough surface loses to the others is put back.
+    Result.Gain        = 1.0 + Specular * ZyBounces(Roughness, Result.NoV);
+    return Result;
+}
+
+/// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
+/// arriving along its normal, the part every light shares already in its lobe.
+vec3 ZyBrdf(ZyLobe Lobe, vec3 Normal, vec3 Sight, vec3 Incident, vec3 Specular, float Spread)
+{
+    vec3  Halfway = normalize(Sight + Incident);
+    float NoL     = clamp(dot(Normal, Incident), 0.0, 1.0);
+    float NoH     = clamp(dot(Normal, Halfway), 0.0, 1.0);
+    float VoH     = clamp(dot(Sight, Halfway), 0.0, 1.0);
+
+    // A light of some size turns the half vector across half its angle, which widens the lobe it lands in, the two
+    // spreads adding in quadrature so the distribution keeps its whole energy.
+    float Widened = sqrt(Lobe.Alpha * Lobe.Alpha + ZySquare(Spread * 0.5));
+
+    vec3 Fresnel = ZyFresnel(Specular, VoH);
+    vec3 Single  = Fresnel * (ZyDistribution(NoH, Widened) * ZyVisibility(Lobe.NoV, NoL, Lobe.Alpha));
+
+    return (Lobe.Scatter + Single * Lobe.Gain) * NoL;
+}
+
 /// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
 /// arriving along its normal.
 vec3 ZyBrdf(vec3 Normal, vec3 Sight, vec3 Incident, vec3 Diffuse, vec3 Specular, float Roughness, float Spread)
 {
-    vec3  Halfway = normalize(Sight + Incident);
-    float NoL     = clamp(dot(Normal, Incident), 0.0, 1.0);
-    float NoV     = max(dot(Normal, Sight), ZY_EPSILON);
-    float NoH     = clamp(dot(Normal, Halfway), 0.0, 1.0);
-    float VoH     = clamp(dot(Sight, Halfway), 0.0, 1.0);
-    float Alpha   = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
+    ZyLobe Lobe = ZyPrepareLobe(Normal, Sight, Diffuse, Specular, Roughness);
 
-    // A light of some size turns the half vector across half its angle, which widens the lobe it lands in, the two
-    // spreads adding in quadrature so the distribution keeps its whole energy.
-    float Widened = sqrt(Alpha * Alpha + ZySquare(Spread * 0.5));
-
-    // GGX follows one bounce among the microfacets, so what a rough surface loses to the others is put back.
-    vec3 Fresnel   = ZyFresnel(Specular, VoH);
-    vec3 Single    = Fresnel * (ZyDistribution(NoH, Widened) * ZyVisibility(NoV, NoL, Alpha));
-    vec3 Reflected = Single * (1.0 + Specular * ZyBounces(Roughness, NoV));
-
-    // What the specular sends towards the eye is light the diffuse never gets to scatter.
-    vec3 Scattered = Diffuse * ZY_INV_PI * (1.0 - ZyEnvironment(Specular, Roughness, NoV));
-
-    return (Scattered + Reflected) * NoL;
+    return ZyBrdf(Lobe, Normal, Sight, Incident, Specular, Spread);
 }
 
 /// Returns how much of the light from every side an occluded surface still reflects, after Lagarde, which the

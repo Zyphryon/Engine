@@ -90,7 +90,7 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
 
     for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
     {
-        Lit += texture(Map, vec3(Uv + ZySpiral(Tap, float(ZY_SHADOW_TAPS), Turn) * Penumbra, Depth));
+        Lit += textureLod(Map, vec3(Uv + ZySpiral(Tap, float(ZY_SHADOW_TAPS), Turn) * Penumbra, Depth), 0.0);
     }
     return Lit / float(ZY_SHADOW_TAPS);
 }
