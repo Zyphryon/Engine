@@ -118,7 +118,8 @@ bool ZyCubeLocate(
     float Texel = 1.0 / (Per * Atlas.w);
     float Far   = Light.w;
 
-    float Grain = 2.0 * ZyCubeView(Reach, Face).z / (Scale * Atlas.w);
+    vec3  Size  = abs(Reach);
+    float Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
     vec3  View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     vec2  Mid   = ZyCubeTile(Tile, Per);
 

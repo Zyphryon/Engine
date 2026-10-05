@@ -37,6 +37,48 @@ bool ZyRaymarchClip(vec3 Start, vec3 Inverse, vec3 Least, vec3 Most, float Reach
     return Leave > Enter;
 }
 
+/// Clips a ray to an ellipsoid, giving where it enters and leaves; false if it misses before Reach.
+bool ZyRaymarchEllipsoid(vec3 Start, vec3 Sight, vec3 Middle, vec3 Radii, float Reach, out float Enter, out float Leave)
+{
+    vec3  Origin = (Start - Middle) / Radii;
+    vec3  Way    = Sight / Radii;
+    float Square = dot(Way, Way);
+    float Along  = dot(Origin, Way);
+    float Spread = Along * Along - Square * (dot(Origin, Origin) - 1.0);
+    float Root   = sqrt(max(Spread, 0.0));
+
+    Enter = max((-Along - Root) / Square, 0.0);
+    Leave = min((-Along + Root) / Square, Reach);
+
+    return Spread > 0.0 && Leave > Enter;
+}
+
+/// Clips a ray to an upright elliptic cylinder of any height, giving where it enters and leaves.
+bool ZyRaymarchCylinder(vec3 Start, vec3 Sight, vec2 Middle, vec2 Radii, float Reach, out float Enter, out float Leave)
+{
+    vec2  Origin = (Start.xz - Middle) / Radii;
+    vec2  Way    = Sight.xz / Radii;
+    float Square = dot(Way, Way);
+    float Along  = dot(Origin, Way);
+    float Inside = dot(Origin, Origin) - 1.0;
+
+    // A ray running up the axis is inside for its whole length or never.
+    if (Square < 1e-8)
+    {
+        Enter = 0.0;
+        Leave = Reach;
+        return Inside < 0.0;
+    }
+
+    float Spread = Along * Along - Square * Inside;
+    float Root   = sqrt(max(Spread, 0.0));
+
+    Enter = max((-Along - Root) / Square, 0.0);
+    Leave = min((-Along + Root) / Square, Reach);
+
+    return Spread > 0.0 && Leave > Enter;
+}
+
 /// Billow noise from a stack of lattice slices, eased across a slice and between slices.
 float ZyRaymarchLattice(sampler2DArray Lattice, vec2 Plane, float Height, float Texel, float Slices)
 {
@@ -76,6 +118,10 @@ vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Full
     vec2  Blend  = At - Corner;
     ivec2 Last   = Half - 1;
 
+#ifdef GL_ARB_texture_gather
+    vec4 Gaps = abs(textureGather(Reaches, (Corner + 1.0) / vec2(Half)).wzxy - Reach);
+#endif
+
     vec4  Sum     = vec4(0.0);
     float Total   = 0.0;
     float Nearest = 1e30;
@@ -86,7 +132,11 @@ vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Full
         ivec2 Offset = ivec2(Index & 1, Index >> 1);
         ivec2 Tap    = clamp(ivec2(Corner) + Offset, ivec2(0), Last);
         vec4  Light  = texelFetch(Medium, Tap, 0);
+#ifdef GL_ARB_texture_gather
+        float Gap    = Gaps[Index];
+#else
         float Gap    = abs(texelFetch(Reaches, Tap, 0).r - Reach);
+#endif
         vec2  Share  = mix(1.0 - Blend, Blend, greaterThan(Offset, ivec2(0)));
         float Weight = Share.x * Share.y * clamp(1.0 - Gap * Reject, 0.0, 1.0);
 

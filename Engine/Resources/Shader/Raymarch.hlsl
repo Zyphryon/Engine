@@ -37,6 +37,48 @@ bool ZyRaymarchClip(float3 Start, float3 Inverse, float3 Least, float3 Most, flo
     return Leave > Enter;
 }
 
+/// Clips a ray to an ellipsoid, giving where it enters and leaves; false if it misses before Reach.
+bool ZyRaymarchEllipsoid(float3 Start, float3 Sight, float3 Middle, float3 Radii, float Reach, out float Enter, out float Leave)
+{
+    const float3 Origin = (Start - Middle) / Radii;
+    const float3 Way    = Sight / Radii;
+    const float  Square = dot(Way, Way);
+    const float  Along  = dot(Origin, Way);
+    const float  Spread = Along * Along - Square * (dot(Origin, Origin) - 1.0);
+    const float  Root   = sqrt(max(Spread, 0.0));
+
+    Enter = max((-Along - Root) / Square, 0.0);
+    Leave = min((-Along + Root) / Square, Reach);
+
+    return Spread > 0.0 && Leave > Enter;
+}
+
+/// Clips a ray to an upright elliptic cylinder of any height, giving where it enters and leaves.
+bool ZyRaymarchCylinder(float3 Start, float3 Sight, float2 Middle, float2 Radii, float Reach, out float Enter, out float Leave)
+{
+    const float2 Origin = (Start.xz - Middle) / Radii;
+    const float2 Way    = Sight.xz / Radii;
+    const float  Square = dot(Way, Way);
+    const float  Along  = dot(Origin, Way);
+    const float  Inside = dot(Origin, Origin) - 1.0;
+
+    // A ray running up the axis is inside for its whole length or never.
+    if (Square < 1e-8)
+    {
+        Enter = 0.0;
+        Leave = Reach;
+        return Inside < 0.0;
+    }
+
+    const float Spread = Along * Along - Square * Inside;
+    const float Root   = sqrt(max(Spread, 0.0));
+
+    Enter = max((-Along - Root) / Square, 0.0);
+    Leave = min((-Along + Root) / Square, Reach);
+
+    return Spread > 0.0 && Leave > Enter;
+}
+
 /// Billow noise from a stack of lattice slices, eased across a slice and between slices.
 float ZyRaymarchLattice(
     Texture2DArray<float> Lattice, SamplerState Wrap, float2 Plane, float Height, float Texel, float Slices)
@@ -68,8 +110,9 @@ float ZyRaymarchMeasure(float2 Pixel, float4 Reaches)
                : min(min(Reaches.x, Reaches.y), min(Reaches.z, Reaches.w));
 }
 
-/// Depth-aware upsample of a half-size medium onto a full-size pixel.
-float4 ZyRaymarchSettle(Texture2D Medium, Texture2D<float> Reaches, float2 Pixel, float2 Full, float Reach, float Reject)
+/// Depth-aware upsample of a half-size medium onto a full-size pixel; Clamp is a clamping sampler for Reaches.
+float4 ZyRaymarchSettle(
+    Texture2D Medium, Texture2D<float> Reaches, SamplerState Clamp, float2 Pixel, float2 Full, float Reach, float Reject)
 {
     uint Across;
     uint Down;
@@ -79,6 +122,10 @@ float4 ZyRaymarchSettle(Texture2D Medium, Texture2D<float> Reaches, float2 Pixel
     const float2 Corner = floor(At);
     const float2 Blend  = At - Corner;
     const int2   Last   = int2(Across, Down) - 1;
+
+#if ZY_TIER >= 3
+    const float4 Gaps = abs(Reaches.GatherRed(Clamp, (Corner + 1.0) / float2(Across, Down)).wzxy - Reach);
+#endif
 
     float4 Sum     = 0.0;
     float  Total   = 0.0;
@@ -91,7 +138,11 @@ float4 ZyRaymarchSettle(Texture2D Medium, Texture2D<float> Reaches, float2 Pixel
         const int2   Offset = int2(Index & 1, Index >> 1);
         const int3   Tap    = int3(clamp(int2(Corner) + Offset, 0, Last), 0);
         const float4 Light  = Medium.Load(Tap);
+#if ZY_TIER >= 3
+        const float  Gap    = Gaps[Index];
+#else
         const float  Gap    = abs(Reaches.Load(Tap) - Reach);
+#endif
         const float2 Share  = (Offset != 0) ? Blend : 1.0 - Blend;
         const float  Weight = Share.x * Share.y * saturate(1.0 - Gap * Reject);
 

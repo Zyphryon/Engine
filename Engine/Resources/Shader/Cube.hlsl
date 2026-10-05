@@ -124,7 +124,8 @@ bool ZyCubeLocate(
     const float Texel = 1.0 / (Per * Atlas.w);
     const float Far   = Light.w;
 
-    const float  Grain = 2.0 * ZyCubeView(Reach, Face).z / (Scale * Atlas.w);
+    const float3 Size  = abs(Reach);
+    const float  Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
     const float3 View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     const float2 Mid   = ZyCubeTile(Tile, Per);
     const float2 Clip  = View.xy * Scale / (View.z * Per) + Mid;
