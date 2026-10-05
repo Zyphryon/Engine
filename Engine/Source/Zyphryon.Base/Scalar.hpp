@@ -113,6 +113,45 @@ inline namespace ZyBase
         return std::fmod(Dividend, Divisor);
     }
 
+    /// \brief Brings an integer into the range from zero up to a size, counting down from the top for a negative one.
+    ///
+    /// \param Value The integer to bring into range, of any sign.
+    /// \param Size  The length of the range, above zero.
+    /// \return The value in `[0, Size)`, the same remainder `Value` leaves by `Size` on the positive side.
+    template<IsIntegral Type>
+    constexpr Type Wrap(Type Value, Type Size)
+    {
+        ZY_ASSERT(Size > Type(0), "Size must be above zero");
+
+        const Type Rest = Value % Size;
+
+        if constexpr (IsSigned<Type>)
+        {
+            return (Rest < Type(0) ? Rest + Size : Rest);
+        }
+        return Rest;
+    }
+
+    /// \brief Brings a real number into the range from zero up to a size, counting down from the top for a negative one.
+    ///
+    /// \param Value The number to bring into range, of any sign.
+    /// \param Size  The length of the range, above zero.
+    /// \return The value in `[0, Size)`, the same remainder `Value` leaves by `Size` on the positive side.
+    template<IsReal Type>
+    ZY_INLINE Type Wrap(Type Value, Type Size)
+    {
+        ZY_ASSERT(Size > Type(0), "Size must be above zero");
+
+        const Type Rest = std::fmod(Value, Size);
+
+        if (Rest < Type(0))
+        {
+            const Type Raised = Rest + Size;
+            return (Raised < Size ? Raised : Type(0));
+        }
+        return Rest;
+    }
+
     /// \brief Computes the power of a base raised to an exponent for real numbers.
     ///
     /// \param Base     The base value.
