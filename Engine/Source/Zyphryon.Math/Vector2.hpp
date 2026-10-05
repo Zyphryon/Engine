@@ -242,7 +242,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Type GetDistanceManhattan(AnyVector2 Target) const
         {
             const AnyVector2 Difference = (* this) - Target;
-            return Abs(Difference.GetX()) + Abs(Difference.GetY());
+            return ::Abs(Difference.GetX()) + ::Abs(Difference.GetY());
         }
 
         /// \brief Calculates the Chebyshev distance between this vector and another vector.
@@ -769,6 +769,15 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyVector2 Max(AnyVector2 P0, AnyVector2 P1)
         {
             return AnyVector2(::Max(P0.mX, P1.mX), ::Max(P0.mY, P1.mY));
+        }
+
+        /// \brief Gets the component-wise absolute value of a vector.
+        ///
+        /// \param Vector The vector to take the absolute value of.
+        /// \return A vector with the absolute value of each component.
+        ZY_INLINE static constexpr AnyVector2 Abs(AnyVector2 Vector)
+        {
+            return AnyVector2(::Abs(Vector.mX), ::Abs(Vector.mY));
         }
 
         /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
