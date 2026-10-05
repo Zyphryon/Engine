@@ -78,6 +78,7 @@ namespace ZyScene
         Rows.Clear();
         State.Depths.Clear();
         State.Snapshot.Clear();
+        State.Sizes.Clear();
         Starts.Clear();
 
         // Siblings sit side by side, so a run of them climbs once for its depth.
@@ -87,6 +88,8 @@ namespace ZyScene
         for (UInt32 Match = 0; Match < State.Chunks.GetSize(); ++Match)
         {
             ConstRef<Chunk> Target = * State.Chunks[Match];
+
+            State.Sizes.Append(Target.GetSize());
 
             for (UInt32 Row = 0; Row < Target.GetSize(); ++Row)
             {
@@ -137,16 +140,29 @@ namespace ZyScene
 
     Bool Walk::IsSorted(Ref<Storage> Owner, ConstRef<Selection> State)
     {
-        if (State.Links != Owner.mDirectory.GetLinks() || State.Snapshot.GetSize() != State.Count())
+        if (State.Links != Owner.mDirectory.GetLinks())
         {
             return false;
         }
-
+        if (State.Snapshot.GetSize() != State.Count() || State.Sizes.GetSize() != State.Chunks.GetSize())
+        {
+            return false;
+        }
+        
         // Every row of every match against the entity it held then, a page at a time.
         ConstPtr<Handle> Expected = State.Snapshot.GetData();
 
-        for (const Ptr<Chunk> Target : State.Chunks)
+        for (UInt32 Match = 0; Match < State.Chunks.GetSize(); ++Match)
         {
+            const Ptr<Chunk> Target = State.Chunks[Match];
+
+            // An entity moved from the head of one match onto the tail of the one before it leaves the snapshot as it
+            // was, but not where its gathered row points, so each match must still hold as many rows as it did.
+            if (Target->GetSize() != State.Sizes[Match])
+            {
+                return false;
+            }
+
             for (UInt32 Row = 0; Row < Target->GetSize();)
             {
                 const UInt32 Run = Min(Target->GetRows() - Target->GetPlace(Row), Target->GetSize() - Row);

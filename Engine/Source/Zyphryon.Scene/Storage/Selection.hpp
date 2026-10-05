@@ -91,6 +91,9 @@ namespace ZyScene
         /// The entity in every row of every match when the rows gathered were sorted, which spares finding them again.
         Sequence<Handle>           Snapshot;
 
+        /// The rows every match held when the rows gathered were sorted.
+        Sequence<UInt32>           Sizes;
+
         /// The list of fields the walks were declared for, so a callback asking for others declares them again.
         ConstPtr<void>             Declared;
 
