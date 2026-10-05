@@ -23,8 +23,9 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    VFXLoader::VFXLoader(ShaderLanguage Language)
-        : mLanguage { ZyEnum::GetName(Language) }
+    VFXLoader::VFXLoader(ShaderLanguage Language, Tier Tier)
+        : mLanguage { ZyEnum::GetName(Language) },
+          mTier     { Tier }
     {
     }
 
@@ -160,6 +161,10 @@ namespace ZyGraphic
                 }
             }
         }
+
+        // Every program is told the tier the device reaches, numbered from one, which the shared shaders branch on.
+        constexpr Text kTiers[] = { "1", "2", "3", "4", "5" };
+        Description.Base.Macros.Append(Text("ZY_TIER"), kTiers[ZyEnum::Cast(mTier)]);
 
         // Parse 'Program' section
         if (const JsonObject JsonProgram = JsonRoot.GetObject("Program"); JsonProgram.IsValid())

@@ -630,6 +630,6 @@ namespace ZyGraphic
         Content->AddLoader(MTLLoader::kTypes, Retainer<MTLLoader>::Create());
         Content->AddLoader(SHDLoader::kTypes, Retainer<SHDLoader>::Create());
         Content->AddLoader(TEXLoader::kTypes, Retainer<TEXLoader>::Create());
-        Content->AddLoader(VFXLoader::kTypes, Retainer<VFXLoader>::Create(mDescription.Language));
+        Content->AddLoader(VFXLoader::kTypes, Retainer<VFXLoader>::Create(mDescription.Language, mDescription.Tier));
     }
 }

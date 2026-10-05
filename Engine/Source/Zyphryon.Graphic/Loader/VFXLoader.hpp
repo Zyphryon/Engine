@@ -31,10 +31,11 @@ namespace ZyGraphic
 
     public:
 
-        /// \brief Constructs a VFX loader for the specified shader language.
+        /// \brief Constructs a VFX loader for the specified shader language and tier.
         ///
         /// \param Language The shader language used when compiling technique assets.
-        VFXLoader(ShaderLanguage Language);
+        /// \param Tier     The tier the device reaches, which every technique is compiled for as `ZY_TIER`.
+        VFXLoader(ShaderLanguage Language, Tier Tier);
 
         /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
         Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
@@ -75,5 +76,6 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Text mLanguage;
+        Tier mTier;
     };
 }
