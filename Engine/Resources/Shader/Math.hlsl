@@ -9,79 +9,54 @@
 #ifndef ZY_MATH_INCLUDED
 #define ZY_MATH_INCLUDED
 
-/// The half turn, in radians.
+/// The engine tier the program is built for, counted from one; the technique loader sets it.
+#ifndef ZY_TIER
+#error "ZY_TIER must be named by the technique loader"
+#endif
+
+/// Pi.
 #define ZY_PI            3.14159265359
 
-/// The full turn, in radians.
+/// Two pi.
 #define ZY_TWO_PI        6.28318530718
 
-/// The quarter turn, in radians.
+/// Half pi.
 #define ZY_HALF_PI       1.57079632679
 
-/// The reciprocal of the half turn, for trading a divide against a multiply.
+/// One over pi.
 #define ZY_INV_PI        0.31830988618
 
-/// The reciprocal of the full turn, for trading a divide against a multiply.
+/// One over two pi.
 #define ZY_INV_TWO_PI    0.15915494309
 
-/// Small enough to stand in for zero, large enough to keep a divide from running away.
+/// A tiny value that stands in for zero and keeps divides safe.
 #define ZY_EPSILON       0.0001
 
-/// \brief Holds a value to the closed range zero through one.
-///
-/// \param Value The value to hold.
-///
-/// \return The value, brought inside the range.
+/// Clamps a value to 0..1.
 float ZySaturate(float Value)
 {
     return saturate(Value);
 }
 
-/// \brief Multiplies a value by itself.
-///
-/// \param Value The value to multiply.
-///
-/// \return The value squared.
+/// Squares a value.
 float ZySquare(float Value)
 {
     return Value * Value;
 }
 
-/// \brief Picks the smallest of three values.
-///
-/// \param First  The first value to weigh.
-/// \param Second The second value to weigh.
-/// \param Third  The third value to weigh.
-///
-/// \return The smallest of the three.
+/// The smallest of three values.
 float ZyMin3(float First, float Second, float Third)
 {
     return min(First, min(Second, Third));
 }
 
-/// \brief Picks the largest of three values.
-///
-/// \param First  The first value to weigh.
-/// \param Second The second value to weigh.
-/// \param Third  The third value to weigh.
-///
-/// \return The largest of the three.
+/// The largest of three values.
 float ZyMax3(float First, float Second, float Third)
 {
     return max(First, max(Second, Third));
 }
 
-/// \brief Carries a value out of one range and into another, keeping its place between the ends.
-///
-/// \note Either range may descend, but a source range narrower than \ref ZY_EPSILON is widened to it.
-///
-/// \param Value   The value to carry.
-/// \param FromMin The end of the range the value starts at.
-/// \param FromMax The end of the range the value stops at.
-/// \param ToMin   The end of the range the value is carried to.
-/// \param ToMax   The end of the range the value is carried against.
-///
-/// \return The value, holding the same place in the range it was carried to.
+/// Remaps a value from one range to another; either range may run backwards.
 float ZyRemap(float Value, float FromMin, float FromMax, float ToMin, float ToMax)
 {
     const float Range = FromMax - FromMin;
@@ -89,32 +64,19 @@ float ZyRemap(float Value, float FromMin, float FromMax, float ToMin, float ToMa
     return ToMin + (Value - FromMin) * (ToMax - ToMin) / (abs(Range) > ZY_EPSILON ? Range : ZY_EPSILON);
 }
 
-/// \brief Folds an angle back into the half turn either side of zero.
-///
-/// \param Radians The angle to fold.
-///
-/// \return The angle, inside the range negative through positive half turn.
+/// Wraps an angle into -pi..pi.
 float ZyWrapAngle(float Radians)
 {
     return Radians - ZY_TWO_PI * round(Radians * ZY_INV_TWO_PI);
 }
 
-/// \brief Turns a vector by an angle carried as its cosine and sine, so many turns share the one pair.
-///
-/// \param Vector The vector to turn.
-/// \param Turn   The angle to turn by, as its cosine and sine.
-///
-/// \return The vector, turned.
+/// Rotates a 2D vector by an angle given as its cosine and sine.
 float2 ZyRotate(float2 Vector, float2 Turn)
 {
     return float2(Vector.x * Turn.x - Vector.y * Turn.y, Vector.x * Turn.y + Vector.y * Turn.x);
 }
 
-/// \brief Normalizes a vector, giving back zero rather than dividing by a length it does not have.
-///
-/// \param Vector The vector to normalize.
-///
-/// \return The vector at unit length, or zero when it is too short to carry a direction.
+/// Normalizes a vector, or returns zero when it is too short to have a direction.
 float3 ZySafeNormalize(float3 Vector)
 {
     const float Length = dot(Vector, Vector);

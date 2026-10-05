@@ -9,11 +9,7 @@
 #ifndef ZY_VERTEX_INCLUDED
 #define ZY_VERTEX_INCLUDED
 
-/// \brief Places one corner of a unit rectangle, drawn as a strip of four.
-///
-/// \param VertexID The corner to place, as `SV_VertexID` counts them.
-///
-/// \return The corner, over zero through one on both axes.
+/// A corner of the 0..1 rectangle, drawn as a 4-vertex strip.
 float2 ZyEmitRect(uint VertexID)
 {
     const float2 kCorners[4] = {
@@ -26,21 +22,13 @@ float2 ZyEmitRect(uint VertexID)
     return kCorners[VertexID];
 }
 
-/// \brief Places one corner of a rectangle centred on the origin, drawn as a strip of four.
-///
-/// \param VertexID The corner to place, as `SV_VertexID` counts them.
-///
-/// \return The corner, over negative one through one on both axes.
+/// A corner of the -1..1 rectangle, drawn as a 4-vertex strip.
 float2 ZyEmitQuad(uint VertexID)
 {
     return ZyEmitRect(VertexID) * 2.0 - 1.0;
 }
 
-/// \brief Traces the outline of a unit rectangle, drawn as a line strip of five.
-///
-/// \param VertexID The corner to trace, as `SV_VertexID` counts them.
-///
-/// \return The corner, over zero through one on both axes.
+/// The outline of the 0..1 rectangle, drawn as a 5-vertex line strip.
 float2 ZyEmitRectOutline(uint VertexID)
 {
     const float2 kCorners[5] = {
@@ -54,13 +42,7 @@ float2 ZyEmitRectOutline(uint VertexID)
     return kCorners[VertexID];
 }
 
-/// \brief Traces the four edges of a rectangle centred on the origin, drawn as a line list of eight.
-///
-/// \note This is the flat counterpart of \ref ZyEmitBox, for the same line list a box outline is drawn as.
-///
-/// \param VertexID The endpoint to trace, as `SV_VertexID` counts them.
-///
-/// \return The endpoint, over negative one through one on both axes.
+/// The edges of the -1..1 rectangle, drawn as an 8-vertex line list.
 float2 ZyEmitQuadEdges(uint VertexID)
 {
     const float2 kEdges[8] = {
@@ -77,11 +59,7 @@ float2 ZyEmitQuadEdges(uint VertexID)
     return kEdges[VertexID];
 }
 
-/// \brief Places one corner of the triangle that covers the screen, drawn as three vertices and no buffer.
-///
-/// \param VertexID The corner to place, as `SV_VertexID` counts them.
-///
-/// \return The clip position and the texture coordinate that reads through it.
+/// A corner of the full-screen triangle, drawn with no buffer, as clip xy and texture uv.
 float4 ZyEmitScreen(uint VertexID)
 {
     const float2 Corner = float2(float((VertexID << 1) & 2), float(VertexID & 2));
@@ -89,11 +67,7 @@ float4 ZyEmitScreen(uint VertexID)
     return float4(Corner * 2.0 - 1.0, Corner.x, 1.0 - Corner.y);
 }
 
-/// \brief Traces the twelve edges of a box centred on the origin, drawn as a line list of twenty-four.
-///
-/// \param VertexID The endpoint to trace, as `SV_VertexID` counts them.
-///
-/// \return The endpoint, over negative one through one on every axis.
+/// The edges of the -1..1 box, drawn as a 24-vertex line list.
 float3 ZyEmitBox(uint VertexID)
 {
     const float3 kEdges[24] = {
@@ -126,12 +100,7 @@ float3 ZyEmitBox(uint VertexID)
     return kEdges[VertexID];
 }
 
-/// \brief Traces a cylinder centred on the origin, drawn as a line list.
-///
-/// \param VertexID The endpoint to trace, as `SV_VertexID` counts them.
-/// \param Segments The chords each ring is drawn with.
-///
-/// \return The endpoint, over negative one through one on every axis, the axis of the cylinder being Y.
+/// The wireframe of a -1..1 cylinder along Y, drawn as a line list.
 float3 ZyEmitCylinder(uint VertexID, int Segments)
 {
     const int   Line = int(VertexID / 2u);
@@ -148,11 +117,7 @@ float3 ZyEmitCylinder(uint VertexID, int Segments)
     return float3(cos(Theta), End == 0 ? -1.0 : 1.0, sin(Theta));
 }
 
-/// \brief Fills a box centred on the origin, drawn as a single strip of fourteen.
-///
-/// \param VertexID The corner to fill, as `SV_VertexID` counts them.
-///
-/// \return The corner, over negative one through one on every axis.
+/// The solid -1..1 box, drawn as a 14-vertex strip.
 float3 ZyEmitBoxSolid(uint VertexID)
 {
     const float3 kStrip[14] = {

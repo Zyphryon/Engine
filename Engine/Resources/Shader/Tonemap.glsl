@@ -9,41 +9,37 @@
 #ifndef ZY_TONEMAP_INCLUDED
 #define ZY_TONEMAP_INCLUDED
 
-/// The matrix that carries linear sRGB into the space the ACES curve is fitted over.
+/// Carries linear sRGB into the space the ACES fit works in.
 const mat3 ZY_ACES_INPUT = mat3(
     0.59719, 0.35458, 0.04823,
     0.07600, 0.90834, 0.01566,
     0.02840, 0.13383, 0.83777);
 
-/// The matrix that carries the tonemapped color back out into linear sRGB.
+/// Carries the ACES fit's result back to linear sRGB.
 const mat3 ZY_ACES_OUTPUT = mat3(
      1.60475, -0.53108, -0.07367,
     -0.10208,  1.10813, -0.00605,
     -0.00327, -0.07276,  1.07602);
 
-/// The brightness the GT curve rolls off towards.
+/// Default GT peak brightness.
 #define ZY_GT_PEAK            1.00
 
-/// The slope the GT curve holds through its straight section.
+/// Default GT contrast, the slope of its straight section.
 #define ZY_GT_CONTRAST        1.00
 
-/// The point the GT curve leaves its toe and runs straight.
+/// Default GT point where the toe ends and the straight section starts.
 #define ZY_GT_LINEAR_START    0.22
 
-/// The share of the range the GT curve runs straight over.
+/// Default GT length of the straight section, as a share of the range.
 #define ZY_GT_LINEAR_LENGTH   0.40
 
-/// How hard the GT curve pulls its toe towards black.
+/// Default GT pull of the toe towards black.
 #define ZY_GT_BLACK_TIGHTNESS 1.33
 
-/// The floor the GT curve lifts black off, for a display that cannot reach it.
+/// Default GT black lift, for displays that cannot reach black.
 #define ZY_GT_PEDESTAL        0.00
 
-/// \brief Rolls a color of light off through the ACES filmic curve.
-///
-/// \param Color The color of light to roll off.
-///
-/// \return The tonemapped color, over zero through one.
+/// ACES filmic tonemap, to 0..1.
 vec3 ZyTonemapAces(vec3 Color)
 {
     Color = Color * ZY_ACES_INPUT;
@@ -54,27 +50,13 @@ vec3 ZyTonemapAces(vec3 Color)
     return clamp((Numerator / Denominator) * ZY_ACES_OUTPUT, 0.0, 1.0);
 }
 
-/// \brief Rolls a color of light off through a cheap approximation of the ACES filmic curve.
-///
-/// \param Color The color of light to roll off.
-///
-/// \return The tonemapped color, over zero through one.
+/// Cheap approximation of the ACES filmic tonemap, to 0..1.
 vec3 ZyTonemapAcesFast(vec3 Color)
 {
     return clamp((Color * (2.51 * Color + 0.03)) / (Color * (2.43 * Color + 0.59) + 0.14), 0.0, 1.0);
 }
 
-/// \brief Rolls one channel of light off through the Gran Turismo curve.
-///
-/// \param Channel        The channel of light to roll off.
-/// \param Peak           The brightness the curve rolls off towards.
-/// \param Contrast       The slope the curve holds through its straight section.
-/// \param LinearStart    The point the curve leaves its toe and runs straight.
-/// \param LinearLength   The share of the range the curve runs straight over.
-/// \param BlackTightness The measure of how hard the curve pulls its toe towards black.
-/// \param Pedestal       The floor the curve lifts black off.
-///
-/// \return The tonemapped channel.
+/// Uchimura's Gran Turismo tonemap for one channel, blending a toe, a line and a shoulder.
 float ZyTonemapGt(
     float Channel,
     float Peak,
@@ -100,17 +82,7 @@ float ZyTonemapGt(
     return Toe * ToeWeight + Linear * LinearWeight + Shoulder * ShoulderWeight;
 }
 
-/// \brief Rolls a color of light off through the Gran Turismo curve.
-///
-/// \param Color          The color of light to roll off.
-/// \param Peak           The brightness the curve rolls off towards.
-/// \param Contrast       The slope the curve holds through its straight section.
-/// \param LinearStart    The point the curve leaves its toe and runs straight.
-/// \param LinearLength   The share of the range the curve runs straight over.
-/// \param BlackTightness The measure of how hard the curve pulls its toe towards black.
-/// \param Pedestal       The floor the curve lifts black off.
-///
-/// \return The tonemapped color.
+/// Gran Turismo tonemap for a color.
 vec3 ZyTonemapGt(
     vec3  Color,
     float Peak,
@@ -126,11 +98,7 @@ vec3 ZyTonemapGt(
         ZyTonemapGt(Color.b, Peak, Contrast, LinearStart, LinearLength, BlackTightness, Pedestal));
 }
 
-/// \brief Rolls a color of light off through the Gran Turismo curve, shaped as the engine defaults it.
-///
-/// \param Color The color of light to roll off.
-///
-/// \return The tonemapped color.
+/// Gran Turismo tonemap with the engine's default shape.
 vec3 ZyTonemapGt(vec3 Color)
 {
     return ZyTonemapGt(Color,

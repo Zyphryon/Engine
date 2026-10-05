@@ -9,67 +9,40 @@
 #ifndef ZY_COLOR_INCLUDED
 #define ZY_COLOR_INCLUDED
 
-/// The share of luminance each primary carries, as Rec. 709 weighs them.
+/// Rec. 709 luminance weights.
 #define ZY_LUMINANCE_709 vec3(0.2126, 0.7152, 0.0722)
 
-/// \brief Reads one channel the way sRGB stores it and gives back the light it stands for.
-///
-/// \param Channel The channel to read, as sRGB stores it.
-///
-/// \return The light the channel stands for.
+/// Converts an sRGB channel to linear light.
 float ZyToLinear(float Channel)
 {
     return (Channel <= 0.04045) ? Channel / 12.92 : pow(abs((Channel + 0.055) / 1.055), 2.4);
 }
 
-/// \brief Reads a color the way sRGB stores it and gives back the light it stands for.
-///
-/// \param Color The color to read, as sRGB stores it.
-///
-/// \return The light the color stands for.
+/// Converts an sRGB color to linear light.
 vec3 ZyToLinear(vec3 Color)
 {
     return vec3(ZyToLinear(Color.r), ZyToLinear(Color.g), ZyToLinear(Color.b));
 }
 
-/// \brief Writes one channel of light back the way sRGB stores it.
-///
-/// \param Channel The channel of light to write.
-///
-/// \return The channel as sRGB stores it.
+/// Converts a linear channel to sRGB.
 float ZyToGamma(float Channel)
 {
     return (Channel <= 0.0031308) ? Channel * 12.92 : 1.055 * pow(abs(Channel), 1.0 / 2.4) - 0.055;
 }
 
-/// \brief Writes a color of light back the way sRGB stores it.
-///
-/// \param Color The color of light to write.
-///
-/// \return The color as sRGB stores it.
+/// Converts a linear color to sRGB.
 vec3 ZyToGamma(vec3 Color)
 {
     return vec3(ZyToGamma(Color.r), ZyToGamma(Color.g), ZyToGamma(Color.b));
 }
 
-/// \brief Applies a plain power curve, for the places a display wants one instead of the sRGB kink.
-///
-/// \param Color The color of light to write.
-/// \param Gamma The exponent the display expects the color to be raised against.
-///
-/// \return The color as that curve stores it.
+/// Applies a plain power curve, for displays that want one instead of sRGB.
 vec3 ZyToGamma(vec3 Color, float Gamma)
 {
     return pow(abs(Color), vec3(1.0 / Gamma));
 }
 
-/// \brief Measures how bright a color reads, weighing each primary as the eye does.
-///
-/// \note The weights hold only over linear light, so a color sRGB still encodes goes through \ref ZyToLinear first.
-///
-/// \param Color The color of light to measure.
-///
-/// \return The luminance the color carries.
+/// How bright a linear color reads to the eye.
 float ZyLuminance(vec3 Color)
 {
     return dot(Color, ZY_LUMINANCE_709);

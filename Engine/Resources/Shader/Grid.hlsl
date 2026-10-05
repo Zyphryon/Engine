@@ -9,13 +9,7 @@
 #ifndef ZY_GRID_INCLUDED
 #define ZY_GRID_INCLUDED
 
-/// \brief Measures how much of a pixel the nearest line of a lattice covers, one pixel wide and softened at its edge.
-///
-/// \note The line is measured through screen derivatives, so this belongs to the fragment stage alone.
-///
-/// \param Repeat The place along the lattice, counted in periods, so that a line falls on every whole number.
-///
-/// \return The coverage, over zero between lines through one on a line.
+/// How much of a pixel the nearest grid line covers, one pixel wide; fragment stage only.
 float ZyGridLine(float Repeat)
 {
     const float Derivate = max(fwidth(Repeat), 1e-8);
@@ -25,13 +19,7 @@ float ZyGridLine(float Repeat)
     return saturate(1.0 - Distance) * Density;
 }
 
-/// \brief Measures how much of a pixel the nearest line of a lattice on a plane covers, along either axis.
-///
-/// \note The line is measured through screen derivatives, so this belongs to the fragment stage alone.
-///
-/// \param Repeat The place on the lattice, counted in periods, so that a line falls on every whole number of either axis.
-///
-/// \return The coverage, over zero between lines through one on a line.
+/// How much of a pixel the nearest line of a 2D grid covers, on either axis; fragment stage only.
 float ZyGridLine(float2 Repeat)
 {
     const float2 Derivate = max(fwidth(Repeat), 1e-8);

@@ -9,31 +9,23 @@
 #ifndef ZY_AFFINE_INCLUDED
 #define ZY_AFFINE_INCLUDED
 
-/// \brief Represents the axes an instance is laid down along, and the point it stands at.
+/// An instance's three axes and the point it stands at.
 struct ZyAffine
 {
-    /// The direction the instance's own X travels, in the space it is placed into.
+    /// The instance's X axis, in the space it is placed in.
     vec3 ColumnX;
 
-    /// The direction the instance's own Y travels, in the space it is placed into.
+    /// The instance's Y axis, in the space it is placed in.
     vec3 ColumnY;
 
-    /// The direction the instance's own Z travels, in the space it is placed into.
+    /// The instance's Z axis, in the space it is placed in.
     vec3 ColumnZ;
 
     /// The point the instance stands at.
     vec3 Origin;
 };
 
-/// \brief Reads an affine out of the three rows an instance carries it as.
-///
-/// \note Each row holds one component of every column, which is the transposed layout a `Matrix4x3` is named in.
-///
-/// \param Row0 The first row of the affine.
-/// \param Row1 The second row of the affine.
-/// \param Row2 The third row of the affine.
-///
-/// \return The axes the instance is laid down along, and the point it stands at.
+/// Reads an affine from the three transposed rows an instance carries.
 ZyAffine ZyReadAffine(vec4 Row0, vec4 Row1, vec4 Row2)
 {
     ZyAffine Result;
@@ -46,12 +38,7 @@ ZyAffine ZyReadAffine(vec4 Row0, vec4 Row1, vec4 Row2)
     return Result;
 }
 
-/// \brief Carries a point out of an instance's own space and into the one it is placed in.
-///
-/// \param Transform The axes the instance is laid down along, and the point it stands at.
-/// \param Local     The point to carry, in the instance's own space.
-///
-/// \return The point, in the space the instance is placed in.
+/// Carries a point from the instance's own space into the space it is placed in.
 vec3 ZyApplyAffine(ZyAffine Transform, vec3 Local)
 {
     return Transform.Origin + Local.x * Transform.ColumnX + Local.y * Transform.ColumnY + Local.z * Transform.ColumnZ;

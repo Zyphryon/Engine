@@ -11,29 +11,28 @@
 
 #include "Embedded://Shader/Math.hlsl"
 
-/// The least roughness a surface is shaded at, since a perfect mirror turns a light into one burning texel.
+/// The lowest roughness shaded, so a mirror never turns a light into one burning texel.
 #define ZY_ROUGHNESS_FLOOR 0.045
 
-/// The share of the light a white metal's single bounce misses, as 1/E - 1, a cubic in the floored roughness (rows)
-/// and the root of NoV (columns), fitted to an importance-sampled reference of the BRDF below, within 3% over NoV 0.05.
+/// Fit of what a white metal's single bounce misses (1/E - 1), by roughness and sqrt(NoV).
 #define ZY_BOUNCES_0 float4( 0.11915,  -1.15002,   2.39832,  -1.44896)
 #define ZY_BOUNCES_1 float4( 0.21413,   7.86972, -22.92279,  16.19535)
 #define ZY_BOUNCES_2 float4(-2.42695,  -6.08632,  37.69816, -34.34492)
 #define ZY_BOUNCES_3 float4( 2.22216,  -0.83850, -14.39541,  19.10697)
 
-/// Returns the colour a surface scatters, which a metal has none of.
+/// The diffuse colour, which a metal has none of.
 float3 ZyDiffuse(float3 Albedo, float Metalness)
 {
     return Albedo * (1.0 - Metalness);
 }
 
-/// Returns the colour a surface reflects head on, which is its own colour where it is a metal.
+/// The head-on specular colour, which is the albedo for a metal.
 float3 ZySpecular(float3 Albedo, float Metalness, float Reflectance)
 {
     return lerp(float3(Reflectance, Reflectance, Reflectance), Albedo, Metalness);
 }
 
-/// Returns how many of the surface's microfacets face halfway between the light and the eye, after GGX.
+/// GGX normal distribution.
 float ZyDistribution(float NoH, float Alpha)
 {
     const float Square = Alpha * Alpha;
@@ -42,7 +41,7 @@ float ZyDistribution(float NoH, float Alpha)
     return Square / (ZY_PI * Lean * Lean);
 }
 
-/// Returns how much of the light the microfacets shade and mask from one another, after the height-correlated Smith.
+/// Height-correlated Smith visibility.
 float ZyVisibility(float NoV, float NoL, float Alpha)
 {
     const float Square = Alpha * Alpha;
@@ -52,13 +51,13 @@ float ZyVisibility(float NoV, float NoL, float Alpha)
     return 0.5 / max(View + Light, ZY_EPSILON);
 }
 
-/// Returns how much more a surface reflects as the light grazes it, after Schlick.
+/// Schlick Fresnel.
 float3 ZyFresnel(float3 Specular, float VoH)
 {
     return Specular + (1.0 - Specular) * pow(1.0 - VoH, 5.0);
 }
 
-/// Returns what a surface reflects of light arriving from every side, after Karis' fit of the split-sum lookup.
+/// Reflectance under light from every side, after Karis' split-sum fit.
 float3 ZyEnvironment(float3 Specular, float Roughness, float NoV)
 {
     const float4 Low  = float4(-1.0, -0.0275, -0.572,  0.022);
@@ -71,7 +70,7 @@ float3 ZyEnvironment(float3 Specular, float Roughness, float NoV)
     return Specular * Scale.x + Scale.y;
 }
 
-/// Returns the share of the light a white metal's single bounce misses, which the bounces GGX leaves out carry.
+/// The energy GGX's single bounce misses on a white metal.
 float ZyBounces(float Roughness, float NoV)
 {
     const float  Rough = max(Roughness, ZY_ROUGHNESS_FLOOR);
@@ -83,17 +82,17 @@ float ZyBounces(float Roughness, float NoV)
     return max(dot(float4(1.0, Rough, Rough * Rough, Rough * Rough * Rough), Terms), 0.0);
 }
 
-/// \brief Holds what the BRDF of a point seen from one way shares between every light that reaches it.
+/// The BRDF terms every light on a point shares, for one view.
 struct ZyLobe
 {
-    float  NoV;         ///< The cosine between the normal and the way to the eye, held above zero.
-    float  Alpha;       ///< The roughness past its floor, squared.
-    float3 Environment; ///< The share the surface reflects of light arriving from every side.
-    float3 Scatter;     ///< The colour the diffuse sends back per unit of light, less what the specular took.
-    float3 Gain;        ///< The factor the single bounce is scaled by to carry the bounces GGX leaves out.
+    float  NoV;         ///< Cosine of normal and view, kept above zero.
+    float  Alpha;       ///< Floored roughness, squared.
+    float3 Environment; ///< Reflectance under light from every side.
+    float3 Scatter;     ///< Diffuse per unit of light, less what the specular took.
+    float3 Gain;        ///< Boost to the single bounce for the bounces GGX leaves out.
 };
 
-/// Returns what the BRDF of a point seen from one way shares between every light that reaches it.
+/// Builds the BRDF terms every light on a point shares.
 ZyLobe ZyPrepareLobe(float3 Normal, float3 Sight, float3 Diffuse, float3 Specular, float Roughness)
 {
     ZyLobe Result;
@@ -101,16 +100,15 @@ ZyLobe ZyPrepareLobe(float3 Normal, float3 Sight, float3 Diffuse, float3 Specula
     Result.Alpha       = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
     Result.Environment = ZyEnvironment(Specular, Roughness, Result.NoV);
 
-    // What the specular sends towards the eye is light the diffuse never gets to scatter.
+    // Light the specular reflects is light the diffuse never gets.
     Result.Scatter     = Diffuse * ZY_INV_PI * (1.0 - Result.Environment);
 
-    // GGX follows one bounce among the microfacets, so what a rough surface loses to the others is put back.
+    // Put back the energy GGX's single bounce loses on rough surfaces.
     Result.Gain        = 1.0 + Specular * ZyBounces(Roughness, Result.NoV);
     return Result;
 }
 
-/// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
-/// arriving along its normal, the part every light shares already in its lobe.
+/// Light sent to the eye from a light of given angular radius, using a prepared lobe.
 float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 Specular, float Spread)
 {
     const float3 Halfway = normalize(Sight + Incident);
@@ -118,8 +116,7 @@ float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 
     const float  NoH     = saturate(dot(Normal, Halfway));
     const float  VoH     = saturate(dot(Sight, Halfway));
 
-    // A light of some size turns the half vector across half its angle, which widens the lobe it lands in, the two
-    // spreads adding in quadrature so the distribution keeps its whole energy.
+    // A sized light widens the lobe; the two spreads add in quadrature to keep energy.
     const float  Widened = sqrt(Lobe.Alpha * Lobe.Alpha + ZySquare(Spread * 0.5));
 
     const float3 Fresnel = ZyFresnel(Specular, VoH);
@@ -128,8 +125,7 @@ float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 
     return (Lobe.Scatter + Single * Lobe.Gain) * NoL;
 }
 
-/// Returns what a surface sends towards the eye from a light of an angular radius, in radians, per unit of the light
-/// arriving along its normal.
+/// Light sent to the eye from a light of given angular radius.
 float3 ZyBrdf(float3 Normal, float3 Sight, float3 Incident, float3 Diffuse, float3 Specular, float Roughness, float Spread)
 {
     const ZyLobe Lobe = ZyPrepareLobe(Normal, Sight, Diffuse, Specular, Roughness);
@@ -137,15 +133,13 @@ float3 ZyBrdf(float3 Normal, float3 Sight, float3 Incident, float3 Diffuse, floa
     return ZyBrdf(Lobe, Normal, Sight, Incident, Specular, Spread);
 }
 
-/// Returns how much of the light from every side an occluded surface still reflects, after Lagarde, which the
-/// cavity takes less of the more the surface faces the eye and the smoother it is.
+/// Specular occlusion from ambient occlusion, after Lagarde.
 float ZyOcclusion(float NoV, float Occlusion, float Roughness)
 {
     return saturate(pow(NoV + Occlusion, exp2(-16.0 * Roughness - 1.0)) - 1.0 + Occlusion);
 }
 
-/// Returns how much of a light reaches a point, whole within its core, falling with the square past it and windowed
-/// down to nothing at its reach.
+/// Light falloff, full inside the core, inverse square past it and zero at the radius.
 float ZyFalloff(float Distance, float Radius, float Core)
 {
     const float Share  = Distance / max(Radius, ZY_EPSILON);
@@ -154,13 +148,13 @@ float ZyFalloff(float Distance, float Radius, float Core)
     return Window * (Core * Core) / max(Distance * Distance, Core * Core);
 }
 
-/// Returns how much of a cone reaches a point, whole within its inner angle and faded out by its outer one.
+/// Spot cone falloff, full inside the inner angle and gone past the outer.
 float ZyCone(float3 Axis, float3 Toward, float Outer, float Inner)
 {
     return smoothstep(Outer, Inner, dot(Axis, Toward));
 }
 
-/// Returns what the sky and the ground lay on a direction, the sky above and the ground below.
+/// Hemisphere ambient, sky above and ground below.
 float3 ZyHemisphere(float3 Direction, float3 Sky, float3 Ground)
 {
     return lerp(Ground, Sky, Direction.y * 0.5 + 0.5);
