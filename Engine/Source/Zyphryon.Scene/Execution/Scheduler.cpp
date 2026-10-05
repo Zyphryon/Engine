@@ -83,6 +83,36 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Scheduler::SetEnabled(UInt32 Handle, Bool Enabled)
+    {
+        if (Handle == 0 || Handle > mSystems.GetSize())
+        {
+            return;
+        }
+
+        if (Ref<Unique<Routine>> Slot = mSystems[Handle - 1]; Slot)
+        {
+            Slot->Enabled = Enabled;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Scheduler::IsEnabled(UInt32 Handle) const
+    {
+        if (Handle == 0 || Handle > mSystems.GetSize())
+        {
+            return false;
+        }
+
+        ConstRef<Unique<Routine>> Slot = mSystems[Handle - 1];
+        return Slot && Slot->Alive && Slot->Enabled;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Scheduler::Discard(UInt32 Package)
     {
         for (UInt32 Index = 0; Index < mSystems.GetSize(); ++Index)
@@ -119,7 +149,7 @@ namespace ZyScene
             {
                 Ref<Routine> Target = * mSystems[Phase.Systems[Index] - 1];
 
-                if (Target.Alive && (Target.Rate <= 1 || ++Target.Count >= Target.Rate))
+                if (Target.Alive && Target.Enabled && (Target.Rate <= 1 || ++Target.Count >= Target.Rate))
                 {
                     ZY_PROFILE_NAMED(Target.Name.GetData(), Target.Name.GetSize());
 

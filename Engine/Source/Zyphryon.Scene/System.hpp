@@ -57,6 +57,16 @@ namespace ZyScene
         /// \brief Destroys the system, which runs no more.
         void Destruct();
 
+        /// \brief Holds the system off or lets it run again, keeping its place in its phase.
+        ///
+        /// \param Enabled `true` to run it again, `false` to hold it off.
+        void SetEnabled(Bool Enabled);
+
+        /// \brief Checks whether the system is run when its phase comes.
+        ///
+        /// \return `true` while it is run, `false` while it is held off or names nothing.
+        Bool IsEnabled() const;
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

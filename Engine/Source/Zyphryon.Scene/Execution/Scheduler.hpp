@@ -56,6 +56,18 @@ namespace ZyScene
         /// \param Handle The handle of the system, or one already taken out.
         void DestroySystem(UInt32 Handle);
 
+        /// \brief Holds a system off or lets it run again, keeping its place in its phase.
+        ///
+        /// \param Handle  The handle of the system, or one already taken out.
+        /// \param Enabled `true` to run it again, `false` to hold it off.
+        void SetEnabled(UInt32 Handle, Bool Enabled);
+
+        /// \brief Checks whether a system is run when its phase comes.
+        ///
+        /// \param Handle The handle of the system.
+        /// \return `true` while it is run, `false` while it is held off or taken out.
+        Bool IsEnabled(UInt32 Handle) const;
+
         /// \brief Takes out every system and phase a module declared.
         ///
         /// \param Package The module.
@@ -96,6 +108,9 @@ namespace ZyScene
             /// `true` until it is taken out.
             Bool   Alive;
 
+            /// `true` while it is run, `false` while it is held off.
+            Bool   Enabled;
+
             /// \brief Constructs a system.
             ///
             /// \param Name    The name profiles and logs show.
@@ -110,7 +125,8 @@ namespace ZyScene
                   Count   { 0 },
                   Phase   { Phase },
                   Package { Package },
-                  Alive   { true }
+                  Alive   { true },
+                  Enabled { true }
             {
             }
         };
