@@ -64,12 +64,13 @@ ENDIF ()
 ## Dependency (Tracy) (BSD-3-Clause)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_PROFILE_BACKEND_TRACY "Use Tracy profiler" OFF)
+OPTION(ZY_PROFILE_BACKEND_TRACY "Use Tracy profiler"                               OFF)
+OPTION(ZY_PROFILE_MEMORY        "Report every allocation and free to the profiler" OFF)
 
 IF    (ZY_PROFILE_BACKEND_TRACY)
 
     SET(TRACY_ENABLE     ON  CACHE BOOL "" FORCE)
-    SET(TRACY_ON_DEMAND  OFF CACHE BOOL "" FORCE)
+    SET(TRACY_ON_DEMAND  ON  CACHE BOOL "" FORCE)
 
     FetchContent_Declare(External_Tracy
             GIT_REPOSITORY https://github.com/wolfpld/tracy
@@ -79,8 +80,14 @@ IF    (ZY_PROFILE_BACKEND_TRACY)
 
     ZyApplyOptions("TracyClient")
 
+    TARGET_COMPILE_DEFINITIONS("TracyClient" PRIVATE "DEFAULT_SPAN_MAP_COUNT=4")
+
     TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC "ZY_PROFILE_BACKEND_TRACY")
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}      PUBLIC "TracyClient")
+
+    IF (ZY_PROFILE_MEMORY)
+        TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE "ZY_PROFILE_MEMORY")
+    ENDIF ()
 
 ENDIF ()
 

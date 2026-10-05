@@ -16,7 +16,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#if defined(ZY_PROFILE_BACKEND_TRACY)
+#if defined(ZY_PROFILE_BACKEND_TRACY) && defined(ZY_PROFILE_MEMORY)
 
 Ptr<void> operator new(std::size_t _Size)
 {
