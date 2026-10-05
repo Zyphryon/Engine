@@ -935,7 +935,7 @@ namespace ZyGraphic
     struct Command final
     {
         /// \brief Maximum number of sampler bindings allowed per draw command.
-        static constexpr UInt8 kMaxSamplers = 0x08;
+        static constexpr UInt8 kMaxSamplers = 0x10;
 
         /// \brief Maximum number of texture bindings allowed per draw command.
         static constexpr UInt8 kMaxTextures = 0x10;
