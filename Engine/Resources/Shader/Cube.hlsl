@@ -11,25 +11,28 @@
 
 #include "Embedded://Shader/Noise.hlsl"
 
-/// How far a receiver is lifted along its normal before a light's face is read, in texels of that face.
+/// How far a receiver is pushed along its normal before the lookup, in face texels.
 #define ZY_CUBE_LIFT   1.5
 
-/// How far a receiver is held in front of what a light's face recorded, in world units.
+/// Depth bias against what the face recorded, in world units.
 #define ZY_CUBE_BIAS   0.03
 
-/// The widest a light's penumbra spreads, in texels.
+/// The widest a penumbra spreads, in texels.
 #define ZY_CUBE_WIDEST 16.0
 
-/// The 2x2 blocks the blocker search gathers.
+/// 2x2 gathers the blocker search makes, where gather is available.
 #define ZY_CUBE_GATHER 3
 
-/// The taps the filter reads.
+/// Single taps the blocker search reads, where gather is not available.
+#define ZY_CUBE_SEARCH 8
+
+/// Taps the filter reads.
 #define ZY_CUBE_TAPS   12
 
-/// The taps a fixed spread of comparisons reads.
+/// Taps the small fixed filter reads.
 #define ZY_CUBE_SPREAD 4
 
-/// \brief Picks the face a direction from the light lands on, by its longest axis.
+/// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(float3 Reach)
 {
     const float3 Size = abs(Reach);
@@ -45,7 +48,7 @@ int ZyCubeFace(float3 Reach)
     return Reach.z >= 0.0 ? 4 : 5;
 }
 
-/// \brief Carries a direction from the light into a face's own right, up and depth.
+/// Turns a direction from the light into a face's right, up and depth.
 float3 ZyCubeView(float3 Reach, int Face)
 {
     const float3 kRight[6] =
@@ -67,7 +70,7 @@ float3 ZyCubeView(float3 Reach, int Face)
     return float3(dot(Reach, kRight[Face]), dot(Reach, kUp[Face]), dot(Reach, kAhead[Face]));
 }
 
-/// \brief Gets the middle of a tile of the atlas, in its clip space.
+/// The centre of an atlas tile, in clip space.
 float2 ZyCubeTile(float Tile, float Per)
 {
     const float Row    = floor((Tile + 0.5) / Per);
@@ -76,10 +79,7 @@ float2 ZyCubeTile(float Tile, float Per)
     return (float2(Column, Row) * 2.0 + 1.0) / Per - 1.0;
 }
 
-/// \brief Places a point seen from a light into the tile one of its faces was given.
-///
-/// \param Atlas Tiles per row, the share of a tile the face spans, the near plane and texels per tile.
-/// \param Seen  The point on the face, kept within the tile while its x and y stay within its depth.
+/// Places a point seen from a light into the atlas tile of one of its faces.
 float4 ZyCubePlace(float3 World, float4 Lamp, int Face, float Tile, float4 Atlas, out float3 Seen)
 {
     const float3 View = ZyCubeView(World - Lamp.xyz, Face);
@@ -91,21 +91,13 @@ float4 ZyCubePlace(float3 World, float4 Lamp, int Face, float Tile, float4 Atlas
     return float4(Seen.xy / Atlas.x + ZyCubeTile(Tile, Atlas.x) * View.z, (View.z - Near) * Far / (Far - Near), View.z);
 }
 
-/// \brief Gets how far a point lies within each side of its face, for the rasterizer to clip the tile against.
+/// Distances to the face's four edges, for clipping the tile.
 float4 ZyCubeClip(float3 Seen)
 {
     return Seen.z - float4(Seen.x, -Seen.x, Seen.y, -Seen.y);
 }
 
-/// \brief Finds where a point lands on the face of a light it is seen from, and the part of the atlas that face holds.
-///
-/// \param Atlas    Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
-/// \param Uv       The point on the atlas.
-/// \param Depth    The point's depth on the face, held in front of what the face recorded.
-/// \param Least    The lowest coordinate a read may take and stay within the tile.
-/// \param Most     The highest coordinate a read may take and stay within the tile.
-/// \param Distance The point's distance from the light along the face's own depth, in world units.
-/// \return `false` when the face was given no tile, which leaves the point lit.
+/// Finds a point's atlas coordinate, depth and tile bounds; false if its face has no tile.
 bool ZyCubeLocate(
     float4 Atlas, float3 World, float3 Normal, float4 Light, float4 Faces0, float2 Faces1,
     out float2 Uv, out float Depth, out float2 Least, out float2 Most, out float Distance)
@@ -146,11 +138,7 @@ bool ZyCubeLocate(
     return true;
 }
 
-/// \brief Reads a fixed spread of comparisons about a point of a light's face, kept within its tile.
-///
-/// \param Radius The spread, as a share of the atlas.
-/// \param Spin   The angle the taps are carried around by, as its cosine and sine.
-/// \return The share of the taps the point is lit through, from none at zero to all of them at one.
+/// Small fixed filter about a point, kept inside its tile.
 float ZyCubeSpread(
     Texture2D Map, SamplerComparisonState Compare, float2 Uv, float Depth, float2 Least, float2 Most,
     float Radius, float2 Spin)
@@ -165,11 +153,7 @@ float ZyCubeSpread(
     return Lit / float(ZY_CUBE_SPREAD);
 }
 
-/// Returns how much of a light reaches a point past what stands in its way, softer the further the point lies
-/// behind the blocker and the wider the light's source.
-///
-/// \param Atlas Tiles per row, the share of a tile a face spans, the near plane and texels per tile.
-/// \param Spin  The angle the taps are carried around by, as its cosine and sine.
+/// Soft lamp shadow from the cube atlas, wider with source size and distance past the blocker.
 float ZyCubeShadow(
     Texture2D Depths, SamplerState Point, Texture2D Map, SamplerComparisonState Compare, float4 Atlas,
     float3 World, float3 Normal, float4 Light, float Source, float4 Faces0, float2 Faces1, float2 Spin)
@@ -192,17 +176,21 @@ float ZyCubeShadow(
     const float A     = Far / (Far - Near);
     const float B     = -Far * Near / (Far - Near);
 
-    // A world unit at the receiver's depth, as a share of the atlas.
+    // One world unit at the receiver's depth, as a share of the atlas.
     const float  Spread = Atlas.y * 0.5 / (Per * Distance);
     const float  Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
 
     float Found = 0.0;
     float Count = 0.0;
 
+#if ZY_TIER >= 3
+
+    const float Taps = float(ZY_CUBE_GATHER * 4);
+
     [unroll]
-    for (int Tap = 0; Tap < ZY_CUBE_GATHER; ++Tap)
+    for (int Probe = 0; Probe < ZY_CUBE_GATHER; ++Probe)
     {
-        const float2 At      = clamp(Uv + ZySpiral(Tap, ZY_CUBE_GATHER, Spin) * Search, Least, Most);
+        const float2 At      = clamp(Uv + ZySpiral(Probe, ZY_CUBE_GATHER, Spin) * Search, Least, Most);
         const float4 Stored  = Depths.GatherRed(Point, At);
         const float4 Blocked = float4(Stored < Depth);
 
@@ -210,19 +198,45 @@ float ZyCubeShadow(
         Count += dot(Blocked, 1.0);
     }
 
+#else
+
+    const float Taps = float(ZY_CUBE_SEARCH);
+
+    [unroll]
+    for (int Probe = 0; Probe < ZY_CUBE_SEARCH; ++Probe)
+    {
+        const float2 At     = clamp(Uv + ZySpiral(Probe, ZY_CUBE_SEARCH, Spin) * Search, Least, Most);
+        const float  Stored = Depths.SampleLevel(Point, At, 0.0).r;
+
+        if (Stored < Depth)
+        {
+            Found += B / (Stored - A);
+            Count += 1.0;
+        }
+    }
+
+#endif
+
     if (Count == 0.0)
     {
         return 1.0;
     }
 
-    // A search blocked all round is taken to lie deep in the shadow, which spares the filter where most pixels stand.
-    if (Count == float(ZY_CUBE_GATHER * 4))
+    // Blocked all round means deep in shadow, so skip the filter.
+    if (Count == Taps)
     {
         return 0.0;
     }
 
     const float Blocker  = max(Found / Count, Near);
     const float Penumbra = clamp(Source * 0.5 * (Distance - Blocker) / Blocker * Spread, Texel, Texel * ZY_CUBE_WIDEST);
+
+    // A narrow penumbra needs only the few taps of the fixed filter.
+    [branch]
+    if (Penumbra <= Texel * 2.0)
+    {
+        return ZyCubeSpread(Map, Compare, Uv, Depth, Least, Most, Penumbra, Spin);
+    }
 
     float Lit = 0.0;
 

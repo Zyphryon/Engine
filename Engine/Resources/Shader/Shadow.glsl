@@ -11,33 +11,25 @@
 
 #include "Embedded://Shader/Noise.glsl"
 
-/// The 2x2 blocks the blocker search gathers, where the driver can gather.
+/// 2x2 gathers the blocker search makes, where gather is available.
 #define ZY_SHADOW_GATHER 4
 
-/// The taps the blocker search reads one at a time, where it cannot.
+/// Single taps the blocker search reads, where gather is not available.
 #define ZY_SHADOW_SEARCH 12
 
-/// The taps the filter reads.
+/// Taps the filter reads.
 #define ZY_SHADOW_TAPS   16
 
-/// \brief Reads how much light reaches a point through a depth map, sharp where the point touches what blocks it and
-///        softer the further below it the point lies.
-///
-/// \param Depths The map, read as plain depth with no filtering.
-/// \param Map    The map, read through a comparison that passes where the reference is nearer.
-/// \param Uv     The point's coordinate on the map.
-/// \param Depth  The point's depth on the map, over the map's range.
-/// \param Texel  The size of one texel, as a share of the map.
-/// \param Spread How far the penumbra widens, as a share of the map, per unit of depth between blocker and point.
-/// \param Turn   The angle the taps are carried around by, as its cosine and sine.
-///
-/// \return The share of light that reaches the point, from none at zero to all of it at one.
+/// Taps the filter reads when the penumbra is only a couple of texels wide.
+#define ZY_SHADOW_NARROW 4
+
+/// Soft shadow from a depth map: sharp at contact, softer the further the blocker.
 float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, float Texel, float Spread, vec2 Turn)
 {
     float Least = Texel;
     float Most  = Texel * 48.0;
 
-    // The search reaches as far as the widest penumbra a blocker right at the map's near end would cast.
+    // Search as wide as the penumbra a blocker at the map's near end would cast.
     float Search = clamp(Spread * Depth, Least * 2.0, Most);
 
     float Found = 0.0;
@@ -78,7 +70,7 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
         return 1.0;
     }
 
-    // The penumbra never reaches past the search, so a search blocked all round leaves the filter nothing to find.
+    // Blocked all round means deep in shadow, so skip the filter.
     if (Count == Taps)
     {
         return 0.0;
@@ -87,6 +79,16 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
     float Penumbra = clamp((Depth - Found / Count) * Spread, Least, Most);
 
     float Lit = 0.0;
+
+    // A narrow penumbra needs only a few taps.
+    if (Penumbra <= Least * 2.0)
+    {
+        for (int Tap = 0; Tap < ZY_SHADOW_NARROW; ++Tap)
+        {
+            Lit += textureLod(Map, vec3(Uv + ZySpiral(Tap, float(ZY_SHADOW_NARROW), Turn) * Penumbra, Depth), 0.0);
+        }
+        return Lit / float(ZY_SHADOW_NARROW);
+    }
 
     for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
     {

@@ -11,26 +11,19 @@
 
 #include "Embedded://Shader/Noise.hlsl"
 
-/// The 2x2 blocks the blocker search gathers.
+/// 2x2 gathers the blocker search makes, where gather is available.
 #define ZY_SHADOW_GATHER 4
 
-/// The taps the filter reads.
+/// Single taps the blocker search reads, where gather is not available.
+#define ZY_SHADOW_SEARCH 12
+
+/// Taps the filter reads.
 #define ZY_SHADOW_TAPS   16
 
-/// \brief Reads how much light reaches a point through a depth map, sharp where the point touches what blocks it and
-///        softer the further below it the point lies.
-///
-/// \param Depths  The map, read as plain depth.
-/// \param Point   The sampler the plain depth is read through, with no filtering.
-/// \param Map     The map, read through a comparison.
-/// \param Compare The sampler that compares a reference against the map, passing where the reference is nearer.
-/// \param Uv      The point's coordinate on the map.
-/// \param Depth   The point's depth on the map, over the map's range.
-/// \param Texel   The size of one texel, as a share of the map.
-/// \param Spread  How far the penumbra widens, as a share of the map, per unit of depth between blocker and point.
-/// \param Turn    The angle the taps are carried around by, as its cosine and sine.
-///
-/// \return The share of light that reaches the point, from none at zero to all of it at one.
+/// Taps the filter reads when the penumbra is only a couple of texels wide.
+#define ZY_SHADOW_NARROW 4
+
+/// Soft shadow from a depth map: sharp at contact, softer the further the blocker.
 float ZyShadow(
     Texture2D              Depths,
     SamplerState           Point,
@@ -45,29 +38,51 @@ float ZyShadow(
     const float Least = Texel;
     const float Most  = Texel * 48.0;
 
-    // The search reaches as far as the widest penumbra a blocker right at the map's near end would cast.
+    // Search as wide as the penumbra a blocker at the map's near end would cast.
     const float Search = clamp(Spread * Depth, Least * 2.0, Most);
 
     float Found = 0.0;
     float Count = 0.0;
 
+#if ZY_TIER >= 3
+
+    const float Taps = float(ZY_SHADOW_GATHER * 4);
+
     [unroll]
-    for (int Tap = 0; Tap < ZY_SHADOW_GATHER; ++Tap)
+    for (int Probe = 0; Probe < ZY_SHADOW_GATHER; ++Probe)
     {
-        const float4 Stored  = Depths.GatherRed(Point, Uv + ZySpiral(Tap, ZY_SHADOW_GATHER, Turn) * Search);
+        const float4 Stored  = Depths.GatherRed(Point, Uv + ZySpiral(Probe, ZY_SHADOW_GATHER, Turn) * Search);
         const float4 Blocked = float4(Stored < Depth);
 
         Found += dot(Stored, Blocked);
         Count += dot(Blocked, 1.0);
     }
 
+#else
+
+    const float Taps = float(ZY_SHADOW_SEARCH);
+
+    [unroll]
+    for (int Probe = 0; Probe < ZY_SHADOW_SEARCH; ++Probe)
+    {
+        const float Stored = Depths.SampleLevel(Point, Uv + ZySpiral(Probe, ZY_SHADOW_SEARCH, Turn) * Search, 0.0).r;
+
+        if (Stored < Depth)
+        {
+            Found += Stored;
+            Count += 1.0;
+        }
+    }
+
+#endif
+
     if (Count == 0.0)
     {
         return 1.0;
     }
 
-    // The penumbra never reaches past the search, so a search blocked all round leaves the filter nothing to find.
-    if (Count == float(ZY_SHADOW_GATHER * 4))
+    // Blocked all round means deep in shadow, so skip the filter.
+    if (Count == Taps)
     {
         return 0.0;
     }
@@ -75,6 +90,18 @@ float ZyShadow(
     const float Penumbra = clamp((Depth - Found / Count) * Spread, Least, Most);
 
     float Lit = 0.0;
+
+    // A narrow penumbra needs only a few taps.
+    [branch]
+    if (Penumbra <= Least * 2.0)
+    {
+        [unroll]
+        for (int Tap = 0; Tap < ZY_SHADOW_NARROW; ++Tap)
+        {
+            Lit += Map.SampleCmpLevelZero(Compare, Uv + ZySpiral(Tap, ZY_SHADOW_NARROW, Turn) * Penumbra, Depth);
+        }
+        return Lit / float(ZY_SHADOW_NARROW);
+    }
 
     [unroll]
     for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
