@@ -18,7 +18,9 @@
 #define ZY_SHADOW_SEARCH 12
 
 /// Taps the filter reads.
+#ifndef ZY_SHADOW_TAPS
 #define ZY_SHADOW_TAPS   16
+#endif
 
 /// Taps the filter reads when the penumbra is only a couple of texels wide.
 #define ZY_SHADOW_NARROW 4
