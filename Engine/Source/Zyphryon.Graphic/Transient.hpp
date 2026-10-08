@@ -70,7 +70,7 @@ namespace ZyGraphic
         /// \brief Copies data from a span into the transient buffer at the specified offset.
         ///
         /// \param Data   The source span containing the data to copy.
-        /// \param Offset The byte offset within the transient buffer where copying begins.
+        /// \param Offset The offset within the transient buffer where copying begins, in elements of its type.
         template<typename Other>
         ZY_INLINE void Copy(ConstSpan<Other> Data, UInt32 Offset = 0)
         {

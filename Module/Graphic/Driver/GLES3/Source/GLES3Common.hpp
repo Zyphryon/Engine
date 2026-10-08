@@ -162,7 +162,7 @@ namespace ZyGraphic
     constexpr GLenum GLES3Convert(TestCondition Value)
     {
         static constexpr Array kMapping = {
-            static_cast<GLenum>(GL_NONE),                       // TestCondition::None
+            static_cast<GLenum>(GL_ALWAYS),                     // TestCondition::None
             static_cast<GLenum>(GL_ALWAYS),                     // TestCondition::Always
             static_cast<GLenum>(GL_NEVER),                      // TestCondition::Never
             static_cast<GLenum>(GL_GREATER),                    // TestCondition::Greater
