@@ -40,7 +40,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Technique::Obtain(Ref<Service> Service, Key Key)
+    Object Technique::Obtain(Ref<Service> Service, Key Key) const
     {
         if (Key == 0)
         {
@@ -143,16 +143,6 @@ namespace ZyGraphic
             }
         }
 
-        for (ConstRef<Feature> Feature : mDescription.Features)
-        {
-            for (ConstRetainer<Shader> Shader : Feature.Patch.Shaders)
-            {
-                if (Shader)
-                {
-                    Service.Reload(Shader);
-                }
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -162,9 +152,7 @@ namespace ZyGraphic
     {
         ConstRef<Layer> Base = mDescription.Base;
 
-        Shaders Modules = Base.Shaders;
-
-        // Only the attributes are taken from the layer, since one schema describes every variant's bindings.
+        // Every variant reads the base's shaders and attributes, which no feature replaces.
         Program.Macros       = Base.Macros;
         Signature.Attributes = Base.Attributes;
         States               = Base.States;
@@ -180,22 +168,8 @@ namespace ZyGraphic
             }
 
             ConstRef<Feature> Feature = mDescription.Features[Index];
-            ConstRef<Layer>   Patch   = Feature.Patch;
 
-            Program.Macros.Append(Patch.Macros);
-
-            for (UInt Stage = 0, Stages = ZyEnum::Count<ShaderStage>(); Stage < Stages; ++Stage)
-            {
-                if (Patch.Shaders[Stage])
-                {
-                    Modules[Stage] = Patch.Shaders[Stage];
-                }
-            }
-
-            if (!Patch.Attributes.IsEmpty())
-            {
-                Signature.Attributes = Patch.Attributes;
-            }
+            Program.Macros.Append(Feature.Macros);
 
             // Two features writing one block is an authoring mistake, since only the later one survives.
             if (Feature.Blocks & Claimed)
@@ -203,13 +177,13 @@ namespace ZyGraphic
                 LOG_W("'{0}' variant {1} lets '{2}' overwrite a state block", GetKey(), Key, Feature.Name);
             }
 
-            Converge(States, Patch.States, Feature.Blocks);
+            Converge(States, Feature.States, Feature.Blocks);
             Claimed = SetBit(Claimed, Feature.Blocks);
         }
 
         for (UInt Index = 0, Limit = ZyEnum::Count<ShaderStage>(); Index < Limit; ++Index)
         {
-            if (ConstRetainer<Shader> Shader = Modules[Index])
+            if (ConstRetainer<Shader> Shader = Base.Shaders[Index])
             {
                 Program.Modules[Index] = Blob::Borrow(Shader->GetSource());
             }
@@ -242,37 +216,18 @@ namespace ZyGraphic
             Destination.DepthBiasSlope = Source.DepthBiasSlope;
         }
 
-        if (HasBit(Blocks, GetBlockMask(Block::Stencil)))
-        {
-            Destination.StencilReadMask       = Source.StencilReadMask;
-            Destination.StencilWriteMask      = Source.StencilWriteMask;
-            Destination.StencilBackTest       = Source.StencilBackTest;
-            Destination.StencilBackFail       = Source.StencilBackFail;
-            Destination.StencilBackDepthFail  = Source.StencilBackDepthFail;
-            Destination.StencilBackDepthPass  = Source.StencilBackDepthPass;
-            Destination.StencilFrontTest      = Source.StencilFrontTest;
-            Destination.StencilFrontFail      = Source.StencilFrontFail;
-            Destination.StencilFrontDepthFail = Source.StencilFrontDepthFail;
-            Destination.StencilFrontDepthPass = Source.StencilFrontDepthPass;
-        }
-
         if (HasBit(Blocks, GetBlockMask(Block::Rasterizer)))
         {
             Destination.Fill    = Source.Fill;
             Destination.Cull    = Source.Cull;
             Destination.Scissor = Source.Scissor;
         }
-
-        if (HasBit(Blocks, GetBlockMask(Block::Layout)))
-        {
-            Destination.Topology = Source.Topology;
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Technique::Compile(Ref<Service> Service, Key Key)
+    Object Technique::Compile(Ref<Service> Service, Key Key) const
     {
         Program   Program;
         Signature Signature;

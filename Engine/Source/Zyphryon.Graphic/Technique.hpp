@@ -39,12 +39,10 @@ namespace ZyGraphic
         {
             Blend,          ///< The blend factors, equations and write mask.
             Depth,          ///< The depth clip, write mask, comparison and bias.
-            Stencil,        ///< The stencil read and write masks, comparisons and actions.
             Rasterizer,     ///< The fill mode, cull mode and scissor test.
-            Layout,         ///< The vertex attributes and primitive topology.
         };
 
-        /// \brief Holds every part of a pipeline a feature is allowed to replace.
+        /// \brief Holds every part the base pipeline is built from.
         struct Layer final
         {
             /// The preprocessor macros used when compiling the shaders.
@@ -60,23 +58,26 @@ namespace ZyGraphic
             Shaders         Shaders;
         };
 
-        /// \brief Describes an optional capability that patches the base layer while it is enabled.
+        /// \brief Describes an optional capability that adds macros and replaces state blocks while it is enabled.
         struct Feature final
         {
             /// The name identifying this feature, which a key is resolved from.
-            Str32  Name;
+            Str32           Name;
 
             /// The hash of the texture whose presence enables the feature, or zero if the caller enables it.
-            UInt64 Texture   = 0;
+            UInt64          Texture   = 0;
 
             /// The hash of the parameter whose presence enables the feature, or zero if the caller enables it.
-            UInt64 Parameter = 0;
+            UInt64          Parameter = 0;
 
             /// The bitmask of the state blocks this feature replaces, built from \ref Block.
-            UInt8  Blocks    = 0;
+            UInt8           Blocks    = 0;
 
-            /// The parts replacing the base ones, each left empty at whatever the base keeps.
-            Layer  Patch;
+            /// The preprocessor macros the feature adds to the base's.
+            Sequence<Macro> Macros;
+
+            /// The states every block in \ref Blocks is read from, complete in each of them.
+            States          States;
         };
 
         /// \brief Describes the configuration for a rendering technique.
@@ -113,29 +114,14 @@ namespace ZyGraphic
             return mHandle;
         }
 
-        /// \brief Gets the GPU pipeline handle for the given variant.
-        ///
-        /// \note Yields zero for a variant that has not been compiled yet, which \ref Obtain compiles.
-        ///
-        /// \param Key The bitmask of the features the variant compiles with.
-        /// \return The variant's GPU pipeline object handle, or zero if it has not been compiled.
-        ZY_INLINE Object GetHandle(Key Key) const
-        {
-            if (Key == 0)
-            {
-                return mHandle;
-            }
-
-            const ConstPtr<Object> Handle = mVariants.Find(Key);
-            return (Handle ? * Handle : 0);
-        }
-
         /// \brief Gets the GPU pipeline handle for the given variant, compiling it when it does not exist.
+        ///
+        /// \note A variant missing from the preload list is compiled by the first draw that asks for it.
         ///
         /// \param Service The graphic service used to create the resource.
         /// \param Key     The bitmask of the features the variant compiles with.
         /// \return The variant's GPU pipeline object handle, falling back to the base one if it failed.
-        Object Obtain(Ref<Service> Service, Key Key);
+        Object Obtain(Ref<Service> Service, Key Key) const;
 
         /// \brief Resolves the key of the features the given material enables.
         ///
@@ -254,16 +240,16 @@ namespace ZyGraphic
         /// \param Service The graphic service used to create the resource.
         /// \param Key     The bitmask of the features the variant compiles with.
         /// \return The variant's GPU pipeline object handle, or zero if it failed to compile.
-        Object Compile(Ref<Service> Service, Key Key);
+        Object Compile(Ref<Service> Service, Key Key) const;
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object             mHandle;
-        Description        mDescription;
-        Schema             mSchema;
-        Table<Key, Object> mVariants;
+        Object                     mHandle;
+        Description                mDescription;
+        Schema                     mSchema;
+        mutable Table<Key, Object> mVariants;
     };
 }
