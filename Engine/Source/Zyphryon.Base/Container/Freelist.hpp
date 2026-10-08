@@ -23,7 +23,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Tracks allocation state for a fixed-capacity set of slots using a free-list strategy.
+    /// \brief Represents the allocation state of a fixed-capacity set of slots, tracked with a free-list strategy.
     ///
     /// \tparam Capacity  The number of slots to track.
     /// \tparam EpochBits The number of bits given to each slot's epoch, or zero to track none.

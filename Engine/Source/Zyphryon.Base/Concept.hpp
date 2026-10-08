@@ -168,19 +168,19 @@ inline namespace ZyBase
     template<class Type>
     concept IsEmpty     = std::is_empty_v<Type>;
 
-    /// \brief Empty type used as dummy value.
+    /// \brief Represents an empty type used as a dummy value.
     struct Empty
     {
     };
 
-    /// \brief Identifies the type at the specified index in the parameter pack.
+    /// \brief Provides the type at the specified index in the parameter pack.
     template<UInt Index, typename First, typename... Rest>
     struct Identify
     {
         using Type = Identify<Index - 1, Rest...>::Type;
     };
 
-    /// \brief Identifies the first type in the parameter pack.
+    /// \brief Provides the first type in the parameter pack.
     template<typename First, typename... Rest>
     struct Identify<0, First, Rest...>
     {

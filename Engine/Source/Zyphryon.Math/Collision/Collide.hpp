@@ -21,7 +21,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Finds whether two standing volumes share a spot, and the shortest way one has to move to be clear.
+    /// \brief Provides the tests for whether two standing volumes share a spot, and the shortest way one has to move to be clear.
     ///
     /// \note This is the case \ref Sweep declines: a pair already overlapping has no face the motion came in through.
     class ZY_API Collide final
@@ -83,8 +83,8 @@ inline namespace ZyMath
         ///
         /// \param Apart    The way out across the ground, which need not be normalized.
         /// \param Span     The length of \p Apart, so it is measured once.
-        /// \param Ground   How far one has sunk into the other across the ground.
-        /// \param Standing How far one has sunk into the other up the height.
+        /// \param Ground   The depth one has sunk into the other across the ground.
+        /// \param Standing The depth one has sunk into the other up the height.
         /// \param Under    `true` when the first volume stands below the second.
         /// \param Contact  Receives the way out and the depth along it.
         /// \return `true` always, so a caller may hand the answer straight back.

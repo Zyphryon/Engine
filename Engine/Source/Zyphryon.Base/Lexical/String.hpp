@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A mutable string container with optional inline storage.
+    /// \brief Represents a mutable string container with optional inline storage.
     ///
     /// When \p Capacity is zero, the string uses heap allocation and grows dynamically.
     /// When \p Capacity is greater than zero, the string uses stack storage with a fixed upper bound.
@@ -290,7 +290,7 @@ inline namespace ZyBase
         /// \param Number    The number to append.
         /// \param Digits    The number of digits to append.
         /// \param Base      The numerical base to use.
-        /// \param Uppercase Whether to use uppercase letters for bases greater than 10.
+        /// \param Uppercase `true` to use uppercase letters for bases greater than 10, `false` for lowercase.
         template<typename Type>
         ZY_INLINE constexpr void AppendInteger(Type Number, UInt Digits, UInt Base, Bool Uppercase)
             requires (IsIntegral<Type> && !IsAnyOf<Type, Bool>)

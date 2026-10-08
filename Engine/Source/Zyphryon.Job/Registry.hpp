@@ -20,12 +20,12 @@
 
 namespace ZyJob
 {
-    /// \brief The table of in-flight jobs, addressed by generation-tagged handles.
+    /// \brief Represents the table of in-flight jobs, addressed by generation-tagged handles.
     class Registry final
     {
     public:
 
-        /// \brief Bookkeeping for a single in-flight job.
+        /// \brief Holds the bookkeeping for a single in-flight job.
         struct Entry final
         {
             /// The work to execute, cleared as soon as it returns so captures do not outlive the job.

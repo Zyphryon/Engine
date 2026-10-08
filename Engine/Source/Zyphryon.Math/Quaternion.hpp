@@ -33,7 +33,7 @@ inline namespace ZyMath
 
         /// \brief Constructs a quaternion from an existing vector.
         ///
-        /// \param Data A vector containing (x, y, z, w) components.
+        /// \param Data The vector containing the (x, y, z, w) components.
         ZY_INLINE explicit Quaternion(Vector4 Data)
             : mData { Data }
         {
@@ -61,7 +61,7 @@ inline namespace ZyMath
 
         /// \brief Stores the quaternion components into a float array.
         ///
-        /// \param  Output Pointer to four 32-bit floats. Must be 16-byte aligned.
+        /// \param Output Receives the four components, at an address that must be 16-byte aligned.
         ZY_INLINE void Store(Ptr<Real32> Output) const
         {
             mData.Store(Output);
@@ -437,7 +437,7 @@ inline namespace ZyMath
 
         /// \brief Creates a quaternion from Euler angles.
         /// 
-        /// \param Angles A vector where X = pitch, Y = yaw, Z = roll (in radians).
+        /// \param Angles The pitch, yaw and roll as X, Y and Z, in radians.
         /// \return The quaternion representing the combined rotation.
         static Quaternion FromEulerAngles(Vector3 Angles);
 
@@ -453,7 +453,7 @@ inline namespace ZyMath
         ///
         /// \param Start      The starting quaternion.
         /// \param End        The ending quaternion.
-        /// \param Percentage A value between 0 and 1 representing interpolation amount.
+        /// \param Percentage The interpolation amount, between 0 and 1.
         /// \return The normalized quaternion interpolated between Start and End.
         ZY_INLINE static Quaternion Slerp(Quaternion Start, Quaternion End, Real32 Percentage)
         {

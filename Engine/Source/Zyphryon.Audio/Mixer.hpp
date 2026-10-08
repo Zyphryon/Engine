@@ -22,7 +22,7 @@
 
 namespace ZyAudio
 {
-    /// \brief The engine's software audio mixer: voices, submixes, spatialization, and effects.
+    /// \brief Represents the engine's software audio mixer: voices, submixes, spatialization, and effects.
     class ZY_API Mixer final
     {
     public:
@@ -170,13 +170,13 @@ namespace ZyAudio
 
     private:
 
-        /// \brief The kind of a queued control command.
+        /// \brief Specifies the kind of a queued control command.
         enum class Op : UInt8
         {
             Play, Stop, Pause, Resume, Loop, Volume, Cutoff, Move, Listener, Cone
         };
 
-        /// \brief A single queued control command transferred from the game thread to the audio thread.
+        /// \brief Represents a single queued control command transferred from the game thread to the audio thread.
         struct Command final
         {
             Ptr<Decoder> Decoder;

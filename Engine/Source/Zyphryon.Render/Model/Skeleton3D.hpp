@@ -32,7 +32,7 @@ namespace ZyRender
         /// \brief The value returned for a bone the skeleton does not carry.
         static constexpr SInt32 kMissing = -1;
 
-        /// \brief A single bone, carrying its parent link, rest-pose transform, and inverse bind matrix.
+        /// \brief Represents a single bone, carrying its parent link, rest-pose transform, and inverse bind matrix.
         struct Bone final
         {
             /// The hash of the bone's name.
@@ -54,7 +54,7 @@ namespace ZyRender
             Matrix4x3  Inverse  = Matrix4x3::Identity();
         };
 
-        /// \brief A view over the local transform of every bone, split by channel.
+        /// \brief Represents a view over the local transform of every bone, split by channel.
         struct Pose final
         {
             /// The local position of every bone, relative to its parent.

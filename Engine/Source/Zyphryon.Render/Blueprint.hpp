@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Declares what a frame draws: the targets it needs, and the passes that fill them, in order.
+    /// \brief Describes what a frame draws: the targets it needs, and the passes that fill them, in order.
     ///
     /// \note A scene drawn from several cameras keeps a single set of passes and the state each of them carries.
     class Blueprint final

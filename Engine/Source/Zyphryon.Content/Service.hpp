@@ -25,7 +25,7 @@
 
 namespace ZyContent
 {
-    /// \brief Central coordinator for content I/O, caching, and lifecycle management.
+    /// \brief Represents the central coordinator for content I/O, caching, and lifecycle management.
     class ZY_API Service final : public ZyEngine::Subsystem, public ZyEngine::Locator<ZyJob::Service>
     {
     public:
@@ -171,7 +171,7 @@ namespace ZyContent
         /// \brief Evicts unreferenced resources from the cache of the specified resource type.
         ///
         /// \tparam Type The resource type whose cache to prune.
-        /// \param Force If `true`, all finished assets are removed regardless of tracking state.
+        /// \param Force `true` to remove every finished asset regardless of tracking state, `false` to remove only the unreferenced ones.
         template<typename Type>
         ZY_INLINE void Prune(Bool Force)
         {

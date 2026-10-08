@@ -25,7 +25,7 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief Supplies the state for the dynamic sampler a technique declares under the same name.
+        /// \brief Holds the state for the dynamic sampler a technique declares under the same name.
         struct SamplerEntry final
         {
             /// The hash identifying the sampler's name.
@@ -38,7 +38,7 @@ namespace ZyGraphic
             Object  Handle = 0;
         };
 
-        /// \brief Binds an image to the texture a technique declares under the same name.
+        /// \brief Represents an image bound to the texture a technique declares under the same name.
         struct TextureEntry final
         {
             /// The hash identifying the texture's name.

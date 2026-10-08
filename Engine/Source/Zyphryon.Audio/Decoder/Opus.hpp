@@ -20,7 +20,7 @@
 
 namespace ZyAudio::Codec
 {
-    /// \brief Expands the Opus packets of a baked sound into the mixer's floating-point frames.
+    /// \brief Represents a decoder that expands the Opus packets of a baked sound into the mixer's floating-point frames.
     class ZY_API Opus final : public Decoder
     {
     public:

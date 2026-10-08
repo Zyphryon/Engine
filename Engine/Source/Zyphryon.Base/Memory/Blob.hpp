@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A move-only byte buffer with a caller-supplied deleter.
+    /// \brief Represents a move-only byte buffer with a caller-supplied deleter.
     class Blob final
     {
     public:

@@ -104,7 +104,7 @@ namespace ZyRender
 
     void Graph::Reconcile()
     {
-        ConstSpan<Target> Targets = mBlueprint.GetTargets();
+        const ConstSpan<Target> Targets = mBlueprint.GetTargets();
 
         while (mSlots.GetSize() < Targets.GetSize())
         {

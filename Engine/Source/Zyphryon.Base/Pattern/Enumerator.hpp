@@ -57,7 +57,7 @@ namespace ZyEnum
 /// \brief Defines bitwise operators for the specified enum type with friend access, allowing them to be used in class scopes.
 #define ZY_DEFINE_BITWISE_FRIEND_ENUM(Enum) ZY_DEFINE_BITWISE_ENUM_TYPE(Enum, friend)
 
-    /// \brief Customization point that defines the range of underlying values probed when reflecting \p Type.
+    /// \brief Provides the customization point that defines the range of underlying values probed when reflecting \p Type.
     ///
     /// \note Specialize this trait for a specific enum if it ever needs a wider or negative range.
     template<IsEnum Type>
@@ -72,7 +72,7 @@ namespace ZyEnum
 
     namespace Detail
     {
-        /// \brief A single reflected enumerator.
+        /// \brief Represents a single reflected enumerator.
         template<IsEnum Type>
         struct Descriptor final
         {
@@ -86,7 +86,7 @@ namespace ZyEnum
             UInt16 Length;
         };
 
-        /// \brief The result of reflecting an enum: a dense array of entries.
+        /// \brief Represents the result of reflecting an enum: a dense array of entries.
         template<IsEnum Type, UInt Capacity, UInt Chars>
         struct Reflection final
         {
@@ -97,7 +97,7 @@ namespace ZyEnum
             Array<Char, Chars>                Names;
         };
 
-        /// \brief The two counts needed to size a \c Reflection.
+        /// \brief Holds the two counts needed to size a \c Reflection.
         struct Measurement final
         {
             /// The number of valid enumerators found.

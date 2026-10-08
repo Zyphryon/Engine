@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Gathers the draws of one pass for a \ref Collector to order, and writes each batch it hands back.
+    /// \brief Represents the draws of one pass, gathered for a \ref Collector to order and written batch by batch as it hands them back.
     ///
     /// \tparam Layout The per-instance data one draw is laid out from, in the layout its technique reads.
     template<typename Layout>
@@ -52,9 +52,8 @@ namespace ZyRender
         /// \param Service   The service the transient instance streams are allocated from.
         /// \param Collector The collector the draws are ordered and batched by.
         /// \param Kind      The tag every draw is stamped with, so a drain routes its batches back here.
-        /// \param Vertices  How many vertices one instance is drawn from, four being the quad most are.
-        ZY_INLINE Recorder(
-            ConstRetainer<ZyGraphic::Service> Service, Ref<Collector> Collector, UInt32 Kind, UInt32 Vertices = 4)
+        /// \param Vertices  The number of vertices one instance is drawn from, four being the quad most are.
+        ZY_INLINE Recorder(Ref<ZyGraphic::Service> Service, Ref<Collector> Collector, UInt32 Kind, UInt32 Vertices = 4)
             : mService   { Service },
               mCollector { Collector },
               mKind      { Kind },
@@ -70,14 +69,6 @@ namespace ZyRender
             mTechnique = Technique;
         }
 
-        /// \brief Gets the service the transient streams are allocated from.
-        ///
-        /// \return The service, for whoever holds the recorder to allocate alongside it.
-        ZY_INLINE ConstRetainer<ZyGraphic::Service> GetService() const
-        {
-            return mService;
-        }
-
         /// \brief Drops everything recorded so far, and the technique it was recorded under.
         ZY_INLINE void Reset()
         {
@@ -88,9 +79,9 @@ namespace ZyRender
 
         /// \brief Records one draw and files it with the collector, handing back the instance to fill.
         ///
-        /// \param Order    Where the draw falls in the queue the collector orders.
+        /// \param Order    The place the draw takes in the queue the collector orders.
         /// \param Material The material the draw binds, which its batch is gathered by.
-        /// \param Group    What else keeps the draw out of a batch it does not belong in.
+        /// \param Group    The value that keeps the draw out of a batch it does not belong in.
         /// \param Variant  The features the draw turns on beyond the ones its material implies.
         /// \return The instance the draw is laid out from.
         ZY_INLINE Ref<Layout> Open(
@@ -125,8 +116,7 @@ namespace ZyRender
         /// \param Encoder  The encoder that builds the resulting draw commands.
         /// \param Commands The batch the collector handed back.
         /// \param Uniform  The per-instance uniform stream the batch reads, where it reads one at all.
-        ZY_INLINE void Write(
-            Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands,  ConstRef<ZyGraphic::Stream> Uniform = {})
+        ZY_INLINE void Write(Ref<Encoder> Encoder, ConstSpan<Collector::Command> Commands, ZyGraphic::Stream Uniform = {})
         {
             for (UInt Start = 0, Count = Commands.GetSize(); Start < Count;)
             {
@@ -145,7 +135,10 @@ namespace ZyRender
                     .Count     = mVertices,
                     .Instances = static_cast<UInt32>(Run.GetSize())
                 };
-                Encoder.Begin(* First.Technique).Apply(* First.Material, First.Variant).Draw(Gather(Run), Uniform, Invocation);
+
+
+                const ZyGraphic::Stream Data = Gather(Run);
+                Encoder.Begin(* First.Technique).Apply(* First.Material, First.Variant).Draw(Data, Uniform, Invocation);
 
                 Start = End;
             }
@@ -159,7 +152,7 @@ namespace ZyRender
         /// \return The instance-rate stream the batch draws from.
         ZY_INLINE ZyGraphic::Stream Gather(ConstSpan<Collector::Command> Commands) const
         {
-            ZyGraphic::Transient<Layout> Block = mService->AllocateInFlightVertices<Layout>(Commands.GetSize());
+            ZyGraphic::Transient<Layout> Block = mService.AllocateInFlightVertices<Layout>(Commands.GetSize());
 
             for (UInt32 Element = 0, Limit = Commands.GetSize(); Element < Limit; ++Element)
             {
@@ -173,7 +166,7 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Retainer<ZyGraphic::Service>   mService;
+        Ref<ZyGraphic::Service>        mService;
         Ref<Collector>                 mCollector;
         UInt32                         mKind;
         UInt32                         mVertices;

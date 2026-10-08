@@ -157,7 +157,7 @@ namespace ZyRender
         ///
         /// \note A keyed lane with no bone of its own is kept after the last bone, so a later layout can place it.
         ///
-        /// \param Binding One bone index per lane, as resolved by \ref Skeleton2D::Find.
+        /// \param Binding The bone index of each lane, as resolved by \ref Skeleton2D::Find.
         /// \param Bones   The number of bones the skeleton carries.
         /// \return `true` when every keyed lane found a bone of its own, otherwise `false`.
         Bool Arrange(ConstSpan<SInt32> Binding, UInt32 Bones);

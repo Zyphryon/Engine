@@ -21,7 +21,7 @@
 
 namespace ZyAI
 {
-    /// \brief Interface a \ref Brain calls to run the leaves of a \ref Behaviour.
+    /// \brief Defines the interface a \ref Brain calls to run the leaves of a \ref Behaviour.
     class Host
     {
     public:

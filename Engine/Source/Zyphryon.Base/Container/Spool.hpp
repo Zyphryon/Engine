@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A sequence taken from the front by a cursor rather than by removing what is taken.
+    /// \brief Represents a sequence taken from the front by a cursor rather than by removing what is taken.
     template<typename Type, UInt Count = 0>
     class Spool final
     {

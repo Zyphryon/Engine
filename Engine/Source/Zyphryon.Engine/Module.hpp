@@ -20,7 +20,7 @@
 
 namespace ZyEngine
 {
-    /// \brief Base class for engine modules that can be attached to a host.
+    /// \brief Defines the interface of an engine module that can be attached to a host.
     class Module
     {
     public:

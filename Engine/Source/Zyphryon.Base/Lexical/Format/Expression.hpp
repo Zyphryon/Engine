@@ -20,7 +20,7 @@
 
 namespace ZyFormat
 {
-    /// \brief A parsed format expression representing either a placeholder or literal text.
+    /// \brief Represents a parsed format expression, either a placeholder or literal text.
     struct Expression final
     {
         /// The offset of the literal text in the original format string.

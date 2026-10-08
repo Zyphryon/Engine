@@ -23,7 +23,7 @@ namespace ZyContent
     /// \brief Forward declaration of the content service.
     class Service;
 
-    /// \brief Interface for decoding binary content into resource objects.
+    /// \brief Defines the interface for decoding binary content into resource objects.
     class Loader : public Retainable<Loader>
     {
     public:

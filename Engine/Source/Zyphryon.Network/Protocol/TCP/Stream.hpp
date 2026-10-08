@@ -92,7 +92,7 @@ namespace ZyNetwork::TCP
 
         /// \brief Frames a payload behind the byte that says what it carries, at the back of the outbound queue.
         ///
-        /// \param Kind    What the frame carries.
+        /// \param Kind    The kind of payload the frame carries.
         /// \param Payload The bytes behind the tag, which are copied.
         void Enqueue(Tag Kind, ConstSpan<Byte> Payload);
 

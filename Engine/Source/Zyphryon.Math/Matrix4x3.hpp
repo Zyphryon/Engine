@@ -25,7 +25,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief A matrix transposed into the basis axes and translation, ready to transform points.
+        /// \brief Represents a matrix transposed into the basis axes and translation, ready to transform points.
         struct Basis final
         {
             /// \brief Transposes a matrix into its columns.
@@ -103,18 +103,18 @@ inline namespace ZyMath
 
         /// \brief Constructs a matrix from 12 scalar values in column-major order.
         ///
-        /// \param S00 Element at column 0, row 0.
-        /// \param S10 Element at column 0, row 1.
-        /// \param S20 Element at column 0, row 2.
-        /// \param S30 Element at column 0, row 3.
-        /// \param S01 Element at column 1, row 0.
-        /// \param S11 Element at column 1, row 1.
-        /// \param S21 Element at column 1, row 2.
-        /// \param S31 Element at column 1, row 3.
-        /// \param S02 Element at column 2, row 0.
-        /// \param S12 Element at column 2, row 1.
-        /// \param S22 Element at column 2, row 2.
-        /// \param S32 Element at column 2, row 3.
+        /// \param S00 The element at column 0, row 0.
+        /// \param S10 The element at column 0, row 1.
+        /// \param S20 The element at column 0, row 2.
+        /// \param S30 The element at column 0, row 3.
+        /// \param S01 The element at column 1, row 0.
+        /// \param S11 The element at column 1, row 1.
+        /// \param S21 The element at column 1, row 2.
+        /// \param S31 The element at column 1, row 3.
+        /// \param S02 The element at column 2, row 0.
+        /// \param S12 The element at column 2, row 1.
+        /// \param S22 The element at column 2, row 2.
+        /// \param S32 The element at column 2, row 3.
         ZY_INLINE Matrix4x3(
             Real32 S00, Real32 S10, Real32 S20, Real32 S30,
             Real32 S01, Real32 S11, Real32 S21, Real32 S31,

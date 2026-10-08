@@ -22,14 +22,14 @@
 
 inline namespace ZyBase
 {
-    /// \brief A contiguous sequence of \p Type elements whose storage policy is controlled by \p Count.
+    /// \brief Represents a contiguous sequence of \p Type elements whose storage policy is controlled by \p Count.
     ///
     /// When \p Count is zero the sequence is heap-backed and grows dynamically.
     /// When \p Count is greater than zero all storage lives inside the object itself with a fixed capacity.
     template<typename Type, UInt Count = 0>
     class Sequence;
 
-    /// \brief A heap-backed, dynamically growing contiguous sequence of \p Type elements.
+    /// \brief Represents a heap-backed, dynamically growing contiguous sequence of \p Type elements.
     template<typename Type>
     class Sequence<Type, 0> final
     {

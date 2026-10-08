@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Content loader for the engine's native, pre-baked binary font format.
+    /// \brief Represents the content loader for the engine's native, pre-baked binary font format.
     class FNTLoader final : public ZyContent::Loader
     {
     public:

@@ -30,7 +30,7 @@ namespace ZyGraphic
         /// \brief The most levels of detail a mesh may carry.
         static constexpr UInt8 kMaxDetail = 8;
 
-        /// \brief Where one level's primitives sit in the flat list, and the coverage it serves.
+        /// \brief Describes where one level's primitives sit in the flat list, and the coverage it serves.
         struct Range final
         {
             /// The index of the level's first primitive.

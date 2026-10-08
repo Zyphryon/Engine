@@ -288,7 +288,7 @@ inline namespace ZyBase
         return Result;
     }
 
-    /// \brief A hash carried as a value of its own, so what was hashed cannot be confused with anything else.
+    /// \brief Represents a hash carried as a value of its own, so what was hashed cannot be confused with anything else.
     struct Digest final
     {
         /// The hash itself, which is what a table places the digest by.

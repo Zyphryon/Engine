@@ -14,7 +14,7 @@
 
 namespace ZyAudio
 {
-    /// \brief Abstract interface for decoding audio data into PCM sample frames.
+    /// \brief Defines the interface for decoding audio data into PCM sample frames.
     class ZY_API Decoder
     {
     public:

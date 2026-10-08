@@ -22,13 +22,13 @@
 
 inline namespace ZyBase
 {
-    /// \brief A cache-efficient hash map using Robin Hood hashing with backward-shift deletion and dense value storage.
+    /// \brief Represents a cache-efficient hash map using Robin Hood hashing with backward-shift deletion and dense value storage.
     template<typename Key, typename Value>
     class Table final
     {
     public:
 
-        /// \brief A key-value pair stored in the dense value array.
+        /// \brief Represents a key-value pair stored in the dense value array.
         struct Pair
         {
             Key                 First;
@@ -50,7 +50,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a hash table with initial data.
         ///
-        /// \param List An initializer list of key-value pairs to populate the table.
+        /// \param List The key-value pairs to populate the table with.
         ZY_INLINE Table(ConstSpan<Pair> List)
             : Table()
         {
@@ -230,7 +230,7 @@ inline namespace ZyBase
         /// \brief Removes a key-value pair from the table if it exists and satisfies the given predicate.
         ///
         /// \param Needle    The key to search for in the table.
-        /// \param Predicate A callable invoked with the matching value; returning `true` removes the entry.
+        /// \param Predicate The callable invoked with the matching value; returning `true` removes the entry.
         /// \return `true` if the key was found and the predicate caused its removal, `false` otherwise.
         template<typename KeyType = Key, typename Callable>
         ZY_INLINE Bool EraseIf(AnyRef<KeyType> Needle, AnyRef<Callable> Predicate)
@@ -240,7 +240,7 @@ inline namespace ZyBase
 
         /// \brief Removes all entries satisfying the given predicate.
         ///
-        /// \param Predicate A callable invoked with each key-value pair; returning `true` removes the entry.
+        /// \param Predicate The callable invoked with each key-value pair; returning `true` removes the entry.
         template<typename Callable>
         ZY_INLINE void EraseIf(AnyRef<Callable> Predicate)
         {
@@ -603,7 +603,7 @@ inline namespace ZyBase
         /// \brief Removes a key-value pair from the table if it exists and satisfies the given predicate.
         ///
         /// \param Needle    The key to search for in the table.
-        /// \param Predicate A callable invoked with the matching value; returning `true` removes the entry.
+        /// \param Predicate The callable invoked with the matching value; returning `true` removes the entry.
         /// \return `true` if the key was found and the predicate caused its removal, `false` otherwise.
         template<typename KeyType = Key, typename Callable>
         ZY_INLINE Bool DoEraseIf(AnyRef<KeyType> Needle, AnyRef<Callable> Predicate)

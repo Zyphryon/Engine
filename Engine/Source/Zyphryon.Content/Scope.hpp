@@ -20,7 +20,7 @@
 
 namespace ZyContent
 {
-    /// \brief Tracks dependencies for a resource loading operation.
+    /// \brief Represents the dependencies tracked for a resource loading operation.
     class Scope final
     {
     public:

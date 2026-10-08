@@ -20,7 +20,7 @@
 
 namespace ZyContent
 {
-    /// \brief Virtual filesystem mount backed by a location this machine has to ask another one for.
+    /// \brief Represents a virtual filesystem mount backed by a location this machine has to ask another one for.
     class ZY_API Remote final : public Mount
     {
     public:
@@ -59,7 +59,7 @@ namespace ZyContent
         /// \brief The status a server answers with when it is being asked for too much at once.
         static constexpr UInt32 kTooMany     = 429;
 
-        /// \brief One request, either waiting its turn or waiting on an answer.
+        /// \brief Represents one request, either waiting its turn or waiting on an answer.
         struct Request final
         {
             /// The path being asked for, kept because a refused request is sent again.
@@ -86,7 +86,7 @@ namespace ZyContent
         /// \brief Answers a request and releases it, then sends whatever was waiting behind it.
         ///
         /// \param Handle The request being answered.
-        /// \param Result What to answer with.
+        /// \param Result The result to answer with.
         /// \param Data   The bytes that came back, which the blob takes over, or nothing.
         /// \param Size   The number of bytes that came back.
         static void Close(Ptr<Request> Handle, Filesystem::Result Result, Ptr<Byte> Data, UInt32 Size);

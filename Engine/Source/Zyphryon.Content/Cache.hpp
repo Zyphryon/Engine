@@ -45,7 +45,7 @@ namespace ZyContent
         /// \brief Retrieves an existing asset or optionally creates it if not found.
         ///
         /// \param Key            The URI of the asset.
-        /// \param CreateIfNeeded If `true`, a new asset is created when not found.
+        /// \param CreateIfNeeded `true` to create the asset when it is not found, `false` to only look it up.
         /// \return A Retainer to the asset, or `nullptr` if not found and not created.
         template<typename Source>
         ZY_INLINE Retainer<Type> GetOrCreate(AnyRef<Source> Key, Bool CreateIfNeeded)
@@ -84,7 +84,7 @@ namespace ZyContent
 
         /// \brief Removes finished assets that are solely owned by the cache, or all finished assets if forced.
         ///
-        /// \param Force      If `true`, all finished assets are removed regardless of tracking state.
+        /// \param Force      `true` to remove every finished asset regardless of tracking state, `false` to remove only those the cache solely owns.
         /// \param Dispatcher The callback to invoke for each asset before it is removed.
         template<typename Function>
         ZY_INLINE void Prune(Bool Force, AnyRef<Function> Dispatcher)

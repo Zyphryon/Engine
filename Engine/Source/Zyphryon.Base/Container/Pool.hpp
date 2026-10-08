@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A fixed-capacity object pool that manages allocation and deallocation of objects.
+    /// \brief Represents a fixed-capacity object pool that manages allocation and deallocation of objects.
     ///
     /// \tparam Type      The object the pool holds.
     /// \tparam Capacity  The number of objects the pool can hold.

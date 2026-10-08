@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Defines the effect parameters for text rendering.
+    /// \brief Represents the effect parameters for text rendering.
     class ZY_ALIGN(16) FontEffect final
     {
     public:

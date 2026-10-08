@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A compile-time fixed-capacity string symbol for efficient string interning and comparison.
+    /// \brief Represents a compile-time fixed-capacity string symbol for efficient string interning and comparison.
     ///
     /// \tparam Capacity The total capacity including null terminator (must be >= 1).
     template<UInt Capacity>
@@ -30,7 +30,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a symbol from a string literal.
         ///
-        /// \param Literal A string literal array of exactly \p Capacity characters (including null terminator).
+        /// \param Literal The string literal array of exactly \p Capacity characters (including null terminator).
         ZY_INLINE constexpr Symbol(const Char (& Literal)[Capacity])
         {
             ::Copy(_mData, Capacity, Literal);

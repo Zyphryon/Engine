@@ -30,7 +30,7 @@ inline namespace ZyMath
         Value * Scalar;
     };
 
-    /// \brief A cubic parametric curve, stored in Bézier form.
+    /// \brief Represents a cubic parametric curve, stored in Bézier form.
     ///
     /// \tparam Type The value the curve carries, which may be a scalar, a point, or anything else splinable.
     template<IsSplinable Type>

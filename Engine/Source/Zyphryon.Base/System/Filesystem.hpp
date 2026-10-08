@@ -87,7 +87,7 @@ inline namespace ZyBase
         /// \return `true` to continue enumeration, `false` to stop early.
         using OnEnumerate = Delegate<Bool(ConstRef<Record>)>;
 
-        /// \brief Identifies an open file, transferred at explicit offsets rather than through a cursor.
+        /// \brief Represents an open file, transferred at explicit offsets rather than through a cursor.
         struct Handle final
         {
             /// The value standing for a handle that refers to no file, shared by both backends.
@@ -204,7 +204,7 @@ inline namespace ZyBase
         /// \brief Opens a file and keeps it open for repeated transfers at explicit offsets.
         ///
         /// \param Path   The path of the file to be opened.
-        /// \param Access What the file will be used for.
+        /// \param Access The access the file is opened for.
         /// \param Output The handle receiving the open file, left closed when the file could not be opened.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Open(Text Path, Access Access, Ref<Handle> Output);

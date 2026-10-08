@@ -384,7 +384,7 @@ namespace ZyReflection
         /// \tparam Getter The data member, or the getter, the name is read through.
         /// \tparam Setter The setter the name is written through, left out for a data member or a read-only value.
         /// \param  Name   The name the value is shown under, taken as an array so only a lasting one can be given.
-        /// \param  Filter What the tool offers to pick from, taken the same way and for the same reason.
+        /// \param  Filter The values the tool offers to pick from, taken the same way and for the same reason.
         /// \return A field describing that name.
         template<auto Getter, auto Setter = nullptr, UInt Count, UInt Length>
         ZY_INLINE static constexpr Field Asset(const Char (& Name)[Count], const Char (& Filter)[Length])
@@ -464,7 +464,7 @@ namespace ZyReflection
         /// \param Read  The handler that reads the field out of an instance.
         /// \param Write The handler that writes the field back, or `nullptr` when the field is read-only.
         /// \param Slot   The bounds, options, fields or tag the kind needs.
-        /// \param Traits What may be done with the field beside reading it.
+        /// \param Traits The operations allowed on the field beside reading it.
         /// \param Size  The width of the type the field is reached through.
         /// \param Align The alignment of the type the field is reached through.
         ZY_INLINE constexpr Field(

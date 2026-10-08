@@ -26,7 +26,7 @@ namespace ZyJob
     template<typename Type>
     class Future;
 
-    /// \brief A lane-based job scheduler with dependency tracking and helping waits.
+    /// \brief Represents a lane-based job scheduler with dependency tracking and helping waits.
     class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
@@ -63,7 +63,7 @@ namespace ZyJob
         ///
         /// \param Target     The lane to execute the job on.
         /// \param Work       The job to execute.
-        /// \param Dependency An optional job that must complete before this one is queued.
+        /// \param Dependency The optional job that must complete before this one is queued.
         /// \return A handle that must be passed to \ref Wait, \ref Block or \ref Discard exactly once.
         Handle Submit(Lane Target, AnyRef<Task> Work, Handle Dependency = Handle());
 
@@ -74,7 +74,7 @@ namespace ZyJob
         /// \param Target     The lane to execute the job on.
         /// \param Output     The future the value is written into once the job is done, with no job pending on it.
         /// \param Work       The job to execute, whose return value is written into the future.
-        /// \param Dependency An optional job that must complete before this one is queued.
+        /// \param Dependency The optional job that must complete before this one is queued.
         template<typename Type, typename Callable>
         void Launch(Lane Target, Ref<Future<Type>> Output, AnyRef<Callable> Work, Handle Dependency = Handle())
         {
@@ -116,7 +116,7 @@ namespace ZyJob
         /// \param Target    The lane to spread the range over, which cannot be \ref Lane::Main.
         /// \param Count     The number of indices to visit.
         /// \param Callback  The callback invoked with one half-open chunk of the range, on whichever worker took it.
-        /// \param Partition How many chunks to cut per worker; raise it when the per-index cost is very uneven.
+        /// \param Partition The number of chunks to cut per worker; raise it when the per-index cost is very uneven.
         template<typename Callable>
         void Parallel(Lane Target, UInt32 Count, AnyRef<Callable> Callback, UInt32 Partition = 8)
         {

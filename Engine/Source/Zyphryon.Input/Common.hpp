@@ -180,7 +180,7 @@ namespace ZyInput
         /// Event-specific data.
         union
         {
-            /// \brief Data for \ref Type::KeyType.
+            /// \brief Holds the data for \ref Type::KeyType.
             ///
             /// \warning \c Text is a non-owning view into the poller's internal buffer.
             struct
@@ -188,13 +188,13 @@ namespace ZyInput
                 Text Content;
             } KeyType;
 
-            /// \brief Data for \ref Type::KeyUp and \ref Type::KeyDown.
+            /// \brief Holds the data for \ref Type::KeyUp and \ref Type::KeyDown.
             struct
             {
                 Key  Key; ///< Physical key code.
             } KeyAction;
 
-            /// \brief Data for \ref Type::MouseMove.
+            /// \brief Holds the data for \ref Type::MouseMove.
             struct
             {
                 Real32 X;      ///< Actual X position.
@@ -203,20 +203,20 @@ namespace ZyInput
                 Real32 DeltaY; ///< Delta Y since last event.
             } MouseAxis;
 
-            /// \brief Data for \ref Type::MouseUp and \ref Type::MouseDown.
+            /// \brief Holds the data for \ref Type::MouseUp and \ref Type::MouseDown.
             struct
             {
                 Button Button; ///< Mouse button identifier.
             } MouseAction;
 
-            /// \brief Data for \ref Type::MouseScroll.
+            /// \brief Holds the data for \ref Type::MouseScroll.
             struct
             {
                 Real32 DeltaX; ///< Delta X since last event.
                 Real32 DeltaY; ///< Delta Y since last event.
             } MouseScroll;
 
-            /// \brief Data for \ref Type::TouchDown, \ref Type::TouchMove, \ref Type::TouchUp and \ref Type::TouchCancel.
+            /// \brief Holds the data for \ref Type::TouchDown, \ref Type::TouchMove, \ref Type::TouchUp and \ref Type::TouchCancel.
             struct
             {
                 UInt32 ID;     ///< The identity the platform gave this touch, held until it leaves.
@@ -226,13 +226,13 @@ namespace ZyInput
                 Real32 DeltaY; ///< Delta Y since last event.
             } TouchAction;
 
-            /// \brief Data for \ref Type::WindowFocus.
+            /// \brief Holds the data for \ref Type::WindowFocus.
             struct
             {
                 Bool State; ///< `true` if focus gained, `false` if lost.
             } WindowFocus;
 
-            /// \brief Data for \ref Type::WindowResize.
+            /// \brief Holds the data for \ref Type::WindowResize.
             struct
             {
                 UInt32 Width;  ///< New window width in pixels.

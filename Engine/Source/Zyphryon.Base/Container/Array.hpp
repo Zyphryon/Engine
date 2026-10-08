@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A fixed-size contiguous sequence container holding exactly \p Count elements of \p Type.
+    /// \brief Represents a fixed-size contiguous sequence container holding exactly \p Count elements of \p Type.
     template<typename Type, UInt Count>
     class Array final
     {

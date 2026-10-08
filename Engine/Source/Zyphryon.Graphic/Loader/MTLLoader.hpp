@@ -21,7 +21,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Content loader for material assets using JSON.
+    /// \brief Represents the content loader for material assets using JSON.
     class MTLLoader final : public ZyContent::Loader
     {
     public:

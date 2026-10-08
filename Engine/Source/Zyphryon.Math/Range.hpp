@@ -104,7 +104,7 @@ inline namespace ZyMath
 
         /// \brief Walks from one bound to the other.
         ///
-        /// \param Amount How far along to walk, from zero at the lower bound to one at the upper.
+        /// \param Amount The fraction to walk, from zero at the lower bound to one at the upper.
         /// \return The value that far between the bounds.
         ZY_INLINE constexpr Type Lerp(Real32 Amount) const
         {

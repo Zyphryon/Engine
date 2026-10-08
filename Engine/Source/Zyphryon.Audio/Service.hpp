@@ -23,7 +23,7 @@
 
 namespace ZyAudio
 {
-    /// \brief High-level audio service that owns the mixer and its output device driver.
+    /// \brief Represents the high-level audio service that owns the mixer and its output device driver.
     class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:

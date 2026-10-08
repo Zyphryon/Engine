@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Predefined inline storage sizes for delegates.
+    /// \brief Specifies the predefined inline storage sizes for delegates.
     enum class DelegateInlineSize
     {
         None      = 0,    ///< No inline storage
@@ -31,11 +31,11 @@ inline namespace ZyBase
         Largest   = 16,   ///< Maximum size for inline storage, enough for most functor objects.
     };
 
-    /// \brief A type-safe delegate that can bind to free functions, member functions, and lambdas.
+    /// \brief Represents a type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Standard>
     class ZY_ALIGN_CPU Delegate;
 
-    /// \brief A type-safe delegate that can bind to free functions, member functions, and lambdas.
+    /// \brief Represents a type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
     class ZY_ALIGN_CPU Delegate<Return(Arguments...), InlineSize> final
     {
@@ -459,7 +459,7 @@ inline namespace ZyBase
         Release mRelease;
     };
 
-    /// \brief A type-safe delegate that can bind to free functions and static member functions only.
+    /// \brief Represents a type-safe delegate that can bind to free functions and static member functions only.
     template<typename Return, typename... Arguments>
     class ZY_ALIGN_CPU Delegate<Return(Arguments...), DelegateInlineSize::None> final
     {
@@ -633,11 +633,11 @@ inline namespace ZyBase
         Execute mExecute;
     };
 
-    /// \brief A multicast delegate that can hold and invoke multiple delegates.
+    /// \brief Represents a multicast delegate that can hold and invoke multiple delegates.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Standard>
     class ZY_ALIGN_CPU MulticastDelegate;
 
-    /// \brief A multicast delegate that can hold and invoke multiple delegates.
+    /// \brief Represents a multicast delegate that can hold and invoke multiple delegates.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
     class MulticastDelegate<Return(Arguments...), InlineSize> final
     {

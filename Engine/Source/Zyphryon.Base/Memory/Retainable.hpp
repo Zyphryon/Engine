@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Base class for reference-counted objects managed by `Retainer<Type>`.
+    /// \brief Represents the base of every reference-counted object managed by `Retainer<Type>`.
     template<typename Type>
     class Retainable
     {

@@ -35,7 +35,7 @@ inline namespace ZyBase
         { Value.GetData() } -> IsCastable<ConstPtr<Element>>;
     };
     
-    /// \brief A non-owning view over a contiguous sequence of elements of \p Type.
+    /// \brief Represents a non-owning view over a contiguous sequence of elements of \p Type.
     template<typename Type>
     class Span final
     {

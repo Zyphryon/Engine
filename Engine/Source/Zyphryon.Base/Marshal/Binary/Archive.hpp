@@ -53,7 +53,7 @@ inline namespace ZyBase
         Object.Advance(Size);
     };
 
-    /// \brief A unified reader/writer for serializing values to and from a binary archive.
+    /// \brief Represents a unified reader/writer for serializing values to and from a binary archive.
     ///
     /// \tparam Object The underlying archive type, either \c Reader or \c Writer.
     template<typename Object>

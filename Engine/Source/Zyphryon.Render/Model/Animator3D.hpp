@@ -22,7 +22,7 @@
 
 namespace ZyRender
 {
-    /// \brief One playing instance of a model, holding its clip position and the palette posed from it.
+    /// \brief Represents one playing instance of a model, holding its clip position and the palette posed from it.
     class ZY_API Animator3D final
     {
     public:
@@ -30,7 +30,7 @@ namespace ZyRender
         /// \brief The number of clips an animator holds at once: the one playing, and the one it fades out of.
         static constexpr UInt kSources = 2;
 
-        /// \brief Scratch space for posing, shared by every animator advanced on one thread.
+        /// \brief Represents the scratch space for posing, shared by every animator advanced on one thread.
         ///
         /// The local poses are written, folded into the palette, and never read again, so they live here once
         /// per thread instead of once per instance.
@@ -41,7 +41,7 @@ namespace ZyRender
             /// \brief Gets a pose sized to the given rig, growing the buffers when one is wider than any before.
             ///
             /// \param Bones The number of bones the caller is about to pose.
-            /// \param Slot  Which of the \ref kSources poses to hand out.
+            /// \param Slot  The pose to hand out, below \ref kSources.
             /// \return A pose covering exactly \p Bones, whose contents are indeterminate.
             Skeleton3D::Pose Acquire(UInt Bones, UInt Slot = 0);
 
@@ -76,8 +76,8 @@ namespace ZyRender
         /// \brief Starts a clip over the attached model's rig.
         ///
         /// \param Animation The clip to play.
-        /// \param Mode      How the clip behaves once it reaches its end.
-        /// \param Fade      How long to blend out of the clip already playing, in seconds.
+        /// \param Mode      The way the clip behaves once it reaches its end.
+        /// \param Fade      The time to blend out of the clip already playing, in seconds.
         void Play(ConstRetainer<Animation3D> Animation, Repeat Mode = Repeat::Loop, Real64 Fade = 0.0);
 
         /// \brief Gets the cursor tracking where the playing clip has reached.
@@ -106,7 +106,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief One clip paired with a rig: where it has reached, and how its lanes reach the bones.
+        /// \brief Represents one clip paired with a rig: where it has reached, and how its lanes reach the bones.
         struct Source final
         {
             /// The clip being played, or empty when the source holds none.

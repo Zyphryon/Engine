@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Lock-free single-producer / single-consumer ring buffer of fixed capacity.
+    /// \brief Represents a lock-free single-producer / single-consumer ring buffer of fixed capacity.
     ///
     /// \tparam Capacity The maximum number of elements the ring can hold. Must be a power of two.
     template<typename Type, UInt32 Capacity>

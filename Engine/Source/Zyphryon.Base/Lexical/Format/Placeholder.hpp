@@ -20,7 +20,7 @@
 
 namespace ZyFormat
 {
-    /// \brief Parsed format placeholder specification controlling output formatting.
+    /// \brief Represents a parsed format placeholder specification controlling output formatting.
     struct Placeholder final
     {
         /// The parameter index for positional formatting.

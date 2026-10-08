@@ -54,7 +54,7 @@ namespace ZyGraphic
             Sequence<Uniform> Uniforms;
         };
 
-        /// \brief Names a sampler a material may supply, with the state bound when it does not.
+        /// \brief Describes a sampler a material may supply, with the state bound when it does not.
         struct Sampler final
         {
             /// The hash identifying this sampler's name.
@@ -67,7 +67,7 @@ namespace ZyGraphic
             Object             Handle = 0;
         };
 
-        /// \brief Names a texture the program samples, with the one-texel texture bound where a material supplies none.
+        /// \brief Describes a texture the program samples, with the one-texel texture bound where a material supplies none.
         struct Texture final
         {
             /// The hash identifying the name a material binds its image under.

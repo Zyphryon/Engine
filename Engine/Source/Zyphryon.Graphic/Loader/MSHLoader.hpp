@@ -20,7 +20,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Content loader for the engine's native, chunked binary mesh format.
+    /// \brief Represents the content loader for the engine's native, chunked binary mesh format.
     class MSHLoader final : public ZyContent::Loader
     {
     public:

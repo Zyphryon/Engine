@@ -14,7 +14,7 @@
 
 namespace ZyEngine
 {
-    /// \brief A system that manages a collection of subsystems and coordinates their lifecycle.
+    /// \brief Represents a system that manages a collection of subsystems and coordinates their lifecycle.
     template<typename Unit>
     class System
     {

@@ -59,7 +59,7 @@ inline namespace ZyBase
         /// \brief Constructs a key naming one slot at one epoch.
         ///
         /// \param Slot  The slot, counted from one, or zero to name nothing.
-        /// \param Epoch How many times that slot had been handed out when the key was minted.
+        /// \param Epoch The number of times that slot had been handed out when the key was minted.
         ZY_INLINE constexpr Key(Slot Slot, Epoch Epoch)
             : mValue { static_cast<Value>(static_cast<Value>(Slot) | (static_cast<Value>(Epoch) << kSlotBits)) }
         {

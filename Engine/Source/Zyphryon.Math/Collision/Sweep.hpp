@@ -21,7 +21,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Finds where a moving volume first meets a standing one.
+    /// \brief Provides the tests for where a moving volume first meets a standing one.
     class ZY_API Sweep final
     {
     public:
@@ -93,9 +93,9 @@ inline namespace ZyMath
 
         /// \brief Narrows the interval to the stretch of the motion that lies between one pair of faces.
         ///
-        /// \param Apart  How far apart the two volumes stand along the axis.
-        /// \param Reach  How far apart along the axis the two still touch at.
-        /// \param Motion How far the first volume travels along the axis.
+        /// \param Apart  The distance between the two volumes along the axis.
+        /// \param Reach  The largest distance along the axis at which the two still touch.
+        /// \param Motion The distance the first volume travels along the axis.
         /// \param Facing The way out of the faces this axis stands for.
         /// \param Result Receives the narrowed interval, left as it was when nothing survives.
         /// \return `true` if any of the motion survives the narrowing, `false` otherwise.
@@ -103,19 +103,19 @@ inline namespace ZyMath
 
         /// \brief Narrows the interval to the stretch of the motion that lies inside one circle on the ground.
         ///
-        /// \param Apart  How far apart the two volumes stand across the ground.
-        /// \param Reach  How far apart across the ground the two still touch at.
-        /// \param Motion How far the first volume travels across the ground.
+        /// \param Apart  The offset between the two volumes across the ground.
+        /// \param Reach  The largest distance across the ground at which the two still touch.
+        /// \param Motion The displacement of the first volume across the ground.
         /// \param Result Receives the narrowed interval, left as it was when nothing survives.
         /// \return `true` if any of the motion survives the narrowing, `false` otherwise.
         static Bool NarrowRound(Vector2 Apart, Real32 Reach, Vector2 Motion, Ref<Interval> Result);
 
         /// \brief Narrows the interval against a rectangle grown by a radius, which is two slabs and four corners.
         ///
-        /// \param Apart  How far apart the two volumes stand across the ground.
+        /// \param Apart  The offset between the two volumes across the ground.
         /// \param Extent The half-size of the rectangle across the ground.
         /// \param Reach  The radius the rectangle is grown by.
-        /// \param Motion How far the first volume travels across the ground.
+        /// \param Motion The displacement of the first volume across the ground.
         /// \param Result Receives the narrowed interval, left as it was when nothing survives.
         /// \return `true` if any of the motion survives the narrowing, `false` otherwise.
         static Bool NarrowGrown(Vector2 Apart, Vector2 Extent, Real32 Reach, Vector2 Motion, Ref<Interval> Result);

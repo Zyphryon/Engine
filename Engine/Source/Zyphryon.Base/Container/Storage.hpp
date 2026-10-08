@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A union providing uninitialized, contiguous storage for \p Count elements of \p Type.
+    /// \brief Represents a union providing uninitialized, contiguous storage for \p Count elements of \p Type.
     template<typename Type, UInt Count>
     class Storage final
     {
@@ -98,7 +98,7 @@ inline namespace ZyBase
         /// \brief Constructs the element at the specified index in place.
         ///
         /// \param Index      The zero-based index of the slot to construct.
-        /// \param Parameters Forwarded arguments used to construct the value.
+        /// \param Parameters The arguments forwarded to construct the value.
         /// \return A non-owning reference to the constructed value.
         template<typename... Arguments>
         ZY_INLINE constexpr Ref<Type> Construct(UInt Index, AnyRef<Arguments>... Parameters)

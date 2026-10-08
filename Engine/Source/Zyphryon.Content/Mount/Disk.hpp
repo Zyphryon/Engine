@@ -20,7 +20,7 @@
 
 namespace ZyContent
 {
-    /// \brief Virtual filesystem mount backed by the host operating system's filesystem.
+    /// \brief Represents a virtual filesystem mount backed by the host operating system's filesystem.
     class ZY_API Disk final : public Mount
     {
     public:

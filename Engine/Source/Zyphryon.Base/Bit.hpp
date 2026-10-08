@@ -48,7 +48,7 @@ inline namespace ZyBase
     ///
     /// \param Field  The original field value to modify.
     /// \param Mask   The bitmask indicating which bits to set or clear.
-    /// \param Enable If `true`, the bits specified by the mask are set, otherwise are cleared.
+    /// \param Enable `true` to set the bits the mask specifies, `false` to clear them.
     /// \return A new value with the specified bits either set or cleared based on the condition.
     template<typename Type, typename Value>
     constexpr Type SetOrClearBit(Type Field, Value Mask, Bool Enable)

@@ -23,8 +23,7 @@ namespace ZyNetwork
     /// \brief Represents a value one side keeps telling the other, of which only the newest ever matters.
     ///
     /// \tparam Type   The value, which is serializable or trivially copyable.
-    /// \tparam Opcode The type the application names its opcodes with, an enumeration or a plain integer, whose
-    ///                width is what the message opens with.
+    /// \tparam Opcode The type the application names its opcodes with, an enumeration or a plain integer.
     template<typename Type, typename Opcode = UInt8>
     class Signal final
     {
@@ -68,13 +67,14 @@ namespace ZyNetwork
         /// \return `true` if a newer value had arrived, `false` if nothing came since the last take.
         ZY_INLINE Bool Poll(Ref<Type> Value)
         {
-            if (!mFresh)
+            if (mFresh)
             {
-                return false;
+                mFresh = false;
+                Value  = mValue;
+
+                return true;
             }
-            mFresh = false;
-            Value  = mValue;
-            return true;
+            return false;
         }
 
         /// \brief Writes the message when the value changed since it was last said, or has held for \ref kRepeat.
@@ -88,7 +88,7 @@ namespace ZyNetwork
 
             // Compared as bytes, so a value that cannot say whether it changed still only goes out when it did.
             mScratch.Clear();
-            Archive<Writer>(mScratch).Serialize(mValue);
+            Archive(mScratch).Serialize(mValue);
 
             if (Same(mScratch, mSaid) && mElapsed < kRepeat)
             {
@@ -99,7 +99,7 @@ namespace ZyNetwork
             mSaid.Clear();
             mSaid.Write<Byte>(mScratch.GetData(), mScratch.GetSize());
 
-            Archive<Writer>(Output).Serialize(mOpcode);
+            Archive(Output).Serialize(mOpcode);
             Output.Write<UInt16>(++mSequence);
             Output.Write<Byte>(mScratch.GetData(), mScratch.GetSize());
             return true;
@@ -120,7 +120,7 @@ namespace ZyNetwork
 
             // Read rather than peeked, since the opcode is as wide as the application made it.
             Opcode Code;
-            Archive<Reader>(Input).Serialize(Code);
+            Archive(Input).Serialize(Code);
 
             if (Code != mOpcode)
             {
@@ -133,7 +133,7 @@ namespace ZyNetwork
                 mSequence = Sequence;
                 mFresh    = true;
 
-                Archive<Reader>(Input).Serialize(mValue);
+                Archive(Input).Serialize(mValue);
             }
             return true;
         }

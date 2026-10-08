@@ -503,7 +503,7 @@ namespace ZyGraphic
         UInt32 UniformBlockCapacity  = 0;
     };
 
-    /// \brief Configuration settings for the graphics device.
+    /// \brief Describes the configuration settings for the graphics device.
     struct Configuration final
     {
         /// Whether presentation waits for the vertical blank.
@@ -541,7 +541,7 @@ namespace ZyGraphic
         Sequence<Adapter> Adapters;
     };
 
-    /// \brief Defines a rectangular scissor region for pixel clipping during rendering.
+    /// \brief Describes a rectangular scissor region for pixel clipping during rendering.
     struct Scissor final
     {
         /// The X screen coordinate of the region’s origin, in pixels.
@@ -557,7 +557,7 @@ namespace ZyGraphic
         UInt16 Height = 0;
     };
 
-    /// \brief Defines a rectangular viewport for transforming normalized device coordinates.
+    /// \brief Describes a rectangular viewport for transforming normalized device coordinates.
     struct Viewport final
     {
         /// The X coordinate of the top-left corner in screen space.
@@ -579,7 +579,7 @@ namespace ZyGraphic
         Real32 MaxDepth = 1.0f;
     };
 
-    /// \brief Defines the configuration for a color attachment in a render pass.
+    /// \brief Describes the configuration for a color attachment in a render pass.
     struct ColorAttachment final
     {
         /// The texture object used as the render target for this attachment.
@@ -598,7 +598,7 @@ namespace ZyGraphic
         Action StoreAction = Action::Store;
     };
 
-    /// \brief Defines the configuration for a depth/stencil attachment in a render pass.
+    /// \brief Describes the configuration for a depth/stencil attachment in a render pass.
     struct DepthAttachment final
     {
         /// The texture object used as the render target for this attachment.
@@ -623,7 +623,7 @@ namespace ZyGraphic
         Action StencilStoreAction = Action::Store;
     };
 
-    /// \brief Defines the layout of a vertex attribute within a vertex buffer.
+    /// \brief Describes the layout of a vertex attribute within a vertex buffer.
     struct Attribute final
     {
         /// The location of the vertex attribute in the shader.
@@ -645,7 +645,7 @@ namespace ZyGraphic
     /// \brief Type alias for the vertex attributes a program's input stage consumes.
     using Attributes = Sequence<Attribute, kMaxAttributes>;
 
-    /// \brief Defines a buffer stream used for vertex, index, or uniform input.
+    /// \brief Describes a buffer stream used for vertex, index, or uniform input.
     struct Stream final
     {
         /// The buffer object providing the data for this stream.
@@ -664,7 +664,7 @@ namespace ZyGraphic
         ZY_INLINE constexpr Bool operator==(ConstRef<Stream> Other) const = default;
     };
 
-    /// \brief Defines the sampling parameters for texture access in shaders.
+    /// \brief Describes the sampling parameters for texture access in shaders.
     struct Sampler final
     {
         /// The wrapping mode for the U (horizontal) texture coordinate.
@@ -847,7 +847,7 @@ namespace ZyGraphic
         }
     };
 
-    /// \brief Defines the parameters for a draw call.
+    /// \brief Describes the parameters for a draw call.
     struct Invocation final
     {
         /// The number of vertices or indices to draw.
@@ -863,7 +863,7 @@ namespace ZyGraphic
         UInt32 Instances = 1;
     };
 
-    /// \brief Defines a complete draw item, encapsulating all state and resources needed for a single draw call.
+    /// \brief Represents a complete draw item, encapsulating all state and resources needed for a single draw call.
     struct Command final
     {
         /// \brief Maximum number of sampler bindings allowed per draw command.

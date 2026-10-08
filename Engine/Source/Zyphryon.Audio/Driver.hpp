@@ -20,7 +20,7 @@
 
 namespace ZyAudio
 {
-    /// \brief The audio output device backend backend per operating system.
+    /// \brief Represents the audio output device backend for each operating system.
     class ZY_API Driver final
     {
     public:

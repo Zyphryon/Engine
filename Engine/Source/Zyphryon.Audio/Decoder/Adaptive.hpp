@@ -21,7 +21,7 @@
 
 namespace ZyAudio::Codec
 {
-    /// \brief Expands the IMA ADPCM blocks of a baked sound into the mixer's floating-point frames.
+    /// \brief Represents a decoder that expands the IMA ADPCM blocks of a baked sound into the mixer's floating-point frames.
     class ZY_API Adaptive final : public Decoder
     {
     public:

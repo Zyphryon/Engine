@@ -22,7 +22,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A mixin that provides named factory registration for swappable implementations.
+    /// \brief Represents a mixin that provides named factory registration for swappable implementations.
     ///
     /// \tparam Interface The abstract interface that all registered factories must produce.
     template<typename Interface>

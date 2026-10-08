@@ -23,7 +23,7 @@
 
 namespace ZyAudio
 {
-    /// \brief Runtime state for a single active playback instance, owned by the mixer's voice pool.
+    /// \brief Holds the runtime state of a single active playback instance, owned by the mixer's voice pool.
     struct Voice final
     {
         /// The decoder that owns and supplies the source PCM (already at the mixer sample rate).

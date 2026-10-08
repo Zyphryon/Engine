@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Intrusive reference-counted smart pointer managing a `Retainable` object.
+    /// \brief Represents an intrusive reference-counted smart pointer managing a `Retainable` object.
     template<class Type>
     class Retainer final
     {

@@ -20,7 +20,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Content loader for shader source assets.
+    /// \brief Represents the content loader for shader source assets.
     class SHDLoader final : public ZyContent::Loader
     {
     public:

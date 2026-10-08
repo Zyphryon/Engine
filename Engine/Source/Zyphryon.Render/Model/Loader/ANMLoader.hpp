@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Content loader for the engine's native, pre-baked binary animation format.
+    /// \brief Represents the content loader for the engine's native, pre-baked binary animation format.
     class ANMLoader final : public ZyContent::Loader
     {
     public:
@@ -35,7 +35,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief Identifies which components of a bone a lane drives.
+        /// \brief Specifies which components of a bone a lane drives.
         enum class Component : UInt8
         {
             None     = 0,

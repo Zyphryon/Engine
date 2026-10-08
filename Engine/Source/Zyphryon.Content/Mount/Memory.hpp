@@ -20,12 +20,12 @@
 
 namespace ZyContent
 {
-    /// \brief Virtual mount that serves read-only resources from in-memory, typically compiled-in, buffers.
+    /// \brief Represents a virtual mount that serves read-only resources from in-memory, typically compiled-in, buffers.
     class ZY_API Memory final : public Mount
     {
     public:
 
-        /// \brief Associates a logical path with the bytes served for it.
+        /// \brief Represents a logical path paired with the bytes served for it.
         struct Entry final
         {
             /// The logical path within the mount.

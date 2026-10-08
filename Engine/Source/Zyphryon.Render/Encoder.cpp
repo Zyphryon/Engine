@@ -24,7 +24,6 @@ namespace ZyRender
     Encoder::Binder::Binder(Ref<Encoder> Encoder, ConstRef<ZyGraphic::Technique> Technique)
         : mEncoder   { Encoder },
           mTechnique { Technique },
-          mCommand   { },
           mVariant   { 0 }
     {
         ConstRef<ZyGraphic::Schema> Schema = Technique.GetSchema();
@@ -98,7 +97,7 @@ namespace ZyRender
 
             Bool Bound = false;
 
-            for (ConstRef<ZyGraphic::Stream> Stream : mCommand.Vertices)
+            for (const ZyGraphic::Stream Stream : mCommand.Vertices)
             {
                 Bound = Stream.Buffer == Vertices
                      && Stream.Stride == Block.Stride

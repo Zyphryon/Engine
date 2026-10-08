@@ -23,7 +23,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Encapsulates a binary reader for deserialization.
+    /// \brief Represents a binary reader for deserialization.
     class Reader final
     {
     public:

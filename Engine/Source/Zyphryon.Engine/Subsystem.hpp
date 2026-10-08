@@ -20,7 +20,7 @@
 
 namespace ZyEngine
 {
-    /// \brief A generic subsystem class for defining subsystems within a system.
+    /// \brief Represents a generic subsystem within a system.
     class Subsystem : public Retainable<Subsystem>
     {
     public:

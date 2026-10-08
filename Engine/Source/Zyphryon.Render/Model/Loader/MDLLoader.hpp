@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Content loader for the engine's textual model manifest.
+    /// \brief Represents the content loader for the engine's textual model manifest.
     class MDLLoader final : public ZyContent::Loader
     {
     public:

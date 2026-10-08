@@ -20,7 +20,7 @@
 
 namespace ZyJob
 {
-    /// \brief One lane's runtime state: the jobs queued on it and the workers that drain them.
+    /// \brief Represents one lane's runtime state: the jobs queued on it and the workers that drain them.
     class Executor final
     {
     public:

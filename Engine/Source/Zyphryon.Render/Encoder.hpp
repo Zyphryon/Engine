@@ -23,12 +23,12 @@
 
 namespace ZyRender
 {
-    /// \brief Builds graphic draw commands with automatic resource binding.
+    /// \brief Represents a builder of graphic draw commands with automatic resource binding.
     class ZY_API Encoder final
     {
     public:
 
-        /// \brief Fills the bindings a technique's signature declares, then emits the draw that reads them.
+        /// \brief Represents one draw being bound, filling the bindings a technique's signature declares and then emitting the draw that reads them.
         class Binder final
         {
         public:
@@ -222,7 +222,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief What a material resolves to under a technique: its variant, packed block, images and samplers.
+        /// \brief Represents what a material resolves to under a technique: its variant, packed block, images and samplers.
         struct Binding final
         {
             /// The technique the material was resolved under.

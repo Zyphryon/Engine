@@ -21,7 +21,7 @@
 
 namespace ZyAudio
 {
-    /// \brief Content loader for the engine's native, mixer-ready binary sound format.
+    /// \brief Represents the content loader for the engine's native, mixer-ready binary sound format.
     class SNDLoader final : public ZyContent::Loader
     {
     public:

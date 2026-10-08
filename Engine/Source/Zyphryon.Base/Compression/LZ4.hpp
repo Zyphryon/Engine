@@ -53,7 +53,7 @@ inline namespace ZyBase
     /// \param Source      The uncompressed input bytes.
     /// \param Destination The output buffer receiving the compressed bytes.
     /// \param Capacity    The capacity of the output buffer, in bytes (must be at least `LZ4Bound(Source size)`).
-    /// \param Level       How far to walk each chain, clamped to [`kLZ4LevelMin`, `kLZ4LevelMax`].
+    /// \param Level       The search depth along each chain, clamped to [`kLZ4LevelMin`, `kLZ4LevelMax`].
     /// \return The number of compressed bytes written.
     ZY_API UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity, UInt32 Level);
 

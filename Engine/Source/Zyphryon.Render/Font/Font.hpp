@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief A font resource containing glyph metrics, kerning data, and a material for rendering text.
+    /// \brief Represents a font resource containing glyph metrics, kerning data, and one material per atlas page.
     class ZY_API Font final : public ZyContent::AbstractResource<Font>
     {
     public:
@@ -55,7 +55,7 @@ namespace ZyRender
             UInt32 Page;
         };
 
-        /// \brief Metrics describing the font typeface.
+        /// \brief Represents the metrics of the font typeface.
         struct Metrics final
         {
             /// Nominal font size used when generating glyphs.
@@ -101,7 +101,7 @@ namespace ZyRender
         /// \param Metrics The font metrics.
         /// \param Glyphs  The table of glyphs indexed by Unicode codepoint.
         /// \param Kerning The table of kerning adjustments for character pairs.
-        /// \param Atlases One material per atlas page, indexed by \c Glyph::Page.
+        /// \param Atlases The materials, one per atlas page, indexed by \c Glyph::Page.
         void Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, AnyRef<Atlases> Atlases);
 
         /// \brief Gets the font metrics describing ascent, descent, and underline properties.
@@ -162,7 +162,7 @@ namespace ZyRender
         ///
         /// \param Content  The text string to lay out.
         /// \param Spacing  The horizontal (between characters) and vertical (between lines) spacing adjustments.
-        /// \param Callback A callable invoked with the \ref Placement of each glyph, in reading order.
+        /// \param Callback The callable invoked with the \ref Placement of each glyph, in reading order.
         template<typename Callable>
         void Shape(Text Content, Vector2 Spacing, AnyRef<Callable> Callback) const
         {

@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A cache-efficient unordered bag with dense storage and fast iteration.
+    /// \brief Represents a cache-efficient unordered bag with dense storage and fast iteration.
     template<typename Key>
     class Bag final
     {

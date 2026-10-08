@@ -22,7 +22,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A parsed command line, exposed as named switches plus ordered operands.
+    /// \brief Represents a parsed command line, exposed as named switches plus ordered operands.
     ///
     /// A switch is written as `--name`, `--name=value`, `--name value`, or `--no-name`.
     class ZY_API Environment final
@@ -136,7 +136,7 @@ inline namespace ZyBase
 
     private:
 
-        /// \brief A single name/value pair produced by \ref Parse.
+        /// \brief Represents a single name/value pair produced by \ref Parse.
         struct Switch final
         {
             /// The switch name, with its leading dashes and any negation prefix stripped.

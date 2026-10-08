@@ -22,7 +22,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Manages all GPU resources and rendering operations.
+    /// \brief Represents the graphics service, managing all GPU resources and rendering operations.
     ///
     /// Dispatch commands to the active driver through a double-buffered \ref Journal for asynchronous GPU execution.
     class ZY_API Service final : public ZyEngine::Subsystem, public Switchable<Driver>
@@ -360,7 +360,7 @@ namespace ZyGraphic
         /// \param Token The stop token used to request termination of the GPU worker thread.
         void OnWorkerThread(ConstRef<std::stop_token> Token);
 
-        /// \brief Mirrors the driver state the producer side must answer for without reaching the GPU thread.
+        /// \brief Holds a mirror of the driver state the producer side must answer for without reaching the GPU thread.
         struct Snapshot final
         {
             /// Whether presentation waits for the vertical blank.
@@ -399,7 +399,7 @@ namespace ZyGraphic
             UInt32         Capacity = 0;
         };
 
-        /// \brief Groups all per-frame resources required to record and execute one GPU frame.
+        /// \brief Holds all per-frame resources required to record and execute one GPU frame.
         struct InFlightFrame final
         {
             /// The command journal for this frame.

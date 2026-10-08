@@ -77,7 +77,7 @@ namespace ZyNetwork
 
     struct Proactor::Backend final
     {
-        /// \brief One operation as the platform holds it, which outlives the socket it was posted on.
+        /// \brief Represents one operation as the platform holds it, which outlives the socket it was posted on.
         struct Record final
         {
             /// What the platform threads its completion through, which must lead the record for the cast back.

@@ -21,7 +21,7 @@
 
 namespace ZyContent
 {
-    /// \brief Base class for content resources managed by the content service.
+    /// \brief Represents the base of every content resource managed by the content service.
     class Resource : public Retainable<Resource>
     {
     public:
@@ -187,7 +187,7 @@ namespace ZyContent
         UInt64         mFootprint;
     };
 
-    /// \brief Abstract base class for typed resources with an associated cache.
+    /// \brief Represents the abstract base of every typed resource with an associated cache.
     ///
     /// \tparam Type The concrete resource type derived from Resource.
     template<typename Type>

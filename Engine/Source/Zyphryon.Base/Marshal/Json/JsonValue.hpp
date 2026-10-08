@@ -24,7 +24,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A JSON value that can represent any JSON type.
+    /// \brief Represents a JSON value of any JSON type.
     class JsonValue final
     {
     public:

@@ -27,7 +27,7 @@ namespace ZyRender
     {
     public:
 
-        /// \brief The motion of one bone: what it is called, and where it goes over time.
+        /// \brief Represents the motion of one bone: what it is called, and where it goes over time.
         struct Lane final
         {
             /// The hash of the driven bone's name, matching \ref Skeleton3D::Bone::Name.

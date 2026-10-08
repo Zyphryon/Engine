@@ -20,7 +20,7 @@
 
 namespace ZyEngine
 {
-    /// \brief Aggregates multiple service dependencies and resolves each from the host.
+    /// \brief Represents an aggregate of service dependencies, each resolved from the host.
     template<typename... Dependencies>
     class Locator : Dependency<Dependencies>...
     {

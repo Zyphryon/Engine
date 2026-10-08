@@ -37,7 +37,7 @@ inline namespace ZyMath
         ///
         /// \param Normal The way out, pointing from the second volume at the first.
         /// \param Time   The fraction of the motion the two meet at.
-        /// \param Depth  How far one has sunk into the other.
+        /// \param Depth  The depth one has sunk into the other.
         ZY_INLINE constexpr Manifold(Vector3 Normal, Real32 Time, Real32 Depth)
             : mNormal { Normal },
               mTime   { Time },

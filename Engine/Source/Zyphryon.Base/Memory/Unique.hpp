@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Exclusive-ownership smart pointer that manages a heap-allocated object.
+    /// \brief Represents an exclusive-ownership smart pointer that manages a heap-allocated object.
     template<class Type>
     class Unique final
     {

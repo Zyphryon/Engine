@@ -14,7 +14,7 @@
 
 namespace ZyAudio
 {
-    /// \brief Converts interleaved PCM between two sample rates with per-lane linear interpolation.
+    /// \brief Represents a converter of interleaved PCM between two sample rates, using per-lane linear interpolation.
     class ZY_API Resampler final
     {
     public:

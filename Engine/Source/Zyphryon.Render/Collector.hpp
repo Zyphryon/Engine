@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Collects rendering commands for efficient submission to the graphics service.
+    /// \brief Represents the queue rendering commands are collected in for efficient submission to the graphics service.
     class ZY_API Collector final
     {
     public:

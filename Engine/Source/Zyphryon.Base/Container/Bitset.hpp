@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A fixed-size bitset backed by an inline array of platform-width words; no heap allocation is performed.
+    /// \brief Represents a fixed-size bitset backed by an inline array of platform-width words; no heap allocation is performed.
     template<UInt Size, typename Word = UInt>
     class Bitset final
     {

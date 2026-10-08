@@ -76,7 +76,7 @@ namespace ZyNetwork
         /// The tag an operation whose own completion says nothing is queued under, which names no record either.
         static constexpr UInt64 kIgnore = ~static_cast<UInt64>(1);
 
-        /// \brief One operation as the kernel holds it, which outlives the socket it was posted on.
+        /// \brief Represents one operation as the kernel holds it, which outlives the socket it was posted on.
         struct Record final
         {
             /// The connection the operation was posted under.
@@ -120,7 +120,7 @@ namespace ZyNetwork
             }
         };
 
-        /// \brief One of the two rings the kernel and this thread hand work across.
+        /// \brief Represents one of the two rings the kernel and this thread hand work across.
         struct Ring final
         {
             /// Where the mapping begins, kept so it can be given back.

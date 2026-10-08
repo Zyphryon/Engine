@@ -14,7 +14,7 @@
 
 namespace ZyJob
 {
-    /// \brief Identifies the pool of threads a job executes on.
+    /// \brief Specifies the pool of threads a job executes on.
     enum class Lane : UInt8
     {
         Main,       ///< Runs on the main thread, drained once per frame during \ref Service::OnTick.

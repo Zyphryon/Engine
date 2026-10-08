@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief A render pass that executes a sequence of draw commands through an encoder.
+    /// \brief Represents a render pass that executes a sequence of draw commands through an encoder.
     class Pass
     {
     public:
@@ -28,7 +28,7 @@ namespace ZyRender
         /// \brief Names no managed target, which on the first color attachment means the display surface.
         static constexpr UInt32 kNone = 0xFFFFFFFF;
 
-        /// \brief A declared color attachment.
+        /// \brief Represents a declared color attachment.
         struct ColorAttachment final
         {
             /// The slot of the target written by this attachment, or \ref kNone for the display surface.
@@ -44,7 +44,7 @@ namespace ZyRender
             Color             Tint   = Color(0.0f, 0.0f, 0.0f, 1.0f);
         };
 
-        /// \brief A declared depth/stencil attachment.
+        /// \brief Represents a declared depth/stencil attachment.
         struct DepthAttachment final
         {
             /// The slot of the depth/stencil target, or \ref kNone when the pass has no depth attachment.
@@ -69,7 +69,7 @@ namespace ZyRender
             UInt8             Stencil      = 0;
         };
 
-        /// \brief A declared input, a target the pass reads under the name its techniques declare the texture by.
+        /// \brief Represents a declared input, a target the pass reads under the name its techniques declare the texture by.
         struct InputAttachment final
         {
             /// The hash of the texture's name, as every technique drawn in the pass declares it.

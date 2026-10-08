@@ -20,7 +20,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief The properties of a texture format that the engine has to state rather than derive.
+    /// \brief Describes the properties of a texture format that the engine has to state rather than derive.
     struct TextureMetadata final
     {
         UInt32 BitsPerPixel : 8;    ///< The total number of bits per pixel, or per block when compressed.
@@ -234,7 +234,7 @@ namespace ZyGraphic
         return kMetadata[ZyEnum::Cast(Format)];
     }
 
-    /// \brief The properties of a vertex format that the engine has to state rather than derive.
+    /// \brief Describes the properties of a vertex format that the engine has to state rather than derive.
     struct VertexMetadata final
     {
         UInt16 Components        : 3;   ///< The number of components per vertex element.
@@ -404,7 +404,7 @@ namespace ZyGraphic
         return Offset;
     }
 
-    /// \brief The properties of a uniform that the engine has to state rather than derive.
+    /// \brief Describes the properties of a uniform that the engine has to state rather than derive.
     struct UniformMetadata final
     {
         UInt8 Components : 3;   ///< The number of components the value carries.

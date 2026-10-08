@@ -40,7 +40,7 @@ namespace ZyFormat
         };
     };
 
-    /// \brief Static processor that formats arguments into an output buffer according to a pattern.
+    /// \brief Represents the static processor that formats arguments into an output buffer according to a pattern.
     ///
     /// \tparam Type The output buffer type (must support `Append`, `AppendInteger`, `AppendReal`).
     template<typename Type>
@@ -90,7 +90,7 @@ namespace ZyFormat
 
     private:
 
-        /// \brief Stores left and right padding counts for alignment.
+        /// \brief Holds the left and right padding counts for alignment.
         struct Padding
         {
             UInt Left  = 0;
@@ -141,7 +141,7 @@ namespace ZyFormat
         /// \param Number     The unsigned integer value to format.
         /// \param Digits     The number of digits in the value.
         /// \param Base       The numeric base (2, 10, 16).
-        /// \param Uppercase  Whether to use uppercase letters for bases > 10.
+        /// \param Uppercase  `true` to use uppercase letters for bases > 10, `false` for lowercase.
         template<typename Unsigned>
         ZY_INLINE static constexpr void AppendInt(
             Ref<Output> Buffer,

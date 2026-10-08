@@ -665,7 +665,7 @@ inline namespace ZyBase
     ///
     /// \param Content  The text to scan.
     /// \param Cursor   The current position, advanced past matching characters.
-    /// \param Predicate A callable taking a Char and returning Bool.
+    /// \param Predicate The callable taking a Char and returning Bool.
     /// \return The number of characters skipped.
     template<typename Callable>
     constexpr UInt StrSkip(Text Content, Ref<UInt> Cursor, AnyRef<Callable> Predicate)
@@ -914,7 +914,7 @@ inline namespace ZyBase
     /// \brief Iterates over each UTF-8 codepoint in the text and invokes the callback.
     ///
     /// \param Content  The UTF-8 text to iterate over.
-    /// \param Callback A callable invoked for each decoded codepoint.
+    /// \param Callback The callable invoked for each decoded codepoint.
     template<typename Callable>
     constexpr void StrIterateUTF8(Text Content, AnyRef<Callable> Callback)
     {

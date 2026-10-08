@@ -205,10 +205,10 @@ namespace ZyScene
             ///
             /// \param Owner   The storage.
             /// \param State   The query.
-            /// \param Where   Where each field of the chunk is read from.
+            /// \param Where   The places each field of the chunk is read from.
             /// \param Parent  The slot of the parent.
             /// \param Field   The position of the field.
-            /// \param Current Where the field reads from now, kept when it does not climb.
+            /// \param Current The place the field reads from now, kept when it does not climb.
             /// \return The first byte of the value, or `nullptr` when the field climbs and no ancestor carries it.
             ZY_INLINE static Ptr<Byte> Climb(
                 Ref<Storage>        Owner,
@@ -223,7 +223,7 @@ namespace ZyScene
 
             /// \brief Gets how many instances a field steps per row, as the way a page is walked says.
             ///
-            /// \param Where    Where each field of the chunk is read from.
+            /// \param Where    The places each field of the chunk is read from.
             /// \param Position The position of the field.
             /// \return One for a field that steps, zero for one read from one place.
             template<Stride Mode, typename Field>
@@ -425,7 +425,7 @@ namespace ZyScene
             /// \param Callback The callable.
             /// \param State    The query.
             /// \param Handles  The entities of the page.
-            /// \param Where    Where each field of the chunk is read from.
+            /// \param Where    The places each field of the chunk is read from.
             /// \param First    The first row of the page.
             /// \param Last     The row past the last one.
             /// \param Bases    The start of each field in the page, or the one place every row reads it from.

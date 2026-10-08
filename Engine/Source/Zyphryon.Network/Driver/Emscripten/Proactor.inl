@@ -47,7 +47,7 @@ namespace ZyNetwork
 
     struct Proactor::Backend final
     {
-        /// \brief One socket as the browser holds it, and everything still outstanding on it.
+        /// \brief Represents one socket as the browser holds it, and everything still outstanding on it.
         struct Session final
         {
             /// The socket the browser opened, which every call about it names.
@@ -91,7 +91,7 @@ namespace ZyNetwork
         ///
         /// \param Entry The socket the operation was posted on.
         /// \param Kind  The operation that finished.
-        /// \param Cause Why it failed, or \ref Reason::None when it did not.
+        /// \param Cause The reason it failed, or \ref Reason::None when it did not.
         /// \param Size  The number of bytes it moved.
         void Post(ConstRef<Session> Entry, Operation Kind, Reason Cause, UInt32 Size)
         {
@@ -157,7 +157,7 @@ namespace ZyNetwork
         /// \brief Acts on the browser saying that a socket has reached its peer.
         ///
         /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   What the browser had to say about it.
+        /// \param Event   The event the browser reported about it.
         /// \param Context The socket it happened on.
         /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnOpen(SInt32 Kind, ConstPtr<EmscriptenWebSocketOpenEvent> Event, Ptr<void> Context)
@@ -176,7 +176,7 @@ namespace ZyNetwork
         /// \brief Acts on the browser handing over a message a peer sent.
         ///
         /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   What the browser had to say about it.
+        /// \param Event   The event the browser reported about it.
         /// \param Context The socket it arrived on.
         /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnMessage(SInt32 Kind, ConstPtr<EmscriptenWebSocketMessageEvent> Event, Ptr<void> Context)
@@ -200,7 +200,7 @@ namespace ZyNetwork
         /// \brief Acts on the browser saying that a socket went wrong.
         ///
         /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   What the browser had to say about it.
+        /// \param Event   The event the browser reported about it.
         /// \param Context The socket it happened on.
         /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnError(SInt32 Kind, ConstPtr<EmscriptenWebSocketErrorEvent> Event, Ptr<void> Context)
@@ -211,7 +211,7 @@ namespace ZyNetwork
         /// \brief Acts on the browser saying that a socket has ended.
         ///
         /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   What the browser had to say about it.
+        /// \param Event   The event the browser reported about it.
         /// \param Context The socket that ended.
         /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnClose(SInt32 Kind, ConstPtr<EmscriptenWebSocketCloseEvent> Event, Ptr<void> Context)

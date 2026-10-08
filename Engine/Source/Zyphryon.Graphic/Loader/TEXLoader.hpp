@@ -21,7 +21,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Content loader for the engine's native, GPU-ready binary texture format.
+    /// \brief Represents the content loader for the engine's native, GPU-ready binary texture format.
     class TEXLoader final : public ZyContent::Loader
     {
     public:

@@ -21,7 +21,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Determines how a track interpolates between adjacent samples.
+    /// \brief Specifies how a track interpolates between adjacent samples.
     enum class Interpolation : UInt8
     {
         Step,    ///< Hold the previous sample's value (no interpolation).
@@ -30,7 +30,7 @@ inline namespace ZyMath
         Hermite, ///< Smoothly interpolate with a Hermite spline through the track's authored tangents.
     };
 
-    /// \brief Where a moment in time falls within a track: the samples bracketing it, and how far between them.
+    /// \brief Represents where a moment in time falls within a track: the samples bracketing it, and how far between them.
     struct Cursor final
     {
         /// The index of the sample at or before the time.
@@ -61,7 +61,7 @@ inline namespace ZyMath
         }
     };
 
-    /// \brief A time-ordered sequence of values sampled to produce a value at any point in time.
+    /// \brief Represents a time-ordered sequence of values sampled to produce a value at any point in time.
     template<typename Type>
     class Track final
     {

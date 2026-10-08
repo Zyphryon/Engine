@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Content loader for the engine's native, pre-baked binary skeleton format.
+    /// \brief Represents the content loader for the engine's native, pre-baked binary skeleton format.
     class SKLLoader final : public ZyContent::Loader
     {
     public:

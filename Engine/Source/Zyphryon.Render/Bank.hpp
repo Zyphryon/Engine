@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Interns the block a run of instances shares, so each instance carries a number instead of a copy.
+    /// \brief Represents an intern store for the block a run of instances shares, so each instance carries a number instead of a copy.
     ///
     /// \tparam Type     The block one run shares, in the layout its technique reads.
     /// \tparam Capacity The most runs one page holds, which the technique's own array has to be declared at.
@@ -29,7 +29,7 @@ namespace ZyRender
     {
     public:
 
-        /// \brief Names one interned run, by the page it landed on and where on that page it sits.
+        /// \brief Represents one interned run, by the page it landed on and where on that page it sits.
         struct Slot final
         {
             /// Where the run sits on its page, which is what an instance carries.
@@ -47,7 +47,7 @@ namespace ZyRender
 
             /// \brief Constructs a slot naming where one run landed.
             ///
-            /// \param Index Where the run sits on its page.
+            /// \param Index The position of the run on its page.
             /// \param Page  The page the run was interned into.
             ZY_INLINE constexpr Slot(UInt16 Index, UInt16 Page)
                 : Index { Index },

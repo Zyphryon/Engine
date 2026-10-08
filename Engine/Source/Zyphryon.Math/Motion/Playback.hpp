@@ -14,7 +14,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Determines how a playback cursor behaves once it reaches the end of its duration.
+    /// \brief Specifies how a playback cursor behaves once it reaches the end of its duration.
     enum class Repeat : UInt8
     {
         Once,    ///< Stop at the end.
@@ -22,7 +22,7 @@ inline namespace ZyMath
         Mirror,  ///< Reverse direction at each boundary.
     };
 
-    /// \brief A deterministic time cursor over a fixed duration, with looping, speed, and pause control.
+    /// \brief Represents a deterministic time cursor over a fixed duration, with looping, speed, and pause control.
     class Playback final
     {
     public:

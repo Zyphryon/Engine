@@ -21,7 +21,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Content loader for technique assets using JSON.
+    /// \brief Represents the content loader for technique assets using JSON.
     class VFXLoader final : public ZyContent::Loader
     {
     public:

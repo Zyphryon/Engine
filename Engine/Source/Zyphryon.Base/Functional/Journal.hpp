@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Lightweight command journal for recording and executing deferred operations.
+    /// \brief Represents a lightweight command journal for recording and executing deferred operations.
     ///
     /// Records callable objects into a contiguous byte buffer with minimal per-command overhead.
     class Journal final

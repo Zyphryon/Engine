@@ -22,7 +22,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Encapsulates a binary writer for serialization.
+    /// \brief Represents a binary writer for serialization.
     class Writer final
     {
     public:
@@ -212,7 +212,7 @@ inline namespace ZyBase
         /// \brief Writes a block of bytes packed into a single LZ4 block.
         ///
         /// \param Value The bytes to pack.
-        /// \param Level How far to search for matches, or `0` to take the fast encoder.
+        /// \param Level The search depth for matches, or `0` to take the fast encoder.
         template<typename Header>
         ZY_INLINE void WriteBlockCompressed(ConstSpan<Byte> Value, UInt32 Level = 0)
         {

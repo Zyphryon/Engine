@@ -40,7 +40,7 @@ namespace ZyReflection
     template<typename Type>
     concept IsSelfClassified = requires { Type::OnClassify(); };
 
-    /// \brief Customization point that lists the fields of a type.
+    /// \brief Provides the customization point that lists the fields of a type.
     ///
     /// \brief Concept satisfied when a type lays out its own fields rather than having them laid out for it.
     template<typename Type>
@@ -48,7 +48,7 @@ namespace ZyReflection
     {
     };
 
-    /// \brief Takes the fields a type laid out for itself in `OnDescribe`.
+    /// \brief Provides the fields a type laid out for itself in `OnDescribe`.
     template<IsSelfDescribed Type>
     struct Describe<Type>
     {
@@ -64,7 +64,7 @@ namespace ZyReflection
     template<typename Type>
     concept IsDescribed = requires { Describe<Type>::kFields; };
 
-    /// \brief Customization point that names the kind a type is edited as.
+    /// \brief Provides the customization point that names the kind a type is edited as.
     ///
     /// \code
     /// template<>
@@ -88,7 +88,7 @@ namespace ZyReflection
             : Kind::None;
     };
 
-    /// \brief Takes the tag a type named itself with in `OnClassify`.
+    /// \brief Provides the tag a type named itself with in `OnClassify`.
     template<IsSelfClassified Type>
     struct Classify<Type>
     {
@@ -99,7 +99,7 @@ namespace ZyReflection
         static constexpr Text kTag   = Type::OnClassify().Name;
     };
 
-    /// \brief Names a view of characters as text, which is what a getter over owned storage hands back.
+    /// \brief Provides the text tag for a view of characters, which is what a getter over owned storage hands back.
     template<>
     struct Classify<Text>
     {
@@ -125,11 +125,11 @@ namespace ZyReflection
 
     namespace Detail
     {
-        /// \brief Decomposes a member pointer into the type it reaches through and the value it carries.
+        /// \brief Describes a member pointer into the type it reaches through and the value it carries.
         template<typename Type>
         struct Accessor;
 
-        /// \brief Decomposes a pointer to a data member, which is its own getter and setter.
+        /// \brief Describes a pointer to a data member, which is its own getter and setter.
         template<typename Class, typename Type>
         struct Accessor<Type Class::*> final
         {
@@ -146,7 +146,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a constant getter.
+        /// \brief Describes a pointer to a constant getter.
         template<typename Class, typename Type>
         struct Accessor<Type (Class::*)() const> final
         {
@@ -157,7 +157,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a constant getter that promises not to throw.
+        /// \brief Describes a pointer to a constant getter that promises not to throw.
         template<typename Class, typename Type>
         struct Accessor<Type (Class::*)() const noexcept> final
         {
@@ -168,7 +168,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a mutable getter.
+        /// \brief Describes a pointer to a mutable getter.
         template<typename Class, typename Type>
         struct Accessor<Type (Class::*)()> final
         {
@@ -179,7 +179,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a mutable getter that promises not to throw.
+        /// \brief Describes a pointer to a mutable getter that promises not to throw.
         template<typename Class, typename Type>
         struct Accessor<Type (Class::*)() noexcept> final
         {
@@ -190,7 +190,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a setter, whatever it hands back.
+        /// \brief Describes a pointer to a setter, whatever it hands back.
         ///
         /// \note A setter that returns its own owner, so calls may be chained, is as much a setter as one that
         ///       returns nothing, and what it hands back is no business of the field.
@@ -204,7 +204,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Decomposes a pointer to a setter that promises not to throw.
+        /// \brief Describes a pointer to a setter that promises not to throw.
         template<typename Class, typename Return, typename Type>
         struct Accessor<Return (Class::*)(Type) noexcept> final
         {
@@ -215,7 +215,7 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
-        /// \brief Names a type with its reference and constness taken off, and its extent kept.
+        /// \brief Provides a type with its reference and constness taken off, and its extent kept.
         template<typename Type>
         struct Bare final
         {
@@ -235,11 +235,11 @@ namespace ZyReflection
             using Result = typename Bare<Type>::Result;
         };
 
-        /// \brief Decomposes a run of elements into what it holds and how many of them there are.
+        /// \brief Describes a run of elements into what it holds and how many of them there are.
         template<typename Type>
         struct Sequenced;
 
-        /// \brief Decomposes a plain array.
+        /// \brief Describes a plain array.
         template<typename Type, UInt Count>
         struct Sequenced<Type[Count]> final
         {
@@ -250,7 +250,7 @@ namespace ZyReflection
             static constexpr UInt kCount = Count;
         };
 
-        /// \brief Decomposes the fixed container, which is a plain array wearing a name.
+        /// \brief Describes the fixed container, which is a plain array wearing a name.
         template<typename Type, UInt Count>
         struct Sequenced<Array<Type, Count>> final
         {

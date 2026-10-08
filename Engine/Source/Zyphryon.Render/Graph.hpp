@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief One realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
+    /// \brief Represents one realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
     ///
     /// \note A view is a graph, so drawing the same scene from another camera costs just another set of buffers.
     class ZY_API Graph final
@@ -106,7 +106,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief One target the graph realized, and the shape it came out in.
+        /// \brief Represents one target the graph realized, and the shape it came out in.
         struct Slot final
         {
             /// The texture the graph realized for the target, or zero while it holds none.
@@ -122,7 +122,7 @@ namespace ZyRender
             UInt16                   Height  = 0;
         };
 
-        /// \brief One pass the graph baked, and the surface it draws into.
+        /// \brief Represents one pass the graph baked, and the surface it draws into.
         struct Step final
         {
             /// The pass handle the step draws through.

@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A non-owning view of a contiguous sequence of characters.
+    /// \brief Represents a non-owning view of a contiguous sequence of characters.
     class Text final
     {
     public:

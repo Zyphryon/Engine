@@ -21,7 +21,7 @@
 
 namespace ZyFormat
 {
-    /// \brief A compiled format pattern containing parsed expressions for formatting.
+    /// \brief Represents a compiled format pattern containing parsed expressions for formatting.
     ///
     /// \tparam Capacity The maximum number of expressions the pattern can hold.
     template<UInt Capacity = 24>
