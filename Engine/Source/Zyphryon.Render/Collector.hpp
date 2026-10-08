@@ -105,22 +105,12 @@ namespace ZyRender
         ///
         /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
         /// \param Depth    The depth value for sorting the command, typically in the range [0, 1].
-        /// \param Mesh     The identifier of the mesh to be rendered, used for sorting and batching.
+        /// \param Group    The value that splits batches beyond pipeline and material, such as the mesh a draw reads.
         /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
         /// \param Material The material to use for rendering, which may be null for default material.
-        ZY_INLINE void Push(Object Entry, Real32 Depth, UInt16 Mesh, UInt16 Pipeline, UInt16 Material)
+        ZY_INLINE void Push(Object Entry, Real32 Depth, UInt16 Group, UInt16 Pipeline, UInt16 Material)
         {
-            mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Mesh, Depth), Entry);
-        }
-
-        /// \brief Pushes a command that batches by pipeline and material alone, with no depth or mesh to order by.
-        ///
-        /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
-        /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
-        /// \param Material The material to use for rendering, which may be null for default material.
-        ZY_INLINE void Push(Object Entry, UInt16 Pipeline, UInt16 Material)
-        {
-            Push(Entry, 0.0f, 0, Pipeline, Material);
+            mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Group, Depth), Entry);
         }
 
         /// \brief Drains the open phase, invoking a callback for each batch of commands it collected.
@@ -149,7 +139,7 @@ namespace ZyRender
             UInt32            Start = 0;
             ConstPtr<Command> Base  = Sorted;
 
-            // Iterate through the queue and batch commands with identical pipeline, material, and mesh.
+            // Iterate through the queue and batch commands with identical pipeline, material, and group.
             for (UInt32 End = 1; End < Size; ++End)
             {
                 if (ConstRef<Command> Current = Sorted[End]; (Current.Order & Mask) != (Base->Order & Mask))
@@ -175,10 +165,10 @@ namespace ZyRender
         using Queue = Sequence<Command>;
 
         /// The bits of an order key that identify a batch, indexed by queue.
-        static constexpr UInt64 kGroupMask[] 
+        static constexpr UInt64 kGroupMask[]
         {
-            0xFFFFFFFFFF000000ull,  ///< Opaque:      [Pipeline|Material|Mesh] sit in the high 40 bits.
-            0x000000FFFFFFFFFFull,  ///< Transparent: [Pipeline|Material|Mesh] sit in the low 40 bits.
+            0xFFFFFFFFFF000000ull,  ///< Opaque:      [Pipeline|Material|Group] sit in the high 40 bits.
+            0x000000FFFFFFFFFFull,  ///< Transparent: [Pipeline|Material|Group] sit in the low 40 bits.
         };
 
         /// \brief Sorts rendering commands using an in-place least-significant-digit radix sort.
@@ -194,97 +184,58 @@ namespace ZyRender
         /// \param Priority The rendering priority of the draw command, which determines the sorting strategy.
         /// \param Pipeline The graphics pipeline used for the draw call.
         /// \param Material The material used for the draw call.
-        /// \param Mesh     The mesh used for the draw call.
+        /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that encodes rendering state for optimal draw call ordering.
         ZY_INLINE static constexpr UInt64 GenerateOrderKey(
-            Priority Priority, UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+            Priority Priority, UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
         {
-            switch (Priority)
-            {
-            case Priority::Opaque:
-                return GenerateOpaqueOrderKey(Pipeline, Material, Mesh, Depth);
-            case Priority::Transparent:
-                return GenerateAlphaOrderKey(Pipeline, Material, Mesh, Depth);
-            default:
-                return 0;
-            }
+            return (Priority == Priority::Opaque)
+                ? GenerateOpaqueOrderKey(Pipeline, Material, Group, Depth)
+                : GenerateAlphaOrderKey(Pipeline, Material, Group, Depth);
         }
 
         /// \brief Generates a sort key for opaque draw commands.
         ///
         /// \param Pipeline The graphics pipeline used for the draw call.
         /// \param Material The material used for the draw call.
-        /// \param Mesh     The mesh used for the draw call.
+        /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort opaque draw calls for optimal rendering order.
         ZY_INLINE static constexpr UInt64 GenerateOpaqueOrderKey(
-            UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+            UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
         {
             return (static_cast<UInt64>(Pipeline & 0x3FFu)  << 54) |    // [10:Pipeline]
                    (static_cast<UInt64>(Material & 0x3FFFu) << 40) |    // [14:Material]
-                   (static_cast<UInt64>(Mesh     & 0xFFFFu) << 24) |    // [16:Mesh]
-                   (static_cast<UInt64>(OpaqueDepthToBits(Depth)));     // [24:Depth]
+                   (static_cast<UInt64>(Group    & 0xFFFFu) << 24) |    // [16:Group]
+                   (static_cast<UInt64>(DepthToBits(Depth)));           // [24:Depth]
         }
 
         /// \brief Generates a sort key for transparent draw commands.
         ///
         /// \param Pipeline The graphics pipeline used for the draw call.
         /// \param Material The material used for the draw call.
-        /// \param Mesh     The mesh used for the draw call.
+        /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort transparent draw calls for correct back-to-front rendering order.
         ZY_INLINE static constexpr UInt64 GenerateAlphaOrderKey(
-            UInt16 Pipeline, UInt16 Material, UInt16 Mesh, Real32 Depth)
+            UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
         {
             return (static_cast<UInt64>(DepthToBits(1.0f - Depth))  << 40) |   // [24:Depth]
                    (static_cast<UInt64>(Pipeline & 0x3FFu)          << 30) |   // [10:Pipeline]
                    (static_cast<UInt64>(Material & 0x3FFFu)         << 16) |   // [14:Material]
-                   (static_cast<UInt64>(Mesh     & 0xFFFFu));                  // [16:Mesh]
+                   (static_cast<UInt64>(Group    & 0xFFFFu));                  // [16:Group]
         }
 
-        /// \brief Converts a depth value into the depth field of an opaque order key.
-        ///
-        /// \param Depth The depth value to convert, which may be any finite floating-point value.
-        /// \return The depth field, left-aligned so an unspent budget leaves whole bytes constant.
-        template<UInt32 Bits = 24>
-        ZY_INLINE static constexpr UInt32 OpaqueDepthToBits(Real32 Depth)
-        {
-            if constexpr (Bits == 0)
-            {
-                return 0;
-            }
-            else
-            {
-                return DepthToBits<Bits>(Depth) << (24 - Bits);
-            }
-        }
-
-        /// \brief Converts a floating-point depth value to a sortable integer representation.
+        /// \brief Converts a floating-point depth value to the 24-bit depth field of an order key.
         ///
         /// \param Depth The depth value to convert, which may be any finite floating-point value.
         /// \return A sortable integer where the natural integer order matches the original float order.
-        template<UInt32 Bits = 24>
         ZY_INLINE static constexpr UInt32 DepthToBits(Real32 Depth)
         {
-            const UInt32 Raw   = CastBit<UInt32>(Depth);
-            const UInt32 Mask  = -static_cast<SInt32>(Raw >> 31) | 0x80000000u;
-            return (Raw ^ Mask) >> (32 - Bits);
-        }
-
-    public:
-
-        /// \brief Resolves the queue a technique's output belongs to from the blend state it declares.
-        ///
-        /// \param Technique The technique whose fixed-function blend state decides the queue.
-        /// \return The queue the technique's draws are collected into.
-        ZY_INLINE static Priority GetPriority(ConstRef<ZyGraphic::Technique> Technique)
-        {
-            ConstRef<ZyGraphic::States> States = Technique.GetDescription().Base.States;
-
-            const Bool Opaque = (States.BlendSrcColor == ZyGraphic::BlendFactor::One
-                              && States.BlendDstColor == ZyGraphic::BlendFactor::Zero);
-            return Opaque ? Priority::Opaque : Priority::Transparent;
+            const UInt32 Raw  = CastBit<UInt32>(Depth);
+            const UInt32 Mask = -static_cast<SInt32>(Raw >> 31) | 0x80000000u;
+            return (Raw ^ Mask) >> 8;
         }
 
     private:

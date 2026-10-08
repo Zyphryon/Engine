@@ -78,14 +78,6 @@ namespace ZyRender
             return mService;
         }
 
-        /// \brief Checks whether anything has been recorded since the last reset.
-        ///
-        /// \return `true` while nothing has been recorded.
-        ZY_INLINE Bool IsEmpty() const
-        {
-            return mBatches.IsEmpty();
-        }
-
         /// \brief Drops everything recorded so far, and the technique it was recorded under.
         ZY_INLINE void Reset()
         {
@@ -153,7 +145,7 @@ namespace ZyRender
                     .Count     = mVertices,
                     .Instances = static_cast<UInt32>(Run.GetSize())
                 };
-                Encoder.Draw(* First.Technique, First.Material, Gather(Run), Uniform, Invocation, First.Variant);
+                Encoder.Begin(* First.Technique).Apply(* First.Material, First.Variant).Draw(Gather(Run), Uniform, Invocation);
 
                 Start = End;
             }

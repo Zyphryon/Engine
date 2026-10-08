@@ -61,23 +61,6 @@ namespace ZyRender
             ZY_ASSERT(Count > 0, "A bank must hold at least one page");
         }
 
-        /// \brief Constructs an album of single-layer pages that has lent nothing and made no bank yet.
-        ///
-        /// \param Service The graphic service the banks are made on.
-        /// \param Format  The format every page is stored in.
-        /// \param Width   The width of one page, in texels.
-        /// \param Height  The height of one page, in texels.
-        /// \param Count   The number of pages one bank holds, which is the depth of its texture array.
-        ZY_INLINE Album(
-            ConstRetainer<ZyGraphic::Service> Service,
-            ZyGraphic::TextureFormat          Format,
-            UInt16                            Width,
-            UInt16                            Height,
-            UInt16                            Count)
-            : Album(Service, { Format }, Width, Height, Count)
-        {
-        }
-
         /// \brief Destroys the album and every bank it made.
         ZY_INLINE ~Album()
         {
@@ -148,17 +131,9 @@ namespace ZyRender
             mService->UpdateTexture(Texture, 0, GetSlice(Page), 0, 0, mWidth, mHeight, Pitch, Move(Data));
         }
 
-        /// \brief Gets how many banks the pages are spread across.
-        ///
-        /// \return The number of banks made so far, each holding as many pages as the album was built with.
-        ZY_INLINE UInt32 GetBanks() const
-        {
-            return mBanks.GetSize();
-        }
-
         /// \brief Gets the texture array one layer of a bank is stored in.
         ///
-        /// \param Bank  The bank to read, below \ref GetBanks.
+        /// \param Bank  The bank to read, as \ref GetBank names it for a page lent.
         /// \param Layer The layer to read, in the order the Format were given.
         /// \return The array, a slice per page of the bank, in that layer's format.
         ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Bank, UInt32 Layer = 0) const
