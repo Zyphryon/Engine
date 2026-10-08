@@ -166,7 +166,6 @@ namespace ZyGraphic
 
         // Only the attributes are taken from the layer, since one schema describes every variant's bindings.
         Program.Macros       = Base.Macros;
-        Signature            = mDescription.Signature;
         Signature.Attributes = Base.Attributes;
         States               = Base.States;
 
@@ -224,7 +223,6 @@ namespace ZyGraphic
     {
         if (HasBit(Blocks, GetBlockMask(Block::Blend)))
         {
-            Destination.AlphaToCoverage    = Source.AlphaToCoverage;
             Destination.Channel            = Source.Channel;
             Destination.BlendSrcColor      = Source.BlendSrcColor;
             Destination.BlendDstColor      = Source.BlendDstColor;

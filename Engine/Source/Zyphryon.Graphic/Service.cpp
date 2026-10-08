@@ -160,28 +160,6 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size)
-    {
-        ZY_ASSERT(mBuffers.IsAllocated(SrcBuffer), "Source buffer is not valid");
-        ZY_ASSERT(mBuffers.IsAllocated(DstBuffer), "Destination buffer is not valid");
-
-        Enqueue<& Driver::CopyBuffer>(SrcBuffer, SrcOffset, DstBuffer, DstOffset, Size);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::ReadBuffer(Object ID, UInt32 Offset, UInt32 Size, AnyRef<OnRead> Callback)
-    {
-        ZY_ASSERT(mBuffers.IsAllocated(ID), "Buffer is not valid");
-        ZY_ASSERT(Size > 0, "An empty read is never answered");
-
-        mFrames[mProducer].Reads.Append(ID, false, Offset, Size, Move(Callback));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Object Service::CreateMaterial()
     {
         return mMaterials.Allocate();
@@ -265,7 +243,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, AnyRef<Blob> Data)
+    Object Service::CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data)
     {
         ZY_ASSERT(Layout != TextureLayout::TextureCube || Layers == 6, "A cube map is exactly six slices");
 
@@ -273,7 +251,7 @@ namespace ZyGraphic
 
         if (ID)
         {
-            Enqueue<& Driver::CreateTexture>(ID, Layout, Format, Storage, Usage, Width, Height, Layers, Levels, Samples, Move(Data));
+            Enqueue<& Driver::CreateTexture>(ID, Layout, Format, Storage, Usage, Width, Height, Layers, Levels, Move(Data));
         }
         return ID;
     }
@@ -296,27 +274,6 @@ namespace ZyGraphic
         mTextures.Free(ID);
 
         Enqueue<& Driver::DeleteTexture>(ID);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
-    {
-        ZY_ASSERT(mTextures.IsAllocated(SrcTexture), "Source texture is not valid");
-        ZY_ASSERT(mTextures.IsAllocated(DstTexture), "Destination texture is not valid");
-
-        Enqueue<& Driver::CopyTexture>(SrcTexture, SrcLevel, SrcLayer, SrcX, SrcY, DstTexture, DstLevel, DstLayer, DstX, DstY, Width, Height);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::ReadTexture(Object ID, UInt8 Level, UInt16 Layer, AnyRef<OnRead> Callback)
-    {
-        ZY_ASSERT(mTextures.IsAllocated(ID), "Texture is not valid");
-
-        mFrames[mProducer].Reads.Append(ID, true, Level, Layer, Move(Callback));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -376,9 +333,6 @@ namespace ZyGraphic
         mSignal.wait(true, std::memory_order_acquire);
 #endif
 
-        // The GPU thread is idle now, so the reads it answered can be handed over on this thread.
-        DeliverInFlightReads();
-
         // Rotate the frame queue so that the next frame becomes writable for the CPU while the previous one
         // moves into the GPU submission pipeline.
         Swap(mProducer, mConsumer);
@@ -404,9 +358,6 @@ namespace ZyGraphic
 
         // Execute all commands in the consumer buffer, then reset it for reuse.
         GetConsumer().Run();
-
-        // Try the reads only now, so the copies they wait on have been issued first.
-        ReadInFlightFrame(mFrames[mConsumer]);
 
         // Clears the in-flight command queue.
         mFrames[mConsumer].Commands.Clear();
@@ -520,7 +471,7 @@ namespace ZyGraphic
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=- =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     void Service::CreateInFlightFrame(Ref<InFlightFrame> Frame)
     {
@@ -557,66 +508,6 @@ namespace ZyGraphic
                 }
             }
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::ReadInFlightFrame(Ref<InFlightFrame> Frame)
-    {
-        for (Ref<InFlightRead> Read : Frame.Reads)
-        {
-            if (!Read.Data)
-            {
-                if (Read.Texture)
-                {
-                    Read.Data = mDriver->ReadTexture(Read.ID, Read.Offset, Read.Size);
-                }
-                else
-                {
-                    Read.Data = mDriver->ReadBuffer(Read.ID, Read.Offset, Read.Size);
-                }
-            }
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Service::DeliverInFlightReads()
-    {
-        Ref<Sequence<InFlightRead>> Answered = mFrames[mConsumer].Reads;
-        Ref<Sequence<InFlightRead>> Issued   = mFrames[mProducer].Reads;
-
-        if (Answered.IsEmpty())
-        {
-            return;
-        }
-
-        Answered.RemoveSomeIf([this](Ref<InFlightRead> Read)
-        {
-            // A resource deleted before its read was answered leaves nothing to answer it with.
-            if (!(Read.Texture ? mTextures.IsAllocated(Read.ID) : mBuffers.IsAllocated(Read.ID)))
-            {
-                return true;
-            }
-
-            if (Read.Data)
-            {
-                Read.Callback(Move(Read.Data));
-                return true;
-            }
-            return false;
-        });
-
-        // What the GPU has not answered yet goes ahead of the reads issued since, and is tried again next frame.
-        for (Ref<InFlightRead> Read : Issued)
-        {
-            Answered.Append(Move(Read));
-        }
-        Issued.Clear();
-
-        Swap(Answered, Issued);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

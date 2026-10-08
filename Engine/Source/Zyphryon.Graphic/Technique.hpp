@@ -37,7 +37,7 @@ namespace ZyGraphic
         /// \brief Specifies the groups of fixed-function state a feature replaces as a whole.
         enum class Block : UInt8
         {
-            Blend,          ///< The blend factors, equations, write mask and alpha-to-coverage flag.
+            Blend,          ///< The blend factors, equations and write mask.
             Depth,          ///< The depth clip, write mask, comparison and bias.
             Stencil,        ///< The stencil read and write masks, comparisons and actions.
             Rasterizer,     ///< The fill mode, cull mode and scissor test.
@@ -82,9 +82,6 @@ namespace ZyGraphic
         /// \brief Describes the configuration for a rendering technique.
         struct Description final
         {
-            /// The resource interface the pipeline exposes to the driver, whose bindings no variant changes.
-            Signature         Signature;
-
             /// The parts every variant starts from, before any enabled feature patches them.
             Layer             Base;
 

@@ -72,7 +72,7 @@ namespace ZyGraphic
         ///
         /// \param ID     The identifier of the buffer resource to update.
         /// \param Offset The byte offset within the buffer to start updating.
-        /// \param Data   Th e new data to write into the buffer.
+        /// \param Data   The new data to write into the buffer.
         virtual void UpdateBuffer(Object ID, UInt32 Offset, ConstSpan<Byte> Data)
         {
 
@@ -82,18 +82,6 @@ namespace ZyGraphic
         ///
         /// \param ID The identifier of the buffer resource to delete.
         virtual void DeleteBuffer(Object ID)
-        {
-
-        }
-
-        /// \brief Copies a region of one buffer resource to another.
-        ///
-        /// \param SrcBuffer The identifier of the source buffer to copy from.
-        /// \param SrcOffset The byte offset within the source buffer to start copying from.
-        /// \param DstBuffer The identifier of the destination buffer to copy to.
-        /// \param DstOffset The byte offset within the destination buffer to start copying to.
-        /// \param Size      The number of bytes to copy.
-        virtual void CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size)
         {
 
         }
@@ -115,17 +103,6 @@ namespace ZyGraphic
         virtual void UnmapBuffer(Object ID)
         {
 
-        }
-
-        /// \brief Reads a region of a readback buffer back, without waiting on the GPU.
-        ///
-        /// \param ID     The identifier of the readback buffer to read.
-        /// \param Offset The byte offset within the buffer to start reading from.
-        /// \param Size   The number of bytes to read.
-        /// \return The bytes read, or an empty blob if the GPU has not finished writing them.
-        virtual Blob ReadBuffer(Object ID, UInt32 Offset, UInt32 Size)
-        {
-            return Blob();
         }
 
         /// \brief Creates a render pass resource with the specified color and depth attachments.
@@ -193,9 +170,8 @@ namespace ZyGraphic
         /// \param Height  The height of the texture in pixels.
         /// \param Layers  The number of array slices.
         /// \param Levels  The number of mipmap levels.
-        /// \param Samples The multisample count.
         /// \param Data    The optional initial image data to populate the texture with, ordered slice-major.
-        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
+        virtual void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data)
         {
 
         }
@@ -222,36 +198,6 @@ namespace ZyGraphic
         virtual void DeleteTexture(Object ID)
         {
 
-        }
-
-        /// \brief Copies a region of one texture resource to another.
-        ///
-        /// \param SrcTexture The identifier of the source texture to copy from.
-        /// \param SrcLevel   The mipmap level of the source texture to copy from.
-        /// \param SrcLayer   The array slice of the source texture to copy from.
-        /// \param SrcX       The X offset within the source texture to start copying from.
-        /// \param SrcY       The Y offset within the source texture to start copying from.
-        /// \param DstTexture The identifier of the destination texture to copy to.
-        /// \param DstLevel   The mipmap level of the destination texture to copy to.
-        /// \param DstLayer   The array slice of the destination texture to copy to.
-        /// \param DstX       The X offset within the destination texture to start copying to.
-        /// \param DstY       The Y offset within the destination texture to start copying to.
-        /// \param Width      The width of the region to copy in pixels.
-        /// \param Height     The height of the region to copy in pixels.
-        virtual void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
-        {
-
-        }
-
-        /// \brief Reads one level of one slice of a readback texture back, without waiting on the GPU.
-        ///
-        /// \param ID    The identifier of the readback texture to read.
-        /// \param Level The mipmap level to read.
-        /// \param Layer The array slice to read.
-        /// \return The level's rows packed tightly, or an empty blob if the GPU has not finished writing them.
-        virtual Blob ReadTexture(Object ID, UInt8 Level, UInt16 Layer)
-        {
-            return Blob();
         }
 
         /// \brief Prepares the specified render pass for rendering by setting the viewport and clearing attachments.

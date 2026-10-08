@@ -101,7 +101,7 @@ namespace ZyRender
             Entry.Format  = Description.Format;
             Entry.Width   = Sized;
             Entry.Height  = Tall;
-            Entry.Texture = mService->CreateTexture(Description.Format, Sized, Tall, 1, Description.Samples);
+            Entry.Texture = mService->CreateTexture(Description.Format, Sized, Tall, 1);
             Realized      = true;
         }
 
@@ -142,8 +142,7 @@ namespace ZyRender
             for (ConstRef<Pass::ColorAttachment> Color : Colors)
             {
                 Ref<ZyGraphic::ColorAttachment> Attachment = Resolved.Append();
-                Attachment.Target      = Color.Target  != Pass::kNone ? GetTexture(Color.Target)  : 0;
-                Attachment.Resolve     = Color.Resolve != Pass::kNone ? GetTexture(Color.Resolve) : 0;
+                Attachment.Target      = Color.Target != Pass::kNone ? GetTexture(Color.Target) : 0;
                 Attachment.LoadAction  = Color.Load;
                 Attachment.StoreAction = Color.Store;
             }

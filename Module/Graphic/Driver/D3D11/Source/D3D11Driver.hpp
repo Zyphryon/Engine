@@ -50,17 +50,11 @@ namespace ZyGraphic
         /// \see Driver::DeleteBuffer(Object)
         void DeleteBuffer(Object ID) override;
 
-        /// \see Driver::CopyBuffer(Object, UInt32, Object, UInt32, UInt32)
-        void CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size) override;
-
         /// \see Driver::MapBuffer(Object, UInt32, UInt32)
         Ptr<Byte> MapBuffer(Object ID, UInt32 Offset, UInt32 Size) override;
 
         /// \see Driver::UnmapBuffer(Object)
         void UnmapBuffer(Object ID) override;
-
-        /// \see Driver::ReadBuffer(Object, UInt32, UInt32)
-        Blob ReadBuffer(Object ID, UInt32 Offset, UInt32 Size) override;
 
         /// \see Driver::CreatePass(Object, ConstSpan<ColorAttachment>, DepthAttachment)
         void CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth) override;
@@ -80,20 +74,14 @@ namespace ZyGraphic
         /// \see Driver::DeleteSampler(Object)
         void DeleteSampler(Object ID) override;
 
-        /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt16, UInt8, Multisample, ConstSpan<Byte>)
-        void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data) override;
+        /// \see Driver::CreateTexture(Object, TextureLayout, TextureFormat, Storage, Usage, UInt16, UInt16, UInt16, UInt8, ConstSpan<Byte>)
+        void CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data) override;
 
         /// \see Driver::UpdateTexture(Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16, UInt32, ConstSpan<Byte>)
         void UpdateTexture(Object ID, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Pitch, ConstSpan<Byte> Data) override;
 
         /// \see Driver::DeleteTexture(Object)
         void DeleteTexture(Object ID) override;
-
-        /// \see Driver::CopyTexture(Object, UInt8, UInt16, UInt16, UInt16, Object, UInt8, UInt16, UInt16, UInt16, UInt16, UInt16)
-        void CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16 SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height) override;
-
-        /// \see Driver::ReadTexture(Object, UInt8, UInt16)
-        Blob ReadTexture(Object ID, UInt8 Level, UInt16 Layer) override;
 
         /// \see Driver::Prepare(Object, Text, ConstRef<Viewport>, ConstSpan<Color>, Real32, UInt8)
         void Prepare(Object Pass, Text Name, ConstRef<Viewport> Viewport, ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) override;
@@ -105,9 +93,6 @@ namespace ZyGraphic
         void Commit(Object Pass) override;
     private:
 
-        /// \brief Maximum multisample count Direct3D 11 supports for a single resource.
-        static constexpr UInt32 kMaxSamples = 8;
-
         /// \brief Internal wrapper for Direct3D 11 buffer resources.
         using  D3D11Buffer  = ComPtr<ID3D11Buffer>;
 
@@ -116,12 +101,8 @@ namespace ZyGraphic
         {
             ComPtr<ID3D11Resource>         Target;
             ComPtr<ID3D11RenderTargetView> TargetResource;
-            UINT                           TargetSlice   = 0;
-            ComPtr<ID3D11Resource>         Resolve;
-            DXGI_FORMAT                    ResolveFormat = DXGI_FORMAT_UNKNOWN;
-            UINT                           ResolveSlice  = 0;
-            Action                         LoadAction    = Action::Clear;
-            Action                         StoreAction   = Action::Discard;
+            Action                         LoadAction  = Action::Clear;
+            Action                         StoreAction = Action::Discard;
         };
 
         /// \brief Internal wrapper for Direct3D 11 depth/stencil attachment resources.
@@ -133,9 +114,6 @@ namespace ZyGraphic
             Action                         StencilLoadAction  = Action::Discard;
             Action                         StencilStoreAction = Action::Discard;
         };
-
-        /// \brief Per-format table of the highest supported quality level for each multisample count.
-        using D3D11Multisamples = Array<Array<UInt8, kMaxSamples + 1>, ZyEnum::Count<TextureFormat>()>;
 
         /// \brief Internal wrapper for Direct3D 11 render pass resources.
         struct D3D11Pass final
@@ -164,20 +142,18 @@ namespace ZyGraphic
         {
             ComPtr<ID3D11Texture2D>          Object;
             ComPtr<ID3D11ShaderResourceView> Resource;
-            TextureFormat                    Format  = TextureFormat::Unspecified;
-            UINT                             Samples = 1;
-            UINT                             Levels  = 1;
-            UINT                             Layers  = 1;
+            TextureFormat                    Format = TextureFormat::Unspecified;
+            UINT                             Levels = 1;
+            UINT                             Layers = 1;
         };
 
         /// \brief Direct3D 11 device capabilities and feature support.
         struct D3D11Properties final
         {
-            D3D11Multisamples Multisample;
-            Bool              Tearless    = true;
-            Bool              Tearing     = false;
-            TextureFormat     ColorFormat = TextureFormat::Unspecified;
-            TextureFormat     DepthFormat = TextureFormat::Unspecified;
+            Bool          Tearless    = true;
+            Bool          Tearing     = false;
+            TextureFormat ColorFormat = TextureFormat::Unspecified;
+            TextureFormat DepthFormat = TextureFormat::Unspecified;
         };
 
         /// \brief Internal wrapper for the profiler's view of the device, and the one zone a pass is timed by.

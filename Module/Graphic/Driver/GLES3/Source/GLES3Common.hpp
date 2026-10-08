@@ -77,7 +77,6 @@ namespace ZyGraphic
             static_cast<GLenum>(GL_STATIC_DRAW),    // Storage::Immutable
             static_cast<GLenum>(GL_DYNAMIC_DRAW),   // Storage::Dynamic
             static_cast<GLenum>(GL_STREAM_DRAW),    // Storage::Stream
-            static_cast<GLenum>(GL_STREAM_READ),    // Storage::Readback
         };
         return kMapping[ZyEnum::Cast(Value)];
     }

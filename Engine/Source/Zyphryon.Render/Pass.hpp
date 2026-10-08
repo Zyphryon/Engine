@@ -32,19 +32,16 @@ namespace ZyRender
         struct ColorAttachment final
         {
             /// The slot of the target written by this attachment, or \ref kNone for the display surface.
-            UInt32            Target  = kNone;
-
-            /// The slot of the target the multisampled result is resolved into, or \ref kNone when not multisampled.
-            UInt32            Resolve = kNone;
+            UInt32            Target = kNone;
 
             /// The operation applied when the pass opens.
-            ZyGraphic::Action Load    = ZyGraphic::Action::Clear;
+            ZyGraphic::Action Load   = ZyGraphic::Action::Clear;
 
             /// The operation applied when the pass closes.
-            ZyGraphic::Action Store   = ZyGraphic::Action::Store;
+            ZyGraphic::Action Store  = ZyGraphic::Action::Store;
 
             /// The color this attachment is cleared to (used when \ref Load is \ref ZyGraphic::Action::Clear).
-            Color             Tint    = Color(0.0f, 0.0f, 0.0f, 1.0f);
+            Color             Tint   = Color(0.0f, 0.0f, 0.0f, 1.0f);
         };
 
         /// \brief A declared depth/stencil attachment.

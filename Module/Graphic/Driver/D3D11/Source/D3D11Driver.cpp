@@ -243,12 +243,9 @@ namespace ZyGraphic
 
     void D3D11Driver::CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
     {
-        const Bool IsReadback = (Storage == Storage::Readback);
-
         const UInt Size   = (Usage == Usage::Uniform) ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment) : Capacity;
-        const UInt Bind   = IsReadback ? 0 : D3D11Convert(Usage);
-        const UInt Access = IsReadback ? D3D11_CPU_ACCESS_READ : (Storage == Storage::Dynamic) ? D3D11_CPU_ACCESS_WRITE : 0;
-        const CD3D11_BUFFER_DESC Descriptor(Size, Bind, D3D11Convert(Storage), Access);
+        const UInt Access = (Storage == Storage::Dynamic) ? D3D11_CPU_ACCESS_WRITE : 0;
+        const CD3D11_BUFFER_DESC Descriptor(Size, D3D11Convert(Usage), D3D11Convert(Storage), Access);
 
         D3D11_SUBRESOURCE_DATA Content {
             .pSysMem     = Data.GetData(),
@@ -281,19 +278,6 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CopyBuffer(Object SrcBuffer, UInt32 SrcOffset, Object DstBuffer, UInt32 DstOffset, UInt32 Size)
-    {
-        constexpr D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
-
-        const CD3D11_BOX        Offset(SrcOffset, 0, 0, SrcOffset + Size, 1, 1);
-        const Ptr<ID3D11Buffer> Target = mBuffers[DstBuffer].Get();
-        const Ptr<ID3D11Buffer> Source = mBuffers[SrcBuffer].Get();
-        mDeviceImmediate->CopySubresourceRegion1(Target, 0, DstOffset, 0, 0, Source, 0, AddressOf(Offset), Flags);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Ptr<Byte> D3D11Driver::MapBuffer(Object ID, UInt32 Offset, UInt32 Size)
     {
         constexpr D3D11_MAP      Mapping = D3D11_MAP_WRITE_DISCARD;
@@ -317,33 +301,6 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Blob D3D11Driver::ReadBuffer(Object ID, UInt32 Offset, UInt32 Size)
-    {
-        const Ptr<ID3D11Buffer> Buffer = mBuffers[ID].Get();
-
-        if (!Buffer)
-        {
-            return Blob();
-        }
-
-        // Still drawing means the copy has not landed yet, and the read is tried again next frame.
-        D3D11_MAPPED_SUBRESOURCE Memory;
-
-        const HRESULT Result = mDeviceImmediate->Map(Buffer, 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, AddressOf(Memory));
-
-        if (Result == DXGI_ERROR_WAS_STILL_DRAWING || !D3D11Check(Result))
-        {
-            return Blob();
-        }
-
-        Blob Output = Blob::Copy(ConstSpan(static_cast<ConstPtr<Byte>>(Memory.pData) + Offset, Size));
-        mDeviceImmediate->Unmap(Buffer, 0);
-        return Output;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void D3D11Driver::CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth)
     {
         Ref<D3D11Pass> Target = mPasses[ID];
@@ -355,23 +312,12 @@ namespace ZyGraphic
 
             Ref<D3D11ColorAttachment> Attachment = Target.Colors.Append();
             Attachment.Target      = Source.Object;
-            Attachment.TargetSlice = D3D11CalcSubresource(Color.TargetLevel, Color.TargetLayer, Source.Levels);
+            Attachment.LoadAction  = Color.LoadAction;
+            Attachment.StoreAction = Color.StoreAction;
 
-            if (Color.Resolve)
-            {
-                ConstRef<D3D11Texture> Destination = mTextures[Color.Resolve];
-
-                Attachment.Resolve       = Destination.Object;
-                Attachment.ResolveSlice  = D3D11CalcSubresource(Color.ResolveLevel, Color.ResolveLayer, Destination.Levels);
-                Attachment.ResolveFormat = D3D11TranslateSRV(Destination.Format);
-            }
-            Attachment.LoadAction    = Color.LoadAction;
-            Attachment.StoreAction   = Color.StoreAction;
-
-            const Bool                     IsSliced  = (Source.Layers > 1);
-            const D3D11_RTV_DIMENSION      Dimension = Source.Samples > 1
-                ? (IsSliced ? D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D11_RTV_DIMENSION_TEXTURE2DMS)
-                : (IsSliced ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY   : D3D11_RTV_DIMENSION_TEXTURE2D);
+            const D3D11_RTV_DIMENSION Dimension = (Source.Layers > 1)
+                ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY
+                : D3D11_RTV_DIMENSION_TEXTURE2D;
 
             const CD3D11_RENDER_TARGET_VIEW_DESC Description(
                 Dimension, D3D11TranslateSRV(Source.Format), Color.TargetLevel, Color.TargetLayer, 1);
@@ -390,10 +336,9 @@ namespace ZyGraphic
 
             ConstRef<D3D11Texture> Source = mTextures[Depth.Target];
 
-            const Bool                Sliced    = (Source.Layers > 1);
-            const D3D11_DSV_DIMENSION Dimension = Source.Samples > 1
-                ? (Sliced ? D3D11_DSV_DIMENSION_TEXTURE2DMSARRAY : D3D11_DSV_DIMENSION_TEXTURE2DMS)
-                : (Sliced ? D3D11_DSV_DIMENSION_TEXTURE2DARRAY   : D3D11_DSV_DIMENSION_TEXTURE2D);
+            const D3D11_DSV_DIMENSION Dimension = (Source.Layers > 1)
+                ? D3D11_DSV_DIMENSION_TEXTURE2DARRAY
+                : D3D11_DSV_DIMENSION_TEXTURE2D;
 
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
                 Dimension, D3D11TranslateDSV(Source.Format), Depth.TargetLevel, Depth.TargetLayer, 1);
@@ -446,7 +391,6 @@ namespace ZyGraphic
             Description.RenderTarget[0].DestBlendAlpha        = D3D11Convert(States.BlendDstAlpha);
             Description.RenderTarget[0].BlendOpAlpha          = D3D11Convert(States.BlendEquationAlpha);
             Description.RenderTarget[0].RenderTargetWriteMask = static_cast<D3D11_COLOR_WRITE_ENABLE>(States.Channel);
-            Description.AlphaToCoverageEnable                 = States.AlphaToCoverage;
 
             D3D11Check(mDevice->CreateBlendState(& Description, Pipeline.BS.GetAddressOf()));
         }
@@ -587,28 +531,17 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, Multisample Samples, ConstSpan<Byte> Data)
+    void D3D11Driver::CreateTexture(Object ID, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data)
     {
-        const Bool   IsReadback = (Storage == Storage::Readback);
-        const Bool   IsCube     = (Layout == TextureLayout::TextureCube);
-        const UInt16 Slices     = IsCube ? 6 : Max<UInt16>(1, Layers);
+        const Bool   IsCube = (Layout == TextureLayout::TextureCube);
+        const UInt16 Slices = IsCube ? 6 : Max<UInt16>(1, Layers);
 
         CD3D11_TEXTURE2D_DESC Description(D3D11Convert(Format), Width, Height, Slices, Levels);
-        Description.Usage      = D3D11Convert(Storage);
-        Description.BindFlags  = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
-        Description.MiscFlags  = IsCube ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
-        Description.SampleDesc = {
-            .Count = ZyEnum::Cast(Samples),
-            .Quality = mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Samples)]
-        };
+        Description.Usage     = D3D11Convert(Storage);
+        Description.BindFlags = HasBit(Usage, Usage::Sample) ? D3D11_BIND_SHADER_RESOURCE : 0;
+        Description.MiscFlags = IsCube ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
 
-        if (IsReadback)
-        {
-            Description.BindFlags      = 0;
-            Description.MiscFlags      = 0;
-            Description.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-        }
-        else if (HasBit(Usage, Usage::Target))
+        if (HasBit(Usage, Usage::Target))
         {
             switch (Format)
             {
@@ -625,10 +558,9 @@ namespace ZyGraphic
         }
 
         Ref<D3D11Texture> Texture = mTextures[ID];
-        Texture.Format  = Format;
-        Texture.Samples = ZyEnum::Cast(Samples);
-        Texture.Levels  = Levels;
-        Texture.Layers  = Slices;
+        Texture.Format = Format;
+        Texture.Levels = Levels;
+        Texture.Layers = Slices;
 
         // Fill the data, slice-major so the entry order matches what D3D11CalcSubresource indexes.
         Sequence<D3D11_SUBRESOURCE_DATA> Content;
@@ -657,7 +589,7 @@ namespace ZyGraphic
         }
         D3D11Check(mDevice->CreateTexture2D(AddressOf(Description), Memory, Texture.Object.GetAddressOf()));
 
-        if (HasBit(Usage, Usage::Sample) && !IsReadback)
+        if (HasBit(Usage, Usage::Sample))
         {
             D3D11_SRV_DIMENSION Dimension;
 
@@ -667,15 +599,11 @@ namespace ZyGraphic
             }
             else if (Layout == TextureLayout::Texture2DArray)
             {
-                Dimension = (Samples != Multisample::X1)
-                    ? D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY
-                    : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+                Dimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
             }
             else
             {
-                Dimension = (Samples != Multisample::X1)
-                    ? D3D11_SRV_DIMENSION_TEXTURE2DMS
-                    : D3D11_SRV_DIMENSION_TEXTURE2D;
+                Dimension = D3D11_SRV_DIMENSION_TEXTURE2D;
             }
 
             const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Levels, 0, Slices);
@@ -703,65 +631,6 @@ namespace ZyGraphic
 
         const CD3D11_BOX Offset(X, Y, 0, X + Width, Y + Height, 1);
         mDeviceImmediate->UpdateSubresource1(Texture.Object.Get(), Subresource, AddressOf(Offset), Data.GetData(), Pitch, 0, Flags);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void D3D11Driver::CopyTexture(Object SrcTexture, UInt8 SrcLevel, UInt16 SrcLayer, UInt16 SrcX, UInt16  SrcY, Object DstTexture, UInt8 DstLevel, UInt16 DstLayer, UInt16 DstX, UInt16 DstY, UInt16 Width, UInt16 Height)
-    {
-        constexpr D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
-
-        ConstRef<D3D11Texture> Target = mTextures[DstTexture];
-        ConstRef<D3D11Texture> Source = mTextures[SrcTexture];
-
-        const UINT DstSubresource = D3D11CalcSubresource(DstLevel, DstLayer, Target.Levels);
-        const UINT SrcSubresource = D3D11CalcSubresource(SrcLevel, SrcLayer, Source.Levels);
-
-        const CD3D11_BOX Offset(SrcX, SrcY, 0, SrcX + Width, SrcY + Height, 1);
-        mDeviceImmediate->CopySubresourceRegion1(
-            Target.Object.Get(), DstSubresource, DstX, DstY, 0, Source.Object.Get(), SrcSubresource, AddressOf(Offset), Flags);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Blob D3D11Driver::ReadTexture(Object ID, UInt8 Level, UInt16 Layer)
-    {
-        ConstRef<D3D11Texture> Texture = mTextures[ID];
-
-        if (!Texture.Object)
-        {
-            return Blob();
-        }
-
-        // Still drawing means the copy has not landed yet, and the read is tried again next frame.
-        const UINT               Subresource = D3D11CalcSubresource(Level, Layer, Texture.Levels);
-        D3D11_MAPPED_SUBRESOURCE Memory;
-
-        const HRESULT Result = mDeviceImmediate->Map(
-            Texture.Object.Get(), Subresource, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, AddressOf(Memory));
-
-        if (Result == DXGI_ERROR_WAS_STILL_DRAWING || !D3D11Check(Result))
-        {
-            return Blob();
-        }
-
-        D3D11_TEXTURE2D_DESC Description;
-        Texture.Object->GetDesc(AddressOf(Description));
-
-        const UInt32 Pitch = GetLevelPitch(Texture.Format, static_cast<UInt16>(Description.Width), Level);
-        const UInt32 Rows  = GetLevelRows(Texture.Format, static_cast<UInt16>(Description.Height), Level);
-
-        // The driver pads each row as it likes, and the caller gets them packed tightly.
-        Blob Output = Blob::Allocate<Byte>(Pitch * Rows);
-
-        for (UInt32 Row = 0; Row < Rows; ++Row)
-        {
-            Output.Copy(static_cast<ConstPtr<Byte>>(Memory.pData) + Row * Memory.RowPitch, Pitch, Row * Pitch);
-        }
-        mDeviceImmediate->Unmap(Texture.Object.Get(), Subresource);
-        return Output;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -951,22 +820,10 @@ namespace ZyGraphic
 
     void D3D11Driver::Commit(Object Pass)
     {
-        // Resolve multisample color attachments into their corresponding single-sample targets.
+        // What the pass does not keep is discarded, so the driver need not preserve it past the pass.
         for (ConstRef<D3D11ColorAttachment> Attachment : mPasses[Pass].Colors)
         {
-            if (Attachment.StoreAction == Action::Store)
-            {
-                if (Attachment.Resolve)
-                {
-                    mDeviceImmediate->ResolveSubresource(
-                        Attachment.Resolve.Get(),
-                        Attachment.ResolveSlice,
-                        Attachment.Target.Get(),
-                        Attachment.TargetSlice,
-                        Attachment.ResolveFormat);
-                }
-            }
-            else
+            if (Attachment.StoreAction != Action::Store)
             {
                 mDeviceImmediate->DiscardView(Attachment.TargetResource.Get());
             }
@@ -979,7 +836,7 @@ namespace ZyGraphic
             mDeviceImmediate->DiscardView(DepthAttachment.Target.Get());
         }
 
-        // Closed once the pass has resolved, so what it timed is the pass and not the wait for the display.
+        // Closed once the pass has drawn, so what it timed is the pass and not the wait for the display.
         mProfiler.Close();
 
         // Present the swap chain if this is the primary rendering pass.
@@ -1100,32 +957,6 @@ namespace ZyGraphic
                 DXGI_FEATURE_PRESENT_ALLOW_TEARING, AddressOf(AllowAdaptive), sizeof(AllowAdaptive)));
             mDeviceProperties.Tearing = AllowAdaptive;
         }
-
-        // Query supported multisample anti-aliasing (MSAA) levels for each texture format.
-        for (const TextureFormat Format : ZyEnum::GetValues<TextureFormat>())
-        {
-            if (Format == TextureFormat::Unspecified)
-            {
-                continue;
-            }
-
-            const DXGI_FORMAT DXGIFormat = D3D11Convert(Format);
-
-            for (const Multisample Sample : ZyEnum::GetValues<Multisample>())
-            {
-                const UINT Count   = static_cast<UInt32>(Sample);
-                UINT       Quality = 0;
-
-                if (SUCCEEDED(mDevice->CheckMultisampleQualityLevels(DXGIFormat, Count, AddressOf(Quality))) && Quality > 0)
-                {
-                    mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Sample)] = static_cast<UInt8>(Quality - 1);
-                }
-                else
-                {
-                    mDeviceProperties.Multisample[ZyEnum::Cast(Format)][ZyEnum::Cast(Sample)] = 0;
-                }
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1190,18 +1021,15 @@ namespace ZyGraphic
             0, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(ColorBuffer.GetAddressOf())));
 
         Ref<D3D11ColorAttachment> Attachment = Pass.Colors.Append();
-        Attachment.Target        = ColorBuffer;
-        Attachment.TargetSlice   = 0;
-        Attachment.ResolveFormat = D3D11Convert(Config.ColorFormat);
-        Attachment.ResolveSlice  = 0;
-        Attachment.LoadAction    = Action::Clear;
-        Attachment.StoreAction   = Action::Store;
+        Attachment.Target      = ColorBuffer;
+        Attachment.LoadAction  = Action::Clear;
+        Attachment.StoreAction = Action::Store;
 
-        const CD3D11_RENDER_TARGET_VIEW_DESC View(D3D11_RTV_DIMENSION_TEXTURE2D, Attachment.ResolveFormat);
+        const CD3D11_RENDER_TARGET_VIEW_DESC View(D3D11_RTV_DIMENSION_TEXTURE2D, D3D11Convert(Config.ColorFormat));
         D3D11Check(mDevice->CreateRenderTargetView(
             Attachment.Target.Get(), AddressOf(View), Attachment.TargetResource.GetAddressOf()));
 
-        // Create a depth-stencil buffer matching the swapchain dimensions and sample count.
+        // Create a depth-stencil buffer matching the swapchain dimensions.
         if (Config.DepthFormat != TextureFormat::Unspecified)
         {
             D3D11_TEXTURE2D_DESC DepthStencilTextureMetadata { };

@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Describes a texture a \ref Pipeline declares and every \ref Graph realizes one of its own.
+    /// \brief Describes a texture a \ref Blueprint declares and every \ref Graph realizes one of its own.
     struct Target final
     {
         /// \brief Describes how a target's dimensions track the frame's output size.
@@ -36,15 +36,12 @@ namespace ZyRender
         ZyGraphic::TextureFormat Format;
 
         /// How the target's dimensions track the frame's output size.
-        Scale                    Sizing  = Scale::Full;
+        Scale                    Sizing = Scale::Full;
 
         /// The width, in pixels, used only when \ref Sizing is \ref Scale::Fixed.
-        UInt16                   Width   = 0;
+        UInt16                   Width  = 0;
 
         /// The height, in pixels, used only when \ref Sizing is \ref Scale::Fixed.
-        UInt16                   Height  = 0;
-
-        /// The multisample count of the target texture.
-        ZyGraphic::Multisample   Samples = ZyGraphic::Multisample::X1;
+        UInt16                   Height = 0;
     };
 }

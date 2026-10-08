@@ -62,9 +62,7 @@ namespace ZyGraphic
                 {
                     const JsonObject JsonTexture = JsonTextures.GetObject(Index);
 
-                    const Text       Name       = JsonTexture.GetString("Name");
-                    const Frequency  Frequency  = JsonTexture.GetEnum("Frequency", Frequency::Material);
-                    const Visibility Visibility = JsonTexture.GetEnum("Visibility", Visibility::All);
+                    const Text Name = JsonTexture.GetString("Name");
 
                     // The schema hands back the register it took, which the authored one only has to agree with.
                     const UInt8 Register = Schema.AddTexture(Name);
@@ -87,8 +85,6 @@ namespace ZyGraphic
 
                         Schema.SetFallback(Register, Texel, JsonTexture.GetEnum("Layout", TextureLayout::Texture2D), Format);
                     }
-
-                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(Resource::Texture, Register, 1, Visibility);
                 }
             }
 
@@ -98,10 +94,6 @@ namespace ZyGraphic
                 for (UInt Index = 0, Limit = JsonSamplers.GetSize(); Index < Limit; ++Index)
                 {
                     const JsonObject JsonSampler = JsonSamplers.GetObject(Index);
-
-                    const Text       Name       = JsonSampler.GetString("Name");
-                    const Frequency  Frequency  = JsonSampler.GetEnum("Frequency", Frequency::Material);
-                    const Visibility Visibility = JsonSampler.GetEnum("Visibility", Visibility::All);
 
                     Sampler Descriptor;
                     Descriptor.AddressModeU = JsonSampler.GetEnum("AddressModeU", TextureAddress::Clamp);
@@ -115,9 +107,6 @@ namespace ZyGraphic
 
                     ZY_ASSERT(JsonSampler.GetNumber<UInt8>("Register", Index) == Register,
                         "Sampler registers must be dense and ordered");
-
-                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
-                        Resource::Sampler, Register, 1, Visibility);
                 }
             }
 
@@ -148,16 +137,6 @@ namespace ZyGraphic
                             Schema.AddUniform(Frequency, Buffer, Type, Parameter());
                         }
                     }
-                }
-            }
-
-            // Declare one uniform block per frequency that declared any field, at the register matching it.
-            for (const Frequency Frequency : ZyEnum::GetValues<Frequency>())
-            {
-                if (Schema.GetUniforms(Frequency).Size > 0)
-                {
-                    Description.Signature.Bindings[ZyEnum::Cast(Frequency)].Append(
-                        Resource::Uniform, ZyEnum::Cast(Frequency), 1, Visibility::All);
                 }
             }
         }
@@ -283,7 +262,6 @@ namespace ZyGraphic
         // Parse 'Blend' section
         if (const JsonObject JsonBlend = Section.GetObject("Blend"); JsonBlend.IsValid())
         {
-            States.AlphaToCoverage     = JsonBlend.GetBool("AlphaToCoverage", States.AlphaToCoverage);
             States.Channel             = JsonBlend.GetEnum("Channel", States.Channel);
             States.BlendSrcColor       = JsonBlend.GetEnum("SrcColor", States.BlendSrcColor);
             States.BlendDstColor       = JsonBlend.GetEnum("DstColor", States.BlendDstColor);

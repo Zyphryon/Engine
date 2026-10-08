@@ -117,7 +117,6 @@ namespace ZyRender
                         mHeight,
                         mCount,
                         1,
-                        ZyGraphic::Multisample::X1,
                         Blob());
                 }
             }

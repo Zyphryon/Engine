@@ -33,9 +33,6 @@ namespace ZyGraphic
         /// \brief The maximum number of vertex attributes in a vertex buffer.
         kMaxAttributes  = 0x0010,
 
-        /// \brief The maximum number of resource bindings declared within a single frequency group.
-        kMaxBindings    = 0x0010,
-
         /// \brief The maximum number of buffer resources.
         kMaxBuffers     = 0x1000,
 
@@ -142,15 +139,6 @@ namespace ZyGraphic
         Instance, ///< Rebound for every draw call.
     };
 
-    /// \brief Specifies the number of samples for multisampling.
-    enum class Multisample : UInt8
-    {
-        X1 = 1,  ///< Single sample (no multisampling).
-        X2 = 2,  ///< 2x multisampling.
-        X4 = 4,  ///< 4x multisampling.
-        X8 = 8,  ///< 8x multisampling.
-    };
-
     /// \brief Specifies the type of geometric primitive to render.
     enum class Primitive : UInt8
     {
@@ -159,14 +147,6 @@ namespace ZyGraphic
         LineStrip,      ///< Connected lines (1 vertex per segment after the first).
         TriangleList,   ///< Independent triangles (3 vertices per triangle).
         TriangleStrip,  ///< Connected triangles (1 triangle per vertex after the first two).
-    };
-
-    /// \brief Specifies the kind of resource a shader binding expects.
-    enum class Resource : UInt8
-    {
-        Texture, ///< Sampled texture image.
-        Sampler, ///< Sampler state, bound independently of the texture it filters.
-        Uniform, ///< Uniform (constant) block.
     };
 
     /// \brief Describes shader source languages used by the shader compiler frontend.
@@ -190,7 +170,6 @@ namespace ZyGraphic
         Immutable, ///< Initialized once at creation; read-only by the GPU.
         Dynamic,   ///< Written frequently by the CPU; read by the GPU (mapped access).
         Stream,    ///< Written occasionally by the CPU via explicit uploads; read by the GPU.
-        Readback,  ///< Filled by the GPU through a copy; read by the CPU.
     };
 
     /// \brief Specifies the action to perform when a test (e.g., stencil) passes or fails.
@@ -438,16 +417,6 @@ namespace ZyGraphic
         None,          ///< No semantic assigned.
     };
 
-    /// \brief Specifies which shader stages can reach a binding.
-    enum class Visibility : UInt8
-    {
-        None     = 0,                                       ///< Reached by no stage; the binding is inert.
-        Vertex   = 1 << ZyEnum::Cast(ShaderStage::Vertex),    ///< Reached by the vertex stage.
-        Fragment = 1 << ZyEnum::Cast(ShaderStage::Fragment),  ///< Reached by the fragment stage.
-        All      = Vertex | Fragment,                       ///< Reached by every stage.
-    };
-    ZY_DEFINE_BITWISE_ENUM(Visibility)
-
     /// \brief Represents the value of a shader parameter.
     using Parameter = Variant<
         Bool,       Color,          IntColor8,
@@ -502,9 +471,6 @@ namespace ZyGraphic
 
         /// Indicates whether the graphics device supports vertex base offset.
         Bool   SupportsBaseVertex    = false;
-
-        /// The maximum level of anisotropy supported by the graphics device.
-        UInt8  MaxTextureAnisotropy  = 0;
 
         /// The maximum supported texture dimension (width and height) in pixels.
         UInt32 MaxTextureDimension   = 0;
@@ -617,28 +583,19 @@ namespace ZyGraphic
     struct ColorAttachment final
     {
         /// The texture object used as the render target for this attachment.
-        Object Target       = 0;
+        Object Target      = 0;
 
         /// The mipmap level of the render target (if applicable).
-        UInt8  TargetLevel  = 0;
+        UInt8  TargetLevel = 0;
 
         /// The array slice or cube face of the render target.
-        UInt16 TargetLayer  = 0;
-
-        /// The texture object used as the resolve target for multisampled render targets (if multisampling is used).
-        Object Resolve      = 0;
-
-        /// The mipmap level of the resolve target (if multisampling is used).
-        UInt8  ResolveLevel = 0;
-
-        /// The array slice or cube face of the resolve target (if multisampling is used).
-        UInt16 ResolveLayer = 0;
+        UInt16 TargetLayer = 0;
 
         /// The operation to perform on the color buffer at the beginning of a render pass.
-        Action LoadAction   = Action::Clear;
+        Action LoadAction  = Action::Clear;
 
         /// The operation to perform on the color buffer at the end of a render pass.
-        Action StoreAction  = Action::Store;
+        Action StoreAction = Action::Store;
     };
 
     /// \brief Defines the configuration for a depth/stencil attachment in a render pass.
@@ -762,33 +719,11 @@ namespace ZyGraphic
         Sequence<Macro>                           Macros;
     };
 
-    /// \brief Describes a single resource binding declared by a shader program.
-    struct Binding final
-    {
-        /// The kind of resource expected at this binding.
-        Resource   Resource    = Resource::Uniform;
-
-        /// The register the shader declares within its frequency group.
-        UInt8      Register   = 0;
-
-        /// The number of consecutive registers this binding occupies.
-        UInt8      Count      = 1;
-
-        /// The shader stages that read this binding.
-        Visibility Visibility = Visibility::All;
-    };
-
-    /// \brief Type alias for the resource bindings a program declares at one frequency.
-    using Bindings = Sequence<Binding, kMaxBindings>;
-
-    /// \brief Describes the resource interface of a shader program, grouped by update frequency.
+    /// \brief Describes the resource interface of a shader program.
     struct Signature final
     {
         /// The vertex attributes consumed by the program's input stage.
-        Attributes                               Attributes;
-
-        /// The resource bindings declared by the program, indexed by the frequency that rebinds them.
-        Array<Bindings, ZyEnum::Count<Frequency>()> Bindings;
+        Attributes Attributes;
     };
 
     /// \brief Describes the fixed-function GPU state for a rendering pipeline.
@@ -802,9 +737,6 @@ namespace ZyGraphic
 
         /// Enables or disables scissor testing.
         Bool           Scissor               = false;
-
-        /// Alpha-to-coverage enable flag for multisampling.
-        Bool           AlphaToCoverage       = false;
 
         /// Source blend factor for color channels.
         BlendFactor    BlendSrcColor         = BlendFactor::One;
