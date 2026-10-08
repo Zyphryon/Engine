@@ -53,40 +53,20 @@ namespace ZyRender
 
     void Animator2D::Restart(ConstRef<Animation2D> Sequence, Real64 Timestamp, Real64 Phase)
     {
+        // The repeat each status plays under, in the order they are declared; the backward one alone runs from its end.
+        static constexpr Array kRepeats(Repeat::Once, Repeat::Once, Repeat::Loop, Repeat::Mirror);
+
         const Real64 Duration = Sequence.GetDuration();
         const Real32 Rate     = GetRate();
+        const Bool   Backward = (Sequence.GetStatus() == Animation2D::Status::Backward);
 
         // Move the clock to the start time first, so playback is anchored there and not at the last advance.
         mPlayback.Advance(Timestamp);
         mPlayback.SetDuration(Duration);
-
-        switch (Sequence.GetStatus())
-        {
-        case Animation2D::Status::Forward:
-            mPlayback.SetRepeat(Repeat::Once);
-            mPlayback.SetSpeed(Rate);
-            mPlayback.Seek(Phase * Duration);
-            mPlayback.Play();
-            break;
-        case Animation2D::Status::Backward:
-            mPlayback.SetRepeat(Repeat::Once);
-            mPlayback.SetSpeed(-Rate);
-            mPlayback.Seek((1.0 - Phase) * Duration);
-            mPlayback.Play();
-            break;
-        case Animation2D::Status::Repeat:
-            mPlayback.SetRepeat(Repeat::Loop);
-            mPlayback.SetSpeed(Rate);
-            mPlayback.Seek(Phase * Duration);
-            mPlayback.Play();
-            break;
-        case Animation2D::Status::Mirror:
-            mPlayback.SetRepeat(Repeat::Mirror);
-            mPlayback.SetSpeed(Rate);
-            mPlayback.Seek(Phase * Duration);
-            mPlayback.Play();
-            break;
-        }
+        mPlayback.SetRepeat(kRepeats[ZyEnum::Cast(Sequence.GetStatus())]);
+        mPlayback.SetSpeed(Backward ? -Rate : Rate);
+        mPlayback.Seek((Backward ? 1.0 - Phase : Phase) * Duration);
+        mPlayback.Play();
 
         mKeyframe = Locate(Sequence);
 

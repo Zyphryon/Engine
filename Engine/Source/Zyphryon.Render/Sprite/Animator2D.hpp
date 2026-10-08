@@ -96,11 +96,9 @@ namespace ZyRender
         /// \return The share of the clip's duration elapsed in the direction it plays, from zero to one.
         ZY_INLINE Real64 GetPhase() const
         {
-            const Real64 Duration = mPlayback.GetDuration();
-
-            if (Duration > 0.0)
+            if (mPlayback.GetDuration() > 0.0)
             {
-                const Real64 Share = Clamp(mPlayback.GetTime() / Duration, 0.0, 1.0);
+                const Real64 Share = mPlayback.GetProgress();
                 return mPlayback.GetSpeed() < 0.0f ? 1.0 - Share : Share;
             }
             return 0.0;
@@ -166,13 +164,7 @@ namespace ZyRender
         /// \return `true` when a play-once clip is holding on its final frame, otherwise `false`.
         ZY_INLINE Bool HasEnded() const
         {
-            if (mPlayback.GetRepeat() == Repeat::Once)
-            {
-                return mPlayback.GetSpeed() < 0.0f
-                    ? (mPlayback.GetTime() <= 0.0)
-                    : (mPlayback.GetTime() >= mPlayback.GetDuration());
-            }
-            return false;
+            return mPlayback.IsComplete();
         }
 
     private:
