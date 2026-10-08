@@ -23,23 +23,12 @@ namespace ZyRender
 
     Bool Camera::Compute()
     {
-        // Atomically retrieve and clear the dirty mask, if no bits were set, no recomputation is needed.
-        if (const UInt32 Mask = Exchange(mMask, 0u); Mask != 0)
+        if (Exchange(mDirty, false))
         {
-            // Recompute the view matrix only if the camera's transform has changed.
-            if (HasBit(Mask, kBitMaskTransformation))
-            {
-                mView = Matrix4x3::Inverse(mTransform.Compute());
-            }
-
-            // Recompute the combined view-projection matrix.
-            mViewProjection = mProjection * Matrix4x4::FromMatrix4x3(mView);
-
-            // Recompute the inverse of the combined view-projection matrix.
+            mView                  = Matrix4x3::Inverse(mTransform.Compute());
+            mViewProjection        = mProjection * Matrix4x4::FromMatrix4x3(mView);
             mViewProjectionInverse = Matrix4x4::Inverse(mViewProjection);
-
-            // Recompute the frustum the new view-projection closes.
-            mFrustum = Frustum::FromMatrix(mViewProjection);
+            mFrustum               = Frustum::FromMatrix(mViewProjection);
             return true;
         }
         return false;

@@ -45,7 +45,65 @@ namespace ZyRender
     {
         mWidth  = Width;
         mHeight = Height;
+    }
 
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Graph::Run(ZyGraphic::Stream Frame)
+    {
+        // Whatever the blueprint restated or the output moved since the last run is realized before anything draws.
+        Reconcile();
+
+        // Bind the frame-global uniforms shared by every pass and draw this frame.
+        mEncoder.SetFrame(Frame);
+
+        for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
+        {
+            Ref<Pass>      Stage = (* mBlueprint.mPasses[Index]);
+            ConstRef<Step> Entry = mSteps[Index];
+
+            if (!Stage.IsActive())
+            {
+                continue;
+            }
+
+            // The pass opens the target it declared, clearing it as it asked, and closes it once it has drawn.
+            Sequence<Color, ZyGraphic::kMaxAttachments> Clears;
+
+            for (ConstRef<Pass::ColorAttachment> Color : Stage.GetColors())
+            {
+                Clears.Append(Color.Tint);
+            }
+
+            ConstRef<Pass::DepthAttachment> Depth = Stage.GetDepth();
+
+            // The display tracks the output, which can move while every texture of the graph's own stays put.
+            const ZyGraphic::Viewport Viewport = (Entry.Handle == ZyGraphic::kDisplay)
+                ? ZyGraphic::Viewport(0.0f, 0.0f, mWidth, mHeight)
+                : Entry.Viewport;
+
+            mService->Prepare(Entry.Handle, Stage.GetName(), Viewport, Clears, Depth.Depth, Depth.Stencil);
+
+            mEncoder.Reset();
+
+            // Whatever the pass reads is handed to every draw it records, under the name its techniques declare.
+            for (ConstRef<Pass::InputAttachment> Input : Stage.GetInputs())
+            {
+                mEncoder.SetInput(Input.Name, GetTexture(Input.Target));
+            }
+
+            Stage.Run(mEncoder, * this);
+
+            mService->Commit();
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Graph::Reconcile()
+    {
         ConstSpan<Target> Targets = mBlueprint.GetTargets();
 
         while (mSlots.GetSize() < Targets.GetSize())
@@ -67,16 +125,16 @@ namespace ZyRender
             switch (Description.Sizing)
             {
             case Target::Scale::Full:
-                Sized = Width;
-                Tall  = Height;
+                Sized = mWidth;
+                Tall  = mHeight;
                 break;
             case Target::Scale::Half:
-                Sized = Width  / 2;
-                Tall  = Height / 2;
+                Sized = mWidth  / 2;
+                Tall  = mHeight / 2;
                 break;
             case Target::Scale::Quarter:
-                Sized = Width  / 4;
-                Tall  = Height / 4;
+                Sized = mWidth  / 4;
+                Tall  = mHeight / 4;
                 break;
             default:
                 Sized = Description.Width;
@@ -105,8 +163,8 @@ namespace ZyRender
             Realized      = true;
         }
 
-        // Every step names the textures it draws into, so they stand only while none of them moved.
-        if (!Realized && !mSteps.IsEmpty())
+        // Every step names the textures it draws into, so they stand only while none of them moved and no pass came.
+        if (!Realized && mSteps.GetSize() == mBlueprint.mPasses.GetSize())
         {
             return;
         }
@@ -132,8 +190,7 @@ namespace ZyRender
 
             if (!IsDepthOnly && (Colors.IsEmpty() || Colors.GetFront().Target == Pass::kNone))
             {
-                Entry.Handle   = ZyGraphic::kDisplay;
-                Entry.Viewport = ZyGraphic::Viewport(0.0f, 0.0f, Width, Height);
+                Entry.Handle = ZyGraphic::kDisplay;
                 continue;
             }
 
@@ -187,49 +244,5 @@ namespace ZyRender
 
         mSlots.Clear();
         mSteps.Clear();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Graph::Run(ZyGraphic::Stream Frame)
-    {
-        // Bind the frame-global uniforms shared by every pass and draw this frame.
-        mEncoder.SetFrame(Frame);
-
-        for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
-        {
-            Ref<Pass>      Stage = (* mBlueprint.mPasses[Index]);
-            ConstRef<Step> Entry = mSteps[Index];
-
-            if (!Stage.IsActive())
-            {
-                continue;
-            }
-
-            // The pass opens the target it declared, clearing it as it asked, and closes it once it has drawn.
-            Sequence<Color, ZyGraphic::kMaxAttachments> Clears;
-
-            for (ConstRef<Pass::ColorAttachment> Color : Stage.GetColors())
-            {
-                Clears.Append(Color.Tint);
-            }
-
-            ConstRef<Pass::DepthAttachment> Depth = Stage.GetDepth();
-
-            mService->Prepare(Entry.Handle, Stage.GetName(), Entry.Viewport, Clears, Depth.Depth, Depth.Stencil);
-
-            mEncoder.Reset();
-
-            // Whatever the pass reads is handed to every draw it records, under the name its techniques declare.
-            for (ConstRef<Pass::InputAttachment> Input : Stage.GetInputs())
-            {
-                mEncoder.SetInput(Input.Name, GetTexture(Input.Target));
-            }
-
-            Stage.Run(mEncoder, * this);
-
-            mService->Commit();
-        }
     }
 }

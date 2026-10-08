@@ -37,21 +37,34 @@ namespace ZyRender
         /// \brief Destroys every texture and handle the graph holds.
         ~Graph();
 
-        /// \brief Recreates every texture and pass handle at the specified output size.
+        /// \brief Sets the output size the scaled targets track, which the next \ref Run realizes them at.
         ///
         /// \param Width  The frame's output width, in pixels.
         /// \param Height The frame's output height, in pixels.
         void Resize(UInt16 Width, UInt16 Height);
 
-        /// \brief Executes every active pass in order and submits the frame.
+        /// \brief Realizes whatever target or pass changed since the last run, then executes every active pass in order.
         ///
         /// \param Frame The pre-packed frame uniform stream.
         void Run(ZyGraphic::Stream Frame);
 
+        /// \brief Packs a value into a transient uniform block, then runs the frame with it as the frame's block.
+        ///
+        /// \param Block The value laid out as the techniques declare the frame's block.
+        template<typename Type>
+        ZY_INLINE void Run(ConstRef<Type> Block)
+            requires (!IsAnyOf<Type, ZyGraphic::Stream>)
+        {
+            ZyGraphic::Transient<Type> Slice = mService->AllocateInFlightUniforms<Type>(1);
+            Slice[0] = Block;
+
+            Run(Slice.GetStream());
+        }
+
         /// \brief Gets the texture realized for one of the blueprint's targets.
         ///
         /// \param Slot The slot naming the target, as \ref Blueprint::AddTarget returned it.
-        /// \return The texture object, valid until the next resize.
+        /// \return The texture object, valid until a run realizes the target again.
         ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Slot) const
         {
             return mSlots[Slot].Texture;
@@ -115,9 +128,12 @@ namespace ZyRender
             /// The pass handle the step draws through.
             ZyGraphic::Object   Handle = 0;
 
-            /// The viewport covering the target the pass draws into.
+            /// The viewport covering the target the pass draws into, left unset for the display, which tracks the output.
             ZyGraphic::Viewport Viewport;
         };
+
+        /// \brief Realizes every target whose shape changed, and bakes the passes again when any target or pass did.
+        void Reconcile();
 
         /// \brief Destroys every texture and handle, leaving the graph unrealized.
         void Release();
