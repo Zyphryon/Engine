@@ -367,6 +367,17 @@ inline namespace ZyBase
             Seal();
         }
 
+        /// \brief Shrinks the string to the given size, keeping the characters at its front.
+        ///
+        /// \param Size The number of characters to keep, where a size not below the current one changes nothing.
+        ZY_INLINE constexpr void Truncate(UInt Size)
+        {
+            if (Size < GetSize())
+            {
+                RemoveLast(GetSize() - Size);
+            }
+        }
+
         /// \brief Shrinks the heap capacity to match the current size.
         ZY_INLINE constexpr void Shrink()
             requires (Capacity == 0)
