@@ -506,6 +506,15 @@ inline namespace ZyMath
             return AnyColor(Type(0), Type(0), Type(0), Limit());
         }
 
+        /// \brief Returns a black color with the specified opacity.
+        ///
+        /// \param Opacity The alpha value for the black color, where 0 is fully transparent.
+        /// \return A color representing black with the specified opacity.
+        ZY_INLINE static constexpr AnyColor Black(Type Opacity)
+        {
+            return AnyColor(Type(0), Type(0), Type(0), Opacity);
+        }
+
         /// \brief Returns an opaque white color.
         ///
         /// \return A color representing opaque white.
@@ -693,6 +702,16 @@ inline namespace ZyMath
         ZY_INLINE static constexpr AnyColor Invert(AnyColor Color)
         {
             return AnyColor(Limit() - Color.GetRed(), Limit() - Color.GetGreen(), Limit() - Color.GetBlue(), Color.GetAlpha());
+        }
+
+        /// \brief Returns the same color with another alpha.
+        ///
+        /// \param Color The input color, whose RGB channels are kept.
+        /// \param Alpha The alpha the result takes.
+        /// \return A color with the RGB channels of \a Color and the given alpha.
+        ZY_INLINE static constexpr AnyColor WithAlpha(AnyColor Color, Type Alpha)
+        {
+            return AnyColor(Color.GetRed(), Color.GetGreen(), Color.GetBlue(), Alpha);
         }
 
         /// \brief Linearly interpolates between two color values.
