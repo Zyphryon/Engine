@@ -69,6 +69,9 @@ namespace ZyInput
         /// \brief Event triggered when the window is resized.
         MulticastDelegate<Bool(UInt32, UInt32)>                         OnWindowResize;
 
+        /// \brief Event triggered when the display scale of the window changes.
+        MulticastDelegate<Bool(Real32)>                                 OnWindowScale;
+
         /// \brief Event triggered when the window is requested to close or exit.
         MulticastDelegate<Bool()>                                       OnWindowExit;
 
@@ -122,6 +125,8 @@ namespace ZyInput
                 return OnWindowFocus.Propagate(Event.WindowFocus.State);
             case Event::Type::WindowResize:
                 return OnWindowResize.Propagate(Event.WindowResize.Width, Event.WindowResize.Height);
+            case Event::Type::WindowScale:
+                return OnWindowScale.Propagate(Event.WindowScale.Scale);
             case Event::Type::WindowExit:
                 return OnWindowExit.Propagate();
             default:

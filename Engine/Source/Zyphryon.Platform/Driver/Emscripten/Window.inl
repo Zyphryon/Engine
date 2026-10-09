@@ -444,6 +444,9 @@ namespace ZyPlatform
                 Canvas->mWidth  = static_cast<UInt32>(Width);
                 Canvas->mHeight = static_cast<UInt32>(Height);
                 Canvas->mDispatcher.QueueWindowResize(Canvas->mWidth, Canvas->mHeight);
+
+                // Zooming the page resizes it and changes its pixel ratio, so the ratio is told with every resize.
+                Canvas->mDispatcher.QueueWindowScale(static_cast<Real32>(emscripten_get_device_pixel_ratio()));
             }
             return EM_TRUE;
         }

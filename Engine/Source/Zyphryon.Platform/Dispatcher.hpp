@@ -226,6 +226,15 @@ namespace ZyPlatform
             Event.WindowResize.Height = Height;
         }
 
+        /// \brief Queues a window display scale change event.
+        ///
+        /// \param Scale The new display scale, one at the platform's standard density.
+        ZY_INLINE void QueueWindowScale(Real32 Scale)
+        {
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::WindowScale);
+            Event.WindowScale.Scale = Scale;
+        }
+
         /// \brief Queues a window close request event.
         ZY_INLINE void QueueWindowExit()
         {

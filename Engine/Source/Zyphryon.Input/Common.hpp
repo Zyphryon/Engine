@@ -170,6 +170,7 @@ namespace ZyInput
             TouchCancel,  ///< Touch revoked by the system before it was lifted.
             WindowFocus,  ///< Window focus gained or lost.
             WindowResize, ///< Window size change event.
+            WindowScale,  ///< Window display scale change event.
             WindowExit,   ///< Window close request.
             Unknown,      ///< Unknown event.
         };
@@ -238,6 +239,12 @@ namespace ZyInput
                 UInt32 Width;  ///< New window width in pixels.
                 UInt32 Height; ///< New window height in pixels.
             } WindowResize;
+
+            /// \brief Holds the data for \ref Type::WindowScale.
+            struct
+            {
+                Real32 Scale; ///< New display scale, one at the platform's standard density.
+            } WindowScale;
         };
 
         /// \brief Constructs an event with no type information.

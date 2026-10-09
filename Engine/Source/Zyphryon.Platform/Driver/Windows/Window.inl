@@ -416,6 +416,9 @@ namespace ZyPlatform
             {
                 const auto [Left, Top, Right, Bottom] = *reinterpret_cast<ConstPtr<RECT>>(Arg1);
                 ::SetWindowPos(Handle, nullptr, Left, Top, Right - Left, Bottom - Top, SWP_NOZORDER | SWP_NOACTIVATE);
+
+                // The window moved to a monitor of another scale, or the user changed it, so the new one is told.
+                Dispatcher.QueueWindowScale(static_cast<Real32>(HIWORD(Arg0)) / USER_DEFAULT_SCREEN_DPI);
                 break;
             }
             case WM_CLOSE:
