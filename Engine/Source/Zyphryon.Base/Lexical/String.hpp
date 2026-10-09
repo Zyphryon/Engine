@@ -339,20 +339,33 @@ inline namespace ZyBase
                 return;
             }
 
+            // The magnitude is written and the sign before it, which a value rounding to nought leaves out.
+            const Bool Negative  = Number < 0;
+            const Type Magnitude = Negative ? -Number : Number;
+
             if (Precision > 0)
             {
                 const UInt64 Scale    = Pow10(Precision);
-                const UInt64 Scaled   = static_cast<UInt64>(Number * Scale + 0.5);
+                const UInt64 Scaled   = static_cast<UInt64>(Magnitude * Scale + 0.5);
                 const UInt64 Integer  = Scaled / Scale;
                 const UInt64 Fraction = Scaled % Scale;
 
+                if (Negative && Scaled > 0)
+                {
+                    Append('-');
+                }
                 AppendInteger(Integer, CountDigits<10>(Integer), 10, true);
                 Append('.');
                 AppendInteger(Fraction, Precision, 10, true);
             }
             else
             {
-                const UInt64 Integer = static_cast<UInt64>(::Round(Number));
+                const UInt64 Integer = static_cast<UInt64>(::Round(Magnitude));
+
+                if (Negative && Integer > 0)
+                {
+                    Append('-');
+                }
                 AppendInteger(Integer, CountDigits<10>(Integer), 10, true);
             }
         }

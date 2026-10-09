@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "JsonError.hpp"
 #include "JsonValue.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,11 +26,24 @@ inline namespace ZyBase
     {
     public:
 
+        /// The deepest arrays and objects may nest, so a hostile file cannot exhaust the stack.
+        static constexpr UInt kMaxDepth = 128;
+
+    public:
+
         /// \brief Parses JSON text into a value structure.
         ///
-        /// \param Content The JSON text to parse.
+        /// \param Content The JSON text to parse, which may open with a UTF-8 byte order mark.
         /// \return The parsed root value, or null if parsing fails.
         static JsonValue Parse(Text Content);
+
+        /// \brief Parses JSON text into a value structure, saying why and where when it fails.
+        ///
+        /// \param Content The JSON text to parse, which may open with a UTF-8 byte order mark.
+        /// \param Output  Receives the parsed root value, left untouched when parsing fails.
+        /// \param Error   Receives why and where parsing failed, left untouched when it succeeds.
+        /// \return `true` if the whole text was one valid value, `false` otherwise.
+        static Bool Parse(Text Content, Ref<JsonValue> Output, Ref<JsonError> Error);
 
         /// \brief Serializes a JSON value to text.
         ///

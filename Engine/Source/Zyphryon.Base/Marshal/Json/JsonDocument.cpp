@@ -22,7 +22,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static JsonValue ParseValue(Text Content, Ref<UInt> Cursor);
+    static Bool ParseValue(Text Content, Ref<UInt> Cursor, UInt Depth, Ref<JsonValue> Output, Ref<JsonError> Error);
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -32,11 +32,50 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static JsonValue ParseString(Text Content, Ref<UInt> Cursor)
+    static Bool Fail(Text Content, UInt Cursor, Text Message, Ref<JsonError> Error)
     {
-        ++Cursor;
+        const Text Before = Content.Slice(0, Min(Cursor, Content.GetSize()));
 
-        Str Result;
+        Error.Message = Message;
+        Error.Line    = static_cast<UInt32>(StrCount(Before, '\n') + 1);
+        Error.Column  = static_cast<UInt32>(Before.GetSize() - (StrFindLast(Before, '\n') + 1) + 1);
+        Error.Path.Clear();
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static void Prepend(Ref<JsonError> Error, Text Step)
+    {
+        // A key is joined to the step after it by a dot, an index stands right against it.
+        if (!Error.Path.IsEmpty() && Error.Path[0] != '[')
+        {
+            Error.Path.Insert(0, '.');
+        }
+        Error.Path.Insert(0, Step);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool ParseHex(Text Content, Ref<UInt> Cursor, Ref<UInt32> Output)
+    {
+        // Exactly four digits follow, so only they are read.
+        const Text Digits = Content.Slice(Cursor, Min<UInt>(4, Content.GetSize() - Cursor));
+        UInt       Read   = 0;
+
+        Output  = StrExtractNumber<16, UInt32>(Digits, Read);
+        Cursor += Read;
+        return Read == 4;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool ParseString(Text Content, Ref<UInt> Cursor, Ref<Str> Output, Ref<JsonError> Error)
+    {
+        const UInt Start = Cursor++;
 
         while (Cursor < Content.GetSize())
         {
@@ -44,259 +83,304 @@ inline namespace ZyBase
 
             if (Character == '"')
             {
+                return true;
+            }
+
+            if (static_cast<UInt8>(Character) < 0x20)
+            {
+                return Fail(Content, Cursor - 1, "A string holds a control character, which must be escaped", Error);
+            }
+
+            if (Character != '\\')
+            {
+                Output.Append(Character);
+                continue;
+            }
+
+            if (Cursor >= Content.GetSize())
+            {
                 break;
             }
-            else if (Character == '\\' && Cursor < Content.GetSize())
-            {
-                switch (const Char Escaped = Content[Cursor++])
-                {
-                case '"':
-                    Result.Append('"');
-                    break;
-                case '\\':
-                    Result.Append('\\');
-                    break;
-                case '/':
-                    Result.Append('/');
-                    break;
-                case 'b':
-                    Result.Append('\b');
-                    break;
-                case 'f':
-                    Result.Append('\f');
-                    break;
-                case 'n':
-                    Result.Append('\n');
-                    break;
-                case 'r':
-                    Result.Append('\r');
-                    break;
-                case 't':
-                    Result.Append('\t');
-                    break;
-                case 'u':
-                {
-                    UInt32 Codepoint = 0;
 
-                    for (UInt Index = 0; Index < 4; ++Index)
+            switch (Content[Cursor++])
+            {
+            case '"':
+                Output.Append('"');
+                break;
+            case '\\':
+                Output.Append('\\');
+                break;
+            case '/':
+                Output.Append('/');
+                break;
+            case 'b':
+                Output.Append('\b');
+                break;
+            case 'f':
+                Output.Append('\f');
+                break;
+            case 'n':
+                Output.Append('\n');
+                break;
+            case 'r':
+                Output.Append('\r');
+                break;
+            case 't':
+                Output.Append('\t');
+                break;
+            case 'u':
+            {
+                UInt32 Codepoint = 0;
+
+                if (!ParseHex(Content, Cursor, Codepoint))
+                {
+                    return Fail(Content, Cursor, "A \\u escape needs four hexadecimal digits", Error);
+                }
+
+                // A character outside the basic plane is written as two escapes, high half first.
+                if (Codepoint >= 0xD800 && Codepoint <= 0xDBFF)
+                {
+                    const Bool Paired = Cursor + 1 < Content.GetSize() && Content[Cursor] == '\\' && Content[Cursor + 1] == 'u';
+                    UInt32     Low    = 0;
+
+                    if (Paired)
                     {
-                        if (Cursor >= Content.GetSize())
-                        {
-                            break;
-                        }
-
-                        const Char Hex = Content[Cursor++];
-                        Codepoint <<= 4;
-
-                        if (Hex >= '0' && Hex <= '9')
-                        {
-                            Codepoint |= (Hex - '0');
-                        }
-                        else if (Hex >= 'a' && Hex <= 'f')
-                        {
-                            Codepoint |= (Hex - 'a' + 10);
-                        }
-                        else if (Hex >= 'A' && Hex <= 'F')
-                        {
-                            Codepoint |= (Hex - 'A' + 10);
-                        }
+                        Cursor += 2;
                     }
-                    Result.AppendCodepoint(Codepoint);
+
+                    if (!Paired || !ParseHex(Content, Cursor, Low) || Low < 0xDC00 || Low > 0xDFFF)
+                    {
+                        return Fail(Content, Cursor, "A \\u escape holds half a surrogate pair", Error);
+                    }
+                    Codepoint = 0x10000 + ((Codepoint - 0xD800) << 10) + (Low - 0xDC00);
                 }
+                else if (Codepoint >= 0xDC00 && Codepoint <= 0xDFFF)
+                {
+                    return Fail(Content, Cursor, "A \\u escape holds half a surrogate pair", Error);
+                }
+                Output.AppendCodepoint(Codepoint);
                 break;
-                default:
-                    Result.Append(Escaped);
-                    break;
-                }
             }
-            else
-            {
-                Result.Append(Character);
+            default:
+                return Fail(Content, Cursor - 1, "A string holds an escape JSON does not have", Error);
             }
         }
-        return JsonValue(Result);
+        return Fail(Content, Start, "A string is never closed", Error);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static JsonValue ParseObject(Text Content, Ref<UInt> Cursor)
+    static Bool ParseNumber(Text Content, Ref<UInt> Cursor, Ref<JsonValue> Output, Ref<JsonError> Error)
     {
-        JsonValue Result;
-        Ref<JsonValue::Object> Object = Result.SetObject();
+        const UInt Start = Cursor;
+        const UInt First = Content[Cursor] == '-' ? Cursor + 1 : Cursor;
+
+        if (First >= Content.GetSize() || !StrIsDigit(Content[First]))
+        {
+            return Fail(Content, Start, "A number needs a digit", Error);
+        }
+
+        Real64 Value = StrExtractNumber<Real64>(Content, Cursor);
+
+        // An exponent scales the number by a power of ten.
+        if (Cursor < Content.GetSize() && (Content[Cursor] | 0x20) == 'e')
+        {
+            ++Cursor;
+
+            const Bool Down = StrConsume(Content, Cursor, '-');
+
+            if (!Down)
+            {
+                StrConsume(Content, Cursor, '+');
+            }
+
+            if (Cursor >= Content.GetSize() || !StrIsDigit(Content[Cursor]))
+            {
+                return Fail(Content, Cursor, "A number needs a digit in its exponent", Error);
+            }
+
+            const SInt64 Exponent = StrExtractNumber<10, SInt64>(Content, Cursor);
+            Value *= Pow(10.0, static_cast<Real64>(Down ? -Exponent : Exponent));
+        }
+
+        if (IsInf(Value))
+        {
+            return Fail(Content, Start, "A number is too large to hold", Error);
+        }
+
+        Output = JsonValue(Value);
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool ParseWord(Text Content, Ref<UInt> Cursor, Text Word, ConstRef<JsonValue> Value, Ref<JsonValue> Output, Ref<JsonError> Error)
+    {
+        if (!StrConsume(Content, Cursor, Word))
+        {
+            return Fail(Content, Cursor, "A value is not valid JSON", Error);
+        }
+
+        Output = Value;
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool ParseObject(Text Content, Ref<UInt> Cursor, UInt Depth, Ref<JsonValue> Output, Ref<JsonError> Error)
+    {
+        Ref<JsonValue::Object> Object = Output.SetObject();
 
         ++Cursor;
         StrSkipWhitespace(Content, Cursor);
 
-        if (Cursor < Content.GetSize() && Content[Cursor] == '}')
+        if (StrConsume(Content, Cursor, '}'))
         {
-            ++Cursor;
+            return true;
         }
-        else
+
+        while (true)
         {
-            while (Cursor < Content.GetSize())
+            if (Cursor >= Content.GetSize() || Content[Cursor] != '"')
             {
-                StrSkipWhitespace(Content, Cursor);
-
-                if (Content[Cursor] != '"')
-                {
-                    break;
-                }
-
-                JsonValue Key = ParseString(Content, Cursor);
-
-                StrSkipWhitespace(Content, Cursor);
-
-                if (Cursor >= Content.GetSize() || Content[Cursor] != ':')
-                {
-                    break;
-                }
-
-                ++Cursor;
-
-                JsonValue Value = ParseValue(Content, Cursor);
-
-                Object.Assign(Key.GetString(), Move(Value));
-
-                StrSkipWhitespace(Content, Cursor);
-
-                if (Cursor >= Content.GetSize())
-                {
-                    break;
-                }
-
-                if (Content[Cursor] == '}')
-                {
-                    ++Cursor;
-                    break;
-                }
-
-                if (Content[Cursor] == ',')
-                {
-                    ++Cursor;
-                }
+                return Fail(Content, Cursor, "An object needs a key in quotes", Error);
             }
+
+            Str Key;
+
+            if (!ParseString(Content, Cursor, Key, Error))
+            {
+                return false;
+            }
+
+            StrSkipWhitespace(Content, Cursor);
+
+            if (!StrConsume(Content, Cursor, ':'))
+            {
+                return Fail(Content, Cursor, "A key needs a ':' after it", Error);
+            }
+
+            JsonValue Value;
+
+            if (!ParseValue(Content, Cursor, Depth + 1, Value, Error))
+            {
+                Prepend(Error, Key);
+                return false;
+            }
+            Object.Assign(Move(Key), Move(Value));
+
+            StrSkipWhitespace(Content, Cursor);
+
+            if (StrConsume(Content, Cursor, '}'))
+            {
+                return true;
+            }
+
+            if (!StrConsume(Content, Cursor, ','))
+            {
+                return Fail(Content, Cursor, "An object needs a ',' or a '}' after a value", Error);
+            }
+            StrSkipWhitespace(Content, Cursor);
         }
-        return Result;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static JsonValue ParseArray(Text Content, Ref<UInt> Cursor)
+    static Bool ParseArray(Text Content, Ref<UInt> Cursor, UInt Depth, Ref<JsonValue> Output, Ref<JsonError> Error)
     {
-        JsonValue Result;
-        Ref<JsonValue::Array> Array = Result.SetArray();
+        Ref<JsonValue::Array> Array = Output.SetArray();
 
         ++Cursor;
         StrSkipWhitespace(Content, Cursor);
 
-        if (Cursor < Content.GetSize() && Content[Cursor] == ']')
+        if (StrConsume(Content, Cursor, ']'))
         {
-            ++Cursor;
+            return true;
         }
-        else
+
+        while (true)
         {
-            while (Cursor < Content.GetSize())
+            JsonValue Element;
+
+            if (!ParseValue(Content, Cursor, Depth + 1, Element, Error))
             {
-                JsonValue Element = ParseValue(Content, Cursor);
-                Array.Append(Move(Element));
+                Str Step;
+                Step.Format<"[{0}]">(Array.GetSize());
+                Prepend(Error, Step);
+                return false;
+            }
+            Array.Append(Move(Element));
 
-                StrSkipWhitespace(Content, Cursor);
+            StrSkipWhitespace(Content, Cursor);
 
-                if (Cursor >= Content.GetSize())
-                {
-                    break;
-                }
+            if (StrConsume(Content, Cursor, ']'))
+            {
+                return true;
+            }
 
-                if (Content[Cursor] == ']')
-                {
-                    ++Cursor;
-                    break;
-                }
-
-                if (Content[Cursor] == ',')
-                {
-                    ++Cursor;
-                }
+            if (!StrConsume(Content, Cursor, ','))
+            {
+                return Fail(Content, Cursor, "An array needs a ',' or a ']' after a value", Error);
             }
         }
-        return Result;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static JsonValue ParseBoolean(Text Content, Ref<UInt> Cursor)
-    {
-        return JsonValue(StrExtractBool(Content, Cursor));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static JsonValue ParseNull(Text Content, Ref<UInt> Cursor)
-    {
-        if (Cursor + 4 <= Content.GetSize()
-            && Content[Cursor] == 'n'
-            && Content[Cursor + 1] == 'u'
-            && Content[Cursor + 2] == 'l'
-            && Content[Cursor + 3] == 'l')
-        {
-            Cursor += 4;
-        }
-        return JsonValue();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static JsonValue ParseNumber(Text Content, Ref<UInt> Cursor)
-    {
-        return JsonValue(StrExtractNumber<Real64>(Content, Cursor));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static JsonValue ParseValue(Text Content, Ref<UInt> Cursor)
+    static Bool ParseValue(Text Content, Ref<UInt> Cursor, UInt Depth, Ref<JsonValue> Output, Ref<JsonError> Error)
     {
         StrSkipWhitespace(Content, Cursor);
 
         if (Cursor >= Content.GetSize())
         {
-            return JsonValue();
+            return Fail(Content, Cursor, "A value is missing", Error);
         }
 
         const Char Character = Content[Cursor];
 
-        if (Character == '"')
+        // Each array or object reads the next level down, so the nesting is bounded before the stack is.
+        if ((Character == '{' || Character == '[') && Depth >= JsonDocument::kMaxDepth)
         {
-            return ParseString(Content, Cursor);
+            return Fail(Content, Cursor, "Arrays and objects nest too deeply", Error);
         }
-        if (Character == '{')
+
+        switch (Character)
         {
-            return ParseObject(Content, Cursor);
-        }
-        if (Character == '[')
+        case '"':
         {
-            return ParseArray(Content, Cursor);
+            Str Result;
+
+            if (!ParseString(Content, Cursor, Result, Error))
+            {
+                return false;
+            }
+            Output = JsonValue(Result);
+            return true;
         }
-        if (Character == 't' || Character == 'f')
-        {
-            return ParseBoolean(Content, Cursor);
+        case '{':
+            return ParseObject(Content, Cursor, Depth, Output, Error);
+        case '[':
+            return ParseArray(Content, Cursor, Depth, Output, Error);
+        case 't':
+            return ParseWord(Content, Cursor, "true", JsonValue(true), Output, Error);
+        case 'f':
+            return ParseWord(Content, Cursor, "false", JsonValue(false), Output, Error);
+        case 'n':
+            return ParseWord(Content, Cursor, "null", JsonValue(), Output, Error);
+        default:
+            if (Character == '-' || StrIsDigit(Character))
+            {
+                return ParseNumber(Content, Cursor, Output, Error);
+            }
+            return Fail(Content, Cursor, "A value is not valid JSON", Error);
         }
-        if (Character == 'n')
-        {
-            return ParseNull(Content, Cursor);
-        }
-        if (Character == '-' || (Character >= '0' && Character <= '9'))
-        {
-            return ParseNumber(Content, Cursor);
-        }
-        return JsonValue();
     }
-    
+
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -313,13 +397,21 @@ inline namespace ZyBase
 
     static void WriteNumber(Ref<Str> Output, Real64 Value)
     {
+        // JSON has no word for a number that is not finite, so it reads back as null rather than breaking the text.
+        if (Value != Value || Value > kMaximum<Real64> || Value < -kMaximum<Real64>)
+        {
+            Output.Append("null");
+            return;
+        }
+
         if (Value < 0.0)
         {
             Output.Append('-');
             Value = -Value;
         }
 
-        if (Value == static_cast<SInt64>(Value))
+        // Past 2^53 a double cannot hold a fraction anyway, and past the integer range the cast is undefined.
+        if (Value < 9.0e15 && Value == static_cast<SInt64>(Value))
         {
             const SInt64 IntPart = Value;
             Output.AppendInteger(IntPart, CountDigits<10>(IntPart), 10, true);
@@ -497,9 +589,39 @@ inline namespace ZyBase
 
     JsonValue JsonDocument::Parse(Text Content)
     {
-        UInt Cursor = 0;
-        StrSkipWhitespace(Content, Cursor);
-        return ParseValue(Content, Cursor);
+        JsonValue Result;
+        JsonError Error;
+        Parse(Content, Result, Error);
+        return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool JsonDocument::Parse(Text Content, Ref<JsonValue> Output, Ref<JsonError> Error)
+    {
+        // The byte order mark some editors save at the start is not part of the text, nor of its first line.
+        UInt Mark = 0;
+        StrConsume(Content, Mark, "\xEF\xBB\xBF");
+
+        const Text Source = Content.Slice(Mark);
+        UInt       Cursor = 0;
+        JsonValue  Result;
+
+        if (!ParseValue(Source, Cursor, 0, Result, Error))
+        {
+            return false;
+        }
+
+        StrSkipWhitespace(Source, Cursor);
+
+        if (Cursor < Source.GetSize())
+        {
+            return Fail(Source, Cursor, "Something follows the value, where the text should end", Error);
+        }
+
+        Output = Move(Result);
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -114,14 +114,22 @@ namespace ZyAI
     {
         const Retainer<Behaviour> Asset = Retainer<Behaviour>::Cast(Scope.GetResource());
 
-        JsonValue        Document = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
-        const JsonObject Root(Document);
+        JsonValue Document;
+        JsonError Error;
 
-        if (!Root.IsValid())
+        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        {
+            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            return false;
+        }
+
+        if (!Document.IsObject())
         {
             LOG_W("'{0}' is not a valid behaviour", Scope.GetResource()->GetKey());
             return false;
         }
+
+        const JsonObject Root(Document);
 
         Sequence<Behaviour::Node> Nodes;
         Sequence<JsonValue>       Arguments;

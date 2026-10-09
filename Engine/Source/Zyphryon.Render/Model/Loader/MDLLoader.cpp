@@ -28,14 +28,22 @@ namespace ZyRender
     {
         const Retainer<Model3D> Asset = Retainer<Model3D>::Cast(Scope.GetResource());
 
-        JsonValue        Document = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
-        const JsonObject Root(Document);
+        JsonValue Document;
+        JsonError Error;
 
-        if (!Root.IsValid())
+        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        {
+            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            return false;
+        }
+
+        if (!Document.IsObject())
         {
             LOG_W("'{0}' is not a valid model manifest", Scope.GetResource()->GetKey());
             return false;
         }
+
+        const JsonObject Root(Document);
 
         // Resolve the referenced binary mesh; the content system tracks it as a dependency of this model.
         if (const Text Path = Root.GetString("Mesh"); !Path.IsEmpty())

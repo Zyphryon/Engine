@@ -620,6 +620,15 @@ inline namespace ZyBase
         return Character >= '0' && Character <= '9';
     }
 
+    /// \brief Checks whether a character is a hexadecimal digit (0-9, a-f, A-F).
+    ///
+    /// \param Character The character to check.
+    /// \return `true` if the character is a hexadecimal digit, `false` otherwise.
+    constexpr Bool StrIsHexDigit(Char Character)
+    {
+        return StrIsDigit(Character) || (Character >= 'a' && Character <= 'f') || (Character >= 'A' && Character <= 'F');
+    }
+
     /// \brief Checks whether a character is a whitespace character.
     ///
     /// \param Character The character to check.
@@ -703,6 +712,22 @@ inline namespace ZyBase
         if (Content.GetSize() > Cursor && Content[Cursor] == Expected)
         {
             ++Cursor;
+            return true;
+        }
+        return false;
+    }
+
+    /// \brief Consumes a text if it stands at the current cursor position.
+    ///
+    /// \param Content  The text to read from.
+    /// \param Cursor   The current position, advanced past \p Expected if it matches.
+    /// \param Expected The text to match.
+    /// \return `true` if the text was found and consumed, `false` otherwise.
+    constexpr Bool StrConsume(Text Content, Ref<UInt> Cursor, Text Expected)
+    {
+        if (Content.GetSize() >= Cursor && StrStartsWith(Content.Slice(Cursor), Expected))
+        {
+            Cursor += Expected.GetSize();
             return true;
         }
         return false;
@@ -878,37 +903,98 @@ inline namespace ZyBase
     ///
     /// \param Content The text to parse from.
     /// \param Cursor  The current position, advanced past the consumed bytes.
-    /// \return The extracted Unicode codepoint, or 0 if the sequence is invalid.
+    /// \return The extracted Unicode codepoint, or 0 if the sequence is invalid, in which case one byte is consumed.
     constexpr UInt32 StrExtractUTF8(Text Content, Ref<UInt> Cursor)
     {
-        const Char First = Content[Cursor++];
+        const UInt8 First = static_cast<UInt8>(Content[Cursor++]);
 
-        if ((First & 0x80) == 0)
+        if (First < 0x80)
         {
             return First;
         }
 
-        if ((First & 0xE0) == 0xC0)
+        const UInt Length = (First & 0xE0) == 0xC0 ? 2 : ((First & 0xF0) == 0xE0 ? 3 : ((First & 0xF8) == 0xF0 ? 4 : 0));
+
+        // A stray continuation byte, or a sequence the end of the text cuts short, is never read past.
+        if (Length == 0 || Cursor + Length - 1 > Content.GetSize())
         {
-            const Char B1 = Content[Cursor++];
-            return ((First & 0x1F) << 6) | (B1 & 0x3F);
+            return 0;
         }
 
-        if ((First & 0xF0) == 0xE0)
+        UInt32 Codepoint = First & (0x7F >> Length);
+
+        for (UInt Index = 0; Index < Length - 1; ++Index)
         {
-            const Char B1 = Content[Cursor++];
-            const Char B2 = Content[Cursor++];
-            return ((First & 0x0F) << 12) | ((B1 & 0x3F) << 6) | (B2 & 0x3F);
+            const UInt8 Next = static_cast<UInt8>(Content[Cursor + Index]);
+
+            if ((Next & 0xC0) != 0x80)
+            {
+                return 0;
+            }
+            Codepoint = (Codepoint << 6) | (Next & 0x3F);
         }
 
-        if ((First & 0xF8) == 0xF0)
+        Cursor += Length - 1;
+        return Codepoint;
+    }
+
+    /// \brief Counts the codepoints of a UTF-8 text.
+    ///
+    /// \param Content The text to count.
+    /// \return The number of codepoints, each byte that continues none counted as one.
+    constexpr UInt StrCountUTF8(Text Content)
+    {
+        UInt Result = 0;
+
+        for (UInt Index = 0; Index < Content.GetSize(); ++Index)
         {
-            const Char B1 = Content[Cursor++];
-            const Char B2 = Content[Cursor++];
-            const Char B3 = Content[Cursor++];
-            return ((First & 0x07) << 18) | ((B1 & 0x3F) << 12) | ((B2 & 0x3F) << 6) | (B3 & 0x3F);
+            Result += (static_cast<UInt8>(Content[Index]) & 0xC0) != 0x80 ? 1 : 0;
         }
-        return 0;
+        return Result;
+    }
+
+    /// \brief Gets the offset after the codepoint starting at an offset of a UTF-8 text.
+    ///
+    /// \param Content The text.
+    /// \param Offset  The offset of the codepoint.
+    /// \return The offset after it, at most the size of the text.
+    constexpr UInt StrNextUTF8(Text Content, UInt Offset)
+    {
+        if (Offset >= Content.GetSize())
+        {
+            return Content.GetSize();
+        }
+
+        // The codepoint runs on over the continuation bytes after its first.
+        ++Offset;
+
+        while (Offset < Content.GetSize() && (static_cast<UInt8>(Content[Offset]) & 0xC0) == 0x80)
+        {
+            ++Offset;
+        }
+        return Offset;
+    }
+
+    /// \brief Gets the offset of the codepoint before an offset of a UTF-8 text.
+    ///
+    /// \param Content The text.
+    /// \param Offset  The offset after the codepoint.
+    /// \return The offset it starts at, or zero at the start of the text.
+    constexpr UInt StrPreviousUTF8(Text Content, UInt Offset)
+    {
+        if (Offset == 0)
+        {
+            return 0;
+        }
+
+        // The codepoint before starts at the last byte before the offset that is not a continuation byte.
+        Offset = Min(Offset, Content.GetSize()) - 1;
+
+        while (Offset > 0 && (static_cast<UInt8>(Content[Offset]) & 0xC0) == 0x80)
+        {
+            --Offset;
+        }
+        return Offset;
     }
 
     /// \brief Iterates over each UTF-8 codepoint in the text and invokes the callback.

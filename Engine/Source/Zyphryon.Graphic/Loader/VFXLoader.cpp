@@ -38,14 +38,22 @@ namespace ZyGraphic
         Technique::Description Description;
         ZyGraphic::Schema      Schema;
 
-        JsonValue JsonDocument = JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()));
-        const JsonObject JsonRoot(JsonDocument);
+        JsonValue Document;
+        JsonError Error;
 
-        if (!JsonRoot.IsValid())
+        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        {
+            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            return false;
+        }
+
+        if (!Document.IsObject())
         {
             LOG_W("'{0}' is not a valid technique document", Scope.GetResource()->GetKey());
             return false;
         }
+
+        const JsonObject JsonRoot(Document);
 
         // Parse 'Properties' section
         if (const JsonObject JsonProperties = JsonRoot.GetObject("Properties"); JsonProperties.IsValid())
