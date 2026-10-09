@@ -83,6 +83,14 @@ inline namespace ZyMath
             return mMinimumX <= mMaximumX && mMinimumY <= mMaximumY;
         }
 
+        /// \brief Checks if the rectangle covers no area (X1 >= X2 or Y1 >= Y2).
+        ///
+        /// \return `true` if the rectangle is flat or inverted on either axis, `false` otherwise.
+        ZY_INLINE constexpr Bool IsEmpty() const
+        {
+            return mMinimumX >= mMaximumX || mMinimumY >= mMaximumY;
+        }
+
         /// \brief Checks if the rectangle is the zero rectangle.
         ///
         /// \return `true` if all coordinates are approximately zero, `false` otherwise.
@@ -273,7 +281,17 @@ inline namespace ZyMath
         /// \return The contracted rectangle.
         ZY_INLINE constexpr AnyRect Contract(Type Amount) const
         {
-            return AnyRect(mMinimumX + Amount, mMinimumY + Amount, mMaximumX - Amount, mMaximumY - Amount);
+            return Contract(Amount, Amount);
+        }
+
+        /// \brief Contracts the rectangle by the given amounts in the X and Y directions.
+        ///
+        /// \param AmountX The amount to contract in the X direction.
+        /// \param AmountY The amount to contract in the Y direction.
+        /// \return The contracted rectangle.
+        ZY_INLINE constexpr AnyRect Contract(Type AmountX, Type AmountY) const
+        {
+            return AnyRect(mMinimumX + AmountX, mMinimumY + AmountY, mMaximumX - AmountX, mMaximumY - AmountY);
         }
 
         /// \brief Checks if this rectangle completely contains another rectangle.
