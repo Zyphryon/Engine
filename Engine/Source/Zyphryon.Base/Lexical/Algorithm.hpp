@@ -756,15 +756,16 @@ inline namespace ZyBase
     ///
     /// \tparam Base   The numeric base to use for parsing (default is 10).
     /// \param Content The text to parse from.
-    /// \param Cursor  The current position, advanced past the consumed digits.
-    /// \return The extracted integral value.
+    /// \param Cursor  The current position, advanced past the consumed digits, or left alone when none is read.
+    /// \return The extracted integral value, or `0` when no digit is read.
     template<UInt Base = 10, typename Type>
     constexpr Type StrExtractNumber(Text Content, Ref<UInt> Cursor)
         requires (IsIntegral<Type>)
     {
         constexpr UInt kMaxDigits = CountDigits<Base, Type>(kMaximum<Type>);
 
-        Bool IsNegative = false;
+        const UInt Start      = Cursor;
+        Bool       IsNegative = false;
 
         if constexpr (IsSigned<Type>)
         {
@@ -806,6 +807,12 @@ inline namespace ZyBase
             {
                 break;
             }
+        }
+
+        if (Taken == 0)
+        {
+            Cursor = Start;
+            return Type(0);
         }
 
         if constexpr (IsSigned<Type>)
@@ -879,23 +886,35 @@ inline namespace ZyBase
     ///
     /// \tparam Type   The floating-point type to extract.
     /// \param Content The text to parse from.
-    /// \param Cursor  The current position, advanced past the consumed characters.
-    /// \return The extracted floating-point value.
+    /// \param Cursor  The current position, advanced past the consumed characters, or left alone when no digit is read.
+    /// \return The extracted floating-point value, or `0` when no digit is read.
     template<typename Type>
     constexpr Type StrExtractNumber(Text Content, Ref<UInt> Cursor)
         requires (IsReal<Type>)
     {
-        Type Result = 0.0f;
+        const UInt Start      = Cursor;
+        const Bool IsNegative = StrConsume(Content, Cursor, '-');
 
-        const Bool   IsNegative = (Content.GetSize() > Cursor && Content[Cursor] == '-');
-        const SInt64 IntPart    = StrExtractNumber<10, SInt64>(Content, Cursor);
+        const UInt   Whole   = Cursor;
+        const UInt64 IntPart = StrExtractNumber<10, UInt64>(Content, Cursor);
+        Bool         Digits  = Cursor > Whole;
+        Type         Result  = static_cast<Type>(IntPart);
 
         if (StrConsume(Content, Cursor, '.'))
         {
-            const UInt   Start   = Cursor;
+            const UInt   Point   = Cursor;
             const UInt64 IntFrac = StrExtractNumber<10, UInt64>(Content, Cursor);
-            Result = static_cast<Type>(IntFrac) / static_cast<Type>(Pow10(Cursor - Start));
+
+            Digits  = Digits || Cursor > Point;
+            Result += static_cast<Type>(IntFrac) / static_cast<Type>(Pow10(Cursor - Point));
         }
-        return static_cast<Type>(IntPart) + (IsNegative ? -Result : Result);
+
+        if (Digits)
+        {
+            return IsNegative ? Type(0) - Result : Result;
+        }
+        
+        Cursor = Start;
+        return Type(0);
     }
 }
