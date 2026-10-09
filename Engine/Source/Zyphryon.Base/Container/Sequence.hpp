@@ -590,6 +590,25 @@ inline namespace ZyBase
             return -1;
         }
 
+        /// \brief Finds the last element matching the specified predicate, searching back from \p Before.
+        ///
+        /// \param Predicate The unary predicate used to identify the element.
+        /// \param Before    The index below which the search starts, clamped to the size, so the default searches all.
+        /// \return The index of the last matching element below \p Before, or -1 if not found.
+        template<typename Callable>
+        ZY_INLINE SInt FindLast(AnyRef<Callable> Predicate, UInt Before = kMaximum<UInt>) const
+            requires IsInvocable<Callable, ConstRef<Type>>
+        {
+            for (UInt Index = Min(Before, GetSize()); Index > 0; --Index)
+            {
+                if (Predicate(mData[Index - 1]))
+                {
+                    return Index - 1;
+                }
+            }
+            return -1;
+        }
+
         /// \brief Checks whether the sequence contains the specified element.
         ///
         /// \param Element The element to search for.
@@ -697,6 +716,17 @@ inline namespace ZyBase
         {
             Clear();
             Advance(Size);
+        }
+
+        /// \brief Constructs new elements at the end until the sequence holds at least \p Size, keeping the contents.
+        ///
+        /// \param Size The number of elements to hold at least afterwards.
+        ZY_INLINE void Expand(UInt Size)
+        {
+            if (Size > mSize)
+            {
+                Advance(Size - mSize);
+            }
         }
 
         /// \brief Ensures that the sequence can hold at least \p Capacity elements without reallocating.
@@ -1254,6 +1284,25 @@ inline namespace ZyBase
             return -1;
         }
 
+        /// \brief Finds the last element matching the specified predicate, searching back from \p Before.
+        ///
+        /// \param Predicate The unary predicate used to identify the element.
+        /// \param Before    The index below which the search starts, clamped to the size, so the default searches all.
+        /// \return The index of the last matching element below \p Before, or -1 if not found.
+        template<typename Callable>
+        ZY_INLINE constexpr SInt FindLast(AnyRef<Callable> Predicate, UInt Before = kMaximum<UInt>) const
+            requires IsInvocable<Callable, ConstRef<Type>>
+        {
+            for (UInt Index = Min(Before, GetSize()); Index > 0; --Index)
+            {
+                if (Predicate(mStorage[Index - 1]))
+                {
+                    return Index - 1;
+                }
+            }
+            return -1;
+        }
+
         /// \brief Checks whether the sequence contains the specified element.
         ///
         /// \param Element The element to search for.
@@ -1359,6 +1408,17 @@ inline namespace ZyBase
         {
             Clear();
             Advance(Size);
+        }
+
+        /// \brief Constructs new elements at the end until the sequence holds at least \p Size, keeping the contents.
+        ///
+        /// \param Size The number of elements to hold at least afterwards, which must fit the fixed capacity.
+        ZY_INLINE constexpr void Expand(UInt Size)
+        {
+            if (Size > mSize)
+            {
+                Advance(Size - mSize);
+            }
         }
 
         /// \brief Replaces the contents with a copy of \p Other.
