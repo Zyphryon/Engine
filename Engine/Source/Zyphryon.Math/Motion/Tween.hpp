@@ -39,16 +39,20 @@ inline namespace ZyMath
         /// \param End      The target value of the tween.
         /// \param Time     The total duration of the tween in seconds.
         /// \param Function The easing function to use (default: Linear).
-        ZY_INLINE Tween(Type Start, Type End, Real64 Time, Easing Function = Easing::Linear)
+        /// \param Delay    The time the tween holds at its start before it moves, in seconds.
+        ZY_INLINE Tween(Type Start, Type End, Real64 Time, Easing Function = Easing::Linear, Real64 Delay = 0.0)
             : mStart       { Start },
               mEnd         { End },
               mTime        { Time },
+              mDelay       { Delay },
               mAccumulator { 0 },
               mEasing      { Function }
         {
         }
 
         /// \brief Aims the tween at a new value, starting over from wherever it now stands.
+        ///
+        /// \note The delay is kept, so the tween holds where it stands for the whole delay again before it moves.
         ///
         /// \param End  The target value of the tween.
         /// \param Time The total duration of the tween in seconds.
@@ -74,7 +78,7 @@ inline namespace ZyMath
         /// \return The current interpolated value.
         ZY_INLINE Type Tick(Real64 Delta)
         {
-            mAccumulator = Min(mAccumulator + Delta, mTime);
+            mAccumulator = Min(mAccumulator + Delta, mDelay + mTime);
 
             return GetValue();
         }
@@ -84,7 +88,9 @@ inline namespace ZyMath
         /// \return The current interpolated value.
         ZY_INLINE Type GetValue() const
         {
-            const Real32 Progress = mTime > 0.0 ? static_cast<Real32>(mAccumulator / mTime) : 1.0f;
+            const Real64 Elapsed  = mAccumulator - mDelay;
+            const Real64 Share    = mTime > 0.0 ? Clamp(Elapsed / mTime, 0.0, 1.0) : (Elapsed >= mTime ? 1.0 : 0.0);
+            const Real32 Progress = static_cast<Real32>(Share);
             const Real32 Eased    = Ease(mEasing, Progress);
 
             if constexpr (IsLerpable<Type>)
@@ -102,7 +108,7 @@ inline namespace ZyMath
         /// \return `true` if the tween is idling, `false` otherwise.
         ZY_INLINE Bool IsIdle() const
         {
-            return IsAlmostZero(mTime);
+            return IsAlmostZero(mTime) && IsAlmostZero(mDelay);
         }
 
         /// \brief Checks if the tween has completed.
@@ -110,7 +116,7 @@ inline namespace ZyMath
         /// \return `true` if the tween has reached its end value, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
-            return IsAlmostEqual(mAccumulator, mTime);
+            return IsAlmostEqual(mAccumulator, mDelay + mTime);
         }
 
     private:
@@ -121,6 +127,7 @@ inline namespace ZyMath
         Type   mStart;
         Type   mEnd;
         Real64 mTime;
+        Real64 mDelay;
         Real64 mAccumulator;
         Easing mEasing;
     };
