@@ -11,7 +11,10 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
+#include <X11/Xatom.h>
 #include <X11/keysym.h>
+#include <poll.h>
 
 #ifdef Bool
 #undef Bool
@@ -283,6 +286,9 @@ namespace ZyPlatform
 
     struct Window::Backend
     {
+        /// How long a read of the clipboard waits for the program holding it to answer, in milliseconds.
+        static constexpr SInt32 kTimeout = 500;
+
         /// The connection to the X server, owned for the lifetime of the window.
         Ptr<::Display> Connection = nullptr;
 
@@ -309,6 +315,18 @@ namespace ZyPlatform
 
         /// The vertical cursor position seen by the previous motion event, which relative motion is measured from.
         SInt32         CursorY    = 0;
+
+        /// The `CLIPBOARD` selection atom.
+        Atom           Selection  = None;
+
+        /// The `UTF8_STRING` atom, the encoding the clipboard is read and written in.
+        Atom           Encoding   = None;
+
+        /// The `TARGETS` atom, which a program asks for to learn which encodings the clipboard offers.
+        Atom           Targets    = None;
+
+        /// The text the window offers on the clipboard while it owns it.
+        Str            Clipboard;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -355,6 +373,43 @@ namespace ZyPlatform
                 ::XUngrabPointer(Connection, CurrentTime);
                 ::XUndefineCursor(Connection, Handle);
             }
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        void Offer(ConstRef<XSelectionRequestEvent> Request)
+        {
+            XEvent Reply { };
+            Reply.xselection.type      = SelectionNotify;
+            Reply.xselection.requestor = Request.requestor;
+            Reply.xselection.selection = Request.selection;
+            Reply.xselection.target    = Request.target;
+            Reply.xselection.time      = Request.time;
+            Reply.xselection.property  = None;
+
+            // A program asks which encodings are offered, then for the text in one of them.
+            if (Request.target == Targets)
+            {
+                Array<Atom, 2> Offered;
+                Offered[0] = Targets;
+                Offered[1] = Encoding;
+
+                ::XChangeProperty(
+                    Connection, Request.requestor, Request.property, XA_ATOM, 32, PropModeReplace,
+                    reinterpret_cast<ConstPtr<Byte>>(Offered.GetData()), static_cast<SInt32>(Offered.GetSize()));
+                Reply.xselection.property = Request.property;
+            }
+            else if (Request.target == Encoding)
+            {
+                ::XChangeProperty(
+                    Connection, Request.requestor, Request.property, Request.target, 8, PropModeReplace,
+                    reinterpret_cast<ConstPtr<Byte>>(Clipboard.GetData()), static_cast<SInt32>(Clipboard.GetSize()));
+                Reply.xselection.property = Request.property;
+            }
+
+            ::XSendEvent(Connection, Request.requestor, 0, 0, AddressOf(Reply));
+            ::XFlush(Connection);
         }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -431,6 +486,16 @@ namespace ZyPlatform
                 {
                     Dispatcher.QueueWindowExit();
                 }
+                break;
+            }
+            case SelectionRequest:
+            {
+                Offer(Event.xselectionrequest);
+                break;
+            }
+            case SelectionClear:
+            {
+                Clipboard.Clear();
                 break;
             }
             case KeyPress:
@@ -652,6 +717,75 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Window::SetClipboard(Text Content)
+    {
+        mBackend->Clipboard = Content;
+        ::XSetSelectionOwner(mBackend->Connection, mBackend->Selection, mBackend->Handle, CurrentTime);
+        ::XFlush(mBackend->Connection);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Str Window::GetClipboard()
+    {
+        const ::Window Owner = ::XGetSelectionOwner(mBackend->Connection, mBackend->Selection);
+
+        if (Owner == mBackend->Handle)
+        {
+            return mBackend->Clipboard;
+        }
+
+        // The owner is asked to write its text into a property of this window named as the selection, and answers.
+        ::XConvertSelection(
+            mBackend->Connection, mBackend->Selection, mBackend->Encoding, mBackend->Selection, mBackend->Handle, CurrentTime);
+        ::XFlush(mBackend->Connection);
+
+        XEvent Answer { };
+        pollfd Socket { .fd = ::XConnectionNumber(mBackend->Connection), .events = POLLIN, .revents = 0 };
+
+        // Other events stay queued for the next poll; a program that never answers leaves the clipboard empty.
+        while (!::XCheckTypedWindowEvent(mBackend->Connection, mBackend->Handle, SelectionNotify, AddressOf(Answer)))
+        {
+            if (::poll(AddressOf(Socket), 1, Backend::kTimeout) <= 0)
+            {
+                return Str();
+            }
+        }
+
+        if (Answer.xselection.property == None)
+        {
+            return Str();
+        }
+
+        Atom          Type   = None;
+        SInt32        Format = 0;
+        unsigned long Count  = 0;
+        unsigned long Left   = 0;
+        Ptr<Byte>     Data   = nullptr;
+
+        ::XGetWindowProperty(
+            mBackend->Connection, mBackend->Handle, mBackend->Selection, 0, kMaximum<SInt32> / 4, 1, AnyPropertyType,
+            AddressOf(Type), AddressOf(Format), AddressOf(Count), AddressOf(Left), AddressOf(Data));
+
+        // Text too large for one property arrives in parts (INCR), which are not gathered.
+        Str Result;
+
+        if (Data && Format == 8 && Type == mBackend->Encoding)
+        {
+            Result = Text(reinterpret_cast<ConstPtr<Char>>(Data), static_cast<UInt>(Count));
+        }
+
+        if (Data)
+        {
+            ::XFree(Data);
+        }
+        return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Window::SetVisible(Bool Visible)
     {
         if (Visible)
@@ -762,6 +896,10 @@ namespace ZyPlatform
         // Ask for the close button to arrive as a client message instead of severing the connection.
         mBackend->Close = mBackend->GetAtom("WM_DELETE_WINDOW");
         ::XSetWMProtocols(mBackend->Connection, mBackend->Handle, AddressOf(mBackend->Close), 1);
+
+        mBackend->Selection = mBackend->GetAtom("CLIPBOARD");
+        mBackend->Encoding  = mBackend->GetAtom("UTF8_STRING");
+        mBackend->Targets   = mBackend->GetAtom("TARGETS");
 
         // A fully transparent 1x1 cursor, bound while the pointer is locked.
         XColor Color { };

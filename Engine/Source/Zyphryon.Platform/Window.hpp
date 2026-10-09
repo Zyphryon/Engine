@@ -182,6 +182,16 @@ namespace ZyPlatform
             return HasBit(mStates, State::Locked);
         }
 
+        /// \brief Puts text on the system clipboard, in place of what it held.
+        ///
+        /// \param Content The text, in UTF-8.
+        void SetClipboard(Text Content);
+
+        /// \brief Gets the text the system clipboard holds.
+        ///
+        /// \return The text, in UTF-8, or empty when the clipboard holds none.
+        Str GetClipboard();
+
     private:
 
         /// \brief Describes the state of the window.

@@ -763,6 +763,63 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Window::SetClipboard(Text Content)
+    {
+        if (!::OpenClipboard(mBackend->Handle))
+        {
+            return;
+        }
+
+        ::EmptyClipboard();
+
+        // The text goes with the terminator the conversion leaves past its end.
+        const Sequence<Wide> Units = StrConvertUTF16(Content);
+        const UInt           Count = Units.GetSize() + 1;
+
+        if (const HGLOBAL Memory = ::GlobalAlloc(GMEM_MOVEABLE, Count * sizeof(Wide)))
+        {
+            if (const Ptr<Wide> Target = static_cast<Ptr<Wide>>(::GlobalLock(Memory)))
+            {
+                Copy(Target, Count, Units.GetData());
+                ::GlobalUnlock(Memory);
+            }
+
+            // The clipboard owns the memory only once it takes it.
+            if (!::SetClipboardData(CF_UNICODETEXT, Memory))
+            {
+                ::GlobalFree(Memory);
+            }
+        }
+        ::CloseClipboard();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Str Window::GetClipboard()
+    {
+        Str Result;
+
+        if (!::OpenClipboard(mBackend->Handle))
+        {
+            return Result;
+        }
+
+        if (const HANDLE Memory = ::GetClipboardData(CF_UNICODETEXT))
+        {
+            if (const ConstPtr<Wide> Source = static_cast<ConstPtr<Wide>>(::GlobalLock(Memory)))
+            {
+                Result = Str::ConvertFromUTF16(StrConvert(Source));
+                ::GlobalUnlock(Memory);
+            }
+        }
+        ::CloseClipboard();
+        return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Window::SetCursorPosition(UInt32 X, UInt32 Y)
     {
         POINT Point = { .x = static_cast<LONG>(X), .y = static_cast<LONG>(Y) };

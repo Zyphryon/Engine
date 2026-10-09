@@ -555,6 +555,40 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Window::SetClipboard(Text Content)
+    {
+        EM_ASM(
+        {
+            Module.zyClipboard = UTF8ToString($0, $1);
+
+            if (navigator.clipboard && navigator.clipboard.writeText)
+            {
+                navigator.clipboard.writeText(Module.zyClipboard).catch(function() { });
+            }
+        }, Content.GetData(), Content.GetSize());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Str Window::GetClipboard()
+    {
+        const UInt Length = static_cast<UInt>(EM_ASM_INT({ return lengthBytesUTF8(Module.zyClipboard || ""); }));
+
+        Str Result;
+        Result.Append('\0', Length);
+
+        EM_ASM(
+        {
+            stringToUTF8(Module.zyClipboard || "", $0, $1);
+        }, Result.GetData(), Length + 1);
+
+        return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Window::SetVisible(Bool Visible)
     {
         mStates = SetOrClearBit(mStates, State::Visible, Visible);
@@ -676,6 +710,20 @@ namespace ZyPlatform
         SetTitle(Title);
         SetFullscreen(Fullscreen);
         SetFocus();
+
+        // Text pasted into the page is what the clipboard holds, as far as the page may know.
+        EM_ASM(
+        {
+            document.addEventListener('paste', function(Event)
+            {
+                const Content = Event.clipboardData ? Event.clipboardData.getData('text/plain') : "";
+
+                if (Content)
+                {
+                    Module.zyClipboard = Content;
+                }
+            });
+        });
 
         // Register HTML5 event callbacks for the canvas window.
         emscripten_set_keydown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasKeyDown);
