@@ -67,6 +67,17 @@ inline namespace ZyBase
         return (Field & static_cast<Type>(Mask)) == static_cast<Type>(Mask);
     }
 
+    /// \brief Checks whether any bit in the given mask is set in the field.
+    ///
+    /// \param Field The field to check.
+    /// \param Mask  The bitmask indicating which bits to compare.
+    /// \return `true` if at least one bit in the mask is set in the field, `false` otherwise.
+    template<typename Type, typename Value>
+    constexpr Bool HasAnyBit(Type Field, Value Mask)
+    {
+        return (Field & static_cast<Type>(Mask)) != static_cast<Type>(0);
+    }
+
     /// \brief Returns the number of set bits in \p Word.
     ///
     /// \param Word The value to inspect.
