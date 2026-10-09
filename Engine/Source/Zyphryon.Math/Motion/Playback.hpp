@@ -59,10 +59,10 @@ inline namespace ZyMath
             mClock = Time;
             mFresh = false;
 
-            if (mPlaying && !IsEndless())
+            if (mPlaying && !IsEndless(mRepeat, mLaps))
             {
                 const Real64 Local   = GetElapsed();
-                const Real64 Length  = GetLength();
+                const Real64 Length  = GetLength(mDuration, mRepeat, mLaps);
                 const Bool   Forward = mSpeed >= 0.0f;
 
                 if (Forward ? Local >= Length : Local <= 0.0)
@@ -189,28 +189,7 @@ inline namespace ZyMath
         /// \return The local time in [0, duration], in seconds.
         ZY_INLINE Real64 GetTime() const
         {
-            if (mDuration <= 0.0)
-            {
-                return 0.0;
-            }
-
-            const Real64 Local = IsEndless() ? GetElapsed() : Clamp(GetElapsed(), 0.0, GetLength());
-
-            switch (mRepeat)
-            {
-            case Repeat::Once:
-                return Local;
-            case Repeat::Loop:
-                // The last lap ends at its end, rather than wrapping to the start of one more.
-                return !IsEndless() && Local >= GetLength() ? mDuration : Wrap(Local, mDuration);
-            case Repeat::Mirror:
-            {
-                const Real64 Cycle = mDuration * 2.0;
-                const Real64 Phase = Wrap(Local, Cycle);
-                return Phase <= mDuration ? Phase : Cycle - Phase;
-            }
-            }
-            return 0.0;
+            return Map(GetElapsed(), mDuration, mRepeat, mLaps);
         }
 
         /// \brief Gets the normalized progress through the duration.
@@ -221,6 +200,14 @@ inline namespace ZyMath
             return mDuration > 0.0 ? static_cast<Real32>(GetTime() / mDuration) : 0.0f;
         }
 
+        /// \brief Gets the local time before the repeat policy wraps, mirrors or clamps it.
+        ///
+        /// \return The unwrapped local time, in seconds, which counts every lap run so far.
+        ZY_INLINE Real64 GetElapsed() const
+        {
+            return mPlaying ? mOffset + mSpeed * (mClock - mEpoch) : mOffset;
+        }
+
         /// \brief Gets the current playback direction, accounting for mirror reflection.
         ///
         /// \return `true` when advancing forward, `false` when reversed.
@@ -228,7 +215,7 @@ inline namespace ZyMath
         {
             if (mRepeat == Repeat::Mirror && mDuration > 0.0)
             {
-                return Wrap(GetElapsed(), mDuration * 2.0) <= mDuration;
+                return ::Wrap(GetElapsed(), mDuration * 2.0) <= mDuration;
             }
             return mSpeed >= 0.0f;
         }
@@ -254,49 +241,71 @@ inline namespace ZyMath
         /// \return `true` if the cursor is complete, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
-            if (!IsEndless())
+            if (!IsEndless(mRepeat, mLaps))
             {
                 const Real64 Elapsed = GetElapsed();
-                return mSpeed >= 0.0f ? Elapsed >= GetLength() : Elapsed <= 0.0;
+                return mSpeed >= 0.0f ? Elapsed >= GetLength(mDuration, mRepeat, mLaps) : Elapsed <= 0.0;
             }
             return false;
         }
 
-        /// \brief Gets the local time before the repeat policy wraps, mirrors or clamps it.
-        ///
-        /// \return The unwrapped local time, in seconds, which counts every lap run so far.
-        ZY_INLINE Real64 GetElapsed() const
-        {
-            return mPlaying ? mOffset + mSpeed * (mClock - mEpoch) : mOffset;
-        }
-
     private:
 
-        /// \brief Checks whether the cursor repeats forever, so it never reaches an end.
+        /// \brief Checks whether a repeat policy runs forever, so it never reaches an end.
         ///
-        /// \return `true` if a looping or mirrored cursor has no lap count, `false` otherwise.
-        ZY_INLINE Bool IsEndless() const
+        /// \param Mode The behavior once the end is reached.
+        /// \param Laps The number of laps a looping or mirrored cursor runs, where `0` runs forever.
+        /// \return `true` if a looping or mirrored policy has no lap count, `false` otherwise.
+        ZY_INLINE static Bool IsEndless(Repeat Mode, UInt32 Laps)
         {
-            return mRepeat != Repeat::Once && mLaps == 0;
+            return Mode != Repeat::Once && Laps == 0;
         }
 
-        /// \brief Gets the local time the last lap ends at.
+        /// \brief Gets the local time the last lap of a repeat policy ends at.
         ///
-        /// \return The duration times the laps run, in seconds, meaningful only when the cursor is not endless.
-        ZY_INLINE Real64 GetLength() const
+        /// \param Duration The length of one lap, in seconds.
+        /// \param Mode     The behavior once the end is reached.
+        /// \param Laps     The number of laps a looping or mirrored cursor runs.
+        /// \return The duration times the laps run, in seconds, meaningful only when the policy is not endless.
+        ZY_INLINE static Real64 GetLength(Real64 Duration, Repeat Mode, UInt32 Laps)
         {
-            return mRepeat == Repeat::Once ? mDuration : mDuration * static_cast<Real64>(mLaps);
+            return Mode == Repeat::Once ? Duration : Duration * static_cast<Real64>(Laps);
         }
 
-        /// \brief Wraps a time into one period, so a time before zero lands as far from the end as it was.
+    public:
+
+        /// \brief Maps a local time onto the cursor time a repeat policy gives it, as a cursor holding it would.
         ///
-        /// \param Time   The time to wrap, in seconds.
-        /// \param Period The length of one period, in seconds.
-        /// \return The wrapped time, in [0, Period).
-        ZY_INLINE static Real64 Wrap(Real64 Time, Real64 Period)
+        /// \param Elapsed  The local time before the repeat policy wraps, mirrors or clamps it, in seconds.
+        /// \param Duration The length of one lap, in seconds.
+        /// \param Mode     The behavior once the end is reached.
+        /// \param Laps     The number of laps a looping or mirrored cursor runs, where `0` runs forever.
+        /// \return The local time in [0, duration], in seconds, or `0` when there is no duration.
+        ZY_INLINE static Real64 Map(Real64 Elapsed, Real64 Duration, Repeat Mode, UInt32 Laps = 0)
         {
-            const Real64 Wrapped = Mod(Time, Period);
-            return Wrapped < 0.0 ? Wrapped + Period : Wrapped;
+            if (Duration <= 0.0)
+            {
+                return 0.0;
+            }
+
+            const Bool   Endless = IsEndless(Mode, Laps);
+            const Real64 Length  = GetLength(Duration, Mode, Laps);
+            const Real64 Local   = Endless ? Elapsed : Clamp(Elapsed, 0.0, Length);
+
+            switch (Mode)
+            {
+            case Repeat::Once:
+                return Local;
+            case Repeat::Loop:
+                return !Endless && Local >= Length ? Duration : ::Wrap(Local, Duration);
+            case Repeat::Mirror:
+            {
+                const Real64 Cycle = Duration * 2.0;
+                const Real64 Phase = ::Wrap(Local, Cycle);
+                return Phase <= Duration ? Phase : Cycle - Phase;
+            }
+            }
+            return 0.0;
         }
 
     private:
