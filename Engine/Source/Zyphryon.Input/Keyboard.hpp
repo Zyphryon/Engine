@@ -71,6 +71,19 @@ namespace ZyInput
             return mLastKeys.Test(ZyEnum::Cast(Key)) && !mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
+        /// \brief Gets the modifier keys currently held, either side of each counting.
+        ///
+        /// \return The modifier keys held.
+        ZY_INLINE Modifier GetModifiers() const
+        {
+            Modifier Result = Modifier::None;
+            Result = SetOrClearBit(Result, Modifier::Shift,   IsKeyHeld(Key::LeftShift) || IsKeyHeld(Key::RightShift));
+            Result = SetOrClearBit(Result, Modifier::Control, IsKeyHeld(Key::LeftCtrl)  || IsKeyHeld(Key::RightCtrl));
+            Result = SetOrClearBit(Result, Modifier::Alt,     IsKeyHeld(Key::LeftAlt)   || IsKeyHeld(Key::RightAlt));
+            Result = SetOrClearBit(Result, Modifier::Super,   IsKeyHeld(Key::LeftSuper) || IsKeyHeld(Key::RightSuper));
+            return Result;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

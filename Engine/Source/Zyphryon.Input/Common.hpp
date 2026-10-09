@@ -142,6 +142,17 @@ namespace ZyInput
         RightSuper,     ///< Right Super key (Windows/Command).
     };
 
+    /// \brief Specifies the modifier keys held, either side of each counting.
+    enum class Modifier : UInt8
+    {
+        None    = 0,      ///< No modifier key held.
+        Shift   = 1 << 0, ///< Either Shift key held.
+        Control = 1 << 1, ///< Either Control key held.
+        Alt     = 1 << 2, ///< Either Alt key held.
+        Super   = 1 << 3, ///< Either Super key (Windows/Command) held.
+    };
+    ZY_DEFINE_BITWISE_ENUM(Modifier)
+
     /// \brief Specifies how far along a touch is in the life it has on screen.
     enum class Phase : UInt8
     {
@@ -160,6 +171,7 @@ namespace ZyInput
             KeyType,      ///< Key type event (text input).
             KeyUp,        ///< Key release event.
             KeyDown,      ///< Key press event.
+            KeyRepeat,    ///< Key repeat event.
             MouseMove,    ///< Mouse movement event.
             MouseScroll,  ///< Mouse scroll wheel event.
             MouseUp,      ///< Mouse button release event.
@@ -189,7 +201,7 @@ namespace ZyInput
                 Text Content;
             } KeyType;
 
-            /// \brief Holds the data for \ref Type::KeyUp and \ref Type::KeyDown.
+            /// \brief Holds the data for \ref Type::KeyUp, \ref Type::KeyDown and \ref Type::KeyRepeat.
             struct
             {
                 Key  Key; ///< Physical key code.

@@ -429,13 +429,17 @@ namespace ZyPlatform
             case WM_KEYDOWN:
             case WM_SYSKEYDOWN:
             {
-                if ((HIWORD(Arg1) & KF_REPEAT) == 0)
-                {
-                    const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0), Arg1);
+                const ZyInput::Key Key = ConvertVirtualKey(static_cast<UInt32>(Arg0), Arg1);
 
-                    if (Key != ZyInput::Key::Unknown)
+                if (Key != ZyInput::Key::Unknown)
+                {
+                    if ((HIWORD(Arg1) & KF_REPEAT) == 0)
                     {
                         Dispatcher.QueueKeyDown(Key);
+                    }
+                    else
+                    {
+                        Dispatcher.QueueKeyRepeat(Key);
                     }
                 }
                 return ::DefWindowProcW(Handle, Message, Arg0, Arg1);

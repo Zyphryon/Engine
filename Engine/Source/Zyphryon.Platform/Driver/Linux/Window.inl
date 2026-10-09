@@ -328,6 +328,9 @@ namespace ZyPlatform
         /// The text the window offers on the clipboard while it owns it.
         Str            Clipboard;
 
+        /// The key codes held, since X11 sends a repeat as one more press of a held key.
+        Bitset<256>    Held;
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -469,6 +472,9 @@ namespace ZyPlatform
                 Window->mStates = ClearBit(Window->mStates, State::Focused);
                 Dispatcher.QueueWindowFocus(false);
 
+                // Keys let go while another window holds the keyboard send no release here.
+                Held.Reset();
+
                 if (Context)
                 {
                     ::XUnsetICFocus(Context);
@@ -504,8 +510,16 @@ namespace ZyPlatform
 
                 if (const ZyInput::Key Key = ConvertKeySymbol(Symbol); Key != ZyInput::Key::Unknown)
                 {
-                    Dispatcher.QueueKeyDown(Key);
+                    if (Held.Test(Event.xkey.keycode))
+                    {
+                        Dispatcher.QueueKeyRepeat(Key);
+                    }
+                    else
+                    {
+                        Dispatcher.QueueKeyDown(Key);
+                    }
                 }
+                Held.Set(Event.xkey.keycode);
 
                 // The input method turns the keystroke into text, which is what composed and dead keys need.
                 if (Context)
@@ -536,6 +550,7 @@ namespace ZyPlatform
                 {
                     Dispatcher.QueueKeyUp(Key);
                 }
+                Held.Reset(Event.xkey.keycode);
                 break;
             }
             case ButtonPress:
@@ -896,6 +911,9 @@ namespace ZyPlatform
         // Ask for the close button to arrive as a client message instead of severing the connection.
         mBackend->Close = mBackend->GetAtom("WM_DELETE_WINDOW");
         ::XSetWMProtocols(mBackend->Connection, mBackend->Handle, AddressOf(mBackend->Close), 1);
+
+        // A held key then repeats as presses alone, which the input service drops, rather than as releases and presses.
+        ::XkbSetDetectableAutoRepeat(mBackend->Connection, 1, nullptr);
 
         mBackend->Selection = mBackend->GetAtom("CLIPBOARD");
         mBackend->Encoding  = mBackend->GetAtom("UTF8_STRING");

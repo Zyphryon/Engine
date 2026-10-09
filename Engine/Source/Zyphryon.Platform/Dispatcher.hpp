@@ -112,6 +112,15 @@ namespace ZyPlatform
             Event.KeyAction.Key = Key;
         }
 
+        /// \brief Queues a key repeat event, as the system sends while a key is held down.
+        ///
+        /// \param Key The physical key that is held.
+        ZY_INLINE void QueueKeyRepeat(ZyInput::Key Key)
+        {
+            Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::KeyRepeat);
+            Event.KeyAction.Key = Key;
+        }
+
         /// \brief Queues a mouse movement event.
         ///
         /// \param X         The absolute X position of the mouse cursor.

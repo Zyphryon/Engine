@@ -264,9 +264,13 @@ namespace ZyPlatform
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                if (!Event->repeat)
+                if (const ZyInput::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != ZyInput::Key::Unknown)
                 {
-                    if (const ZyInput::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != ZyInput::Key::Unknown)
+                    if (Event->repeat)
+                    {
+                        Canvas->mDispatcher.QueueKeyRepeat(Key);
+                    }
+                    else
                     {
                         Canvas->mDispatcher.QueueKeyDown(Key);
                     }

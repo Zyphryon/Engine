@@ -33,6 +33,9 @@ namespace ZyInput
         /// \brief Event triggered when a key is released.
         MulticastDelegate<Bool(Key)>                                    OnKeyUp;
 
+        /// \brief Event triggered when the system repeats a key held down.
+        MulticastDelegate<Bool(Key)>                                    OnKeyRepeat;
+
         /// \brief Event triggered when a text input is received.
         MulticastDelegate<Bool(Text)>                                   OnKeyType;
 
@@ -101,6 +104,8 @@ namespace ZyInput
                 return OnKeyUp.Propagate(Event.KeyAction.Key);
             case Event::Type::KeyDown:
                 return OnKeyDown.Propagate(Event.KeyAction.Key);
+            case Event::Type::KeyRepeat:
+                return OnKeyRepeat.Propagate(Event.KeyAction.Key);
             case Event::Type::MouseMove:
                 return OnMouseMove.Propagate(
                     Event.MouseAxis.X,
@@ -159,6 +164,14 @@ namespace ZyInput
         ZY_INLINE Bool IsKeyReleased(Key Key) const
         {
             return mKeyboard.IsKeyReleased(Key);
+        }
+
+        /// \brief Gets the modifier keys currently held, either side of each counting.
+        ///
+        /// \return The modifier keys held.
+        ZY_INLINE Modifier GetModifiers() const
+        {
+            return mKeyboard.GetModifiers();
         }
 
         /// \brief Gets the current X position of the mouse cursor.
