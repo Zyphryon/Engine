@@ -50,7 +50,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate()
             : mStorage { },
               mExecute { AddressOf(InvokeEmpty) },
-              mRelease { AddressOf(ReleaseEmpty) }
+              mManage  { AddressOf(ManageEmpty) }
         {
         }
 
@@ -61,7 +61,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(Constant<Function>)
             : mStorage { },
               mExecute { AddressOf(InvokeDirect<Function>) },
-              mRelease { AddressOf(ReleaseEmpty) }
+              mManage  { AddressOf(ManageEmpty) }
         {
         }
 
@@ -71,7 +71,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(Return (* Function)(Arguments...))
             : mStorage { },
               mExecute { AddressOf(InvokeFunction) },
-              mRelease { AddressOf(ReleaseEmpty) }
+              mManage  { AddressOf(ManagePlain) }
         {
             * reinterpret_cast<Return(**)(Arguments...)>(mStorage) = Function;
         }
@@ -84,7 +84,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(Constant<Method>, Ptr<Type> Object)
             : mStorage { },
               mExecute { AddressOf(InvokeMethod<Method, Type>) },
-              mRelease { AddressOf(ReleaseEmpty) }
+              mManage  { AddressOf(ManagePlain) }
         {
             * reinterpret_cast<Ptr<Ptr<Type>>>(mStorage) = Object;
         }
@@ -104,14 +104,14 @@ inline namespace ZyBase
                 Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeMoveableLambda<Type>);
-                mRelease = AddressOf(ReleaseStack<Type>);
+                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
             }
             else
             {
                 * reinterpret_cast<Ptr<Type> *>(mStorage) = new Type(Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeDynamicLambda<Type>);
-                mRelease = AddressOf(ReleaseHeap<Type>);
+                mManage  = AddressOf(ManageHeap<Type>);
             }
         }
 
@@ -121,12 +121,9 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(ConstRef<Delegate> Other)
             : mStorage { },
               mExecute { Other.mExecute },
-              mRelease { Other.mRelease }
+              mManage  { Other.mManage }
         {
-            if (mExecute != AddressOf(InvokeEmpty))
-            {
-                Copy(mStorage, kCapacity, Other.mStorage);
-            }
+            Duplicate(Other);
         }
 
         /// \brief Move constructor, transfers ownership from another delegate.
@@ -134,10 +131,10 @@ inline namespace ZyBase
         /// \param Other The other delegate to move from.
         ZY_INLINE constexpr Delegate(AnyRef<Delegate> Other)
             : mStorage { },
-              mExecute { Exchange(Other.mExecute, AddressOf(InvokeEmpty))  },
-              mRelease { Exchange(Other.mRelease, AddressOf(ReleaseEmpty)) }
+              mExecute { Exchange(Other.mExecute, AddressOf(InvokeEmpty)) },
+              mManage  { Exchange(Other.mManage, AddressOf(ManageEmpty)) }
         {
-            Copy(mStorage, kCapacity, Other.mStorage);
+            mManage(Operation::Move, mStorage, Other.mStorage);
         }
 
         /// \brief Destructor, releases any resources held by the delegate.
@@ -154,7 +151,7 @@ inline namespace ZyBase
         {
             Reset();
             mExecute = AddressOf(InvokeDirect<Function>);
-            mRelease = AddressOf(ReleaseEmpty);
+            mManage  = AddressOf(ManageEmpty);
         }
 
         /// \brief Binds a member function and object instance to the delegate.
@@ -167,7 +164,7 @@ inline namespace ZyBase
             Reset();
             * reinterpret_cast<Ptr<Ptr<Type>>>(mStorage) = Object;
             mExecute = AddressOf(InvokeMethod<Method, Type>);
-            mRelease = AddressOf(ReleaseEmpty);
+            mManage  = AddressOf(ManagePlain);
         }
 
         /// \brief Binds a function pointer to the delegate.
@@ -178,7 +175,7 @@ inline namespace ZyBase
             Reset();
             * reinterpret_cast<Return(**)(Arguments...)>(mStorage) = Function;
             mExecute = AddressOf(InvokeFunction);
-            mRelease = AddressOf(ReleaseEmpty);
+            mManage  = AddressOf(ManagePlain);
         }
 
         /// \brief Binds a lambda or callable object to the delegate.
@@ -196,14 +193,14 @@ inline namespace ZyBase
                 Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeMoveableLambda<Type>);
-                mRelease = AddressOf(ReleaseStack<Type>);
+                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
             }
             else
             {
                 * reinterpret_cast<Ptr<Type> *>(mStorage) = new Type(Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeDynamicLambda<Type>);
-                mRelease = AddressOf(ReleaseHeap<Type>);
+                mManage  = AddressOf(ManageHeap<Type>);
             }
         }
 
@@ -269,8 +266,8 @@ inline namespace ZyBase
                 Reset();
 
                 mExecute = Other.mExecute;
-                mRelease = Other.mRelease;
-                Copy(mStorage, kCapacity, Other.mStorage);
+                mManage  = Other.mManage;
+                Duplicate(Other);
             }
             return (* this);
         }
@@ -286,9 +283,9 @@ inline namespace ZyBase
                 Reset();
 
                 mExecute = Exchange(Other.mExecute, AddressOf(InvokeEmpty));
-                mRelease = Exchange(Other.mRelease, AddressOf(ReleaseEmpty));
+                mManage  = Exchange(Other.mManage, AddressOf(ManageEmpty));
 
-                Copy(mStorage, kCapacity, Other.mStorage);
+                mManage(Operation::Move, mStorage, Other.mStorage);
             }
             return (* this);
         }
@@ -299,7 +296,7 @@ inline namespace ZyBase
         /// \return `true` if both delegates are bound to the same function and object, otherwise `false`.
         ZY_INLINE Bool operator==(ConstRef<Delegate> Other) const
         {
-            if (mExecute != Other.mExecute || mRelease != Other.mRelease)
+            if (mExecute != Other.mExecute || mManage != Other.mManage)
             {
                 return false;
             }
@@ -363,20 +360,37 @@ inline namespace ZyBase
         /// \brief Resets the delegate to an empty state, releasing any resources.
         ZY_INLINE void Reset()
         {
-            if (mRelease != AddressOf(ReleaseEmpty))
-            {
-                mRelease(mStorage);
-            }
+            mManage(Operation::Release, mStorage, nullptr);
 
             mExecute = AddressOf(InvokeEmpty);
-            mRelease = AddressOf(ReleaseEmpty);
+            mManage  = AddressOf(ManageEmpty);
         }
+
+        /// \brief Copies the callable of another delegate, leaving this one empty when it cannot be copied.
+        ///
+        /// \param Other The delegate to copy the callable of.
+        ZY_INLINE void Duplicate(ConstRef<Delegate> Other)
+        {
+            if (!mManage(Operation::Copy, mStorage, Other.mStorage))
+            {
+                mExecute = AddressOf(InvokeEmpty);
+                mManage  = AddressOf(ManageEmpty);
+            }
+        }
+
+        /// \brief Specifies what a manage function does to the callable a buffer holds.
+        enum class Operation : UInt8
+        {
+            Copy,       ///< Builds a copy of the source's callable in the target.
+            Move,       ///< Hands the source's callable over to the target, leaving the source to be forgotten.
+            Release,    ///< Destroys the target's callable.
+        };
 
         /// \brief Type alias for the internal trampoline function signature.
         using Execute = Return(*)(ConstPtr<void>, Arguments...);
 
-        /// \brief Type alias for the internal release function signature.
-        using Release = void(*)(Ptr<void>);
+        /// \brief Type alias for the internal function that copies, moves and releases the callable.
+        using Manage = Bool(*)(Operation, Ptr<void>, ConstPtr<void>);
 
         /// \brief Empty trampoline function for uninitialized delegates.
         ZY_INLINE static auto InvokeEmpty(ConstPtr<void>, Arguments...)
@@ -430,23 +444,96 @@ inline namespace ZyBase
             return (** static_cast<Ptr<Callable> const *>(Buffer))(Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Empty release function for uninitialized delegates.
-        ZY_INLINE static void ReleaseEmpty(Ptr<void>)
+        /// \brief Manages a binding that holds nothing.
+        ///
+        /// \return `true` always.
+        ZY_INLINE static Bool ManageEmpty(Operation, Ptr<void>, ConstPtr<void>)
         {
+            return true;
         }
 
-        /// \brief Releases a heap-allocated callable object.
-        template<typename Callable>
-        ZY_INLINE static void ReleaseHeap(Ptr<void> Buffer)
+        /// \brief Manages a function pointer, object pointer or trivially copyable callable as plain bytes.
+        ///
+        /// \param Action The operation to perform.
+        /// \param Target The buffer to copy or move into.
+        /// \param Source The buffer to copy or move from.
+        /// \return `true` always.
+        ZY_INLINE static Bool ManagePlain(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
-            delete * static_cast<Ptr<Callable> *>(Buffer);
+            if (Action != Operation::Release)
+            {
+                Copy(static_cast<Ptr<Byte>>(Target), kCapacity, static_cast<ConstPtr<Byte>>(Source));
+            }
+            return true;
         }
 
-        /// \brief Releases a stack-allocated callable object.
+        /// \brief Manages a callable held in the buffer itself, through its own constructors and destructor.
+        ///
+        /// \param Action The operation to perform.
+        /// \param Target The buffer to copy or move into, or whose callable is released.
+        /// \param Source The buffer to copy or move from.
+        /// \return `false` when asked to copy a callable that cannot be copied, `true` otherwise.
         template<typename Callable>
-        ZY_INLINE static void ReleaseStack(Ptr<void> Buffer)
+        ZY_INLINE static Bool ManageStack(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
-            Destruct(* static_cast<Ptr<Callable>>(Buffer));
+            switch (Action)
+            {
+            case Operation::Copy:
+                if constexpr (IsCopyConstructible<Callable>)
+                {
+                    Construct<Callable>(static_cast<Ptr<Callable>>(Target), * Launder(static_cast<ConstPtr<Callable>>(Source)));
+                    return true;
+                }
+                else
+                {
+                    ZY_ASSERT(false, "A delegate holding a callable that cannot be copied was copied");
+                    return false;
+                }
+            case Operation::Move:
+            {
+                // The source is left empty by its owner, so its callable is destroyed once moved.
+                const Ptr<Callable> Origin = Launder(static_cast<Ptr<Callable>>(const_cast<Ptr<void>>(Source)));
+                Construct<Callable>(static_cast<Ptr<Callable>>(Target), Move(* Origin));
+                Destruct(* Origin);
+                break;
+            }
+            case Operation::Release:
+                Destruct(* Launder(static_cast<Ptr<Callable>>(Target)));
+                break;
+            }
+            return true;
+        }
+
+        /// \brief Manages a callable too large for the buffer, held on the heap by the address in the buffer.
+        ///
+        /// \param Action The operation to perform.
+        /// \param Target The buffer to copy or move into, or whose callable is released.
+        /// \param Source The buffer to copy or move from.
+        /// \return `false` when asked to copy a callable that cannot be copied, `true` otherwise.
+        template<typename Callable>
+        ZY_INLINE static Bool ManageHeap(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
+        {
+            switch (Action)
+            {
+            case Operation::Copy:
+                if constexpr (IsCopyConstructible<Callable>)
+                {
+                    * static_cast<Ptr<Ptr<Callable>>>(Target) = new Callable(** static_cast<ConstPtr<Ptr<Callable>>>(Source));
+                    return true;
+                }
+                else
+                {
+                    ZY_ASSERT(false, "A delegate holding a callable that cannot be copied was copied");
+                    return false;
+                }
+            case Operation::Move:
+                * static_cast<Ptr<Ptr<Callable>>>(Target) = * static_cast<ConstPtr<Ptr<Callable>>>(Source);
+                break;
+            case Operation::Release:
+                delete * static_cast<Ptr<Ptr<Callable>>>(Target);
+                break;
+            }
+            return true;
         }
 
     private:
@@ -456,7 +543,7 @@ inline namespace ZyBase
 
         Byte    mStorage[kCapacity];
         Execute mExecute;
-        Release mRelease;
+        Manage  mManage;
     };
 
     /// \brief Represents a type-safe delegate that can bind to free functions and static member functions only.
