@@ -37,12 +37,14 @@ inline namespace ZyMath
         ///
         /// \param Duration The total duration, in seconds.
         /// \param Mode     The behavior once the end is reached.
-        ZY_INLINE explicit Playback(Real64 Duration, Repeat Mode = Repeat::Once)
+        /// \param Laps     The number of laps a looping or mirrored cursor runs, where `0` runs forever.
+        ZY_INLINE explicit Playback(Real64 Duration, Repeat Mode = Repeat::Once, UInt32 Laps = 0)
             : mDuration { Duration },
               mOffset   { 0 },
               mEpoch    { 0 },
               mClock    { 0 },
               mSpeed    { 1 },
+              mLaps     { Laps },
               mRepeat   { Mode },
               mPlaying  { false },
               mFresh    { false }
@@ -57,14 +59,15 @@ inline namespace ZyMath
             mClock = Time;
             mFresh = false;
 
-            if (mPlaying && mRepeat == Repeat::Once)
+            if (mPlaying && !IsEndless())
             {
                 const Real64 Local   = GetElapsed();
+                const Real64 Length  = GetLength();
                 const Bool   Forward = mSpeed >= 0.0f;
 
-                if (Forward ? Local >= mDuration : Local <= 0.0)
+                if (Forward ? Local >= Length : Local <= 0.0)
                 {
-                    mOffset  = Forward ? mDuration : 0.0;
+                    mOffset  = Forward ? Length : 0.0;
                     mPlaying = false;
                 }
             }
@@ -123,6 +126,14 @@ inline namespace ZyMath
             mSpeed = Speed;
         }
 
+        /// \brief Gets the playback speed multiplier.
+        ///
+        /// \return The speed multiplier.
+        ZY_INLINE Real32 GetSpeed() const
+        {
+            return mSpeed;
+        }
+
         /// \brief Sets the total duration.
         ///
         /// \param Duration The duration, in seconds.
@@ -131,12 +142,46 @@ inline namespace ZyMath
             mDuration = Duration;
         }
 
+        /// \brief Gets the total duration.
+        ///
+        /// \return The duration, in seconds.
+        ZY_INLINE Real64 GetDuration() const
+        {
+            return mDuration;
+        }
+
         /// \brief Sets the repeat behavior.
         ///
         /// \param Mode The behavior once the end is reached.
         ZY_INLINE void SetRepeat(Repeat Mode)
         {
             mRepeat = Mode;
+        }
+
+        /// \brief Gets the repeat behavior.
+        ///
+        /// \return The repeat mode.
+        ZY_INLINE Repeat GetRepeat() const
+        {
+            return mRepeat;
+        }
+
+        /// \brief Sets how many laps a looping or mirrored cursor runs before it stops.
+        ///
+        /// \note A mirrored lap is one pass in one direction, so two laps run there and back.
+        ///
+        /// \param Laps The number of laps, where `0` runs forever.
+        ZY_INLINE void SetLaps(UInt32 Laps)
+        {
+            mLaps = Laps;
+        }
+
+        /// \brief Gets how many laps a looping or mirrored cursor runs before it stops.
+        ///
+        /// \return The number of laps, where `0` runs forever.
+        ZY_INLINE UInt32 GetLaps() const
+        {
+            return mLaps;
         }
 
         /// \brief Gets the current cursor time, wrapped by the repeat policy.
@@ -149,14 +194,15 @@ inline namespace ZyMath
                 return 0.0;
             }
 
-            const Real64 Local = GetElapsed();
+            const Real64 Local = IsEndless() ? GetElapsed() : Clamp(GetElapsed(), 0.0, GetLength());
 
             switch (mRepeat)
             {
             case Repeat::Once:
-                return Clamp(Local, 0.0, mDuration);
+                return Local;
             case Repeat::Loop:
-                return Wrap(Local, mDuration);
+                // The last lap ends at its end, rather than wrapping to the start of one more.
+                return !IsEndless() && Local >= GetLength() ? mDuration : Wrap(Local, mDuration);
             case Repeat::Mirror:
             {
                 const Real64 Cycle = mDuration * 2.0;
@@ -165,30 +211,6 @@ inline namespace ZyMath
             }
             }
             return 0.0;
-        }
-
-        /// \brief Gets the total duration.
-        ///
-        /// \return The duration, in seconds.
-        ZY_INLINE Real64 GetDuration() const
-        {
-            return mDuration;
-        }
-
-        /// \brief Gets the playback speed multiplier.
-        ///
-        /// \return The speed multiplier.
-        ZY_INLINE Real32 GetSpeed() const
-        {
-            return mSpeed;
-        }
-
-        /// \brief Gets the repeat behavior.
-        ///
-        /// \return The repeat mode.
-        ZY_INLINE Repeat GetRepeat() const
-        {
-            return mRepeat;
         }
 
         /// \brief Gets the normalized progress through the duration.
@@ -227,15 +249,15 @@ inline namespace ZyMath
             return mPlaying;
         }
 
-        /// \brief Checks whether a non-repeating cursor has reached the end.
+        /// \brief Checks whether a cursor that does not run forever has reached the end of its last lap.
         ///
         /// \return `true` if the cursor is complete, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
-            if (mRepeat == Repeat::Once)
+            if (!IsEndless())
             {
                 const Real64 Elapsed = GetElapsed();
-                return mSpeed >= 0.0f ? Elapsed >= mDuration : Elapsed <= 0.0;
+                return mSpeed >= 0.0f ? Elapsed >= GetLength() : Elapsed <= 0.0;
             }
             return false;
         }
@@ -249,6 +271,22 @@ inline namespace ZyMath
         }
 
     private:
+
+        /// \brief Checks whether the cursor repeats forever, so it never reaches an end.
+        ///
+        /// \return `true` if a looping or mirrored cursor has no lap count, `false` otherwise.
+        ZY_INLINE Bool IsEndless() const
+        {
+            return mRepeat != Repeat::Once && mLaps == 0;
+        }
+
+        /// \brief Gets the local time the last lap ends at.
+        ///
+        /// \return The duration times the laps run, in seconds, meaningful only when the cursor is not endless.
+        ZY_INLINE Real64 GetLength() const
+        {
+            return mRepeat == Repeat::Once ? mDuration : mDuration * static_cast<Real64>(mLaps);
+        }
 
         /// \brief Wraps a time into one period, so a time before zero lands as far from the end as it was.
         ///
@@ -271,6 +309,7 @@ inline namespace ZyMath
         Real64 mEpoch;
         Real64 mClock;
         Real32 mSpeed;
+        UInt32 mLaps;
         Repeat mRepeat;
         Bool   mPlaying;
         Bool   mFresh;
