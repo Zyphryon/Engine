@@ -714,6 +714,26 @@ inline namespace ZyMath
             return AnyColor(Color.GetRed(), Color.GetGreen(), Color.GetBlue(), Alpha);
         }
 
+        /// \brief Returns the same color with its alpha scaled by an opacity.
+        ///
+        /// \param Color   The input color, whose RGB channels are kept.
+        /// \param Opacity The factor the alpha is scaled by, where 0 is fully transparent and 1 leaves it as it is.
+        /// \return A color with the RGB channels of \a Color and its alpha scaled by \a Opacity.
+        ZY_INLINE static constexpr AnyColor Fade(AnyColor Color, Real32 Opacity)
+        {
+            if constexpr (IsReal<Type>)
+            {
+                return WithAlpha(Color, static_cast<Type>(Color.GetAlpha() * Opacity));
+            }
+            else
+            {
+                constexpr Real32 Maximum = static_cast<Real32>(Limit());
+
+                const Real32 Alpha = ::Clamp(static_cast<Real32>(Color.GetAlpha()) * Opacity, 0.0f, Maximum);
+                return WithAlpha(Color, static_cast<Type>(Alpha + 0.5f));
+            }
+        }
+
         /// \brief Linearly interpolates between two color values.
         ///
         /// \param Start      The starting color value.
