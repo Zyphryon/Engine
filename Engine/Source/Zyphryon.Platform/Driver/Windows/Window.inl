@@ -668,7 +668,7 @@ namespace ZyPlatform
     {
         mTitle = Title;
 
-        Sequence<Wide, MAX_PATH> InTitle = StrConvertUTF16<MAX_PATH>(mTitle);
+        Sequence<Wide, MAX_PATH> InTitle = Unicode::Widen<MAX_PATH>(mTitle);
         ::SetWindowTextW(mBackend->Handle, InTitle.GetData());
     }
 
@@ -777,7 +777,7 @@ namespace ZyPlatform
         ::EmptyClipboard();
 
         // The text goes with the terminator the conversion leaves past its end.
-        const Sequence<Wide> Units = StrConvertUTF16(Content);
+        const Sequence<Wide> Units = Unicode::Widen(Content);
         const UInt           Count = Units.GetSize() + 1;
 
         if (const HGLOBAL Memory = ::GlobalAlloc(GMEM_MOVEABLE, Count * sizeof(Wide)))
@@ -870,7 +870,7 @@ namespace ZyPlatform
         Win32Class.lpszClassName = L"ZyWindowClass";
         ::RegisterClassExW(AddressOf(Win32Class));
 
-        Sequence<Wide, MAX_PATH> InTitle = StrConvertUTF16<MAX_PATH>(Title);
+        Sequence<Wide, MAX_PATH> InTitle = Unicode::Widen<MAX_PATH>(Title);
 
         mBackend = Unique<Backend>::Create();
 

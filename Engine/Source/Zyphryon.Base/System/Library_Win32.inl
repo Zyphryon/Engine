@@ -26,7 +26,7 @@ inline namespace ZyBase
     {
         Close();
 
-        Sequence<Wide, Filesystem::kMaxPathLength> InPath = StrConvertUTF16<Filesystem::kMaxPathLength>(Path);
+        Sequence<Wide, Filesystem::kMaxPathLength> InPath = Unicode::Widen<Filesystem::kMaxPathLength>(Path);
 
         // Taken with the folder it sits in searched first, so a library standing beside its own dependencies
         // finds them without the whole of the process's search order being widened for it.

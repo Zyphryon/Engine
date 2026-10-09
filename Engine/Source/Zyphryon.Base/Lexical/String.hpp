@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Format/Processor.hpp"
+#include "Unicode.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -229,59 +230,9 @@ inline namespace ZyBase
         /// \param Codepoint The unicode codepoint to encode.
         ZY_INLINE constexpr void AppendCodepoint(UInt32 Codepoint)
         {
-            UInt Length;
-
-            if (Codepoint <= 0x7F)
-            {
-                Length = 1;
-            }
-            else if (Codepoint <= 0x7FF)
-            {
-                Length = 2;
-            }
-            else if (Codepoint <= 0xFFFF)
-            {
-                Length = 3;
-            }
-            else
-            {
-                Length = 4;
-            }
-
             const UInt Offset = mBuffer.GetSize();
-            mBuffer.Advance(Length);
-
-            switch (Length)
-            {
-            case 1:
-            {
-                mBuffer[Offset]     = static_cast<Char>(Codepoint);
-                break;
-            }
-            case 2:
-            {
-                mBuffer[Offset]     = static_cast<Char>(0xC0 | (Codepoint >> 6));
-                mBuffer[Offset + 1] = static_cast<Char>(0x80 | (Codepoint & 0x3F));
-                break;
-            }
-            case 3:
-            {
-                mBuffer[Offset]     = static_cast<Char>(0xE0 |  (Codepoint >> 12));
-                mBuffer[Offset + 1] = static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F));
-                mBuffer[Offset + 2] = static_cast<Char>(0x80 |  (Codepoint        & 0x3F));
-                break;
-            }
-            case 4:
-            {
-                mBuffer[Offset]     = static_cast<Char>(0xF0 |  (Codepoint >> 18));
-                mBuffer[Offset + 1] = static_cast<Char>(0x80 | ((Codepoint >> 12) & 0x3F));
-                mBuffer[Offset + 2] = static_cast<Char>(0x80 | ((Codepoint >>  6) & 0x3F));
-                mBuffer[Offset + 3] = static_cast<Char>(0x80 |  (Codepoint        & 0x3F));
-                break;
-            }
-            default:
-                break;
-            }
+            mBuffer.Advance(Unicode::GetLength(Codepoint));
+            Unicode::Encode(Codepoint, &mBuffer[Offset]);
             Seal();
         }
 

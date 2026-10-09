@@ -134,7 +134,7 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
-        Sequence<Wide, kMaxPathLength + 3> InPath = StrConvertUTF16<kMaxPathLength + 3>(Path);
+        Sequence<Wide, kMaxPathLength + 3> InPath = Unicode::Widen<kMaxPathLength + 3>(Path);
         InPath.Append(L'/');
         InPath.Append(L'*');
         InPath.Append(L'\0');
@@ -174,7 +174,7 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Make(Text Path)
     {
-        Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
+        Sequence<Wide, kMaxPathLength> InPath = Unicode::Widen<kMaxPathLength>(Path);
 
         if (CreateDirectoryW(InPath.GetData(), nullptr))
         {
@@ -188,8 +188,8 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Copy(Text Source, Text Destination)
     {
-        Sequence<Wide, kMaxPathLength> InSource      = StrConvertUTF16<kMaxPathLength>(Source);
-        Sequence<Wide, kMaxPathLength> InDestination = StrConvertUTF16<kMaxPathLength>(Destination);
+        Sequence<Wide, kMaxPathLength> InSource      = Unicode::Widen<kMaxPathLength>(Source);
+        Sequence<Wide, kMaxPathLength> InDestination = Unicode::Widen<kMaxPathLength>(Destination);
 
         if (CopyFileExW(InSource.GetData(), InDestination.GetData(), nullptr, nullptr, nullptr, COPY_FILE_NO_BUFFERING))
         {
@@ -203,7 +203,7 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Delete(Text Path)
     {
-        Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
+        Sequence<Wide, kMaxPathLength> InPath = Unicode::Widen<kMaxPathLength>(Path);
 
         if (const DWORD Attributes = GetFileAttributesW(InPath.GetData()); Attributes != INVALID_FILE_ATTRIBUTES)
         {
@@ -230,8 +230,8 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
     {
-        Sequence<Wide, kMaxPathLength> InSource      = StrConvertUTF16<kMaxPathLength>(Source);
-        Sequence<Wide, kMaxPathLength> InDestination = StrConvertUTF16<kMaxPathLength>(Destination);
+        Sequence<Wide, kMaxPathLength> InSource      = Unicode::Widen<kMaxPathLength>(Source);
+        Sequence<Wide, kMaxPathLength> InDestination = Unicode::Widen<kMaxPathLength>(Destination);
 
         if (MoveFileExW(InSource.GetData(), InDestination.GetData(), MOVEFILE_REPLACE_EXISTING))
         {
@@ -245,7 +245,7 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Open(Text Path, Access Access, Ref<Handle> Output)
     {
-        Sequence<Wide, kMaxPathLength> InPath = StrConvertUTF16<kMaxPathLength>(Path);
+        Sequence<Wide, kMaxPathLength> InPath = Unicode::Widen<kMaxPathLength>(Path);
 
         Close(Output);
 

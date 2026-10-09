@@ -32,6 +32,7 @@
 #include "Zyphryon.Base/Lexical/Format/Processor.hpp"
 #include "Zyphryon.Base/Lexical/Algorithm.hpp"
 #include "Zyphryon.Base/Lexical/Symbol.hpp"
+#include "Zyphryon.Base/Lexical/Unicode.hpp"
 #include "Zyphryon.Base/Marshal/Binary/Archive.hpp"
 #include "Zyphryon.Base/Marshal/Json/JsonArray.hpp"
 #include "Zyphryon.Base/Marshal/Json/JsonDocument.hpp"

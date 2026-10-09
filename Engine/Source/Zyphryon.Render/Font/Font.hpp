@@ -172,7 +172,7 @@ namespace ZyRender
             Real32 LineY    = 0.0f;
             UInt32 Previous = 0;
 
-            StrIterateUTF8(Content, [&](UInt32 Codepoint)
+            Unicode::Iterate(Content, [&](UInt32 Codepoint)
             {
                 switch (Codepoint)
                 {

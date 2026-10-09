@@ -279,7 +279,7 @@ namespace ZyPlatform
                 if (const Text Data = StrConvert(Event->key); !Data.IsEmpty())
                 {
                     UInt Cursor = 0;
-                    StrExtractUTF8(Data, Cursor);
+                    Unicode::Decode(Data, Cursor);
 
                     if (Cursor == Data.GetSize())
                     {
