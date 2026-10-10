@@ -38,6 +38,7 @@ namespace ZyScene
         {
             mColumnOf.Fill(kAbsent, Signature.GetBack() + 1);
             mFlags.Advance(mColumnOf.GetSize());
+            mRunOf.Fill(0, mColumnOf.GetSize());
         }
 
         for (const UInt32 Identifier : Signature)
@@ -151,6 +152,7 @@ namespace ZyScene
         Swap(mStride,   Fresh.mStride);
         Swap(mColumns,  Fresh.mColumns);
         Swap(mColumnOf, Fresh.mColumnOf);
+        Swap(mRunOf,    Fresh.mRunOf);
         Swap(mFlags,    Fresh.mFlags);
         Swap(mPages,    Fresh.mPages);
 
@@ -218,6 +220,9 @@ namespace ZyScene
             // Each run starts a cache line after the rows before it end.
             Target.Offset = Rows * Before + kPageAlignment * (Index + 1);
             Before       += Target.Size;
+
+            // A typed read steps by its type's size, so the bytes kept for an unresolved type offer it no run.
+            mRunOf[Target.Identifier] = Target.Info == AddressOf(Metatype::Unitialized()) ? 0 : Target.Offset;
 
             if (Old)
             {

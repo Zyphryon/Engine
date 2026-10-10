@@ -132,18 +132,18 @@ namespace ZyScene
             {
                 const UInt32              Identifier = IdentifierOf<Type>();
                 ConstRef<Directory::Slot> Entry      = mStorage->mDirectory[GetIndex()];
-                const SInt16              Column     = Entry.Holder->Find(Identifier);
+                const Ptr<Type>           Held       = Entry.Holder->Fetch<Type>(Identifier, Entry.Row);
 
                 // In place, even mid-walk, unless a reader watches changes or a change of this entity waits already.
-                if (Column >= 0
+                if (Held
                     && !mStorage->IsWatched(Identifier, Pull::Changed)
                     && !mStorage->mDeferral.IsMarked(GetIndex()))
                 {
-                    * reinterpret_cast<Ptr<Type>>(Entry.Holder->At(Column, Entry.Row)) = Forward<Value>(Data);
+                    * Held = Forward<Value>(Data);
                 }
                 else
                 {
-                    Store<Type>(Identifier, Column, Forward<Value>(Data));
+                    Store<Type>(Identifier, Entry.Holder->Find(Identifier), Forward<Value>(Data));
                 }
                 return (* this);
             }
@@ -343,9 +343,9 @@ namespace ZyScene
                     return nullptr;
                 }
 
-                if (const SInt16 Column = Entry->Holder->Find(Identifier); Column >= 0)
+                if (const Ptr<Type> Held = Entry->Holder->Fetch<Type>(Identifier, Entry->Row))
                 {
-                    return reinterpret_cast<Ptr<Type>>(Entry->Holder->At(Column, Entry->Row));
+                    return Held;
                 }
 
                 if constexpr (IsImmutable<Type>)

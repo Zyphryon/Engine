@@ -24,6 +24,8 @@ namespace ZyScene
     /// \brief Represents the entities holding one set of components made from one archetype, in pages that never move.
     class ZY_API Chunk final
     {
+        friend class Entity;
+
     public:
 
         /// The column a component answers to when the chunk carries it as a tag.
@@ -418,6 +420,18 @@ namespace ZyScene
         /// \brief Adds room for more rows, doubling the first page until full and adding pages after that.
         void Grow();
 
+        /// \brief Gets where one row keeps a component, stepping by the type's own size rather than its column's.
+        ///
+        /// \param Identifier The identifier of the component type to locate.
+        /// \param Row        The row within the chunk that holds the instance.
+        /// \return The instance, or `nullptr` when the component is absent, a tag, or bytes of an unresolved type.
+        template<typename Type>
+        ZY_INLINE Ptr<Type> Fetch(UInt32 Identifier, UInt32 Row) const
+        {
+            const UInt32 Offset = Identifier < mRunOf.GetSize() ? mRunOf[Identifier] : 0;
+            return Offset ? reinterpret_cast<Ptr<Type>>(GetPage(Row) + Offset) + GetPlace(Row) : nullptr;
+        }
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -430,6 +444,7 @@ namespace ZyScene
         Sequence<Ptr<Byte>>  mPages;
         Sequence<Column>     mColumns;
         Sequence<SInt16>     mColumnOf;
+        Sequence<UInt32>     mRunOf;
         UInt32               mStride;
         UInt32               mIndex;
         UInt32               mBase;
