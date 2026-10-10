@@ -29,7 +29,7 @@ namespace ZyFormat
         /// The minimum field width for the formatted output.
         UInt8 Width     = 0;
 
-        /// The precision for floating-point or maximum width for strings.
+        /// The decimals of a real written under `f`, or the maximum width for strings.
         UInt8 Precision = 6;
 
         /// The padding character used when the output is shorter than the width.
@@ -91,6 +91,7 @@ namespace ZyFormat
             if (StrConsume(Specification, Cursor, '.'))
             {
                 Precision = StrExtractNumber<10, UInt8>(Specification, Cursor);
+                Type      = 'f';
             }
 
             if (Cursor < Specification.GetSize())

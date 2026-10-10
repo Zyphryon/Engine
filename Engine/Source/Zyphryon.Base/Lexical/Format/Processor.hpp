@@ -188,14 +188,36 @@ namespace ZyFormat
         /// \param Buffer     The output buffer.
         /// \param Properties The placeholder formatting properties.
         /// \param Prefix     The sign prefix character ('-', '+', ' ', or '\0').
-        /// \param Length     The total length of the formatted number.
-        /// \param Value      The floating-point value to format.
-        /// \param Precision  The number of decimal places.
+        /// \param Value      The magnitude of the floating-point value to format.
         template<typename Argument>
         ZY_INLINE static constexpr void AppendReal(
-            Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, Argument Value, UInt Precision)
+            Ref<Output> Buffer, Placeholder Properties, Char Prefix, Argument Value)
         {
-            const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Length);
+            if (Properties.Width == 0)
+            {
+                if (Prefix)
+                {
+                    Buffer.Append(Prefix);
+                }
+                AppendDigits(Buffer, Properties, Value);
+                return;
+            }
+
+            Output Digits;
+            AppendDigits(Digits, Properties, Value);
+
+            const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Digits.GetSize());
+
+            if (Properties.Padding == '0')
+            {
+                if (Prefix)
+                {
+                    Buffer.Append(Prefix);
+                }
+                Buffer.Append('0', Pad.Left);
+                Buffer.Append(Digits);
+                return;
+            }
 
             if (Pad.Left > 0)
             {
@@ -207,16 +229,29 @@ namespace ZyFormat
                 Buffer.Append(Prefix);
             }
 
-            if (Properties.Padding == '0')
-            {
-                Buffer.Append('0', Pad.Left);
-            }
-
-            Buffer.AppendReal(Value, Precision);
+            Buffer.Append(Digits);
 
             if (Pad.Right > 0)
             {
                 Buffer.Append(Properties.Padding, Pad.Right);
+            }
+        }
+
+        /// \brief Appends a floating-point value in fixed decimals under `f`, and in significant digits otherwise.
+        ///
+        /// \param Buffer     The output buffer.
+        /// \param Properties The placeholder formatting properties.
+        /// \param Value      The magnitude of the floating-point value to format.
+        template<typename Argument>
+        ZY_INLINE static constexpr void AppendDigits(Ref<Output> Buffer, Placeholder Properties, Argument Value)
+        {
+            if (Properties.Type == 'f')
+            {
+                Buffer.AppendReal(Value, Properties.Precision);
+            }
+            else
+            {
+                Buffer.AppendReal(Value);
             }
         }
 
@@ -308,13 +343,11 @@ namespace ZyFormat
             }
             else if constexpr (IsReal<Value>)
             {
-                const auto Number = Abs(Parameter);
-                const UInt Length = CountDigits(Number, Properties.Precision);
                 const Char Prefix = (Parameter < 0)
                     ? '-'
                     : (Properties.Sign == '+' ? '+' : (Properties.Sign == ' ' ? ' ' : '\0'));
 
-                AppendReal(Buffer, Properties, Prefix, Length, Number, Properties.Precision);
+                AppendReal(Buffer, Properties, Prefix, Abs(Parameter));
             }
             else if constexpr (IsAnyOf<Value, Bool>)
             {

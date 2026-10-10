@@ -26,11 +26,6 @@ inline namespace ZyBase
     {
     public:
 
-        /// The deepest arrays and objects may nest, so a hostile file cannot exhaust the stack.
-        static constexpr UInt kMaxDepth = 128;
-
-    public:
-
         /// \brief Parses JSON text into a value structure.
         ///
         /// \param Content The JSON text to parse, which may open with a UTF-8 byte order mark.

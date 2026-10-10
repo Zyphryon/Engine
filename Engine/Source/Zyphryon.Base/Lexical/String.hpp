@@ -283,7 +283,7 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Appends a real number to the end of the string.
+        /// \brief Appends a real number with a fixed number of decimals.
         ///
         /// \param Number    The number to append.
         /// \param Precision The number of decimal places to append.
@@ -332,6 +332,18 @@ inline namespace ZyBase
                 }
                 AppendInteger(Integer, CountDigits<10>(Integer), 10, true);
             }
+        }
+
+        /// \brief Appends a real number in the significant digits its type keeps, with no trailing zeros.
+        ///
+        /// \param Number The number to append.
+        template<typename Type>
+        ZY_INLINE void AppendReal(Type Number)
+            requires IsReal<Type>
+        {
+            String<30> Digits;
+            StrWriteReal(Digits, Number, sizeof(Type) == sizeof(Real32) ? 6 : 15);
+            Append(Digits);
         }
 
         /// \brief Inserts a single character at the specified index.
@@ -895,6 +907,13 @@ inline namespace ZyBase
 
     /// \brief A stack-backed string with a fixed capacity of 126 characters.
     using Str128 = String<126>;
+
+    /// \brief Writes a real number in at most the given significant digits, with no trailing zeros.
+    ///
+    /// \param Output      Receives the characters, at most 22 of them.
+    /// \param Number      The number to write.
+    /// \param Significant The most significant digits to write, from one to fifteen.
+    ZY_API void StrWriteReal(Ref<Str32> Output, Real64 Number, UInt Significant);
 
     /// \brief Allow concatenation of a string with a text literal.
     template<UInt Capacity>

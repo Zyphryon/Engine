@@ -205,6 +205,26 @@ inline namespace ZyBase
         return kPow10Table[Exponent];
     }
 
+    /// \brief Computes 10 raised to the power of the given exponent as a real number.
+    ///
+    /// \param Exponent The exponent value, where a negative one yields the reciprocal.
+    /// \return The result of 10 ^ \p Exponent.
+    template<IsReal Type>
+    ZY_INLINE Type Pow10(SInt32 Exponent)
+    {
+        static constexpr Real64 kPow10Table[23] =
+        {
+            1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
+            1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22
+        };
+
+        if (Exponent < 0)
+        {
+            return static_cast<Type>(1.0 / Pow10<Real64>(-Exponent));
+        }
+        return Exponent < 23 ? static_cast<Type>(kPow10Table[Exponent]) : Pow(Type(10), static_cast<Type>(Exponent));
+    }
+
     /// \brief Computes the square root of the given number.
     ///
     /// \param Value The number to compute the square root for.
@@ -266,6 +286,30 @@ inline namespace ZyBase
             ++Result;
         }
         return Result;
+    }
+
+    /// \brief Computes the integer base-10 logarithm of a real number, the power of ten of its leading digit.
+    ///
+    /// \param Number The number to compute the logarithm for, which must be positive and normal.
+    /// \return The largest exponent whose Pow10 is not above \p Number.
+    template<IsReal Type>
+    ZY_INLINE SInt32 Log10(Type Number)
+    {
+        ZY_ASSERT(Number > Type(0), "Log10 requires a positive number");
+
+        SInt32 Binary;
+
+        if constexpr (sizeof(Type) == sizeof(Real32))
+        {
+            Binary = static_cast<SInt32>(CastBit<UInt32>(Number) >> 23) - 127;
+        }
+        else
+        {
+            Binary = static_cast<SInt32>(CastBit<UInt64>(Number) >> 52) - 1023;
+        }
+
+        const SInt32 Estimate = static_cast<SInt32>(Floor(Binary * 0.30102999566398120));
+        return Number >= Pow10<Type>(Estimate + 1) ? Estimate + 1 : Estimate;
     }
 
     /// \brief Computes the sine of the given angle.
