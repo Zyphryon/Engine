@@ -580,13 +580,16 @@ namespace ZyPlatform
         const UInt Length = static_cast<UInt>(EM_ASM_INT({ return lengthBytesUTF8(Module.zyClipboard || ""); }));
 
         Str Result;
-        Result.Append('\0', Length);
-
-        EM_ASM(
+        
+        if (Length != 0)
         {
-            stringToUTF8(Module.zyClipboard || "", $0, $1);
-        }, Result.GetData(), Length + 1);
+            Result.Append('\0', Length);
 
+            EM_ASM(
+            {
+                stringToUTF8(Module.zyClipboard || "", $0, $1);
+            }, Result.GetData(), Length + 1);
+        }
         return Result;
     }
 

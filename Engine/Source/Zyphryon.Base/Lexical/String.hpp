@@ -73,9 +73,8 @@ inline namespace ZyBase
         ///
         /// \param Other The string to copy from.
         ZY_INLINE constexpr String(ConstRef<String> Other)
-            : mBuffer { Other.mBuffer }
         {
-            Seal();
+            Assign(Other);
         }
 
         /// \brief Move constructor that transfers the contents from another string.
@@ -89,17 +88,31 @@ inline namespace ZyBase
 
         /// \brief Returns a pointer to the mutable character data.
         ///
-        /// \return A pointer to the first character.
+        /// \return A pointer to the first character, which a terminator always follows.
         ZY_INLINE constexpr Ptr<Char> GetData()
         {
+            if constexpr (Capacity == 0)
+            {
+                if (mBuffer.GetCapacity() == 0)
+                {
+                    return const_cast<Ptr<Char>>(AddressOf(kTerminator));
+                }
+            }
             return mBuffer.GetData();
         }
 
         /// \brief Returns a pointer to the const character data.
         ///
-        /// \return A read-only pointer to the first character.
+        /// \return A read-only pointer to the first character, which a terminator always follows.
         ZY_INLINE constexpr ConstPtr<Char> GetData() const
         {
+            if constexpr (Capacity == 0)
+            {
+                if (mBuffer.GetCapacity() == 0)
+                {
+                    return AddressOf(kTerminator);
+                }
+            }
             return mBuffer.GetData();
         }
 
@@ -181,18 +194,18 @@ inline namespace ZyBase
             Seal();
         }
 
-        /// \brief Reserves heap capacity for at least the given number of characters.
+        /// \brief Reserves heap capacity for at least the given number of characters, and the terminator after them.
         ///
-        /// \param Length The minimum number of characters to reserve space for.
+        /// \param Length The minimum number of characters to reserve space for, where zero reserves nothing.
         ZY_INLINE constexpr void Reserve(UInt Length)
         {
             if constexpr (Capacity > 0)
             {
                 ZY_ASSERT(Capacity >= Length, "Requested reserve length exceeds fixed capacity");
             }
-            else
+            else if (Length > 0)
             {
-                mBuffer.Reserve(Length);
+                mBuffer.Reserve(Length + 1);
             }
             Seal();
         }
@@ -378,11 +391,13 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Shrinks the heap capacity to match the current size.
+        /// \brief Shrinks the heap capacity to match the current size and its terminator.
         ZY_INLINE constexpr void Shrink()
             requires (Capacity == 0)
         {
+            mBuffer.Append('\0');
             mBuffer.Shrink();
+            mBuffer.RemoveLast();
             Seal();
         }
 
@@ -426,7 +441,7 @@ inline namespace ZyBase
         {
             ZY_ASSERT(Offset <= mBuffer.GetSize(), "Slice offset exceeds string size");
 
-            return Text(mBuffer.GetData() + Offset, mBuffer.GetSize() - Offset);
+            return Text(GetData() + Offset, mBuffer.GetSize() - Offset);
         }
 
         /// \brief Creates a subview of this string of exactly the given length from the given offset.
@@ -438,7 +453,7 @@ inline namespace ZyBase
         {
             ZY_ASSERT(Offset + Count <= mBuffer.GetSize(), "Slice range exceeds string size");
 
-            return Text(mBuffer.GetData() + Offset, Count);
+            return Text(GetData() + Offset, Count);
         }
 
         /// \brief Formats the string using a runtime pattern and parameters.
@@ -607,8 +622,10 @@ inline namespace ZyBase
         /// \return A reference to this string.
         ZY_INLINE constexpr Ref<String> operator=(ConstRef<String> Other)
         {
-            mBuffer = Other.mBuffer;
-            Seal();
+            if (this != AddressOf(Other))
+            {
+                Assign(Other);
+            }
             return (* this);
         }
 
@@ -788,6 +805,9 @@ inline namespace ZyBase
 
     private:
 
+        /// \brief The terminator a heap-backed string that owns no storage shows as its data, which is never written.
+        static constexpr Char kTerminator = '\0';
+
         /// \brief Ensures the underlying buffer is null-terminated at \ref GetData().
         ///
         /// \note Must be called after any operation that mutates the buffer's contents or size.
@@ -801,7 +821,16 @@ inline namespace ZyBase
             }
             else
             {
-                mBuffer.Reserve(Size + 1);
+                if (mBuffer.GetCapacity() == 0)
+                {
+                    return;
+                }
+
+                if (Size == mBuffer.GetCapacity())
+                {
+                    mBuffer.Append('\0');
+                    mBuffer.RemoveLast();
+                }
             }
 
             mBuffer.GetData()[Size] = '\0';
@@ -816,6 +845,10 @@ inline namespace ZyBase
 
             if (!Content.IsEmpty())
             {
+                if constexpr (Capacity == 0)
+                {
+                    mBuffer.Reserve(Content.GetSize() + 1);
+                }
                 mBuffer.Append(Content);
             }
             Seal();
