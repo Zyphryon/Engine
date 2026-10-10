@@ -40,7 +40,8 @@ namespace ZyRender
               mPhase     { 0.0f },
               mSlot      { kUnresolved },
               mKeyframe  { 0 },
-              mDirection { 0 }
+              mDirection { 0 },
+              mBackward  { false }
         {
         }
 
@@ -80,7 +81,7 @@ namespace ZyRender
         /// \param Rate The rate, where `1` plays as authored and `0` holds the current frame; negative is clamped to `0`.
         ZY_INLINE void SetRate(Real32 Rate)
         {
-            mPlayback.SetSpeed(mPlayback.GetSpeed() < 0.0f ? -Max(Rate, 0.0f) : Max(Rate, 0.0f));
+            mPlayback.SetSpeed(mBackward ? -Max(Rate, 0.0f) : Max(Rate, 0.0f));
         }
 
         /// \brief Gets the playback rate relative to the authored frame durations.
@@ -99,7 +100,7 @@ namespace ZyRender
             if (mPlayback.GetDuration() > 0.0)
             {
                 const Real64 Share = mPlayback.GetProgress();
-                return mPlayback.GetSpeed() < 0.0f ? 1.0 - Share : Share;
+                return mBackward ? 1.0 - Share : Share;
             }
             return 0.0;
         }
@@ -261,5 +262,6 @@ namespace ZyRender
         UInt16            mSlot;
         UInt8             mKeyframe;
         UInt8             mDirection;
+        Bool              mBackward;
     };
 }

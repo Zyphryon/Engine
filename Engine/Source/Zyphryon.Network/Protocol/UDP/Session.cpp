@@ -60,7 +60,7 @@ namespace ZyNetwork::UDP
 
         mArena.Append(Message);
 
-        mStats.Pending = mArena.GetSize();
+        mStats.Pending += Message.GetSize();
         return true;
     }
 
@@ -72,6 +72,7 @@ namespace ZyNetwork::UDP
         ZY_ASSERT(Output.GetSize() > kHeader, "The packet has no room for anything beyond its header");
 
         UInt32 Cursor = kHeader;
+        UInt   Taken  = 0;
 
         for (const Parcel Entry : mPending)
         {
@@ -87,6 +88,8 @@ namespace ZyNetwork::UDP
 
             Blit(Output.GetData() + Cursor, Entry.Size, mArena.GetData() + Entry.Offset);
             Cursor += Entry.Size;
+
+            ++Taken;
         }
 
         if (Cursor != kHeader)
@@ -97,11 +100,19 @@ namespace ZyNetwork::UDP
             Value.Bits        = 0;
             Encode(Output, Value);
 
-            mPending.Clear();
-            mArena.Clear();
+            mPending.Remove(0, Taken);
 
-            mStats.Sent   += Cursor;
-            mStats.Pending = 0;
+            if (mPending.IsEmpty())
+            {
+                mArena.Clear();
+                mStats.Pending = 0;
+            }
+            else
+            {
+                mStats.Pending = mArena.GetSize() - mPending.GetFront().Offset;
+            }
+
+            mStats.Sent += Cursor;
             return Cursor;
         }
         return 0;

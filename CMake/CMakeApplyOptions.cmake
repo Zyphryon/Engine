@@ -127,6 +127,9 @@ FUNCTION(ZyApplyOptions TARGET)
 
     ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
+        # CMake adds -flto to compile and link, and archives with gcc-ar or llvm-ar so the index covers the IR.
+        SET_TARGET_PROPERTIES(${TARGET} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release,RelWithDebInfo>:
                 -O3
@@ -153,7 +156,6 @@ FUNCTION(ZyApplyOptions TARGET)
 
         TARGET_LINK_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
-                -flto=auto
                 -Wl,--gc-sections
                 -Wl,--strip-all
             >
@@ -165,7 +167,7 @@ FUNCTION(ZyApplyOptions TARGET)
 
         IF    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
-            TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE -fno-fat-lto-objects -Wno-changes-meaning)
+            TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE -Wno-changes-meaning)
 
         ENDIF ()
 

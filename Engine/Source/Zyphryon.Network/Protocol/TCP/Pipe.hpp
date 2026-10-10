@@ -269,7 +269,7 @@ namespace ZyNetwork
             {
                 if (Left > 0)
                 {
-                    Blit(mData.GetData(), Left, mData.GetData() + mReader);
+                    Copy(mData.GetData(), Left, mData.GetData() + mReader);
                 }
                 mReader = 0;
                 mWriter = Left;

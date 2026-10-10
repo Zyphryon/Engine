@@ -51,16 +51,24 @@ namespace ZyRuntime
 
         if (ConstRetainer<ZyPlatform::Service> Platform = GetService<ZyPlatform::Service>())
         {
-            ConstRef<ZyPlatform::Window> Window = Platform->GetWindow();
+            ConstRef<ZyPlatform::Window>  Window  = Platform->GetWindow();
+            ConstRef<ZyPlatform::Display> Display = Platform->GetDisplay();
 
-            mStartup.SetWindowWidth(Window.GetWidth());
-            mStartup.SetWindowHeight(Window.GetHeight());
-            mStartup.SetWindowFullscreen(Window.IsFullscreen());
+            Real32 Scale = 1.0f;
 
-            if (const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY()))
+            if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window.GetX(), Window.GetY()))
             {
                 mStartup.SetWindowMonitor(Monitor->GetName());
+                Scale = Monitor->GetScale();
             }
+            else if (!Display.GetMonitors().IsEmpty())
+            {
+                Scale = Display.GetMonitor(mStartup.GetWindowMonitor()).GetScale();
+            }
+
+            mStartup.SetWindowWidth(static_cast<UInt32>(Round(Window.GetWidth() / Scale)));
+            mStartup.SetWindowHeight(static_cast<UInt32>(Round(Window.GetHeight() / Scale)));
+            mStartup.SetWindowFullscreen(Window.IsFullscreen());
         }
 
         if (ConstRetainer<ZyGraphic::Service> Graphic = GetService<ZyGraphic::Service>())

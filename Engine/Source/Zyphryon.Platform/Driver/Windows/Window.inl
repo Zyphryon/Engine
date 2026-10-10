@@ -409,6 +409,12 @@ namespace ZyPlatform
             }
             case WM_SYSCOMMAND:
             {
+                // A lone Alt or F10 would open the window menu, whose modal loop holds the frame until the next key.
+                if ((Arg0 & 0xFFF0) == SC_KEYMENU)
+                {
+                    return 0;
+                }
+
                 if ((Arg0 & 0xFFF0) == SC_SIZE)
                 {
                     Window->mStates = SetBit(Window->mStates, State::Held);
@@ -462,6 +468,10 @@ namespace ZyPlatform
                     Dispatcher.QueueKeyUp(Key);
                 }
                 return ::DefWindowProcW(Handle, Message, Arg0, Arg1);
+            }
+            case WM_SYSCHAR:
+            {
+                return 0;
             }
             case WM_LBUTTONDOWN:
             {

@@ -377,6 +377,12 @@ namespace ZyAudio
         Output.Backend = "WASAPI";
         Output.Adapter = mBackend->Name;
 
+        // A failed open has already released the enumerator, so no endpoint can be listed.
+        if (mBackend->Enumerator == nullptr)
+        {
+            return;
+        }
+
         Ptr<IMMDeviceCollection> Collection = nullptr;
         if (FAILED(mBackend->Enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, AddressOf(Collection))))
         {

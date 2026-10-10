@@ -45,6 +45,30 @@ namespace ZyNetwork
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static EM_BOOL Ignore(SInt32 Kind, ConstPtr<EmscriptenWebSocketOpenEvent> Event, Ptr<void> Context)
+    {
+        return EM_TRUE;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static EM_BOOL Ignore(SInt32 Kind, ConstPtr<EmscriptenWebSocketMessageEvent> Event, Ptr<void> Context)
+    {
+        return EM_TRUE;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static EM_BOOL Ignore(SInt32 Kind, ConstPtr<EmscriptenWebSocketCloseEvent> Event, Ptr<void> Context)
+    {
+        return EM_TRUE;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     struct Proactor::Backend final
     {
         /// \brief Represents one socket as the browser holds it, and everything still outstanding on it.
@@ -245,9 +269,9 @@ namespace ZyNetwork
     {
         if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle))
         {
-            emscripten_websocket_set_onopen_callback(Entry->Handle, nullptr, nullptr);
-            emscripten_websocket_set_onmessage_callback(Entry->Handle, nullptr, nullptr);
-            emscripten_websocket_set_onclose_callback(Entry->Handle, nullptr, nullptr);
+            emscripten_websocket_set_onopen_callback(Entry->Handle, nullptr, Ignore);
+            emscripten_websocket_set_onmessage_callback(Entry->Handle, nullptr, Ignore);
+            emscripten_websocket_set_onclose_callback(Entry->Handle, nullptr, Ignore);
 
             emscripten_websocket_close(Entry->Handle, 1000, nullptr);
 

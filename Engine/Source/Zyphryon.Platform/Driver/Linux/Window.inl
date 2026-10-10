@@ -180,6 +180,7 @@ namespace ZyPlatform
         case XK_Escape:
             return ZyInput::Key::Escape;
         case XK_Return:
+        case XK_KP_Enter:
             return ZyInput::Key::Enter;
         case XK_Tab:
             return ZyInput::Key::Tab;
@@ -316,6 +317,12 @@ namespace ZyPlatform
         /// The vertical cursor position seen by the previous motion event, which relative motion is measured from.
         SInt32         CursorY    = 0;
 
+        /// The horizontal cursor position when the lock was taken, where the cursor returns when it is let go.
+        SInt32         RestoreX   = 0;
+
+        /// The vertical cursor position when the lock was taken, where the cursor returns when it is let go.
+        SInt32         RestoreY   = 0;
+
         /// The `CLIPBOARD` selection atom.
         Atom           Selection  = None;
 
@@ -375,6 +382,11 @@ namespace ZyPlatform
             {
                 ::XUngrabPointer(Connection, CurrentTime);
                 ::XUndefineCursor(Connection, Handle);
+
+                // Recorded before the warp so the motion it sends carries no delta.
+                CursorX = RestoreX;
+                CursorY = RestoreY;
+                ::XWarpPointer(Connection, 0, Handle, 0, 0, 0, 0, RestoreX, RestoreY);
             }
         }
 
@@ -426,8 +438,19 @@ namespace ZyPlatform
             {
             case ConfigureNotify:
             {
-                Window->mX = Event.xconfigure.x;
-                Window->mY = Event.xconfigure.y;
+                // A real event under a window manager's frame is relative to the frame, so the server is asked instead.
+                if (Event.xconfigure.send_event)
+                {
+                    Window->mX = Event.xconfigure.x;
+                    Window->mY = Event.xconfigure.y;
+                }
+                else
+                {
+                    ::Window Child = None;
+                    ::XTranslateCoordinates(
+                        Connection, Handle, ::XDefaultRootWindow(Connection), 0, 0,
+                        AddressOf(Window->mX), AddressOf(Window->mY), AddressOf(Child));
+                }
 
                 const UInt32 Width  = static_cast<UInt32>(Event.xconfigure.width);
                 const UInt32 Height = static_cast<UInt32>(Event.xconfigure.height);
@@ -627,9 +650,22 @@ namespace ZyPlatform
 
                 if (Window->IsCursorLocked())
                 {
-                    if (DeltaX != 0 || DeltaY != 0)
+                    const SInt32 CenterX = static_cast<SInt32>(Window->mWidth / 2);
+                    const SInt32 CenterY = static_cast<SInt32>(Window->mHeight / 2);
+
+                    // Landing on the center is the pointer being put back there, not a move of the user's.
+                    if (X != CenterX || Y != CenterY)
                     {
-                        Dispatcher.QueueMouseMove(0.0f, 0.0f, DeltaX, DeltaY);
+                        if (DeltaX != 0 || DeltaY != 0)
+                        {
+                            Dispatcher.QueueMouseMove(0.0f, 0.0f, DeltaX, DeltaY);
+                        }
+
+                        // The grab holds the pointer inside the window, so it goes back to the center to keep moving.
+                        if (Window->IsFocused())
+                        {
+                            ::XWarpPointer(Connection, 0, Handle, 0, 0, 0, 0, CenterX, CenterY);
+                        }
                     }
                 }
                 else
@@ -869,8 +905,18 @@ namespace ZyPlatform
     {
         ZY_ASSERT(Lock != IsCursorLocked(), "The cursor is already in the requested lock state");
 
-        mBackend->ApplyCursorLock(Lock);
-        ::XFlush(mBackend->Connection);
+        if (Lock)
+        {
+            mBackend->RestoreX = mBackend->CursorX;
+            mBackend->RestoreY = mBackend->CursorY;
+        }
+
+        // Focus changes apply and release the lock themselves, so an unfocused window only records it for later.
+        if (IsFocused())
+        {
+            mBackend->ApplyCursorLock(Lock);
+            ::XFlush(mBackend->Connection);
+        }
 
         mStates = SetOrClearBit(mStates, State::Locked, Lock);
     }

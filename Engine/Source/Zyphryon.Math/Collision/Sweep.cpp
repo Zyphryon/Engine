@@ -139,7 +139,7 @@ inline namespace ZyMath
         const Real32 Beyond = Vector2::Dot(Apart, Apart) - Reach * Reach;
 
         // A motion that never travels on the ground either lies inside the circle the whole way or never does.
-        if (Square < kMinimumReach)
+        if (Square < kMinimumReach * kMinimumReach)
         {
             return Beyond <= 0.0f;
         }

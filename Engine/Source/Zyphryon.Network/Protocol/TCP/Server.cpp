@@ -170,13 +170,13 @@ namespace ZyNetwork::TCP
 
     void Server::Retire(Ref<Proactor> Watcher, Connection Link, Reason Cause, Ref<Mailbox> Output)
     {
-        if (const Ptr<Stream> Peer = Locate(Link))
-        {
-            Peer->Retire(Watcher, Link, Cause, Output);
-        }
-        else
+        if (!Link.IsPeer())
         {
             Fold(Watcher, Cause, Output);
+        }
+        else if (const Ptr<Stream> Peer = Locate(Link))
+        {
+            Peer->Retire(Watcher, Link, Cause, Output);
         }
     }
 
@@ -185,11 +185,7 @@ namespace ZyNetwork::TCP
 
     void Server::SetTimeout(Connection Link, Real64 Seconds)
     {
-        if (const Ptr<Stream> Peer = Locate(Link))
-        {
-            Peer->SetTimeout(Link, Seconds);
-        }
-        else
+        if (!Link.IsPeer())
         {
             Channel::SetTimeout(Link, Seconds);
 
@@ -197,6 +193,10 @@ namespace ZyNetwork::TCP
             {
                 Peer->SetTimeout(Peer->GetLink(), Seconds);
             });
+        }
+        else if (const Ptr<Stream> Peer = Locate(Link))
+        {
+            Peer->SetTimeout(Link, Seconds);
         }
     }
 

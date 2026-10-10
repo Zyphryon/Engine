@@ -148,17 +148,17 @@ namespace ZyNetwork::UDP
 
     void Server::Retire(Ref<Proactor> Watcher, Connection Link, Reason Cause, Ref<Mailbox> Output)
     {
-        if (const Ptr<Peer> Entry = mPeers.TryGet(Link.GetPeer()))
+        if (!Link.IsPeer())
+        {
+            Fold(Watcher, Cause, Output);
+        }
+        else if (const Ptr<Peer> Entry = mPeers.TryGet(Link.GetPeer()))
         {
             Output.Disconnect(Entry->Link, Cause);
 
             Forget(* Entry);
 
             mPeers.Free(Link.GetPeer());
-        }
-        else
-        {
-            Fold(Watcher, Cause, Output);
         }
     }
 

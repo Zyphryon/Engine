@@ -91,18 +91,26 @@ inline namespace ZyBase
             {
                 Buffer.Append(StrConvert(Home));
 #if defined(ZY_PLATFORM_MACOS)
-                Buffer.Append("/Library/Application Support/");
+                Buffer.Append("/Library/Application Support");
 #else
-                Buffer.Append("/.local/share/");
+                Buffer.Append("/.local/share");
 #endif
             }
         }
 
         if (!Buffer.IsEmpty())
         {
-            Buffer.Append(Organization);
-            Buffer.Append('/');
-            Buffer.Append(Application);
+            if (!Organization.IsEmpty())
+            {
+                Buffer.Append('/');
+                Buffer.Append(Organization);
+            }
+
+            if (!Application.IsEmpty())
+            {
+                Buffer.Append('/');
+                Buffer.Append(Application);
+            }
         }
         return Buffer;
     }
@@ -112,7 +120,9 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
-        if (const Ptr<DIR> Directory = opendir(Path.GetData()))
+        const Filesystem::Path InPath(Path);
+
+        if (const Ptr<DIR> Directory = opendir(InPath.GetData()))
         {
             const SInt32 Handle = dirfd(Directory);
 
@@ -160,7 +170,9 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Make(Text Path)
     {
-        if (mkdir(Path.GetData(), 0755) == 0 || errno == EEXIST)
+        const Filesystem::Path InPath(Path);
+
+        if (mkdir(InPath.GetData(), 0755) == 0 || errno == EEXIST)
         {
             return Result::Success;
         }
@@ -174,7 +186,10 @@ inline namespace ZyBase
     {
 #if defined(ZY_PLATFORM_MACOS)
 
-        if (copyfile(Source.GetData(), Destination.GetData(), nullptr, COPYFILE_ALL) == 0)
+        const Filesystem::Path InSource(Source);
+        const Filesystem::Path InDestination(Destination);
+
+        if (copyfile(InSource.GetData(), InDestination.GetData(), nullptr, COPYFILE_ALL) == 0)
         {
             return Result::Success;
         }
@@ -198,7 +213,9 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Delete(Text Path)
     {
-        if (remove(Path.GetData()) == 0 || errno == ENOENT)
+        const Filesystem::Path InPath(Path);
+
+        if (remove(InPath.GetData()) == 0 || errno == ENOENT)
         {
             return Result::Success;
         }
@@ -210,7 +227,10 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
     {
-        if (rename(Source.GetData(), Destination.GetData()) == 0)
+        const Filesystem::Path InSource(Source);
+        const Filesystem::Path InDestination(Destination);
+
+        if (rename(InSource.GetData(), InDestination.GetData()) == 0)
         {
             return Result::Success;
         }
@@ -222,11 +242,13 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Open(Text Path, Access Access, Ref<Handle> Output)
     {
+        const Filesystem::Path InPath(Path);
+
         Close(Output);
 
         const SInt32 Native = (Access == Access::Read)
-            ? open(Path.GetData(), O_RDONLY)
-            : open(Path.GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            ? open(InPath.GetData(), O_RDONLY)
+            : open(InPath.GetData(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
         if (Native < 0)
         {

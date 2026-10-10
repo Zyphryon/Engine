@@ -66,7 +66,7 @@ namespace ZyPlatform
         UINT32 PathCount = 0;
         UINT32 ModeCount = 0;
 
-        if (FAILED(::GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, AddressOf(PathCount), AddressOf(ModeCount))))
+        if (::GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, AddressOf(PathCount), AddressOf(ModeCount)) != ERROR_SUCCESS)
         {
             return;
         }
@@ -77,13 +77,7 @@ namespace ZyPlatform
         Paths.Advance(PathCount);
         Modes.Advance(ModeCount);
 
-        if (FAILED(::QueryDisplayConfig(
-            QDC_ONLY_ACTIVE_PATHS,
-            AddressOf(PathCount),
-            Paths.GetData(),
-            AddressOf(ModeCount),
-            Modes.GetData(),
-            nullptr)))
+        if (::QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, AddressOf(PathCount), Paths.GetData(), AddressOf(ModeCount), Modes.GetData(), nullptr) != ERROR_SUCCESS)
         {
             return;
         }
@@ -96,7 +90,7 @@ namespace ZyPlatform
             SourceName.header.adapterId = Path.sourceInfo.adapterId;
             SourceName.header.id        = Path.sourceInfo.id;
 
-            if (FAILED(::DisplayConfigGetDeviceInfo(AddressOf(SourceName.header))))
+            if (::DisplayConfigGetDeviceInfo(AddressOf(SourceName.header)) != ERROR_SUCCESS)
             {
                 continue;
             }
@@ -120,7 +114,8 @@ namespace ZyPlatform
             TargetName.header.adapterId = Path.targetInfo.adapterId;
             TargetName.header.id        = Path.targetInfo.id;
 
-            if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(TargetName.header))))
+            // Built-in panels often report no friendly name, and those keep their GDI one.
+            if (::DisplayConfigGetDeviceInfo(AddressOf(TargetName.header)) == ERROR_SUCCESS && TargetName.monitorFriendlyDeviceName[0] != L'\0')
             {
                 Entry.SetName(Str::ConvertFromUTF16(StrConvert(TargetName.monitorFriendlyDeviceName)));
             }
@@ -131,7 +126,7 @@ namespace ZyPlatform
             ColorInfo.header.adapterId = Path.targetInfo.adapterId;
             ColorInfo.header.id        = Path.targetInfo.id;
 
-            if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(ColorInfo.header))))
+            if (::DisplayConfigGetDeviceInfo(AddressOf(ColorInfo.header)) == ERROR_SUCCESS)
             {
                 if (ColorInfo.advancedColorEnabled != 0)
                 {

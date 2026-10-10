@@ -58,14 +58,16 @@ namespace ZyRender
 
         const Real64 Duration = Frames.GetDuration();
         const Real32 Rate     = GetRate();
-        const Bool   Backward = (Frames.GetStatus() == Animation2D::Status::Backward);
+
+        // A speed of zero compares the same either way, so the direction is kept apart from it.
+        mBackward = (Frames.GetStatus() == Animation2D::Status::Backward);
 
         // Move the clock to the start time first, so playback is anchored there and not at the last advance.
         mPlayback.Advance(Timestamp);
         mPlayback.SetDuration(Duration);
         mPlayback.SetRepeat(kRepeats[ZyEnum::Cast(Frames.GetStatus())]);
-        mPlayback.SetSpeed(Backward ? -Rate : Rate);
-        mPlayback.Seek((Backward ? 1.0 - Phase : Phase) * Duration);
+        mPlayback.SetSpeed(mBackward ? -Rate : Rate);
+        mPlayback.Seek((mBackward ? 1.0 - Phase : Phase) * Duration);
         mPlayback.Play();
 
         mKeyframe = Locate(Frames);

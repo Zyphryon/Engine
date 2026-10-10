@@ -265,6 +265,8 @@ namespace ZyPlatform
 
         static EM_BOOL OnCanvasKeyDown(SInt32, ConstPtr<EmscriptenKeyboardEvent> Event, Ptr<void> Context)
         {
+            const Bool Shortcut = Event->metaKey || (Event->ctrlKey && !Event->altKey);
+
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
                 if (const ZyInput::Key Key = ConvertWebKey(StrConvert(Event->code)); Key != ZyInput::Key::Unknown)
@@ -279,7 +281,7 @@ namespace ZyPlatform
                     }
                 }
 
-                if (const Text Data = StrConvert(Event->key); !Data.IsEmpty())
+                if (const Text Data = StrConvert(Event->key); !Shortcut && !Data.IsEmpty())
                 {
                     // Named keys such as Shift spell more than one character and are not text.
                     UInt Cursor = 0;
@@ -290,6 +292,12 @@ namespace ZyPlatform
                         Canvas->mDispatcher.QueueKeyType(Data);
                     }
                 }
+            }
+
+            // The browser copies, cuts and pastes only when it runs its own action, and it picks those keys by keyCode.
+            if (Shortcut && (Event->keyCode == 'C' || Event->keyCode == 'V' || Event->keyCode == 'X'))
+            {
+                return EM_FALSE;
             }
             return EM_TRUE;
         }
@@ -316,8 +324,15 @@ namespace ZyPlatform
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                const Real32 X         = static_cast<Real32>(Event->targetX);
-                const Real32 Y         = static_cast<Real32>(Event->targetY);
+                // The page reports positions in css pixels and the window is measured in its drawing buffer's pixels.
+                Real64 Width;
+                Real64 Height;
+                emscripten_get_element_css_size(kCanvas, AddressOf(Width), AddressOf(Height));
+
+                const Real64 ScaleX    = Canvas->mWidth / Max(Width, 1.0);
+                const Real64 ScaleY    = Canvas->mHeight / Max(Height, 1.0);
+                const Real32 X         = static_cast<Real32>(Event->targetX * ScaleX);
+                const Real32 Y         = static_cast<Real32>(Event->targetY * ScaleY);
                 const Real32 RelativeX = static_cast<Real32>(Event->movementX);
                 const Real32 RelativeY = static_cast<Real32>(Event->movementY);
                 Canvas->mDispatcher.QueueMouseMove(X, Y, RelativeX, RelativeY);
@@ -379,14 +394,22 @@ namespace ZyPlatform
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
+                // The page reports positions in css pixels and the window is measured in its drawing buffer's pixels.
+                Real64 Width;
+                Real64 Height;
+                emscripten_get_element_css_size(kCanvas, AddressOf(Width), AddressOf(Height));
+
+                const Real64 ScaleX = Canvas->mWidth / Max(Width, 1.0);
+                const Real64 ScaleY = Canvas->mHeight / Max(Height, 1.0);
+
                 for (SInt32 Index = 0; Index < Event->numTouches; ++Index)
                 {
                     if (ConstRef<EmscriptenTouchPoint> Touch = Event->touches[Index]; Touch.isChanged)
                     {
                         (Canvas->mDispatcher.*Queue)(
                             static_cast<UInt32>(Touch.identifier),
-                            static_cast<Real32>(Touch.targetX),
-                            static_cast<Real32>(Touch.targetY));
+                            static_cast<Real32>(Touch.targetX * ScaleX),
+                            static_cast<Real32>(Touch.targetY * ScaleY));
                     }
                 }
             }
@@ -441,22 +464,27 @@ namespace ZyPlatform
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                Real64 Width;
-                Real64 Height;
-                emscripten_get_element_css_size(kCanvas, AddressOf(Width), AddressOf(Height));
+                const Real64 DPI = emscripten_get_device_pixel_ratio();
 
                 if (Canvas->IsBorderless())
                 {
-                    const Real64 DPI = emscripten_get_device_pixel_ratio();
+                    Real64 Width;
+                    Real64 Height;
+                    emscripten_get_element_css_size(kCanvas, AddressOf(Width), AddressOf(Height));
                     emscripten_set_canvas_element_size(kCanvas, Width * DPI, Height * DPI);
                 }
+
+                // The size told is the drawing buffer's, in device pixels.
+                SInt32 Width;
+                SInt32 Height;
+                emscripten_get_canvas_element_size(kCanvas, AddressOf(Width), AddressOf(Height));
 
                 Canvas->mWidth  = static_cast<UInt32>(Width);
                 Canvas->mHeight = static_cast<UInt32>(Height);
                 Canvas->mDispatcher.QueueWindowResize(Canvas->mWidth, Canvas->mHeight);
 
                 // Zooming the page resizes it and changes its pixel ratio, so the ratio is told with every resize.
-                Canvas->mDispatcher.QueueWindowScale(static_cast<Real32>(emscripten_get_device_pixel_ratio()));
+                Canvas->mDispatcher.QueueWindowScale(static_cast<Real32>(DPI));
             }
             return EM_TRUE;
         }
@@ -668,10 +696,11 @@ namespace ZyPlatform
     {
         mWidth  = Width;
         mHeight = Height;
-        emscripten_set_element_css_size(Backend::kCanvas, mWidth, mHeight);
 
-        const Real32 DPI = static_cast<Real32>(emscripten_get_device_pixel_ratio());
-        emscripten_set_canvas_element_size(Backend::kCanvas, mWidth * DPI, mHeight * DPI);
+        // The size is in device pixels, and the page lays the element out in css pixels.
+        const Real64 DPI = emscripten_get_device_pixel_ratio();
+        emscripten_set_element_css_size(Backend::kCanvas, mWidth / DPI, mHeight / DPI);
+        emscripten_set_canvas_element_size(Backend::kCanvas, mWidth, mHeight);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -716,8 +745,7 @@ namespace ZyPlatform
         }
         else
         {
-            const Real32 DPI = static_cast<Real32>(emscripten_get_device_pixel_ratio());
-            SetSize(Width / DPI, Height / DPI);
+            SetSize(Width, Height);
         }
 
         SetTitle(Title);
