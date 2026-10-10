@@ -64,28 +64,28 @@ namespace ZyRender
         /// \brief Gets the texture realized for one of the blueprint's targets.
         ///
         /// \param Slot The slot naming the target, as \ref Blueprint::AddTarget returned it.
-        /// \return The texture object, valid until a run realizes the target again.
+        /// \return The texture object, valid until a run realizes the target again, or zero before the first run.
         ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Slot) const
         {
-            return mSlots[Slot].Texture;
+            return Slot < mSlots.GetSize() ? mSlots[Slot].Texture : 0;
         }
 
         /// \brief Gets the width one of the blueprint's targets came out at, in pixels.
         ///
         /// \param Slot The slot naming the target.
-        /// \return The width the target was realized at.
+        /// \return The width the target was realized at, or zero before the first run.
         ZY_INLINE UInt16 GetWidth(UInt32 Slot) const
         {
-            return mSlots[Slot].Width;
+            return Slot < mSlots.GetSize() ? mSlots[Slot].Width : 0;
         }
 
         /// \brief Gets the height one of the blueprint's targets came out at, in pixels.
         ///
         /// \param Slot The slot naming the target.
-        /// \return The height the target was realized at.
+        /// \return The height the target was realized at, or zero before the first run.
         ZY_INLINE UInt16 GetHeight(UInt32 Slot) const
         {
-            return mSlots[Slot].Height;
+            return Slot < mSlots.GetSize() ? mSlots[Slot].Height : 0;
         }
 
         /// \brief Gets the output width the graph was last resized to, in pixels.
