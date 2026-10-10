@@ -47,6 +47,17 @@ namespace ZyGraphic
         mLayers = Layers;
         mLevels = Levels;
         mData   = Move(Data);
+        mOutlines.Clear();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Image::SetOutlines(AnyRef<Sequence<Outline>> Outlines)
+    {
+        ZY_ASSERT(Outlines.IsEmpty() || Outlines.GetSize() == mLayers, "Image needs one outline per layer, or none");
+
+        mOutlines = Move(Outlines);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

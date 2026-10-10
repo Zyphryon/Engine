@@ -26,6 +26,11 @@ namespace ZyGraphic
     {
     public:
 
+        /// \brief Represents the outline of one layer as 8 points in order around a convex hull of its visible texels.
+        using Outline = Array<Vector2, 8>;
+
+    public:
+
         /// \brief Constructs an image resource with the given content key.
         ///
         /// \param Key The unique content key identifying this image.
@@ -98,6 +103,19 @@ namespace ZyGraphic
             return mLevels;
         }
 
+        /// \brief Sets the outlines of this image's layers, kept on the CPU for whoever draws the image.
+        ///
+        /// \param Outlines The outlines, one per layer in layer order, or none when the image carries no alpha.
+        void SetOutlines(AnyRef<Sequence<Outline>> Outlines);
+
+        /// \brief Gets the outlines of this image's layers.
+        ///
+        /// \return A read-only view over the outlines, one per layer, or an empty view when the image has none.
+        ZY_INLINE ConstSpan<Outline> GetOutlines() const
+        {
+            return mOutlines;
+        }
+
         /// \brief Uploads the image data to the GPU, creating the texture resource.
         ///
         /// \param Service The graphic service used to create the resource.
@@ -126,13 +144,14 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Object        mHandle;
-        TextureLayout mLayout;
-        TextureFormat mFormat;
-        UInt16        mWidth;
-        UInt16        mHeight;
-        UInt16        mLayers;
-        UInt8         mLevels;
-        Blob          mData;
+        Object            mHandle;
+        TextureLayout     mLayout;
+        TextureFormat     mFormat;
+        UInt16            mWidth;
+        UInt16            mHeight;
+        UInt16            mLayers;
+        UInt8             mLevels;
+        Sequence<Outline> mOutlines;
+        Blob              mData;
     };
 }

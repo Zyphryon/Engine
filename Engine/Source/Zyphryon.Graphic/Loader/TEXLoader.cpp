@@ -69,6 +69,38 @@ namespace ZyGraphic
         }
 
         Asset.Setup(Layout, Format, Width, Height, Layers, Mipmaps, Move(Buffer));
+
+        // The outlines trail the payload as an optional block, so a file baked without them ends right here.
+        if (Input.GetAvailable() > 0)
+        {
+            const UInt16 Count  = Input.Read<UInt16>();
+            const UInt   Length = static_cast<UInt>(Count) * Image::Outline().GetSize() * 2 * sizeof(UInt16);
+
+            if (Count != 0 && Count != Layers)
+            {
+                LOG_W("'{0}' has {1} outline(s) for {2} layer(s), ignoring them", Asset.GetKey(), Count, Layers);
+            }
+            else if (Length > Input.GetAvailable())
+            {
+                LOG_W("'{0}' has a truncated outline block, ignoring it", Asset.GetKey());
+            }
+            else
+            {
+                Sequence<Image::Outline> Outlines(Count);
+
+                for (UInt Index = 0; Index < Count; ++Index)
+                {
+                    for (Ref<Vector2> Point : Outlines.Append())
+                    {
+                        const Real32 X = Input.Read<UInt16>();
+                        const Real32 Y = Input.Read<UInt16>();
+                        
+                        Point = Vector2(X, Y) / kMaximum<UInt16>;
+                    }
+                }
+                Asset.SetOutlines(Move(Outlines));
+            }
+        }
         return true;
     }
 }
