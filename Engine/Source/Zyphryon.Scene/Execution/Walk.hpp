@@ -983,11 +983,11 @@ namespace ZyScene
         {
             if constexpr (Plan<Callable>::kEntity)
             {
-                Callback(Entity(AddressOf(Owner), Actor), Forward<Values>(Arguments)...);
+                ZY_INLINE_CALL Callback(Entity(AddressOf(Owner), Actor), Forward<Values>(Arguments)...);
             }
             else
             {
-                Callback(Forward<Values>(Arguments)...);
+                ZY_INLINE_CALL Callback(Forward<Values>(Arguments)...);
             }
         }
     };

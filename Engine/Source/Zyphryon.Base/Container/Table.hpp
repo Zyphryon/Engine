@@ -200,7 +200,7 @@ inline namespace ZyBase
         template<typename KeyType = Key, typename ValueType>
         ZY_INLINE Bool Assign(AnyRef<KeyType> Needle, AnyRef<ValueType> Data)
         {
-            return DoAssign(Needle, Forward<ValueType>(Data));
+            return DoAssign(Forward<KeyType>(Needle), Forward<ValueType>(Data));
         }
 
         /// \brief Removes a key-value pair from the table.
@@ -347,7 +347,7 @@ inline namespace ZyBase
                 return mEntries[mIndices[Match]].Second;
             }
 
-            Construct<Pair>(AddressOf(mEntries[mSize]), Needle, Value{});
+            Construct<Pair>(AddressOf(mEntries[mSize]), Forward<KeyType>(Needle), Value{});
             DoInsert(Metadata, mSize, Slot);
             ++mSize;
 
@@ -548,7 +548,7 @@ inline namespace ZyBase
                 return false;
             }
 
-            Construct<Pair>(AddressOf(mEntries[mSize]), Needle, Forward<ValueType>(Data));
+            Construct<Pair>(AddressOf(mEntries[mSize]), Forward<KeyType>(Needle), Forward<ValueType>(Data));
             DoInsert(Metadata, mSize, Slot);
             ++mSize;
 
