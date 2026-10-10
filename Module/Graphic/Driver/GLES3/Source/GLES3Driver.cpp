@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "GLES3Driver.hpp"
-#include "Zyphryon.Graphic/Metadata.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -24,32 +23,76 @@ namespace ZyGraphic
 
     static GLenum GetBufferWriteTarget(GLenum Target)
     {
-#if defined(ZY_PLATFORM_WEB)
+        // Writes avoid GL_ARRAY_BUFFER, whose binding the snapshot tracks.
         return (Target != GL_ELEMENT_ARRAY_BUFFER) ? GL_COPY_WRITE_BUFFER : GL_ELEMENT_ARRAY_BUFFER;
-#else
-        return Target;
-#endif
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void AttachTexture(GLenum Framebuffer, GLenum Point, GLuint Object, GLuint Target, UInt8 Level, UInt16 Layer)
+    static void AttachTexture(GLenum Framebuffer, GLenum Point, GLuint Object, GLenum Target, UInt8 Level, UInt16 Layer)
     {
         if (Target == GL_TEXTURE_2D_ARRAY)
         {
             glFramebufferTextureLayer(Framebuffer, Point, Object, Level, Layer);
         }
+        else if (Target == GL_TEXTURE_CUBE_MAP)
+        {
+            glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_CUBE_MAP_POSITIVE_X + Layer, Object, Level);
+        }
         else
         {
-            if (Target == GL_TEXTURE_CUBE_MAP)
+            glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_2D, Object, Level);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static void Upload(GLenum Face, ConstRef<GLES3Format> Format, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Size, ConstPtr<Byte> Bytes)
+    {
+        if (Face == GL_TEXTURE_2D_ARRAY)
+        {
+            if (Format.Compressed)
             {
-                glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_CUBE_MAP_POSITIVE_X + Layer, Object, Level);
+                glCompressedTexSubImage3D(
+                    GL_TEXTURE_2D_ARRAY,
+                    Level,
+                    X,
+                    Y,
+                    Layer,
+                    Width,
+                    Height,
+                    1,
+                    Format.Internal,
+                    Size,
+                    Bytes);
             }
             else
             {
-
-                glFramebufferTexture2D(Framebuffer, Point, GL_TEXTURE_2D, Object, Level);
+                glTexSubImage3D(
+                    GL_TEXTURE_2D_ARRAY,
+                    Level,
+                    X,
+                    Y,
+                    Layer,
+                    Width,
+                    Height,
+                    1,
+                    Format.External,
+                    Format.Type,
+                    Bytes);
+            }
+        }
+        else
+        {
+            if (Format.Compressed)
+            {
+                glCompressedTexSubImage2D(Face, Level, X, Y, Width, Height, Format.Internal, Size, Bytes);
+            }
+            else
+            {
+                glTexSubImage2D(Face, Level, X, Y, Width, Height, Format.External, Format.Type, Bytes);
             }
         }
     }
@@ -112,14 +155,14 @@ namespace ZyGraphic
     {
         if (!mContext.Initialize(Output, Config))
         {
-            LOG_E("GLES3Driver: Failed to initialize OpenGL context");
+            LOG_E("Graphics: Failed to initialize OpenGL context");
             return false;
         }
 
 #if !defined(ZY_PLATFORM_WEB)
         if (!GLAD_GL_ARB_texture_storage)
         {
-            LOG_E("GLES3Driver: the driver lacks GL_ARB_texture_storage");
+            LOG_E("Graphics: The driver lacks GL_ARB_texture_storage");
             return false;
         }
 #endif
@@ -128,8 +171,7 @@ namespace ZyGraphic
 
         mCompiler.Initialize();
 
-        // Core profiles mandate a bound vertex array object; a single one is kept current for the driver's lifetime
-        // while attribute pointers are re-specified per pipeline / vertex-stream change.
+        // Core profiles need a bound vertex array, so one stays bound for the driver's lifetime.
         glGenVertexArrays(1, AddressOf(mGlobalVAO));
         glBindVertexArray(mGlobalVAO);
 
@@ -137,8 +179,7 @@ namespace ZyGraphic
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-        // Force the real GL state to match the pipeline snapshot's assumed defaults, keeping the cached
-        // state tracking coherent.
+        // Matches the GL state to the snapshot's defaults.
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CW);
@@ -151,7 +192,6 @@ namespace ZyGraphic
 
         Ref<GLES3Pass> Display = mPasses[kDisplay];
         Display.Framebuffer              = 0;
-        Display.Width                    = Config.Width;
         Display.Height                   = Config.Height;
         Display.Depth.DepthLoadAction    = HasDepth   ? Action::Clear : Action::Discard;
         Display.Depth.DepthStoreAction   = Action::Discard;
@@ -173,7 +213,6 @@ namespace ZyGraphic
 
     void GLES3Driver::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        mPasses[kDisplay].Width  = Width;
         mPasses[kDisplay].Height = Height;
 
         mContext.SetTearless(Tearless);
@@ -193,14 +232,16 @@ namespace ZyGraphic
     void GLES3Driver::CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
     {
         Ref<GLES3Buffer> Buffer = mBuffers[ID];
-        Buffer.Target   = GLES3Convert(Usage);
-        Buffer.Capacity = (Usage == Usage::Uniform) ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment) : Capacity;
+        Buffer.Target = GLES3Convert(Usage);
 
+        const UInt32 Size   = (Usage == Usage::Uniform)
+            ? Align(Capacity, mDescription.Capabilities.UniformBlockAlignment)
+            : Capacity;
         const GLenum Target = GetBufferWriteTarget(Buffer.Target);
 
         glGenBuffers(1, AddressOf(Buffer.Object));
         glBindBuffer(Target, Buffer.Object);
-        glBufferData(Target, Buffer.Capacity, Data.IsEmpty() ? nullptr : Data.GetData(), GLES3Convert(Storage));
+        glBufferData(Target, Size, Data.IsEmpty() ? nullptr : Data.GetData(), GLES3Convert(Storage));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -265,16 +306,18 @@ namespace ZyGraphic
     {
         Ref<GLES3Pass> Pass = mPasses[ID];
 
-        // All attachments share a common size, the mip-adjusted height of the first one flips window coordinates.
+        // Attachments share one size, and the first one's mip height flips window coordinates.
         if (!Colors.IsEmpty())
         {
-            Pass.Width  = static_cast<UInt16>(Max(1, mTextures[Colors[0].Target].Width  >> Colors[0].TargetLevel));
-            Pass.Height = static_cast<UInt16>(Max(1, mTextures[Colors[0].Target].Height >> Colors[0].TargetLevel));
+            Pass.Height = static_cast<UInt16>(GetLevelExtent(
+                mTextures[Colors[0].Target].Height,
+                Colors[0].TargetLevel));
         }
         else if (Depth.Target)
         {
-            Pass.Width  = static_cast<UInt16>(Max(1, mTextures[Depth.Target].Width  >> Depth.TargetLevel));
-            Pass.Height = static_cast<UInt16>(Max(1, mTextures[Depth.Target].Height >> Depth.TargetLevel));
+            Pass.Height = static_cast<UInt16>(GetLevelExtent(
+                mTextures[Depth.Target].Height,
+                Depth.TargetLevel));
         }
 
         glGenFramebuffers(1, AddressOf(Pass.Framebuffer));
@@ -305,7 +348,7 @@ namespace ZyGraphic
 
             AttachTexture(GL_FRAMEBUFFER, Point, Target.Object, Target.Target, Depth.TargetLevel, Depth.TargetLayer);
 
-            Pass.Depth = Depth;                                         // Retain the attachment verbatim.
+            Pass.Depth = Depth;
         }
     }
 
@@ -360,31 +403,27 @@ namespace ZyGraphic
         Pipeline.DepthBiasSlope     = States.DepthBiasSlope;
 
         // Stencil.
-        Pipeline.StencilEnable        = States.UsesStencil();
-        Pipeline.StencilReadMask      = States.StencilReadMask;
-        Pipeline.StencilWriteMask     = States.StencilWriteMask;
-        Pipeline.StencilFrontFunction = GLES3Convert(States.StencilFrontTest);
-        Pipeline.StencilFrontFail     = GLES3Convert(States.StencilFrontFail);
-        Pipeline.StencilFrontDepthFail= GLES3Convert(States.StencilFrontDepthFail);
-        Pipeline.StencilFrontDepthPass= GLES3Convert(States.StencilFrontDepthPass);
-        Pipeline.StencilBackFunction  = GLES3Convert(States.StencilBackTest);
-        Pipeline.StencilBackFail      = GLES3Convert(States.StencilBackFail);
-        Pipeline.StencilBackDepthFail = GLES3Convert(States.StencilBackDepthFail);
-        Pipeline.StencilBackDepthPass = GLES3Convert(States.StencilBackDepthPass);
+        Pipeline.StencilEnable         = States.UsesStencil();
+        Pipeline.StencilReadMask       = States.StencilReadMask;
+        Pipeline.StencilWriteMask      = States.StencilWriteMask;
+        Pipeline.StencilFrontFunction  = GLES3Convert(States.StencilFrontTest);
+        Pipeline.StencilFrontFail      = GLES3Convert(States.StencilFrontFail);
+        Pipeline.StencilFrontDepthFail = GLES3Convert(States.StencilFrontDepthFail);
+        Pipeline.StencilFrontDepthPass = GLES3Convert(States.StencilFrontDepthPass);
+        Pipeline.StencilBackFunction   = GLES3Convert(States.StencilBackTest);
+        Pipeline.StencilBackFail       = GLES3Convert(States.StencilBackFail);
+        Pipeline.StencilBackDepthFail  = GLES3Convert(States.StencilBackDepthFail);
+        Pipeline.StencilBackDepthPass  = GLES3Convert(States.StencilBackDepthPass);
 
         // Rasterizer.
         Pipeline.CullEnable    = States.Cull != Cull::None;
         Pipeline.CullMode      = GLES3Convert(States.Cull);
         Pipeline.ScissorEnable = States.Scissor;
-        Pipeline.FillMode      = States.Fill == Fill::Wireframe ? 0x1B01 : 0x1B02;
+        Pipeline.FillMode      = States.Fill == Fill::Wireframe ? kGLLine : kGLFill;
 
         // Input assembler.
         Pipeline.Primitive = GLES3Convert(States.Topology);
-
-        for (ConstRef<Attribute> Attribute : Signature.Attributes)
-        {
-            Pipeline.Attributes.Append(Attribute);
-        }
+        Pipeline.Attributes.Append(Signature.Attributes);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -411,31 +450,6 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool GLES3Driver::Settle(Object ID)
-    {
-        Ref<GLES3Pipeline> Pipeline = mPipelines[ID];
-
-        if (Pipeline.Program == 0 || !mCompiler.IsReady(Pipeline.Program))
-        {
-            return false;
-        }
-
-        Pipeline.Ready = mCompiler.Finish(Pipeline.Program, * mCompilations.Find(ID));
-
-        if (!Pipeline.Ready)
-        {
-            glDeleteProgram(Pipeline.Program);
-
-            Pipeline.Program = 0;
-        }
-
-        mCompilations.Erase(ID);
-        return Pipeline.Ready;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void GLES3Driver::CreateSampler(Object ID, Sampler Descriptor)
     {
         Ref<GLuint> Object = mSamplers[ID];
@@ -457,15 +471,16 @@ namespace ZyGraphic
             glSamplerParameteri(Object, GL_TEXTURE_COMPARE_MODE, GL_NONE);
         }
 
-#ifndef ZY_PLATFORM_WEB
-        glSamplerParameterfv(Object, 0x1004, GLES3Convert(Descriptor.Border));
+#if !defined(ZY_PLATFORM_WEB)
+        glSamplerParameterfv(Object, kGLTextureBorderColor, GLES3Convert(Descriptor.Border));
 #endif
 
         if (mDescription.Capabilities.MaxAnisotropy > 0)
         {
             const Real32 Anisotropy = Min(
-                GLES3ConvertAnisotropy(Descriptor.Filter), mDescription.Capabilities.MaxAnisotropy);
-            glSamplerParameterf(Object, 0x84FE, Anisotropy);
+                GLES3ConvertAnisotropy(Descriptor.Filter),
+                mDescription.Capabilities.MaxAnisotropy);
+            glSamplerParameterf(Object, kGLTextureMaxAnisotropy, Anisotropy);
         }
     }
 
@@ -492,10 +507,7 @@ namespace ZyGraphic
 
         Ref<GLES3Texture> Texture = mTextures[ID];
         Texture.Format = Format;
-        Texture.Width  = Width;
         Texture.Height = Height;
-        Texture.Layers = Slices;
-        Texture.Levels = Max<UInt8>(1, Levels);
 
         const GLES3Format Description = GLES3Convert(Format);
 
@@ -520,7 +532,7 @@ namespace ZyGraphic
         // The source is ordered slice-major, with every level of one slice before the next slice begins.
         for (UInt16 Slice = 0; Slice < Slices && Bytes; ++Slice)
         {
-            const GLenum Face = IsCube ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Slice) : GL_TEXTURE_2D;
+            const GLenum Face = IsCube ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Slice) : Texture.Target;
 
             for (UInt8 Level = 0; Level < Count; ++Level)
             {
@@ -528,34 +540,7 @@ namespace ZyGraphic
                 const UInt16 LevelHeight = GetLevelExtent(Height, Level);
                 const UInt32 Size        = GetLevelSize(Format, Width, Height, Level);
 
-                if (IsArray)
-                {
-                    if (Description.Compressed)
-                    {
-                        glCompressedTexSubImage3D(
-                            GL_TEXTURE_2D_ARRAY, Level, 0, 0, Slice, LevelWidth, LevelHeight, 1,
-                            Description.Internal, Size, Bytes);
-                    }
-                    else
-                    {
-                        glTexSubImage3D(
-                            GL_TEXTURE_2D_ARRAY, Level, 0, 0, Slice, LevelWidth, LevelHeight, 1,
-                            Description.External, Description.Type, Bytes);
-                    }
-                }
-                else
-                {
-                    if (Description.Compressed)
-                    {
-                        glCompressedTexSubImage2D(
-                            Face, Level, 0, 0, LevelWidth, LevelHeight, Description.Internal, Size, Bytes);
-                    }
-                    else
-                    {
-                        glTexSubImage2D(
-                            Face, Level, 0, 0, LevelWidth, LevelHeight, Description.External, Description.Type, Bytes);
-                    }
-                }
+                Upload(Face, Description, Level, Slice, 0, 0, LevelWidth, LevelHeight, Size, Bytes);
 
                 Bytes += Size;
             }
@@ -570,8 +555,7 @@ namespace ZyGraphic
         ConstRef<GLES3Texture> Texture     = mTextures[ID];
         const GLES3Format      Description = GLES3Convert(Texture.Format);
 
-        const Bool   IsArray = (Texture.Target == GL_TEXTURE_2D_ARRAY);
-        const GLenum Face    = (Texture.Target == GL_TEXTURE_CUBE_MAP)
+        const GLenum Face = (Texture.Target == GL_TEXTURE_CUBE_MAP)
             ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + Layer)
             : Texture.Target;
 
@@ -579,42 +563,16 @@ namespace ZyGraphic
 
         if (Description.Compressed)
         {
-            const TextureMetadata FormatDescription = GetTextureMetadata(Texture.Format);
+            const UInt32 Size = GetLevelSize(Texture.Format, Width, Height, 0);
 
-            const UInt32 BlockWidth  = (Width  + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
-            const UInt32 BlockHeight = (Height + FormatDescription.BlockSize - 1) / FormatDescription.BlockSize;
-            const UInt32 Size        = BlockWidth
-                * BlockHeight
-                * (FormatDescription.BitsPerPixel * FormatDescription.BlockSize * FormatDescription.BlockSize / 8);
-
-            if (IsArray)
-            {
-                glCompressedTexSubImage3D(
-                    GL_TEXTURE_2D_ARRAY, Level, X, Y, Layer, Width, Height, 1, Description.Internal, Size, Data.GetData());
-            }
-            else
-            {
-                glCompressedTexSubImage2D(
-                    Face, Level, X, Y, Width, Height, Description.Internal, Size, Data.GetData());
-            }
+            Upload(Face, Description, Level, Layer, X, Y, Width, Height, Size, Data.GetData());
         }
         else
         {
             const UInt32 BytesPerPixel = GetTextureMetadata(Texture.Format).BitsPerPixel / 8;
 
             glPixelStorei(GL_UNPACK_ROW_LENGTH, BytesPerPixel ? Pitch / BytesPerPixel : 0);
-
-            if (IsArray)
-            {
-                glTexSubImage3D(
-                    GL_TEXTURE_2D_ARRAY, Level, X, Y, Layer, Width, Height, 1,
-                    Description.External, Description.Type, Data.GetData());
-            }
-            else
-            {
-                glTexSubImage2D(
-                    Face, Level, X, Y, Width, Height, Description.External, Description.Type, Data.GetData());
-            }
+            Upload(Face, Description, Level, Layer, X, Y, Width, Height, 0, Data.GetData());
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         }
     }
@@ -758,13 +716,14 @@ namespace ZyGraphic
                 || Oldest.Indices.Buffer != Newest.Indices.Buffer
                 || Oldest.Indices.Offset != Newest.Indices.Offset)
             {
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Newest.Indices.Buffer ? mBuffers[Newest.Indices.Buffer].Object : 0);
+                glBindBuffer(
+                    GL_ELEMENT_ARRAY_BUFFER,
+                    Newest.Indices.Buffer ? mBuffers[Newest.Indices.Buffer].Object : 0);
             }
 
             ApplyUniformResources(Oldest, Newest);
             ApplyTextureResources(Oldest, Newest);
 
-            // Issue draw command.
             const UInt32 Count     = Newest.Parameters.Count;
             const SInt32 Base      = Newest.Parameters.Base;
             const UInt32 Offset    = Newest.Parameters.Offset;
@@ -875,7 +834,7 @@ namespace ZyGraphic
         glGetIntegerv(GL_MAJOR_VERSION, AddressOf(Major));
         glGetIntegerv(GL_MINOR_VERSION, AddressOf(Minor));
 
-        Ref<Capabilities> Limits  = mDescription.Capabilities;
+        Ref<Capabilities> Limits = mDescription.Capabilities;
 
 #if defined(ZY_PLATFORM_WEB)
         const Bool ExtendedTier = (Major > 3) || (Major == 3 && Minor >= 1);   // OpenGL ES 3.1+
@@ -898,7 +857,7 @@ namespace ZyGraphic
         if (HasExtension("GL_EXT_texture_filter_anisotropic") || HasExtension("GL_ARB_texture_filter_anisotropic"))
         {
             GLfloat MaxAnisotropy = 1.0f;
-            glGetFloatv(0x84FF, AddressOf(MaxAnisotropy));
+            glGetFloatv(kGLMaxTextureMaxAnisotropy, AddressOf(MaxAnisotropy));
 
             Limits.MaxAnisotropy = static_cast<UInt8>(MaxAnisotropy);
         }
@@ -946,24 +905,46 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool GLES3Driver::HasExtension(ConstPtr<Char> Name) const
+    Bool GLES3Driver::HasExtension(Text Name) const
     {
         GLint Count = 0;
         glGetIntegerv(GL_NUM_EXTENSIONS, AddressOf(Count));
 
         for (GLint Index = 0; Index < Count; ++Index)
         {
-            if (ConstPtr<Char> Extension = reinterpret_cast<ConstPtr<Char>>(glGetStringi(GL_EXTENSIONS, Index)))
+            const ConstPtr<Char> Extension = reinterpret_cast<ConstPtr<Char>>(glGetStringi(GL_EXTENSIONS, Index));
+
+            if (Extension && StrConvert(Extension) == Name)
             {
-                while (* Extension && (* Extension == * Name))
-                {
-                    ++Extension;
-                    ++Name;
-                }
-                return (* Extension == * Name);
+                return true;
             }
         }
         return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool GLES3Driver::Settle(Object ID)
+    {
+        Ref<GLES3Pipeline> Pipeline = mPipelines[ID];
+
+        if (Pipeline.Program == 0 || !mCompiler.IsReady(Pipeline.Program))
+        {
+            return false;
+        }
+
+        Pipeline.Ready = mCompiler.Finish(Pipeline.Program, * mCompilations.Find(ID));
+
+        if (!Pipeline.Ready)
+        {
+            glDeleteProgram(Pipeline.Program);
+
+            Pipeline.Program = 0;
+        }
+
+        mCompilations.Erase(ID);
+        return Pipeline.Ready;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -990,13 +971,18 @@ namespace ZyGraphic
             if (State.BlendSrcColor != Pipeline.BlendSrcColor || State.BlendDstColor != Pipeline.BlendDstColor
              || State.BlendSrcAlpha != Pipeline.BlendSrcAlpha || State.BlendDstAlpha != Pipeline.BlendDstAlpha)
             {
-                glBlendFuncSeparate(Pipeline.BlendSrcColor, Pipeline.BlendDstColor, Pipeline.BlendSrcAlpha, Pipeline.BlendDstAlpha);
+                glBlendFuncSeparate(
+                    Pipeline.BlendSrcColor,
+                    Pipeline.BlendDstColor,
+                    Pipeline.BlendSrcAlpha,
+                    Pipeline.BlendDstAlpha);
                 State.BlendSrcColor = Pipeline.BlendSrcColor;
                 State.BlendDstColor = Pipeline.BlendDstColor;
                 State.BlendSrcAlpha = Pipeline.BlendSrcAlpha;
                 State.BlendDstAlpha = Pipeline.BlendDstAlpha;
             }
-            if (State.BlendEquationColor != Pipeline.BlendEquationColor || State.BlendEquationAlpha != Pipeline.BlendEquationAlpha)
+            if (State.BlendEquationColor != Pipeline.BlendEquationColor
+             || State.BlendEquationAlpha != Pipeline.BlendEquationAlpha)
             {
                 glBlendEquationSeparate(Pipeline.BlendEquationColor, Pipeline.BlendEquationAlpha);
                 State.BlendEquationColor = Pipeline.BlendEquationColor;
@@ -1073,15 +1059,23 @@ namespace ZyGraphic
                 State.StencilReadMask      = Pipeline.StencilReadMask;
                 mSnapshot.Stencil          = Stencil;
             }
-            if (State.StencilFrontFail != Pipeline.StencilFrontFail
+            if (State.StencilFrontFail      != Pipeline.StencilFrontFail
              || State.StencilFrontDepthFail != Pipeline.StencilFrontDepthFail
              || State.StencilFrontDepthPass != Pipeline.StencilFrontDepthPass
-             || State.StencilBackFail != Pipeline.StencilBackFail
-             || State.StencilBackDepthFail != Pipeline.StencilBackDepthFail
-             || State.StencilBackDepthPass != Pipeline.StencilBackDepthPass)
+             || State.StencilBackFail       != Pipeline.StencilBackFail
+             || State.StencilBackDepthFail  != Pipeline.StencilBackDepthFail
+             || State.StencilBackDepthPass  != Pipeline.StencilBackDepthPass)
             {
-                glStencilOpSeparate(GL_FRONT, Pipeline.StencilFrontFail, Pipeline.StencilFrontDepthFail, Pipeline.StencilFrontDepthPass);
-                glStencilOpSeparate(GL_BACK,  Pipeline.StencilBackFail,  Pipeline.StencilBackDepthFail,  Pipeline.StencilBackDepthPass);
+                glStencilOpSeparate(
+                    GL_FRONT,
+                    Pipeline.StencilFrontFail,
+                    Pipeline.StencilFrontDepthFail,
+                    Pipeline.StencilFrontDepthPass);
+                glStencilOpSeparate(
+                    GL_BACK,
+                    Pipeline.StencilBackFail,
+                    Pipeline.StencilBackDepthFail,
+                    Pipeline.StencilBackDepthPass);
                 State.StencilFrontFail      = Pipeline.StencilFrontFail;
                 State.StencilFrontDepthFail = Pipeline.StencilFrontDepthFail;
                 State.StencilFrontDepthPass = Pipeline.StencilFrontDepthPass;
@@ -1125,7 +1119,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool IsPipelineDirty)
+    void GLES3Driver::ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool Dirty)
     {
         UInt32 Enabled = 0;
 
@@ -1145,7 +1139,7 @@ namespace ZyGraphic
                 mSnapshot.Vertices = Object;
             }
 
-            if (IsPipelineDirty)
+            if (Dirty)
             {
                 glEnableVertexAttribArray(Attribute.Location);
                 glVertexAttribDivisor(Attribute.Location, Attribute.Divisor);
@@ -1161,12 +1155,18 @@ namespace ZyGraphic
             }
             else
             {
-                glVertexAttribPointer(Attribute.Location, Format.Size, Format.Type, Format.Normalized, Stream.Stride, Cursor);
+                glVertexAttribPointer(
+                    Attribute.Location,
+                    Format.Size,
+                    Format.Type,
+                    Format.Normalized,
+                    Stream.Stride,
+                    Cursor);
             }
         }
 
         // The enable-set changes only with the pipeline; disable whatever a previously bound pipeline left enabled.
-        if (IsPipelineDirty)
+        if (Dirty)
         {
             for (UInt32 Location = 0, Stale = mSnapshot.Attributes & ~Enabled; Stale; ++Location, Stale >>= 1)
             {
@@ -1208,7 +1208,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Driver::ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest)
+    void GLES3Driver::ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const
     {
         const UInt32 OldTextures = Oldest.Textures.GetSize();
         const UInt32 NewTextures = Newest.Textures.GetSize();
@@ -1241,5 +1241,4 @@ namespace ZyGraphic
             }
         }
     }
-
 }

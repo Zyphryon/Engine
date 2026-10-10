@@ -51,7 +51,7 @@ namespace ZyScene
 
         /// \brief Gets the entity standing for the world, whose components are the singletons.
         ///
-        /// \return The world entity.
+        /// \return The world entity, which is never destroyed.
         Entity GetWorld() const;
 
         /// \brief Gets the entity a number names, as \ref Entity::GetID hands it out.
@@ -67,7 +67,7 @@ namespace ZyScene
 
         /// \brief Creates an archetype, an entity that queries never match and that other entities are made from.
         ///
-        /// \return The archetype.
+        /// \return The archetype, placed at once even during a walk.
         Entity CreateArchetype();
 
         /// \brief Creates an entity from an archetype, with every part beneath it.
@@ -85,7 +85,7 @@ namespace ZyScene
 
         /// \brief Takes a component off every entity holding it.
         ///
-        /// \param Type The component.
+        /// \param Type The component to take off.
         void Purge(Component Type);
 
         /// \brief Takes a component off every entity holding it.
@@ -97,7 +97,7 @@ namespace ZyScene
 
         /// \brief Runs a callable with every change that would move an entity between chunks held until it returns.
         ///
-        /// \param Callback The callable.
+        /// \param Callback The callable to run, taking no argument.
         template<typename Callable>
         ZY_INLINE void Defer(AnyRef<Callable> Callback)
         {
@@ -108,9 +108,7 @@ namespace ZyScene
 
         /// \brief Runs a task once the running walk ends, in order with the changes it held, or at once outside a walk.
         ///
-        /// \note This is how a spread walk makes entities or does work that is not safe on many threads at once.
-        ///
-        /// \param Callback The task, moved into the held change.
+        /// \param Callback The task, moved into the held change, which may make entities where a spread walk cannot.
         template<typename Callable>
         ZY_INLINE void Postpone(AnyRef<Callable> Callback)
         {
@@ -155,16 +153,22 @@ namespace ZyScene
         /// \param Other      The other entity it involves, or one naming nothing.
         /// \param Payload    The value it carries, taken from \ref Deferral::Allocate, or `nullptr`.
         /// \param Mark       `true` to mark its entity, so every change of it waits behind this one, `false` otherwise.
-        ZY_INLINE void Queue(Deferral::Operation Kind, Handle Actor, UInt32 Identifier, Handle Other, Ptr<Byte> Payload, Bool Mark = true)
+        ZY_INLINE void Queue(
+            Deferral::Operation Kind,
+            Handle              Actor,
+            UInt32              Identifier,
+            Handle              Other,
+            Ptr<Byte>           Payload,
+            Bool                Mark = true)
         {
             mDeferral.Queue(Deferral::Command(Kind, Identifier, Actor, Other, Payload), Mark);
         }
 
         /// \brief Checks whether any reader watches a component for some changes.
         ///
-        /// \param Identifier The component.
-        /// \param Kinds      The changes.
-        /// \return `true` if one does, `false` otherwise.
+        /// \param Identifier The identifier of the component to ask about.
+        /// \param Kinds      The changes, any one of which counts.
+        /// \return `true` if a reader watches any of them, `false` otherwise.
         ZY_INLINE Bool IsWatched(UInt32 Identifier, Pull Kinds) const
         {
             return mLedger.IsWatched(Identifier, Kinds);
@@ -172,7 +176,7 @@ namespace ZyScene
 
         /// \brief Records a change of what an entity sees, and of what its heirs see through it, when a reader watches it.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component that changed.
         /// \param Kind       The change, exactly one.
         /// \param Index      The slot of the entity.
         /// \param Value      The value leaving on a removal, or `nullptr`.
@@ -188,7 +192,11 @@ namespace ZyScene
                 else
                 {
                     mLedger.Record(
-                        Identifier, Kind, mDirectory.GetHandle(Index), Value, mDirectory[Index].Holder->GetIndex());
+                        Identifier,
+                        Kind,
+                        mDirectory.GetHandle(Index),
+                        Value,
+                        mDirectory[Index].Holder->GetIndex());
 
                     if (Directory::IsArchetype(Index))
                     {
@@ -213,19 +221,19 @@ namespace ZyScene
         /// \brief Records that a component written in place changed.
         ///
         /// \param Actor      The entity, which must be alive.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component written.
         void MarkChanged(Handle Actor, UInt32 Identifier);
 
         /// \brief Holds the record of a write in place a spread walk made, which is made once the walk ends.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component written.
         /// \param Index      The slot of the entity.
         void Hold(UInt32 Identifier, UInt32 Index);
 
         /// \brief Places an entity whose slot sits in no chunk at the end of one.
         ///
         /// \param Index  The slot of the entity.
-        /// \param Target The chunk.
+        /// \param Target The chunk to place it in.
         ZY_INLINE void Place(UInt32 Index, Ref<Chunk> Target)
         {
             Ref<Directory::Slot> Entry = mDirectory[Index];
@@ -236,7 +244,7 @@ namespace ZyScene
         /// \brief Places an entity in a chunk, moving it there when it sits in one already.
         ///
         /// \param Index  The slot of the entity.
-        /// \param Target The chunk.
+        /// \param Target The chunk to place it in.
         ZY_INLINE void PlaceOrTransfer(UInt32 Index, Ref<Chunk> Target)
         {
             if (mDirectory[Index].Holder)
@@ -252,13 +260,13 @@ namespace ZyScene
         /// \brief Moves an entity to another chunk, destroying what it lacks there and leaving new columns unbuilt.
         ///
         /// \param Index  The slot of the entity.
-        /// \param Target The chunk.
+        /// \param Target The chunk to move it to.
         void Transfer(UInt32 Index, Ref<Chunk> Target);
 
         /// \brief Gets the chunk reached by adding a component and everything it brings along.
         ///
         /// \param Source     The chunk an entity sits in.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component added.
         /// \return The chunk, made from the same archetype.
         ZY_INLINE Ptr<Chunk> FindOrCreateAddition(Ref<Chunk> Source, UInt32 Identifier)
         {
@@ -279,9 +287,9 @@ namespace ZyScene
 
         /// \brief Gets the chunk holding exactly a set of components for one archetype, making it the first time.
         ///
-        /// \param Signature The components, sorted.
+        /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype its entities are made from, or zero.
-        /// \return The chunk.
+        /// \return The chunk, never `nullptr`.
         Ptr<Chunk> FindOrCreate(ConstSpan<UInt32> Signature, UInt32 Base);
 
         /// \brief Builds the defaults an entity gained by a move, bar the caller's own, and records them when asked.
@@ -295,7 +303,7 @@ namespace ZyScene
         /// \brief Adds a component nobody watches by moving the entity and building the value in place.
         ///
         /// \param Index      The slot of the entity, which must not hold the component.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to add.
         /// \param Data       The value, moved into place.
         template<typename Type, typename Value>
         ZY_INLINE void Insert(UInt32 Index, UInt32 Identifier, AnyRef<Value> Data)
@@ -326,13 +334,13 @@ namespace ZyScene
         /// \brief Gives an entity a default component unless it holds or inherits one, recording it.
         ///
         /// \param Actor      The entity, which must be alive.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to give.
         void Add(Handle Actor, UInt32 Identifier);
 
         /// \brief Takes a component an entity holds off it, recording it.
         ///
         /// \param Actor      The entity, which must be alive.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to take off.
         void Remove(Handle Actor, UInt32 Identifier);
 
         /// \brief Gives an entity a component or overwrites the one it holds, recording it, or holds that during a walk.
@@ -351,7 +359,7 @@ namespace ZyScene
         /// \brief Reads a component over an entity from the bytes it was written as, adding it when absent.
         ///
         /// \param Actor      The entity, which must be alive.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to read.
         /// \param Input      The bytes, which a value that cannot read itself leaves at its default.
         void Read(Handle Actor, UInt32 Identifier, Ref<Reader> Input);
 
@@ -376,8 +384,8 @@ namespace ZyScene
 
         /// \brief Finds a child of an entity by its name.
         ///
-        /// \param Parent The slot of the entity.
-        /// \param Name   The name.
+        /// \param Parent The slot of the parent.
+        /// \param Name   The \ref Named value the child carries.
         /// \return The slot of the child, or zero.
         UInt32 FindChild(UInt32 Parent, Text Name) const;
 
@@ -412,13 +420,13 @@ namespace ZyScene
 
         /// \brief Applies one held change.
         ///
-        /// \param Change The change.
+        /// \param Change The change to apply.
         void Apply(ConstRef<Deferral::Command> Change);
 
         /// \brief Gives an entity a component it does not hold, recording it.
         ///
         /// \param Index      The slot of the entity.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to give.
         /// \param Fresh      The value, moved into place, or `nullptr` to build a default.
         void InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh);
 
@@ -430,7 +438,7 @@ namespace ZyScene
 
         /// \brief Records a change of what an archetype lends for every heir reading it, heirs of heirs included.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component that changed.
         /// \param Kind       The change, exactly one.
         /// \param Archetype  The slot of the archetype.
         /// \param Value      The value leaving on a removal, or `nullptr`.
@@ -458,6 +466,16 @@ namespace ZyScene
         /// \param Archetype The slot of the archetype.
         void DestroyPartCopies(UInt32 Part, UInt32 Archetype);
 
+        /// \brief Checks whether an entity is a part, an archetype hanging under an archetype.
+        ///
+        /// \param Index  The slot of the entity.
+        /// \param Parent The slot of the parent, or zero for none.
+        /// \return `true` if both it and its parent are archetypes, `false` otherwise.
+        ZY_INLINE Bool IsPart(UInt32 Index, UInt32 Parent) const
+        {
+            return Parent && mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype();
+        }
+
         /// \brief Gives the heirs of a dying archetype what it lent them, and makes them read from its own archetype.
         ///
         /// \param Archetype The slot of the archetype.
@@ -471,23 +489,23 @@ namespace ZyScene
 
         /// \brief Gets the chunk made the first time a component is added to another chunk's set.
         ///
-        /// \param Source     The chunk.
-        /// \param Identifier The component.
-        /// \return The chunk.
+        /// \param Source     The chunk an entity sits in.
+        /// \param Identifier The identifier of the component added.
+        /// \return The chunk, which the source remembers from now on.
         Ptr<Chunk> CreateAddition(Ref<Chunk> Source, UInt32 Identifier);
 
         /// \brief Gets the chunk made the first time a component is removed from another chunk's set.
         ///
-        /// \param Source     The chunk.
-        /// \param Identifier The component.
-        /// \return The chunk.
+        /// \param Source     The chunk an entity sits in.
+        /// \param Identifier The identifier of the component removed.
+        /// \return The chunk, which the source remembers from now on.
         Ptr<Chunk> CreateRemoval(Ref<Chunk> Source, UInt32 Identifier);
 
         /// \brief Gets every component an entity sees, held or lent, that a reader watches for a change.
         ///
         /// \param Index The slot of the entity.
-        /// \param Kind  The change.
-        /// \return The components.
+        /// \param Kind  The change readers watch for.
+        /// \return The identifiers, held ones first.
         Sequence<UInt32> GetWatched(UInt32 Index, Pull Kind) const;
 
     protected:
@@ -499,7 +517,7 @@ namespace ZyScene
         Layout    mLayout;
         Deferral  mDeferral;
         Ledger    mLedger;
-        
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

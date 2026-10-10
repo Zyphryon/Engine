@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Geometry/Rect.hpp"
 #include "Polynomial.hpp"
+#include "Zyphryon.Math/Geometry/Rect.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -46,7 +46,7 @@ inline namespace ZyMath
         /// \brief Gets one of the curve's control points.
         ///
         /// \param Index The zero-based index of the control point.
-        /// \return The control point.
+        /// \return The control point at \p Index.
         ZY_INLINE constexpr Type GetControl(UInt Index) const
         {
             return mControl[Index];
@@ -107,7 +107,7 @@ inline namespace ZyMath
 
         /// \brief Computes the box that tightly encloses the curve.
         ///
-        /// \return The bounding rectangle.
+        /// \return The smallest rectangle holding the whole curve.
         ZY_INLINE Rect Measure() const
             requires IsAnyOf<Type, Vector2>
         {
@@ -167,8 +167,8 @@ inline namespace ZyMath
         ///
         /// \param Start The value at zero.
         /// \param End   The value at one.
-        /// \param Time  The position between them.
-        /// \return The interpolated value.
+        /// \param Time  The share of the way from \p Start to \p End.
+        /// \return The value that share of the way along.
         ZY_INLINE static constexpr Type Mix(Type Start, Type End, Real32 Time)
         {
             return Start + (End - Start) * Time;
@@ -182,7 +182,7 @@ inline namespace ZyMath
         /// \param P1 The control point steering the start.
         /// \param P2 The control point steering the end.
         /// \param P3 The point the curve ends at.
-        /// \return The curve.
+        /// \return The curve with those four control points.
         ZY_INLINE static constexpr AnyBezier FromBezier(Type P0, Type P1, Type P2, Type P3)
         {
             AnyBezier Result;
@@ -224,7 +224,7 @@ inline namespace ZyMath
         /// \param End          The point the curve ends at.
         /// \param TangentStart The tangent leaving \p Start.
         /// \param TangentEnd   The tangent arriving at \p End.
-        /// \return The curve.
+        /// \return The curve, which traces the same segment.
         ZY_INLINE static constexpr AnyBezier FromHermite(Type Start, Type End, Type TangentStart, Type TangentEnd)
         {
             constexpr Real32 kHandle = 1.0f / 3.0f;
@@ -238,7 +238,7 @@ inline namespace ZyMath
         /// \param Start    The value the segment starts at.
         /// \param End      The value the segment ends at.
         /// \param Next     The value after the segment.
-        /// \return The curve.
+        /// \return The curve, which runs from \p Start to \p End.
         ZY_INLINE static constexpr AnyBezier FromCatmullRom(Type Previous, Type Start, Type End, Type Next)
         {
             constexpr Real32 kHandle = 1.0f / 6.0f;

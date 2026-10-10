@@ -56,8 +56,8 @@ namespace ZyGraphic
     static Text GLES3ReadWord(Text Content, Ref<UInt> Cursor)
     {
         const UInt Start = Cursor;
-        StrSkip(Content, Cursor, [](Char Character) { return StrIsIdentifier(Character); });
-        return (Cursor > Start) ? Text(Content.GetData() + Start, Cursor - Start) : Text();
+        StrSkip(Content, Cursor, StrIsIdentifier);
+        return Content.Slice(Start, Cursor - Start);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -67,7 +67,10 @@ namespace ZyGraphic
     {
         const Text Code(Source.GetData<Char>(), Source.GetSize());
 
-        const auto IsInlineSpace = [](Char Character) { return Character == ' ' || Character == '\t'; };
+        const auto IsInlineSpace = [](Char Character)
+        {
+            return Character == ' ' || Character == '\t';
+        };
 
         Str  Result;
         UInt Copied = 0;
@@ -85,7 +88,7 @@ namespace ZyGraphic
                 continue;
             }
             StrSkip(Code, End, IsInlineSpace);
-            StrSkip(Code, End, [](Char Character) { return StrIsDigit(Character); });
+            StrSkip(Code, End, StrIsDigit);
 
             // Extend the removed span over one adjacent separator: a leading ", " or a trailing ",".
             UInt RemoveStart = Word;
@@ -96,10 +99,7 @@ namespace ZyGraphic
             }
 
             UInt Forward = End;
-            while (Forward < Code.GetSize() && IsInlineSpace(Code[Forward]))
-            {
-                ++Forward;
-            }
+            StrSkip(Code, Forward, IsInlineSpace);
 
             if (Back > Copied && Code[Back - 1] == '(' && Forward < Code.GetSize() && Code[Forward] == ')')
             {
@@ -116,11 +116,7 @@ namespace ZyGraphic
 
                 RemoveStart = Head;
                 End         = Forward + 1;
-
-                while (End < Code.GetSize() && IsInlineSpace(Code[End]))
-                {
-                    ++End;
-                }
+                StrSkip(Code, End, IsInlineSpace);
             }
             else if (Back > Copied && Code[Back - 1] == ',')
             {
@@ -131,13 +127,29 @@ namespace ZyGraphic
                 End = Forward + 1;
             }
 
-            Result.Append(Text(Code.GetData() + Copied, RemoveStart - Copied));
+            Result.Append(Code.Slice(Copied, RemoveStart - Copied));
             Copied = End;
             Cursor = End;
         }
 
-        Result.Append(Text(Code.GetData() + Copied, Code.GetSize() - Copied));
+        Result.Append(Code.Slice(Copied));
         return Result;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static void Report(GLuint Shader)
+    {
+        GLchar  Message[1024] { };
+        GLsizei Length = 0;
+
+        glGetShaderInfoLog(Shader, sizeof(Message), AddressOf(Length), Message);
+
+        if (Length > 0)
+        {
+            LOG_E("Graphics: {0}", Text(Message, Length));
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -147,7 +159,8 @@ namespace ZyGraphic
     {
 #if defined(ZY_PLATFORM_WEB)
         mParallel = emscripten_webgl_enable_extension(
-            emscripten_webgl_get_current_context(), "KHR_parallel_shader_compile") == EM_TRUE;
+            emscripten_webgl_get_current_context(),
+            "KHR_parallel_shader_compile") == EM_TRUE;
 #else
         mParallel = (GLAD_GL_KHR_parallel_shader_compile != 0);
 
@@ -163,8 +176,14 @@ namespace ZyGraphic
 
     GLuint GLES3Compiler::Compile(ConstRef<Program> Program, Ref<GLES3Build> Build) const
     {
-        Build.Vertex   = Compile(ShaderStage::Vertex,   Program.Modules[ZyEnum::Cast(ShaderStage::Vertex)],   Program.Macros);
-        Build.Fragment = Compile(ShaderStage::Fragment, Program.Modules[ZyEnum::Cast(ShaderStage::Fragment)], Program.Macros);
+        Build.Vertex   = Compile(
+            ShaderStage::Vertex,
+            Program.Modules[ZyEnum::Cast(ShaderStage::Vertex)],
+            Program.Macros);
+        Build.Fragment = Compile(
+            ShaderStage::Fragment,
+            Program.Modules[ZyEnum::Cast(ShaderStage::Fragment)],
+            Program.Macros);
 
         if (Build.Vertex == 0 || Build.Fragment == 0)
         {
@@ -183,8 +202,7 @@ namespace ZyGraphic
         {
             if (Module.GetSize() > 0)
             {
-                Parse(Module, Build.Blocks);
-                Sample(Module, Build.Samplers);
+                Parse(Module, Build);
             }
         }
         return Handle;
@@ -218,18 +236,11 @@ namespace ZyGraphic
             GLsizei Length = 0;
 
             glGetProgramInfoLog(Handle, sizeof(Message), AddressOf(Length), Message);
-            LOG_E("GLES3Compiler: Failed to link program: {0}", Text(Message, Length));
+            LOG_E("Graphics: Failed to link program: {0}", Text(Message, Length));
 
             // A stage that failed to compile surfaces here, since nothing asked it earlier.
-            for (const GLuint Shader : { Build.Vertex, Build.Fragment })
-            {
-                glGetShaderInfoLog(Shader, sizeof(Message), AddressOf(Length), Message);
-
-                if (Length > 0)
-                {
-                    LOG_E("GLES3Compiler: {0}", Text(Message, Length));
-                }
-            }
+            Report(Build.Vertex);
+            Report(Build.Fragment);
         }
 
         glDetachShader(Handle, Build.Vertex);
@@ -301,12 +312,12 @@ namespace ZyGraphic
         for (ConstRef<Macro> Macro : Macros)
         {
             Preamble.Append("#define ");
-            Preamble.Append(Text(Macro.Name.GetData(), Macro.Name.GetSize()));
+            Preamble.Append(Macro.Name);
 
             if (!Macro.Value.IsEmpty())
             {
                 Preamble.Append(' ');
-                Preamble.Append(Text(Macro.Value.GetData(), Macro.Value.GetSize()));
+                Preamble.Append(Macro.Value);
             }
             Preamble.Append('\n');
         }
@@ -333,7 +344,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void GLES3Compiler::Sample(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Samplers) const
+    void GLES3Compiler::Parse(ConstRef<Blob> Source, Ref<GLES3Build> Build) const
     {
         UInt Cursor = 0;
 
@@ -355,7 +366,7 @@ namespace ZyGraphic
                 continue;
             }
 
-            const Text Qualifiers(Code.GetData() + Cursor, static_cast<UInt>(CloseRelative));
+            const Text Qualifiers = Code.Slice(Cursor, static_cast<UInt>(CloseRelative));
             Cursor += static_cast<UInt>(CloseRelative) + 1;             // Skip past ')'.
 
             // Recover the binding point declared inside the qualifier list, if any: `binding = N`.
@@ -383,105 +394,45 @@ namespace ZyGraphic
 
             StrSkipWhitespace(Code, Cursor);
 
-            if (!StrEqualCase(GLES3ReadWord(Code, Cursor), "uniform"))
+            if (GLES3ReadWord(Code, Cursor) != "uniform")
             {
                 continue;
             }
 
             StrSkipWhitespace(Code, Cursor);
 
-            if (!StrContains(GLES3ReadWord(Code, Cursor), "sampler"))
+            const Text Word = GLES3ReadWord(Code, Cursor);
+
+            if (Word.IsEmpty())
             {
                 continue;
             }
 
-            StrSkipWhitespace(Code, Cursor);
-
-            const Text Name = GLES3ReadWord(Code, Cursor);
-
-            if (Name.IsEmpty())
+            if (StrContains(Word, "sampler"))
             {
-                continue;
+                StrSkipWhitespace(Code, Cursor);
+
+                const Text Name = GLES3ReadWord(Code, Cursor);
+
+                if (Name.IsEmpty())
+                {
+                    continue;
+                }
+
+                // Both stages may name the same sampler, and both then mean the one texture.
+                const Bool Declared = Build.Samplers.Contains([& Name](ConstRef<GLES3Binding> Sampler)
+                {
+                    return Sampler.Name == Name;
+                });
+
+                if (!Declared)
+                {
+                    Build.Samplers.Append(Name, Point);
+                }
             }
-
-            // Both stages may name the same sampler, and both then mean the one texture.
-            Bool Declared = false;
-
-            for (ConstRef<GLES3Binding> Sampler : Samplers)
+            else
             {
-                Declared = Declared || StrEqualCase(Text(Sampler.Name.GetData(), Sampler.Name.GetSize()), Name);
-            }
-
-            if (!Declared)
-            {
-                Samplers.Append(Name, Point);
-            }
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void GLES3Compiler::Parse(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Blocks) const
-    {
-        UInt Cursor = 0;
-
-        const Text Code(Source.GetData<Char>(), Source.GetSize());
-
-        while (GLES3FindWord(Code, "layout", Cursor))
-        {
-            StrSkipWhitespace(Code, Cursor);
-
-            if (!StrConsume(Code, Cursor, '('))
-            {
-                continue;
-            }
-
-            // Isolate the parenthesized qualifier list.
-            const SInt CloseRelative = StrFind(Code.Slice(Cursor), ')');
-            if (CloseRelative <= 0)
-            {
-                continue;
-            }
-
-            const Text Qualifiers(Code.GetData() + Cursor, static_cast<UInt>(CloseRelative));
-            Cursor += static_cast<UInt>(CloseRelative) + 1;             // Skip past ')'.
-
-            // Recover the binding point declared inside the qualifier list, if any: `binding = N`.
-            UInt Inner = 0;
-
-            if (!GLES3FindWord(Qualifiers, "binding", Inner))
-            {
-                continue;
-            }
-
-            StrSkipWhitespace(Qualifiers, Inner);
-
-            if (!StrConsume(Qualifiers, Inner, '='))
-            {
-                continue;
-            }
-
-            StrSkipWhitespace(Qualifiers, Inner);
-
-            if (Inner >= Qualifiers.GetSize() || !StrIsDigit(Qualifiers[Inner]))
-            {
-                continue;
-            }
-            const GLint Point = StrExtractNumber<10, GLint>(Qualifiers, Inner);
-
-            StrSkipWhitespace(Code, Cursor);
-
-            if (!StrEqualCase(GLES3ReadWord(Code, Cursor), "uniform"))
-            {
-                continue;
-            }
-
-            StrSkipWhitespace(Code, Cursor);
-
-            if (const Text Name = GLES3ReadWord(Code, Cursor); !Name.IsEmpty() && !StrContains(Name, "sampler"))
-            {
-                Blocks.Append(Name, Point);
+                Build.Blocks.Append(Word, Point);
             }
         }
     }

@@ -12,11 +12,10 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Container/Table.hpp"
 #include "Zyphryon.Base/Container/Sequence.hpp"
+#include "Zyphryon.Base/Container/Table.hpp"
 #include "Zyphryon.Base/Container/Variant.hpp"
 #include "Zyphryon.Base/Lexical/String.hpp"
-#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -29,10 +28,10 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief A JSON array type alias.
+        /// \brief Represents a JSON array as a sequence of values.
         using Array  = Sequence<JsonValue>;
 
-        /// \brief A JSON object type alias.
+        /// \brief Represents a JSON object as a table of values by key.
         using Object = Table<Str, JsonValue>;
 
     public:
@@ -61,11 +60,11 @@ inline namespace ZyBase
         ///
         /// \param Value The text value to store.
         ZY_INLINE JsonValue(Text Value)
+            : mData { Str(Value) }
         {
-            mData.Emplace<Str>(Value);
         }
 
-        /// \brief Checks if the value is null.
+        /// \brief Checks whether the value is null.
         ///
         /// \return `true` if the value is null, `false` otherwise.
         ZY_INLINE Bool IsNull() const
@@ -73,7 +72,7 @@ inline namespace ZyBase
             return mData.IsEmpty();
         }
 
-        /// \brief Checks if the value is a boolean.
+        /// \brief Checks whether the value is a boolean.
         ///
         /// \return `true` if the value is a boolean, `false` otherwise.
         ZY_INLINE Bool IsBool() const
@@ -81,7 +80,7 @@ inline namespace ZyBase
             return mData.IsHolding<Bool>();
         }
 
-        /// \brief Checks if the value is a number.
+        /// \brief Checks whether the value is a number.
         ///
         /// \return `true` if the value is a number, `false` otherwise.
         ZY_INLINE Bool IsNumber() const
@@ -89,7 +88,7 @@ inline namespace ZyBase
             return mData.IsHolding<Real64>();
         }
 
-        /// \brief Checks if the value is a string.
+        /// \brief Checks whether the value is a string.
         ///
         /// \return `true` if the value is a string, `false` otherwise.
         ZY_INLINE Bool IsString() const
@@ -97,7 +96,7 @@ inline namespace ZyBase
             return mData.IsHolding<Str>();
         }
 
-        /// \brief Checks if the value is an array.
+        /// \brief Checks whether the value is an array.
         ///
         /// \return `true` if the value is an array, `false` otherwise.
         ZY_INLINE Bool IsArray() const
@@ -105,7 +104,7 @@ inline namespace ZyBase
             return mData.IsHolding<Array>();
         }
 
-        /// \brief Checks if the value is an object.
+        /// \brief Checks whether the value is an object.
         ///
         /// \return `true` if the value is an object, `false` otherwise.
         ZY_INLINE Bool IsObject() const
@@ -213,9 +212,9 @@ inline namespace ZyBase
             return mData.Emplace<Object>();
         }
 
-        /// \brief Formats the JSON value into an output buffer.
+        /// \brief Gets a string representation of this object.
         ///
-        /// \param Buffer The buffer to format into.
+        /// \param Buffer The string buffer to write the output to.
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
@@ -225,7 +224,7 @@ inline namespace ZyBase
                 return;
             }
 
-            static constexpr ZyFormat::Pattern<5> kPattern("{0}");
+            static constexpr ZyFormat::Pattern<1> kPattern("{0}");
 
             mData.Visit([&]<typename T0>(AnyRef<T0> Value)
             {

@@ -33,7 +33,7 @@ namespace ZyScene
 
     public:
 
-        /// \brief Constructs a clock starting at zero with a neutral multiplier of \c 1.
+        /// \brief Constructs a clock starting at zero with a neutral multiplier of `1`.
         ZY_INLINE Clock()
             : mAbsolute   { 0.0 },
               mDelta      { 0.0 },
@@ -72,13 +72,13 @@ namespace ZyScene
             const Real64 Step  = Clamp(mSlew, -Room, Room);
 
             mSlew     -= Step;
-            mAbsolute += Scale + Step;
             mDelta     = Scale + Step;
+            mAbsolute += mDelta;
         }
 
         /// \brief Follows another clock, adopting its multiplier and closing the gap to its time.
         ///
-        /// \param Leader The clock to follow, usually as last received from the publisher.
+        /// \param Leader The clock to follow, usually the last copy received over the network.
         ZY_INLINE void Follow(ConstRef<Clock> Leader)
         {
             mMultiplier = Leader.mMultiplier;
@@ -106,7 +106,7 @@ namespace ZyScene
             return Floor(mElapsed / Period) != Floor((mElapsed - mStep) / Period);
         }
 
-        /// \brief Sets the timescale multiplier applied to each tick, where \c 0 pauses the clock.
+        /// \brief Sets the timescale multiplier applied to each tick, where `0` pauses the clock.
         ///
         /// \param Multiplier The new timescale multiplier, never negative.
         ZY_INLINE void SetMultiplier(Real32 Multiplier)

@@ -12,9 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Graphic/Material.hpp"
 #include "Zyphryon.Graphic/Mesh.hpp"
+#include "Zyphryon.Graphic/Service.hpp"
 #include "Zyphryon.Graphic/Technique.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -130,7 +130,7 @@ namespace ZyRender
             ///
             /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
             /// \param Uniform    The per-instance uniform stream bound to scope #Instance (empty stream if unused).
-            /// \param Parameters The draw parameters.
+            /// \param Parameters The vertex or index range and instance count to draw.
             void Draw(
                 ConstRef<ZyGraphic::Stream>     Instances,
                 ConstRef<ZyGraphic::Stream>     Uniform,
@@ -139,7 +139,7 @@ namespace ZyRender
             /// \brief Emits the draw the bindings were gathered for, with no per-instance uniform stream.
             ///
             /// \param Instances  The instance-rate vertex stream (empty stream for a single non-instanced draw).
-            /// \param Parameters The draw parameters.
+            /// \param Parameters The vertex or index range and instance count to draw.
             ZY_INLINE void Draw(ConstRef<ZyGraphic::Stream> Instances, ConstRef<ZyGraphic::Invocation> Parameters)
             {
                 Draw(Instances, ZyGraphic::Stream(), Parameters);
@@ -185,17 +185,16 @@ namespace ZyRender
         /// \param Stream The transient stream holding the per-frame uniforms.
         void SetFrame(ZyGraphic::Stream Stream);
 
-        /// \brief Sets the pass's uniform block and input textures.
+        /// \brief Sets the pass's uniform block, bound to every subsequent draw.
         ///
         /// \param Stream The transient stream holding the per-pass uniforms.
         void SetPass(ZyGraphic::Stream Stream);
 
         /// \brief Sets the rectangle every subsequent draw is clipped to.
         ///
-        /// \note Read from the target's top-left on both APIs, and honoured only by a technique whose
-        ///       rasterizer state enables the scissor. An empty rectangle keeps no pixel at all.
+        /// \note Honoured only by a technique whose rasterizer enables the scissor; an empty rectangle keeps nothing.
         ///
-        /// \param Scissor The region to keep, in pixels.
+        /// \param Scissor The region to keep, in pixels from the target's top-left on both APIs.
         void SetScissor(ZyGraphic::Scissor Scissor);
 
         /// \brief Packs a value into a transient uniform block and binds it as the pass's.
@@ -205,10 +204,7 @@ namespace ZyRender
         ZY_INLINE void SetPass(ConstRef<Type> Block)
             requires (!IsAnyOf<Type, ZyGraphic::Stream>)
         {
-            ZyGraphic::Transient<Type> Slice = mService.AllocateInFlightUniforms<Type>(1);
-            Slice[0] = Block;
-
-            SetPass(Slice.GetStream());
+            SetPass(mService.AllocateInFlightUniforms(ConstSpan<Type>(Block)));
         }
 
         /// \brief Opens a draw against a technique, to be filled with the bindings its signature declares.
@@ -226,19 +222,19 @@ namespace ZyRender
         struct Binding final
         {
             /// The technique the material was resolved under.
-            ConstPtr<ZyGraphic::Technique> Technique = nullptr;
+            ConstPtr<ZyGraphic::Technique>                                Technique = nullptr;
 
             /// The material resolved, compared by address.
-            ConstPtr<ZyGraphic::Material>  Material  = nullptr;
+            ConstPtr<ZyGraphic::Material>                                 Material  = nullptr;
 
             /// The samplers the material supplied itself, one bit per slot, as opposed to the technique's own.
-            UInt32                         Overrides = 0;
+            UInt32                                                        Overrides = 0;
 
             /// The variant the material's features select.
-            ZyGraphic::Technique::Key      Variant   = 0;
+            ZyGraphic::Technique::Key                                     Variant   = 0;
 
             /// The material's uniform block, packed into the frame's arena.
-            ZyGraphic::Stream              Uniforms;
+            ZyGraphic::Stream                                             Uniforms;
 
             /// The image handle for every texture the technique declares, zero where the material has none.
             Sequence<ZyGraphic::Object, ZyGraphic::Command::kMaxTextures> Textures;
@@ -259,13 +255,15 @@ namespace ZyRender
 
         /// \brief Packs a uniform block for a frequency by resolving each declared field from a provider.
         ///
-        /// \param  Frequency  The uniform block to pack.
-        /// \param  Technique  The technique describing the block's layout.
-        /// \param  Source     The provider supplying field values by hash.
+        /// \param Frequency The uniform block to pack.
+        /// \param Technique The technique describing the block's layout.
+        /// \param Source    The provider supplying field values by hash.
         /// \return A transient stream holding the packed block, or an empty stream if the block declares no fields.
         template<typename Provider>
         ZY_INLINE ZyGraphic::Stream Pack(
-            ZyGraphic::Frequency Frequency, ConstRef<ZyGraphic::Technique> Technique, ConstRef<Provider> Source)
+            ZyGraphic::Frequency           Frequency,
+            ConstRef<ZyGraphic::Technique> Technique,
+            ConstRef<Provider>             Source)
         {
             ConstRef<ZyGraphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
 

@@ -39,7 +39,7 @@ IF    (PROJECT_IS_TOP_LEVEL)
 ENDIF ()
 
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-## Plugins
+## Scripts
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 INCLUDE(FetchContent)
@@ -55,8 +55,8 @@ INCLUDE(CMake/CMakeRegisterResources.cmake)
 ## Engine
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_WEB_THREAD    "Core: Uses thread on Emscripten"                             OFF)
-OPTION(ZY_MODE_HEADLESS "Core: Runs without window, input, graphic or audio services" OFF)
+OPTION(ZY_WEB_THREAD    "Core: Use threads on Emscripten"                            OFF)
+OPTION(ZY_MODE_HEADLESS "Core: Run without window, input, graphic or audio services" OFF)
 
 ADD_SUBDIRECTORY(Engine)
 

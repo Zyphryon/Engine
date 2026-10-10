@@ -116,11 +116,8 @@ inline namespace ZyBase
             }
             else
             {
-                const UInt8 Code = static_cast<UInt8>(Character);
-
                 mOutput.Append("\\u00");
-                mOutput.Append("0123456789abcdef"[Code >> 4]);
-                mOutput.Append("0123456789abcdef"[Code & 0x0F]);
+                mOutput.AppendInteger(static_cast<UInt8>(Character), 2, 16, false);
             }
         }
 
@@ -168,26 +165,24 @@ inline namespace ZyBase
             return;
         }
 
-        // Indented text puts a space after each key's colon, text on one line does not.
         const Text Colon = mIndent.IsEmpty() ? ":"_Text : ": "_Text;
-        Bool       First = true;
 
         mOutput.Append('{');
         ++mLevel;
 
-        Value.ForEach([&](ConstRef<Str> Key, ConstRef<JsonValue> Member)
+        for (UInt Index = 0; Index < Value.GetSize(); ++Index)
         {
-            if (!First)
+            ConstRef<JsonValue::Object::Pair> Member = Value.GetData()[Index];
+
+            if (Index > 0)
             {
                 mOutput.Append(',');
             }
-            First = false;
-
             WriteBreak();
-            WriteString(Key);
+            WriteString(Member.First);
             mOutput.Append(Colon);
-            WriteValue(Member);
-        });
+            WriteValue(Member.Second);
+        }
 
         --mLevel;
         WriteBreak();

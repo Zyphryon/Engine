@@ -26,16 +26,16 @@ namespace ZyContent
     {
     public:
 
-        /// \brief Computes the total memory footprint of all assets currently in the cache.
+        /// \brief Gets the total memory footprint of every asset in the cache.
         ///
-        /// \return The sum of memory footprint for every asset in the registry.
+        /// \return The summed footprint, in bytes.
         ZY_INLINE UInt64 GetMemoryUsage() const
         {
             Guard Lock(mMutex);
 
             UInt64 Total = 0;
 
-            mRegistry.ForEach([&](ConstRef<Digest>, ConstRef<Retainer<Type>> Asset)
+            mRegistry.ForEach([&](ConstRef<Digest>, ConstRetainer<Type> Asset)
             {
                 Total += Asset->GetFootprint();
             });
@@ -52,9 +52,9 @@ namespace ZyContent
         {
             Guard Lock(mMutex);
 
-            const Digest Digest(Hash(Key));
+            const Digest Needle(Hash(Key));
 
-            if (const Ptr<Retainer<Type>> Asset = mRegistry.Find(Digest))
+            if (const Ptr<Retainer<Type>> Asset = mRegistry.Find(Needle))
             {
                 return (* Asset);
             }
@@ -62,7 +62,7 @@ namespace ZyContent
             if (CreateIfNeeded)
             {
                 Retainer<Type> Result = Retainer<Type>::Create(Uri(Forward<Source>(Key)));
-                mRegistry.Assign(Digest, Result);
+                mRegistry.Assign(Needle, Result);
                 return Result;
             }
             return nullptr;

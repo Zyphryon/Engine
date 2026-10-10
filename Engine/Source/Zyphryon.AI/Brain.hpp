@@ -104,9 +104,9 @@ namespace ZyAI
         /// \brief Ticks a node and the children it runs.
         ///
         /// \param Nodes The nodes of the behaviour.
-        /// \param Index The index of the node.
+        /// \param Index The index of the node to tick.
         /// \param Host  The host that runs the leaves.
-        /// \return The status of the node.
+        /// \return The status the node reached this tick.
         Status Visit(ConstSpan<Behaviour::Node> Nodes, UInt32 Index, Ref<Host> Host);
 
         /// \brief Stops every running node of a subtree, halting each running leaf through the host.
@@ -118,7 +118,7 @@ namespace ZyAI
 
         /// \brief Applies a compare node's test to the blackboard.
         ///
-        /// \param Node The compare node.
+        /// \param Node The node naming the entry, the test and the operand.
         /// \return `true` when the entry passes the test, otherwise `false`.
         Bool Compare(ConstRef<Behaviour::Node> Node) const;
 

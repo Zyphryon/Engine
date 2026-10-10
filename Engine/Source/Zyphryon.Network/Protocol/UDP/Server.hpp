@@ -34,7 +34,7 @@ namespace ZyNetwork::UDP
         /// \param Listener The handler told about its peers.
         Server(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener);
 
-        /// \brief Destroys the endpoint, closing its socket and every peer it accepted.
+        /// \brief Destroys the endpoint, closing its socket.
         ~Server() override;
 
         /// \see Channel::IsQuiet()
@@ -75,7 +75,7 @@ namespace ZyNetwork::UDP
             /// The bytes the platform is sending, which stay put until it says it is finished with them.
             Sequence<Byte, kMaxDatagram> Data;
 
-            /// The peer it went to, kept so what it cost is put against the right one when it lands.
+            /// The peer it went to, whose next packet is pushed once this one lands.
             Connection::Peer             Peer;
         };
 
@@ -85,16 +85,16 @@ namespace ZyNetwork::UDP
             /// The connection naming this peer.
             Connection Link;
 
-            /// Where the peer is, which is what a datagram is matched against to find whose it is.
+            /// The address the peer sends from, which a datagram is matched against to find whose it is.
             Endpoint   Remote;
 
-            /// Where the peer is, as it would be written down.
+            /// The peer's address, as it would be written down.
             Address    Origin;
 
-            /// What it is owed and what it has been told arrived.
+            /// The session holding what the peer is owed and counting what it sent back.
             Session    Session;
 
-            /// When anything last arrived from it, which is what a lapse is measured from.
+            /// The time anything last arrived from it, which a lapse is measured from.
             Real64     Freshness = 0.0;
         };
 
@@ -121,7 +121,7 @@ namespace ZyNetwork::UDP
         ///
         /// \param Watcher The proactor the peer is given up on through, should it have to be.
         /// \param Time    The current time, in seconds.
-        /// \param Slot    The place the peer sits.
+        /// \param Slot    The slot of the peer the datagram came from.
         /// \param Size    The number of bytes the datagram carried.
         /// \param Output  Receives the messages, and a notice should the peer be let go of.
         void Absorb(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, UInt32 Size, Ref<Mailbox> Output);
@@ -130,6 +130,14 @@ namespace ZyNetwork::UDP
         ///
         /// \param Entry The peer to forget.
         void Forget(ConstRef<Peer> Entry);
+
+        /// \brief Lets a peer go once it has said nothing for longer than the timeout allows.
+        ///
+        /// \param Time   The current time, in seconds.
+        /// \param Entry  The peer to check.
+        /// \param Output Receives a notice for the peer if it was let go of.
+        /// \return `true` if the peer was let go of and its slot is to be freed, `false` otherwise.
+        Bool Lapse(Real64 Time, ConstRef<Peer> Entry, Ref<Mailbox> Output);
 
         /// \brief Posts a write for every peer with something waiting, up to what the endpoint may have out at once.
         ///
@@ -141,7 +149,7 @@ namespace ZyNetwork::UDP
         ///
         /// \param Watcher The proactor the write is posted to.
         /// \param Time    The current time, in seconds.
-        /// \param Slot    The place the peer sits.
+        /// \param Slot    The slot `Entry` sits in.
         /// \param Entry   The peer to take the packet from.
         /// \return `true` if a packet went out, `false` if the peer had none or there was no room left.
         Bool Push(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, Ref<Peer> Entry);
@@ -164,7 +172,7 @@ namespace ZyNetwork::UDP
         /// \param Time    The current time, in seconds.
         /// \param Origin  The address the datagram arrived from.
         /// \param Size    The number of bytes the read moved, where none is a datagram that said nothing.
-        /// \param Output  Receives the message, and a notice for the peer if it was taken on for it.
+        /// \param Output  Receives the messages, and a notice for a peer taken on or let go of.
         void OnReceive(Ref<Proactor> Watcher, Real64 Time, ConstRef<Endpoint> Origin, UInt32 Size, Ref<Mailbox> Output);
 
         /// \brief Acts on a write that finished, taking its room back and posting whatever waits behind it.

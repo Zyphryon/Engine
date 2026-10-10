@@ -38,18 +38,19 @@ namespace ZyEngine
         {
         }
 
-        /// \brief Virtual destructor for proper cleanup in derived classes.
+        /// \brief Destructs the subsystem.
         virtual ~Subsystem() = default;
 
         /// \brief Called when the subsystem is being ticked.
-        virtual void OnTick(Real64 Time)
+        ///
+        /// \param Delta The elapsed time in seconds since the last tick.
+        virtual void OnTick(Real64 Delta)
         {
         }
 
         /// \brief Called when the subsystem is being torn down by the host.
         virtual void OnTeardown()
         {
-
         }
 
     protected:

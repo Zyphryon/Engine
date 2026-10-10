@@ -87,8 +87,7 @@ namespace ZyNetwork
         {
             const ConstPtr<sockaddr_in6> Value = reinterpret_cast<ConstPtr<sockaddr_in6>>(Source);
 
-            // The scope tells two peers apart when the address alone cannot, and the flow label is left out of
-            // this and of the comparison alike, since nothing promises a peer keeps it the same between datagrams.
+            // The scope tells link-local peers apart; the flow label is left out since a peer may change it.
             Blit(Output.GetData() + 0, sizeof(Value->sin6_family),   AddressOf(Value->sin6_family));
             Blit(Output.GetData() + 2, sizeof(Value->sin6_port),     AddressOf(Value->sin6_port));
             Blit(Output.GetData() + 4, sizeof(Value->sin6_scope_id), AddressOf(Value->sin6_scope_id));
@@ -134,7 +133,6 @@ namespace ZyNetwork
             const ConstPtr<sockaddr_in6> First  = reinterpret_cast<ConstPtr<sockaddr_in6>>(Left);
             const ConstPtr<sockaddr_in6> Second = reinterpret_cast<ConstPtr<sockaddr_in6>>(Right);
 
-            // The scope tells two peers apart when the address alone cannot, which link-local ones cannot.
             return First->sin6_port == Second->sin6_port
                 && First->sin6_scope_id == Second->sin6_scope_id
                 && Compare(reinterpret_cast<ConstPtr<Byte>>(AddressOf(First->sin6_addr)),
@@ -167,8 +165,7 @@ namespace ZyNetwork
             return false;
         }
 
-        // The first answer is taken, which is the order the resolver itself prefers them in, so a host that
-        // answers on both families is reached over whichever one the platform believes in more.
+        // The first answer is taken, since the resolver lists its preferred family first.
         Output = Endpoint(ConstSpan(reinterpret_cast<ConstPtr<Byte>>(List->ai_addr), List->ai_addrlen));
 
         freeaddrinfo(List);

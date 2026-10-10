@@ -30,34 +30,33 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC "ZyEngine")
 ## Dependency (Glad)
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-IF (NOT ANDROID AND NOT EMSCRIPTEN)
+IF    (NOT ANDROID AND NOT EMSCRIPTEN)
 
     FetchContent_Declare(External_Glad
             GIT_REPOSITORY https://github.com/Dav1dde/glad
-            GIT_TAG        v2.0.8
             GIT_SHALLOW    TRUE
+            GIT_TAG        v2.0.8
             SOURCE_SUBDIR  cmake)
     FetchContent_MakeAvailable(External_Glad)
 
     SET(GLAD_APIS gl:core=3.3)
 
-    IF     (WIN32)
+    IF    (WIN32)
+
         LIST(APPEND GLAD_APIS wgl:core=1.0)
+        SET(PLATFORM "opengl32" "gdi32" "user32")
+
     ELSEIF (UNIX)
+
         LIST(APPEND GLAD_APIS glx:core=1.4)
-    ENDIF  ()
+        FIND_PACKAGE(X11 REQUIRED)
+        SET(PLATFORM X11::X11)
+
+    ENDIF ()
 
     glad_add_library(glad_gl STATIC REPRODUCIBLE LOADER API ${GLAD_APIS})
 
-    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "glad_gl")
-
-    IF     (WIN32)
-        TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "opengl32" "gdi32" "user32")
-    ELSEIF (UNIX)
-        FIND_PACKAGE(X11 REQUIRED)
-
-        TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE X11::X11)
-    ENDIF  ()
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE "glad_gl" ${PLATFORM})
 
 ENDIF ()
 

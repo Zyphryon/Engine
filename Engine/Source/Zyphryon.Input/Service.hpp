@@ -27,70 +27,70 @@ namespace ZyInput
     {
     public:
 
-        /// \brief Event triggered when a key is pressed down.
+        /// The delegates invoked when a key is pressed down.
         MulticastDelegate<Bool(Key)>                                    OnKeyDown;
 
-        /// \brief Event triggered when a key is released.
+        /// The delegates invoked when a key is released.
         MulticastDelegate<Bool(Key)>                                    OnKeyUp;
 
-        /// \brief Event triggered when the system repeats a key held down.
+        /// The delegates invoked when the system repeats a key held down.
         MulticastDelegate<Bool(Key)>                                    OnKeyRepeat;
 
-        /// \brief Event triggered when a text input is received.
+        /// The delegates invoked when a text input is received.
         MulticastDelegate<Bool(Text)>                                   OnKeyType;
 
-        /// \brief Event triggered when a mouse button is pressed down.
+        /// The delegates invoked when a mouse button is pressed down.
         MulticastDelegate<Bool(Button)>                                 OnMouseDown;
 
-        /// \brief Event triggered when a mouse button is released.
+        /// The delegates invoked when a mouse button is released.
         MulticastDelegate<Bool(Button)>                                 OnMouseUp;
 
-        /// \brief Event triggered when the mouse is moved.
+        /// The delegates invoked when the mouse is moved.
         MulticastDelegate<Bool(Real32, Real32, Real32, Real32)>         OnMouseMove;
 
-        /// \brief Event triggered when the mouse wheel is scrolled.
+        /// The delegates invoked when the mouse wheel is scrolled.
         MulticastDelegate<Bool(Real32, Real32)>                         OnMouseScroll;
 
-        /// \brief Event triggered when a touch lands on the surface.
+        /// The delegates invoked when a touch lands on the surface.
         MulticastDelegate<Bool(UInt32, Real32, Real32)>                 OnTouchDown;
 
-        /// \brief Event triggered when a touch moves across the surface.
+        /// The delegates invoked when a touch moves across the surface.
         MulticastDelegate<Bool(UInt32, Real32, Real32)>                 OnTouchMove;
 
-        /// \brief Event triggered when a touch leaves the surface.
+        /// The delegates invoked when a touch leaves the surface.
         MulticastDelegate<Bool(UInt32, Real32, Real32)>                 OnTouchUp;
 
-        /// \brief Event triggered when the system takes a touch away before it was lifted.
+        /// The delegates invoked when the system takes a touch away before it was lifted.
         MulticastDelegate<Bool(UInt32)>                                 OnTouchCancel;
 
-        /// \brief Event triggered when a bound action is pressed or released, after the frame's other events.
+        /// The delegates invoked when a bound action is pressed or released, after the frame's other events.
         MulticastDelegate<Bool(UInt64, Action)>                         OnAction;
 
-        /// \brief Event triggered when the window gains or loses focus.
+        /// The delegates invoked when the window gains or loses focus.
         MulticastDelegate<Bool(Bool)>                                   OnWindowFocus;
 
-        /// \brief Event triggered when the window is resized.
+        /// The delegates invoked when the window is resized.
         MulticastDelegate<Bool(UInt32, UInt32)>                         OnWindowResize;
 
-        /// \brief Event triggered when the display scale of the window changes.
+        /// The delegates invoked when the display scale of the window changes.
         MulticastDelegate<Bool(Real32)>                                 OnWindowScale;
 
-        /// \brief Event triggered when the window is requested to close or exit.
+        /// The delegates invoked when the window is requested to close or exit.
         MulticastDelegate<Bool()>                                       OnWindowExit;
 
     public:
 
-        /// \brief Constructs the input service and registers it with the system host.
+        /// \brief Constructs the input service.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
-        /// \brief Processes a stack of input events for the current frame.
+        /// \brief Processes the input events of the current frame.
         ///
-        /// \param Frame The stack of input events to process.
+        /// \param Frame The events of the current frame.
         void Process(ConstSpan<Event> Frame);
 
-        /// \brief Dispatches events to the appropriate delegates.
+        /// \brief Dispatches an event to the delegate its kind names.
         ///
         /// \param Event The event to handle.
         /// \return `true` if the event was handled and should not propagate further, otherwise `false`.
@@ -139,7 +139,7 @@ namespace ZyInput
             }
         }
 
-        /// \brief Checks if a key was pressed in the current frame.
+        /// \brief Checks whether a key was pressed in the current frame.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key transitioned from released to pressed this frame, otherwise `false`.
@@ -148,7 +148,7 @@ namespace ZyInput
             return mKeyboard.IsKeyPressed(Key);
         }
 
-        /// \brief Checks if a key is currently held down.
+        /// \brief Checks whether a key is currently held down.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key is currently pressed, otherwise `false`.
@@ -157,7 +157,7 @@ namespace ZyInput
             return mKeyboard.IsKeyHeld(Key);
         }
 
-        /// \brief Checks if a key was released in the current frame.
+        /// \brief Checks whether a key was released in the current frame.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key transitioned from pressed to released this frame, otherwise `false`.
@@ -190,23 +190,23 @@ namespace ZyInput
             return mMouse.GetY();
         }
 
-        /// \brief Gets the current scroll offset along the X axis.
+        /// \brief Gets how far the wheel scrolled along the X axis during the current frame.
         ///
-        /// \return The scroll offset in the X direction.
+        /// \return The sum of every scroll along the X axis since the frame began.
         ZY_INLINE Real32 GetMouseScrollX() const
         {
             return mMouse.GetScrollX();
         }
 
-        /// \brief Gets the current scroll offset along the Y axis.
+        /// \brief Gets how far the wheel scrolled along the Y axis during the current frame.
         ///
-        /// \return The scroll offset in the Y direction.
+        /// \return The sum of every scroll along the Y axis since the frame began.
         ZY_INLINE Real32 GetMouseScrollY() const
         {
             return mMouse.GetScrollY();
         }
 
-        /// \brief Checks if a mouse button was pressed in the current frame.
+        /// \brief Checks whether a mouse button was pressed in the current frame.
         ///
         /// \param Button The mouse button to check.
         /// \return `true` if the button transitioned from released to pressed this frame, otherwise `false`.
@@ -215,7 +215,7 @@ namespace ZyInput
             return mMouse.IsButtonPressed(Button);
         }
 
-        /// \brief Checks if a mouse button is currently held down.
+        /// \brief Checks whether a mouse button is currently held down.
         ///
         /// \param Button The mouse button to check.
         /// \return `true` if the button is currently pressed, otherwise `false`.
@@ -224,7 +224,7 @@ namespace ZyInput
             return mMouse.IsButtonHeld(Button);
         }
 
-        /// \brief Checks if a mouse button was released in the current frame.
+        /// \brief Checks whether a mouse button was released in the current frame.
         ///
         /// \param Button The mouse button to check.
         /// \return `true` if the button transitioned from pressed to released this frame, otherwise `false`.
@@ -268,7 +268,7 @@ namespace ZyInput
             return mMapping;
         }
 
-        /// \brief Checks if an action was pressed in the current frame.
+        /// \brief Checks whether an action was pressed in the current frame.
         ///
         /// \param Action The identifier of the action, from \ref Mapping::Identify.
         /// \return `true` if the action went from released to held this frame, otherwise `false`.
@@ -277,7 +277,7 @@ namespace ZyInput
             return mMapping.IsPressed(Action);
         }
 
-        /// \brief Checks if an action is being held down.
+        /// \brief Checks whether an action is being held down.
         ///
         /// \param Action The identifier of the action, from \ref Mapping::Identify.
         /// \return `true` if the action is held this frame, otherwise `false`.
@@ -286,7 +286,7 @@ namespace ZyInput
             return mMapping.IsHeld(Action);
         }
 
-        /// \brief Checks if an action was released in the current frame.
+        /// \brief Checks whether an action was released in the current frame.
         ///
         /// \param Action The identifier of the action, from \ref Mapping::Identify.
         /// \return `true` if the action went from held to released this frame, otherwise `false`.

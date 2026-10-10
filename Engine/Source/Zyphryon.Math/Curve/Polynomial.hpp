@@ -16,7 +16,7 @@ inline namespace ZyMath
 {
     /// \brief Finds the real roots of the linear equation `Ax + B`.
     ///
-    /// \param Result   The span that receives the root, which needs room for one.
+    /// \param Result   Receives the root, which needs room for one.
     /// \param Linear   The coefficient of the linear term.
     /// \param Constant The constant term.
     /// \return The number of real roots written, which is zero when the equation is constant.
@@ -36,7 +36,7 @@ inline namespace ZyMath
 
     /// \brief Finds the real roots of the quadratic equation `Ax² + Bx + C`.
     ///
-    /// \param Result    The span that receives the roots in no particular order, which needs room for two.
+    /// \param Result    Receives the roots in no particular order, which needs room for two.
     /// \param Quadratic The coefficient of the squared term.
     /// \param Linear    The coefficient of the linear term.
     /// \param Constant  The constant term.
@@ -73,7 +73,7 @@ inline namespace ZyMath
 
     /// \brief Finds the real roots of the cubic equation `Ax³ + Bx² + Cx + D`.
     ///
-    /// \param Result    The span that receives the roots in no particular order, which needs room for three.
+    /// \param Result    Receives the roots in no particular order, which needs room for three.
     /// \param Cubic     The coefficient of the cubed term.
     /// \param Quadratic The coefficient of the squared term.
     /// \param Linear    The coefficient of the linear term.
@@ -89,15 +89,17 @@ inline namespace ZyMath
             return SolveQuadratic(Result, Quadratic, Linear, Constant);
         }
 
-        constexpr Type kThird      = Type(1) / Type(3);
-        constexpr Type kHalf       = Type(1) / Type(2);
-        constexpr Type kTwoNinths  = Type(2) / Type(27);
+        constexpr Type kThird             = Type(1) / Type(3);
+        constexpr Type kHalf              = Type(1) / Type(2);
+        constexpr Type kTwoTwentySevenths = Type(2) / Type(27);
 
         const Type Normal   = Quadratic / Cubic;
         const Type Slope    = Linear / Cubic;
         const Type Squared  = Normal * Normal;
         const Type Pressure = kThird * (Slope - kThird * Squared);
-        const Type Offset   = kHalf * (kTwoNinths * Normal * Squared - kThird * Normal * Slope + Constant / Cubic);
+        const Type Offset   = kHalf * (kTwoTwentySevenths * Normal * Squared
+                                     - kThird * Normal * Slope
+                                     + Constant / Cubic);
 
         const Type Cubed        = Pressure * Pressure * Pressure;
         const Type Discriminant = Offset * Offset + Cubed;

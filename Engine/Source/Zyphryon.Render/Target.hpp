@@ -35,7 +35,7 @@ namespace ZyRender
         /// The pixel format of the target texture.
         ZyGraphic::TextureFormat Format;
 
-        /// How the target's dimensions track the frame's output size.
+        /// The way the target's dimensions track the frame's output size.
         Scale                    Sizing = Scale::Full;
 
         /// The width, in pixels, used only when \ref Sizing is \ref Scale::Fixed.

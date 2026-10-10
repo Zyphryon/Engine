@@ -34,7 +34,7 @@ namespace ZyScene
 
         /// \brief Gets the chunk of entities that hold nothing.
         ///
-        /// \return The chunk.
+        /// \return The chunk, always the first one.
         ZY_INLINE Ptr<Chunk> GetRoot() const
         {
             return AddressOf(* mChunks[0]);
@@ -42,7 +42,7 @@ namespace ZyScene
 
         /// \brief Gets the chunk entities made during a walk wait in until it ends.
         ///
-        /// \return The chunk.
+        /// \return The chunk, which no selection ever matches.
         ZY_INLINE Ptr<Chunk> GetPending() const
         {
             return AddressOf(* mPending);
@@ -50,18 +50,18 @@ namespace ZyScene
 
         /// \brief Finds the chunk holding exactly a set of components for one archetype.
         ///
-        /// \param Signature The components, sorted.
+        /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype, or zero.
         /// \return The chunk, or `nullptr` when none was made yet.
         Ptr<Chunk> Find(ConstSpan<UInt32> Signature, UInt32 Base) const;
 
         /// \brief Makes the chunk holding exactly a set of components for one archetype, for every selection to match.
         ///
-        /// \param Signature The components, sorted.
+        /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype, or zero.
         /// \param Marker    The component that makes archetypes.
         /// \param Slots     The directory, which knows what archetypes lend.
-        /// \return The chunk.
+        /// \return The chunk made.
         Ptr<Chunk> Create(ConstSpan<UInt32> Signature, UInt32 Base, UInt32 Marker, ConstRef<Directory> Slots);
 
         /// \brief Destroys an empty chunk whose archetype is gone, so the slot's next archetype makes its own.
@@ -113,7 +113,7 @@ namespace ZyScene
         /// \param Archetype   The slot of the archetype.
         /// \param Holder      The chunk the archetype sits in now.
         /// \param AsArchetype `true` for a copy that is an archetype too, `false` for an instance.
-        /// \param Target      The chunk.
+        /// \param Target      The chunk the copy lands in.
         void SetCopy(UInt32 Archetype, Ptr<Chunk> Holder, Bool AsArchetype, Ptr<Chunk> Target);
 
         /// \brief Gets the chunk a copy of an archetype was last made in, while the archetype has not moved since.
@@ -137,17 +137,17 @@ namespace ZyScene
         ///
         /// \param State The selection, whose terms are all declared.
         /// \param Slots The directory, which knows what archetypes lend.
-        /// \return The selection.
+        /// \return The selection, which the layout now owns.
         Ptr<Selection> AddSelection(AnyRef<Unique<Selection>> State, ConstRef<Directory> Slots);
 
         /// \brief Destroys a selection.
         ///
-        /// \param State The selection.
+        /// \param State The selection to destroy, as \ref AddSelection returned it.
         void RemoveSelection(ConstPtr<Selection> State);
 
         /// \brief Gets the selections kept current.
         ///
-        /// \return The selections.
+        /// \return The selections, in the order they were added.
         ZY_INLINE ConstSpan<Unique<Selection>> GetSelections() const
         {
             return mSelections;
@@ -155,7 +155,7 @@ namespace ZyScene
 
         /// \brief Fills a selection with every chunk it matches, once what it asks for changed.
         ///
-        /// \param State The selection.
+        /// \param State The selection to fill.
         /// \param Slots The directory, which knows what archetypes lend.
         void Populate(Ref<Selection> State, ConstRef<Directory> Slots) const;
 
@@ -183,12 +183,12 @@ namespace ZyScene
         /// \brief Gets the lineage of an archetype, making it the first time.
         ///
         /// \param Archetype The slot of the archetype.
-        /// \return The lineage.
+        /// \return The lineage, which moves when another one is made.
         Ref<Lineage> GetLineage(UInt32 Archetype);
 
         /// \brief Gets the key a chunk is filed under.
         ///
-        /// \param Signature The components, sorted.
+        /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype, or zero.
         /// \return The key, before any step past another set filed alike.
         static UInt64 GetKey(ConstSpan<UInt32> Signature, UInt32 Base);

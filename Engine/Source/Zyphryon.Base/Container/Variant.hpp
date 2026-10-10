@@ -12,8 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Utility.hpp"
+#include "Array.hpp"
 #include "Zyphryon.Base/Scalar.hpp"
+#include "Zyphryon.Base/Utility.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -50,13 +51,7 @@ inline namespace ZyBase
         ZY_INLINE Variant(ConstRef<Variant> Other)
             : mSlot { kEmpty }
         {
-            if (!Other.IsEmpty())
-            {
-                Other.Visit([this]<typename T0>(AnyRef<T0> Value)
-                {
-                    Emplace<StripAll<T0>>(Value);
-                });
-            }
+            (* this) = Other;
         }
 
         /// \brief Constructs a variant by transferring ownership from another variant.
@@ -65,14 +60,7 @@ inline namespace ZyBase
         ZY_INLINE Variant(AnyRef<Variant> Other)
             : mSlot { kEmpty }
         {
-            if (!Other.IsEmpty())
-            {
-                Other.Visit([this]<typename T0>(AnyRef<T0> Value)
-                {
-                    Emplace<StripAll<T0>>(Move(Value));
-                });
-                Other.Reset();
-            }
+            (* this) = Move(Other);
         }
 
         /// \brief Destroys the active value and releases the variant.
@@ -145,7 +133,7 @@ inline namespace ZyBase
 
         /// \brief Gets the zero-based slot of the active type.
         ///
-        /// \return The slot of the current type.
+        /// \return The slot of the active type, or 255 when the variant is empty.
         ZY_INLINE UInt8 GetSlot() const
         {
             return mSlot;
@@ -189,7 +177,7 @@ inline namespace ZyBase
         {
             ZY_ASSERT(!IsEmpty(), "Cannot visit an empty variant");
 
-            return VisitImpl(mSlot, Forward<Callable>(Callback), * this);
+            return Dispatch(mSlot, Forward<Callable>(Callback), * this);
         }
 
         /// \brief Invokes a callable with the active value.
@@ -201,7 +189,7 @@ inline namespace ZyBase
         {
             ZY_ASSERT(!IsEmpty(), "Cannot visit an empty variant");
 
-            return VisitImpl(mSlot, Forward<Callable>(Callback), * this);
+            return Dispatch(mSlot, Forward<Callable>(Callback), * this);
         }
 
         /// \brief Assigns a new value to the variant, replacing the current one.
@@ -259,6 +247,30 @@ inline namespace ZyBase
             return (* this);
         }
 
+        /// \brief Gets the byte size of the type at the given zero-based slot.
+        ///
+        /// \param Index The zero-based slot to query.
+        /// \return The size, in bytes, of the type occupying \p Index.
+        ZY_INLINE static constexpr UInt16 GetSize(UInt8 Index)
+        {
+            ZY_ASSERT(Index < sizeof...(Types), "Index out of range");
+
+            static constexpr Array kSizes = Array(static_cast<UInt16>(sizeof(Types))...);
+            return kSizes[Index];
+        }
+
+        /// \brief Gets the required alignment of the type at the given zero-based slot.
+        ///
+        /// \param Index The zero-based slot to query.
+        /// \return The alignment, in bytes, of the type occupying \p Index.
+        ZY_INLINE static constexpr UInt16 GetAlignment(UInt8 Index)
+        {
+            ZY_ASSERT(Index < sizeof...(Types), "Index out of range");
+
+            static constexpr Array kAlignments = Array(static_cast<UInt16>(alignof(Types))...);
+            return kAlignments[Index];
+        }
+
     private:
 
         /// \brief The slot used to represent an empty variant.
@@ -266,7 +278,7 @@ inline namespace ZyBase
 
         /// \brief Finds the zero-based slot of \p Type in the parameter pack \p Types.
         ///
-        /// \return The the zero-based slot of \p Type in \p Types, or `kEmpty` if \p Type is not found.
+        /// \return The zero-based slot of \p Type in \p Types, or `kEmpty` when it is not one of them.
         template<typename Type>
         ZY_INLINE static constexpr UInt8 SlotOf()
         {
@@ -281,45 +293,17 @@ inline namespace ZyBase
         /// \param Value    The variant whose active value will be passed to \p Callback.
         /// \return The result of invoking \p Callback with the active value.
         template<UInt8 Element = 0, typename Callable, typename Type>
-        ZY_INLINE static decltype(auto) VisitImpl(UInt8 Index, AnyRef<Callable> Callback, AnyRef<Type> Value)
+        ZY_INLINE static decltype(auto) Dispatch(UInt8 Index, AnyRef<Callable> Callback, AnyRef<Type> Value)
         {
             if constexpr (Element + 1 < sizeof...(Types))
             {
                 if (Element != Index)
                 {
-                    return VisitImpl<Element + 1, Callable>(Index, Forward<Callable>(Callback), Value);
+                    return Dispatch<Element + 1, Callable>(Index, Forward<Callable>(Callback), Value);
                 }
             }
             return Callback(Value.template Get<typename Identify<Element, Types...>::Type>());
         }
-
-    public:
-
-        /// \brief Gets the byte size of the type at the given zero-based slot.
-        ///
-        /// \param Index The zero-based slot to query.
-        /// \return The size, in bytes, of the type occupying \p Index.
-        static constexpr UInt16 GetSize(UInt8 Index)
-        {
-            ZY_ASSERT(Index < sizeof...(Types), "Index out of range");
-
-            static constexpr Array kSizes = Array(static_cast<UInt16>(sizeof(Types))...);
-            return kSizes[Index];
-        }
-
-        /// \brief Gets the required alignment of the type at the given zero-based slot.
-        ///
-        /// \param Index The zero-based slot to query.
-        /// \return The alignment, in bytes, of the type occupying \p Index.
-        static constexpr UInt16 GetAlignment(UInt8 Index)
-        {
-            ZY_ASSERT(Index < sizeof...(Types), "Index out of range");
-
-            static constexpr Array kAlignments = Array(static_cast<UInt16>(alignof(Types))...);
-            return kAlignments[Index];
-        }
-
-    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -53,7 +53,7 @@ namespace ZyScene
         /// \return This query.
         Ref<Query> operator=(AnyRef<Query> Other);
 
-        /// \brief Queries are not copied, since each owns what it matches.
+        /// \brief Queries are not assigned, since each owns what it matches.
         Ref<Query> operator=(ConstRef<Query> Other) = delete;
 
         /// \brief Checks whether the query was made by a world.
@@ -66,7 +66,7 @@ namespace ZyScene
 
         /// \brief Gets the number of entities the query matches right now.
         ///
-        /// \return The number of matching entities.
+        /// \return The number, zero for a query that matches nothing.
         ZY_INLINE UInt Matches() const
         {
             return mState ? mState->Count() : 0;
@@ -74,20 +74,20 @@ namespace ZyScene
 
         /// \brief Hands every match to a callback, holding every structural change it asks for until the walk ends.
         ///
-        /// \param Each The callable, taking the entity first when it asks for it, then its fields.
+        /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
         template<typename Callable>
-        ZY_INLINE void Run(AnyRef<Callable> Each) const
+        ZY_INLINE void Run(AnyRef<Callable> Callback) const
         {
-            Walk::Run(* mOwner, Prepare<StripAll<Callable>>(), Each);
+            Walk::Run(* mOwner, Prepare<StripAll<Callable>>(), Callback);
         }
 
         /// \brief Hands every matching entity to a callback, spread over the compute workers when the work is worth it.
         ///
-        /// \param Each The callable, thread-safe and changing only its own entity.
+        /// \param Callback The callable, thread-safe and changing only its own entity.
         template<typename Callable>
-        ZY_INLINE void Spread(AnyRef<Callable> Each) const
+        ZY_INLINE void Spread(AnyRef<Callable> Callback) const
         {
-            Walk::Spread(* mOwner, Prepare<StripAll<Callable>>(), Each);
+            Walk::Spread(* mOwner, Prepare<StripAll<Callable>>(), Callback);
         }
 
         /// \brief Checks whether the last walk that could spread did.
@@ -102,7 +102,7 @@ namespace ZyScene
 
         /// \brief Gets the selection, declared for a callback's fields when it was declared for others.
         ///
-        /// \return The selection.
+        /// \return The selection, ready to walk with the callback.
         template<typename Callable>
         ZY_INLINE Ref<Selection> Prepare() const
         {

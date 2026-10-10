@@ -24,21 +24,21 @@ namespace ZyGraphic
 
     Bool MSHLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
+        const Retainer<Mesh> Asset = Retainer<Mesh>::Cast(Scope.GetResource());
+
         Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('M' << 8) | ('S' << 16) | ('H' << 24)))
         {
-            LOG_W("'{0}' is not a ZMSH file (bad magic)", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a ZMSH file (bad magic)", Asset->GetKey());
             return false;
         }
 
         if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{0}' has an unsupported ZMSH version", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an unsupported ZMSH version", Asset->GetKey());
             return false;
         }
-
-        const Retainer<Mesh> Asset = Retainer<Mesh>::Cast(Scope.GetResource());
 
         // Walk the tag-length-value chunk stream; unrecognized tags are skipped by their length.
         while (Input.GetAvailable() >= 2 * sizeof(UInt32))
@@ -56,7 +56,7 @@ namespace ZyGraphic
 
             switch (Tag)
             {
-            case ('M' | ('E' << 8) | ('S' << 16) | ('H' << 24)):
+            case kMesh:
             {
                 Asset->SetProperties(Body.Read<Mesh::Property>());
                 Asset->SetExtent(Body.Read<Box>());
@@ -96,34 +96,30 @@ namespace ZyGraphic
                 }
                 break;
             }
-            case ('V' | ('B' << 8) | ('U' << 16) | ('F' << 24)):
+            case kVertices:
             {
                 Blob Vertices = Body.ReadBlockCompressed<UInt32>();
 
-                if (Vertices)
-                {
-                    Asset->SetVertices(Move(Vertices));
-                }
-                else
+                if (!Vertices)
                 {
                     LOG_W("'{0}' has an invalid vertex buffer", Asset->GetKey());
                     return false;
                 }
+
+                Asset->SetVertices(Move(Vertices));
                 break;
             }
-            case ('I' | ('B' << 8) | ('U' << 16) | ('F' << 24)):
+            case kIndices:
             {
                 Blob Indices = Body.ReadBlockCompressed<UInt32>();
 
-                if (Indices)
-                {
-                    Asset->SetIndices(Move(Indices));
-                }
-                else
+                if (!Indices)
                 {
                     LOG_W("'{0}' has an invalid index buffer", Asset->GetKey());
                     return false;
                 }
+
+                Asset->SetIndices(Move(Indices));
                 break;
             }
             default:

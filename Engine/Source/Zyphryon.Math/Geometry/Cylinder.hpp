@@ -26,17 +26,17 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the cylinder to center (0.0f, 0.0f, 0.0f) with radius and half height 0.0f.
+        /// \brief Constructs a cylinder at the origin with a radius and half height of zero.
         ZY_INLINE constexpr Cylinder()
             : mRadius { 0.0f },
               mExtent { 0.0f }
         {
         }
 
-        /// \brief Initializes the cylinder with the given center, radius and half height.
+        /// \brief Constructs a cylinder from a center, a radius and a half height.
         ///
-        /// \param Center The center point.
-        /// \param Radius The radius.
+        /// \param Center The point halfway up the axis.
+        /// \param Radius The radius across the ground.
         /// \param Extent The half height.
         ZY_INLINE constexpr Cylinder(Vector3 Center, Real32 Radius, Real32 Extent)
             : mCenter { Center },
@@ -45,12 +45,12 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Initializes the cylinder with the given components.
+        /// \brief Constructs a cylinder from the coordinates of its center, a radius and a half height.
         ///
         /// \param X      The center's x-coordinate.
         /// \param Y      The center's y-coordinate.
         /// \param Z      The center's z-coordinate.
-        /// \param Radius The radius.
+        /// \param Radius The radius across the ground.
         /// \param Extent The half height.
         ZY_INLINE constexpr Cylinder(Real32 X, Real32 Y, Real32 Z, Real32 Radius, Real32 Extent)
             : mCenter { X, Y, Z },
@@ -85,8 +85,8 @@ inline namespace ZyMath
 
         /// \brief Sets the cylinder's center, radius and half height.
         ///
-        /// \param Center The center point.
-        /// \param Radius The radius.
+        /// \param Center The point halfway up the axis.
+        /// \param Radius The radius across the ground.
         /// \param Extent The half height.
         ZY_INLINE constexpr void Set(Vector3 Center, Real32 Radius, Real32 Extent)
         {
@@ -97,7 +97,7 @@ inline namespace ZyMath
 
         /// \brief Sets the cylinder's center.
         ///
-        /// \param Center The center point.
+        /// \param Center The point halfway up the axis.
         ZY_INLINE constexpr void SetCenter(Vector3 Center)
         {
             mCenter = Center;
@@ -105,7 +105,7 @@ inline namespace ZyMath
 
         /// \brief Gets the cylinder's center.
         ///
-        /// \return The center point.
+        /// \return The point halfway up the axis.
         ZY_INLINE constexpr Vector3 GetCenter() const
         {
             return mCenter;
@@ -113,7 +113,7 @@ inline namespace ZyMath
 
         /// \brief Sets the cylinder's radius.
         ///
-        /// \param Radius The radius.
+        /// \param Radius The radius across the ground, never negative.
         ZY_INLINE constexpr void SetRadius(Real32 Radius)
         {
             ZY_ASSERT(Radius >= 0.0f, "Cylinder radius cannot be negative");
@@ -123,7 +123,7 @@ inline namespace ZyMath
 
         /// \brief Gets the cylinder's radius.
         ///
-        /// \return The radius.
+        /// \return The radius across the ground.
         ZY_INLINE constexpr Real32 GetRadius() const
         {
             return mRadius;
@@ -131,7 +131,7 @@ inline namespace ZyMath
 
         /// \brief Sets the cylinder's half height.
         ///
-        /// \param Extent The half height.
+        /// \param Extent The half height, never negative.
         ZY_INLINE constexpr void SetExtent(Real32 Extent)
         {
             ZY_ASSERT(Extent >= 0.0f, "Cylinder half height cannot be negative");
@@ -207,8 +207,8 @@ inline namespace ZyMath
 
         /// \brief Grows the cylinder by an amount, on every side alike.
         ///
-        /// \param Amount The amount to grow by.
-        /// \return The grown cylinder.
+        /// \param Amount The length to add to the radius and the half height.
+        /// \return The cylinder with radius and half height grown by \p Amount.
         ZY_INLINE constexpr Cylinder Expand(Real32 Amount) const
         {
             return Cylinder(mCenter, mRadius + Amount, mExtent + Amount);
@@ -216,8 +216,8 @@ inline namespace ZyMath
 
         /// \brief Shrinks the cylinder by an amount, never past nothing.
         ///
-        /// \param Amount The amount to shrink by.
-        /// \return The shrunken cylinder.
+        /// \param Amount The length to take off the radius and the half height.
+        /// \return The cylinder with radius and half height shrunk by \p Amount, never below zero.
         ZY_INLINE constexpr Cylinder Contract(Real32 Amount) const
         {
             return Cylinder(mCenter, Max(0.0f, mRadius - Amount), Max(0.0f, mExtent - Amount));
@@ -226,7 +226,7 @@ inline namespace ZyMath
         /// \brief Checks if this cylinder contains a point.
         ///
         /// \param Point The point to check.
-        /// \return `true` if the point is inside the cylinder, `false` otherwise.
+        /// \return `true` if the point lies inside the cylinder or on its surface, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Vector3 Point) const
         {
             if (Point.GetY() < GetBottom() || Point.GetY() > GetTop())
@@ -239,7 +239,7 @@ inline namespace ZyMath
         /// \brief Checks if this cylinder intersects with another cylinder.
         ///
         /// \param Other The other cylinder to check.
-        /// \return `true` if the cylinders intersect, `false` otherwise.
+        /// \return `true` if the cylinders overlap or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(Cylinder Other) const
         {
             if (GetBottom() > Other.GetTop() || GetTop() < Other.GetBottom())
@@ -251,13 +251,10 @@ inline namespace ZyMath
             return mCenter.GetXZ().GetDistanceSquared(Other.mCenter.GetXZ()) <= (Reach * Reach);
         }
 
-
         /// \brief Checks if this cylinder intersects with a box.
         ///
-        /// \note The box is axis-aligned, so the nearest part of it to the axis is found by clamping into it.
-        ///
         /// \param Other The box to check.
-        /// \return `true` if the cylinder and the box intersect, `false` otherwise.
+        /// \return `true` if the cylinder and the box overlap or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(Box Other) const
         {
             if (GetBottom() > Other.GetMaximumY() || GetTop() < Other.GetMinimumY())
@@ -265,12 +262,8 @@ inline namespace ZyMath
                 return false;
             }
 
-            const Vector2 Center(mCenter.GetX(), mCenter.GetZ());
-            const Vector2 Closest(
-                Clamp(Center.GetX(), Other.GetMinimumX(), Other.GetMaximumX()),
-                Clamp(Center.GetY(), Other.GetMinimumZ(), Other.GetMaximumZ()));
-
-            return Center.GetDistanceSquared(Closest) <= (mRadius * mRadius);
+            const Vector2 Center = mCenter.GetXZ();
+            return Center.GetDistanceSquared(Other.GetXZ().GetNearest(Center)) <= (mRadius * mRadius);
         }
 
         /// \brief Checks if this cylinder is equal to another cylinder.
@@ -295,12 +288,12 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Gets a cylinder that contains nothing and is grown into.
+        /// \brief Gets a cylinder that fails every validity check.
         ///
-        /// \return An invalid cylinder.
+        /// \return A cylinder with a radius and half height of minus one.
         ZY_INLINE static constexpr Cylinder Invalid()
         {
-            return Cylinder(Vector3(0.0f, 0.0f, 0.0f), -1.0f, -1.0f);
+            return Cylinder(Vector3::Zero(), -1.0f, -1.0f);
         }
 
         /// \brief Gets the unit cylinder centered at origin with radius and half height 1.0.
@@ -308,13 +301,13 @@ inline namespace ZyMath
         /// \return A unit cylinder.
         ZY_INLINE static constexpr Cylinder Unit()
         {
-            return Cylinder(Vector3(0.0f, 0.0f, 0.0f), 1.0f, 1.0f);
+            return Cylinder(Vector3::Zero(), 1.0f, 1.0f);
         }
 
         /// \brief Creates a cylinder standing on a point rather than centered on one.
         ///
         /// \param Base   The point the cylinder stands on.
-        /// \param Radius The radius.
+        /// \param Radius The radius across the ground.
         /// \param Height The height it rises to.
         /// \return A new cylinder resting on the given point.
         ZY_INLINE static constexpr Cylinder FromBase(Vector3 Base, Real32 Radius, Real32 Height)
@@ -336,7 +329,7 @@ inline namespace ZyMath
 
         /// \brief Canonicalizes a cylinder by ensuring its radius and half height are non-negative.
         ///
-        /// \param Source The cylinder to canonicalize.
+        /// \param Source The cylinder whose radius or half height may be negative.
         /// \return A cylinder with non-negative radius and half height.
         ZY_INLINE static constexpr Cylinder Canonicalize(Cylinder Source)
         {

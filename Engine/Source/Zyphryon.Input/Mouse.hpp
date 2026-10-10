@@ -26,7 +26,7 @@ namespace ZyInput
     public:
 
         /// \brief The total number of supported mouse buttons.
-        constexpr static UInt32 kMaxButtons = ZyEnum::Count<Button>();
+        static constexpr UInt32 kMaxButtons = ZyEnum::Count<Button>();
 
     public:
 
@@ -45,6 +45,8 @@ namespace ZyInput
         void Begin();
 
         /// \brief Processes a single input event to update the mouse state.
+        ///
+        /// \param Event The event to apply if it comes from the mouse.
         void Process(ConstRef<Event> Event);
 
         /// \brief Clears all stored mouse state.
@@ -52,7 +54,7 @@ namespace ZyInput
 
         /// \brief Marks every button as released, keeping the previous frame so the transition is reported.
         ///
-        /// \param Output Receives one release event per input that was held.
+        /// \param Output Receives one release event per button that was held.
         void ReleaseAllButtons(Ref<Sequence<Event>> Output);
 
         /// \brief Gets the current X position of the mouse cursor.
@@ -87,23 +89,23 @@ namespace ZyInput
             return mThisDeltaY;
         }
 
-        /// \brief Gets the current scroll offset along the X axis.
+        /// \brief Gets how far the wheel scrolled along the X axis during the current frame.
         ///
-        /// \return The scroll offset in the X direction.
+        /// \return The sum of every scroll along the X axis since the frame began.
         ZY_INLINE Real32 GetScrollX() const
         {
             return mThisScrollX;
         }
 
-        /// \brief Gets the current scroll offset along the Y axis.
+        /// \brief Gets how far the wheel scrolled along the Y axis during the current frame.
         ///
-        /// \return The scroll offset in the Y direction.
+        /// \return The sum of every scroll along the Y axis since the frame began.
         ZY_INLINE Real32 GetScrollY() const
         {
             return mThisScrollY;
         }
 
-        /// \brief Checks if a mouse button was pressed during the current frame.
+        /// \brief Checks whether a mouse button was pressed during the current frame.
         ///
         /// \param Button The button to check.
         /// \return `true` if the button transitioned from released to pressed this frame, otherwise `false`.
@@ -112,7 +114,7 @@ namespace ZyInput
             return !mLastButtons.Test(ZyEnum::Cast(Button)) && mThisButtons.Test(ZyEnum::Cast(Button));
         }
 
-        /// \brief Checks if a mouse button is currently held down.
+        /// \brief Checks whether a mouse button is currently held down.
         ///
         /// \param Button The button to check.
         /// \return `true` if the button is currently pressed, otherwise `false`.
@@ -121,7 +123,7 @@ namespace ZyInput
             return mThisButtons.Test(ZyEnum::Cast(Button));
         }
 
-        /// \brief Checks if a mouse button was released during the current frame.
+        /// \brief Checks whether a mouse button was released during the current frame.
         ///
         /// \param Button The button to check.
         /// \return `true` if the button transitioned from pressed to released this frame, otherwise `false`.

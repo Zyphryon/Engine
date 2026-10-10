@@ -45,7 +45,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a text view from a string literal.
         ///
-        /// \param Literal The string literal array of exactly \p Count characters (excluding the null terminator).
+        /// \param Literal The string literal, whose \p Count characters include its terminator.
         template<UInt Count>
         ZY_INLINE constexpr Text(const Char (& Literal)[Count])
             : mData { Literal },
@@ -63,7 +63,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Constructs a text view from any type satisfying the \c IsText concept.
+        /// \brief Constructs a text view over any contiguous container of characters.
         ///
         /// \param Value The text-like object to view.
         template<typename Type>
@@ -74,15 +74,15 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Checks if the text view is empty.
+        /// \brief Gets a pointer to the first character in the view.
         ///
-        /// \return `true` if the view contains no characters, `false` otherwise.
-        ZY_INLINE constexpr Bool IsEmpty() const
+        /// \return A pointer to the character data, which may be `nullptr` for an empty view.
+        ZY_INLINE constexpr ConstPtr<Char> GetData() const
         {
-            return mSize == 0u;
+            return mData;
         }
 
-        /// \brief Returns the number of characters in the view.
+        /// \brief Gets the number of characters in the view.
         ///
         /// \return A count of characters in the view.
         ZY_INLINE constexpr UInt GetSize() const
@@ -90,15 +90,15 @@ inline namespace ZyBase
             return mSize;
         }
 
-        /// \brief Returns a pointer to the first character in the view.
+        /// \brief Checks whether the text view is empty.
         ///
-        /// \return A pointer to the character data, or `nullptr` if the view is empty.
-        ZY_INLINE constexpr ConstPtr<Char> GetData() const
+        /// \return `true` if the view contains no characters, `false` otherwise.
+        ZY_INLINE constexpr Bool IsEmpty() const
         {
-            return mData;
+            return mSize == 0u;
         }
 
-        /// \brief Returns the first character in the view.
+        /// \brief Gets the first character in the view.
         ///
         /// \return A copy of the first character in the view.
         ZY_INLINE constexpr Char GetFront() const
@@ -108,7 +108,7 @@ inline namespace ZyBase
             return mData[0];
         }
 
-        /// \brief Returns the last character in the view.
+        /// \brief Gets the last character in the view.
         ///
         /// \return A copy of the last character in the view.
         ZY_INLINE constexpr Char GetBack() const
@@ -149,7 +149,7 @@ inline namespace ZyBase
             return (mSize > 0) ? ::Hash(mData, mSize) : 0;
         }
 
-        /// \brief Accesses a character at the specified index without bounds checking.
+        /// \brief Accesses a character at the specified index.
         ///
         /// \param Index The zero-based index of the character.
         /// \return A copy of the character at the specified index.
@@ -197,22 +197,22 @@ inline namespace ZyBase
         UInt           mSize;
     };
 
-    /// \brief Compile-time string literal to text view conversion operator.
+    /// \brief Converts a string literal to a text view at compile time.
     ///
     /// \param Data The pointer to the first character of the string literal.
     /// \param Size The number of characters in the literal (excluding null terminator).
     /// \return A \c Text view representing the string literal.
-    consteval auto operator ""_Text(ConstPtr<Char> Data, size_t Size)
+    consteval Text operator ""_Text(ConstPtr<Char> Data, size_t Size)
     {
         return Text(Data, Size);
     }
 
-    /// \brief Compile-time string literal to hash conversion operator.
+    /// \brief Hashes a string literal at compile time.
     ///
     /// \param Data The pointer to the first character of the string literal.
     /// \param Size The number of characters in the literal (excluding null terminator).
     /// \return The hash of the string literal, guaranteed to be computed at compile time.
-    consteval auto operator ""_Hash(ConstPtr<Char> Data, size_t Size)
+    consteval UInt64 operator ""_Hash(ConstPtr<Char> Data, size_t Size)
     {
         return Hash(Data, Size);
     }

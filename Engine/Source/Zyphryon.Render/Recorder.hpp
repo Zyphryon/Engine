@@ -41,7 +41,7 @@ namespace ZyRender
             /// The features the draw turns on beyond the ones its material implies.
             ZyGraphic::Technique::Key      Variant   = 0;
 
-            /// What else keeps the draw out of a batch it does not belong in.
+            /// The value that keeps the draw out of a batch it does not belong in.
             UInt16                         Group     = 0;
         };
 
@@ -85,16 +85,19 @@ namespace ZyRender
         /// \param Variant  The features the draw turns on beyond the ones its material implies.
         /// \return The instance the draw is laid out from.
         ZY_INLINE Ref<Layout> Open(
-            Real32 Order, ConstRef<ZyGraphic::Material> Material, UInt16 Group, ZyGraphic::Technique::Key Variant = 0)
+            Real32                        Order,
+            ConstRef<ZyGraphic::Material> Material,
+            UInt16                        Group,
+            ZyGraphic::Technique::Key     Variant = 0)
         {
             ZY_ASSERT(mTechnique, "A technique must be set before recording a draw");
 
             // Filed before either half exists, so the slot it is filed under is the one they land in.
             mCollector.Push(
                 Collector::Object(mKind, mBatches.GetSize()),
-                Order, 
-                Group, 
-                mTechnique->GetHandle(), 
+                Order,
+                Group,
+                mTechnique->GetHandle(),
                 Material.GetHandle());
 
             mBatches.Append(Batch(AddressOf(* mTechnique), AddressOf(Material), Variant, Group));
@@ -136,7 +139,6 @@ namespace ZyRender
                     .Instances = static_cast<UInt32>(Run.GetSize())
                 };
 
-
                 const ZyGraphic::Stream Data = Gather(Run);
                 Encoder.Begin(* First.Technique).Apply(* First.Material, First.Variant).Draw(Data, Uniform, Invocation);
 
@@ -163,8 +165,8 @@ namespace ZyRender
 
     private:
 
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ref<ZyGraphic::Service>        mService;
         Ref<Collector>                 mCollector;

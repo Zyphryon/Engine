@@ -1,8 +1,12 @@
-# Makes a target the one image the engine's marked symbols are carried out of, so a plugin loaded beside it calls
-# into this engine rather than holding one of its own.
-#
-# An executable is as good a host as a library, and the cheaper one: nothing is linked twice and the whole program
-# is optimized as one. A build with no plugins to load needs none of this and should not ask.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+# Makes a target the one image that carries the engine's marked symbols out to the plugins loaded beside it.
 #
 # Usage:
 #   ZyApplyExports(<target> [MODULES <targets>...])
@@ -32,12 +36,11 @@ FUNCTION(ZyApplyExports TARGET)
 
     ENDIF()
 
-    # What a plugin is given: the engine, and whatever the host wrote its own kernel in.
+    # A plugin is given the engine and whatever the host wrote its own kernel in.
     SET(OFFERED "ZyEngine" ${ARG_MODULES})
     LIST(REMOVE_DUPLICATES OFFERED)
 
-    # Everything standing inside the image, the graphic drivers included, since each holds marked symbols and
-    # would otherwise compile as though reading them in from somewhere else.
+    # Everything inside the image compiles as the exporter, the graphic drivers included.
     SET(MARKED ${OFFERED} ${TARGET})
 
     GET_PROPERTY(REGISTERED GLOBAL PROPERTY ZY_MODULES)
@@ -116,12 +119,9 @@ FUNCTION(ZyApplyExports TARGET)
 
 ENDFUNCTION()
 
-# Turns a target into a plugin a host loads once it is already running, reaching the engine by calling into the
-# host that loaded it.
+# Turns a target into a plugin that reaches the engine through the host that loads it.
 #
-# Which entry points a host looks for is the host's own business, so nothing here names them. A plugin marks each
-# one with ZY_EXPORT_C and the host resolves it by name through ZyBase::Library. Where the file has to land is the
-# host's business too, since the host is what goes looking for it.
+# A plugin marks each entry point with ZY_EXPORT_C, and the host resolves it by name through ZyBase::Library.
 #
 # Usage:
 #   ZyApplyPlugin(<target> HOST <target>)
@@ -160,9 +160,8 @@ FUNCTION(ZyApplyPlugin TARGET)
 
     ENDIF()
 
-    # Linking the host hands over its headers and the mark that makes every ZY_API symbol one to call in rather
-    # than one to carry out. On Windows that is the host's import library; elsewhere the loader answers for it and
-    # nothing is linked at all.
+    # Linking the host gives the plugin its headers and the import side of ZY_API.
+    # On Windows that links the host's import library; elsewhere the loader resolves it and nothing is linked.
     TARGET_LINK_LIBRARIES(${TARGET} PRIVATE ${ARG_HOST})
 
     # A plugin carries out only what it was written to be found by, which is what it marked itself.

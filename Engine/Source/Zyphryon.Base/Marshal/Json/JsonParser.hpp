@@ -21,7 +21,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Reads one JSON text into a value tree, reusing its scratch from value to value.
+    /// \brief Represents a parser that reads one JSON text into a value tree, reusing its scratch from value to value.
     class ZY_API JsonParser final
     {
     public:
@@ -44,8 +44,8 @@ inline namespace ZyBase
 
         /// \brief Reads the whole text as one value.
         ///
-        /// \param Output The value that receives the parsed tree, left untouched when parsing fails.
-        /// \param Error  The error that receives why and where parsing failed, left untouched when it succeeds.
+        /// \param Output Receives the parsed tree, left untouched when parsing fails.
+        /// \param Error  Receives why and where parsing failed, left untouched when it succeeds.
         /// \return `true` if the whole text was one valid value, `false` otherwise.
         Bool Parse(Ref<JsonValue> Output, Ref<JsonError> Error);
 
@@ -53,32 +53,31 @@ inline namespace ZyBase
 
         /// \brief Reads the value at the cursor, after any whitespace before it.
         ///
-        /// \param Output The value that receives what was read.
+        /// \param Output Receives the value, left untouched when it is not valid.
         /// \return `true` if a valid value was read, `false` otherwise.
         Bool ParseValue(Ref<JsonValue> Output);
 
         /// \brief Reads the object that opens at the cursor into a table of its exact size.
         ///
-        /// \param Output The value that receives the object.
+        /// \param Output Receives the object, left untouched when it is not valid.
         /// \return `true` if a valid object was read, `false` otherwise.
         Bool ParseObject(Ref<JsonValue> Output);
 
         /// \brief Reads the array that opens at the cursor into a sequence of its exact size.
         ///
-        /// \param Output The value that receives the array.
+        /// \param Output Receives the array, left untouched when it is not valid.
         /// \return `true` if a valid array was read, `false` otherwise.
         Bool ParseArray(Ref<JsonValue> Output);
 
         /// \brief Reads the string that opens at the cursor.
         ///
-        /// \param Output The text of the string, a slice of the content when it holds no escape, or else the
-        ///               decoded scratch, which stays valid until the next string is read.
+        /// \param Output Receives the text, valid until the next string is read.
         /// \return `true` if a valid string was read, `false` otherwise.
         Bool ParseString(Ref<Text> Output);
 
         /// \brief Reads the number that starts at the cursor.
         ///
-        /// \param Output The value that receives the number.
+        /// \param Output Receives the number, left untouched when it is not valid.
         /// \return `true` if a valid number was read, `false` otherwise.
         Bool ParseNumber(Ref<JsonValue> Output);
 
@@ -86,13 +85,13 @@ inline namespace ZyBase
         ///
         /// \param Word   The word expected at the cursor.
         /// \param Value  The value the word stands for.
-        /// \param Output The value that receives it.
+        /// \param Output Receives \p Value.
         /// \return `true` if the word was there, `false` otherwise.
         Bool ParseWord(Text Word, ConstRef<JsonValue> Value, Ref<JsonValue> Output);
 
         /// \brief Reads the four hexadecimal digits of a `\u` escape at the cursor.
         ///
-        /// \param Output The code unit the digits spell.
+        /// \param Output Receives the code unit the digits spell.
         /// \return `true` if four digits were read, `false` otherwise.
         Bool ParseHex(Ref<UInt32> Output);
 

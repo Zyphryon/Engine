@@ -56,7 +56,7 @@ namespace ZyGraphic
             TCHAR Message[1024];
             ::FormatMessage(Flags, nullptr, Result, 0, Message, sizeof(Message), nullptr);
 
-            LOG_E("Driver: {0}", Str::ConvertFromUTF16(StrConvert(Message)));
+            LOG_E("Graphics: {0}", Str::ConvertFromUTF16(StrConvert(Message)));
             return false;
         }
         return true;
@@ -112,33 +112,54 @@ namespace ZyGraphic
 
         if (const auto Dll = ::LoadLibraryExW(L"D3D11.DLL", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32); Dll != nullptr)
         {
-            D3D11CreateDevicePtr = reinterpret_cast<decltype(&D3D11CreateDevice)>(GetProcAddress(Dll, "D3D11CreateDevice"));
+            D3D11CreateDevicePtr = reinterpret_cast<decltype(& D3D11CreateDevice)>(::GetProcAddress(
+                Dll,
+                "D3D11CreateDevice"));
         }
         if (const auto Dll = ::LoadLibraryExW(L"DXGI.DLL", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32); Dll != nullptr)
         {
-            CreateDXGIFactoryPtr = reinterpret_cast<decltype(&CreateDXGIFactory1)>(GetProcAddress(Dll, "CreateDXGIFactory1"));
+            CreateDXGIFactoryPtr = reinterpret_cast<decltype(& CreateDXGIFactory1)>(::GetProcAddress(
+                Dll,
+                "CreateDXGIFactory1"));
         }
 
-        Bool Successful = D3D11CreateDevicePtr && CreateDXGIFactoryPtr;
-
-        if (Successful)
+        if (!D3D11CreateDevicePtr || !CreateDXGIFactoryPtr)
         {
-            ComPtr<ID3D11Device>        Device;
-            ComPtr<ID3D11DeviceContext> DeviceImmediate;
+            LOG_E("Graphics: Failed to load D3D11.DLL or DXGI.DLL");
+            return false;
+        }
 
-            constexpr UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+        ComPtr<ID3D11Device>        Device;
+        ComPtr<ID3D11DeviceContext> DeviceImmediate;
 
-            constexpr D3D_FEATURE_LEVEL Direct3DFeatureLevels[] = {
-                D3D_FEATURE_LEVEL_11_1,
-                D3D_FEATURE_LEVEL_11_0,
-                D3D_FEATURE_LEVEL_10_1,
-                D3D_FEATURE_LEVEL_10_0,
-            };
+        constexpr UInt Flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 
-            // Tries hardware, which selects the highest level the adapter reaches.
-            HRESULT Result = D3D11CreateDevicePtr(
+        constexpr D3D_FEATURE_LEVEL Direct3DFeatureLevels[] = {
+            D3D_FEATURE_LEVEL_11_1,
+            D3D_FEATURE_LEVEL_11_0,
+            D3D_FEATURE_LEVEL_10_1,
+            D3D_FEATURE_LEVEL_10_0,
+        };
+
+        // Tries hardware, which selects the highest level the adapter reaches.
+        HRESULT Result = D3D11CreateDevicePtr(
+            nullptr,
+            D3D_DRIVER_TYPE_HARDWARE,
+            nullptr,
+            Flags,
+            Direct3DFeatureLevels,
+            _countof(Direct3DFeatureLevels),
+            D3D11_SDK_VERSION,
+            Device.GetAddressOf(),
+            nullptr,
+            DeviceImmediate.GetAddressOf());
+
+        // Tries Direct3D WARP mode.
+        if (FAILED(Result))
+        {
+            Result = D3D11CreateDevicePtr(
                 nullptr,
-                D3D_DRIVER_TYPE_HARDWARE,
+                D3D_DRIVER_TYPE_WARP,
                 nullptr,
                 Flags,
                 Direct3DFeatureLevels,
@@ -148,51 +169,34 @@ namespace ZyGraphic
                 nullptr,
                 DeviceImmediate.GetAddressOf());
 
-            // Tries Direct3D WARP mode.
-            if (FAILED(Result))
+            if (SUCCEEDED(Result))
             {
-                Result = D3D11CreateDevicePtr(
-                    nullptr,
-                    D3D_DRIVER_TYPE_WARP,
-                    nullptr,
-                    Flags,
-                    Direct3DFeatureLevels,
-                    _countof(Direct3DFeatureLevels),
-                    D3D11_SDK_VERSION,
-                    Device.GetAddressOf(),
-                    nullptr,
-                    DeviceImmediate.GetAddressOf());
-
-                if (SUCCEEDED(Result))
-                {
-                    LOG_I("Driver: Enabling software mode (WARP)");
-                }
-            }
-
-            Successful = D3D11Check(Result);
-
-            if (Successful)
-            {
-                Successful = D3D11Check(Device.As<ID3D11Device1>(AddressOf(mDevice)))
-                          && D3D11Check(DeviceImmediate.As<ID3D11DeviceContext1>(AddressOf(mDeviceImmediate)))
-                          && D3D11Check(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory)));
-
-                if (Successful)
-                {
-                    LoadAdapters(D3D11Convert(Config.ColorFormat));
-                    LoadCapabilities();
-
-                    mProfiler.Initialize(mDevice.Get(), mDeviceImmediate.Get());
-
-                    if (Output)
-                    {
-                        CreateSwapchain(mPasses[0], static_cast<HWND>(Output), Config);
-                    }
-                }
+                LOG_I("Graphics: Enabling software mode (WARP)");
             }
         }
 
-        return Successful;
+        if (!D3D11Check(Result))
+        {
+            return false;
+        }
+
+        if (!D3D11Check(Device.As<ID3D11Device1>(AddressOf(mDevice)))
+            || !D3D11Check(DeviceImmediate.As<ID3D11DeviceContext1>(AddressOf(mDeviceImmediate)))
+            || !D3D11Check(CreateDXGIFactoryPtr(IID_PPV_ARGS(& mDeviceFactory))))
+        {
+            return false;
+        }
+
+        LoadAdapters(D3D11Convert(Config.ColorFormat));
+        LoadCapabilities();
+
+        mProfiler.Initialize(mDevice.Get(), mDeviceImmediate.Get());
+
+        if (Output)
+        {
+            CreateSwapchain(mPasses[kDisplay], static_cast<HWND>(Output), Config);
+        }
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -200,33 +204,26 @@ namespace ZyGraphic
 
     void D3D11Driver::Reset(UInt16 Width, UInt16 Height, Bool Tearless)
     {
-        mDeviceProperties.Tearless = Tearless;
+        Ref<Configuration> Config = mDeviceProperties.Config;
+        Config.Tearless = Tearless;
 
-        DXGI_SWAP_CHAIN_DESC Description{};
+        DXGI_SWAP_CHAIN_DESC Description { };
         D3D11Check(mSwapchain->GetDesc(AddressOf(Description)));
 
         if (Description.BufferDesc.Width != Width || Description.BufferDesc.Height != Height)
         {
-            if (mDeviceImmediate)
-            {
-                mDeviceImmediate->ClearState();
-            }
+            mDeviceImmediate->ClearState();
 
-            // Deletes the current display pass to release associated render targets.
+            // ResizeBuffers fails while any view of the back buffer is alive.
             DeletePass(kDisplay);
 
-            // Resizes the swap chain buffers with the new resolution and format.
+            // A zero count and an unknown format keep the buffers' own.
             const UINT Flags = mDeviceProperties.Tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
             D3D11Check(mSwapchain->ResizeBuffers(0, Width, Height, DXGI_FORMAT_UNKNOWN, Flags));
 
-            // Recreates swap chain resources, including color and depth-stencil attachments.
-            Configuration Config;
-            Config.Width = Width;
+            Config.Width  = Width;
             Config.Height = Height;
-            Config.Tearless = mDeviceProperties.Tearless;
-            Config.ColorFormat = mDeviceProperties.ColorFormat;
-            Config.DepthFormat = mDeviceProperties.DepthFormat;
-            CreateSwapchainResources(mPasses[0], Config);
+            CreateSwapchainResources(mPasses[kDisplay], Config);
         }
     }
 
@@ -264,7 +261,14 @@ namespace ZyGraphic
         constexpr D3D11_COPY_FLAGS Flags = D3D11_COPY_NO_OVERWRITE;
 
         const CD3D11_BOX Destination(Offset, 0, 0, Offset + Data.GetSizeInBytes(), 1, 1);
-        mDeviceImmediate->UpdateSubresource1(mBuffers[ID].Get(), 0, AddressOf(Destination), Data.GetData(), 0, 0, Flags);
+        mDeviceImmediate->UpdateSubresource1(
+            mBuffers[ID].Get(),
+            0,
+            AddressOf(Destination),
+            Data.GetData(),
+            0,
+            0,
+            Flags);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -272,7 +276,7 @@ namespace ZyGraphic
 
     void D3D11Driver::DeleteBuffer(Object ID)
     {
-        Destruct(mBuffers[ID]);
+        mBuffers[ID] = nullptr;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -305,13 +309,11 @@ namespace ZyGraphic
     {
         Ref<D3D11Pass> Target = mPasses[ID];
 
-        // Configure and create render target views (RTVs) for each color attachment.
         for (const ColorAttachment Color : Colors)
         {
             ConstRef<D3D11Texture> Source = mTextures[Color.Target];
 
             Ref<D3D11ColorAttachment> Attachment = Target.Colors.Append();
-            Attachment.Target      = Source.Object;
             Attachment.LoadAction  = Color.LoadAction;
             Attachment.StoreAction = Color.StoreAction;
 
@@ -320,19 +322,21 @@ namespace ZyGraphic
                 : D3D11_RTV_DIMENSION_TEXTURE2D;
 
             const CD3D11_RENDER_TARGET_VIEW_DESC Description(
-                Dimension, D3D11TranslateSRV(Source.Format), Color.TargetLevel, Color.TargetLayer, 1);
+                Dimension,
+                D3D11TranslateSRV(Source.Format),
+                Color.TargetLevel,
+                Color.TargetLayer,
+                1);
 
             D3D11Check(mDevice->CreateRenderTargetView(
-                Attachment.Target.Get(), AddressOf(Description), Attachment.TargetResource.GetAddressOf()));
+                Source.Object.Get(),
+                AddressOf(Description),
+                Attachment.Target.GetAddressOf()));
         }
 
-        // Create and assign its depth-stencil view (DSV) if an auxiliary attachment is provided.
-        if (Depth.Target > 0)
+        if (Depth.Target)
         {
-            Target.DepthStencil.DepthLoadAction    = Depth.DepthLoadAction;
-            Target.DepthStencil.DepthStoreAction   = Depth.DepthStoreAction;
-            Target.DepthStencil.StencilLoadAction  = Depth.StencilLoadAction;
-            Target.DepthStencil.StencilStoreAction = Depth.StencilStoreAction;
+            Target.Depth = Depth;
 
             ConstRef<D3D11Texture> Source = mTextures[Depth.Target];
 
@@ -341,10 +345,16 @@ namespace ZyGraphic
                 : D3D11_DSV_DIMENSION_TEXTURE2D;
 
             const CD3D11_DEPTH_STENCIL_VIEW_DESC Description(
-                Dimension, D3D11TranslateDSV(Source.Format), Depth.TargetLevel, Depth.TargetLayer, 1);
+                Dimension,
+                D3D11TranslateDSV(Source.Format),
+                Depth.TargetLevel,
+                Depth.TargetLayer,
+                1);
 
             D3D11Check(mDevice->CreateDepthStencilView(
-                Source.Object.Get(), AddressOf(Description), Target.DepthStencil.Target.GetAddressOf()));
+                Source.Object.Get(),
+                AddressOf(Description),
+                Target.DepthStencil.GetAddressOf()));
         }
     }
 
@@ -353,7 +363,7 @@ namespace ZyGraphic
 
     void D3D11Driver::DeletePass(Object ID)
     {
-        Destruct(mPasses[ID]);
+        mPasses[ID] = D3D11Pass();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -372,13 +382,23 @@ namespace ZyGraphic
         Macros.Append("VERTEX_SHADER", nullptr);
         Macros.Append(nullptr, nullptr);
 
-        const Ptr<ID3DBlob> VS = mCompiler.Compile(Program.Modules[0], mDescription.Tier, ShaderStage::Vertex, Macros.GetData());
-        D3D11Check(mDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), nullptr, Pipeline.VS.GetAddressOf()));
+        ComPtr<ID3DBlob> VS;
+        VS.Attach(mCompiler.Compile(Program.Modules[0], mDescription.Tier, ShaderStage::Vertex, Macros.GetData()));
+        D3D11Check(mDevice->CreateVertexShader(
+            VS->GetBufferPointer(),
+            VS->GetBufferSize(),
+            nullptr,
+            Pipeline.VS.GetAddressOf()));
 
         Macros[Macros.GetSize() - 2].Name = "FRAGMENT_SHADER";
 
-        const Ptr<ID3DBlob> PS = mCompiler.Compile(Program.Modules[1], mDescription.Tier, ShaderStage::Fragment, Macros.GetData());
-        D3D11Check(mDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), nullptr, Pipeline.PS.GetAddressOf()));
+        ComPtr<ID3DBlob> PS;
+        PS.Attach(mCompiler.Compile(Program.Modules[1], mDescription.Tier, ShaderStage::Fragment, Macros.GetData()));
+        D3D11Check(mDevice->CreatePixelShader(
+            PS->GetBufferPointer(),
+            PS->GetBufferSize(),
+            nullptr,
+            Pipeline.PS.GetAddressOf()));
 
         {
             D3D11_BLEND_DESC Description = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
@@ -392,16 +412,16 @@ namespace ZyGraphic
             Description.RenderTarget[0].BlendOpAlpha          = D3D11Convert(States.BlendEquationAlpha);
             Description.RenderTarget[0].RenderTargetWriteMask = static_cast<D3D11_COLOR_WRITE_ENABLE>(States.Channel);
 
-            D3D11Check(mDevice->CreateBlendState(& Description, Pipeline.BS.GetAddressOf()));
+            D3D11Check(mDevice->CreateBlendState(AddressOf(Description), Pipeline.BS.GetAddressOf()));
         }
 
         {
             D3D11_DEPTH_STENCIL_DESC Description = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 
-            Description.DepthEnable    = States.UsesDepth();
-            Description.DepthFunc      = D3D11Convert(States.DepthTest);
-            Description.DepthWriteMask = static_cast<D3D11_DEPTH_WRITE_MASK>(States.DepthMask);
-            Description.StencilEnable  = States.UsesStencil();
+            Description.DepthEnable                  = States.UsesDepth();
+            Description.DepthFunc                    = D3D11Convert(States.DepthTest);
+            Description.DepthWriteMask               = static_cast<D3D11_DEPTH_WRITE_MASK>(States.DepthMask);
+            Description.StencilEnable                = States.UsesStencil();
             Description.StencilReadMask              = States.StencilReadMask;
             Description.StencilWriteMask             = States.StencilWriteMask;
             Description.FrontFace.StencilFunc        = D3D11Convert(States.StencilFrontTest);
@@ -413,7 +433,7 @@ namespace ZyGraphic
             Description.BackFace.StencilDepthFailOp  = D3D11Convert(States.StencilBackDepthFail);
             Description.BackFace.StencilPassOp       = D3D11Convert(States.StencilBackDepthPass);
 
-            D3D11Check(mDevice->CreateDepthStencilState(& Description, Pipeline.DS.GetAddressOf()));
+            D3D11Check(mDevice->CreateDepthStencilState(AddressOf(Description), Pipeline.DS.GetAddressOf()));
         }
 
         {
@@ -430,7 +450,7 @@ namespace ZyGraphic
             Description.AntialiasedLineEnable = TRUE;
             Description.FillMode              = D3D11Convert(States.Fill);
 
-            D3D11Check(mDevice->CreateRasterizerState(& Description, Pipeline.RS.GetAddressOf()));
+            D3D11Check(mDevice->CreateRasterizerState(AddressOf(Description), Pipeline.RS.GetAddressOf()));
         }
 
         {
@@ -451,7 +471,12 @@ namespace ZyGraphic
 
             if (Count > 0)
             {
-                D3D11Check(mDevice->CreateInputLayout(Description, Count, VS->GetBufferPointer(), VS->GetBufferSize(), Pipeline.IL.GetAddressOf()));
+                D3D11Check(mDevice->CreateInputLayout(
+                    Description,
+                    Count,
+                    VS->GetBufferPointer(),
+                    VS->GetBufferSize(),
+                    Pipeline.IL.GetAddressOf()));
             }
         }
 
@@ -463,7 +488,7 @@ namespace ZyGraphic
 
     void D3D11Driver::DeletePipeline(Object ID)
     {
-        Destruct(mPipelines[ID]);
+        mPipelines[ID] = D3D11Pipeline();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -525,7 +550,7 @@ namespace ZyGraphic
 
     void D3D11Driver::DeleteSampler(Object ID)
     {
-        Destruct(mSamplers[ID]);
+        mSamplers[ID] = nullptr;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -543,18 +568,9 @@ namespace ZyGraphic
 
         if (HasBit(Usage, Usage::Target))
         {
-            switch (Format)
-            {
-            case TextureFormat::D16UIntNorm:
-            case TextureFormat::D32Float:
-            case TextureFormat::D24S8UIntNorm:
-            case TextureFormat::D32S8UIntNorm:
-                Description.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
-                break;
-            default:
-                Description.BindFlags |= D3D11_BIND_RENDER_TARGET;
-                break;
-            }
+            Description.BindFlags |= GetTextureMetadata(Format).IsDepth
+                ? D3D11_BIND_DEPTH_STENCIL
+                : D3D11_BIND_RENDER_TARGET;
         }
 
         Ref<D3D11Texture> Texture = mTextures[ID];
@@ -607,16 +623,11 @@ namespace ZyGraphic
             }
 
             const CD3D11_SHADER_RESOURCE_VIEW_DESC View(Dimension, D3D11TranslateSRV(Format), 0, Levels, 0, Slices);
-            D3D11Check(mDevice->CreateShaderResourceView(Texture.Object.Get(), AddressOf(View), Texture.Resource.GetAddressOf()));
+            D3D11Check(mDevice->CreateShaderResourceView(
+                Texture.Object.Get(),
+                AddressOf(View),
+                Texture.Resource.GetAddressOf()));
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void D3D11Driver::DeleteTexture(Object ID)
-    {
-        Destruct(mTextures[ID]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -630,7 +641,22 @@ namespace ZyGraphic
         const UINT             Subresource = D3D11CalcSubresource(Level, Layer, Texture.Levels);
 
         const CD3D11_BOX Offset(X, Y, 0, X + Width, Y + Height, 1);
-        mDeviceImmediate->UpdateSubresource1(Texture.Object.Get(), Subresource, AddressOf(Offset), Data.GetData(), Pitch, 0, Flags);
+        mDeviceImmediate->UpdateSubresource1(
+            Texture.Object.Get(),
+            Subresource,
+            AddressOf(Offset),
+            Data.GetData(),
+            Pitch,
+            0,
+            Flags);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void D3D11Driver::DeleteTexture(Object ID)
+    {
+        mTextures[ID] = D3D11Texture();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -645,12 +671,10 @@ namespace ZyGraphic
         Sequence<Ptr<ID3D11RenderTargetView>, kMaxAttachments> ColorAttachments;
         for (ConstRef<D3D11ColorAttachment> Attachment : Target.Colors)
         {
-            ColorAttachments.Append(Attachment.TargetResource.Get());
+            ColorAttachments.Append(Attachment.Target.Get());
         }
 
-        // Bind the render targets for the rendering pass.
-        const Ptr<ID3D11DepthStencilView> DepthAttachment
-            = (Target.DepthStencil.Target ? Target.DepthStencil.Target.Get() : nullptr);
+        const Ptr<ID3D11DepthStencilView> DepthAttachment = Target.DepthStencil.Get();
         mDeviceImmediate->OMSetRenderTargets(ColorAttachments.GetSize(), ColorAttachments.GetData(), DepthAttachment);
 
         // Clear color attachments as specified, only as far as the clears handed over actually reach.
@@ -661,7 +685,8 @@ namespace ZyGraphic
             if (Attachment.LoadAction == Action::Clear && Index < Colors.GetSize())
             {
                 mDeviceImmediate->ClearRenderTargetView(
-                    ColorAttachments[Index], reinterpret_cast<ConstPtr<FLOAT>>(AddressOf(Colors[Index])));
+                    ColorAttachments[Index],
+                    reinterpret_cast<ConstPtr<FLOAT>>(AddressOf(Colors[Index])));
             }
         }
 
@@ -669,11 +694,11 @@ namespace ZyGraphic
         if (DepthAttachment)
         {
             UINT Mode = 0;
-            if (Target.DepthStencil.DepthLoadAction == Action::Clear)
+            if (Target.Depth.DepthLoadAction == Action::Clear)
             {
                 Mode |= D3D11_CLEAR_DEPTH;
             }
-            if (Target.DepthStencil.StencilLoadAction == Action::Clear)
+            if (Target.Depth.StencilLoadAction == Action::Clear)
             {
                 Mode |= D3D11_CLEAR_STENCIL;
             }
@@ -684,7 +709,6 @@ namespace ZyGraphic
             }
         }
 
-        // Set the viewport for rendering.
         const CD3D11_VIEWPORT Rect(
             Viewport.X,
             Viewport.Y,
@@ -704,45 +728,41 @@ namespace ZyGraphic
 
         for (UInt32 Batch = 0; Batch < Commands.GetSize(); ++Batch)
         {
-            ConstRef<Command> NewestSubmission = Commands[Batch];
-            ConstRef<Command> OldestSubmission = Batch > 0 ? Commands[Batch - 1] : kEmptyCommand;
+            ConstRef<Command> Newest = Commands[Batch];
+            ConstRef<Command> Oldest = Batch > 0 ? Commands[Batch - 1] : kEmptyCommand;
 
-            // Apply vertices
-            ApplyVertexResources(OldestSubmission, NewestSubmission);
+            ApplyVertexResources(Oldest, Newest);
 
-            // Apply indices
-            if (OldestSubmission.Indices.Buffer != NewestSubmission.Indices.Buffer ||
-                OldestSubmission.Indices.Offset != NewestSubmission.Indices.Offset ||
-                OldestSubmission.Indices.Stride != NewestSubmission.Indices.Stride)
+            if (Oldest.Indices.Buffer != Newest.Indices.Buffer ||
+                Oldest.Indices.Offset != Newest.Indices.Offset ||
+                Oldest.Indices.Stride != Newest.Indices.Stride)
             {
-                ConstRef<D3D11Buffer> Buffer = mBuffers[NewestSubmission.Indices.Buffer];
+                ConstRef<D3D11Buffer> Buffer = mBuffers[Newest.Indices.Buffer];
                 const DXGI_FORMAT     Format =
-                    NewestSubmission.Indices.Stride == 1 ? DXGI_FORMAT_R8_UINT  :
-                    NewestSubmission.Indices.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-                mDeviceImmediate->IASetIndexBuffer(Buffer.Get(), Format, NewestSubmission.Indices.Offset);
+                    Newest.Indices.Stride == 1 ? DXGI_FORMAT_R8_UINT  :
+                    Newest.Indices.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+                mDeviceImmediate->IASetIndexBuffer(Buffer.Get(), Format, Newest.Indices.Offset);
             }
 
-            // Apply the scissor rect
-            const Bool ScissorDirty = (OldestSubmission.Scissor.X      != NewestSubmission.Scissor.X)
-                                   || (OldestSubmission.Scissor.Y      != NewestSubmission.Scissor.Y)
-                                   || (OldestSubmission.Scissor.Width  != NewestSubmission.Scissor.Width)
-                                   || (OldestSubmission.Scissor.Height != NewestSubmission.Scissor.Height);
+            const Bool ScissorDirty = (Oldest.Scissor.X      != Newest.Scissor.X)
+                                   || (Oldest.Scissor.Y      != Newest.Scissor.Y)
+                                   || (Oldest.Scissor.Width  != Newest.Scissor.Width)
+                                   || (Oldest.Scissor.Height != Newest.Scissor.Height);
 
             if (ScissorDirty)
             {
                 const RECT Scissor = CD3D11_RECT(
-                    NewestSubmission.Scissor.X,
-                    NewestSubmission.Scissor.Y,
-                    NewestSubmission.Scissor.X + NewestSubmission.Scissor.Width,
-                    NewestSubmission.Scissor.Y + NewestSubmission.Scissor.Height);
+                    Newest.Scissor.X,
+                    Newest.Scissor.Y,
+                    Newest.Scissor.X + Newest.Scissor.Width,
+                    Newest.Scissor.Y + Newest.Scissor.Height);
                 mDeviceImmediate->RSSetScissorRects(1, AddressOf(Scissor));
             }
 
-            // Apply pipeline or stencil value
-            if (OldestSubmission.Pipeline != NewestSubmission.Pipeline)
+            if (Oldest.Pipeline != Newest.Pipeline)
             {
-                ConstRef<D3D11Pipeline> Old = mPipelines[OldestSubmission.Pipeline];
-                ConstRef<D3D11Pipeline> New = mPipelines[NewestSubmission.Pipeline];
+                ConstRef<D3D11Pipeline> Old = mPipelines[Oldest.Pipeline];
+                ConstRef<D3D11Pipeline> New = mPipelines[Newest.Pipeline];
 
                 if (Old.VS != New.VS)
                 {
@@ -756,9 +776,9 @@ namespace ZyGraphic
                 {
                     mDeviceImmediate->OMSetBlendState(New.BS.Get(), nullptr, D3D11_DEFAULT_SAMPLE_MASK);
                 }
-                if (Old.DS != New.DS || OldestSubmission.Stencil != NewestSubmission.Stencil)
+                if (Old.DS != New.DS || Oldest.Stencil != Newest.Stencil)
                 {
-                    mDeviceImmediate->OMSetDepthStencilState(New.DS.Get(), NewestSubmission.Stencil);
+                    mDeviceImmediate->OMSetDepthStencilState(New.DS.Get(), Newest.Stencil);
                 }
                 if (Old.RS != New.RS)
                 {
@@ -773,24 +793,23 @@ namespace ZyGraphic
                     mDeviceImmediate->IASetPrimitiveTopology(New.PT);
                 }
             }
-            else if (OldestSubmission.Stencil != NewestSubmission.Stencil)
+            else if (Oldest.Stencil != Newest.Stencil)
             {
                 mDeviceImmediate->OMSetDepthStencilState(
-                    mPipelines[NewestSubmission.Pipeline].DS.Get(), NewestSubmission.Stencil);
+                    mPipelines[Newest.Pipeline].DS.Get(),
+                    Newest.Stencil);
             }
 
-            // Apply stage(s) resources
-            ApplySamplerResources(OldestSubmission, NewestSubmission);
-            ApplyTextureResources(OldestSubmission, NewestSubmission);
-            ApplyUniformResources(OldestSubmission, NewestSubmission);
+            ApplySamplerResources(Oldest, Newest);
+            ApplyTextureResources(Oldest, Newest);
+            ApplyUniformResources(Oldest, Newest);
 
-            // Issue draw command
-            const UInt32 Count     = NewestSubmission.Parameters.Count;
-            const SInt32 Base      = NewestSubmission.Parameters.Base;
-            const UInt32 Offset    = NewestSubmission.Parameters.Offset;
-            const UInt32 Instances = NewestSubmission.Parameters.Instances;
+            const UInt32 Count     = Newest.Parameters.Count;
+            const SInt32 Base      = Newest.Parameters.Base;
+            const UInt32 Offset    = Newest.Parameters.Offset;
+            const UInt32 Instances = Newest.Parameters.Instances;
 
-            if (NewestSubmission.Indices.Buffer)
+            if (Newest.Indices.Buffer)
             {
                 if (Instances > 1)
                 {
@@ -820,20 +839,21 @@ namespace ZyGraphic
 
     void D3D11Driver::Commit(Object Pass)
     {
+        ConstRef<D3D11Pass> Target = mPasses[Pass];
+
         // What the pass does not keep is discarded, so the driver need not preserve it past the pass.
-        for (ConstRef<D3D11ColorAttachment> Attachment : mPasses[Pass].Colors)
+        for (ConstRef<D3D11ColorAttachment> Attachment : Target.Colors)
         {
             if (Attachment.StoreAction != Action::Store)
             {
-                mDeviceImmediate->DiscardView(Attachment.TargetResource.Get());
+                mDeviceImmediate->DiscardView(Attachment.Target.Get());
             }
         }
 
-        ConstRef<D3D11DepthStencilAttachment> DepthAttachment = mPasses[Pass].DepthStencil;
-        if (DepthAttachment.Target
-            && (DepthAttachment.StencilStoreAction == Action::Discard || DepthAttachment.DepthStoreAction == Action::Discard))
+        if (Target.DepthStencil
+            && (Target.Depth.StencilStoreAction == Action::Discard || Target.Depth.DepthStoreAction == Action::Discard))
         {
-            mDeviceImmediate->DiscardView(DepthAttachment.Target.Get());
+            mDeviceImmediate->DiscardView(Target.DepthStencil.Get());
         }
 
         // Closed once the pass has drawn, so what it timed is the pass and not the wait for the display.
@@ -844,8 +864,8 @@ namespace ZyGraphic
         {
             ZY_PROFILE_SCOPE("Driver::Present");
 
-            const UInt Interval = mDeviceProperties.Tearless ? 1 : 0;
-            const UInt Flag     = Interval == 0 && mDeviceProperties.Tearing  ? DXGI_PRESENT_ALLOW_TEARING : 0;
+            const UInt Interval = mDeviceProperties.Config.Tearless ? 1 : 0;
+            const UInt Flag     = Interval == 0 && mDeviceProperties.Tearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
             D3D11Check(mSwapchain->Present(Interval, Flag));
 
             // The frame is over, so whatever the queries have answered is gathered before the next one opens.
@@ -885,7 +905,7 @@ namespace ZyGraphic
 
                     D3D11Check(DXGIOutput->GetDisplayModeList(Format, 0, AddressOf(Length), Descriptions.GetData()));
 
-                    for (Ref<DXGI_MODE_DESC> Description : Descriptions)
+                    for (ConstRef<DXGI_MODE_DESC> Description : Descriptions)
                     {
                         Ref<Resolution> Resolution = AdapterInfo.Resolutions.Append();
                         Resolution.Width     = Description.Width;
@@ -948,13 +968,15 @@ namespace ZyGraphic
             break;
         }
 
-        // Check if we support tearing mode
+        // Tearing presentation needs DXGI 1.5.
         ComPtr<IDXGIFactory5> DXGIFactory5;
         if (SUCCEEDED(mDeviceFactory.As<IDXGIFactory5>(AddressOf(DXGIFactory5))))
         {
             BOOL AllowAdaptive = FALSE;
             D3D11Check(DXGIFactory5->CheckFeatureSupport(
-                DXGI_FEATURE_PRESENT_ALLOW_TEARING, AddressOf(AllowAdaptive), sizeof(AllowAdaptive)));
+                DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+                AddressOf(AllowAdaptive),
+                sizeof(AllowAdaptive)));
             mDeviceProperties.Tearing = AllowAdaptive;
         }
     }
@@ -998,15 +1020,13 @@ namespace ZyGraphic
             D3D11Check(DXGIParent->MakeWindowAssociation(Window, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER));
         }
 
-        mDeviceProperties.Tearless    = Config.Tearless;
-        mDeviceProperties.ColorFormat = Config.ColorFormat;
-        mDeviceProperties.DepthFormat = Config.DepthFormat;
+        mDeviceProperties.Config = Config;
         CreateSwapchainResources(Pass, Config);
 
-        // Matches the two-slot buffer ring; the CPU can never outrun it.
+        // The CPU never queues more frames than the ring it fills.
         if (ComPtr<IDXGIDevice1> DXGIDevice1; SUCCEEDED(mDevice.As(AddressOf(DXGIDevice1))))
         {
-            D3D11Check(DXGIDevice1->SetMaximumFrameLatency(2));
+            D3D11Check(DXGIDevice1->SetMaximumFrameLatency(kMaxFrames));
         }
     }
 
@@ -1016,42 +1036,45 @@ namespace ZyGraphic
     void D3D11Driver::CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Configuration> Config) const
     {
         // Acquire the swapchain back-buffer and create a render target view for it.
-        ComPtr<ID3D11Resource> ColorBuffer;
-        D3D11Check(mSwapchain->GetBuffer(
-            0, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(ColorBuffer.GetAddressOf())));
+        ComPtr<ID3D11Texture2D> ColorBuffer;
+        D3D11Check(mSwapchain->GetBuffer(0, IID_PPV_ARGS(ColorBuffer.GetAddressOf())));
 
         Ref<D3D11ColorAttachment> Attachment = Pass.Colors.Append();
-        Attachment.Target      = ColorBuffer;
         Attachment.LoadAction  = Action::Clear;
         Attachment.StoreAction = Action::Store;
 
         const CD3D11_RENDER_TARGET_VIEW_DESC View(D3D11_RTV_DIMENSION_TEXTURE2D, D3D11Convert(Config.ColorFormat));
         D3D11Check(mDevice->CreateRenderTargetView(
-            Attachment.Target.Get(), AddressOf(View), Attachment.TargetResource.GetAddressOf()));
+            ColorBuffer.Get(),
+            AddressOf(View),
+            Attachment.Target.GetAddressOf()));
 
         // Create a depth-stencil buffer matching the swapchain dimensions.
         if (Config.DepthFormat != TextureFormat::Unspecified)
         {
-            D3D11_TEXTURE2D_DESC DepthStencilTextureMetadata { };
-            DepthStencilTextureMetadata.Width      = Config.Width;
-            DepthStencilTextureMetadata.Height     = Config.Height;
-            DepthStencilTextureMetadata.MipLevels  = 1;
-            DepthStencilTextureMetadata.ArraySize  = 1;
-            DepthStencilTextureMetadata.Format     = D3D11Convert(Config.DepthFormat);
-            DepthStencilTextureMetadata.SampleDesc = { .Count = 1, .Quality = 0 };
-            DepthStencilTextureMetadata.Usage      = D3D11_USAGE_DEFAULT;
-            DepthStencilTextureMetadata.BindFlags  = D3D11_BIND_DEPTH_STENCIL;
+            const CD3D11_TEXTURE2D_DESC Description(
+                D3D11Convert(Config.DepthFormat),
+                Config.Width,
+                Config.Height,
+                1,
+                1,
+                D3D11_BIND_DEPTH_STENCIL);
 
-            Pass.DepthStencil.DepthLoadAction    = Action::Clear;
-            Pass.DepthStencil.DepthStoreAction   = Action::Discard;
-            Pass.DepthStencil.StencilLoadAction  = Action::Clear;
-            Pass.DepthStencil.StencilStoreAction = Action::Discard;
+            Pass.Depth.DepthLoadAction    = Action::Clear;
+            Pass.Depth.DepthStoreAction   = Action::Discard;
+            Pass.Depth.StencilLoadAction  = Action::Clear;
+            Pass.Depth.StencilStoreAction = Action::Discard;
 
             ComPtr<ID3D11Texture2D> Depth;
-            D3D11Check(mDevice->CreateTexture2D(AddressOf(DepthStencilTextureMetadata), nullptr, Depth.GetAddressOf()));
+            D3D11Check(mDevice->CreateTexture2D(AddressOf(Description), nullptr, Depth.GetAddressOf()));
 
-            CD3D11_DEPTH_STENCIL_VIEW_DESC DepthViewDescription(D3D11_DSV_DIMENSION_TEXTURE2D, D3D11TranslateDSV(Config.DepthFormat));
-            D3D11Check(mDevice->CreateDepthStencilView(Depth.Get(), AddressOf(DepthViewDescription), Pass.DepthStencil.Target.GetAddressOf()));
+            CD3D11_DEPTH_STENCIL_VIEW_DESC DepthViewDescription(
+                D3D11_DSV_DIMENSION_TEXTURE2D,
+                D3D11TranslateDSV(Config.DepthFormat));
+            D3D11Check(mDevice->CreateDepthStencilView(
+                Depth.Get(),
+                AddressOf(DepthViewDescription),
+                Pass.DepthStencil.GetAddressOf()));
         }
     }
 
@@ -1068,20 +1091,20 @@ namespace ZyGraphic
             return;
         }
 
-        Ptr<ID3D11Buffer> Array[Command::kMaxVertices];
-        UINT              ArrayOffset[Command::kMaxVertices];
-        UINT              ArrayStride[Command::kMaxVertices];
+        Ptr<ID3D11Buffer> Buffers[Command::kMaxVertices];
+        UINT              Offsets[Command::kMaxVertices];
+        UINT              Strides[Command::kMaxVertices];
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
             const Stream New = Element < Newest.Vertices.GetSize() ? Newest.Vertices[Element] : Stream { };
 
-            Array[Element]       = mBuffers[New.Buffer].Get();
-            ArrayOffset[Element] = New.Offset;
-            ArrayStride[Element] = New.Stride;
+            Buffers[Element] = mBuffers[New.Buffer].Get();
+            Offsets[Element] = New.Offset;
+            Strides[Element] = New.Stride;
         }
 
-        mDeviceImmediate->IASetVertexBuffers(Min, Max - Min, Array + Min, ArrayStride + Min, ArrayOffset + Min);
+        mDeviceImmediate->IASetVertexBuffers(Min, Max - Min, Buffers + Min, Strides + Min, Offsets + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1097,18 +1120,18 @@ namespace ZyGraphic
             return;
         }
 
-        Ptr<ID3D11SamplerState> Array[Command::kMaxSamplers];
+        Ptr<ID3D11SamplerState> Samplers[Command::kMaxSamplers];
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
             const Object New = Element < Newest.Samplers.GetSize() ? Newest.Samplers[Element] : Object { };
 
-            Array[Element] = mSamplers[New].Get();
+            Samplers[Element] = mSamplers[New].Get();
         }
 
         const UInt32 Count = Max - Min;
-        mDeviceImmediate->VSSetSamplers(Min, Count, Array + Min);
-        mDeviceImmediate->PSSetSamplers(Min, Count, Array + Min);
+        mDeviceImmediate->VSSetSamplers(Min, Count, Samplers + Min);
+        mDeviceImmediate->PSSetSamplers(Min, Count, Samplers + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1124,18 +1147,18 @@ namespace ZyGraphic
             return;
         }
 
-        Ptr<ID3D11ShaderResourceView> Array[Command::kMaxTextures];
+        Ptr<ID3D11ShaderResourceView> Views[Command::kMaxTextures];
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
             const Object New = Element < Newest.Textures.GetSize() ? Newest.Textures[Element] : Object { };
 
-            Array[Element] = mTextures[New].Resource.Get();
+            Views[Element] = mTextures[New].Resource.Get();
         }
 
         const UInt32 Count = Max - Min;
-        mDeviceImmediate->VSSetShaderResources(Min, Count, Array + Min);
-        mDeviceImmediate->PSSetShaderResources(Min, Count, Array + Min);
+        mDeviceImmediate->VSSetShaderResources(Min, Count, Views + Min);
+        mDeviceImmediate->PSSetShaderResources(Min, Count, Views + Min);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1151,21 +1174,21 @@ namespace ZyGraphic
             return;
         }
 
-        Ptr<ID3D11Buffer> Array[Command::kMaxUniforms];
-        UINT              ArrayOffset[Command::kMaxUniforms];
-        UINT              ArrayLength[Command::kMaxUniforms];
+        Ptr<ID3D11Buffer> Buffers[Command::kMaxUniforms];
+        UINT              Offsets[Command::kMaxUniforms];
+        UINT              Lengths[Command::kMaxUniforms];
 
         for (UInt32 Element = Min; Element < Max; ++Element)
         {
             ConstRef<Stream> New = Newest.Uniforms[Element];
 
-            Array[Element]       = mBuffers[New.Buffer].Get();
-            ArrayOffset[Element] = New.Offset / sizeof(Vector4);
-            ArrayLength[Element] = New.Stride / sizeof(Vector4);
+            Buffers[Element] = mBuffers[New.Buffer].Get();
+            Offsets[Element] = New.Offset / sizeof(Vector4);
+            Lengths[Element] = New.Stride / sizeof(Vector4);
         }
 
         const UInt32 Count = Max - Min;
-        mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
-        mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Array + Min, ArrayOffset + Min, ArrayLength + Min);
+        mDeviceImmediate->VSSetConstantBuffers1(Min, Count, Buffers + Min, Offsets + Min, Lengths + Min);
+        mDeviceImmediate->PSSetConstantBuffers1(Min, Count, Buffers + Min, Offsets + Min, Lengths + Min);
     }
 }

@@ -34,7 +34,6 @@ namespace ZyNetwork
     {
         ZY_PROFILE_SCOPE("Network::Tick");
 
-        mDrain.Clear();
         mExecutor.Drain(mDrain);
 
         Dispatch();
@@ -47,10 +46,7 @@ namespace ZyNetwork
     {
         mExecutor.Stop();
 
-        for (Ref<Retainer<Handler>> Entry : mHandlers)
-        {
-            Entry = nullptr;
-        }
+        mHandlers.Fill(nullptr);
         mSlots.Clear();
 
         Socket::Teardown();
@@ -145,23 +141,30 @@ namespace ZyNetwork
         const Connection Link(mSlots.Allocate());
         mHandlers[Link.GetChannel().GetSlot()] = Listener;
 
+        Executor::Request Entry;
+        Entry.Link      = Link;
+        Entry.Transport = Transport;
+        Entry.Server    = Server;
+        Entry.Origin    = Origin;
+        Entry.Listener  = Listener;
+
         const Retainer<Service> Self(this);
 
-        GetHost().GetService<ZyJob::Service>()->Dispatch(ZyJob::Lane::IO,
-            [Self, Link, Origin, Transport, Listener, Server]
+        GetHost().GetService<ZyJob::Service>()->Dispatch(ZyJob::Lane::IO, [Self, Entry = Move(Entry)] mutable
         {
-            Executor::Request Entry;
-            Entry.Link      = Link;
-            Entry.Transport = Transport;
-            Entry.Server    = Server;
-            Entry.Origin    = Origin;
-            Entry.Listener  = Listener;
-
-            Endpoint::Resolve(Origin, Transport, Entry.Remote);
-
-            Self->mExecutor.Open(Move(Entry));
+            Self->Resolve(Move(Entry));
         });
         return Link;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Resolve(AnyRef<Executor::Request> Entry)
+    {
+        Endpoint::Resolve(Entry.Origin, Entry.Transport, Entry.Remote);
+
+        mExecutor.Open(Move(Entry));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

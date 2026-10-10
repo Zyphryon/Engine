@@ -45,7 +45,7 @@ namespace ZyScene
         /// \brief Represents one waiting change.
         struct Command final
         {
-            /// What the change does.
+            /// The kind of change.
             Operation Kind;
 
             /// The component it is about, or zero.
@@ -77,7 +77,7 @@ namespace ZyScene
 
         /// \brief Checks whether a walk is running.
         ///
-        /// \return `true` if one is, `false` otherwise.
+        /// \return `true` if any walk has not ended yet, `false` otherwise.
         ZY_INLINE Bool IsWalking() const
         {
             return mDepth > 0;
@@ -113,10 +113,10 @@ namespace ZyScene
 
         /// \brief Checks whether a walk is spread over the workers right now.
         ///
-        /// \return `true` if one is, `false` otherwise.
+        /// \return `true` between \ref Spread and \ref Gather, `false` otherwise.
         ZY_INLINE Bool IsSpreading() const
         {
-            return mSpreading;
+            return mShares > 0;
         }
 
         /// \brief Marks the waiting changes as being applied or done, so a walk they start applies nothing more.
@@ -129,14 +129,14 @@ namespace ZyScene
 
         /// \brief Holds a change, into the calling thread's share while a walk is spread.
         ///
-        /// \param Change The change.
+        /// \param Change The change to hold.
         /// \param Mark   `true` to mark its entity, so every change of it waits behind this one, `false` otherwise.
         void Queue(ConstRef<Command> Change, Bool Mark = true);
 
         /// \brief Checks whether a change already waits for an entity.
         ///
         /// \param Index The slot of the entity.
-        /// \return `true` if one does, `false` otherwise.
+        /// \return `true` if a held change marked the slot, `false` otherwise.
         ZY_INLINE Bool IsMarked(UInt32 Index) const
         {
             return Index < mMarks.GetSize() && mMarks[Index];
@@ -154,7 +154,7 @@ namespace ZyScene
         /// \return The changes, which move when another one is held.
         ZY_INLINE ConstSpan<Command> GetCommands() const
         {
-            return mCommands;
+            return mMain.Commands;
         }
 
         /// \brief Forgets every applied change and every mark, keeping the room to fill again.
@@ -162,10 +162,10 @@ namespace ZyScene
 
     private:
 
-        /// \brief The bytes of one page of values.
+        /// The bytes of one page of values.
         static constexpr UInt kPageBytes     = 16'384;
 
-        /// \brief The alignment of every page and of every value kept apart.
+        /// The alignment of every page and of every value kept apart.
         static constexpr UInt kPageAlignment = 64;
 
         /// \brief Represents the pages values are laid out in, kept to fill again once their changes are applied.
@@ -204,35 +204,36 @@ namespace ZyScene
             void Release();
         };
 
-        /// \brief Represents the changes one share of a spread walk holds, and the room their values take.
+        /// \brief Represents changes held in order, and the room their values take.
         struct Lane final
         {
-            /// The changes, in the order the share asked for them.
+            /// The changes, in the order they were asked for.
             Sequence<Command> Commands;
 
             /// The room their values take, which lives until the changes are applied.
             Room              Values;
         };
 
-        /// \brief Gets the share the calling thread holds its changes into while a walk is spread.
-        ///
-        /// \note Per thread, since a callback reaches the deferral through calls that never name its share.
+        /// \brief Gets the share the calling thread holds its changes into, since callbacks never name it.
         ///
         /// \return The share, which \ref Bind points at and which is `nullptr` before any walk was spread.
         static Ref<Ptr<Lane>> GetShare();
+
+        /// \brief Gets the lane the calling thread holds its changes in, its share while a walk is spread.
+        ///
+        /// \return The main lane, or the share \ref Bind points at.
+        Ref<Lane> GetLane();
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt32              mDepth;
-        Bool                mFlushing;
-        Bool                mSpreading;
-        Sequence<UInt8>     mMarks;
-        Sequence<Command>   mCommands;
-        Room                mValues;
-        Sequence<Lane>      mLanes;
-        UInt32              mShares;
+        UInt32          mDepth;
+        Bool            mFlushing;
+        Sequence<UInt8> mMarks;
+        Lane            mMain;
+        Sequence<Lane>  mLanes;
+        UInt32          mShares;
     };
 }

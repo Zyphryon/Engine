@@ -22,65 +22,44 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace ZyBase
-{
- /// \def ZY_PROFILE_CALLSTACK_DEPTH
+/// \def ZY_PROFILE_CALLSTACK_DEPTH
 /// \brief Maximum number of stack frames recorded in profiling.
 #define ZY_PROFILE_CALLSTACK_DEPTH 15
 
 /// \def ZY_PROFILE
 /// \brief Marks a profiling zone in the profiler.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE ZoneScopedS(ZY_PROFILE_CALLSTACK_DEPTH)
-#else
-#   define ZY_PROFILE
-#endif
 
 /// \def ZY_PROFILE_INTEGER(Name, Value)
 /// \brief Records a named whole number in the profiler.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_INTEGER(Name, Value) TracyPlot(Name, static_cast<SInt64>(Value))
-#else
-#   define ZY_PROFILE_INTEGER(Name, Value) ((void)(Value))
-#endif
 
 /// \def ZY_PROFILE_REAL(Name, Value)
 /// \brief Records a named real number in the profiler.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_REAL(Name, Value) TracyPlot(Name, static_cast<Real64>(Value))
-#else
-#   define ZY_PROFILE_REAL(Name, Value) ((void)(Value))
-#endif
 
 /// \def ZY_PROFILE_SCOPE(Name)
 /// \brief Marks a named profiling zone in the profiler.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_SCOPE(Name) ZoneScopedNS(Name, ZY_PROFILE_CALLSTACK_DEPTH)
-#else
-#   define ZY_PROFILE_SCOPE(Name)
-#endif
 
 /// \def ZY_PROFILE_NAMED(Data, Size)
 /// \brief Marks a profiling zone named at runtime, without a callstack so it stays cheap in a loop.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_NAMED(Data, Size) ZoneScoped; ZoneName(Data, Size)
-#else
-#   define ZY_PROFILE_NAMED(Data, Size)
-#endif
 
-/// \def ZY_PROFILE_FRAME(x)
+/// \def ZY_PROFILE_FRAME
 /// \brief Marks the beginning of a new frame in the profiler.
-#if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_FRAME FrameMark
-#else
-#   define ZY_PROFILE_FRAME
-#endif
 
-/// \def ZY_PROFILE_THREAD(x)
+/// \def ZY_PROFILE_THREAD(Name)
 /// \brief Sets the name of the current thread in the profiler.
 #if defined(ZY_PROFILE_BACKEND_TRACY)
-#   define ZY_PROFILE_THREAD(Name) tracy::SetThreadName(Name)
+#   define ZY_PROFILE                      ZoneScopedS(ZY_PROFILE_CALLSTACK_DEPTH)
+#   define ZY_PROFILE_INTEGER(Name, Value) TracyPlot(Name, static_cast<SInt64>(Value))
+#   define ZY_PROFILE_REAL(Name, Value)    TracyPlot(Name, static_cast<Real64>(Value))
+#   define ZY_PROFILE_SCOPE(Name)          ZoneScopedNS(Name, ZY_PROFILE_CALLSTACK_DEPTH)
+#   define ZY_PROFILE_NAMED(Data, Size)    ZoneScoped; ZoneName(Data, Size)
+#   define ZY_PROFILE_FRAME                FrameMark
+#   define ZY_PROFILE_THREAD(Name)         tracy::SetThreadName(Name)
 #else
+#   define ZY_PROFILE
+#   define ZY_PROFILE_INTEGER(Name, Value) ((void)(Value))
+#   define ZY_PROFILE_REAL(Name, Value)    ((void)(Value))
+#   define ZY_PROFILE_SCOPE(Name)
+#   define ZY_PROFILE_NAMED(Data, Size)
+#   define ZY_PROFILE_FRAME
 #   define ZY_PROFILE_THREAD(Name)
 #endif
-}

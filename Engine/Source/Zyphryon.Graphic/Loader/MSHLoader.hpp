@@ -25,12 +25,23 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "msh" };
 
     public:
 
         /// \see ZyContent::Loader::Load(Ref<ZyContent::Service>, Ref<ZyContent::Scope>, AnyRef<Blob>)
         Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
+
+    private:
+
+        /// \brief The tag of the chunk describing the mesh.
+        static constexpr UInt32 kMesh     = 'M' | ('E' << 8) | ('S' << 16) | ('H' << 24);
+
+        /// \brief The tag of the chunk holding the vertex buffer.
+        static constexpr UInt32 kVertices = 'V' | ('B' << 8) | ('U' << 16) | ('F' << 24);
+
+        /// \brief The tag of the chunk holding the index buffer.
+        static constexpr UInt32 kIndices  = 'I' | ('B' << 8) | ('U' << 16) | ('F' << 24);
     };
 }

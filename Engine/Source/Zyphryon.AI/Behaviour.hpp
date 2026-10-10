@@ -25,7 +25,7 @@ namespace ZyAI
     {
     public:
 
-        /// \brief Enumerates the kinds of behaviour node.
+        /// \brief Specifies the kind of a behaviour node.
         enum class Kind : UInt8
         {
             Sequence, ///< Runs its children in order, and fails on the first child that fails.
@@ -37,12 +37,12 @@ namespace ZyAI
             Timeout,  ///< Runs its child, and stops it and fails once it has run for `Value` seconds.
             Chance,   ///< Runs its child with a probability of `Value`, from `0` to `1`, and fails otherwise.
             Leaf,     ///< Runs the host action named by `Name`.
-            Compare,  ///< Succeeds when the blackboard entry `Name` passes `Check` against `Value`, and fails otherwise.
+            Compare,  ///< Succeeds when the entry `Name` passes `Check` against `Value`, and fails otherwise.
             Set,      ///< Sets the blackboard entry `Name` to `Value`, and succeeds.
             Clear,    ///< Removes the blackboard entry `Name`, and succeeds whether or not it existed.
         };
 
-        /// \brief Enumerates the tests a compare node applies to a blackboard entry.
+        /// \brief Specifies the tests a compare node applies to a blackboard entry.
         enum class Test : UInt8
         {
             Exists,       ///< The entry exists, whatever it holds.
@@ -78,7 +78,7 @@ namespace ZyAI
             /// The test a compare node applies.
             Test   Check     = Test::Exists;
 
-            /// The name of the host action a leaf runs, or of the blackboard entry a compare, set or clear node works on.
+            /// The name of the host action a leaf runs, or of the entry a compare, set or clear node works on.
             Str32  Name;
         };
 

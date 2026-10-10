@@ -35,13 +35,12 @@ namespace ZyAudio
     {
         ZY_PROFILE_SCOPE("Audio::Tick");
 
-        // Advances the driver; the silent driver pumps the mixer here so playback still progresses.
+        // Only a driver without a thread of its own does its work here.
         mDriver.Advance(Delta);
 
-        // Collects playback handles that completed since the last tick.
         mMixer.Drain(mNotifications);
 
-        // Dispatches callbacks for ended playbacks and releases their retained tracks (game thread).
+        // Releases each ended playback's sound and tells its subscriber.
         for (ConstRef<Completion> Completion : mNotifications)
         {
             // A superseded slot was accounted for the moment it changed hands, so the mixer's word on it is stale.
@@ -86,7 +85,7 @@ namespace ZyAudio
 
         for (Text Endpoint : Description.Endpoints)
         {
-            LOG_I("Audio: Found Endpoint '{0}'", Endpoint);
+            LOG_I("Audio: Found endpoint '{0}'", Endpoint);
         }
 
         RegisterBuiltinLoaders();
@@ -185,59 +184,53 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume)
+    Object Service::Play(
+        Category             Category,
+        ConstRetainer<Sound> Sound,
+        Real32               Volume,
+        ConstPtr<Emitter>    Emitter,
+        ConstPtr<Matrix4x3>  Transform)
     {
-        ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded.");
+        ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded");
         ZY_ASSERT(Sound->GetFrequency() == kMixerFrequency, "Sound must be baked to the mixer sample rate");
         ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
+        ZY_ASSERT(!Emitter == !Transform, "A spatial playback needs both an emitter and a transform");
 
-        if (Unique<Decoder> Decoder = Sound->Decode())
+        Unique<Decoder> Decoder = Sound->Decode();
+
+        if (!Decoder)
         {
-            if (const Object Playback = Reserve(Category, Volume * mMixer.GetSubmixVolume(Category)))
-            {
-                if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume))
-                {
-                    Decoder.Release();
-                    mResources.Assign(Playback, Sound);
-
-                    return Playback;
-                }
-
-                mInstances.Free(Playback);
-            }
+            return Object();
         }
-        return Object();
-    }
 
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        Real32 Gain = Volume * mMixer.GetSubmixVolume(Category);
 
-    Object Service::Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform)
-    {
-        ZY_ASSERT(Sound->HasCompleted(), "Sound must be valid and loaded.");
-        ZY_ASSERT(Sound->GetFrequency() == kMixerFrequency, "Sound must be baked to the mixer sample rate");
-        ZY_ASSERT(IsBetween(Volume, 0.0f, 1.0f), "Volume must be between 0.0 and 1.0");
-
-        if (Unique<Decoder> Decoder = Sound->Decode())
+        if (Emitter)
         {
             const Vector2 Placement = mListener.Compute(
-                Transform.GetTranslation(), Vector3::Normalize(Transform.GetForward()), Emitter);
-            const Real32  Gain      = Volume * mMixer.GetSubmixVolume(Category) * Max(Placement.GetX(), Placement.GetY());
+                Transform->GetTranslation(),
+                Vector3::Normalize(Transform->GetForward()),
+                * Emitter);
 
-            if (const Object Playback = Reserve(Category, Gain))
-            {
-                if (mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Transform))
-                {
-                    Decoder.Release();
-                    mResources.Assign(Playback, Sound);
-
-                    return Playback;
-                }
-
-                mInstances.Free(Playback);
-            }
+            Gain *= Max(Placement.GetX(), Placement.GetY());
         }
-        return Object();
+
+        const Object Playback = Reserve(Category, Gain);
+
+        if (!Playback)
+        {
+            return Object();
+        }
+
+        if (!mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Transform))
+        {
+            mInstances.Free(Playback);
+            return Object();
+        }
+
+        Decoder.Release();
+        mResources.Assign(Playback, Sound);
+        return Playback;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -281,7 +274,7 @@ namespace ZyAudio
     {
         ZY_ASSERT(Handle.IsValid(), "Handle must be valid");
 
-        mSubscriptions.Assign(Handle, Callback);
+        mSubscriptions.Assign(Handle, Move(Callback));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -305,20 +298,6 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Silence(ConstRef<Sound> Asset)
-    {
-        mResources.ForEach([&](Object Playback, ConstRetainer<Sound> Resource)
-        {
-            if (AddressOf(* Resource) == AddressOf(Asset))
-            {
-                mMixer.Stop(Playback);
-            }
-        });
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Service::Pause(Object Handle)
     {
         mMixer.Pause(Handle);
@@ -330,6 +309,20 @@ namespace ZyAudio
     void Service::Resume(Object Handle)
     {
         mMixer.Resume(Handle);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Silence(ConstRef<Sound> Asset)
+    {
+        mResources.ForEach([&](Object Playback, ConstRetainer<Sound> Resource)
+        {
+            if (AddressOf(* Resource) == AddressOf(Asset))
+            {
+                mMixer.Stop(Playback);
+            }
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

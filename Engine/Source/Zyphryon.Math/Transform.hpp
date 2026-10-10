@@ -25,7 +25,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Default constructor initializing the transform to an identity state.
+        /// \brief Constructs an identity transform.
         ZY_INLINE Transform()
             : mScale { Vector3::One() }
         {
@@ -65,7 +65,7 @@ inline namespace ZyMath
         /// \brief Constructs a Transform with the specified 2D translation (Z = 0) and rotation.
         ///
         /// \param Translation The 2D translation vector to set (Z component will be set to 0).
-        /// \param Rotation    The quaternion representing the rotation.
+        /// \param Rotation    The quaternion representing the rotation to set.
         ZY_INLINE Transform(Vector2 Translation, Quaternion Rotation)
             : Transform(Vector3(Translation, 0.0f), Rotation)
         {
@@ -97,17 +97,17 @@ inline namespace ZyMath
 
         /// \brief Sets the translation vector for the transform (Z component set to 0).
         ///
-        /// \param Translation The 2D translation vector.
+        /// \param Translation The new position.
         /// \return A reference to this transform, modified by the new translation.
         ZY_INLINE Ref<Transform> SetTranslation(Vector2 Translation)
         {
-            mTranslation = Vector3(Translation.GetX(), Translation.GetY(), 0.0f);
+            mTranslation = Vector3(Translation, 0.0f);
             return (* this);
         }
 
         /// \brief Sets the translation vector for the transform in 3D space.
         ///
-        /// \param Translation The 3D translation vector.
+        /// \param Translation The new position.
         /// \return A reference to this transform, modified by the new translation.
         ZY_INLINE Ref<Transform> SetTranslation(Vector3 Translation)
         {
@@ -125,16 +125,16 @@ inline namespace ZyMath
 
         /// \brief Sets the scale vector for the transform (Z scale = 1.0f).
         ///
-        /// \param Scale The 2D scale vector.
+        /// \param Scale The new scale.
         /// \return A reference to this transform, modified by the new scale.
         ZY_INLINE Ref<Transform> SetScale(Vector2 Scale)
         {
-            return SetScale(Vector3(Scale.GetX(), Scale.GetY(), 1.0f));
+            return SetScale(Vector3(Scale, 1.0f));
         }
 
         /// \brief Sets the scale vector for the transform.
         ///
-        /// \param Scale The 3D scale vector.
+        /// \param Scale The new scale.
         /// \return A reference to this transform, modified by the new scale.
         ZY_INLINE Ref<Transform> SetScale(Vector3 Scale)
         {
@@ -152,7 +152,7 @@ inline namespace ZyMath
 
         /// \brief Sets the rotation for the transform.
         ///
-        /// \param Rotation The quaternion representing the rotation.
+        /// \param Rotation The new rotation.
         /// \return A reference to this transform, modified by the new rotation.
         ZY_INLINE Ref<Transform> SetRotation(Quaternion Rotation)
         {
@@ -170,11 +170,11 @@ inline namespace ZyMath
 
         /// \brief Translates the transform by the given 2D vector.
         ///
-        /// \param Translation The SD translation vector to apply.
+        /// \param Translation The 2D translation vector to apply.
         /// \return A reference to this transform, modified by the translation.
         ZY_INLINE Ref<Transform> Translate(Vector2 Translation)
         {
-            return Translate(Vector3(Translation.GetX(), Translation.GetY(), 0));
+            return Translate(Vector3(Translation, 0.0f));
         }
 
         /// \brief Translates the transform by the given 3D vector.
@@ -205,7 +205,7 @@ inline namespace ZyMath
         /// \return A reference to this transform, modified by the scale.
         ZY_INLINE Ref<Transform> Scale(Vector2 Vector)
         {
-            return Scale(Vector3(Vector.GetX(), Vector.GetY(), 1.0f));
+            return Scale(Vector3(Vector, 1.0f));
         }
 
         /// \brief Scales the transform non-uniformly by a 3D vector.
@@ -252,7 +252,7 @@ inline namespace ZyMath
 
         /// \brief Rotates the transform in world space around a specified axis by a given angle.
         ///
-        /// \param Rotation The rotation angle.
+        /// \param Rotation The angle to rotate by.
         /// \param Axis     The axis around which to rotate (must be normalized).
         /// \return A reference to this transform, modified by the rotation.
         ZY_INLINE Ref<Transform> Rotate(Angle Rotation, Vector3 Axis)
@@ -270,9 +270,20 @@ inline namespace ZyMath
             ZyFormat::Processor<Output>::Format(Buffer, kPattern, mTranslation, mScale, mRotation);
         }
 
+        /// \brief Serializes the state of the transform to or from the specified archive.
+        ///
+        /// \param Archive The archive to serialize the transform with.
+        template<typename Serializer>
+        ZY_INLINE void Serialize(Serializer Archive)
+        {
+            Archive.Serialize(mTranslation);
+            Archive.Serialize(mScale);
+            Archive.Serialize(mRotation);
+        }
+
     public:
 
-        /// \brief Linearly interpolates between two transformations.
+        /// \brief Interpolates between two transformations, spherically for rotation.
         ///
         /// \param Start      The starting transformation.
         /// \param End        The ending transformation.
@@ -284,17 +295,6 @@ inline namespace ZyMath
             const Vector3    Scale       = ::Lerp(Start.GetScale(), End.GetScale(), Percentage);
             const Quaternion Rotation    = Quaternion::Slerp(Start.GetRotation(), End.GetRotation(), Percentage);
             return Transform(Translation, Scale, Rotation);
-        }
-
-        /// \brief Serializes the state of the transform to or from the specified archive.
-        ///
-        /// \param Archive The archive to serialize the transform with.
-        template<typename Serializer>
-        ZY_INLINE void Serialize(Serializer Archive)
-        {
-            Archive.Serialize(mTranslation);
-            Archive.Serialize(mScale);
-            Archive.Serialize(mRotation);
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.

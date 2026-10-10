@@ -49,10 +49,11 @@ inline namespace ZyMath
         const Real32 CZ = Angle::Cosine(HalfRoll);
         const Real32 SZ = Angle::Sine(HalfRoll);
 
-        return Quaternion(SX * CY * CZ + CX * SY * SZ,
-                          CX * SY * CZ - SX * CY * SZ,
-                          CX * CY * SZ + SX * SY * CZ,
-                          CX * CY * CZ - SX * SY * SZ);
+        return Quaternion(
+            SX * CY * CZ + CX * SY * SZ,
+            CX * SY * CZ - SX * CY * SZ,
+            CX * CY * SZ + SX * SY * CZ,
+            CX * CY * CZ - SX * SY * SZ);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -64,12 +65,12 @@ inline namespace ZyMath
         ZY_ASSERT(Up.IsNormalized(), "Up must be normalized");
         ZY_ASSERT(!Direction.IsParallel(Up), "Direction and Up cannot be parallel");
 
-        const Vector3 vRight = Vector3::Normalize(Vector3::Cross(Up, Direction));
-        const Vector3 vCross = Vector3::Cross(Direction, vRight);
+        const Vector3 Right  = Vector3::Normalize(Vector3::Cross(Up, Direction));
+        const Vector3 Upward = Vector3::Cross(Direction, Right);
 
-        const Real32 M00 = vRight.GetX(), M01 = vCross.GetX(), M02 = Direction.GetX();
-        const Real32 M10 = vRight.GetY(), M11 = vCross.GetY(), M12 = Direction.GetY();
-        const Real32 M20 = vRight.GetZ(), M21 = vCross.GetZ(), M22 = Direction.GetZ();
+        const Real32 M00 = Right.GetX(), M01 = Upward.GetX(), M02 = Direction.GetX();
+        const Real32 M10 = Right.GetY(), M11 = Upward.GetY(), M12 = Direction.GetY();
+        const Real32 M20 = Right.GetZ(), M21 = Upward.GetZ(), M22 = Direction.GetZ();
 
         const Real32 Trace = M00 + M11 + M22;
         if (Trace > 0.0f)
@@ -108,6 +109,7 @@ inline namespace ZyMath
         const Real32 QX = (M02 + M20) / S;
         const Real32 QY = (M12 + M21) / S;
         const Real32 QZ = 0.25f * S;
+
         return Quaternion(QX, QY, QZ, QW);
     }
 }

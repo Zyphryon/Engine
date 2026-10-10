@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Text.hpp"
+#include "Zyphryon.Base/Scalar.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -45,7 +46,7 @@ inline namespace ZyBase
         return Text(Value, StrLength(Value));
     }
 
-    /// \brief Converts a null-terminated wide string to a text view.
+    /// \brief Converts a null-terminated wide string to a span of wide characters.
     ///
     /// \param Value The null-terminated wide string to convert.
     /// \return A span view referencing the input wide string.
@@ -145,7 +146,7 @@ inline namespace ZyBase
     ///
     /// \param Value  The text to search within.
     /// \param Search The set of characters to look for.
-    /// \param Start  The starting position to search from (default 0).
+    /// \param Start  The starting position to search from.
     /// \return A zero-based index of the first match, or `-1` if not found.
     constexpr SInt StrFindAny(Text Value, Text Search, UInt Start = 0)
     {
@@ -183,11 +184,11 @@ inline namespace ZyBase
         return Result ? Result - Value.GetData() : -1;
     }
 
-    /// \brief Returns the index of the last occurrence of a character in \p Value.
+    /// \brief Returns the index of the last occurrence of \p Search within \p Value.
     ///
     /// \param Value  The text to search within.
     /// \param Search The substring to look for.
-    /// \return A zero-based index of the first match, or `-1` if not found.
+    /// \return A zero-based index of the last match, or `-1` if not found.
     constexpr SInt StrFindLast(Text Value, Text Search)
     {
         if (Search.IsEmpty())
@@ -223,10 +224,10 @@ inline namespace ZyBase
         return -1;
     }
 
-    /// \brief Returns a sub-view with leading whitespace removed.
+    /// \brief Returns a sub-view with leading spaces and tabs removed.
     ///
     /// \param Value The text to trim.
-    /// \return A sub-view of \p Value with no leading whitespace characters.
+    /// \return A sub-view of \p Value with no leading spaces and tabs.
     constexpr Text StrTrimLeft(Text Value)
     {
         UInt Start = 0;
@@ -238,10 +239,10 @@ inline namespace ZyBase
         return Value.Slice(Start);
     }
 
-    /// \brief Returns a sub-view with trailing whitespace removed.
+    /// \brief Returns a sub-view with trailing spaces and tabs removed.
     ///
     /// \param Value The text to trim.
-    /// \return A sub-view of \p Value with no trailing whitespace characters.
+    /// \return A sub-view of \p Value with no trailing spaces and tabs.
     constexpr Text StrTrimRight(Text Value)
     {
         UInt End = Value.GetSize();
@@ -253,10 +254,10 @@ inline namespace ZyBase
         return Value.Slice(0, End);
     }
 
-    /// \brief Returns a sub-view with both leading and trailing whitespace removed.
+    /// \brief Returns a sub-view with spaces and tabs at both ends removed.
     ///
     /// \param Value The text to trim.
-    /// \return A sub-view of \p Value with no surrounding whitespace characters.
+    /// \return A sub-view of \p Value with no spaces and tabs at both ends.
     constexpr Text StrTrim(Text Value)
     {
         return StrTrimRight(StrTrimLeft(Value));
@@ -316,11 +317,9 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the first occurrence of \p Delimiter and returns the part before it.
     ///
-    /// \note If \p Search is not found an empty view is returned.
-    ///
     /// \param Value     The text to split.
     /// \param Delimiter The character at which to split.
-    /// \return A sub-view of \p Value up to (but not including) the first \p Delimiter.
+    /// \return A sub-view of \p Value before the first \p Delimiter, or an empty view if not found.
     constexpr Text StrBefore(Text Value, Char Delimiter)
     {
         const SInt Index = StrFind(Value, Delimiter);
@@ -329,11 +328,9 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the first occurrence of \p Search and returns the part before it.
     ///
-    /// \note If \p Search is not found an empty view is returned.
-    ///
     /// \param Value  The text to split.
     /// \param Search The substring to search for.
-    /// \return A sub-view of \p Value up to (but not including) the first \p Search.
+    /// \return A sub-view of \p Value before the first \p Search, or an empty view if not found.
     constexpr Text StrBefore(Text Value, Text Search)
     {
         const SInt Index = StrFind(Value, Search);
@@ -342,11 +339,9 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the last occurrence of \p Delimiter and returns the part before it.
     ///
-    /// \note If \p Search is not found an empty view is returned.
-    ///
     /// \param Value     The text to split.
     /// \param Delimiter The character at which to split.
-    /// \return A sub-view of \p Value up to (but not including) the last \p Delimiter.
+    /// \return A sub-view of \p Value before the last \p Delimiter, or an empty view if not found.
     constexpr Text StrBeforeLast(Text Value, Char Delimiter)
     {
         const SInt Index = StrFindLast(Value, Delimiter);
@@ -355,11 +350,9 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the last occurrence of \p Search and returns the part before it.
     ///
-    /// \note If \p Search is not found an empty view is returned.
-    ///
     /// \param Value  The text to split.
     /// \param Search The substring to search for.
-    /// \return A sub-view of \p Value up to (but not including) the last \p Search.
+    /// \return A sub-view of \p Value before the last \p Search, or an empty view if not found.
     constexpr Text StrBeforeLast(Text Value, Text Search)
     {
         const SInt Index = StrFindLast(Value, Search);
@@ -367,8 +360,6 @@ inline namespace ZyBase
     }
 
     /// \brief Splits \p Value at the first occurrence of \p Delimiter and returns the part after it.
-    ///
-    /// \note If \p Delimiter is not found an empty view is returned.
     ///
     /// \param Value     The text to split.
     /// \param Delimiter The character at which to split.
@@ -381,8 +372,6 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the first occurrence of \p Search and returns the part after it.
     ///
-    /// \note If \p Search is not found an empty view is returned.
-    ///
     /// \param Value  The text to split.
     /// \param Search The substring to search for.
     /// \return A sub-view of \p Value after the first \p Search, or an empty view if not found.
@@ -394,8 +383,6 @@ inline namespace ZyBase
 
     /// \brief Splits \p Value at the last occurrence of \p Delimiter and returns the part after it.
     ///
-    /// \note If \p Delimiter is not found an empty view is returned.
-    ///
     /// \param Value     The text to split.
     /// \param Delimiter The character at which to split.
     /// \return A sub-view of \p Value after the last \p Delimiter, or an empty view if not found.
@@ -406,8 +393,6 @@ inline namespace ZyBase
     }
 
     /// \brief Splits \p Value at the last occurrence of \p Search and returns the part after it.
-    ///
-    /// \note If \p Search is not found an empty view is returned.
     ///
     /// \param Value  The text to split.
     /// \param Search The substring to search for.
@@ -487,26 +472,14 @@ inline namespace ZyBase
         return Left.GetSize() < Right.GetSize() ? -1 : 1;
     }
 
-    /// \brief Checks whether two text views are equal.
+    /// \brief Checks whether two text views hold the same characters, case included.
     ///
     /// \param Left  The first text to compare.
     /// \param Right The second text to compare.
-    /// \return `true` if both views contain the same characters regardless of case, `false` otherwise.
+    /// \return `true` if both views hold the same characters, `false` otherwise.
     constexpr Bool StrEqualCase(Text Left, Text Right)
     {
-        if (Left.GetSize() != Right.GetSize())
-        {
-            return false;
-        }
-
-        for (UInt Index = 0; Index < Left.GetSize(); ++Index)
-        {
-            if (Left[Index] != Right[Index])
-            {
-                return false;
-            }
-        }
-        return true;
+        return Left == Right;
     }
 
     /// \brief Checks whether two text views are equal using case-insensitive comparison.
@@ -549,14 +522,7 @@ inline namespace ZyBase
 
         for (UInt Index = 0, Limit = Value.GetSize() - Search.GetSize(); Index <= Limit; ++Index)
         {
-            UInt Cursor = 0;
-
-            while (Cursor < Search.GetSize() && StrLowercase(Value[Index + Cursor]) == StrLowercase(Search[Cursor]))
-            {
-                ++Cursor;
-            }
-
-            if (Cursor == Search.GetSize())
+            if (StrEqualCaseInsensitive(Value.Slice(Index, Search.GetSize()), Search))
             {
                 return static_cast<SInt>(Index);
             }
@@ -626,13 +592,15 @@ inline namespace ZyBase
     /// \return `true` if the character is a hexadecimal digit, `false` otherwise.
     constexpr Bool StrIsHexDigit(Char Character)
     {
-        return StrIsDigit(Character) || (Character >= 'a' && Character <= 'f') || (Character >= 'A' && Character <= 'F');
+        return StrIsDigit(Character) ||
+               (Character >= 'a' && Character <= 'f') ||
+               (Character >= 'A' && Character <= 'F');
     }
 
     /// \brief Checks whether a character is a whitespace character.
     ///
     /// \param Character The character to check.
-    /// \return `true` if the character is a whitespace character, `false` otherwise.
+    /// \return `true` if the character is a space, a tab or one of `\n`, `\r`, `\v` and `\f`, `false` otherwise.
     constexpr Bool StrIsSpace(Char Character)
     {
         return Character == ' '  ||
@@ -647,7 +615,7 @@ inline namespace ZyBase
     ///
     /// \param Character The character to check.
     /// \return `true` if the character is an alphabetic letter, `false` otherwise.
-    constexpr bool StrIsAlphabetic(Char Character)
+    constexpr Bool StrIsAlphabetic(Char Character)
     {
         return (Character >= 'A' && Character <= 'Z') || (Character >= 'a' && Character <= 'z');
     }
@@ -656,24 +624,24 @@ inline namespace ZyBase
     ///
     /// \param Character The character to check.
     /// \return `true` if the character is alphanumeric, `false` otherwise.
-    constexpr bool StrIsAlphanumeric(Char Character)
+    constexpr Bool StrIsAlphanumeric(Char Character)
     {
-        return StrIsAlphabetic (Character) || StrIsDigit(Character);
+        return StrIsAlphabetic(Character) || StrIsDigit(Character);
     }
 
     /// \brief Checks whether a character is a valid identifier character (A-Z, a-z, 0-9, _).
     ///
     /// \param Character The character to check.
     /// \return `true` if the character is a valid identifier character, `false` otherwise.
-    constexpr bool StrIsIdentifier(Char Character)
+    constexpr Bool StrIsIdentifier(Char Character)
     {
-        return StrIsAlphabetic (Character) || StrIsDigit(Character) || Character == '_';
+        return StrIsAlphanumeric(Character) || Character == '_';
     }
 
     /// \brief Skips characters in \p Content starting at \p Cursor while they match \p Predicate.
     ///
-    /// \param Content  The text to scan.
-    /// \param Cursor   The current position, advanced past matching characters.
+    /// \param Content   The text to scan.
+    /// \param Cursor    The current position, advanced past matching characters.
     /// \param Predicate The callable taking a Char and returning Bool.
     /// \return The number of characters skipped.
     template<typename Callable>
@@ -688,11 +656,11 @@ inline namespace ZyBase
         return Cursor - Start;
     }
 
-    /// \brief Skips whitespace characters (space, tab) starting at \p Cursor.
+    /// \brief Skips spaces, tabs, line feeds and carriage returns starting at \p Cursor.
     ///
     /// \param Content The text to scan.
-    /// \param Cursor  The current position, advanced past whitespace.
-    /// \return The number of whitespace characters skipped.
+    /// \param Cursor  The current position, advanced past them.
+    /// \return The number of characters skipped.
     constexpr UInt StrSkipWhitespace(Text Content, Ref<UInt> Cursor)
     {
         return StrSkip(Content, Cursor, [](Char Character)
@@ -752,9 +720,10 @@ inline namespace ZyBase
 
     /// \brief Extracts an integral number from the text at the current cursor position.
     ///
-    /// \note Parses digits in the specified base, optionally handling a leading minus sign for signed types.
+    /// \note A leading minus sign is read only for signed types.
     ///
-    /// \tparam Base   The numeric base to use for parsing (default is 10).
+    /// \tparam Base   The numeric base to use for parsing.
+    /// \tparam Type   The integral type to extract.
     /// \param Content The text to parse from.
     /// \param Cursor  The current position, advanced past the consumed digits, or left alone when none is read.
     /// \return The extracted integral value, or `0` when no digit is read.
@@ -825,63 +794,6 @@ inline namespace ZyBase
         return Result;
     }
 
-    /// \brief Extracts a boolean value from the text at the current cursor position.
-    ///
-    /// Recognizes "0", "1", "true" (case-insensitive) and "false" (case-insensitive).
-    ///
-    /// \param Content The text to parse from.
-    /// \param Cursor  The current position, advanced past the consumed characters if matched.
-    /// \return The extracted boolean value, or `false` if no match is found.
-    constexpr Bool StrExtractBool(Text Content, Ref<UInt> Cursor)
-    {
-        switch (StrExtractChar(Content, Cursor))
-        {
-        case '0':
-            return false;
-        case '1':
-            return true;
-        case 't': case 'T':
-            if (Content.GetSize() >= Cursor + 3
-                && (Content[Cursor    ] | 0x20) == 'r'
-                && (Content[Cursor + 1] | 0x20) == 'u'
-                && (Content[Cursor + 2] | 0x20) == 'e')
-            {
-                Cursor += 3;
-                return true;
-            }
-            break;
-
-        case 'f': case 'F':
-            if (Content.GetSize() >= Cursor + 4
-                && (Content[Cursor    ] | 0x20) == 'a'
-                && (Content[Cursor + 1] | 0x20) == 'l'
-                && (Content[Cursor + 2] | 0x20) == 's'
-                && (Content[Cursor + 3] | 0x20) == 'e')
-            {
-                Cursor += 4;
-                return false;
-            }
-            break;
-        default:
-            break;
-        }
-        --Cursor;
-        return false;
-    }
-
-    /// \brief Extracts text from the current cursor position up to a delimiter.
-    ///
-    /// \param Content   The text to parse from.
-    /// \param Cursor    The current position, advanced past the extracted text and delimiter.
-    /// \param Delimiter The character that terminates the extraction.
-    /// \return The extracted text view.
-    constexpr Text StrExtractText(Text Content, Ref<UInt> Cursor, Char Delimiter)
-    {
-        const Text Result = StrBefore(Content.Slice(Cursor), Delimiter);
-        Cursor += Result.GetSize();
-        return Result;
-    }
-
     /// \brief Extracts a floating-point number from the text at the current cursor position.
     ///
     /// \tparam Type   The floating-point type to extract.
@@ -913,8 +825,57 @@ inline namespace ZyBase
         {
             return IsNegative ? Type(0) - Result : Result;
         }
-        
+
         Cursor = Start;
         return Type(0);
+    }
+
+    /// \brief Extracts a boolean value from the text at the current cursor position.
+    ///
+    /// \note Recognizes `0`, `1`, `true` and `false` in any case.
+    ///
+    /// \param Content The text to parse from.
+    /// \param Cursor  The current position, advanced past the consumed characters if matched.
+    /// \return The extracted boolean value, or `false` if no match is found.
+    constexpr Bool StrExtractBool(Text Content, Ref<UInt> Cursor)
+    {
+        switch (StrExtractChar(Content, Cursor))
+        {
+        case '0':
+            return false;
+        case '1':
+            return true;
+        case 't': case 'T':
+            if (Content.GetSize() >= Cursor + 3 && StrEqualCaseInsensitive(Content.Slice(Cursor, 3), "rue"))
+            {
+                Cursor += 3;
+                return true;
+            }
+            break;
+        case 'f': case 'F':
+            if (Content.GetSize() >= Cursor + 4 && StrEqualCaseInsensitive(Content.Slice(Cursor, 4), "alse"))
+            {
+                Cursor += 4;
+                return false;
+            }
+            break;
+        default:
+            break;
+        }
+        --Cursor;
+        return false;
+    }
+
+    /// \brief Extracts text from the current cursor position up to a delimiter.
+    ///
+    /// \param Content   The text to parse from.
+    /// \param Cursor    The current position, advanced past the extracted text but not the delimiter.
+    /// \param Delimiter The character that terminates the extraction.
+    /// \return The text up to \p Delimiter, or an empty view when no delimiter follows.
+    constexpr Text StrExtractText(Text Content, Ref<UInt> Cursor, Char Delimiter)
+    {
+        const Text Result = StrBefore(Content.Slice(Cursor), Delimiter);
+        Cursor += Result.GetSize();
+        return Result;
     }
 }

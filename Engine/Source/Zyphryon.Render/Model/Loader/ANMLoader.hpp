@@ -25,7 +25,7 @@ namespace ZyRender
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "anm" };
 
     public:
@@ -38,10 +38,10 @@ namespace ZyRender
         /// \brief Specifies which components of a bone a lane drives.
         enum class Component : UInt8
         {
-            None     = 0,
-            Position = 1 << 0,
-            Scale    = 1 << 1,
-            Rotation = 1 << 2,
+            None     = 0,       ///< No component is driven.
+            Position = 1 << 0,  ///< The lane drives the bone's position.
+            Scale    = 1 << 1,  ///< The lane drives the bone's scale.
+            Rotation = 1 << 2,  ///< The lane drives the bone's rotation.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Component);
     };

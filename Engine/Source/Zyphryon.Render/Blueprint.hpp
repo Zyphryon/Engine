@@ -41,7 +41,7 @@ namespace ZyRender
             return mTargets.GetSize() - 1;
         }
 
-        /// \brief Gets the targets the pipeline declares.
+        /// \brief Gets the targets the blueprint declares.
         ///
         /// \return A read-only reference to the target list, in slot order.
         ZY_INLINE ConstSpan<Target> GetTargets() const
@@ -88,7 +88,7 @@ namespace ZyRender
         /// \brief Gets a pass by its position in the execution order.
         ///
         /// \param Index The zero-based index of the pass, in execution order.
-        /// \return A reference to the requested pass.
+        /// \return The pass, cast to `Type` unchecked.
         template<typename Type = Pass>
         ZY_INLINE Ref<Type> GetPass(UInt32 Index)
         {

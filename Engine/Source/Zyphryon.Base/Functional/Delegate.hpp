@@ -23,7 +23,7 @@ inline namespace ZyBase
     /// \brief Specifies the predefined inline storage sizes for delegates.
     enum class DelegateInlineSize
     {
-        None      = 0,    ///< No inline storage
+        None      = 0,    ///< No inline storage.
         Smallest  = 1,    ///< Enough for function pointers and stateless lambdas.
         Small     = 2,    ///< Enough for function pointers and small lambdas.
         Standard  = 4,    ///< Reasonable default size for most use cases.
@@ -33,20 +33,20 @@ inline namespace ZyBase
 
     /// \brief Represents a type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Standard>
-    class ZY_ALIGN_CPU Delegate;
+    class Delegate;
 
     /// \brief Represents a type-safe delegate that can bind to free functions, member functions, and lambdas.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
-    class ZY_ALIGN_CPU Delegate<Return(Arguments...), InlineSize> final
+    class Delegate<Return(Arguments...), InlineSize> final
     {
     public:
 
         /// \brief Capacity of the internal storage buffer, in bytes.
-        static constexpr UInt32 kCapacity  = static_cast<UInt32>(InlineSize) * sizeof(void *);
+        static constexpr UInt32 kCapacity = static_cast<UInt32>(InlineSize) * sizeof(void *);
 
     public:
 
-        /// \brief Default constructor, creates an empty delegate.
+        /// \brief Constructs an empty delegate.
         ZY_INLINE constexpr Delegate()
             : mStorage { },
               mExecute { AddressOf(InvokeEmpty) },
@@ -54,7 +54,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Construct a delegate from a free function or static member function.
+        /// \brief Constructs a delegate bound to a free function or static member function.
         ///
         /// \tparam Function The function pointer to bind.
         template<auto Function>
@@ -65,7 +65,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Construct a delegate from a function pointer.
+        /// \brief Constructs a delegate bound to a function pointer.
         ///
         /// \param Function The function pointer to bind.
         ZY_INLINE constexpr Delegate(Return (* Function)(Arguments...))
@@ -76,7 +76,7 @@ inline namespace ZyBase
             * reinterpret_cast<Return(**)(Arguments...)>(mStorage) = Function;
         }
 
-        /// \brief Construct a delegate from a member function and object instance.
+        /// \brief Constructs a delegate bound to a member function and object instance.
         ///
         /// \tparam Method The member function pointer to bind.
         /// \param  Object The object instance to bind the method to.
@@ -89,7 +89,7 @@ inline namespace ZyBase
             * reinterpret_cast<Ptr<Ptr<Type>>>(mStorage) = Object;
         }
 
-        /// \brief Construct a delegate from a lambda or callable object.
+        /// \brief Constructs a delegate bound to a lambda or callable object.
         ///
         /// \param Object The lambda or callable object to bind.
         template<typename Callable>
@@ -97,25 +97,10 @@ inline namespace ZyBase
             requires (!IsAnyOf<StripAll<Callable>, Delegate>)
             : mStorage { }
         {
-            using Type = StripAll<Callable>;
-
-            if constexpr (sizeof(Type) <= kCapacity)
-            {
-                Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
-
-                mExecute = AddressOf(InvokeMoveableLambda<Type>);
-                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
-            }
-            else
-            {
-                * reinterpret_cast<Ptr<Type> *>(mStorage) = new Type(Forward<Callable>(Object));
-
-                mExecute = AddressOf(InvokeDynamicLambda<Type>);
-                mManage  = AddressOf(ManageHeap<Type>);
-            }
+            Store(Forward<Callable>(Object));
         }
 
-        /// \brief Copy constructor, duplicates another delegate.
+        /// \brief Constructs a delegate copying another.
         ///
         /// \param Other The other delegate to copy from.
         ZY_INLINE constexpr Delegate(ConstRef<Delegate> Other)
@@ -126,7 +111,7 @@ inline namespace ZyBase
             Duplicate(Other);
         }
 
-        /// \brief Move constructor, transfers ownership from another delegate.
+        /// \brief Constructs a delegate taking over another, leaving it empty.
         ///
         /// \param Other The other delegate to move from.
         ZY_INLINE constexpr Delegate(AnyRef<Delegate> Other)
@@ -137,7 +122,7 @@ inline namespace ZyBase
             mManage(Operation::Move, mStorage, Other.mStorage);
         }
 
-        /// \brief Destructor, releases any resources held by the delegate.
+        /// \brief Destroys the delegate, releasing its callable.
         ZY_INLINE ~Delegate()
         {
             Reset();
@@ -186,25 +171,10 @@ inline namespace ZyBase
         {
             Reset();
 
-            using Type = StripAll<Callable>;
-
-            if constexpr (sizeof(Type) <= kCapacity)
-            {
-                Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
-
-                mExecute = AddressOf(InvokeMoveableLambda<Type>);
-                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
-            }
-            else
-            {
-                * reinterpret_cast<Ptr<Type> *>(mStorage) = new Type(Forward<Callable>(Object));
-
-                mExecute = AddressOf(InvokeDynamicLambda<Type>);
-                mManage  = AddressOf(ManageHeap<Type>);
-            }
+            Store(Forward<Callable>(Object));
         }
 
-        /// \brief Returns whether the delegate is empty.
+        /// \brief Checks whether the delegate is empty.
         ///
         /// \return `true` if the delegate is empty, otherwise `false`.
         ZY_INLINE Bool IsEmpty() const
@@ -212,7 +182,7 @@ inline namespace ZyBase
             return (mExecute == AddressOf(InvokeEmpty));
         }
 
-        /// \brief Returns whether the delegate is bound to the specified free function or static member function.
+        /// \brief Checks whether the delegate is bound to the specified free function or static member function.
         ///
         /// \tparam Function The function pointer to check.
         /// \return `true` if the delegate is bound to the specified function, otherwise `false`.
@@ -222,7 +192,7 @@ inline namespace ZyBase
             return (mExecute == AddressOf(InvokeDirect<Function>));
         }
 
-        /// \brief Returns whether the delegate is bound to the specified function pointer.
+        /// \brief Checks whether the delegate is bound to the specified function pointer.
         ///
         /// \param Function The function pointer to check.
         /// \return `true` if the delegate is bound to the specified function, otherwise `false`.
@@ -231,15 +201,15 @@ inline namespace ZyBase
             return (mExecute == AddressOf(InvokeFunction)) && (* reinterpret_cast<Return(* const *)(Arguments...)>(mStorage) == Function);
         }
 
-        /// \brief Returns whether the delegate is bound to the specified member function and object instance.
+        /// \brief Checks whether the delegate is bound to the specified member function and object instance.
         ///
         /// \tparam Method The member function pointer to check.
         /// \param  Object The object instance to check.
         /// \return `true` if the delegate is bound to the specified method and object, otherwise `false`.
-        template<auto Method, typename T>
-        ZY_INLINE Bool IsBoundTo(ConstPtr<T> Object) const
+        template<auto Method, typename Type>
+        ZY_INLINE Bool IsBoundTo(ConstPtr<Type> Object) const
         {
-            return (mExecute == AddressOf(InvokeMethod<Method, T>)) && (* reinterpret_cast<Ptr<T> const *>(mStorage) == Object);
+            return (mExecute == AddressOf(InvokeMethod<Method, Type>)) && (* reinterpret_cast<Ptr<Type> const *>(mStorage) == Object);
         }
 
         /// \brief Invokes the bound function once and then resets the delegate to an empty state.
@@ -255,10 +225,10 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Copy assignment operator.
+        /// \brief Copies another delegate into this one.
         ///
         /// \param Other The other delegate to copy from.
-        /// \return Reference to this delegate.
+        /// \return A reference to this delegate.
         ZY_INLINE Ref<Delegate> operator=(ConstRef<Delegate> Other)
         {
             if (this != AddressOf(Other))
@@ -272,10 +242,10 @@ inline namespace ZyBase
             return (* this);
         }
 
-        /// \brief Move assignment operator, transfers ownership from another delegate.
+        /// \brief Moves another delegate into this one, leaving it empty.
         ///
         /// \param Other The other delegate to move from.
-        /// \return Reference to this delegate.
+        /// \return A reference to this delegate.
         ZY_INLINE Ref<Delegate> operator=(AnyRef<Delegate> Other)
         {
             if (this != AddressOf(Other))
@@ -303,7 +273,6 @@ inline namespace ZyBase
             return Compare(mStorage, Other.mStorage, kCapacity);
         }
 
-
         /// \brief Calls the bound function with the provided arguments.
         ///
         /// \param Parameters The arguments to forward to the bound function.
@@ -328,7 +297,7 @@ inline namespace ZyBase
         ///
         /// \param Function The function pointer to bind.
         /// \return A delegate bound to the specified function.
-        ZY_INLINE static constexpr Delegate Create(Return (*Function)(Arguments...))
+        ZY_INLINE static constexpr Delegate Create(Return (* Function)(Arguments...))
         {
             return Delegate(Function);
         }
@@ -336,7 +305,7 @@ inline namespace ZyBase
         /// \brief Creates a delegate bound to a member function and object instance.
         ///
         /// \tparam Method The member function pointer to bind.
-        /// \param Object  The object instance to bind the method to.
+        /// \param  Object The object instance to bind the method to.
         /// \return A delegate bound to the specified method and object.
         template<auto Method, typename Type>
         ZY_INLINE static constexpr Delegate Create(Ptr<Type> Object)
@@ -356,6 +325,20 @@ inline namespace ZyBase
         }
 
     private:
+
+        /// \brief Specifies what a manage function does to the callable a buffer holds.
+        enum class Operation : UInt8
+        {
+            Copy,       ///< Builds a copy of the source's callable in the target.
+            Move,       ///< Hands the source's callable over to the target, leaving the source to be forgotten.
+            Release,    ///< Destroys the target's callable.
+        };
+
+        /// \brief Type alias for the internal trampoline function signature.
+        using Execute = Return(*)(ConstPtr<void>, Arguments...);
+
+        /// \brief Type alias for the internal function that copies, moves and releases the callable.
+        using Manage = Bool(*)(Operation, Ptr<void>, ConstPtr<void>);
 
         /// \brief Resets the delegate to an empty state, releasing any resources.
         ZY_INLINE void Reset()
@@ -378,21 +361,31 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Specifies what a manage function does to the callable a buffer holds.
-        enum class Operation : UInt8
+        /// \brief Stores a callable in the buffer when it fits, or on the heap otherwise.
+        ///
+        /// \param Object The callable to hold.
+        template<typename Callable>
+        ZY_INLINE constexpr void Store(AnyRef<Callable> Object)
         {
-            Copy,       ///< Builds a copy of the source's callable in the target.
-            Move,       ///< Hands the source's callable over to the target, leaving the source to be forgotten.
-            Release,    ///< Destroys the target's callable.
-        };
+            using Type = StripAll<Callable>;
 
-        /// \brief Type alias for the internal trampoline function signature.
-        using Execute = Return(*)(ConstPtr<void>, Arguments...);
+            if constexpr (sizeof(Type) <= kCapacity)
+            {
+                Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
 
-        /// \brief Type alias for the internal function that copies, moves and releases the callable.
-        using Manage = Bool(*)(Operation, Ptr<void>, ConstPtr<void>);
+                mExecute = AddressOf(InvokeStack<Type>);
+                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
+            }
+            else
+            {
+                * reinterpret_cast<Ptr<Type> *>(mStorage) = new Type(Forward<Callable>(Object));
 
-        /// \brief Empty trampoline function for uninitialized delegates.
+                mExecute = AddressOf(InvokeHeap<Type>);
+                mManage  = AddressOf(ManageHeap<Type>);
+            }
+        }
+
+        /// \brief Returns a default value for a delegate bound to nothing.
         ZY_INLINE static auto InvokeEmpty(ConstPtr<void>, Arguments...)
         {
             if constexpr (!IsVoid<Return>)
@@ -415,31 +408,22 @@ inline namespace ZyBase
         }
 
         /// \brief Invokes a member function on the stored object instance.
-        template<auto Function, typename T>
+        template<auto Function, typename Type>
         ZY_INLINE static auto InvokeMethod(ConstPtr<void> Buffer, Arguments... Parameters)
         {
-            return ((** static_cast<Ptr<T> const *>(Buffer)).* Function)(Forward<Arguments>(Parameters)...);
+            return ((** static_cast<Ptr<Type> const *>(Buffer)).* Function)(Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Invokes a trivially copyable lambda stored in the internal buffer via a const reference.
+        /// \brief Invokes a callable held in the buffer itself.
         template<typename Callable>
-        ZY_INLINE static auto InvokeLambda(ConstPtr<void> Buffer, Arguments... Parameters)
-        {
-            return (* Launder(static_cast<ConstPtr<Callable>>(Buffer)))(Forward<Arguments>(Parameters)...);
-        }
-
-        /// \brief Invokes a move-only lambda stored in the internal buffer via a non-const reference.
-        ///
-        /// Used for lambdas that are not trivially copyable but fit within the inline storage.
-        template<typename Callable>
-        ZY_INLINE static auto InvokeMoveableLambda(ConstPtr<void> Buffer, Arguments... Parameters)
+        ZY_INLINE static auto InvokeStack(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return (* Launder(static_cast<Ptr<Callable>>(const_cast<Ptr<void>>(Buffer))))(Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Invokes a heap-allocated lambda or callable object.
+        /// \brief Invokes a callable held on the heap.
         template<typename Callable>
-        ZY_INLINE static auto InvokeDynamicLambda(ConstPtr<void> Buffer, Arguments... Parameters)
+        ZY_INLINE static auto InvokeHeap(ConstPtr<void> Buffer, Arguments... Parameters)
         {
             return (** static_cast<Ptr<Callable> const *>(Buffer))(Forward<Arguments>(Parameters)...);
         }
@@ -548,17 +532,17 @@ inline namespace ZyBase
 
     /// \brief Represents a type-safe delegate that can bind to free functions and static member functions only.
     template<typename Return, typename... Arguments>
-    class ZY_ALIGN_CPU Delegate<Return(Arguments...), DelegateInlineSize::None> final
+    class Delegate<Return(Arguments...), DelegateInlineSize::None> final
     {
     public:
 
-        /// \brief Default constructor, creates an empty delegate.
+        /// \brief Constructs an empty delegate.
         ZY_INLINE constexpr Delegate()
             : mExecute { AddressOf(InvokeEmpty) }
         {
         }
 
-        /// \brief Construct a delegate from a free function or static member function.
+        /// \brief Constructs a delegate bound to a free function or static member function.
         ///
         /// \tparam Function The function pointer to bind.
         template<auto Function>
@@ -567,7 +551,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Construct a delegate from a function pointer.
+        /// \brief Constructs a delegate bound to a function pointer.
         ///
         /// \param Function The function pointer to bind.
         ZY_INLINE constexpr Delegate(Return (* Function)(Arguments...))
@@ -575,7 +559,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Copy constructor, duplicates another delegate.
+        /// \brief Constructs a delegate copying another.
         ///
         /// \param Other The other delegate to copy from.
         ZY_INLINE constexpr Delegate(ConstRef<Delegate> Other)
@@ -583,18 +567,12 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Move constructor, transfers ownership from another delegate.
+        /// \brief Constructs a delegate taking over another, leaving it empty.
         ///
         /// \param Other The other delegate to move from.
         ZY_INLINE constexpr Delegate(AnyRef<Delegate> Other)
-            : mExecute { Exchange(Other.mExecute, AddressOf(InvokeEmpty))  }
+            : mExecute { Exchange(Other.mExecute, AddressOf(InvokeEmpty)) }
         {
-        }
-
-        /// \brief Destructor, releases any resources held by the delegate.
-        ZY_INLINE ~Delegate()
-        {
-            Reset();
         }
 
         /// \brief Binds a free function or static member function to the delegate.
@@ -603,11 +581,10 @@ inline namespace ZyBase
         template<auto Function>
         ZY_INLINE void Bind()
         {
-            Reset();
             mExecute = AddressOf(InvokeDirect<Function>);
         }
 
-        /// \brief Returns whether the delegate is empty.
+        /// \brief Checks whether the delegate is empty.
         ///
         /// \return `true` if the delegate is empty, otherwise `false`.
         ZY_INLINE Bool IsEmpty() const
@@ -615,7 +592,7 @@ inline namespace ZyBase
             return (mExecute == AddressOf(InvokeEmpty));
         }
 
-        /// \brief Returns whether the delegate is bound to the specified free function or static member function.
+        /// \brief Checks whether the delegate is bound to the specified free function or static member function.
         ///
         /// \tparam Function The function pointer to check.
         /// \return `true` if the delegate is bound to the specified function, otherwise `false`.
@@ -625,45 +602,34 @@ inline namespace ZyBase
             return (mExecute == AddressOf(InvokeDirect<Function>));
         }
 
-        /// \brief Copy assignment operator.
+        /// \brief Copies another delegate into this one.
         ///
         /// \param Other The other delegate to copy from.
-        /// \return Reference to this delegate.
+        /// \return A reference to this delegate.
         ZY_INLINE Ref<Delegate> operator=(ConstRef<Delegate> Other)
         {
-            if (this != AddressOf(Other))
-            {
-                Reset();
-
-                mExecute = Other.mExecute;
-            }
+            mExecute = Other.mExecute;
             return (* this);
         }
 
-        /// \brief Move assignment operator, transfers ownership from another delegate.
+        /// \brief Moves another delegate into this one, leaving it empty.
         ///
         /// \param Other The other delegate to move from.
-        /// \return Reference to this delegate.
+        /// \return A reference to this delegate.
         ZY_INLINE Ref<Delegate> operator=(AnyRef<Delegate> Other)
         {
-            if (this != AddressOf(Other))
-            {
-                Reset();
-
-                mExecute = Exchange(Other.mExecute, AddressOf(InvokeEmpty));
-            }
+            mExecute = Exchange(Other.mExecute, AddressOf(InvokeEmpty));
             return (* this);
         }
 
         /// \brief Compares this delegate to another for equality.
         ///
         /// \param Other The other delegate to compare against.
-        /// \return `true` if both delegates are bound to the same function and object, otherwise `false`.
+        /// \return `true` if both delegates are bound to the same function, otherwise `false`.
         ZY_INLINE Bool operator==(ConstRef<Delegate> Other) const
         {
             return (mExecute == Other.mExecute);
         }
-
 
         /// \brief Calls the bound function with the provided arguments.
         ///
@@ -682,21 +648,15 @@ inline namespace ZyBase
         template<auto Function>
         ZY_INLINE static constexpr Delegate Create()
         {
-            return Delegate(Constant<Function>{});
+            return Delegate(Constant<Function>{ });
         }
 
     private:
 
-        /// \brief Resets the delegate to an empty state, releasing any resources.
-        ZY_INLINE void Reset()
-        {
-            mExecute = AddressOf(InvokeEmpty);
-        }
-
         /// \brief Type alias for the internal trampoline function signature.
         using Execute = Return(*)(Arguments...);
 
-        /// \brief Empty trampoline function for uninitialized delegates.
+        /// \brief Returns a default value for a delegate bound to nothing.
         ZY_INLINE static auto InvokeEmpty(Arguments...)
         {
             if constexpr (!IsVoid<Return>)
@@ -722,7 +682,7 @@ inline namespace ZyBase
 
     /// \brief Represents a multicast delegate that can hold and invoke multiple delegates.
     template<typename Signature, DelegateInlineSize InlineSize = DelegateInlineSize::Standard>
-    class ZY_ALIGN_CPU MulticastDelegate;
+    class MulticastDelegate;
 
     /// \brief Represents a multicast delegate that can hold and invoke multiple delegates.
     template<typename Return, typename... Arguments, DelegateInlineSize InlineSize>
@@ -735,7 +695,7 @@ inline namespace ZyBase
 
     public:
 
-        /// \brief Returns whether the multicast delegate has no bound delegates.
+        /// \brief Checks whether the multicast delegate has no bound delegates.
         ///
         /// \return `true` if there are no bound delegates, otherwise `false`.
         ZY_INLINE Bool IsEmpty() const
@@ -800,7 +760,7 @@ inline namespace ZyBase
         /// \param Entry The delegate to remove.
         ZY_INLINE void Remove(ConstRef<Type> Entry)
         {
-            mDelegates.Remove(Entry);
+            mDelegates.Erase(Entry);
         }
 
         /// \brief Removes the first delegate bound to \p Function from the multicast list.
@@ -809,9 +769,9 @@ inline namespace ZyBase
         template<auto Function>
         ZY_INLINE void RemoveFunction()
         {
-            mDelegates.RemoveIf([](ConstRef<Type> Delegate)
+            mDelegates.RemoveIf([](ConstRef<Type> Entry)
             {
-                return Delegate.template IsBoundTo<Function>();
+                return Entry.template IsBoundTo<Function>();
             });
         }
 
@@ -820,22 +780,22 @@ inline namespace ZyBase
         /// \param Function The function pointer to remove.
         ZY_INLINE void RemoveFunction(Return (* Function)(Arguments...))
         {
-            mDelegates.RemoveIf([Function](ConstRef<Type> Delegate)
+            mDelegates.RemoveIf([Function](ConstRef<Type> Entry)
             {
-                return Delegate.IsBoundTo(Function);
+                return Entry.IsBoundTo(Function);
             });
         }
 
         /// \brief Removes the first delegate bound to \p Method on \p Object from the multicast list.
         ///
         /// \tparam Method The member function pointer to remove.
-        /// \param  Object The object instance to remove.
+        /// \param  Object The object the method was added with.
         template<auto Method, typename ObjectType>
         ZY_INLINE void RemoveMethod(Ptr<ObjectType> Object)
         {
-            mDelegates.RemoveIf([Object](ConstRef<Type> Delegate)
+            mDelegates.RemoveIf([Object](ConstRef<Type> Entry)
             {
-                return Delegate.template IsBoundTo<Method>(Object);
+                return Entry.template IsBoundTo<Method>(Object);
             });
         }
 

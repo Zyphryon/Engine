@@ -14,7 +14,7 @@
 
 namespace ZyAI
 {
-    /// \brief Enumerates the result of ticking a behaviour node.
+    /// \brief Specifies the result of ticking a behaviour node.
     enum class Status : UInt8
     {
         Idle,    ///< Not ticked since it last finished or was stopped.

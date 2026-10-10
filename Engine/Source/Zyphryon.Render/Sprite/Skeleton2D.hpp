@@ -26,10 +26,10 @@ namespace ZyRender
         struct Bone final
         {
             /// The hash of the bone's name.
-            UInt64   Name = 0;
+            UInt64 Name = 0;
 
             /// The name the bone is shown by, which may be cut short; lookups go by \ref Name alone.
-            Str32    Label;
+            Str32  Label;
         };
 
     public:

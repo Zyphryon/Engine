@@ -22,10 +22,9 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Deferral::Deferral()
-        : mDepth     { 0 },
-          mFlushing  { false },
-          mSpreading { false },
-          mShares    { 0 }
+        : mDepth    { 0 },
+          mFlushing { false },
+          mShares   { 0 }
     {
     }
 
@@ -37,7 +36,7 @@ namespace ZyScene
         // Applying a change moved or destroyed its value, so only the memory is left.
         Clear();
 
-        mValues.Release();
+        mMain.Values.Release();
 
         for (Ref<Lane> Share : mLanes)
         {
@@ -50,21 +49,14 @@ namespace ZyScene
 
     void Deferral::Spread(UInt32 Shares, UInt32 Slots)
     {
-        ZY_ASSERT(!mSpreading, "A spread walk cannot start inside another");
+        ZY_ASSERT(mShares == 0, "A spread walk cannot start inside another");
+        ZY_ASSERT(Shares > 0, "A spread walk is cut into one share at least");
 
         // Grown here, on one thread, since a worker marks and holds without ever growing either.
-        if (mLanes.GetSize() < Shares)
-        {
-            mLanes.Advance(Shares - mLanes.GetSize());
-        }
+        mLanes.Expand(Shares);
+        mMarks.Expand(Slots);
 
-        if (mMarks.GetSize() < Slots)
-        {
-            mMarks.Advance(Slots - mMarks.GetSize());
-        }
-
-        mShares    = Shares;
-        mSpreading = true;
+        mShares = Shares;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -72,7 +64,7 @@ namespace ZyScene
 
     void Deferral::Bind(UInt32 Share)
     {
-        ZY_ASSERT(mSpreading && Share < mShares, "A share is bound only while its walk is spread");
+        ZY_ASSERT(Share < mShares, "A share is bound only while its walk is spread");
 
         GetShare() = AddressOf(mLanes[Share]);
     }
@@ -82,7 +74,7 @@ namespace ZyScene
 
     void Deferral::Gather()
     {
-        ZY_ASSERT(mSpreading, "Only a spread walk gathers its shares");
+        ZY_ASSERT(mShares > 0, "Only a spread walk gathers its shares");
 
         // Share order is row order, so the list reads as the same walk on one thread would have held it.
         for (UInt32 Share = 0; Share < mShares; ++Share)
@@ -91,13 +83,12 @@ namespace ZyScene
 
             for (ConstRef<Command> Change : Held)
             {
-                mCommands.Append(Change);
+                mMain.Commands.Append(Change);
             }
             Held.Clear();
         }
 
-        mShares    = 0;
-        mSpreading = false;
+        mShares = 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -105,29 +96,18 @@ namespace ZyScene
 
     void Deferral::Queue(ConstRef<Command> Change, Bool Mark)
     {
-        const UInt32 Index = Change.Actor.GetIndex();
-
-        if (mSpreading)
-        {
-            ZY_ASSERT(GetShare(), "A change held while a walk is spread comes from one of its shares");
-
-            if (Mark)
-            {
-                mMarks[Index] = 1;
-            }
-            GetShare()->Commands.Append(Change);
-            return;
-        }
-
         if (Mark)
         {
-            if (Index >= mMarks.GetSize())
+            const UInt32 Index = Change.Actor.GetIndex();
+
+            // The marks were grown when the walk was spread.
+            if (!IsSpreading())
             {
-                mMarks.Advance(Index + 1 - mMarks.GetSize());
+                mMarks.Expand(Index + 1);
             }
             mMarks[Index] = 1;
         }
-        mCommands.Append(Change);
+        GetLane().Commands.Append(Change);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -135,13 +115,7 @@ namespace ZyScene
 
     Ptr<Byte> Deferral::Allocate(UInt Size, UInt Alignment)
     {
-        if (mSpreading)
-        {
-            ZY_ASSERT(GetShare(), "A value held while a walk is spread comes from one of its shares");
-
-            return GetShare()->Values.Allocate(Size, Alignment);
-        }
-        return mValues.Allocate(Size, Alignment);
+        return GetLane().Values.Allocate(Size, Alignment);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -149,7 +123,7 @@ namespace ZyScene
 
     void Deferral::Clear()
     {
-        for (ConstRef<Command> Change : mCommands)
+        for (ConstRef<Command> Change : mMain.Commands)
         {
             if (Change.Actor.GetIndex() < mMarks.GetSize())
             {
@@ -157,22 +131,13 @@ namespace ZyScene
             }
         }
 
-        mCommands.Clear();
-        mValues.Reset();
+        mMain.Commands.Clear();
+        mMain.Values.Reset();
 
         for (Ref<Lane> Share : mLanes)
         {
             Share.Values.Reset();
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Ref<Ptr<Deferral::Lane>> Deferral::GetShare()
-    {
-        thread_local Ptr<Lane> Share = nullptr;
-        return Share;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -235,5 +200,28 @@ namespace ZyScene
             Free(Block, kPageAlignment);
         }
         Pages.Clear();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<Ptr<Deferral::Lane>> Deferral::GetShare()
+    {
+        thread_local Ptr<Lane> Share = nullptr;
+        return Share;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<Deferral::Lane> Deferral::GetLane()
+    {
+        if (IsSpreading())
+        {
+            ZY_ASSERT(GetShare(), "A change held while a walk is spread comes from one of its shares");
+
+            return * GetShare();
+        }
+        return mMain;
     }
 }

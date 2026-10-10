@@ -1,3 +1,11 @@
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 # Creates a target out of the sources under its own folder, and gives it the engine's standard settings.
 #
 # Usage:
@@ -16,7 +24,6 @@ FUNCTION(ZyAddTarget NAME)
 
     ENDIF()
 
-    # Globbed with CONFIGURE_DEPENDS, so adding or deleting a file is noticed rather than waited on.
     SET(SOURCES)
     SET(FOLDERS)
 
@@ -24,6 +31,7 @@ FUNCTION(ZyAddTarget NAME)
 
         GET_FILENAME_COMPONENT(WHERE "${FOLDER}" ABSOLUTE)
 
+        # Re-globbed on every build, so adding or deleting a file needs no manual reconfigure.
         FILE(GLOB_RECURSE FOUND CONFIGURE_DEPENDS "${WHERE}/*.cpp")
 
         LIST(APPEND SOURCES ${FOUND})

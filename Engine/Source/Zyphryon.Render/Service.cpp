@@ -12,9 +12,9 @@
 
 #include "Service.hpp"
 #include "Font/Loader/FNTLoader.hpp"
+#include "Model/Loader/ANMLoader.hpp"
 #include "Model/Loader/MDLLoader.hpp"
 #include "Model/Loader/SKLLoader.hpp"
-#include "Model/Loader/ANMLoader.hpp"
 #include "Sprite/Loader/SH2Loader.hpp"
 #include "Zyphryon.Content/Service.hpp"
 
@@ -27,7 +27,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Service::Service(Ref<ZyEngine::Subsystem::Host> Host)
+    Service::Service(Ref<Host> Host)
         : Subsystem { Host }
     {
         RegisterBuiltinLoaders();
@@ -39,10 +39,11 @@ namespace ZyRender
     void Service::RegisterBuiltinLoaders()
     {
         ConstRetainer<ZyContent::Service> Content = GetHost().GetService<ZyContent::Service>();
-        Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
-        Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
-        Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
+
         Content->AddLoader(ANMLoader::kTypes, Retainer<ANMLoader>::Create());
+        Content->AddLoader(FNTLoader::kTypes, Retainer<FNTLoader>::Create());
+        Content->AddLoader(MDLLoader::kTypes, Retainer<MDLLoader>::Create());
         Content->AddLoader(SH2Loader::kTypes, Retainer<SH2Loader>::Create());
+        Content->AddLoader(SKLLoader::kTypes, Retainer<SKLLoader>::Create());
     }
 }

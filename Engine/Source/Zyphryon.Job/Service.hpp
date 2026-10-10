@@ -22,11 +22,7 @@
 
 namespace ZyJob
 {
-    /// \brief Forward declaration of the value a job will produce.
-    template<typename Type>
-    class Future;
-
-    /// \brief Represents a lane-based job scheduler with dependency tracking and helping waits.
+    /// \brief Represents a lane-based job scheduler with helping waits.
     class ZY_API Service final : public ZyEngine::Subsystem
     {
     public:
@@ -36,10 +32,10 @@ namespace ZyJob
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
-        /// \brief Drains every job queued on \ref Lane::Main.
+        /// \brief Runs the jobs queued on \ref Lane::Main before this tick, then any that found the job table full.
         ///
-        /// \param Time The elapsed time in seconds since the last tick.
-        void OnTick(Real64 Time) override;
+        /// \param Delta The elapsed time in seconds since the last tick.
+        void OnTick(Real64 Delta) override;
 
         /// \brief Shuts down the service and stops all worker threads, discarding any job that has not started.
         void OnTeardown() override;
@@ -61,55 +57,20 @@ namespace ZyJob
 
         /// \brief Submits a job and returns a handle that tracks its completion.
         ///
-        /// \param Target     The lane to execute the job on.
-        /// \param Work       The job to execute.
-        /// \param Dependency The optional job that must complete before this one is queued.
-        /// \return A handle that must be passed to \ref Wait, \ref Block or \ref Discard exactly once.
-        Handle Submit(Lane Target, AnyRef<Task> Work, Handle Dependency = Handle());
-
-        /// \brief Submits a job that produces a value, written into a future the caller keeps in place.
-        ///
-        /// \note The future never moves while the job runs and waits for it before it is destroyed.
-        ///
-        /// \param Target     The lane to execute the job on.
-        /// \param Output     The future the value is written into once the job is done, with no job pending on it.
-        /// \param Work       The job to execute, whose return value is written into the future.
-        /// \param Dependency The optional job that must complete before this one is queued.
-        template<typename Type, typename Callable>
-        void Launch(Lane Target, Ref<Future<Type>> Output, AnyRef<Callable> Work, Handle Dependency = Handle())
-        {
-            ZY_ASSERT(!Output.IsPending(), "A future takes one job at a time");
-
-            // The job writes where the future already is, so the future never moves while the job runs.
-            const Ptr<Type> Where = AddressOf(Output.mValue);
-
-            Output.mService = this;
-            Output.mJob     = Submit(Target, [Where, Body = Move(Work)]
-            {
-                (* Where) = Body();
-            }, Dependency);
-        }
+        /// \param Target The lane to execute the job on.
+        /// \param Work   The job to execute.
+        /// \return A handle that must be passed to \ref Wait or \ref Discard exactly once.
+        Handle Submit(Lane Target, AnyRef<Task> Work);
 
         /// \brief Blocks until the given job completes, executing other compute jobs meanwhile, then releases it.
         ///
         /// \param Job The job to wait on.
         void Wait(Handle Job);
 
-        /// \brief Blocks until the given job completes without executing anything else, then releases it.
-        ///
-        /// \param Job The job to wait on.
-        void Block(Handle Job);
-
         /// \brief Releases a handle without waiting for the job to complete.
         ///
         /// \param Job The job to release.
         void Discard(Handle Job);
-
-        /// \brief Checks whether the given job has finished executing.
-        ///
-        /// \param Job The job to query.
-        /// \return `true` if the job completed or the handle is stale, otherwise `false`.
-        Bool IsComplete(Handle Job) const;
 
         /// \brief Splits a range across a lane, returning once every chunk of it has been visited.
         ///
@@ -133,38 +94,35 @@ namespace ZyJob
 
             Atomic<UInt32> Cursor { 0 };
 
-            Sequence<Handle> Tasks(Workers);
+            Sequence<Handle> Jobs(Workers);
 
             for (UInt32 Worker = 0; Worker < Workers; ++Worker)
             {
-                Tasks.Append(Submit(Target, [&]
+                Jobs.Append(Submit(Target, [&]
                 {
-                    for (UInt32 Start; (Start = Cursor.fetch_add(Grain, std::memory_order_relaxed)) < Count; )
-                    {
-                        Callback(Start, Min(Start + Grain, Count));
-                    }
+                    Sweep(Cursor, Grain, Count, Callback);
                 }));
             }
 
-            for (const Handle Task : Tasks)
+            for (const Handle Job : Jobs)
             {
-                Wait(Task);
+                Wait(Job);
             }
         }
 
     private:
-    
-        /// The milliseconds a tick may spend on the main lane before what is left waits for the next one.
-        static constexpr SInt64 kMaxTickBudget = 6;
 
-        /// \brief Runs a job to completion, then publishes it and queues everything it was gating.
+        /// \brief Maximum time, in seconds, a tick may spend on the main lane without threads before the rest waits.
+        static constexpr Real64 kMaxTickBudget = 0.006;
+
+        /// \brief Runs a job to completion, then publishes it to its waiters.
         ///
         /// \param Value The slot of the job to execute.
         void Execute(Slot Value);
 
         /// \brief Gets the executor backing a lane.
         ///
-        /// \param Target The lane to address.
+        /// \param Target The lane whose executor to get.
         /// \return The executor that lane queues on.
         ZY_INLINE Ref<Executor> GetExecutor(Lane Target)
         {
@@ -173,7 +131,7 @@ namespace ZyJob
 
         /// \brief Maps a lane onto the one that actually runs it, collapsing to \ref Lane::Main without threads.
         ///
-        /// \param Target The requested lane.
+        /// \param Target The lane the job was submitted to.
         /// \return The lane the job is queued on.
         ZY_INLINE static Lane Reconcile(Lane Target)
         {
@@ -184,7 +142,22 @@ namespace ZyJob
 #endif
         }
 
-        /// \brief Entry point for the worker threads of a background lane.
+        /// \brief Visits chunks of a range through a shared cursor until none is left.
+        ///
+        /// \param Cursor   The cursor every worker claims its next chunk from.
+        /// \param Grain    The number of indices in one chunk.
+        /// \param Count    The number of indices in the range.
+        /// \param Callback The callback invoked with each half-open chunk claimed.
+        template<typename Function>
+        ZY_INLINE static void Sweep(Ref<Atomic<UInt32>> Cursor, UInt32 Grain, UInt32 Count, Ref<Function> Callback)
+        {
+            for (UInt32 Start; (Start = Cursor.fetch_add(Grain, std::memory_order_relaxed)) < Count; )
+            {
+                Callback(Start, Min(Start + Grain, Count));
+            }
+        }
+
+        /// \brief Runs a background lane's worker until it is asked to stop.
         ///
         /// \param Target The lane the worker draws work from.
         /// \param Token  The stop token used to signal thread termination.

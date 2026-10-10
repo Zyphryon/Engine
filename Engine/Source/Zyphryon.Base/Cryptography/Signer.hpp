@@ -40,42 +40,16 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Signs an array of bytes,.
+        /// \brief Signs a run of bytes.
         ///
         /// \param Data The bytes to sign, which are read but never kept.
         /// \return The signature those bytes carry under this key.
         constexpr UInt64 Sign(ConstSpan<Byte> Data) const
         {
-            constexpr auto Revolve = [](UInt64 Value, UInt32 Count)
-            {
-                return (Value << Count) | (Value >> (64 - Count));
-            };
-
             UInt64 V0 = 0x736F6D6570736575ull ^ mKey[0];
             UInt64 V1 = 0x646F72616E646F6Dull ^ mKey[1];
             UInt64 V2 = 0x6C7967656E657261ull ^ mKey[0];
             UInt64 V3 = 0x7465646279746573ull ^ mKey[1];
-
-            const auto Round = [&]
-            {
-                V0 += V1;
-                V1  = Revolve(V1, 13);
-                V1 ^= V0;
-                V0  = Revolve(V0, 32);
-
-                V2 += V3;
-                V3  = Revolve(V3, 16);
-                V3 ^= V2;
-
-                V0 += V3;
-                V3  = Revolve(V3, 21);
-                V3 ^= V0;
-
-                V2 += V1;
-                V1  = Revolve(V1, 17);
-                V1 ^= V2;
-                V2  = Revolve(V2, 32);
-            };
 
             const UInt Size  = Data.GetSize();
             const UInt Whole = Size - (Size & 7);
@@ -91,14 +65,13 @@ inline namespace ZyBase
 
                 V3 ^= Block;
 
-                Round();
-                Round();
+                Round(V0, V1, V2, V3);
+                Round(V0, V1, V2, V3);
 
                 V0 ^= Block;
             }
 
-            // The last block carries the length in its top byte, so two runs alike but for how much followed them
-            // cannot come out the same.
+            // The last block carries the length in its top byte, so runs that differ only in length sign differently.
             UInt64 Tail = static_cast<UInt64>(Size) << 56;
 
             for (UInt Step = Whole; Step < Size; ++Step)
@@ -108,16 +81,16 @@ inline namespace ZyBase
 
             V3 ^= Tail;
 
-            Round();
-            Round();
+            Round(V0, V1, V2, V3);
+            Round(V0, V1, V2, V3);
 
             V0 ^= Tail;
             V2 ^= 0xFF;
 
-            Round();
-            Round();
-            Round();
-            Round();
+            Round(V0, V1, V2, V3);
+            Round(V0, V1, V2, V3);
+            Round(V0, V1, V2, V3);
+            Round(V0, V1, V2, V3);
 
             return V0 ^ V1 ^ V2 ^ V3;
         }
@@ -142,6 +115,45 @@ inline namespace ZyBase
         ZY_INLINE constexpr Bool Verify(ConstRef<Type> Data, UInt64 Value) const
         {
             return Sign(Data) == Value;
+        }
+
+    private:
+
+        /// \brief Rotates a word left by a count of bits.
+        ///
+        /// \param Value The word to rotate.
+        /// \param Count The number of bits to rotate by.
+        /// \return The rotated word.
+        ZY_INLINE static constexpr UInt64 Revolve(UInt64 Value, UInt32 Count)
+        {
+            return (Value << Count) | (Value >> (64 - Count));
+        }
+
+        /// \brief Runs one SipHash round over the four state words.
+        ///
+        /// \param V0 The first state word.
+        /// \param V1 The second state word.
+        /// \param V2 The third state word.
+        /// \param V3 The fourth state word.
+        ZY_INLINE static constexpr void Round(Ref<UInt64> V0, Ref<UInt64> V1, Ref<UInt64> V2, Ref<UInt64> V3)
+        {
+            V0 += V1;
+            V1  = Revolve(V1, 13);
+            V1 ^= V0;
+            V0  = Revolve(V0, 32);
+
+            V2 += V3;
+            V3  = Revolve(V3, 16);
+            V3 ^= V2;
+
+            V0 += V3;
+            V3  = Revolve(V3, 21);
+            V3 ^= V0;
+
+            V2 += V1;
+            V1  = Revolve(V1, 17);
+            V1 ^= V2;
+            V2  = Revolve(V2, 32);
         }
 
     private:

@@ -59,7 +59,7 @@ namespace ZyGraphic
         /// \brief Describes one drawable subrange of the mesh, sharing its bindings and drawn with one material slot.
         struct Primitive final
         {
-            /// The draw range into the mesh's buffers: index count, base vertex, and first-index byte offset.
+            /// The draw range into the mesh's buffers, as its index count, base vertex and first index.
             Invocation Range;
 
             /// The slot into the owning model's material table this primitive is drawn with.
@@ -92,7 +92,7 @@ namespace ZyGraphic
             mProperties = Value;
         }
 
-        /// \brief Tests whether a property is enabled.
+        /// \brief Checks whether a property is enabled.
         ///
         /// \param Value The property to test.
         /// \return `true` if the property is set, `false` otherwise.
@@ -133,7 +133,7 @@ namespace ZyGraphic
         /// \param Coverage The smallest fraction of the viewport's height drawn at this level.
         void AddDetail(Real32 Coverage);
 
-        /// \brief Picks the level of detail to draw an instance at.
+        /// \brief Gets the level of detail to draw an instance at.
         ///
         /// \param Coverage The fraction of the viewport's height the instance spans.
         /// \return The index of the first level whose threshold the coverage clears, or the coarsest otherwise.
@@ -203,7 +203,7 @@ namespace ZyGraphic
             return mBindings[ZyEnum::Cast(Slot)];
         }
 
-        /// \brief Tests whether the mesh provides a vertex attribute.
+        /// \brief Checks whether the mesh provides a vertex attribute.
         ///
         /// \param Slot The attribute's semantic slot.
         /// \return `true` if the attribute is present, `false` otherwise.

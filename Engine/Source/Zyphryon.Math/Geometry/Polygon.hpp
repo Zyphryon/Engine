@@ -30,15 +30,15 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the polygon to an empty ring.
+        /// \brief Constructs a polygon with an empty ring.
         ZY_INLINE constexpr AnyPolygon() = default;
 
-        /// \brief Initializes the polygon by copying a ring of vertices.
+        /// \brief Constructs a polygon by copying a ring of vertices.
         ///
         /// \param Vertices The ordered vertices to copy.
         ZY_INLINE constexpr explicit AnyPolygon(ConstSpan<Vector2> Vertices)
+            : mVertices { Vertices }
         {
-            mVertices.Append(Vertices);
         }
 
         /// \brief Appends a vertex to the end of the ring.
@@ -128,7 +128,7 @@ inline namespace ZyMath
         /// \brief Checks whether the given point falls inside the ring under the non-zero winding rule.
         ///
         /// \param Point The point to test.
-        /// \return `true` if the point is enclosed, `false` otherwise.
+        /// \return `true` if the ring winds around the point, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             return GetWinding(Point) != 0;
@@ -170,8 +170,9 @@ inline namespace ZyMath
             return Total;
         }
 
-        /// \brief Computes the centre of mass of the area the ring encloses.
-        /// \return The centroid.
+        /// \brief Computes the center of mass of the area the ring encloses.
+        ///
+        /// \return The centroid, or the average of the vertices when the ring encloses no area.
         ZY_INLINE constexpr Vector2 GetCentroid() const
         {
             Real32  Total = 0.0f;
@@ -179,8 +180,8 @@ inline namespace ZyMath
 
             for (UInt Index = 0; Index < mVertices.GetSize(); ++Index)
             {
-                Vector2       Head = mVertices[Index];
-                const Vector2 Tail = mVertices[(Index + 1) % mVertices.GetSize()];
+                ConstRef<Vector2> Head = mVertices[Index];
+                ConstRef<Vector2> Tail = mVertices[(Index + 1) % mVertices.GetSize()];
 
                 const Real32 Weight = Vector2::Cross(Head, Tail);
 
@@ -205,12 +206,7 @@ inline namespace ZyMath
                 return Vector2();
             }
 
-            Vector2 Total;
-
-            for (UInt Index = 0; Index < mVertices.GetSize(); ++Index)
-            {
-                Total += mVertices[Index];
-            }
+            const Vector2 Total = Accumulate(mVertices.GetData(), mVertices.GetSize(), Vector2());
             return Total / static_cast<Real32>(mVertices.GetSize());
         }
 
@@ -237,7 +233,7 @@ inline namespace ZyMath
 
         /// \brief Checks whether the ring turns the same way at every vertex.
         ///
-        /// \return `true` if the polygon is convex, `false` otherwise.
+        /// \return `true` if the ring has three or more vertices and never turns both ways, `false` otherwise.
         ZY_INLINE constexpr Bool IsConvex() const
         {
             if (!IsValid())
@@ -273,7 +269,7 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Transform a polygon using an affine transformation matrix.
+        /// \brief Transforms a polygon using an affine transformation matrix.
         ///
         /// \param Source The polygon to transform.
         /// \param Matrix The affine transformation matrix to apply.
@@ -286,7 +282,7 @@ inline namespace ZyMath
             return Result;
         }
 
-        /// \brief Transform a polygon using a 3x2 transformation matrix.
+        /// \brief Transforms a polygon using a 3x2 transformation matrix.
         ///
         /// \param Source The polygon to transform.
         /// \param Matrix The 3x2 transformation matrix to apply.

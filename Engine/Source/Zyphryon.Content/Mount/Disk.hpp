@@ -25,7 +25,7 @@ namespace ZyContent
     {
     public:
 
-        /// \brief Constructs a system mount rooted at the given path.
+        /// \brief Constructs a disk mount rooted at the given path.
         ///
         /// \param Path The root path for the mount, or empty for the working directory.
         explicit Disk(Text Path);

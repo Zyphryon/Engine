@@ -81,8 +81,9 @@ namespace ZyScene
         mTypes.Append(Unique<Metatype>::Create(Info));
 
         const UInt32 Identifier = static_cast<UInt32>(mTypes.GetSize());
-        mNamed.Assign(Hash(Name), Identifier);
-        mQualified.Assign(Hash(Name), Identifier);
+        const UInt64 Key        = Hash(Name);
+        mNamed.Assign(Key, Identifier);
+        mQualified.Assign(Key, Identifier);
         return Identifier;
     }
 
@@ -108,12 +109,14 @@ namespace ZyScene
 
         mNamed.Erase(Hash(Known.Name), Identifier);
 
+        const UInt64 Key = Hash(Name);
+
         // An unresolved type holding the name gives it up, and each world then moves its values over.
-        ZY_ASSERT(!mNamed.Contains(Hash(Name)) || !Lookup(* mNamed.Find(Hash(Name))).Has(Trait::Loaded),
+        ZY_ASSERT(!mNamed.Contains(Key) || !Lookup(* mNamed.Find(Key)).Has(Trait::Loaded),
             "Two component types are declared under one name");
 
         Known.Name = Intern(Name);
-        mNamed.Assign(Hash(Known.Name), Identifier);
+        mNamed.Assign(Key, Identifier);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -140,7 +143,7 @@ namespace ZyScene
 
         Ref<Metatype> Info = Lookup(Identifier);
 
-        // Null them, so a late call fails here instead of jumping into unloaded code.
+        // Null them, so nothing jumps into unloaded code.
         Info.Construct    = nullptr;
         Info.Destruct     = nullptr;
         Info.Relocate     = nullptr;
@@ -200,7 +203,9 @@ namespace ZyScene
 
         for (UInt32 Other = 1; Other <= mTypes.GetSize(); ++Other)
         {
-            if (Other != Identifier && !mTypes[Other - 1]->Has(Trait::Loaded) && mTypes[Other - 1]->Name == Name)
+            ConstRef<Metatype> Known = * mTypes[Other - 1];
+
+            if (Other != Identifier && !Known.Has(Trait::Loaded) && Known.Name == Name)
             {
                 return Other;
             }

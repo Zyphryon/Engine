@@ -25,7 +25,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes a contact that stands for nothing having been met.
+        /// \brief Constructs a contact that stands for nothing having been met.
         ZY_INLINE constexpr Manifold()
             : mNormal { 0.0f, 0.0f, 0.0f },
               mTime   { 0.0f },
@@ -33,7 +33,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Initializes a contact with the given facing, time and depth.
+        /// \brief Constructs a contact with the given facing, time and depth.
         ///
         /// \param Normal The way out, pointing from the second volume at the first.
         /// \param Time   The fraction of the motion the two meet at.
@@ -63,7 +63,7 @@ inline namespace ZyMath
 
         /// \brief Sets the fraction of the motion the two meet at.
         ///
-        /// \param Time The fraction to set.
+        /// \param Time The fraction, zero when the two already meet where they stand.
         ZY_INLINE constexpr void SetTime(Real32 Time)
         {
             mTime = Time;
@@ -79,7 +79,7 @@ inline namespace ZyMath
 
         /// \brief Sets how far one volume has sunk into the other.
         ///
-        /// \param Depth The depth to set.
+        /// \param Depth The depth, zero for a contact that has yet to happen.
         ZY_INLINE constexpr void SetDepth(Real32 Depth)
         {
             mDepth = Depth;
@@ -103,7 +103,7 @@ inline namespace ZyMath
 
         /// \brief Checks whether the contact stands for anything at all.
         ///
-        /// \return `true` when a way out was found.
+        /// \return `true` if a way out was found, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return !mNormal.IsAlmostZero();

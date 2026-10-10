@@ -24,32 +24,32 @@
 
 inline namespace ZyBase
 {
-    /// \brief Casts \p Object to a rvalue reference, enabling move semantics.
+    /// \brief Casts \p Object to an rvalue reference, enabling move semantics.
     ///
     /// \param Object The object to move.
     /// \return An rvalue reference to \p Object.
     template<typename Type>
-    constexpr StripRef<Type>&& Move(AnyRef<Type> Object)
+    constexpr AnyRef<StripRef<Type>> Move(AnyRef<Type> Object)
     {
-        return static_cast<StripRef<Type>&&>(Object);
+        return static_cast<AnyRef<StripRef<Type>>>(Object);
     }
 
-    /// \brief Forwards a lvalue, preserving its value category for perfect forwarding.
+    /// \brief Forwards an lvalue, preserving its value category for perfect forwarding.
     ///
     /// \param Object The lvalue to forward.
     /// \return A forwarded reference to \p Object cast to \p Type.
     template<typename Type>
-    constexpr AnyRef<Type> Forward(StripRef<Type>& Object)
+    constexpr AnyRef<Type> Forward(Ref<StripRef<Type>> Object)
     {
         return static_cast<AnyRef<Type>>(Object);
     }
 
-    /// \brief Forwards a rvalue, preserving its value category for perfect forwarding.
+    /// \brief Forwards an rvalue, preserving its value category for perfect forwarding.
     ///
     /// \param Object The rvalue to forward.
     /// \return A forwarded reference to \p Object cast to \p Type.
     template<typename Type>
-    constexpr AnyRef<Type> Forward(StripRef<Type>&& Object)
+    constexpr AnyRef<Type> Forward(AnyRef<StripRef<Type>> Object)
     {
         return static_cast<AnyRef<Type>>(Object);
     }
@@ -83,7 +83,7 @@ inline namespace ZyBase
     ///
     /// \param Offset    The original offset to align.
     /// \param Alignment The alignment boundary to align to.
-    /// \return A smallest multiple of \p Alignment that is greater than or equal to \p Offset.
+    /// \return The smallest multiple of \p Alignment that is greater than or equal to \p Offset.
     template<typename Type, typename Value>
     constexpr Type Align(Type Offset, Value Alignment)
     {
@@ -94,7 +94,7 @@ inline namespace ZyBase
     ///
     /// \param Offset    The original offset to align.
     /// \param Alignment The power-of-two alignment boundary to align to.
-    /// \return A smallest multiple of \p Alignment that is greater than or equal to \p Offset.
+    /// \return The smallest multiple of \p Alignment that is greater than or equal to \p Offset.
     template<typename Type, typename Value>
     constexpr Type AlignPowTwo(Type Offset, Value Alignment)
     {
@@ -177,7 +177,7 @@ inline namespace ZyBase
         std::copy_n(Source, Count, Destination);
     }
 
-    /// \brief Copies elements from source to destination.
+    /// \brief Copies \p Size raw bytes from source to destination.
     ///
     /// \param Destination The pointer to the destination range.
     /// \param Size        The number of bytes to copy.
@@ -218,7 +218,7 @@ inline namespace ZyBase
     /// \brief Allocates uninitialized storage for a run of elements on the element's alignment.
     ///
     /// \tparam Type  The element type, bytes when left out.
-    /// \param  Count The number of elements.
+    /// \param  Count The number of elements to make room for.
     /// \return The first element of the storage, which \ref Free releases.
     template<typename Type = Byte>
     ZY_INLINE Ptr<Type> Allocate(UInt Count)
@@ -236,7 +236,7 @@ inline namespace ZyBase
     /// \brief Allocates uninitialized storage for a run of elements on a boundary known only at runtime.
     ///
     /// \tparam Type      The element type, bytes when left out.
-    /// \param  Count     The number of elements.
+    /// \param  Count     The number of elements to make room for.
     /// \param  Alignment The boundary in bytes, a power of two.
     /// \return The first element of the storage, which \ref Free releases with the same boundary.
     template<typename Type = Byte>
@@ -369,7 +369,7 @@ inline namespace ZyBase
         std::sort(Data, Data + Size);
     }
 
-    /// \brief Orders the elements in [\p Data, \p Data + \p Size) by a comparison of your own.
+    /// \brief Orders the elements in [\p Data, \p Data + \p Size) by \p Comparator.
     ///
     /// \param Data       The pointer to the beginning of the range.
     /// \param Size       The number of elements to order.

@@ -28,11 +28,11 @@ namespace ZyReflection
         /// The name the type is registered under.
         Text Name;
 
-        /// Whether the type stands in for the one part it holds, rather than being stepped into.
+        /// `true` when the type stands in for the one part it holds, rather than being stepped into.
         Bool Flat = false;
     };
 
-    /// \brief Concept satisfied when the given type has been self described.
+    /// \brief Concept satisfied when the given type has been self-described.
     template<typename Type>
     concept IsSelfDescribed = requires { Type::OnDescribe(); };
 
@@ -41,8 +41,6 @@ namespace ZyReflection
     concept IsSelfClassified = requires { Type::OnClassify(); };
 
     /// \brief Provides the customization point that lists the fields of a type.
-    ///
-    /// \brief Concept satisfied when a type lays out its own fields rather than having them laid out for it.
     template<typename Type>
     struct Describe
     {
@@ -99,7 +97,7 @@ namespace ZyReflection
         static constexpr Text kTag   = Type::OnClassify().Name;
     };
 
-    /// \brief Provides the text tag for a view of characters, which is what a getter over owned storage hands back.
+    /// \brief Provides the kind of a view of characters, which is what a getter over owned storage hands back.
     template<>
     struct Classify<Text>
     {
@@ -129,12 +127,12 @@ namespace ZyReflection
         template<typename Type>
         struct Accessor;
 
-        /// \brief Describes a pointer to a data member, which is its own getter and setter.
-        template<typename Class, typename Type>
-        struct Accessor<Type Class::*> final
+        /// \brief Holds the members every accessor shares.
+        template<typename Class, typename Type, Bool Data>
+        struct Member
         {
-            /// Whether the member is data, and so needs no call to reach it.
-            static constexpr Bool kIsData = true;
+            /// `true` when the member is data, so reaching it needs no call.
+            static constexpr Bool kIsData = Data;
 
             /// The type the member is reached through.
             using Owner  = Class;
@@ -146,73 +144,46 @@ namespace ZyReflection
             using Value  = StripAll<Type>;
         };
 
+        /// \brief Describes a pointer to a data member, which is its own getter and setter.
+        template<typename Class, typename Type>
+        struct Accessor<Type Class::*> final : Member<Class, Type, true>
+        {
+        };
+
         /// \brief Describes a pointer to a constant getter.
         template<typename Class, typename Type>
-        struct Accessor<Type (Class::*)() const> final
+        struct Accessor<Type (Class::*)() const> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Describes a pointer to a constant getter that promises not to throw.
         template<typename Class, typename Type>
-        struct Accessor<Type (Class::*)() const noexcept> final
+        struct Accessor<Type (Class::*)() const noexcept> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Describes a pointer to a mutable getter.
         template<typename Class, typename Type>
-        struct Accessor<Type (Class::*)()> final
+        struct Accessor<Type (Class::*)()> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Describes a pointer to a mutable getter that promises not to throw.
         template<typename Class, typename Type>
-        struct Accessor<Type (Class::*)() noexcept> final
+        struct Accessor<Type (Class::*)() noexcept> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Describes a pointer to a setter, whatever it hands back.
-        ///
-        /// \note A setter that returns its own owner, so calls may be chained, is as much a setter as one that
-        ///       returns nothing, and what it hands back is no business of the field.
         template<typename Class, typename Return, typename Type>
-        struct Accessor<Return (Class::*)(Type)> final
+        struct Accessor<Return (Class::*)(Type)> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Describes a pointer to a setter that promises not to throw.
         template<typename Class, typename Return, typename Type>
-        struct Accessor<Return (Class::*)(Type) noexcept> final
+        struct Accessor<Return (Class::*)(Type) noexcept> final : Member<Class, Type, false>
         {
-            static constexpr Bool kIsData = false;
-
-            using Owner  = Class;
-            using Result = Type;
-            using Value  = StripAll<Type>;
         };
 
         /// \brief Provides a type with its reference and constness taken off, and its extent kept.
@@ -223,12 +194,14 @@ namespace ZyReflection
             using Result = Type;
         };
 
+        /// \brief Provides the type with its constness taken off.
         template<typename Type>
         struct Bare<const Type> final
         {
             using Result = typename Bare<Type>::Result;
         };
 
+        /// \brief Provides the type with its reference taken off.
         template<typename Type>
         struct Bare<Type &> final
         {
@@ -263,13 +236,15 @@ namespace ZyReflection
         template<typename Type>
         concept IsSequenced = requires { typename Sequenced<Type>::Element; };
 
-        /// \brief Whether a value handed back this way names storage that outlives the call.
+        /// \brief `true` when a value handed back this way names storage that outlives the call.
         template<typename Type>
         inline constexpr Bool kIsBorrowed = false;
 
+        /// \brief Marks a reference as borrowed.
         template<typename Type>
         inline constexpr Bool kIsBorrowed<Type &> = true;
 
+        /// \brief Marks a constant reference as borrowed.
         template<typename Type>
         inline constexpr Bool kIsBorrowed<const Type &> = true;
 
@@ -306,7 +281,7 @@ namespace ZyReflection
         template<typename Type>
         ZY_INLINE constexpr Text TagOf()
         {
-            if constexpr (requires { Classify<Type>::kTag; })
+            if constexpr (IsNamed<Type>)
             {
                 return Text(Classify<Type>::kTag);
             }
@@ -442,8 +417,8 @@ namespace ZyReflection
         /// \brief The named values of the given enum, laid down once per enum and never moved.
         template<IsEnum Type>
         inline constexpr auto kOptions = BuildOptions<Type>();
-        
-        /// \brief Checks that every field a type declares is reached through that same type.
+
+        /// \brief Checks whether every field a type declares is reached through that same type.
         ///
         /// \return `true` when every field belongs to the type, otherwise `false`.
         template<typename Type>
@@ -460,10 +435,10 @@ namespace ZyReflection
             }
             return true;
         }
-        
+
         /// \brief Builds what a run of elements holds, out of the type of the run.
         ///
-        /// \return The listing of that run.
+        /// \return The count, stride, kind and fields of the run's elements.
         template<IsSequenced Type>
         constexpr Listing BuildListing()
         {

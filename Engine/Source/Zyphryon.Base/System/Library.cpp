@@ -12,6 +12,12 @@
 
 #include "Library.hpp"
 
+#if   defined(ZY_PLATFORM_WINDOWS)
+#include "Library_Win32.inl"
+#elif defined(ZY_PLATFORM_POSIX)
+#include "Library_Posix.inl"
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -39,9 +45,8 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Library::Library(AnyRef<Library> Other)
-        : mHandle { Other.mHandle }
+        : mHandle { Exchange(Other.mHandle, nullptr) }
     {
-        Other.mHandle = nullptr;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -61,15 +66,8 @@ inline namespace ZyBase
         {
             Close();
 
-            mHandle       = Other.mHandle;
-            Other.mHandle = nullptr;
+            mHandle = Exchange(Other.mHandle, nullptr);
         }
         return (* this);
     }
 }
-
-#if   defined(ZY_PLATFORM_WINDOWS)
-#include "Library_Win32.inl"
-#elif defined(ZY_PLATFORM_POSIX)
-#include "Library_Posix.inl"
-#endif

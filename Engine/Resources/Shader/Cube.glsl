@@ -179,9 +179,9 @@ float ZyCubeShadow(
 
     const float Taps = float(ZY_CUBE_GATHER * 4);
 
-    for (int Tap = 0; Tap < ZY_CUBE_GATHER; ++Tap)
+    for (int Probe = 0; Probe < ZY_CUBE_GATHER; ++Probe)
     {
-        vec2 At      = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
+        vec2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
         vec4 Stored  = textureGather(Depths, At);
         vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
 
@@ -193,9 +193,9 @@ float ZyCubeShadow(
 
     const float Taps = float(ZY_CUBE_SEARCH);
 
-    for (int Tap = 0; Tap < ZY_CUBE_SEARCH; ++Tap)
+    for (int Probe = 0; Probe < ZY_CUBE_SEARCH; ++Probe)
     {
-        vec2  At     = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_SEARCH), Spin) * Search, Least, Most);
+        vec2  At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH), Spin) * Search, Least, Most);
         float Stored = textureLod(Depths, At, 0.0).r;
 
         if (Stored < Depth)

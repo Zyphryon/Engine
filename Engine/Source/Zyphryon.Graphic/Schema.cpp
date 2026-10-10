@@ -30,10 +30,9 @@ namespace ZyGraphic
 
         for (Ref<Schema::Texture> Field : mTextures)
         {
-            if (Field.Declared && Field.Fallback == 0)
+            if (Field.Declared && !Field.Fallback)
             {
-                Blob Texel = Blob::Allocate<UInt32>(1);
-                Texel.Copy(AddressOf(Field.Texel), sizeof(UInt32));
+                Blob Texel = Blob::Copy(ConstSpan<UInt32>(Field.Texel));
 
                 Field.Fallback = Service.CreateTexture(Field.Layout, Field.Format, 1, 1, 1, 1, Move(Texel));
             }
@@ -47,7 +46,7 @@ namespace ZyGraphic
     {
         for (Ref<Schema::Texture> Field : mTextures)
         {
-            if (Field.Fallback != 0)
+            if (Field.Fallback)
             {
                 Service.DeleteTexture(Field.Fallback);
 

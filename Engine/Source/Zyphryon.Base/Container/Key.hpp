@@ -58,19 +58,19 @@ inline namespace ZyBase
 
         /// \brief Constructs a key naming one slot at one epoch.
         ///
-        /// \param Slot  The slot, counted from one, or zero to name nothing.
-        /// \param Epoch The number of times that slot had been handed out when the key was minted.
-        ZY_INLINE constexpr Key(Slot Slot, Epoch Epoch)
-            : mValue { static_cast<Value>(static_cast<Value>(Slot) | (static_cast<Value>(Epoch) << kSlotBits)) }
+        /// \param Index The slot, counted from one, or zero to name nothing.
+        /// \param Stamp The number of times that slot had been handed out when the key was minted.
+        ZY_INLINE constexpr Key(Slot Index, Epoch Stamp)
+            : mValue { static_cast<Value>(static_cast<Value>(Index) | (static_cast<Value>(Stamp) << kSlotBits)) }
         {
         }
 
         /// \brief Constructs a key naming one slot, for a key that carries no epoch.
         ///
-        /// \param Slot The slot, counted from one, or zero to name nothing.
-        ZY_INLINE constexpr Key(Slot Slot)
+        /// \param Index The slot, counted from one, or zero to name nothing.
+        ZY_INLINE constexpr Key(Slot Index)
             requires (kEpochBits == 0)
-            : mValue { static_cast<Value>(Slot) }
+            : mValue { static_cast<Value>(Index) }
         {
         }
 
@@ -132,7 +132,7 @@ inline namespace ZyBase
             return Target(static_cast<Target::Slot>(GetSlot()), GetEpoch());
         }
 
-        /// \brief Compares this key against another for equality.
+        /// \brief Checks whether two keys are equal.
         ///
         /// \param Other The key to compare against.
         /// \return `true` if both name the same slot at the same epoch, otherwise `false`.

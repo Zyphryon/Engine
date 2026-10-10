@@ -109,13 +109,14 @@ namespace ZyEnum
 
         /// \brief Records one discovered enumerator into \p Result.
         template<IsEnum Type, UInt Capacity, UInt Chars>
-        constexpr void AppendEntry(Ref<Reflection<Type, Capacity, Chars>> Result, Ref<UInt> EntryCursor,
-            Ref<UInt> CharCursor, Type Candidate, Text Name)
+        constexpr void AppendEntry(
+            Ref<Reflection<Type, Capacity, Chars>> Result,
+            Ref<UInt>                              EntryCursor,
+            Ref<UInt>                              CharCursor,
+            Type                                   Candidate,
+            Text                                   Name)
         {
-            for (UInt Offset = 0; Offset < Name.GetSize(); ++Offset)
-            {
-                Result.Names[CharCursor + Offset] = Name[Offset];
-            }
+            Copy(Result.Names.GetData() + CharCursor, Name.GetSize(), Name.GetData());
             Result.Names[CharCursor + Name.GetSize()] = '\0';
 
             Result.Entries[EntryCursor] = Descriptor<Type>(
@@ -127,9 +128,21 @@ namespace ZyEnum
             ++EntryCursor;
         }
 
+        /// \brief Converts a probe index into the enumerator value it stands for.
+        ///
+        /// \param Index The index counted from \ref Range's minimum.
+        /// \return The value at \p Index.
+        template<IsEnum Type>
+        constexpr Type Probe(UInt Index)
+        {
+            return static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Index));
+        }
+
 #if defined(ZY_EXTENSION_RESHARPER)
 
         /// \brief Measures how many entries are valid, and their combined name length, in one pass.
+        ///
+        /// \return The number of declared enumerators and their combined name length.
         template<typename Type, UInt Span>
         constexpr Measurement Measure()
         {
@@ -137,7 +150,7 @@ namespace ZyEnum
 
             for (UInt Index = 0; Index < Span; ++Index)
             {
-                const Type Value = static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Index));
+                const Type Value = Probe<Type>(Index);
 
                 if (const ConstPtr<Char> Name = __rscpp_enumerator_name(Value))
                 {
@@ -149,6 +162,8 @@ namespace ZyEnum
         }
 
         /// \brief Builds the reflection data for \p Type, in ascending value order.
+        ///
+        /// \return The reflection of every declared enumerator.
         template<typename Type, UInt Span>
         constexpr auto BuildReflection()
         {
@@ -161,7 +176,7 @@ namespace ZyEnum
 
             for (UInt Index = 0; Index < Span && EntryCursor != Result.Entries.GetSize(); ++Index)
             {
-                const Type Candidate = static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Index));
+                const Type Candidate = Probe<Type>(Index);
 
                 if (const ConstPtr<Char> Name = __rscpp_enumerator_name(Candidate))
                 {
@@ -179,18 +194,16 @@ namespace ZyEnum
 #else
 
         /// \brief Captures the compiler-generated signature of this function.
+        ///
+        /// \return The signature, whose template arguments name every probed value.
         template<auto... Values>
         consteval Text ExtractSignature()
         {
-#if     defined(ZY_COMPILER_MSVC)
-            return __FUNCSIG__;
-#else
-            return __PRETTY_FUNCTION__;
-#endif
+            return ZY_SIGNATURE;
         }
 
         /// \brief The delimiters that wrap the argument list within a captured signature.
-#if     defined(ZY_COMPILER_GCC)
+#if defined(ZY_COMPILER_GCC)
         inline constexpr Char kSignatureOpen  = '{';
         inline constexpr Char kSignatureClose = '}';
 #else
@@ -199,6 +212,9 @@ namespace ZyEnum
 #endif
 
         /// \brief Extracts the comma-separated argument-list portion of a captured \ref ExtractSignature.
+        ///
+        /// \param Signature The signature ExtractSignature captured.
+        /// \return The argument list between the outermost delimiters, or empty when there is none.
         constexpr Text ExtractArguments(Text Signature)
         {
             const ConstPtr<Char> Head = Signature.GetData();
@@ -225,6 +241,10 @@ namespace ZyEnum
         }
 
         /// \brief Scans \p Arguments once and invokes \p Emit for every declared enumerator found.
+        ///
+        /// \param Arguments The argument list to scan.
+        /// \param Emit      The callable given the position and name of each declared enumerator.
+        /// \return The number of declared enumerators and their combined name length.
         template<typename Callable>
         constexpr Measurement ScanArguments(Text Arguments, AnyRef<Callable> Emit)
         {
@@ -302,6 +322,8 @@ namespace ZyEnum
         }
 
         /// \brief Captures the argument list for every probed value of \p Type.
+        ///
+        /// \return The argument list captured for every probed value.
         template<typename Type, SInt64... Offsets>
         consteval Text CaptureArguments(IntegerSequence<SInt64, Offsets...>)
         {
@@ -309,6 +331,8 @@ namespace ZyEnum
         }
 
         /// \brief Captures the argument list for \p Type.
+        ///
+        /// \return The argument list naming every probed value of \p Type.
         template<IsEnum Type>
         consteval Text GetArguments()
         {
@@ -317,9 +341,13 @@ namespace ZyEnum
 
         /// \brief The measured counts for \p Type, evaluated once per translation unit.
         template<IsEnum Type>
-        inline constexpr Measurement kMeasurement = ScanArguments(GetArguments<Type>(), [](UInt, Text) { });
+        inline constexpr Measurement kMeasurement = ScanArguments(GetArguments<Type>(), [](UInt, Text)
+        {
+        });
 
         /// \brief Builds the reflection data for \p Type, in ascending value order.
+        ///
+        /// \return The reflection of every declared enumerator.
         template<IsEnum Type>
         consteval auto BuildReflection()
         {
@@ -330,8 +358,7 @@ namespace ZyEnum
 
             ScanArguments(GetArguments<Type>(), [&](UInt Position, Text Name)
             {
-                AppendEntry(Result, EntryCursor, CharCursor,
-                    static_cast<Type>(Range<Type>::Min + static_cast<SInt64>(Position)), Name);
+                AppendEntry(Result, EntryCursor, CharCursor, Probe<Type>(Position), Name);
             });
 
             return Result;

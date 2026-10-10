@@ -19,7 +19,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Default constructor that initializes the angle to zero radians.
+        /// \brief Constructs an angle of zero radians.
         ZY_INLINE constexpr Angle()
             : mRadians { 0 }
         {
@@ -35,7 +35,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the angle is valid (between 0 and 2π).
         ///
-        /// \return `true` if the angle is valid, `false` otherwise.
+        /// \return `true` if the angle lies within [0, 2π], `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return IsBetween(GetRadians(), 0.0f, kTwoPI<Real32>);
@@ -114,7 +114,7 @@ inline namespace ZyMath
         /// \brief Checks if two angles are equal.
         ///
         /// \param Other The angle to compare to.
-        /// \return `true` if the angles are equal, `false` otherwise.
+        /// \return `true` if the angles are almost equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(Angle Other) const
         {
             return IsAlmostEqual(mRadians, Other.mRadians);
@@ -123,7 +123,7 @@ inline namespace ZyMath
         /// \brief Checks if this angle is less than another angle.
         ///
         /// \param Other The angle to compare against.
-        /// \return `true` if this angle is smaller than `Other`, otherwise `false`.
+        /// \return `true` if this angle is smaller than \p Other, otherwise `false`.
         ZY_INLINE constexpr Bool operator<(Angle Other) const
         {
             return mRadians < Other.mRadians;
@@ -132,7 +132,7 @@ inline namespace ZyMath
         /// \brief Checks if this angle is less than or equal to another angle.
         ///
         /// \param Other The angle to compare against.
-        /// \return `true` if this angle is smaller than or equal to `Other`, otherwise `false`.
+        /// \return `true` if this angle is smaller than or equal to \p Other, otherwise `false`.
         ZY_INLINE constexpr Bool operator<=(Angle Other) const
         {
             return mRadians <= Other.mRadians;
@@ -141,7 +141,7 @@ inline namespace ZyMath
         /// \brief Checks if this angle is greater than another angle.
         ///
         /// \param Other The angle to compare against.
-        /// \return `true` if this angle is larger than `Other`, otherwise `false`.
+        /// \return `true` if this angle is larger than \p Other, otherwise `false`.
         ZY_INLINE constexpr Bool operator>(Angle Other) const
         {
             return mRadians > Other.mRadians;
@@ -150,7 +150,7 @@ inline namespace ZyMath
         /// \brief Checks if this angle is greater than or equal to another angle.
         ///
         /// \param Other The angle to compare against.
-        /// \return `true` if this angle is larger than or equal to `Other`, otherwise `false`.
+        /// \return `true` if this angle is larger than or equal to \p Other, otherwise `false`.
         ZY_INLINE constexpr Bool operator>=(Angle Other) const
         {
             return mRadians >= Other.mRadians;
@@ -198,7 +198,7 @@ inline namespace ZyMath
         /// \brief Creates an angle from the cosine ratio.
         ///
         /// \param Ratio The cosine ratio (adjacent/hypotenuse).
-        /// \return The angle corresponding to the given cosine ratio.
+        /// \return The angle whose cosine is the ratio, within [0, π].
         ZY_INLINE static Angle FromCosine(Real32 Ratio)
         {
             return InvCosine(Ratio);
@@ -207,7 +207,7 @@ inline namespace ZyMath
         /// \brief Creates an angle from the sine ratio.
         ///
         /// \param Ratio The sine ratio (opposite/hypotenuse).
-        /// \return The angle corresponding to the given sine ratio.
+        /// \return The angle whose sine is the ratio, within [-π/2, π/2].
         ZY_INLINE static Angle FromSine(Real32 Ratio)
         {
             return InvSine(Ratio);
@@ -216,7 +216,7 @@ inline namespace ZyMath
         /// \brief Creates an angle from the tangent ratio.
         ///
         /// \param Ratio The tangent ratio (opposite/adjacent).
-        /// \return The angle corresponding to the given tangent ratio.
+        /// \return The angle whose tangent is the ratio, within [-π/2, π/2].
         ZY_INLINE static Angle FromTangent(Real32 Ratio)
         {
             return InvTangent(Ratio);
@@ -226,7 +226,7 @@ inline namespace ZyMath
         ///
         /// \param X The X coordinate.
         /// \param Y The Y coordinate.
-        /// \return The angle corresponding to the given coordinates.
+        /// \return The angle from the x axis to the point, within [-π, π].
         ZY_INLINE static Angle FromCartesian(Real32 X, Real32 Y)
         {
             return InvTangent(X, Y);

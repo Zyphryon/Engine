@@ -153,7 +153,7 @@ namespace ZyGraphic
 
         if (!Connection)
         {
-            LOG_E("GLES3Context: Failed to open a connection to the X server (is DISPLAY set?)");
+            LOG_E("Graphics: Failed to open a connection to the X server (is DISPLAY set?)");
             return false;
         }
 
@@ -164,13 +164,13 @@ namespace ZyGraphic
 
         if (gladLoaderLoadGLX(Connection, Screen) == 0)
         {
-            LOG_E("GLES3Context: Failed to resolve GLX entry points (is a GPU driver installed?)");
+            LOG_E("Graphics: Failed to resolve GLX entry points (is a GPU driver installed?)");
             return false;
         }
 
         if (!GLAD_GLX_ARB_create_context)
         {
-            LOG_E("GLES3Context: Driver lacks GLX_ARB_create_context");
+            LOG_E("Graphics: Driver lacks GLX_ARB_create_context");
             return false;
         }
 
@@ -178,7 +178,7 @@ namespace ZyGraphic
 
         if (!::XGetWindowAttributes(Connection, static_cast<::Window>(mDeviceOutput), AddressOf(Attributes)))
         {
-            LOG_E("GLES3Context: Failed to query the window's visual");
+            LOG_E("Graphics: Failed to query the window's visual");
             return false;
         }
 
@@ -191,7 +191,7 @@ namespace ZyGraphic
         if (!SelectConfig(
             Connection, Screen, ::XVisualIDFromVisual(Attributes.visual), DepthBits, StencilBits, Selection))
         {
-            LOG_E("GLES3Context: No framebuffer configuration matches with {0}-bit depth and {1}-bit stencil", DepthBits, StencilBits);
+            LOG_E("Graphics: No framebuffer configuration matches with {0}-bit depth and {1}-bit stencil", DepthBits, StencilBits);
             return false;
         }
 
@@ -211,14 +211,14 @@ namespace ZyGraphic
 
         if (!Context)
         {
-            LOG_E("GLES3Context: Failed to create an OpenGL 3.3 core context");
+            LOG_E("Graphics: Failed to create an OpenGL 3.3 core context");
             return false;
         }
         mRenderContext = Context;
 
         if (!::glXMakeCurrent(Connection, static_cast<GLXDrawable>(mDeviceOutput), Context))
         {
-            LOG_E("GLES3Context: Failed to make the OpenGL context current");
+            LOG_E("Graphics: Failed to make the OpenGL context current");
 
             ::glXDestroyContext(Connection, Context);
             mRenderContext = nullptr;
@@ -227,7 +227,7 @@ namespace ZyGraphic
 
         if (gladLoaderLoadGL() == 0)
         {
-            LOG_E("GLES3Context: Failed to load OpenGL 3.3 entry points");
+            LOG_E("Graphics: Failed to load OpenGL 3.3 entry points");
             return false;
         }
 
@@ -240,7 +240,7 @@ namespace ZyGraphic
             }
             else
             {
-                LOG_W("GLES3Context: The window's visual cannot present an sRGB back-buffer");
+                LOG_W("Graphics: The window's visual cannot present an sRGB back-buffer");
             }
         }
 

@@ -20,14 +20,14 @@ namespace ZyEngine
     {
     public:
 
-        /// \brief Ticks all registered subsystems with the given time.
+        /// \brief Ticks every registered subsystem with the time since the last tick.
         ///
-        /// \param Time The current time in seconds.
-        ZY_INLINE void Tick(Real64 Time)
+        /// \param Delta The elapsed time in seconds since the last tick.
+        ZY_INLINE void Tick(Real64 Delta)
         {
-            mServices.ForEach([Time](UInt64, ConstRetainer<Unit> Service)
+            mServices.ForEach([Delta](UInt64, ConstRetainer<Unit> Service)
             {
-                Service->OnTick(Time);
+                Service->OnTick(Delta);
             });
         }
 
@@ -46,7 +46,7 @@ namespace ZyEngine
         /// \tparam Type       The concrete service type to register.
         /// \param  Parameters The constructor arguments to forward to the service.
         /// \return The registered service instance.
-        template<typename Type, typename ... Arguments>
+        template<typename Type, typename... Arguments>
         ZY_INLINE Retainer<Type> Register(AnyRef<Arguments>... Parameters)
         {
             ZY_ASSERT(!GetService<Type>(), "Service is already registered in the system");
@@ -65,15 +65,14 @@ namespace ZyEngine
             mServices.Erase(Hash<Type>());
         }
 
-        /// \brief Returns a handle to the registered service of the specified type.
+        /// \brief Gets the registered service of the given type.
         ///
         /// \tparam Type The service type to look up.
         /// \return A handle to the service, or an empty handle if not found.
         template<typename Type>
         ZY_INLINE Retainer<Type> GetService() const
         {
-            const Retainer<Unit> Result = mServices.FindOrDefault(Hash<Type>());
-            return (Result ? Retainer<Type>::Cast(Result) : nullptr);
+            return Retainer<Type>::Cast(mServices.FindOrDefault(Hash<Type>()));
         }
 
     private:

@@ -17,26 +17,26 @@ namespace ZyAudio
     /// \brief Specifies the audio configuration constants.
     enum : UInt16
     {
-        /// \brief Number of frames the mixer processes per internal sub-block.
+        /// \brief The number of frames the mixer processes per internal sub-block.
         kMixerBlock     = 256,
 
-        /// \brief Sample rate, in hertz, at which the mixer runs its internal graph.
+        /// \brief The cutoff frequency, in hertz, at or above which a voice's low-pass is fully open.
+        kMixerCutoff    = 20000,
+
+        /// \brief The sample rate, in hertz, at which the mixer runs its internal graph.
         kMixerFrequency = 48000,
 
-        /// \brief The preferred number of frames per device period (buffer length hint).
+        /// \brief The preferred number of frames per device period.
         kMixerPeriod    = 1024,
 
-        /// \brief Number of interleaved samples per frame produced by the mixer (stereo stride).
+        /// \brief The number of interleaved samples per frame the mixer produces.
         kMixerStride    = 2,
 
-        /// \brief Capacity of the control and completion command queues.
+        /// \brief The capacity of the control and completion command queues.
         kMaxCommands    = 512,
 
-        /// \brief Maximum number of active audio instances.
+        /// \brief The maximum number of active audio instances.
         kMaxInstances   = 256,
-
-        /// \brief Cutoff frequency, in hertz, at or above which a voice's low-pass is fully open.
-        kMixerCutoff    = 20000,
     };
 
     /// \brief Specifies the audio distance attenuation models.
@@ -68,9 +68,9 @@ namespace ZyAudio
     /// \brief Specifies how a baked sound stores its samples.
     enum class Encoding : UInt8
     {
-        Linear,     ///< Signed 16-bit samples, widened on read.
-        Adaptive,   ///< IMA ADPCM, four bits per sample, decoded a block at a time.
-        Opus,       ///< Opus packets, decoded a packet at a time.
+        Linear,         ///< Signed 16-bit samples, widened on read.
+        Adaptive,       ///< IMA ADPCM, four bits per sample, decoded a block at a time.
+        Opus,           ///< Opus packets, decoded a packet at a time.
     };
 
     /// \brief Describes all audio hardware and backend information.

@@ -36,12 +36,12 @@ namespace ZyAudio
         Vector3         Position;
 
         /// The source's normalized forward axis (spatial voices only).
-        Vector3         Forward   = -Vector3::UnitZ();
+        Vector3         Forward      = -Vector3::UnitZ();
 
         /// The base linear volume of the voice (range [0, 1]).
         Real32          Volume       = 1.0f;
 
-        /// The current smoothed per-channel gains, used to deramp toward the target and avoid clicks.
+        /// The current smoothed per-channel gains, ramped toward the target to avoid clicks.
         Vector2         Gain;
 
         /// The low-pass memory the left channel carries, or the mono image of a spatial voice.
@@ -59,7 +59,7 @@ namespace ZyAudio
         /// The handle that identifies this voice, mirrored here so completed voices can be reaped by handle.
         Object          Handle;
 
-        /// The number of interleaved samples the decoder produces per frame (stride).
+        /// The number of interleaved samples the decoder produces per frame.
         UInt16          Stride       = 2;
 
         /// The submix category this voice is routed through.

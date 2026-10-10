@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Service.hpp"
-#include "Zyphryon.Job/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -39,7 +38,7 @@ namespace ZyScene
     {
         ZY_PROFILE_SCOPE("Scene::Tick");
 
-        // The world's clock is the only one, so whatever steers it is ticked here too.
+        // Ticked in place, so readers of the clock's changes are not told every frame.
         GetWorld().Get<Clock>()->Tick(Delta);
 
         Progress();

@@ -31,7 +31,7 @@ inline namespace ZyBase
         /// The number of trailing bytes always emitted as literals (format requirement).
         constexpr UInt32 kLZ4LastLiterals    = 5;
 
-        /// No match may start within this many bytes of the end, guaranteeing a trailing literal run.
+        /// The distance from the end inside which no match may start, so a trailing literal run always remains.
         constexpr UInt32 kLZ4MatchFindMargin = 12;
 
         /// The largest back-reference distance a two-byte offset can encode.
@@ -40,7 +40,10 @@ inline namespace ZyBase
         /// The base-two size of the match-finder hash table, in entries.
         constexpr UInt32 kLZ4HashLog         = 12;
 
-        /// Governs how aggressively the match finder skips ahead over incompressible input.
+        /// The number of buckets the fast hash table holds.
+        constexpr UInt32 kLZ4HashSize        = 1u << kLZ4HashLog;
+
+        /// The skip exponent that sets how fast the match finder strides over incompressible input.
         constexpr UInt32 kLZ4SkipTrigger     = 6;
 
         /// The base-two size of the high-compression match-finder hash table, in entries.
@@ -52,25 +55,25 @@ inline namespace ZyBase
         /// The chain spans the whole window a two-byte offset can reach, so no reachable match falls out of it.
         constexpr UInt32 kLZ4HighChainSize   = kLZ4MaxOffset + 1;
 
-        /// Wraps a position onto its slot in the chain.
+        /// The mask wrapping a position onto its slot in the chain.
         constexpr UInt32 kLZ4HighChainMask   = kLZ4MaxOffset;
 
-        /// Hash-chain match finder backing the high-compression path, searching every candidate at a hash for the longest match.
+        /// \brief Represents the hash-chain match finder of the high-compression path.
         struct LZ4HighFinder final
         {
             /// The first byte of the input, which every stored position is relative to.
             ConstPtr<Byte> Origin;
 
-            /// Maps a hash to the most recent position carrying it, biased by one so zero reads as empty.
+            /// The most recent position per hash, biased by one so zero reads as empty.
             Ptr<UInt32>    Table;
 
-            /// Maps a position to the previous position sharing its hash, under the same bias.
+            /// The previous position sharing each position's hash, under the same bias.
             Ptr<UInt32>    Chain;
 
             /// The next position still to be filed into the table and chain.
             UInt32         Cursor;
 
-            /// How many links of one chain to walk before settling for the best match found so far.
+            /// The number of links of one chain walked before settling for the best match so far.
             UInt32         Attempts;
         };
     }
@@ -85,7 +88,7 @@ inline namespace ZyBase
 
         do
         {
-            ZyBase::Blit(Cursor, kLZ4WildStride, Source);
+            Blit(Cursor, kLZ4WildStride, Source);
             Cursor += kLZ4WildStride;
             Source += kLZ4WildStride;
         }
@@ -99,7 +102,7 @@ inline namespace ZyBase
     {
         if (Offset == 1)
         {
-            ZyBase::Fill(Destination, Length, * Match);
+            Fill(Destination, Length, * Match);
             return;
         }
 
@@ -109,9 +112,9 @@ inline namespace ZyBase
         do
         {
             const UInt32 Available = static_cast<UInt32>(Cursor - Match);
-            const UInt32 Chunk     = ZyBase::Min(Available, static_cast<UInt32>(Finish - Cursor));
+            const UInt32 Chunk     = Min(Available, static_cast<UInt32>(Finish - Cursor));
 
-            ZyBase::Blit(Cursor, Chunk, Match);
+            Blit(Cursor, Chunk, Match);
             Cursor += Chunk;
         }
         while (Cursor < Finish);
@@ -123,7 +126,7 @@ inline namespace ZyBase
     static UInt32 LZ4Read32(ConstPtr<Byte> Pointer)
     {
         UInt32 Value;
-        ZyBase::Blit(AddressOf(Value), sizeof(Value), Pointer);
+        Blit(AddressOf(Value), sizeof(Value), Pointer);
         return Value;
     }
 
@@ -142,10 +145,10 @@ inline namespace ZyBase
     {
         while (Remainder >= 255)
         {
-            * Output++ = 255;
+            (* Output++) = 255;
             Remainder -= 255;
         }
-        * Output++ = static_cast<Byte>(Remainder);
+        (* Output++) = static_cast<Byte>(Remainder);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -273,24 +276,22 @@ inline namespace ZyBase
     {
         ZY_ASSERT(Capacity >= LZ4Bound(Source.GetSize()), "LZ4Encode requires Capacity >= LZ4Bound(Source size)");
 
-        const ConstPtr<Byte> Origin    = Source.GetData();
-        const UInt32         Length    = static_cast<UInt32>(Source.GetSize());
-        const ConstPtr<Byte> InputEnd  = Origin + Length;
+        const ConstPtr<Byte> Origin   = Source.GetData();
+        const UInt32         Length   = static_cast<UInt32>(Source.GetSize());
+        const ConstPtr<Byte> InputEnd = Origin + Length;
 
-        Ptr<Byte>            Output    = Destination;
-        ConstPtr<Byte>       Anchor    = Origin;
-        ConstPtr<Byte>       Input     = Origin;
+        Ptr<Byte>            Output   = Destination;
+        ConstPtr<Byte>       Anchor   = Origin;
 
         // Inputs too small to hold a match are emitted verbatim as a single literal run.
         if (Length >= kLZ4MatchFindMargin + 1)
         {
-            UInt32 Table[1 << kLZ4HashLog] { };
+            UInt32 Table[kLZ4HashSize] { };
 
             const ConstPtr<Byte> MatchFindLimit = InputEnd - kLZ4MatchFindMargin;
             const ConstPtr<Byte> MatchLimit     = InputEnd - kLZ4LastLiterals;
 
-            Table[LZ4Hash(Origin)] = 0;
-            Input = Origin + 1;
+            ConstPtr<Byte> Input = Origin + 1;
 
             for (;;)
             {
@@ -329,7 +330,6 @@ inline namespace ZyBase
                     --Match;
                 }
 
-                // Emit the pending literals, prefixed by the sequence token.
                 const Ptr<Byte> Token = LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>(Input - Anchor));
 
                 // Count the match length past the guaranteed minimum, then fold it into the token.
@@ -348,7 +348,6 @@ inline namespace ZyBase
                     static_cast<UInt32>(Input - Match),
                     static_cast<UInt32>(Cursor - Input) - kLZ4MinMatch);
 
-                // Resume searching immediately past the match.
                 Anchor = Cursor;
                 Input  = Cursor;
             }
@@ -383,7 +382,8 @@ inline namespace ZyBase
             const ConstPtr<Byte> MatchLimit     = InputEnd - kLZ4LastLiterals;
 
             // Table and chain together run to 384 KiB, far past what belongs on a stack.
-            const Ptr<UInt32> Scratch = new UInt32[kLZ4HighHashSize + kLZ4HighChainSize] { };
+            const Ptr<UInt32> Scratch = Allocate<UInt32>(kLZ4HighHashSize + kLZ4HighChainSize);
+            Zero(Scratch, kLZ4HighHashSize + kLZ4HighChainSize);
 
             LZ4HighFinder Finder;
             Finder.Origin   = Origin;
@@ -429,8 +429,10 @@ inline namespace ZyBase
                     ++Found;
                 }
 
-                const Ptr<Byte> Token
-                    = LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>((Origin + Position) - Anchor));
+                const Ptr<Byte> Token = LZ4WriteLiterals(
+                    Output,
+                    Anchor,
+                    static_cast<UInt32>((Origin + Position) - Anchor));
 
                 LZ4WriteMatch(Output, Token, Position - Match, Found - kLZ4MinMatch);
 
@@ -438,7 +440,7 @@ inline namespace ZyBase
                 Anchor    = Origin + Position;
             }
 
-            delete[] Scratch;
+            Free(Scratch);
         }
 
         // Emit the trailing literal run; the decoder stops here without reading a match.
@@ -516,7 +518,7 @@ inline namespace ZyBase
                 return 0;
             }
 
-            UInt32 Length = (Token & 0x0F) + 4;
+            UInt32 Length = (Token & 0x0F) + kLZ4MinMatch;
 
             if ((Token & 0x0F) == 15)
             {

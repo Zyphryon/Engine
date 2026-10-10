@@ -71,7 +71,6 @@ namespace ZyRuntime
         /// \param Startup Receives the parameters the engine starts with, pre-filled with defaults.
         virtual void OnConfigure(Ref<Startup> Startup)
         {
-
         }
 
         /// \brief Called during initialization to allow applications to perform custom setup.
@@ -87,13 +86,11 @@ namespace ZyRuntime
         /// \param Delta The elapsed time in seconds since the last tick.
         virtual void OnTick(Real64 Delta)
         {
-
         }
 
         /// \brief Called during shutdown to allow applications to release resources.
         virtual void OnTerminate()
         {
-
         }
 
     private:
@@ -130,20 +127,20 @@ namespace ZyRuntime
 
         /// \brief Invoked when the window requests to close.
         ///
-        /// \return `true` to allow the window to close, `false` to prevent it.
+        /// \return `true` to keep the event from later listeners, `false` to pass it on.
         Bool OnWindowExit();
 
         /// \brief Invoked when the window is resized.
         ///
         /// \param Width  The new window width in pixels.
         /// \param Height The new window height in pixels.
-        /// \return `true` if the resize was handled successfully, `false` otherwise.
+        /// \return `true` to keep the event from later listeners, `false` to pass it on.
         Bool OnWindowResize(UInt32 Width, UInt32 Height);
 
         /// \brief Invoked when the window gains or loses focus.
         ///
         /// \param Focused `true` if the window gained focus, `false` if it lost focus.
-        /// \return `true` if the focus change was handled successfully, `false` otherwise.
+        /// \return `true` to keep the event from later listeners, `false` to pass it on.
         Bool OnWindowFocus(Bool Focused);
 
 #endif

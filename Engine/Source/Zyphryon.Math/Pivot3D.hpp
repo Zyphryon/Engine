@@ -19,9 +19,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructs a pivot point at the origin (0.0, 0.0, 0.0).
-        ///
-        /// \remarks This represents the bottom-left-back corner in normalized coordinates.
+        /// \brief Constructs a pivot point at the left-bottom-back corner (0.0, 0.0, 0.0).
         ZY_INLINE constexpr Pivot3D()
             : mX { 0.0f },
               mY { 0.0f },
@@ -77,7 +75,7 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Predefined pivot point at the left-top-front corner (0.0, 1.0, 1.0).
+        /// \brief Gets the pivot at the left-top-front corner (0.0, 1.0, 1.0).
         ///
         /// \return A pivot point representing the left-top-front corner.
         ZY_INLINE static constexpr Pivot3D LeftTopFront()
@@ -85,7 +83,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 1.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the left-top-middle edge (0.0, 1.0, 0.5).
+        /// \brief Gets the pivot at the left-top-middle edge (0.0, 1.0, 0.5).
         ///
         /// \return A pivot point representing the left-top-middle edge.
         ZY_INLINE static constexpr Pivot3D LeftTopMiddle()
@@ -93,7 +91,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 1.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the left-top-back corner (0.0, 1.0, 0.0).
+        /// \brief Gets the pivot at the left-top-back corner (0.0, 1.0, 0.0).
         ///
         /// \return A pivot point representing the left-top-back corner.
         ZY_INLINE static constexpr Pivot3D LeftTopBack()
@@ -101,7 +99,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 1.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the left-middle-front edge (0.0, 0.5, 1.0).
+        /// \brief Gets the pivot at the left-middle-front edge (0.0, 0.5, 1.0).
         ///
         /// \return A pivot point representing the left-middle-front edge.
         ZY_INLINE static constexpr Pivot3D LeftMiddleFront()
@@ -109,15 +107,15 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 0.5f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the left-middle-middle center (0.0, 0.5, 0.5).
+        /// \brief Gets the pivot at the left-middle-middle face (0.0, 0.5, 0.5).
         ///
-        /// \return A pivot point representing the left-middle-middle center.
+        /// \return A pivot point representing the left-middle-middle face.
         ZY_INLINE static constexpr Pivot3D LeftMiddleMiddle()
         {
             return Pivot3D(0.0f, 0.5f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the left-middle-back edge (0.0, 0.5, 0.0).
+        /// \brief Gets the pivot at the left-middle-back edge (0.0, 0.5, 0.0).
         ///
         /// \return A pivot point representing the left-middle-back edge.
         ZY_INLINE static constexpr Pivot3D LeftMiddleBack()
@@ -125,7 +123,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 0.5f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the left-bottom-front corner (0.0, 0.0, 1.0).
+        /// \brief Gets the pivot at the left-bottom-front corner (0.0, 0.0, 1.0).
         ///
         /// \return A pivot point representing the left-bottom-front corner.
         ZY_INLINE static constexpr Pivot3D LeftBottomFront()
@@ -133,7 +131,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 0.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the left-bottom-middle edge (0.0, 0.0, 0.5).
+        /// \brief Gets the pivot at the left-bottom-middle edge (0.0, 0.0, 0.5).
         ///
         /// \return A pivot point representing the left-bottom-middle edge.
         ZY_INLINE static constexpr Pivot3D LeftBottomMiddle()
@@ -141,7 +139,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 0.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the left-bottom-back corner (0.0, 0.0, 0.0).
+        /// \brief Gets the pivot at the left-bottom-back corner (0.0, 0.0, 0.0).
         ///
         /// \return A pivot point representing the left-bottom-back corner.
         ZY_INLINE static constexpr Pivot3D LeftBottomBack()
@@ -149,7 +147,7 @@ inline namespace ZyMath
             return Pivot3D(0.0f, 0.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the center-top-front edge (0.5, 1.0, 1.0).
+        /// \brief Gets the pivot at the center-top-front edge (0.5, 1.0, 1.0).
         ///
         /// \return A pivot point representing the center-top-front edge.
         ZY_INLINE static constexpr Pivot3D CenterTopFront()
@@ -157,7 +155,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 1.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the center-top-middle face (0.5, 1.0, 0.5).
+        /// \brief Gets the pivot at the center-top-middle face (0.5, 1.0, 0.5).
         ///
         /// \return A pivot point representing the center-top-middle face.
         ZY_INLINE static constexpr Pivot3D CenterTopMiddle()
@@ -165,7 +163,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 1.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the center-top-back edge (0.5, 1.0, 0.0).
+        /// \brief Gets the pivot at the center-top-back edge (0.5, 1.0, 0.0).
         ///
         /// \return A pivot point representing the center-top-back edge.
         ZY_INLINE static constexpr Pivot3D CenterTopBack()
@@ -173,7 +171,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 1.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the center-middle-front face (0.5, 0.5, 1.0).
+        /// \brief Gets the pivot at the center-middle-front face (0.5, 0.5, 1.0).
         ///
         /// \return A pivot point representing the center-middle-front face.
         ZY_INLINE static constexpr Pivot3D CenterMiddleFront()
@@ -181,7 +179,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.5f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the center (0.5, 0.5, 0.5).
+        /// \brief Gets the pivot at the center (0.5, 0.5, 0.5).
         ///
         /// \return A pivot point representing the center.
         ZY_INLINE static constexpr Pivot3D CenterMiddleMiddle()
@@ -189,7 +187,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.5f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the center-middle-back face (0.5, 0.5, 0.0).
+        /// \brief Gets the pivot at the center-middle-back face (0.5, 0.5, 0.0).
         ///
         /// \return A pivot point representing the center-middle-back face.
         ZY_INLINE static constexpr Pivot3D CenterMiddleBack()
@@ -197,7 +195,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.5f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the center-bottom-front edge (0.5, 0.0, 1.0).
+        /// \brief Gets the pivot at the center-bottom-front edge (0.5, 0.0, 1.0).
         ///
         /// \return A pivot point representing the center-bottom-front edge.
         ZY_INLINE static constexpr Pivot3D CenterBottomFront()
@@ -205,7 +203,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the center-bottom-middle face (0.5, 0.0, 0.5).
+        /// \brief Gets the pivot at the center-bottom-middle face (0.5, 0.0, 0.5).
         ///
         /// \return A pivot point representing the center-bottom-middle face.
         ZY_INLINE static constexpr Pivot3D CenterBottomMiddle()
@@ -213,7 +211,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the center-bottom-back edge (0.5, 0.0, 0.0).
+        /// \brief Gets the pivot at the center-bottom-back edge (0.5, 0.0, 0.0).
         ///
         /// \return A pivot point representing the center-bottom-back edge.
         ZY_INLINE static constexpr Pivot3D CenterBottomBack()
@@ -221,7 +219,7 @@ inline namespace ZyMath
             return Pivot3D(0.5f, 0.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the right-top-front corner (1.0, 1.0, 1.0).
+        /// \brief Gets the pivot at the right-top-front corner (1.0, 1.0, 1.0).
         ///
         /// \return A pivot point representing the right-top-front corner.
         ZY_INLINE static constexpr Pivot3D RightTopFront()
@@ -229,7 +227,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 1.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the right-top-middle edge (1.0, 1.0, 0.5).
+        /// \brief Gets the pivot at the right-top-middle edge (1.0, 1.0, 0.5).
         ///
         /// \return A pivot point representing the right-top-middle edge.
         ZY_INLINE static constexpr Pivot3D RightTopMiddle()
@@ -237,7 +235,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 1.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the right-top-back corner (1.0, 1.0, 0.0).
+        /// \brief Gets the pivot at the right-top-back corner (1.0, 1.0, 0.0).
         ///
         /// \return A pivot point representing the right-top-back corner.
         ZY_INLINE static constexpr Pivot3D RightTopBack()
@@ -245,7 +243,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 1.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the right-middle-front edge (1.0, 0.5, 1.0).
+        /// \brief Gets the pivot at the right-middle-front edge (1.0, 0.5, 1.0).
         ///
         /// \return A pivot point representing the right-middle-front edge.
         ZY_INLINE static constexpr Pivot3D RightMiddleFront()
@@ -253,15 +251,15 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 0.5f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the right-middle-middle center (1.0, 0.5, 0.5).
+        /// \brief Gets the pivot at the right-middle-middle face (1.0, 0.5, 0.5).
         ///
-        /// \return A pivot point representing the right-middle-middle center.
+        /// \return A pivot point representing the right-middle-middle face.
         ZY_INLINE static constexpr Pivot3D RightMiddleMiddle()
         {
             return Pivot3D(1.0f, 0.5f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the right-middle-back edge (1.0, 0.5, 0.0).
+        /// \brief Gets the pivot at the right-middle-back edge (1.0, 0.5, 0.0).
         ///
         /// \return A pivot point representing the right-middle-back edge.
         ZY_INLINE static constexpr Pivot3D RightMiddleBack()
@@ -269,7 +267,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 0.5f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the right-bottom-front corner (1.0, 0.0, 1.0).
+        /// \brief Gets the pivot at the right-bottom-front corner (1.0, 0.0, 1.0).
         ///
         /// \return A pivot point representing the right-bottom-front corner.
         ZY_INLINE static constexpr Pivot3D RightBottomFront()
@@ -277,7 +275,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 0.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the right-bottom-middle edge (1.0, 0.0, 0.5).
+        /// \brief Gets the pivot at the right-bottom-middle edge (1.0, 0.0, 0.5).
         ///
         /// \return A pivot point representing the right-bottom-middle edge.
         ZY_INLINE static constexpr Pivot3D RightBottomMiddle()
@@ -285,7 +283,7 @@ inline namespace ZyMath
             return Pivot3D(1.0f, 0.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the right-bottom-back corner (1.0, 0.0, 0.0).
+        /// \brief Gets the pivot at the right-bottom-back corner (1.0, 0.0, 0.0).
         ///
         /// \return A pivot point representing the right-bottom-back corner.
         ZY_INLINE static constexpr Pivot3D RightBottomBack()

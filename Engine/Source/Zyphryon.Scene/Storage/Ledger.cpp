@@ -48,28 +48,23 @@ namespace ZyScene
     {
         const UInt32 Index = GetListIndex(Identifier, Kind);
 
-        if (Index >= mLists.GetSize())
-        {
-            mLists.Advance(Index + 1 - mLists.GetSize());
-        }
+        mLists.Expand(Index + 1);
 
         if (!mLists[Index])
         {
             mLists[Index] = Unique<List>::Create(Identifier);
         }
+        Ref<List> Target = * mLists[Index];
 
-        if (Identifier >= mWatched.GetSize())
-        {
-            mWatched.Advance(Identifier + 1 - mWatched.GetSize());
-        }
+        mWatched.Expand(Identifier + 1);
         mWatched[Identifier] |= static_cast<UInt8>(Kind);
 
-        ++mLists[Index]->Subscribers;
+        ++Target.Subscribers;
         ++mCount;
 
         // A destroyed reader's slot is taken first, so handles stay few.
-        const Subscription Made(Index, mLists[Index]->First + mLists[Index]->Actors.GetSize());
-        const SInt Vacant = mSubscriptions.Find([](ConstRef<Subscription> Other)
+        const Subscription Made(Index, Target.First + Target.Actors.GetSize());
+        const SInt         Vacant = mSubscriptions.Find([](ConstRef<Subscription> Other)
         {
             return Other.List == kVacant;
         });
@@ -134,7 +129,7 @@ namespace ZyScene
         if (Info.Has(Trait::Keeps) && !Info.IsTag())
         {
             // Entries recorded since the last value kept none, so they are padded before this one is added.
-            Target.Values.Advance(Target.Actors.GetSize() - 1 - Target.Values.GetSize());
+            Target.Values.Expand(Target.Actors.GetSize() - 1);
             Target.Values.Append(Allocate<Byte>(Info.GetSize(), Info.GetAlignment()));
             Chunk::Copy(Info, Target.Values.GetBack(), Value, 1);
         }

@@ -31,47 +31,47 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Finds where a moving volume first meets a standing one.
+        /// \brief Finds where a moving box first meets a standing box.
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  The distance the first volume travels.
+        /// \param Motion  The displacement of the first volume.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Box> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact);
 
-        /// \brief Finds where a moving volume first meets a standing one.
+        /// \brief Finds where a moving cylinder first meets a standing cylinder.
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  The distance the first volume travels.
+        /// \param Motion  The displacement of the first volume.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact);
 
-        /// \brief Finds where a moving volume first meets a standing one.
+        /// \brief Finds where a moving cylinder first meets a standing box.
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  The distance the first volume travels.
+        /// \param Motion  The displacement of the first volume.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact);
 
-        /// \brief Finds where a moving volume first meets a standing one.
+        /// \brief Finds where a moving box first meets a standing cylinder.
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  The distance the first volume travels.
+        /// \param Motion  The displacement of the first volume.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact);
 
-        /// \brief Finds where a moving volume first meets a standing one.
+        /// \brief Finds where a moving shape of any kind first meets a standing one.
         ///
         /// \param First   The volume being moved.
         /// \param Second  The volume standing in its way.
-        /// \param Motion  The distance the first volume travels.
+        /// \param Motion  The displacement of the first volume.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Ref<Manifold> Contact);

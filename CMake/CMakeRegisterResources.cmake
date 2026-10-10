@@ -1,11 +1,15 @@
-# CMakeEmbedResources.cmake
-#
-# Registers a module/plugin resource directory to be embedded into consumer applications.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+# Registers a resource directory that ZyApplyResources(<app>) embeds into each consumer application.
 #
 # Usage:
 #   ZyRegisterResources(TARGET <target> DIRECTORY <dir> [PREFIX <prefix>])
-#
-# Each registered directory is materialized by ZyApplyResources(<app>)
 FUNCTION(ZyRegisterResources)
 
     SET(OPTIONS)

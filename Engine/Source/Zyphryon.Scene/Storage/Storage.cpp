@@ -30,7 +30,7 @@ namespace ZyScene
     {
         Registry::Get().SetTrait(mPrefab, Trait::Local,       true);
         Registry::Get().SetTrait(mAsleep, Trait::Local,       true);
-        Registry::Get().SetTrait(mPart  , Trait::Inheritable, true);
+        Registry::Get().SetTrait(mPart,   Trait::Inheritable, true);
 
         Place(kWorld.GetIndex(), * mLayout.GetRoot());
     }
@@ -369,7 +369,7 @@ namespace ZyScene
 
         ConstRef<Chunk> Source = * mDirectory[Actor.GetIndex()].Holder;
 
-        if (!Source.Has(Identifier) && !mDirectory.FindLent(Source.GetBase(), Identifier))
+        if (!mDirectory.Sees(Source, Identifier))
         {
             InsertRecorded(Actor.GetIndex(), Identifier, nullptr);
         }
@@ -521,7 +521,14 @@ namespace ZyScene
     {
         if (!Recursive)
         {
-            Awake ? Remove(Actor, mAsleep) : Add(Actor, mAsleep);
+            if (Awake)
+            {
+                Remove(Actor, mAsleep);
+            }
+            else
+            {
+                Add(Actor, mAsleep);
+            }
             return;
         }
 
@@ -583,11 +590,8 @@ namespace ZyScene
             ZY_ASSERT(Cursor != Index, "An entity cannot be attached beneath itself");
         }
 
-        // Moving a part copies or destroys entities under every heir, which waits like any structural change, and so
-        // does every move a spread walk asks for.
-        const Bool Part = mDirectory[Index].Holder->IsArchetype()
-            && ((Above && mDirectory[Above].Holder->IsArchetype())
-                || (Previous && mDirectory[Previous].Holder->IsArchetype()));
+        // Moving a part touches every heir, so it waits, as does every move a spread walk asks for.
+        const Bool Part = IsPart(Index, Above) || IsPart(Index, Previous);
 
         if (mDeferral.IsWalking() && (Part || mDeferral.IsSpreading()))
         {
@@ -759,7 +763,7 @@ namespace ZyScene
     {
         const UInt32 Ancestor = mDirectory[Root].Parent;
 
-        if (Ancestor && mDirectory[Root].Holder->IsArchetype() && mDirectory[Ancestor].Holder->IsArchetype())
+        if (IsPart(Root, Ancestor))
         {
             DestroyPartCopies(Root, Ancestor);
         }
@@ -801,9 +805,8 @@ namespace ZyScene
         // The values are the same data, so no pull list records them.
         for (ConstRef<Unique<Chunk>> Target : mLayout.GetChunks())
         {
-            const SInt16 Column = Target ? Target->Find(Identifier) : Chunk::kAbsent;
-
-            const Bool Fitting = Column >= 0 ? Target->GetColumns()[Column].Info == Stored : Stored->IsTag();
+            const SInt16 Column  = Target ? Target->Find(Identifier) : Chunk::kAbsent;
+            const Bool   Fitting = Column >= 0 ? Target->GetColumns()[Column].Info == Stored : Stored->IsTag();
 
             if (Column == Chunk::kAbsent || Fitting)
             {
@@ -994,7 +997,7 @@ namespace ZyScene
     {
         for (const UInt32 Identifier : GetWatched(Index, Pull::Added))
         {
-            if (!Before || (!Before->Has(Identifier) && !mDirectory.FindLent(Before->GetBase(), Identifier)))
+            if (!Before || !mDirectory.Sees(* Before, Identifier))
             {
                 Record(Identifier, Pull::Added, Index, nullptr);
             }
@@ -1066,7 +1069,7 @@ namespace ZyScene
         mDirectory.Link(Index, Parent);
 
         // A part attached to an archetype is marked one, and reaches every entity already made from it.
-        if (mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype())
+        if (IsPart(Index, Parent))
         {
             Add(mDirectory.GetHandle(Index), mPart);
 
@@ -1086,13 +1089,13 @@ namespace ZyScene
     void Storage::ClearParent(UInt32 Index)
     {
         const UInt32 Parent = mDirectory[Index].Parent;
-        const Bool   Part   = mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype();
+        const Bool   Part   = IsPart(Index, Parent);
 
         if (Part)
         {
             DestroyPartCopies(Index, Parent);
         }
-        
+
         mDirectory.Unlink(Index);
 
         if (Part)
@@ -1251,9 +1254,9 @@ namespace ZyScene
         {
             for (const UInt32 Identifier : mDirectory[Base].Holder->GetSignature())
             {
-                const Bool IsWatch = IsWatched(Identifier, Kind);
-
-                if (IsWatch && !Seen.Contains(Identifier) && mDirectory.FindLent(Holder.GetBase(), Identifier))
+                if (IsWatched(Identifier, Kind)
+                    && !Seen.Contains(Identifier)
+                    && mDirectory.FindLent(Holder.GetBase(), Identifier))
                 {
                     Seen.Append(Identifier);
                 }

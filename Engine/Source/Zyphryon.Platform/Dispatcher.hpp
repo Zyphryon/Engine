@@ -28,8 +28,8 @@ namespace ZyPlatform
         /// \brief Specifies the system changes that need attention after the events are polled.
         enum class Notification : UInt8
         {
-            None,       ///< No notifications.
-            Monitor,    ///< Monitor-related notifications.
+            None    = 0,        ///< No notifications.
+            Monitor = 1 << 0,   ///< A monitor was added, removed or changed.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Notification)
 
@@ -58,18 +58,18 @@ namespace ZyPlatform
             ZyBase::Swap(mInputEvents, Output);
         }
 
-        /// \brief Notify that a specific notification has occurred.
+        /// \brief Notifies that a specific notification has occurred.
         ///
-        /// \param Notification The notification type to notify.
+        /// \param Notification The system change to flag until the next reset.
         ZY_INLINE void Notify(Notification Notification)
         {
             mNotifications = SetBit(mNotifications, Notification);
         }
 
-        /// \brief Checks if a specific notification has been notified.
+        /// \brief Checks whether a specific notification has been notified.
         ///
-        /// \param Notification The notification type to check.
-        /// \return `true` if the notification has been notified, `false` otherwise.
+        /// \param Notification The system change to look for.
+        /// \return `true` if the change was flagged since the last reset, `false` otherwise.
         ZY_INLINE Bool IsNotified(Notification Notification) const
         {
             return HasBit(mNotifications, Notification);
@@ -84,14 +84,14 @@ namespace ZyPlatform
 
             if (Offset + Content.GetSize() + 1 > mInputText.GetCapacity())
             {
-                LOG_W("Platform: dropped {0} byte(s) of text input, the frame's buffer is full", Content.GetSize());
+                LOG_W("Platform: Dropped {0} byte(s) of text input, the frame's buffer is full", Content.GetSize());
                 return;
             }
 
             mInputText.Append(Content);
 
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::KeyType);
-            Event.KeyType.Content = Text(mInputText.GetData() + Offset, Content.GetSize());
+            Event.KeyType.Content = mInputText.Slice(Offset);
         }
 
         /// \brief Queues a key release event.
@@ -123,17 +123,17 @@ namespace ZyPlatform
 
         /// \brief Queues a mouse movement event.
         ///
-        /// \param X         The absolute X position of the mouse cursor.
-        /// \param Y         The absolute Y position of the mouse cursor.
-        /// \param RelativeX The relative X movement since the last event.
-        /// \param RelativeY The relative Y movement since the last event.
-        ZY_INLINE void QueueMouseMove(Real32 X, Real32 Y, Real32 RelativeX, Real32 RelativeY)
+        /// \param X      The absolute X position of the mouse cursor.
+        /// \param Y      The absolute Y position of the mouse cursor.
+        /// \param DeltaX The relative X movement since the last event.
+        /// \param DeltaY The relative Y movement since the last event.
+        ZY_INLINE void QueueMouseMove(Real32 X, Real32 Y, Real32 DeltaX, Real32 DeltaY)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::MouseMove);
             Event.MouseAxis.X      = X;
             Event.MouseAxis.Y      = Y;
-            Event.MouseAxis.DeltaX = RelativeX;
-            Event.MouseAxis.DeltaY = RelativeY;
+            Event.MouseAxis.DeltaX = DeltaX;
+            Event.MouseAxis.DeltaY = DeltaY;
         }
 
         /// \brief Queues a mouse scroll event.
@@ -173,9 +173,9 @@ namespace ZyPlatform
         ZY_INLINE void QueueTouchDown(UInt32 ID, Real32 X, Real32 Y)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchDown);
-            Event.TouchAction.ID    = ID;
-            Event.TouchAction.X     = X;
-            Event.TouchAction.Y     = Y;
+            Event.TouchAction.ID = ID;
+            Event.TouchAction.X  = X;
+            Event.TouchAction.Y  = Y;
         }
 
         /// \brief Queues a touch movement event.
@@ -188,9 +188,9 @@ namespace ZyPlatform
         ZY_INLINE void QueueTouchMove(UInt32 ID, Real32 X, Real32 Y)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchMove);
-            Event.TouchAction.ID    = ID;
-            Event.TouchAction.X     = X;
-            Event.TouchAction.Y     = Y;
+            Event.TouchAction.ID = ID;
+            Event.TouchAction.X  = X;
+            Event.TouchAction.Y  = Y;
         }
 
         /// \brief Queues a touch departure event.
@@ -201,9 +201,9 @@ namespace ZyPlatform
         ZY_INLINE void QueueTouchUp(UInt32 ID, Real32 X, Real32 Y)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchUp);
-            Event.TouchAction.ID    = ID;
-            Event.TouchAction.X     = X;
-            Event.TouchAction.Y     = Y;
+            Event.TouchAction.ID = ID;
+            Event.TouchAction.X  = X;
+            Event.TouchAction.Y  = Y;
         }
 
         /// \brief Queues a touch the system took away before it was lifted.
@@ -212,7 +212,7 @@ namespace ZyPlatform
         ZY_INLINE void QueueTouchCancel(UInt32 ID)
         {
             Ref<ZyInput::Event> Event = mInputEvents.Append(ZyInput::Event::Type::TouchCancel);
-            Event.TouchAction.ID    = ID;
+            Event.TouchAction.ID = ID;
         }
 
         /// \brief Queues a window focus event.

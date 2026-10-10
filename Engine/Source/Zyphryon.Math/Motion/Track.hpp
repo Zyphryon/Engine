@@ -30,7 +30,7 @@ inline namespace ZyMath
         Hermite, ///< Smoothly interpolate with a Hermite spline through the track's authored tangents.
     };
 
-    /// \brief Represents where a moment in time falls within a track: the samples bracketing it, and how far between them.
+    /// \brief Represents where a moment in time falls between two samples of a track.
     struct Cursor final
     {
         /// The index of the sample at or before the time.
@@ -39,7 +39,7 @@ inline namespace ZyMath
         /// The index of the sample after it, held at \ref Lower once the time reaches the track's end.
         UInt   Upper = 0;
 
-        /// How far the time sits between the two samples, in the range `[0, 1]`.
+        /// The fraction of the way from the lower sample to the upper one, in the range `[0, 1]`.
         Real32 Delta = 0.0f;
 
         /// \brief Finds where a moment in time falls on samples laid out at a fixed rate, clamping to the ends.
@@ -109,7 +109,7 @@ inline namespace ZyMath
         /// \brief Appends a sample at an explicit time; samples must be added in ascending time order.
         ///
         /// \param Time  The sample's time, in seconds.
-        /// \param Value The sample's value.
+        /// \param Value The value the track holds at \p Time.
         ZY_INLINE void Add(Real64 Time, AnyRef<Type> Value)
         {
             ZY_ASSERT(!IsUniform(), "A track on a fixed cadence takes its times from the cadence");
@@ -122,7 +122,7 @@ inline namespace ZyMath
 
         /// \brief Appends a sample at the next slot of the track's fixed cadence.
         ///
-        /// \param Value The sample's value.
+        /// \param Value The value held at the next slot of the cadence.
         ZY_INLINE void Add(AnyRef<Type> Value)
         {
             ZY_ASSERT(IsUniform(), "A track without a cadence needs a time for every sample");
@@ -292,7 +292,7 @@ inline namespace ZyMath
             return Result;
         }
 
-        /// \brief Samples the track at a cursor obtained from this track or falling back to a value when is empty.
+        /// \brief Samples the track at a cursor it located, falling back to a value when it is empty.
         ///
         /// \param Where    The position within the track to blend at.
         /// \param Fallback The value to return when the track carries no sample.
@@ -335,7 +335,7 @@ inline namespace ZyMath
                 {
                     const UInt Last = mValues.GetSize() - 1;
 
-                    Type Before = mValues[Where.Lower     >= 1    ? Where.Lower - 1 : 0];
+                    Type Before = mValues[Where.Lower >= 1 ? Where.Lower - 1 : 0];
                     Type After  = mValues[Min(Where.Upper + 1, Last)];
                     Type End    = Next;
 
@@ -345,7 +345,8 @@ inline namespace ZyMath
                         End    = Align(Previous, End);
                         After  = Align(End,      After);
                     }
-                    return Renormalize(AnyBezier<Type>::FromCatmullRom(Before, Previous, End, After).Point(Where.Delta));
+                    return Renormalize(
+                        AnyBezier<Type>::FromCatmullRom(Before, Previous, End, After).Point(Where.Delta));
                 }
             }
 
@@ -363,7 +364,7 @@ inline namespace ZyMath
             }
         }
 
-        /// \brief Samples the track at the given time, falling back to a value when is empty.
+        /// \brief Samples the track at the given time, falling back to a value when it is empty.
         ///
         /// \param Time     The time to sample at, in seconds.
         /// \param Fallback The value to return when the track carries no sample.
@@ -380,7 +381,7 @@ inline namespace ZyMath
 
         /// \brief Restores the unit length that a spline blend does not preserve, for types that require it.
         ///
-        /// \param Value The blended value.
+        /// \param Value The value a spline blend produced.
         /// \return The value, renormalized when the type carries a unit-length invariant.
         ZY_INLINE static Type Renormalize(AnyRef<Type> Value)
         {
@@ -440,8 +441,7 @@ inline namespace ZyMath
                 return;
             }
 
-            // Halving narrows a long track in a handful of steps rather than one per sample, but each step
-            // branches unpredictably and a mispredict costs more than several scanned entries.
+            // Halving branches unpredictably, so a short span is cheaper to walk.
             UInt Lower = 1;
             UInt Upper = Last;
 

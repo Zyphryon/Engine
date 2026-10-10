@@ -25,7 +25,7 @@ namespace ZyPlatform
     {
     public:
 
-        /// \brief Poll the display system, updating the state of all monitors.
+        /// \brief Polls the display system, updating the state of all monitors.
         void Poll();
 
         /// \brief Gets a monitor by its name.
@@ -57,9 +57,9 @@ namespace ZyPlatform
 
         /// \brief Gets a monitor by its position.
         ///
-        /// \param X The X coordinate of the position.
-        /// \param Y The Y coordinate of the position.
-        /// \return A reference to the monitor if found, otherwise `nullptr`.
+        /// \param X The X coordinate in virtual screen space.
+        /// \param Y The Y coordinate in virtual screen space.
+        /// \return The monitor whose area holds the point, or `nullptr` if none does.
         ZY_INLINE ConstPtr<Monitor> GetMonitor(SInt32 X, SInt32 Y) const
         {
             for (ConstRef<Monitor> Monitor : mMonitors)

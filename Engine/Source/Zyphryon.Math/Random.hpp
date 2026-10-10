@@ -20,9 +20,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Represents a pseudo-random number generator (PRNG).
-    ///
-    /// It uses the xoshiro256++ algorithm for generating high-quality random numbers.
+    /// \brief Represents a xoshiro256++ pseudo-random number generator.
     class Random final
     {
     public:
@@ -58,7 +56,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Type NextInteger(Type Minimum, Type Maximum)
             requires(IsIntegral<Type>)
         {
-            ZY_ASSERT(Minimum <= Maximum, "Minimum must be less or equal than Maximum");
+            ZY_ASSERT(Minimum <= Maximum, "Minimum must be less than or equal to Maximum");
 
             using Unsigned = Unsigned<Type>;
 
@@ -111,7 +109,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Type NextReal(Type Minimum, Type Maximum)
             requires(IsReal<Type>)
         {
-            ZY_ASSERT(Minimum <= Maximum, "Minimum must be less or equal than Maximum");
+            ZY_ASSERT(Minimum <= Maximum, "Minimum must be less than or equal to Maximum");
 
             return Minimum + (Maximum - Minimum) * NextReal<Type>();
         }
@@ -150,27 +148,6 @@ inline namespace ZyMath
             return AddressOf(Values[NextInteger<UInt32>(0, static_cast<UInt32>(Values.GetSize()) - 1)]);
         }
 
-        /// \brief Scatters the bits of a number, so numbers lying close together come out far apart.
-        ///
-        /// \param Value The number to scatter.
-        /// \return The scattered number, the same every time for the same one.
-        ZY_INLINE static constexpr UInt64 Mix(UInt64 Value)
-        {
-            Value = (Value ^ (Value >> 30)) * 0xBF58476D1CE4E5B9;
-            Value = (Value ^ (Value >> 27)) * 0x94D049BB133111EB;
-            return Value ^ (Value >> 31);
-        }
-
-        /// \brief Scatters the bits of a point on a grid, so neighbouring points come out far apart.
-        ///
-        /// \param Value The point to scatter.
-        /// \return The scattered number, the same every time for the same point.
-        ZY_INLINE static constexpr UInt64 Mix(IntVector2 Value)
-        {
-            return Mix(static_cast<UInt64>(static_cast<UInt32>(Value.GetX())) << 32
-                     | static_cast<UInt64>(static_cast<UInt32>(Value.GetY())));
-        }
-
     private:
 
         /// \brief Generates the next raw 64-bit unsigned integer using the xoshiro256++ state.
@@ -178,14 +155,14 @@ inline namespace ZyMath
         /// \return The next 64-bit unsigned integer from the generator state.
         ZY_INLINE constexpr UInt64 NextUnsignedInteger64()
         {
-            const UInt64 Result = RotateLeft(mState[0] + mState[3], 23) + mState[0];
-            const UInt64 Temp = mState[1] << 17;
+            const UInt64 Result  = RotateLeft(mState[0] + mState[3], 23) + mState[0];
+            const UInt64 Shifted = mState[1] << 17;
 
             mState[2] ^= mState[0];
             mState[3] ^= mState[1];
             mState[1] ^= mState[2];
             mState[0] ^= mState[3];
-            mState[2] ^= Temp;
+            mState[2] ^= Shifted;
             mState[3]  = RotateLeft(mState[3], 45);
             return Result;
         }
@@ -213,7 +190,7 @@ inline namespace ZyMath
 
         /// \brief Constructs a generator seeded unpredictably from the platform's own entropy.
         ///
-        /// \return A generator seeded from platform entropy, or one seeded from the clock where none was had.
+        /// \return A generator seeded from platform entropy, or from a seed of zero where the platform had none.
         ZY_INLINE static Random Seeded()
         {
             Random Generator;
@@ -223,6 +200,27 @@ inline namespace ZyMath
             ZY_ASSERT(Success, "The platform had no entropy to seed from");
 
             return Generator;
+        }
+
+        /// \brief Scatters the bits of a number, so numbers lying close together come out far apart.
+        ///
+        /// \param Value The number to scatter.
+        /// \return The scattered number, the same every time for the same one.
+        ZY_INLINE static constexpr UInt64 Mix(UInt64 Value)
+        {
+            Value = (Value ^ (Value >> 30)) * 0xBF58476D1CE4E5B9;
+            Value = (Value ^ (Value >> 27)) * 0x94D049BB133111EB;
+            return Value ^ (Value >> 31);
+        }
+
+        /// \brief Scatters the bits of a point on a grid, so neighbouring points come out far apart.
+        ///
+        /// \param Value The point to scatter.
+        /// \return The scattered number, the same every time for the same point.
+        ZY_INLINE static constexpr UInt64 Mix(IntVector2 Value)
+        {
+            return Mix(static_cast<UInt64>(static_cast<UInt32>(Value.GetX())) << 32
+                     | static_cast<UInt64>(static_cast<UInt32>(Value.GetY())));
         }
 
     private:

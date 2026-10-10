@@ -29,22 +29,6 @@ inline namespace ZyBase
         /// \brief Constructs an empty bag with no allocated storage.
         ZY_INLINE Bag() = default;
 
-        /// \brief Constructs a bag by copying all keys from another bag.
-        ///
-        /// \param Other The bag to copy from.
-        ZY_INLINE Bag(ConstRef<Bag> Other)
-            : mTable { Other.mTable }
-        {
-        }
-
-        /// \brief Constructs a bag by transferring ownership from another bag.
-        ///
-        /// \param Other The bag to move from, which will be left in an empty state.
-        ZY_INLINE Bag(AnyRef<Bag> Other)
-            : mTable { Move (Other.mTable) }
-        {
-        }
-
         /// \brief Gets a pointer to the dense array of keys.
         ///
         /// \return A pointer to the internal storage array containing all keys.
@@ -71,9 +55,9 @@ inline namespace ZyBase
             return mTable.GetSize();
         }
 
-        /// \brief Gets the maximum number of elements the bag can hold before rehashing.
+        /// \brief Gets the number of slots the bag has allocated.
         ///
-        /// \return The current capacity of the bag's internal storage.
+        /// \return The slot count, which the bag fills to seven eighths before it grows.
         ZY_INLINE UInt GetCapacity() const
         {
             return mTable.GetCapacity();
@@ -124,8 +108,8 @@ inline namespace ZyBase
         /// \brief Extracts a key from the bag, removing it and returning it through the output parameter.
         ///
         /// \param Needle The key to extract from the bag.
-        /// \param Output The output parameter to receive the extracted key if found.
-        /// \return `true` if the key was found and extracted, `false` otherwise
+        /// \param Output Receives the extracted key when it is found.
+        /// \return `true` if the key was found and extracted, `false` otherwise.
         template<typename KeyType = Key>
         ZY_INLINE Bool Extract(AnyRef<KeyType> Needle, Ref<Key> Output)
         {
@@ -140,26 +124,6 @@ inline namespace ZyBase
         ZY_INLINE Bool Contains(AnyRef<KeyType> Needle) const
         {
             return mTable.Contains(Needle);
-        }
-
-        /// \brief Replaces the contents by copying all keys from \p Other.
-        ///
-        /// \param Other The bag to copy from.
-        /// \return A reference to this bag.
-        ZY_INLINE Ref<Bag> operator=(ConstRef<Bag> Other)
-        {
-            mTable = Other.mTable;
-            return (* this);
-        }
-
-        /// \brief Replaces the contents by taking ownership of \p Other's storage.
-        ///
-        /// \param Other The bag to move from. Left empty after the operation.
-        /// \return A reference to this bag.
-        ZY_INLINE Ref<Bag> operator=(AnyRef<Bag> Other)
-        {
-            mTable = Move(Other.mTable);
-            return (* this);
         }
 
     private:

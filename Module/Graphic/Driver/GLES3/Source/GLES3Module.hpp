@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <Zyphryon.Engine/Module.hpp>
+#include "Zyphryon.Engine/Module.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,7 +20,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Defines the OpenGL ES 3.0 module.
+    /// \brief Represents the OpenGL ES 3.0 module.
     class GLES3Module final : public ZyEngine::Module
     {
     public:

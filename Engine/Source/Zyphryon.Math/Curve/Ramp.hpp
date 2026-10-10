@@ -14,9 +14,9 @@
 
 inline namespace ZyMath
 {
-    /// \brief Represents a run of values keyed by the moment each is worn, read by blending the pair either side of one.
+    /// \brief Represents a run of timed values, read by blending the pair either side of a moment.
     ///
-    /// \tparam Type     The value the run carries, blended by its own `Lerp`.
+    /// \tparam Type     The value the run carries, blended by its own `Lerp` where it has one.
     /// \tparam Capacity The number of stops held inline, or zero to hold them on the heap.
     template<typename Type, UInt Capacity = 0>
     class Ramp final
@@ -27,10 +27,10 @@ inline namespace ZyMath
         struct Stop final
         {
             /// The moment the value is worn at.
-            Real32 Time = 0.0f;
+            Real32 Time  = 0.0f;
 
             /// The value worn at that moment.
-            Type   Value     { };
+            Type   Value = Type();
 
             /// \brief Serializes the state of the object to or from the specified archive.
             ///
@@ -43,7 +43,7 @@ inline namespace ZyMath
             }
         };
 
-        /// \brief The stops the run passes through, in the order it passes through them.
+        /// \brief Represents the stops the run passes through, in the order it passes through them.
         using Stops = Sequence<Stop, Capacity>;
 
     public:

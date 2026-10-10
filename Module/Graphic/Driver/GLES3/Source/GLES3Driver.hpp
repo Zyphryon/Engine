@@ -17,7 +17,7 @@
 #include "Zyphryon.Graphic/Driver.hpp"
 
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
-    #include <tracy/TracyOpenGL.hpp>
+#include <tracy/TracyOpenGL.hpp>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -26,7 +26,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Encapsulate the graphic driver implementation using OpenGL ES 3.0 / OpenGL 3.3 core.
+    /// \brief Represents the graphic driver implemented over OpenGL ES 3.0 / OpenGL 3.3 core.
     class GLES3Driver final : public Driver
     {
     public:
@@ -96,93 +96,182 @@ namespace ZyGraphic
 
     private:
 
-        /// \brief Internal wrapper for OpenGL buffer resources.
+        /// \brief Represents an OpenGL buffer.
         struct GLES3Buffer final
         {
-            GLuint Object   = 0;
-            GLenum Target   = 0;
-            UInt32 Capacity = 0;
+            /// The buffer object.
+            GLuint Object = 0;
+
+            /// The target the buffer is bound to when drawn from.
+            GLenum Target = 0;
         };
 
-        /// \brief Internal wrapper for OpenGL render pass resources.
+        /// \brief Represents an OpenGL render pass.
         struct GLES3Pass final
         {
+            /// The framebuffer object, `0` for the default framebuffer.
             GLuint                                     Framebuffer = 0;
-            UInt16                                     Width       = 0;
+
+            /// The height of the attachments, which flips window coordinates.
             UInt16                                     Height      = 0;
+
+            /// The color attachments, in binding order.
             Sequence<ColorAttachment, kMaxAttachments> Colors;
+
+            /// The depth attachment and its load and store actions.
             DepthAttachment                            Depth;
         };
 
-        /// \brief Internal wrapper for OpenGL pipeline resources (linked program plus resolved fixed-function state).
+        /// \brief Represents an OpenGL pipeline, its linked program plus resolved fixed-function state.
         struct GLES3Pipeline final
         {
+            /// The program object, `0` when it failed to build.
             GLuint        Program               = 0;
+
+            /// `true` once the program has linked and its bindings are applied.
             Bool          Ready                 = false;
+
+            /// `true` when blending is enabled.
             Bool          BlendEnable           = false;
+
+            /// The source factor of the color blend.
             GLenum        BlendSrcColor         = GL_ONE;
+
+            /// The destination factor of the color blend.
             GLenum        BlendDstColor         = GL_ZERO;
+
+            /// The equation of the color blend.
             GLenum        BlendEquationColor    = GL_FUNC_ADD;
+
+            /// The source factor of the alpha blend.
             GLenum        BlendSrcAlpha         = GL_ONE;
+
+            /// The destination factor of the alpha blend.
             GLenum        BlendDstAlpha         = GL_ZERO;
+
+            /// The equation of the alpha blend.
             GLenum        BlendEquationAlpha    = GL_FUNC_ADD;
+
+            /// The color channels written, one bit per channel.
             UInt8         Channel               = 0x0F;
+
+            /// `true` when the depth test is enabled.
             Bool          DepthEnable           = true;
+
+            /// `true` when depth writes are enabled.
             Bool          DepthMask             = true;
+
+            /// The comparison of the depth test.
             GLenum        DepthFunction         = GL_LEQUAL;
+
+            /// `true` when depth is clipped rather than clamped.
             Bool          DepthClip             = true;
+
+            /// The constant depth bias.
             Real32        DepthBias             = 0.0f;
+
+            /// The depth bias scaled by the polygon's slope.
             Real32        DepthBiasSlope        = 0.0f;
+
+            /// `true` when the stencil test is enabled.
             Bool          StencilEnable         = false;
+
+            /// The mask applied to stencil values before they are compared.
             GLuint        StencilReadMask       = 0xFF;
+
+            /// The mask applied to stencil values before they are written.
             GLuint        StencilWriteMask      = 0xFF;
+
+            /// The comparison of the front-face stencil test.
             GLenum        StencilFrontFunction  = GL_ALWAYS;
+
+            /// The front-face operation when the stencil test fails.
             GLenum        StencilFrontFail      = GL_KEEP;
+
+            /// The front-face operation when the stencil test passes and the depth test fails.
             GLenum        StencilFrontDepthFail = GL_KEEP;
+
+            /// The front-face operation when both tests pass.
             GLenum        StencilFrontDepthPass = GL_KEEP;
+
+            /// The comparison of the back-face stencil test.
             GLenum        StencilBackFunction   = GL_ALWAYS;
+
+            /// The back-face operation when the stencil test fails.
             GLenum        StencilBackFail       = GL_KEEP;
+
+            /// The back-face operation when the stencil test passes and the depth test fails.
             GLenum        StencilBackDepthFail  = GL_KEEP;
+
+            /// The back-face operation when both tests pass.
             GLenum        StencilBackDepthPass  = GL_KEEP;
+
+            /// `true` when face culling is enabled.
             Bool          CullEnable            = true;
+
+            /// The face that is culled.
             GLenum        CullMode              = GL_BACK;
+
+            /// `true` when the scissor test is enabled.
             Bool          ScissorEnable         = false;
-            GLenum        FillMode              = 0x1B02;
+
+            /// The polygon mode, which only desktop OpenGL applies.
+            GLenum        FillMode              = kGLFill;
+
+            /// The primitive the draws assemble.
             GLenum        Primitive             = GL_TRIANGLES;
+
+            /// The vertex attributes the program reads.
             Attributes    Attributes;
         };
 
-        /// \brief Internal wrapper for OpenGL texture resources.
+        /// \brief Represents an OpenGL texture.
         struct GLES3Texture final
         {
+            /// The texture object.
             GLuint        Object = 0;
+
+            /// The target the texture is bound to.
             GLenum        Target = GL_TEXTURE_2D;
+
+            /// The format the texture was created with.
             TextureFormat Format = TextureFormat::Unspecified;
-            UInt16        Width  = 0;
+
+            /// The height of the base level.
             UInt16        Height = 0;
-            UInt16        Layers = 1;
-            UInt8         Levels = 1;
         };
 
-        /// \brief Internal wrapper for OpenGL pipeline snapshot.
+        /// \brief Holds the context state last applied, so only changes are emitted.
         struct GLES3Snapshot final
         {
-
+            /// The vertex attribute locations enabled, one bit per location.
             UInt32         Attributes = 0;
+
+            /// The pass being recorded.
             Ptr<GLES3Pass> Pass       = nullptr;
+
+            /// The pipeline state last applied.
             GLES3Pipeline  Pipeline;
+
+            /// The stencil reference value last applied.
             UInt8          Stencil    = 0;
+
+            /// The buffer bound to GL_ARRAY_BUFFER.
             GLuint         Vertices   = 0;
         };
 
-        /// \brief Internal wrapper for the profiler's view of the context, and the one zone a pass is timed by.
+        /// \brief Represents the profiler's view of the context, and the one zone a pass is timed by.
         struct GLES3Profiler final
         {
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
+            /// The storage of the zone that times the open pass.
             ZY_ALIGN(tracy::GpuCtxScope) Byte Zone[sizeof(tracy::GpuCtxScope)];
+
+            /// `true` while a zone is open.
             Bool                              Opened = false;
 #endif
 
+            /// \brief Creates the profiler context for the current OpenGL context.
             ZY_INLINE void Initialize()
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
@@ -190,6 +279,9 @@ namespace ZyGraphic
 #endif
             }
 
+            /// \brief Opens the zone a pass is timed by.
+            ///
+            /// \param Name The name the zone is shown with.
             ZY_INLINE void Open(Text Name)
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
@@ -197,13 +289,21 @@ namespace ZyGraphic
 
                 static constexpr Char kZone[] = "GLES3Driver::Prepare";
 
-                Construct<tracy::GpuCtxScope>(reinterpret_cast<Ptr<tracy::GpuCtxScope>>(Zone),
-                    static_cast<UInt32>(__LINE__), __FILE__, sizeof(__FILE__) - 1,
-                    kZone, sizeof(kZone) - 1, Name.GetData(), Name.GetSize(), true);
+                Construct<tracy::GpuCtxScope>(
+                    reinterpret_cast<Ptr<tracy::GpuCtxScope>>(Zone),
+                    static_cast<UInt32>(__LINE__),
+                    __FILE__,
+                    sizeof(__FILE__) - 1,
+                    kZone,
+                    sizeof(kZone) - 1,
+                    Name.GetData(),
+                    Name.GetSize(),
+                    true);
                 Opened = true;
 #endif
             }
 
+            /// \brief Closes the zone opened by \ref Open, if any.
             ZY_INLINE void Close()
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
@@ -215,6 +315,7 @@ namespace ZyGraphic
 #endif
             }
 
+            /// \brief Gathers whatever the timing queries have answered.
             ZY_INLINE void Collect()
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY) && !defined(ZY_PLATFORM_WEB)
@@ -228,11 +329,11 @@ namespace ZyGraphic
         /// \brief Detects the OpenGL version, feature tier, extensions, and device limits.
         void LoadCapabilities();
 
-        /// \brief Queries whether the current context exposes the given OpenGL extension.
+        /// \brief Checks whether the current context exposes the given OpenGL extension.
         ///
         /// \param Name The extension name to look for.
         /// \return `true` when the extension is present, `false` otherwise.
-        Bool HasExtension(ConstPtr<Char> Name) const;
+        Bool HasExtension(Text Name) const;
 
         /// \brief Brings a pipeline whose link is still outstanding into use once the link has landed.
         ///
@@ -240,8 +341,7 @@ namespace ZyGraphic
         /// \return `true` when the pipeline can be drawn with, `false` while it links or once it failed.
         Bool Settle(Object ID);
 
-        /// \brief Applies the fixed-function state and program described by a pipeline, emitting only the changes
-        ///        relative to the state cached from the previous application.
+        /// \brief Applies a pipeline's program and fixed-function state, emitting only what changed since the last one.
         ///
         /// \param Pipeline The pipeline whose state should become current.
         /// \param Stencil  The stencil reference value to bind alongside the stencil state.
@@ -249,10 +349,10 @@ namespace ZyGraphic
 
         /// \brief Applies the vertex stream bindings and attribute layout for a draw item.
         ///
-        /// \param Pipeline        The pipeline whose input layout describes the attributes.
-        /// \param Command         The draw item providing the vertex streams.
-        /// \param IsPipelineDirty Whether the pipeline changed since the previous draw.
-        void ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool IsPipelineDirty);
+        /// \param Pipeline The pipeline whose input layout describes the attributes.
+        /// \param Command  The draw item providing the vertex streams.
+        /// \param Dirty    `true` when the pipeline changed since the previous draw.
+        void ApplyVertexResources(ConstRef<GLES3Pipeline> Pipeline, ConstRef<Command> Command, Bool Dirty);
 
         /// \brief Applies the uniform buffer range bindings for a draw item.
         ///
@@ -264,7 +364,7 @@ namespace ZyGraphic
         ///
         /// \param Oldest The previously submitted draw item.
         /// \param Newest The draw item being submitted.
-        void ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest);
+        void ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
     private:
 

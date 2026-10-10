@@ -75,7 +75,9 @@ namespace ZyScene
     template<typename Type, Pull Kinds>
     struct Pulled final
     {
-        static_assert(Kinds == Pull::Removed || (Kinds != Pull() && (Kinds & Pull::Removed) == Pull()));
+        static_assert(
+            Kinds == Pull::Removed || (Kinds != Pull() && (Kinds & Pull::Removed) == Pull()),
+            "A list records removals alone, or additions and changes in any mix");
 
         /// The component whose changes the list records, and whose fields a reader of it may ask for.
         using Value = Type;
@@ -114,7 +116,7 @@ namespace ZyScene
 
         /// \brief Constructs a name.
         ///
-        /// \param Name The name.
+        /// \param Name The name the entity is looked up by.
         ZY_INLINE explicit Named(Text Name)
             : Value { Name }
         {

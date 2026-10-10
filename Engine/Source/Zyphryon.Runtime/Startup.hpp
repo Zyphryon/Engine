@@ -40,7 +40,7 @@ namespace ZyRuntime
 
         /// \brief Sets the target monitor for the window.
         ///
-        /// \param Name The name of the monitor to use for window placement.
+        /// \param Name The name of the monitor to open the window on, or empty for the primary one.
         ZY_INLINE void SetWindowMonitor(Text Name)
         {
             mWindowMonitor = Name;
@@ -48,7 +48,7 @@ namespace ZyRuntime
 
         /// \brief Gets the target monitor for the window.
         ///
-        /// \return The window monitor to use for window placement.
+        /// \return The name of the monitor the window opens on, or empty for the primary one.
         ZY_INLINE Text GetWindowMonitor() const
         {
             return mWindowMonitor;
@@ -110,7 +110,7 @@ namespace ZyRuntime
             mWindowFullscreen = Fullscreen;
         }
 
-        /// \brief Checks if fullscreen mode is enabled.
+        /// \brief Checks whether fullscreen mode is enabled.
         ///
         /// \return `true` if fullscreen is enabled, `false` otherwise.
         ZY_INLINE Bool IsWindowFullscreen() const
@@ -126,7 +126,7 @@ namespace ZyRuntime
             mWindowBorderless = Borderless;
         }
 
-        /// \brief Checks if borderless window mode is enabled.
+        /// \brief Checks whether borderless window mode is enabled.
         ///
         /// \return `true` if borderless mode is enabled, `false` otherwise.
         ZY_INLINE Bool IsWindowBorderless() const
@@ -158,7 +158,7 @@ namespace ZyRuntime
             mAudioPauseOnFocusLost = Activate;
         }
 
-        /// \brief Gets whether audio is paused when the window loses focus.
+        /// \brief Checks whether audio is paused when the window loses focus.
         ///
         /// \return `true` if audio pauses on focus lost, `false` otherwise.
         ZY_INLINE Bool IsAudioPauseOnFocusLost() const
@@ -174,7 +174,7 @@ namespace ZyRuntime
             mGraphicsDriver = Driver;
         }
 
-        /// \brief Gets the active graphics driver name.
+        /// \brief Gets the name of the graphics driver requested at startup.
         ///
         /// \return The name of the graphics driver backend.
         ZY_INLINE Text GetGraphicsDriver() const
@@ -216,7 +216,7 @@ namespace ZyRuntime
 
         /// \brief Sets the graphics color format.
         ///
-        /// \param Format The desired color format for the graphics.
+        /// \param Format The color format of the swapchain, or `Unspecified` to pick one from the monitor.
         ZY_INLINE void SetGraphicsColorFormat(ZyGraphic::TextureFormat Format)
         {
             mGraphicsColorFormat = Format;
@@ -224,7 +224,7 @@ namespace ZyRuntime
 
         /// \brief Gets the current graphics color format.
         ///
-        /// \return The current color format used by the graphics system.
+        /// \return The color format of the swapchain, `Unspecified` when picked from the monitor.
         ZY_INLINE ZyGraphic::TextureFormat GetGraphicsColorFormat() const
         {
             return mGraphicsColorFormat;
@@ -232,7 +232,7 @@ namespace ZyRuntime
 
         /// \brief Sets the graphics depth format.
         ///
-        /// \param Format The desired depth format for the graphics.
+        /// \param Format The format of the depth buffer, or `Unspecified` for none.
         ZY_INLINE void SetGraphicsDepthFormat(ZyGraphic::TextureFormat Format)
         {
             mGraphicsDepthFormat = Format;
@@ -240,7 +240,7 @@ namespace ZyRuntime
 
         /// \brief Gets the current graphics depth format.
         ///
-        /// \return The current depth format used by the graphics system.
+        /// \return The format of the depth buffer, `Unspecified` when there is none.
         ZY_INLINE ZyGraphic::TextureFormat GetGraphicsDepthFormat() const
         {
             return mGraphicsDepthFormat;

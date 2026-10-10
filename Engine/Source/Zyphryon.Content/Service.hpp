@@ -1,4 +1,4 @@
- // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -33,15 +33,15 @@ namespace ZyContent
         /// \brief A one-shot delegate invoked when a specific resource finishes loading or fails.
         using Callback = Delegate<void(Ref<Resource>)>;
 
-        /// \brief Fired when a resource has finished loading and is ready for use.
+        /// The delegates invoked when a resource has finished loading and is ready for use.
         MulticastDelegate<void(Ref<Resource>)> OnAssetCompleted;
 
-        /// \brief Fired when a resource has failed to load.
+        /// The delegates invoked when a resource has failed to load.
         MulticastDelegate<void(Ref<Resource>)> OnAssetFailed;
 
     public:
 
-        /// \brief Constructs the content service and registers it with the system host.
+        /// \brief Constructs the content service.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
@@ -73,7 +73,7 @@ namespace ZyContent
         /// \param Schema The URI schema whose mount should be removed.
         void RemoveMount(Text Schema);
 
-        /// \brief Returns the current memory usage for the cache of the specified resource type.
+        /// \brief Gets the current memory usage of the cache for the specified resource type.
         ///
         /// \tparam Type The resource type whose cache usage to query.
         /// \return The current memory usage in bytes.
@@ -86,7 +86,7 @@ namespace ZyContent
         /// \brief Enumerates the entries at the specified URI path.
         ///
         /// \param Key      The URI key identifying the mount and path to enumerate.
-        /// \param Callback The callback invoked for each entry found; return `true` to continue, `false` to stop.
+        /// \param Callback The callback invoked once with the result and every entry found.
         void Enumerate(ConstRef<Uri> Key, AnyRef<Mount::OnEnumerate> Callback);
 
         /// \brief Deletes the file or directory at the specified URI.
@@ -105,14 +105,14 @@ namespace ZyContent
         /// \brief Reads the contents of the file at the specified URI.
         ///
         /// \param Key      The URI key identifying the file to read.
-        /// \param Callback The callback invoked with the file's contents if the read succeeds.
+        /// \param Callback The callback invoked with the result and, on success, the file's contents.
         void Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback);
 
         /// \brief Reads the contents of the file at the specified URI, delivering them on a lane of the caller's choosing.
         ///
         /// \param Key      The URI key identifying the file to read.
         /// \param Lane     The lane the callback runs on.
-        /// \param Callback The callback invoked with the file's contents if the read succeeds.
+        /// \param Callback The callback invoked with the result and, on success, the file's contents.
         void Read(ConstRef<Uri> Key, ZyJob::Lane Lane, AnyRef<Mount::OnRead> Callback);
 
         /// \brief Writes the specified bytes to a file at the given URI, creating or overwriting it as necessary.
@@ -126,8 +126,8 @@ namespace ZyContent
         ///
         /// \tparam Type   The resource type to load.
         /// \param  Key    The URI of the resource to load.
-        /// \param  Parent The parent scope for resolving relative URIs, or nullptr.
-        /// \return A handle to the loaded resource, or an empty handle on failure.
+        /// \param  Parent The parent scope for resolving relative URIs, or `nullptr`.
+        /// \return A handle to the resource, which finishes loading in the background.
         template<typename Type>
         ZY_INLINE Retainer<Type> Load(ConstRef<Uri> Key, Ptr<Scope> Parent = nullptr)
         {
@@ -135,10 +135,7 @@ namespace ZyContent
                 ? Type::GetCache().GetOrCreate(Uri::Expand(Key, Parent->GetResource()->GetKey()), true)
                 : Type::GetCache().GetOrCreate(Key, true);
 
-            if (Asset)
-            {
-                OnAssetRequest(Asset, Parent);
-            }
+            OnAssetRequest(Asset, Parent);
             return Asset;
         }
 
@@ -170,8 +167,8 @@ namespace ZyContent
 
         /// \brief Evicts unreferenced resources from the cache of the specified resource type.
         ///
-        /// \tparam Type The resource type whose cache to prune.
-        /// \param Force `true` to remove every finished asset regardless of tracking state, `false` to remove only the unreferenced ones.
+        /// \tparam Type  The resource type whose cache to prune.
+        /// \param  Force `true` to remove every finished asset regardless of tracking state, `false` to remove only the unreferenced ones.
         template<typename Type>
         ZY_INLINE void Prune(Bool Force)
         {
@@ -184,7 +181,7 @@ namespace ZyContent
         /// \brief Subscribes a callback to be invoked when a resource at the given URI finishes loading.
         ///
         /// \param Key      The URI to subscribe to.
-        /// \param Function The callback to invoke.
+        /// \param Function The callback handed the finished resource.
         void Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function);
 
         /// \brief Checks whether a resource has finished loading, and otherwise calls back once it has.
@@ -214,20 +211,37 @@ namespace ZyContent
         /// \param Key The URI to unsubscribe from.
         void Unsubscribe(ConstRef<Uri> Key);
 
-        /// \brief Gets the number of asset loads and lane-delivered reads currently in flight.
+    private:
+
+        /// \brief Runs an operation on a mount, inline when the mount is asynchronous and on the IO lane otherwise.
         ///
-        /// \return The number of assets queued but not yet finalized, plus the reads whose callback has yet to run.
-        ZY_INLINE UInt32 GetPending() const
+        /// \param Mount  The mount the operation runs on.
+        /// \param Action The operation to run.
+        template<typename Function>
+        ZY_INLINE void Route(ConstRetainer<Mount> Mount, AnyRef<Function> Action)
         {
-            return mParserPending.load(std::memory_order_acquire);
+            if (Mount->IsAsynchronous())
+            {
+                Action();
+            }
+            else
+            {
+                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO, Forward<Function>(Action));
+            }
         }
 
-    private:
+        /// \brief Hands a finished read to its callback on the given lane.
+        ///
+        /// \param Lane     The lane the callback runs on.
+        /// \param Result   The result of the read.
+        /// \param Data     The bytes that were read.
+        /// \param Callback The callback handed the result and the bytes.
+        void Deliver(ZyJob::Lane Lane, Filesystem::Result Result, AnyRef<Blob> Data, AnyRef<Mount::OnRead> Callback);
 
         /// \brief Initializes the loading process for a resource, scheduling it for asynchronous loading.
         ///
         /// \param Asset  The resource to load.
-        /// \param Parent The parent scope for dependency tracking, or nullptr.
+        /// \param Parent The parent scope for dependency tracking, or `nullptr`.
         void OnAssetRequest(ConstRetainer<Resource> Asset, Ptr<Scope> Parent);
 
         /// \brief Releases a resource and schedules it through the loading pipeline again.
@@ -235,16 +249,16 @@ namespace ZyContent
         /// \param Asset The resource to reload.
         void OnAssetReload(ConstRetainer<Resource> Asset);
 
-        /// \brief Called when a resource's raw data has been parsed from the mount.
+        /// \brief Called when a resource's raw data has been read from the mount, to parse it.
         ///
         /// \param Result The result of the read operation from the mount.
         /// \param Asset  The resource being parsed.
         /// \param Data   The raw binary data read from the mount.
         void OnAssetParse(Filesystem::Result Result, ConstRetainer<Resource> Asset, AnyRef<Blob> Data);
 
-        /// \brief Called when a new resource is created.
+        /// \brief Called once a parsed resource and its dependencies have finished, to create it and notify listeners.
         ///
-        /// \param Asset The newly created resource.
+        /// \param Asset The resource to create.
         void OnAssetCreate(Ref<Resource> Asset);
 
         /// \brief Called when a resource is being deleted.
@@ -267,6 +281,5 @@ namespace ZyContent
         Mutex                             mParserMutex;
         Sequence<Scope>                   mParserList;
         Sequence<Scope>                   mParserReady;
-        Atomic<UInt32>                    mParserPending;
     };
 }

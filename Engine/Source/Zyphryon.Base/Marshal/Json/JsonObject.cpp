@@ -35,12 +35,8 @@ inline namespace ZyBase
 
     JsonArray JsonObject::GetArray(Text Key) const
     {
-        const Ptr<JsonValue> Value = mNode->GetObject().Find(Key);
+        const Ptr<JsonValue> Value = Find(Key);
 
-        if (Value != nullptr && Value->IsArray())
-        {
-            return JsonArray(* Value);
-        }
-        return JsonArray();
+        return (Value && Value->IsArray()) ? JsonArray(* Value) : JsonArray();
     }
 }

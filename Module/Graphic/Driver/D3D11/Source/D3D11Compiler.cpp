@@ -53,7 +53,7 @@ namespace ZyGraphic
     {
         if (mFunction == nullptr)
         {
-            LOG_E("Failed to compile shader: no D3DCompiler library is available");
+            LOG_E("Graphics: Failed to compile shader: no D3DCompiler library is available");
             return nullptr;
         }
 
@@ -61,7 +61,7 @@ namespace ZyGraphic
 
         if (Profile == nullptr)
         {
-            LOG_E("Failed to compile shader: '{0}' carries no profile", ZyEnum::GetName(Tier));
+            LOG_E("Graphics: Failed to compile shader: '{0}' carries no profile", ZyEnum::GetName(Tier));
             return nullptr;
         }
 
@@ -91,7 +91,12 @@ namespace ZyGraphic
                 --Length;
             }
 
-            LOG_E("Failed to compile {0} shader: {1}", ZyEnum::GetName(Stage), Text(Data, Length));
+            LOG_E("Graphics: Failed to compile {0} shader: {1}", ZyEnum::GetName(Stage), Text(Data, Length));
+        }
+
+        if (Error)
+        {
+            Error->Release();
         }
         return Bytecode;
     }

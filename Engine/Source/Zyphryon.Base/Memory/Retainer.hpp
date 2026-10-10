@@ -21,7 +21,7 @@
 inline namespace ZyBase
 {
     /// \brief Represents an intrusive reference-counted smart pointer managing a `Retainable` object.
-    template<class Type>
+    template<typename Type>
     class Retainer final
     {
         template<typename> friend class Retainer;
@@ -34,7 +34,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Constructs an empty retainer explicitly from a null pointer.
+        /// \brief Constructs an empty retainer from a null pointer.
         ZY_INLINE Retainer(Null)
             : mInstance { nullptr }
         {
@@ -85,9 +85,8 @@ inline namespace ZyBase
         template<typename Derived>
         ZY_INLINE Retainer(AnyRef<Retainer<Derived>> Other)
             requires IsDerived<Type, Derived>
-            : mInstance { static_cast<Ptr<Type>>(Other.mInstance) }
+            : mInstance { Exchange(Other.mInstance, nullptr) }
         {
-            Other.mInstance = nullptr;
         }
 
         /// \brief Destructor that releases the managed instance.
@@ -159,7 +158,7 @@ inline namespace ZyBase
             return mInstance != Other.mInstance;
         }
 
-        /// \brief Checks if the retainer is empty.
+        /// \brief Checks whether the retainer is empty.
         ///
         /// \return `true` if the retainer manages no instance, `false` otherwise.
         ZY_INLINE Bool operator==(Null) const
@@ -167,7 +166,7 @@ inline namespace ZyBase
             return mInstance == nullptr;
         }
 
-        /// \brief Checks if the retainer is not empty.
+        /// \brief Checks whether the retainer is not empty.
         ///
         /// \return `true` if the retainer manages an instance, `false` otherwise.
         ZY_INLINE Bool operator!=(Null) const
@@ -183,7 +182,7 @@ inline namespace ZyBase
             return mInstance != nullptr;
         }
 
-        /// \brief Implicitly converts the retainer to a raw pointer.
+        /// \brief Converts the retainer to a raw pointer.
         ///
         /// \return A pointer to the managed instance, or `nullptr` if empty.
         ZY_INLINE explicit operator Ptr<Type>() const
@@ -191,7 +190,7 @@ inline namespace ZyBase
             return mInstance;
         }
 
-        /// \brief Implicitly converts the retainer to a raw reference.
+        /// \brief Converts the retainer to a raw reference.
         ///
         /// \return A reference to the managed instance.
         ZY_INLINE explicit operator Ref<Type>() const
@@ -251,10 +250,9 @@ inline namespace ZyBase
         Ptr<Type> mInstance;
     };
 
-    /// \brief Non-owning constant reference to a `Retainer` instance.
+    /// \brief Represents a non-owning view of a Retainer for parameters, which never touches the count.
     ///
-    /// Used as a parameter type only. Does not increment the reference count and must not outlive
-    /// the source retainer.
-    template<class Type>
+    /// \note It must not outlive the retainer it views.
+    template<typename Type>
     using ConstRetainer = ConstRef<Retainer<Type>>;
 }

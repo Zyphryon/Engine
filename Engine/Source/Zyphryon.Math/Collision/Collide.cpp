@@ -71,8 +71,13 @@ inline namespace ZyMath
         {
             return false;
         }
-        return Escapes(Apart, Span, Reach - Span, Standing,
-            First.GetCenter().GetY() < Second.GetCenter().GetY(), Contact);
+        return Escapes(
+            Apart,
+            Span,
+            Reach - Span,
+            Standing,
+            First.GetCenter().GetY() < Second.GetCenter().GetY(),
+            Contact);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -80,8 +85,7 @@ inline namespace ZyMath
 
     Bool Collide::Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Ref<Manifold> Contact)
     {
-        const Real32 Standing = Shared(
-            First.GetBottom(), First.GetTop(), Second.GetMinimumY(), Second.GetMaximumY());
+        const Real32 Standing = Shared(First.GetBottom(), First.GetTop(), Second.GetMinimumY(), Second.GetMaximumY());
 
         if (Standing <= 0.0f)
         {
@@ -103,7 +107,7 @@ inline namespace ZyMath
 
         const Bool Under = First.GetCenter().GetY() < Second.GetCenter().GetY();
 
-        // A centre standing inside the footprint has no way of its own to leave by, so it takes the nearest side.
+        // A center standing inside the footprint has no way of its own to leave by, so it takes the nearest side.
         if (IsAlmostZero(Span))
         {
             const Real32 Left  = Center.GetX() - Second.GetMinimumX();

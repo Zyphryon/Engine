@@ -21,10 +21,10 @@
 inline namespace ZyBase
 {
     /// \brief Represents an exclusive-ownership smart pointer that manages a heap-allocated object.
-    template<class Type>
+    template<typename Type>
     class Unique final
     {
-        template<class> friend class Unique;
+        template<typename> friend class Unique;
 
     public:
 
@@ -68,13 +68,10 @@ inline namespace ZyBase
 
         /// \brief Deletes the currently managed instance and optionally replaces it with a new instance.
         ///
-        /// \param Pointer The new instance to manage, or `nullptr` to leave the unique empty. Defaults to `nullptr`.
+        /// \param Pointer The new instance to manage, or `nullptr` to leave the unique empty.
         ZY_INLINE void Reset(Ptr<Type> Pointer = nullptr)
         {
-            if (mInstance)
-            {
-               delete mInstance;
-            }
+            delete mInstance;
             mInstance = Pointer;
         }
 
@@ -134,7 +131,7 @@ inline namespace ZyBase
             return (* mInstance);
         }
 
-        /// \brief Checks if the unique is empty.
+        /// \brief Checks whether the unique is empty.
         ///
         /// \return `true` if the unique manages no instance, `false` otherwise.
         ZY_INLINE Bool operator==(Null) const
@@ -142,7 +139,7 @@ inline namespace ZyBase
             return mInstance == nullptr;
         }
 
-        /// \brief Checks if the unique is not empty.
+        /// \brief Checks whether the unique is not empty.
         ///
         /// \return `true` if the unique manages an instance, `false` otherwise.
         ZY_INLINE Bool operator!=(Null) const

@@ -51,24 +51,24 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator2D::Restart(ConstRef<Animation2D> Sequence, Real64 Timestamp, Real64 Phase)
+    void Animator2D::Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real64 Phase)
     {
         // The repeat each status plays under, in the order they are declared; the backward one alone runs from its end.
         static constexpr Array kRepeats(Repeat::Once, Repeat::Once, Repeat::Loop, Repeat::Mirror);
 
-        const Real64 Duration = Sequence.GetDuration();
+        const Real64 Duration = Frames.GetDuration();
         const Real32 Rate     = GetRate();
-        const Bool   Backward = (Sequence.GetStatus() == Animation2D::Status::Backward);
+        const Bool   Backward = (Frames.GetStatus() == Animation2D::Status::Backward);
 
         // Move the clock to the start time first, so playback is anchored there and not at the last advance.
         mPlayback.Advance(Timestamp);
         mPlayback.SetDuration(Duration);
-        mPlayback.SetRepeat(kRepeats[ZyEnum::Cast(Sequence.GetStatus())]);
+        mPlayback.SetRepeat(kRepeats[ZyEnum::Cast(Frames.GetStatus())]);
         mPlayback.SetSpeed(Backward ? -Rate : Rate);
         mPlayback.Seek((Backward ? 1.0 - Phase : Phase) * Duration);
         mPlayback.Play();
 
-        mKeyframe = Locate(Sequence);
+        mKeyframe = Locate(Frames);
 
         // A clip joined partway is already on its frame, so that frame is not reported as entered.
         if (Phase > 0.0)
@@ -80,7 +80,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator2D::Step(Real64 Time, ConstRef<Animation2D> Sequence, Ref<Visited> Visited)
+    void Animator2D::Step(Real64 Time, ConstRef<Animation2D> Frames, Ref<Visited> Visited)
     {
         // A cursor just started or moved has entered the frame it stands on.
         if (mPlayback.IsFresh())
@@ -88,7 +88,7 @@ namespace ZyRender
             Visited.Append(mKeyframe);
         }
 
-        const UInt32 Count = Sequence.GetCount();
+        const UInt32 Count = Frames.GetCount();
 
         if (Count < 2)
         {
@@ -102,7 +102,7 @@ namespace ZyRender
         const Real64 Into = mPlayback.GetElapsed();
 
         UInt8 At  = mKeyframe;
-        mKeyframe = Locate(Sequence);
+        mKeyframe = Locate(Frames);
 
         // Report every frame passed on the way, lap by lap, not only the one landed on.
         const Bool   Rising = Into >= From;

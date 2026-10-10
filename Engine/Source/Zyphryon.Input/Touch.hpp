@@ -26,7 +26,7 @@ namespace ZyInput
     public:
 
         /// \brief The number of points the surface reports at once, beyond which further ones are turned away.
-        constexpr static UInt32 kMaxPoints = 10;
+        static constexpr UInt32 kMaxPoints = 10;
 
         /// \brief Represents one point on the surface, from the moment it lands until the frame after it leaves.
         struct Point final
@@ -34,7 +34,7 @@ namespace ZyInput
             /// The identity the platform gave this point, held for as long as it rests on the surface.
             UInt32 ID     = 0;
 
-            /// How far along its life the point is.
+            /// The phase the point is in.
             Phase  Phase  = Phase::Began;
 
             /// The X coordinate of the point.
@@ -43,10 +43,10 @@ namespace ZyInput
             /// The Y coordinate of the point.
             Real32 Y      = 0.0f;
 
-            /// How far the point moved along X since the frame opened.
+            /// The distance the point moved along X since the frame opened.
             Real32 DeltaX = 0.0f;
 
-            /// How far the point moved along Y since the frame opened.
+            /// The distance the point moved along Y since the frame opened.
             Real32 DeltaY = 0.0f;
         };
 
@@ -57,7 +57,7 @@ namespace ZyInput
 
         /// \brief Processes a single input event to update the surface.
         ///
-        /// \param Event The event to act on.
+        /// \param Event The event to apply if it comes from a touch.
         void Process(ConstRef<Event> Event);
 
         /// \brief Clears every point resting on the surface.

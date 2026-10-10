@@ -25,17 +25,46 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    template<typename Type>
+    static void WASAPIRelease(Ref<Ptr<Type>> Instance)
+    {
+        if (Instance)
+        {
+            Instance->Release();
+            Instance = nullptr;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     struct Driver::Backend
     {
+        /// The endpoint actually opened, reported by \c Probe.
         Str                      Name       = "Default";
+
+        /// The device enumerator, owned from a successful \c Open until \c Close.
         Ptr<IMMDeviceEnumerator> Enumerator = nullptr;
+
+        /// The render endpoint the audio client is activated on.
         Ptr<IMMDevice>           Endpoint   = nullptr;
+
+        /// The shared-mode audio client that runs the stream.
         Ptr<IAudioClient>        Client     = nullptr;
+
+        /// The render service the buffer is written through.
         Ptr<IAudioRenderClient>  Renderer   = nullptr;
+
+        /// The event WASAPI signals when the buffer has room for more frames.
         HANDLE                   Event      = nullptr;
-        HANDLE                   Thread     = nullptr;
-        Atomic<Bool>             Running    = false;
+
+        /// The thread that refills the buffer each time \c Event is signaled.
+        Thread                   Worker;
+
+        /// The size of the endpoint buffer, in frames.
         UInt32                   Frames     = 0;
+
+        /// The render callback the service installs, through which the mixer fills the buffer.
         Driver::Callback         Callback;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -71,7 +100,7 @@ namespace ZyAudio
                 {
                     Name = Str::ConvertFromUTF16(StrConvert(Variant.pwszVal));
                 }
-                PropVariantClear(AddressOf(Variant));
+                ::PropVariantClear(AddressOf(Variant));
 
                 Store->Release();
             }
@@ -105,7 +134,7 @@ namespace ZyAudio
 
                         const Str Name = WASAPIName(Candidate);
 
-                        if (StrContains(Text(Name.GetData(), Name.GetSize()), Device))
+                        if (StrContains(Name, Device))
                         {
                             Result = Candidate;
                         }
@@ -134,33 +163,33 @@ namespace ZyAudio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static DWORD WINAPI WASAPIThread(LPVOID Parameter)
+        static void WASAPIThread(std::stop_token Token, Ptr<Driver::Backend> Backend)
         {
-            Ref<Driver::Backend> Backend = * static_cast<Ptr<Driver::Backend>>(Parameter);
+            ZY_PROFILE_THREAD("Audio Thread");
 
             if (FAILED(::CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
             {
                 LOG_E("Audio: Failed to initialize COM");
-                return -1;
+                return;
             }
 
             DWORD        Index = 0;
             const HANDLE Task  = ::AvSetMmThreadCharacteristicsW(L"Pro Audio", AddressOf(Index));
 
-            while (Backend.Running.load(std::memory_order_acquire))
+            while (!Token.stop_requested())
             {
-                if (::WaitForSingleObject(Backend.Event, 2000) != WAIT_OBJECT_0)
+                if (::WaitForSingleObject(Backend->Event, 2000) != WAIT_OBJECT_0)
                 {
                     continue;
                 }
 
                 UInt32 Padding = 0;
-                if (SUCCEEDED(Backend.Client->GetCurrentPadding(AddressOf(Padding))))
+                if (SUCCEEDED(Backend->Client->GetCurrentPadding(AddressOf(Padding))))
                 {
-                    const UInt32 Available = Backend.Frames - Padding;
+                    const UInt32 Available = Backend->Frames - Padding;
                     if (Available > 0)
                     {
-                        WASAPIFill(Backend, Available);
+                        WASAPIFill(* Backend, Available);
                     }
                 }
             }
@@ -171,7 +200,6 @@ namespace ZyAudio
             }
 
             ::CoUninitialize();
-            return 0;
         }
     };
 
@@ -256,7 +284,7 @@ namespace ZyAudio
         Format.nBlockAlign     = static_cast<WORD>(Format.nChannels * Format.wBitsPerSample / 8);
         Format.nAvgBytesPerSec = Format.nSamplesPerSec * Format.nBlockAlign;
 
-        constexpr DWORD Flags  =
+        constexpr DWORD Flags =
               AUDCLNT_STREAMFLAGS_EVENTCALLBACK
             | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
             | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
@@ -271,6 +299,8 @@ namespace ZyAudio
 
         if (FAILED(mBackend->Client->GetBufferSize(AddressOf(mBackend->Frames))))
         {
+            LOG_E("Audio: Failed to query the WASAPI buffer size");
+
             Close();
             return false;
         }
@@ -279,25 +309,30 @@ namespace ZyAudio
             __uuidof(IAudioRenderClient),
             reinterpret_cast<Ptr<LPVOID>>(AddressOf(mBackend->Renderer)))))
         {
+            LOG_E("Audio: Failed to obtain the WASAPI render client");
+
             Close();
             return false;
         }
 
-        mBackend->Event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        mBackend->Event = ::CreateEventW(nullptr, FALSE, FALSE, nullptr);
         if (mBackend->Event == nullptr || FAILED(mBackend->Client->SetEventHandle(mBackend->Event)))
         {
+            LOG_E("Audio: Failed to create the WASAPI wake event");
+
             Close();
             return false;
         }
 
-        // Prime the buffer with one block of silence so playback starts without an underrun.
+        // Fill the whole buffer once so playback does not open on an underrun.
         Backend::WASAPIFill(* mBackend, mBackend->Frames);
 
-        mBackend->Running.store(true, std::memory_order_release);
-        mBackend->Thread = CreateThread(nullptr, 0, Backend::WASAPIThread, mBackend.Grab(), 0, nullptr);
+        mBackend->Worker = Thread(Backend::WASAPIThread, mBackend.Grab());
 
-        if (mBackend->Thread == nullptr || FAILED(mBackend->Client->Start()))
+        if (FAILED(mBackend->Client->Start()))
         {
+            LOG_E("Audio: Failed to start the WASAPI audio client");
+
             Close();
             return false;
         }
@@ -309,46 +344,27 @@ namespace ZyAudio
 
     void Driver::Close()
     {
-        if (mBackend->Running.exchange(false, std::memory_order_acq_rel) && mBackend->Thread)
+        if (mBackend->Worker.joinable())
         {
-            SetEvent(mBackend->Event);
-            WaitForSingleObject(mBackend->Thread, INFINITE);
+            mBackend->Worker.request_stop();
+            ::SetEvent(mBackend->Event);
+            mBackend->Worker.join();
         }
 
-        if (mBackend->Thread)
-        {
-            CloseHandle(mBackend->Thread);
-            mBackend->Thread = nullptr;
-        }
         if (mBackend->Client)
         {
             mBackend->Client->Stop();
         }
         if (mBackend->Event)
         {
-            CloseHandle(mBackend->Event);
+            ::CloseHandle(mBackend->Event);
             mBackend->Event = nullptr;
         }
-        if (mBackend->Renderer)
-        {
-            mBackend->Renderer->Release();
-            mBackend->Renderer = nullptr;
-        }
-        if (mBackend->Client)
-        {
-            mBackend->Client->Release();
-            mBackend->Client = nullptr;
-        }
-        if (mBackend->Endpoint)
-        {
-            mBackend->Endpoint->Release();
-            mBackend->Endpoint = nullptr;
-        }
-        if (mBackend->Enumerator)
-        {
-            mBackend->Enumerator->Release();
-            mBackend->Enumerator = nullptr;
-        }
+
+        WASAPIRelease(mBackend->Renderer);
+        WASAPIRelease(mBackend->Client);
+        WASAPIRelease(mBackend->Endpoint);
+        WASAPIRelease(mBackend->Enumerator);
 
         ::CoUninitialize();
     }
@@ -403,7 +419,7 @@ namespace ZyAudio
         {
             if (FAILED(mBackend->Client->Stop()))
             {
-                LOG_W("WASAPI: Failed to stop WASAPI audio client");
+                LOG_W("Audio: Failed to stop the WASAPI audio client");
             }
         }
     }
@@ -417,7 +433,7 @@ namespace ZyAudio
         {
             if (FAILED(mBackend->Client->Start()))
             {
-                LOG_W("WASAPI: Failed to start WASAPI audio client");
+                LOG_W("Audio: Failed to start the WASAPI audio client");
             }
         }
     }

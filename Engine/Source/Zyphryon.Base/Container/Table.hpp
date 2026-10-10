@@ -31,7 +31,10 @@ inline namespace ZyBase
         /// \brief Represents a key-value pair stored in the dense value array.
         struct Pair
         {
+            /// The key the pair is found by.
             Key                 First;
+
+            /// The value stored under the key.
             ZY_COMPRESSED Value Second;
         };
 
@@ -52,7 +55,7 @@ inline namespace ZyBase
         ///
         /// \param List The key-value pairs to populate the table with.
         ZY_INLINE Table(ConstSpan<Pair> List)
-            : Table()
+            : Table { }
         {
             Reserve(List.GetSize());
 
@@ -68,20 +71,14 @@ inline namespace ZyBase
         ZY_INLINE Table(ConstRef<Table> Other)
             : Table { }
         {
-            if (Other.mSize > 0u)
+            Reserve(Other.mSize);
+
+            for (UInt32 Index = 0u; Index < Other.mSize; ++Index)
             {
-                Reserve(Other.mSize);
-
-                for (UInt32 Index = 0u; Index < Other.mSize; ++Index)
-                {
-                    Construct<Pair>(AddressOf(mEntries[Index]), Other.mEntries[Index].First, Other.mEntries[Index].Second);
-
-                    const UInt64 Digest = Hash(mEntries[Index].First);
-                    DoInsert(Compute(Digest), Index, Digest & mMask);
-                }
-
-                mSize = Other.mSize;
+                Construct<Pair>(AddressOf(mEntries[Index]), Other.mEntries[Index]);
             }
+
+            Reindex(Other.mSize);
         }
 
         /// \brief Constructs a hash table by transferring ownership from another table.
@@ -128,9 +125,9 @@ inline namespace ZyBase
             return mSize;
         }
 
-        /// \brief Gets the maximum number of elements the table can hold before rehashing.
+        /// \brief Gets the number of slots the table has allocated.
         ///
-        /// \return The current capacity before exceeding the load factor threshold.
+        /// \return The slot count, which the table fills to seven eighths before it grows.
         ZY_INLINE UInt GetCapacity() const
         {
             return mControl ? (mMask + 1u) : 0u;
@@ -149,9 +146,9 @@ inline namespace ZyBase
         /// \param Count The minimum number of elements to allocate space for.
         ZY_INLINE void Reserve(UInt Count)
         {
-            if (const UInt Requires = (Count * 8u + 6u) / 7u; Requires > (mMask + 1u))
+            if (const UInt Required = (Count * 8u + 6u) / 7u; Required > (mMask + 1u))
             {
-                Rehash(CeilBit(Requires));
+                Rehash(CeilBit(Required));
             }
         }
 
@@ -175,7 +172,7 @@ inline namespace ZyBase
         /// \brief Removes all key-value pairs from the table without releasing allocated memory.
         ZY_INLINE void Clear()
         {
-            if (mControl == nullptr || mSize == 0u)
+            if (mSize == 0u)
             {
                 return;
             }
@@ -262,7 +259,7 @@ inline namespace ZyBase
         /// \brief Extracts a key-value pair from the table, removing it if found.
         ///
         /// \param Needle The key to search for and remove from the table.
-        /// \param Output The output reference to receive the associated value if the key is found.
+        /// \param Output Receives the value the key mapped to, left untouched when it is absent.
         /// \return `true` if the key was found and removed, `false` otherwise.
         template<typename KeyType = Key>
         ZY_INLINE Bool Extract(AnyRef<KeyType> Needle, Ref<Value> Output)
@@ -295,6 +292,16 @@ inline namespace ZyBase
             return DoFind(Needle);
         }
 
+        /// \brief Searches for a value associated with the given key.
+        ///
+        /// \param Needle The key to search for in the table.
+        /// \return A const pointer to the value if found, \c nullptr otherwise.
+        template<typename KeyType>
+        ZY_INLINE ConstPtr<Value> Find(AnyRef<KeyType> Needle) const
+        {
+            return DoFind(Needle);
+        }
+
         /// \brief Searches for a value associated with the given key, returning the value directly.
         ///
         /// \param Needle The key to search for in the table.
@@ -317,16 +324,6 @@ inline namespace ZyBase
             return Found ? (* Found) : Value { };
         }
 
-        /// \brief Searches for a value associated with the given key.
-        ///
-        /// \param Needle The key to search for in the table.
-        /// \return A const pointer to the value if found, \c nullptr otherwise.
-        template<typename KeyType>
-        ZY_INLINE ConstPtr<Value> Find(AnyRef<KeyType> Needle) const
-        {
-            return DoFind(Needle);
-        }
-
         /// \brief Finds the value for a key, or inserts a default-constructed value if the key is absent.
         ///
         /// \param Needle The key to search for or insert.
@@ -347,7 +344,7 @@ inline namespace ZyBase
                 return mEntries[mIndices[Match]].Second;
             }
 
-            Construct<Pair>(AddressOf(mEntries[mSize]), Forward<KeyType>(Needle), Value{});
+            Construct<Pair>(AddressOf(mEntries[mSize]), Forward<KeyType>(Needle), Value { });
             DoInsert(Metadata, mSize, Slot);
             ++mSize;
 
@@ -372,14 +369,7 @@ inline namespace ZyBase
         {
             if (this != AddressOf(Other))
             {
-                Table Temp(Other);
-
-                Swap(mControl,   Temp.mControl);
-                Swap(mIndices,   Temp.mIndices);
-                Swap(mEntries,   Temp.mEntries);
-                Swap(mSize,      Temp.mSize);
-                Swap(mMask,      Temp.mMask);
-                Swap(mThreshold, Temp.mThreshold);
+                (* this) = Table(Other);
             }
             return (* this);
         }
@@ -408,8 +398,8 @@ inline namespace ZyBase
         /// \brief Visits every pair in the table, in storage order.
         ///
         /// \param Callback The callback invoked with each key and a reference to its value.
-        template<typename Function>
-        ZY_INLINE void ForEach(AnyRef<Function> Callback)
+        template<typename Callable>
+        ZY_INLINE void ForEach(AnyRef<Callable> Callback)
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -420,8 +410,8 @@ inline namespace ZyBase
         /// \brief Visits every pair in the table, in storage order.
         ///
         /// \param Callback The callback invoked with each key and its value.
-        template<typename Function>
-        ZY_INLINE void ForEach(AnyRef<Function> Callback) const
+        template<typename Callable>
+        ZY_INLINE void ForEach(AnyRef<Callable> Callback) const
         {
             for (UInt Index = 0; Index < mSize; ++Index)
             {
@@ -431,10 +421,10 @@ inline namespace ZyBase
 
     private:
 
-        /// \brief Sentinel value returned by Probe when no matching entry is found.
+        /// \brief The slot index Probe returns when the key is absent.
         static constexpr UInt32 kInvalid   = ~0u;
 
-        /// \brief Distance increment applied to the upper bits of the dist-and-fingerprint word per probe step.
+        /// \brief The distance one probe step adds to a slot's metadata word.
         static constexpr UInt32 kIncrement = 1u << 8u;
 
         /// \brief Allocates storage for the hash table with the given capacity.
@@ -442,7 +432,7 @@ inline namespace ZyBase
         /// \param Capacity The number of slots to allocate (must be a power of two).
         ZY_INLINE void Allocate(UInt Capacity)
         {
-            const UInt Offset      = Align<UInt>(2u * Capacity * sizeof(UInt32), alignof(Pair));
+            const UInt      Offset = Align<UInt>(2u * Capacity * sizeof(UInt32), alignof(Pair));
             const Ptr<Byte> Memory = ZyBase::Allocate(Offset + Capacity * sizeof(Pair));
 
             mControl   = reinterpret_cast<Ptr<UInt32>>(Memory);
@@ -472,35 +462,35 @@ inline namespace ZyBase
 
         /// \brief Computes the initial dist-and-fingerprint word for a given hash.
         ///
-        /// \param Hash The full 64-bit hash value.
+        /// \param Digest The full 64-bit hash value.
         /// \return A 32-bit value with distance=1 in the upper bits and hash fingerprint in the lower 8 bits.
-        ZY_INLINE UInt32 Compute(UInt64 Hash) const
+        ZY_INLINE static UInt32 Compute(UInt64 Digest)
         {
-            return kIncrement | (static_cast<UInt32>(Hash >> 32u) & 0xFFu);
+            return kIncrement | (static_cast<UInt32>(Digest >> 32u) & 0xFFu);
         }
 
         /// \brief Probes the slot array for an entry matching the given key.
         ///
-        /// \param Needle      The key to search for.
-        /// \param OutMetadata Receives the metadata value at the probe stopping position.
-        /// \param OutSlot     Receives the slot index at the probe stopping position.
+        /// \param Needle   The key to search for.
+        /// \param Metadata Receives the metadata value at the probe stopping position.
+        /// \param Slot     Receives the slot index at the probe stopping position.
         /// \return The slot index of the matching entry, or \c kInvalid if the key is absent.
         template<typename KeyType>
-        ZY_INLINE UInt32 Probe(AnyRef<KeyType> Needle, Ref<UInt32> OutMetadata, Ref<UInt32> OutSlot) const
+        ZY_INLINE UInt32 Probe(AnyRef<KeyType> Needle, Ref<UInt32> Metadata, Ref<UInt32> Slot) const
         {
             const UInt64 Digest = Hash(Needle);
-            OutMetadata = Compute(Digest);
-            OutSlot     = Digest & mMask;
+            Metadata = Compute(Digest);
+            Slot     = Digest & mMask;
 
-            while (OutMetadata <= mControl[OutSlot])
+            while (Metadata <= mControl[Slot])
             {
-                if (OutMetadata == mControl[OutSlot] && mEntries[mIndices[OutSlot]].First == Needle)
+                if (Metadata == mControl[Slot] && mEntries[mIndices[Slot]].First == Needle)
                 {
-                    return OutSlot;
+                    return Slot;
                 }
 
-                OutMetadata += kIncrement;
-                OutSlot      = (OutSlot + 1u) & mMask;
+                Metadata += kIncrement;
+                Slot      = (Slot + 1u) & mMask;
             }
             return kInvalid;
         }

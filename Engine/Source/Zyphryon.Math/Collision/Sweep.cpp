@@ -74,7 +74,7 @@ inline namespace ZyMath
 
     Bool Sweep::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact)
     {
-        // Swapping the pair turns both the gap and the motion around, which meets at the same time on the opposite face.
+        // The swapped pair, moving the other way, meets at the same time on the opposite face.
         if (Test(Second, First, -Motion, Contact))
         {
             Contact.SetNormal(-Contact.GetNormal());
@@ -241,7 +241,7 @@ inline namespace ZyMath
 
     Bool Sweep::Close(ConstRef<Interval> Result, Bool Met, Ref<Manifold> Contact)
     {
-        // A pair that already shares a spot has no face to have come in through, which is separating's business.
+        // A pair that already shares a spot has no face to have come in through, which is Collide's business.
         if (!Met || Result.Normal.IsAlmostZero())
         {
             return false;

@@ -43,7 +43,7 @@ namespace ZyRender
         /// \param Height The frame's output height, in pixels.
         void Resize(UInt16 Width, UInt16 Height);
 
-        /// \brief Realizes whatever target or pass changed since the last run, then executes every active pass in order.
+        /// \brief Realizes any target changed or pass added since the last run, then runs every active pass in order.
         ///
         /// \param Frame The pre-packed frame uniform stream.
         void Run(ZyGraphic::Stream Frame);
@@ -55,10 +55,7 @@ namespace ZyRender
         ZY_INLINE void Run(ConstRef<Type> Block)
             requires (!IsAnyOf<Type, ZyGraphic::Stream>)
         {
-            ZyGraphic::Transient<Type> Slice = mService->AllocateInFlightUniforms<Type>(1);
-            Slice[0] = Block;
-
-            Run(Slice.GetStream());
+            Run(mService->AllocateInFlightUniforms(ConstSpan<Type>(Block)));
         }
 
         /// \brief Gets the texture realized for one of the blueprint's targets.
@@ -134,6 +131,9 @@ namespace ZyRender
 
         /// \brief Realizes every target whose shape changed, and bakes the passes again when any target or pass did.
         void Reconcile();
+
+        /// \brief Destroys every pass the graph baked.
+        void Unbake();
 
         /// \brief Destroys every texture and handle, leaving the graph unrealized.
         void Release();

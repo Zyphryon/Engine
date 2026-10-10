@@ -35,15 +35,8 @@ inline namespace ZyBase
 
     JsonObject JsonArray::GetObject(UInt Index) const
     {
-        if (Index < GetSize())
-        {
-            Ref<JsonValue> Value = mNode->GetArray()[Index];
+        const Ptr<JsonValue> Value = Find(Index);
 
-            if (Value.IsObject())
-            {
-                return JsonObject(Value);
-            }
-        }
-        return JsonObject();
+        return (Value && Value->IsObject()) ? JsonObject(* Value) : JsonObject();
     }
 }

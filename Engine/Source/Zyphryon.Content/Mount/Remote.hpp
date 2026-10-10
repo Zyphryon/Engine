@@ -18,6 +18,8 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+struct emscripten_fetch_t;
+
 namespace ZyContent
 {
     /// \brief Represents a virtual filesystem mount backed by a location this machine has to ask another one for.
@@ -59,6 +61,9 @@ namespace ZyContent
         /// \brief The status a server answers with when it is being asked for too much at once.
         static constexpr UInt32 kTooMany     = 429;
 
+        /// \brief The status a server answers with when the file is not there.
+        static constexpr UInt32 kMissing     = 404;
+
         /// \brief Represents one request, either waiting its turn or waiting on an answer.
         struct Request final
         {
@@ -71,7 +76,7 @@ namespace ZyContent
             /// The mount that sent it, which every answer is handed back through.
             Ptr<Remote> Owner;
 
-            /// How many times this has been sent.
+            /// The number of times this has been sent.
             UInt32      Attempt;
         };
 
@@ -83,13 +88,22 @@ namespace ZyContent
         /// \param Handle The request to send.
         void Send(Ptr<Request> Handle);
 
+        /// \brief Answers a request whose fetch came back with the file.
+        ///
+        /// \param Fetch The fetch that finished, which is closed here.
+        static void OnSuccess(Ptr<emscripten_fetch_t> Fetch);
+
+        /// \brief Answers a request whose fetch failed, or sends it again when the server asked to slow down.
+        ///
+        /// \param Fetch The fetch that failed, which is closed here.
+        static void OnFailure(Ptr<emscripten_fetch_t> Fetch);
+
         /// \brief Answers a request and releases it, then sends whatever was waiting behind it.
         ///
         /// \param Handle The request being answered.
         /// \param Result The result to answer with.
-        /// \param Data   The bytes that came back, which the blob takes over, or nothing.
-        /// \param Size   The number of bytes that came back.
-        static void Close(Ptr<Request> Handle, Filesystem::Result Result, Ptr<Byte> Data, UInt32 Size);
+        /// \param Data   The bytes that came back, or an empty blob.
+        static void Close(Ptr<Request> Handle, Filesystem::Result Result, AnyRef<Blob> Data);
 
     private:
 

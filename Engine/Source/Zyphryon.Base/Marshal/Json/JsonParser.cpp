@@ -23,15 +23,10 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     JsonParser::JsonParser(Text Content)
-        : mContent { Content },
+        : mContent { StrStartsWith(Content, "\xEF\xBB\xBF") ? Content.Slice(3) : Content },
           mCursor  { 0 },
           mDepth   { 0 }
     {
-        // The byte order mark some editors save at the start is not part of the text, nor of its first line.
-        UInt Mark = 0;
-        StrConsume(Content, Mark, "\xEF\xBB\xBF");
-
-        mContent = Content.Slice(Mark);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -106,7 +101,6 @@ inline namespace ZyBase
 
     Bool JsonParser::ParseObject(Ref<JsonValue> Output)
     {
-        // Each array or object reads the next level down, so the nesting is bounded before the stack is.
         if (mDepth >= kMaxDepth)
         {
             return Fail(mCursor, "Arrays and objects nest too deeply");
@@ -357,7 +351,7 @@ inline namespace ZyBase
 
         Real64 Value = StrExtractNumber<Real64>(mContent, mCursor);
 
-        // An exponent scales the number by a power of ten.
+        // StrExtractNumber stops at the exponent, so it is applied here.
         if (mCursor < mContent.GetSize() && (mContent[mCursor] | 0x20) == 'e')
         {
             ++mCursor;

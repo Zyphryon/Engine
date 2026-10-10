@@ -119,16 +119,12 @@ namespace ZyRender
 
         /// \brief Writes every bone's resting local transform into a pose.
         ///
-        /// An animation is layered over this, so a bone no channel drives keeps resting where the hierarchy
-        /// says it should instead of collapsing onto its parent.
+        /// \note A bone no lane drives keeps this rest transform instead of collapsing onto its parent.
         ///
         /// \param Output Receives each bone's resting position, scale and rotation.
         void Rest(ConstRef<Pose> Output) const;
 
         /// \brief Composes local bone transforms into skeleton space.
-        ///
-        /// Because a parent always precedes its children, this is one forward pass with no recursion and no
-        /// scratch beyond the output itself.
         ///
         /// \param Local  The local transform of every bone.
         /// \param Output Receives each bone's transform in skeleton space.
@@ -136,16 +132,12 @@ namespace ZyRender
 
         /// \brief Folds the bind pose out of the rest pose, producing the matrices a model wears undriven.
         ///
-        /// Fused rather than composed then skinned through the other overload, because the palette can carry
-        /// the composed transforms between the two passes and so the whole thing runs without scratch.
-        ///
         /// \param Palette Receives the matrix each bone deforms its vertices by while at rest.
         void Skin(Span<Matrix4x3> Palette) const;
 
         /// \brief Folds the bind pose out of a composed pose to produce the matrices vertices are skinned by.
         ///
-        /// Kept apart from \ref Compose because the composed pose is what a socket or an attachment reads,
-        /// while this is only what the vertex shader wants.
+        /// \note Kept apart from \ref Compose, whose output a socket reads.
         ///
         /// \param Composed The bone transforms in skeleton space, as produced by \ref Compose.
         /// \param Palette  Receives the matrix each bone deforms its vertices by; may alias \p Composed.

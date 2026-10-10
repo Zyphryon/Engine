@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Builder.hpp"
-#include "Type/Declaration.hpp"
 #include "Execution/Scheduler.hpp"
+#include "Type/Declaration.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -182,7 +182,7 @@ namespace ZyScene
 
         /// \brief Discards a module, taking out its systems and keeping its values as the bytes they save to.
         ///
-        /// \param Package The module.
+        /// \param Package The handle \ref Import returned for the module.
         void Discard(UInt32 Package);
 
         /// \brief Writes entities, each with everything beneath it, as one save.
@@ -234,12 +234,12 @@ namespace ZyScene
 
         /// \brief Records components a declaration is done with, reading back the values kept as bytes for them.
         ///
-        /// \param Identifiers The components.
+        /// \param Identifiers The components the declaration is done with.
         void Registered(ConstSpan<UInt32> Identifiers);
 
         /// \brief Writes one entity's record, then everything beneath it, naming each component it saves once.
         ///
-        /// \param Output  The writer.
+        /// \param Output  The writer the record is appended to.
         /// \param Index   The slot of the entity.
         /// \param Parent  The position of the parent's record plus one, or zero for a root.
         /// \param Indices The index each component written so far is written under.

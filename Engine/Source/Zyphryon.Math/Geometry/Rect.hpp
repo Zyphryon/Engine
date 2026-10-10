@@ -28,7 +28,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructor initializing all components zero.
+        /// \brief Constructs a rectangle with every coordinate at zero.
         ZY_INLINE constexpr AnyRect()
             : mMinimumX { 0 },
               mMinimumY { 0 },
@@ -37,7 +37,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the rectangle with specified values.
+        /// \brief Constructs a rectangle from its minimum and maximum coordinates.
         ///
         /// \param MinimumX The minimum X coordinate of the rectangle.
         /// \param MinimumY The minimum Y coordinate of the rectangle.
@@ -51,7 +51,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the rectangle from minimum and maximum points.
+        /// \brief Constructs a rectangle from its minimum and maximum points.
         ///
         /// \param Minimum The minimum point of the rectangle.
         /// \param Maximum The maximum point of the rectangle.
@@ -63,7 +63,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Conversion constructor from another rectangle with a different base type.
+        /// \brief Constructs a rectangle by converting one with a different coordinate type.
         ///
         /// \param Other The source rectangle to convert from.
         template<typename Base>
@@ -77,7 +77,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the rectangle is valid (X1 <= X2 and Y1 <= Y2).
         ///
-        /// \return `true` if the rectangle is valid, `false` otherwise.
+        /// \return `true` if the minimum is at or below the maximum on both axes, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return mMinimumX <= mMaximumX && mMinimumY <= mMaximumY;
@@ -168,7 +168,7 @@ inline namespace ZyMath
 
         /// \brief Gets the X coordinate of the rectangle.
         ///
-        /// \return The X coordinate.
+        /// \return The minimum X coordinate.
         ZY_INLINE constexpr Type GetX() const
         {
             return mMinimumX;
@@ -176,7 +176,7 @@ inline namespace ZyMath
 
         /// \brief Gets the Y coordinate of the rectangle.
         ///
-        /// \return The Y coordinate.
+        /// \return The minimum Y coordinate.
         ZY_INLINE constexpr Type GetY() const
         {
             return mMinimumY;
@@ -200,7 +200,7 @@ inline namespace ZyMath
 
         /// \brief Gets the position of the rectangle.
         ///
-        /// \return The position of the rectangle.
+        /// \return The minimum corner.
         ZY_INLINE constexpr AnyVector2<Type> GetPosition() const
         {
             return AnyVector2(mMinimumX, mMinimumY);
@@ -208,7 +208,7 @@ inline namespace ZyMath
 
         /// \brief Gets the size of the rectangle.
         ///
-        /// \return The size of the rectangle.
+        /// \return The width and height.
         ZY_INLINE constexpr AnyVector2<Type> GetSize() const
         {
             return AnyVector2(GetWidth(), GetHeight());
@@ -219,7 +219,7 @@ inline namespace ZyMath
         /// \return The center point of the rectangle.
         ZY_INLINE constexpr AnyVector2<Type> GetCenter() const
         {
-            if constexpr(IsReal<Type>)
+            if constexpr (IsReal<Type>)
             {
                 return AnyVector2<Type>(mMinimumX + GetWidth() * Type(0.5), mMinimumY + GetHeight() * Type(0.5));
             }
@@ -258,8 +258,8 @@ inline namespace ZyMath
 
         /// \brief Expands the rectangle by the given amount in all directions.
         ///
-        /// \param Amount The amount to expand by.
-        /// \return The expanded rectangle.
+        /// \param Amount The distance to grow by on every side.
+        /// \return The rectangle with every edge moved out by \p Amount.
         ZY_INLINE constexpr AnyRect Expand(Type Amount) const
         {
             return Expand(Amount, Amount);
@@ -267,9 +267,9 @@ inline namespace ZyMath
 
         /// \brief Expands the rectangle by the given amounts in the X and Y directions.
         ///
-        /// \param AmountX The amount to expand in the X direction.
-        /// \param AmountY The amount to expand in the Y direction.
-        /// \return The expanded rectangle.
+        /// \param AmountX The distance to grow by on each side along X.
+        /// \param AmountY The distance to grow by on each side along Y.
+        /// \return The rectangle with its edges moved out by those distances.
         ZY_INLINE constexpr AnyRect Expand(Type AmountX, Type AmountY) const
         {
             return AnyRect(mMinimumX - AmountX, mMinimumY - AmountY, mMaximumX + AmountX, mMaximumY + AmountY);
@@ -277,8 +277,8 @@ inline namespace ZyMath
 
         /// \brief Contracts the rectangle by the given amount in all directions.
         ///
-        /// \param Amount The amount to contract by.
-        /// \return The contracted rectangle.
+        /// \param Amount The distance to shrink by on every side.
+        /// \return The rectangle with every edge moved in by \p Amount.
         ZY_INLINE constexpr AnyRect Contract(Type Amount) const
         {
             return Contract(Amount, Amount);
@@ -286,9 +286,9 @@ inline namespace ZyMath
 
         /// \brief Contracts the rectangle by the given amounts in the X and Y directions.
         ///
-        /// \param AmountX The amount to contract in the X direction.
-        /// \param AmountY The amount to contract in the Y direction.
-        /// \return The contracted rectangle.
+        /// \param AmountX The distance to shrink by on each side along X.
+        /// \param AmountY The distance to shrink by on each side along Y.
+        /// \return The rectangle with its edges moved in by those distances.
         ZY_INLINE constexpr AnyRect Contract(Type AmountX, Type AmountY) const
         {
             return AnyRect(mMinimumX + AmountX, mMinimumY + AmountY, mMaximumX - AmountX, mMaximumY - AmountY);
@@ -297,7 +297,7 @@ inline namespace ZyMath
         /// \brief Checks if this rectangle completely contains another rectangle.
         ///
         /// \param Other The other rectangle to check.
-        /// \return `true` if this rectangle contains the other, `false` otherwise.
+        /// \return `true` if \p Other lies inside this rectangle, even touching its edges, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(ConstRef<AnyRect> Other) const
         {
             return mMinimumX <= Other.mMinimumX && mMaximumX >= Other.mMaximumX &&
@@ -308,7 +308,7 @@ inline namespace ZyMath
         ///
         /// \param X The X coordinate of the point.
         /// \param Y The Y coordinate of the point.
-        /// \return `true` if the point is inside the rectangle, `false` otherwise.
+        /// \return `true` if the point lies at or past the minimum and below the maximum, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Type X, Type Y) const
         {
             return X >= mMinimumX && X < mMaximumX && Y >= mMinimumY && Y < mMaximumY;
@@ -317,7 +317,7 @@ inline namespace ZyMath
         /// \brief Checks if this rectangle contains a point.
         ///
         /// \param Position The position to check.
-        /// \return `true` if the point is inside the rectangle, `false` otherwise.
+        /// \return `true` if the point lies at or past the minimum and below the maximum, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(AnyVector2<Type> Position) const
         {
             return Contains(Position.GetX(), Position.GetY());
@@ -326,7 +326,7 @@ inline namespace ZyMath
         /// \brief Checks if this rectangle intersects with another rectangle.
         ///
         /// \param Other The other rectangle to check.
-        /// \return `true` if the rectangles intersect, `false` otherwise.
+        /// \return `true` if the rectangles overlap by more than a touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(AnyRect Other) const
         {
             return mMinimumX < Other.mMaximumX && mMaximumX > Other.mMinimumX &&
@@ -423,7 +423,7 @@ inline namespace ZyMath
         /// \brief Multiplies all coordinates of this rectangle by a scalar.
         ///
         /// \param Scalar The scalar to multiply by.
-        /// \return A new rectangle with the scalar multiplied by all coordinates.
+        /// \return A new rectangle with all coordinates multiplied by the scalar.
         ZY_INLINE constexpr AnyRect operator*(Type Scalar) const
         {
             return AnyRect(mMinimumX * Scalar, mMinimumY * Scalar, mMaximumX * Scalar, mMaximumY * Scalar);
@@ -432,7 +432,7 @@ inline namespace ZyMath
         /// \brief Multiplies all coordinates of this rectangle by a vector.
         ///
         /// \param Vector The vector to multiply by.
-        /// \return A new rectangle with the vector multiplied by all coordinates.
+        /// \return A new rectangle with coordinates multiplied per-axis.
         ZY_INLINE constexpr AnyRect operator*(AnyVector2<Type> Vector) const
         {
             return AnyRect(mMinimumX * Vector.GetX(),
@@ -444,7 +444,7 @@ inline namespace ZyMath
         /// \brief Divides all coordinates of this rectangle by a scalar.
         ///
         /// \param Scalar The scalar to divide by.
-        /// \return A new rectangle with the scalar divided by all coordinates.
+        /// \return A new rectangle with all coordinates divided by the scalar.
         ZY_INLINE constexpr AnyRect operator/(Type Scalar) const
         {
             ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
@@ -455,7 +455,7 @@ inline namespace ZyMath
         /// \brief Divides all coordinates of this rectangle by a vector.
         ///
         /// \param Vector The vector to divide by.
-        /// \return A new rectangle with the vector divided by all coordinates.
+        /// \return A new rectangle with coordinates divided per-axis.
         ZY_INLINE constexpr AnyRect operator/(AnyVector2<Type> Vector) const
         {
             ZY_ASSERT(!::IsAlmostZero(Vector.GetX()), "Division by zero (X)");
@@ -467,10 +467,10 @@ inline namespace ZyMath
                            mMaximumY / Vector.GetY());
         }
 
-        /// \brief Shift left all coordinates of this rectangle by a scalar.
+        /// \brief Shifts left all coordinates of this rectangle by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
-        /// \return A new rectangle with the scalar shifted by all coordinates.
+        /// \return A new rectangle with all coordinates shifted left by the scalar.
         ZY_INLINE constexpr AnyRect operator<<(Type Scalar) const
             requires(IsIntegral<Type>)
         {
@@ -482,10 +482,10 @@ inline namespace ZyMath
                            mMaximumY << Scalar);
         }
 
-        /// \brief Shift right all coordinates of this rectangle by a scalar.
+        /// \brief Shifts right all coordinates of this rectangle by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
-        /// \return A new rectangle with the scalar shifted by all coordinates.
+        /// \return A new rectangle with all coordinates shifted right by the scalar.
         ZY_INLINE constexpr AnyRect operator>>(Type Scalar) const
             requires(IsIntegral<Type>)
         {
@@ -609,25 +609,25 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Gets a rect that fails every validity check and is the identity of \ref Union.
+        /// \brief Gets a rectangle that fails every validity check and is the identity of \ref Union.
         ///
-        /// \return An invalid rect.
+        /// \return A rectangle whose minimum sits above its maximum on both axes.
         ZY_INLINE static constexpr AnyRect Invalid()
         {
             return AnyRect(kMaximum<Type>, kMaximum<Type>, Lowest(), Lowest());
         }
 
-        /// \brief Gets an empty rect.
+        /// \brief Gets an empty rectangle.
         ///
-        /// \return An empty rect.
+        /// \return An empty rectangle.
         ZY_INLINE static constexpr AnyRect Zero()
         {
             return AnyRect(Type(0), Type(0), Type(0), Type(0));
         }
 
-        /// \brief Gets the unit rect with size 1.
+        /// \brief Gets the unit rectangle with size 1.
         ///
-        /// \return An unit rect.
+        /// \return A unit rectangle.
         ZY_INLINE static constexpr AnyRect One()
         {
             return AnyRect(Type(0), Type(0), Type(1), Type(1));
@@ -635,18 +635,18 @@ inline namespace ZyMath
 
         /// \brief Canonicalizes a rectangle by ensuring X1 <= X2 and Y1 <= Y2.
         ///
-        /// \param Source The rectangle to canonicalize.
-        /// \return A canonicalized rectangle.
+        /// \param Source The rectangle whose minimum and maximum may be swapped on some axis.
+        /// \return The rectangle with each axis's minimum and maximum in order.
         ZY_INLINE static constexpr AnyRect Canonicalize(AnyRect Source)
         {
-            const Type X1 = ::Min(Source.mMinimumX, Source.mMaximumX);
-            const Type X2 = ::Max(Source.mMinimumX, Source.mMaximumX);
-            const Type Y1 = ::Min(Source.mMinimumY, Source.mMaximumY);
-            const Type Y2 = ::Max(Source.mMinimumY, Source.mMaximumY);
-            return AnyRect(X1, Y1, X2, Y2);
+            return AnyRect(
+                ::Min(Source.mMinimumX, Source.mMaximumX),
+                ::Min(Source.mMinimumY, Source.mMaximumY),
+                ::Max(Source.mMinimumX, Source.mMaximumX),
+                ::Max(Source.mMinimumY, Source.mMaximumY));
         }
 
-        /// \brief Encodes a rectangle into the whole range of an integer per edge, the way a normalized vertex attribute reads it back.
+        /// \brief Encodes a rectangle into the whole range of an integer per edge.
         ///
         /// \param Value The rectangle to encode, each edge held to the range the integer spans.
         /// \return The minimum corner then the maximum corner, each edge spread over the integer's range.
@@ -675,7 +675,7 @@ inline namespace ZyMath
         ///
         /// \param First  The first rectangle.
         /// \param Second The second rectangle.
-        /// \return A rect with the component-wise minimum values.
+        /// \return A rectangle with the component-wise minimum values.
         ZY_INLINE static constexpr AnyRect Min(AnyRect First, AnyRect Second)
         {
             return AnyRect(
@@ -731,7 +731,7 @@ inline namespace ZyMath
         ///
         /// \param First  The first rectangle.
         /// \param Second The second rectangle.
-        /// \return A rectangle representing the overlapping region. If they don't overlap, the rect may be invalid.
+        /// \return The overlapping region, invalid when the rectangles do not overlap.
         ZY_INLINE static constexpr AnyRect Intersection(AnyRect First, AnyRect Second)
         {
             return AnyRect(::Max(First.mMinimumX, Second.mMinimumX), ::Max(First.mMinimumY, Second.mMinimumY),
@@ -781,7 +781,7 @@ inline namespace ZyMath
 
         /// \brief Divides a coordinate by a cell, rounding toward negative infinity.
         ///
-        /// \param Value The coordinate.
+        /// \param Value The coordinate to find the cell of.
         /// \param Cell  The size of one cell.
         /// \return The cell the coordinate falls in.
         template<typename Target>
@@ -815,9 +815,9 @@ inline namespace ZyMath
 
         /// \brief Anchors a rectangle relative to a pivot point.
         ///
-        /// \param Source The source rectangle.
-        /// \param Origin The pivot point for anchoring.
-        /// \return A rectangle anchored according to the pivot.
+        /// \param Source The rectangle to place, its minimum corner taken as the anchor.
+        /// \param Origin The point of the rectangle to put on the anchor, in shares of its size.
+        /// \return The rectangle moved so that point sits where its minimum corner was.
         ZY_INLINE static constexpr AnyRect Anchor(AnyRect Source, Pivot2D Origin)
             requires (IsReal<Type>)
         {
@@ -844,11 +844,11 @@ inline namespace ZyMath
                            Region.GetMinimumY() + Share.GetMaximumY() * Height);
         }
 
-        /// \brief Transform a rectangle using an affine transformation matrix.
+        /// \brief Transforms a rectangle using an affine transformation matrix.
         ///
         /// \param Source The rectangle to transform.
         /// \param Matrix The affine transformation matrix to apply.
-        /// \return A rectangle resulting from transforming the rectangle with the matrix.
+        /// \return The smallest rectangle holding the four transformed corners.
         ZY_INLINE static AnyRect Transform(AnyRect Source, ConstRef<Matrix4x3> Matrix)
             requires (IsReal<Type>)
         {
@@ -865,11 +865,11 @@ inline namespace ZyMath
             return AnyRect(PX.ReduceMin(), PY.ReduceMin(), PX.ReduceMax(), PY.ReduceMax());
         }
 
-        /// \brief Transform a rectangle using a 3x2 transformation matrix.
+        /// \brief Transforms a rectangle using a 3x2 transformation matrix.
         ///
         /// \param Source The rectangle to transform.
         /// \param Matrix The 3x2 transformation matrix to apply.
-        /// \return A rectangle resulting from transforming the rectangle with the matrix.
+        /// \return The smallest rectangle holding the four transformed corners.
         ZY_INLINE static AnyRect Transform(AnyRect Source, ConstRef<Matrix3x2> Matrix)
             requires (IsReal<Type>)
         {
@@ -893,9 +893,9 @@ inline namespace ZyMath
 
         /// \brief Iterates over the difference bands between two rectangles, invoking a callback for each band.
         ///
-        /// \param First  The first rectangle.
-        /// \param Second The second rectangle.
-        /// \param Action The callback function to invoke for each difference band.
+        /// \param First  The rectangle the bands are cut from.
+        /// \param Second The rectangle cut away from \p First.
+        /// \param Action The callback given each band of \p First that \p Second does not cover.
         template<typename Function>
         ZY_INLINE static void ForEachRectDiff(AnyRect First, AnyRect Second, AnyRef<Function> Action)
             requires (IsIntegral<Type>)
@@ -907,14 +907,13 @@ inline namespace ZyMath
 
             const AnyRect Intersect = AnyRect::Intersection(First, Second);
 
-            // No intersection, so just return the first rect as-is.
+            // Without an overlap the whole of the first rectangle is the difference.
             if (!Intersect.IsValid() || Intersect.GetArea() == 0)
             {
                 Action(First);
                 return;
             }
 
-            // Top band (above intersection)
             if (Intersect.GetMinimumY() > First.GetMinimumY())
             {
                 Action(AnyRect(
@@ -924,7 +923,6 @@ inline namespace ZyMath
                     Intersect.GetMinimumY()));
             }
 
-            // Bottom band (below intersection)
             if (Intersect.GetMaximumY() < First.GetMaximumY())
             {
                 Action(AnyRect(
@@ -934,7 +932,7 @@ inline namespace ZyMath
                     First.GetMaximumY()));
             }
 
-            // Left band (left of intersection)
+            // Left and right bands span only the overlap's rows, since top and bottom took the rest.
             if (Intersect.GetMinimumX() > First.GetMinimumX())
             {
                 Action(AnyRect(
@@ -944,7 +942,6 @@ inline namespace ZyMath
                     Intersect.GetMaximumY()));
             }
 
-            // Right band (right of intersection)
             if (Intersect.GetMaximumX() < First.GetMaximumX())
             {
                 Action(AnyRect(
@@ -997,7 +994,7 @@ inline namespace ZyMath
 
         /// \brief Gets the lowest value the coordinate type can hold.
         ///
-        /// \return The lowest value.
+        /// \return The most negative finite value for reals, the minimum for integers.
         ZY_INLINE static constexpr Type Lowest()
         {
             if constexpr (IsReal<Type>)

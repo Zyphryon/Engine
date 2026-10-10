@@ -27,7 +27,8 @@ namespace ZyRender
 
         /// \brief Constructs a text effect with default parameters.
         ZY_INLINE constexpr FontEffect()
-            : mOutsetOffset   { 0.0f },
+            : mOutsetColor    { },
+              mOutsetOffset   { 0.0f },
               mOutsetWidth    { 0.0f },
               mOutsetBias     { 0.0f },
               mOutsetBlur     { 0.0f },
@@ -39,12 +40,12 @@ namespace ZyRender
         /// \brief Constructs a text effect with specified parameters.
         ///
         /// \param OutsetColor    The color of the text outset.
-        /// \param OutsetOffset   The offset of the text outset.
-        /// \param OutsetWidth    The relative width of the text outset (relative to font size).
+        /// \param OutsetOffset   The distance the outset is pushed past the stroke, in screen pixels.
+        /// \param OutsetWidth    The width of the outset, as a share of the field range.
         /// \param OutsetBias     The absolute width bias of the text outset (added to relative width).
-        /// \param OutsetBlur     The blur amount of the text outset.
-        /// \param InsetRoundness The roundness of the text inset.
-        /// \param InsetThreshold The threshold for the text inset.
+        /// \param OutsetBlur     The share of the outset that fades out, from `0` to `1`.
+        /// \param InsetRoundness The blend from the sharp field at `0` to the smooth field at `1`.
+        /// \param InsetThreshold The field level the stroke's edge sits at.
         ZY_INLINE constexpr FontEffect(
             IntColor8 OutsetColor,
             Real32    OutsetOffset,
@@ -65,7 +66,7 @@ namespace ZyRender
 
         /// \brief Gets the outset color value.
         ///
-        /// \return The outset color.
+        /// \return The color the outset is drawn in.
         ZY_INLINE constexpr IntColor8 GetOutsetColor() const
         {
             return mOutsetColor;
@@ -73,7 +74,7 @@ namespace ZyRender
 
         /// \brief Gets the outset offset value.
         ///
-        /// \return The outset offset.
+        /// \return The distance the outset is pushed past the stroke, in screen pixels.
         ZY_INLINE constexpr Real32 GetOutsetOffset() const
         {
             return mOutsetOffset;
@@ -81,7 +82,7 @@ namespace ZyRender
 
         /// \brief Gets the relative outset width value.
         ///
-        /// \return The relative outset width.
+        /// \return The outset width, as a share of the field range.
         ZY_INLINE constexpr Real32 GetOutsetWidthRelative() const
         {
             return mOutsetWidth;
@@ -89,7 +90,7 @@ namespace ZyRender
 
         /// \brief Gets the absolute outset width value.
         ///
-        /// \return The absolute outset width.
+        /// \return The extra outset width, in screen pixels.
         ZY_INLINE constexpr Real32 GetOutsetWidthAbsolute() const
         {
             return mOutsetBias;
@@ -97,7 +98,7 @@ namespace ZyRender
 
         /// \brief Gets the outset blur value.
         ///
-        /// \return The outset blur.
+        /// \return The share of the outset that fades out, from `0` to `1`.
         ZY_INLINE constexpr Real32 GetOutsetBlur() const
         {
             return mOutsetBlur;
@@ -105,7 +106,7 @@ namespace ZyRender
 
         /// \brief Gets the inset roundness value.
         ///
-        /// \return The inset roundness.
+        /// \return The blend from the sharp field at `0` to the smooth field at `1`.
         ZY_INLINE constexpr Real32 GetInsetRoundness() const
         {
             return mInsetRoundness;
@@ -113,7 +114,7 @@ namespace ZyRender
 
         /// \brief Gets the inset threshold value.
         ///
-        /// \return The inset threshold.
+        /// \return The field level the stroke's edge sits at.
         ZY_INLINE constexpr Real32 GetInsetThreshold() const
         {
             return mInsetThreshold;
@@ -123,36 +124,30 @@ namespace ZyRender
 
         /// \brief Creates an outline text effect with specified parameters.
         ///
-        /// \param Width    The width of the outline.
-        /// \param Softness The softness of the outline.
+        /// \param Width    The width of the outline, as a share of the field range.
+        /// \param Softness The share of the outline that fades out, from `0` to `1`.
         /// \param Tint     The color tint of the outline.
-        /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static FontEffect Outline(Real32 Width, Real32 Softness, IntColor8 Tint)
+        /// \return An effect that outlines the stroke.
+        ZY_INLINE static constexpr FontEffect Outline(Real32 Width, Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a shadow text effect with specified parameters.
         ///
-        /// \param Softness The softness of the shadow.
+        /// \param Softness The share of the shadow that fades out, from `0` to `1`.
         /// \param Tint     The color tint of the shadow.
-        /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static FontEffect Shadow(Real32 Softness, IntColor8 Tint)
+        /// \return An effect that casts a shadow behind the stroke.
+        ZY_INLINE static constexpr FontEffect Shadow(Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
         }
 
         /// \brief Creates a bold text effect with specified thickness.
         ///
-        /// 0.02 = Slight bold
-        /// 0.05 = Medium bold
-        /// 0.10 = Heavy bold
-        /// 0.15 = Extreme bold
-        /// 0.20 = Maximum bold
-        ///
-        /// \param Thickness The thickness of the bold effect.
-        /// \return A text effect with the specified parameters.
-        ZY_INLINE constexpr static FontEffect Bold(Real32 Thickness)
+        /// \param Thickness The thickness of the bold, from `0.02` (slight) to `0.20` (heaviest).
+        /// \return An effect that thickens the stroke.
+        ZY_INLINE static constexpr FontEffect Bold(Real32 Thickness)
         {
             return FontEffect(IntColor8::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);
         }

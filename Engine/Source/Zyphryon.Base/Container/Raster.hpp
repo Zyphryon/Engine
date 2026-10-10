@@ -22,7 +22,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Represents a fixed grid of cells addressed by column and row, with the walks a field of them invites.
+    /// \brief Represents a fixed grid of cells addressed by column and row.
     template<typename Type, UInt32 Width, UInt32 Height>
     class Raster final
     {
@@ -79,8 +79,7 @@ inline namespace ZyBase
             return mCells[GetIndex(X, Y)];
         }
 
-        /// \brief Gets the cell nearest a column and row, which is the cell itself when they lie within the raster
-        ///        and the cell at the edge in their direction when they do not.
+        /// \brief Gets the cell nearest a column and row, clamping each to the raster's edge.
         ///
         /// \param X The column, which may lie outside the raster.
         /// \param Y The row, which may lie outside the raster.
@@ -119,7 +118,7 @@ inline namespace ZyBase
             return mCells.GetData();
         }
 
-        /// \brief Gets a pointer to the contiguous cell storage.
+        /// \brief Gets a read-only pointer to the contiguous cell storage.
         ///
         /// \return A pointer to the first cell.
         ZY_INLINE constexpr ConstPtr<Type> GetData() const
@@ -182,8 +181,8 @@ inline namespace ZyBase
         /// \brief Visits every cell in turn, row by row.
         ///
         /// \param Callback The callback invoked with each cell's index and a reference to it.
-        template<typename Function>
-        ZY_INLINE constexpr void ForEach(AnyRef<Function> Callback)
+        template<typename Callable>
+        ZY_INLINE constexpr void ForEach(AnyRef<Callable> Callback)
         {
             for (UInt32 Index = 0; Index < kCount; ++Index)
             {
@@ -196,8 +195,8 @@ inline namespace ZyBase
         /// \param Index    The cell, counted row by row.
         /// \param Beside   The cells that count as beside it.
         /// \param Callback The callback invoked with each neighbour's index.
-        template<typename Function>
-        ZY_INLINE constexpr void ForEachNeighbour(UInt32 Index, Neighbourhood Beside, AnyRef<Function> Callback) const
+        template<typename Callable>
+        ZY_INLINE constexpr void ForEachNeighbour(UInt32 Index, Neighbourhood Beside, AnyRef<Callable> Callback) const
         {
             const SInt32 X     = static_cast<SInt32>(GetX(Index));
             const SInt32 Y     = static_cast<SInt32>(GetY(Index));
@@ -223,13 +222,13 @@ inline namespace ZyBase
         /// \param Admit   The callback asked whether a step may be taken, with the cell stepped from and the cell to.
         /// \param Visit   The callback invoked with each cell the region grows over, the seed included.
         /// \return The number of cells the region grew over.
-        template<typename FAdmit, typename FVisit>
+        template<typename Admitter, typename Visitor>
         UInt32 Flood(
             UInt32                Seed,
             Neighbourhood         Beside,
             Ref<Sequence<UInt32>> Scratch,
-            AnyRef<FAdmit>        Admit,
-            AnyRef<FVisit>        Visit) const
+            AnyRef<Admitter>      Admit,
+            AnyRef<Visitor>       Visit) const
         {
             UInt32 Grown = 1;
 
@@ -245,13 +244,7 @@ inline namespace ZyBase
 
                 ForEachNeighbour(Cursor, Beside, [&](UInt32 Next)
                 {
-                    if (Admit(Cursor, Next))
-                    {
-                        Visit(Next);
-                        Scratch.Append(Next);
-
-                        ++Grown;
-                    }
+                    Grown += Spread(Cursor, Next, Scratch, Admit, Visit);
                 });
             }
             return Grown;
@@ -261,8 +254,8 @@ inline namespace ZyBase
         ///
         /// \param Result The raster the distance of every cell is written into, zero where the predicate holds.
         /// \param Solid  The callback asked whether a cell is one the distance is measured to, given the cell.
-        template<typename Distance, typename FSolid>
-        void Measure(Ref<Raster<Distance, Width, Height>> Result, AnyRef<FSolid> Solid) const
+        template<typename Distance, typename Predicate>
+        void Measure(Ref<Raster<Distance, Width, Height>> Result, AnyRef<Predicate> Solid) const
         {
             Measure(Result, 0, 0, static_cast<SInt32>(Width) - 1, static_cast<SInt32>(Height) - 1, Solid);
         }
@@ -275,42 +268,16 @@ inline namespace ZyBase
         /// \param MaximumX The last column of the box, which lies inside it.
         /// \param MaximumY The last row of the box, which lies inside it.
         /// \param Solid    The callback asked whether a cell is one the distance is measured to, given the cell.
-        template<typename Distance, typename FSolid>
+        template<typename Distance, typename Predicate>
         void Measure(
             Ref<Raster<Distance, Width, Height>> Result,
             SInt32                               MinimumX,
             SInt32                               MinimumY,
             SInt32                               MaximumX,
             SInt32                               MaximumY,
-            AnyRef<FSolid>                       Solid) const
+            AnyRef<Predicate>                    Solid) const
         {
             ZY_ASSERT(Contains(MinimumX, MinimumY) && Contains(MaximumX, MaximumY), "The box must lie in the raster");
-
-            constexpr UInt32 kFarthest = static_cast<UInt32>(kMaximum<Distance>);
-
-            const auto Chamfer = [&](SInt32 X, SInt32 Y, SInt32 Toward)
-            {
-                UInt32 Nearest = kFarthest;
-
-                const SInt32 Behind[4][2] = {
-                    { X + Toward, Y     },
-                    { X, Y + Toward     },
-                    { X - 1, Y + Toward },
-                    { X + 1, Y + Toward }
-                };
-
-                for (UInt32 Each = 0; Each < 4; ++Each)
-                {
-                    const SInt32 NearX = Behind[Each][0];
-                    const SInt32 NearY = Behind[Each][1];
-
-                    if (NearX >= MinimumX && NearX <= MaximumX && NearY >= MinimumY && NearY <= MaximumY)
-                    {
-                        Nearest = Min(Nearest, Result[GetIndex(NearX, NearY)] + 1u);
-                    }
-                }
-                return static_cast<Distance>(Min(Nearest, kFarthest));
-            };
 
             for (SInt32 Y = MinimumY; Y <= MaximumY; ++Y)
             {
@@ -318,7 +285,14 @@ inline namespace ZyBase
                 {
                     const UInt32 Index = GetIndex(X, Y);
 
-                    Result[Index] = Solid(mCells[Index]) ? Distance(0) : Chamfer(X, Y, -1);
+                    if (Solid(mCells[Index]))
+                    {
+                        Result[Index] = Distance(0);
+                    }
+                    else
+                    {
+                        Result[Index] = Chamfer(Result, X, Y, -1, MinimumX, MinimumY, MaximumX, MaximumY);
+                    }
                 }
             }
 
@@ -330,7 +304,8 @@ inline namespace ZyBase
 
                     if (!Solid(mCells[Index]))
                     {
-                        Result[Index] = Min(Result[Index], Chamfer(X, Y, 1));
+                        const Distance Nearest = Chamfer(Result, X, Y, 1, MinimumX, MinimumY, MaximumX, MaximumY);
+                        Result[Index] = Min(Result[Index], Nearest);
                     }
                 }
             }
@@ -386,12 +361,85 @@ inline namespace ZyBase
 
         /// \brief Checks whether a column and row name a cell of the raster.
         ///
-        /// \param X The column.
-        /// \param Y The row.
+        /// \param X The column, which may lie outside the raster.
+        /// \param Y The row, which may lie outside the raster.
         /// \return `true` when both lie within the raster, otherwise `false`.
         ZY_INLINE static constexpr Bool Contains(SInt32 X, SInt32 Y)
         {
             return X >= 0 && X < static_cast<SInt32>(Width) && Y >= 0 && Y < static_cast<SInt32>(Height);
+        }
+
+    private:
+
+        /// \brief Grows the flood over the cell stepped to when the step is admitted.
+        ///
+        /// \param Cursor  The cell stepped from, counted row by row.
+        /// \param Next    The cell stepped to, counted row by row.
+        /// \param Scratch The room the growth spreads through.
+        /// \param Admit   The callback asked whether the step may be taken.
+        /// \param Visit   The callback invoked with the cell when the region grows over it.
+        /// \return The number of cells the region grew over, one or zero.
+        template<typename Admitter, typename Visitor>
+        ZY_INLINE static UInt32 Spread(
+            UInt32                Cursor,
+            UInt32                Next,
+            Ref<Sequence<UInt32>> Scratch,
+            AnyRef<Admitter>      Admit,
+            AnyRef<Visitor>       Visit)
+        {
+            if (Admit(Cursor, Next))
+            {
+                Visit(Next);
+                Scratch.Append(Next);
+                return 1;
+            }
+            return 0;
+        }
+
+        /// \brief Gets a cell's distance through the four neighbours a pass has already measured.
+        ///
+        /// \param Result   The raster holding the distances measured so far.
+        /// \param X        The column of the cell.
+        /// \param Y        The row of the cell.
+        /// \param Toward   The direction the pass looks back in, -1 on the first pass and 1 on the second.
+        /// \param MinimumX The first column of the box.
+        /// \param MinimumY The first row of the box.
+        /// \param MaximumX The last column of the box, which lies inside it.
+        /// \param MaximumY The last row of the box, which lies inside it.
+        /// \return The distance through the nearest measured neighbour, held to the largest \p Distance.
+        template<typename Distance>
+        ZY_INLINE static Distance Chamfer(
+            ConstRef<Raster<Distance, Width, Height>> Result,
+            SInt32                                    X,
+            SInt32                                    Y,
+            SInt32                                    Toward,
+            SInt32                                    MinimumX,
+            SInt32                                    MinimumY,
+            SInt32                                    MaximumX,
+            SInt32                                    MaximumY)
+        {
+            constexpr UInt32 kFarthest = static_cast<UInt32>(kMaximum<Distance>);
+
+            UInt32 Nearest = kFarthest;
+
+            const SInt32 Behind[4][2] = {
+                { X + Toward, Y     },
+                { X, Y + Toward     },
+                { X - 1, Y + Toward },
+                { X + 1, Y + Toward }
+            };
+
+            for (UInt32 Each = 0; Each < 4; ++Each)
+            {
+                const SInt32 NearX = Behind[Each][0];
+                const SInt32 NearY = Behind[Each][1];
+
+                if (NearX >= MinimumX && NearX <= MaximumX && NearY >= MinimumY && NearY <= MaximumY)
+                {
+                    Nearest = Min(Nearest, Result[GetIndex(NearX, NearY)] + 1u);
+                }
+            }
+            return static_cast<Distance>(Min(Nearest, kFarthest));
         }
 
     private:

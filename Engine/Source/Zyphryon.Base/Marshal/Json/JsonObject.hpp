@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "JsonValue.hpp"
+#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,7 +21,6 @@
 
 inline namespace ZyBase
 {
-    /// \brief A JSON array type forward declaration.
     class JsonArray;
 
     /// \brief Provides a convenient interface for manipulating JSON objects.
@@ -32,7 +32,6 @@ inline namespace ZyBase
         ZY_INLINE JsonObject()
             : mNode { nullptr }
         {
-
         }
 
         /// \brief Constructs a JSON object from a JSON value node.
@@ -44,23 +43,23 @@ inline namespace ZyBase
             ZY_ASSERT(mNode->IsObject(), "Node is not an object.");
         }
 
-        /// \brief Checks if the object is valid.
+        /// \brief Checks whether the object is valid.
         ///
-        /// \return `true` if the object is valid, `false` otherwise.
+        /// \return `true` if the object wraps a node that is not null, `false` otherwise.
         ZY_INLINE Bool IsValid() const
         {
-            return (mNode != nullptr && !mNode->IsNull());
+            return !IsNull();
         }
 
-        /// \brief Checks if the object is null.
+        /// \brief Checks whether the object is null.
         ///
-        /// \return `true` if the object is null, `false` otherwise.
+        /// \return `true` if the object wraps no node or a null one, `false` otherwise.
         ZY_INLINE Bool IsNull() const
         {
             return (mNode == nullptr || mNode->IsNull());
         }
 
-        /// \brief Checks if the object is empty.
+        /// \brief Checks whether the object is empty.
         ///
         /// \return `true` if the object is empty, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
@@ -87,13 +86,13 @@ inline namespace ZyBase
         /// \brief Gets the untyped value for the specified key.
         ///
         /// \param Key The key to look up.
-        /// \return The untyped \ref JsonValue, or nullptr if the key is not found.
+        /// \return The untyped \ref JsonValue, or \c nullptr if the key is not found.
         ZY_INLINE ConstPtr<JsonValue> GetValue(Text Key) const
         {
-            return mNode->GetObject().Find(Key);
+            return Find(Key);
         }
 
-        /// \brief Checks if the specified key is present.
+        /// \brief Checks whether the specified key is present.
         ///
         /// \param Key The key to look up.
         /// \return `true` if the key is present, `false` otherwise.
@@ -118,13 +117,9 @@ inline namespace ZyBase
         /// \return The boolean value, or the default if the key is not found or the value is not a boolean.
         ZY_INLINE Bool GetBool(Text Key, Bool Default = false) const
         {
-            const ConstPtr<JsonValue> Value = mNode->GetObject().Find(Key);
+            const ConstPtr<JsonValue> Value = Find(Key);
 
-            if (Value != nullptr && Value->IsBool())
-            {
-                return Value->GetBool();
-            }
-            return Default;
+            return (Value && Value->IsBool()) ? Value->GetBool() : Default;
         }
 
         /// \brief Sets a numeric value for the specified key.
@@ -141,17 +136,13 @@ inline namespace ZyBase
         ///
         /// \param Key     The key to look up.
         /// \param Default The value to return if the key is not found or the value is not a number.
-        /// \return The numeric value converted to the specified type, or the default if the key is not found or the value is not a number.
+        /// \return The number as \p Type, or the default if the key is missing or not a number.
         template<IsNumeric Type>
         ZY_INLINE Type GetNumber(Text Key, Type Default = { }) const
         {
-            const ConstPtr<JsonValue> Value = mNode->GetObject().Find(Key);
+            const ConstPtr<JsonValue> Value = Find(Key);
 
-            if (Value != nullptr && Value->IsNumber())
-            {
-                return Value->GetNumber<Type>();
-            }
-            return Default;
+            return (Value && Value->IsNumber()) ? Value->GetNumber<Type>() : Default;
         }
 
         /// \brief Sets a string value for the specified key.
@@ -170,13 +161,9 @@ inline namespace ZyBase
         /// \return The string value, or the default if the key is not found or the value is not a string.
         ZY_INLINE Text GetString(Text Key, Text Default = Text::Empty()) const
         {
-            const ConstPtr<JsonValue> Value = mNode->GetObject().Find(Key);
+            const ConstPtr<JsonValue> Value = Find(Key);
 
-            if (Value != nullptr && Value->IsString())
-            {
-                return Value->GetString();
-            }
-            return Default;
+            return (Value && Value->IsString()) ? Value->GetString() : Default;
         }
 
         /// \brief Sets an enumeration value for the specified key as its name.
@@ -193,17 +180,13 @@ inline namespace ZyBase
         ///
         /// \param Key     The key to look up.
         /// \param Default The value to return if the key is not found or the value is not a valid enumeration name.
-        /// \return The parsed enumeration value, or the default if the key is not found or the value is not a valid name.
+        /// \return The parsed enumeration, or the default if the key is missing or not a valid name.
         template<IsEnum Type>
-        ZY_INLINE Type GetEnum(Text Key, Type Default = {}) const
+        ZY_INLINE Type GetEnum(Text Key, Type Default = { }) const
         {
-            const ConstPtr<JsonValue> Value = mNode->GetObject().Find(Key);
+            const ConstPtr<JsonValue> Value = Find(Key);
 
-            if (Value != nullptr && Value->IsString())
-            {
-                return ZyEnum::Cast<Type>(Value->GetString(), Default);
-            }
-            return Default;
+            return (Value && Value->IsString()) ? ZyEnum::Cast<Type>(Value->GetString(), Default) : Default;
         }
 
         /// \brief Sets an array value for the specified key and returns a wrapper for it.
@@ -236,13 +219,9 @@ inline namespace ZyBase
         /// \return A JSON object wrapper, or a null wrapper if the key is not found or the value is not an object.
         ZY_INLINE JsonObject GetObject(Text Key) const
         {
-            const Ptr<JsonValue> Value = mNode->GetObject().Find(Key);
+            const Ptr<JsonValue> Value = Find(Key);
 
-            if (Value != nullptr && Value->IsObject())
-            {
-                return JsonObject(* Value);
-            }
-            return JsonObject();
+            return (Value && Value->IsObject()) ? JsonObject(* Value) : JsonObject();
         }
 
         /// \brief Visits every member of the object, in storage order.
@@ -254,9 +233,9 @@ inline namespace ZyBase
             mNode->GetObject().ForEach(Forward<Function>(Callback));
         }
 
-        /// \brief Formats the JSON value into an output buffer.
+        /// \brief Gets a string representation of this object.
         ///
-        /// \param Buffer The buffer to format into.
+        /// \param Buffer The string buffer to write the output to.
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
@@ -268,6 +247,17 @@ inline namespace ZyBase
             {
                 Buffer.Append("Null");
             }
+        }
+
+    private:
+
+        /// \brief Gets the value stored under the given key.
+        ///
+        /// \param Key The key to look up.
+        /// \return The value, or \c nullptr when the key is not found.
+        ZY_INLINE Ptr<JsonValue> Find(Text Key) const
+        {
+            return mNode->GetObject().Find(Key);
         }
 
     private:

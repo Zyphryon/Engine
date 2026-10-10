@@ -12,7 +12,7 @@
 
 #include "D3D11Module.hpp"
 #include "D3D11Driver.hpp"
-#include <Zyphryon.Graphic/Service.hpp>
+#include "Zyphryon.Graphic/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -41,12 +41,15 @@ namespace ZyGraphic
 
     void D3D11Module::OnAttach(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        if (ConstRetainer<Service> Service = Host.GetService<ZyGraphic::Service>())
+        if (ConstRetainer<Service> Graphic = Host.GetService<Service>())
         {
-            Service->Register(GetName(), []() -> Unique<Driver>
-            {
-                return Unique<D3D11Driver>::Create();
-            }, Service::Priority::High);
+            Graphic->Register(
+                GetName(),
+                []() -> Unique<Driver>
+                {
+                    return Unique<D3D11Driver>::Create();
+                },
+                Service::Priority::High);
         }
     }
 
@@ -55,9 +58,9 @@ namespace ZyGraphic
 
     void D3D11Module::OnDetach(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        if (ConstRetainer<Service> Service = Host.GetService<ZyGraphic::Service>())
+        if (ConstRetainer<Service> Graphic = Host.GetService<Service>())
         {
-            Service->Unregister(GetName());
+            Graphic->Unregister(GetName());
         }
     }
 }

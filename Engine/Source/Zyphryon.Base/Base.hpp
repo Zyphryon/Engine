@@ -6,6 +6,8 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#pragma once
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -27,10 +29,10 @@
 #include "Zyphryon.Base/Container/Variant.hpp"
 #include "Zyphryon.Base/Cryptography/Signer.hpp"
 #include "Zyphryon.Base/Functional/Delegate.hpp"
-#include "Zyphryon.Base/Half.hpp"
 #include "Zyphryon.Base/Functional/Journal.hpp"
-#include "Zyphryon.Base/Lexical/Format/Processor.hpp"
+#include "Zyphryon.Base/Half.hpp"
 #include "Zyphryon.Base/Lexical/Algorithm.hpp"
+#include "Zyphryon.Base/Lexical/Format/Processor.hpp"
 #include "Zyphryon.Base/Lexical/Symbol.hpp"
 #include "Zyphryon.Base/Lexical/Unicode.hpp"
 #include "Zyphryon.Base/Marshal/Binary/Archive.hpp"

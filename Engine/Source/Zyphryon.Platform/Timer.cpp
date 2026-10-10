@@ -32,18 +32,20 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Timer::Timer()
+        : mStart  { 0.0 },
+          mPeriod { 1.0 }
     {
 #if defined(ZY_PLATFORM_WINDOWS)
 
         LARGE_INTEGER Frequency;
         QueryPerformanceFrequency(AddressOf(Frequency));
-        mFrequency = 1.0 / static_cast<Real64>(Frequency.QuadPart);
+        mPeriod = 1.0 / static_cast<Real64>(Frequency.QuadPart);
 
 #elif defined(ZY_PLATFORM_MACOS)
 
         mach_timebase_info_data_t Timebase;
         mach_timebase_info(AddressOf(Timebase));
-        mFrequency = static_cast<Real64>(Timebase.numer) / static_cast<Real64>(Timebase.denom) / 1'000'000'000.0;
+        mPeriod = static_cast<Real64>(Timebase.numer) / static_cast<Real64>(Timebase.denom) / 1'000'000'000.0;
 
 #endif
 
@@ -59,7 +61,7 @@ namespace ZyPlatform
 
         LARGE_INTEGER Counter;
         QueryPerformanceCounter(AddressOf(Counter));
-        return static_cast<Real64>(Counter.QuadPart) * mFrequency;
+        return static_cast<Real64>(Counter.QuadPart) * mPeriod;
 
 #elif defined(ZY_PLATFORM_LINUX) || defined(ZY_PLATFORM_ANDROID)
 
@@ -70,7 +72,7 @@ namespace ZyPlatform
 #elif defined(ZY_PLATFORM_MACOS)
 
         const UInt64 Time = mach_absolute_time();
-        return static_cast<Real64>(Time) * mFrequency;
+        return static_cast<Real64>(Time) * mPeriod;
 
 #elif defined(ZY_PLATFORM_WEB)
 

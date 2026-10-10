@@ -33,10 +33,9 @@ namespace ZyNetwork::UDP
 
         /// \brief Constructs a sentry under two keys nothing has been proven against yet.
         ZY_INLINE Sentry()
-            : mRotation { 0.0 }
+            : mSecret   { Conjure(), Conjure() },
+              mRotation { 0.0 }
         {
-            mSecret[0] = Conjure();
-            mSecret[1] = Conjure();
         }
 
         /// \brief Stands the key in use down and takes up a fresh one, once it has stood long enough.
@@ -62,7 +61,7 @@ namespace ZyNetwork::UDP
         /// \brief Writes the challenge an address is owed.
         ///
         /// \param Origin The address the challenge is bound to.
-        /// \param Output Receives the challenge, which must have room for \ref kProof bytes.
+        /// \param Output Receives the challenge, which must have room for \ref kChallenge bytes.
         ZY_INLINE void Inscribe(ConstRef<Endpoint> Origin, Span<Byte> Output) const
         {
             ZY_ASSERT(Output.GetSize() >= kChallenge, "The datagram has no room for the challenge it is to carry");
@@ -98,7 +97,7 @@ namespace ZyNetwork::UDP
 
         /// \brief Makes a key nothing can guess, or a key of nothing where the system had none to give.
         ///
-        /// \return The key.
+        /// \return The key, all zeros when the system gave no entropy.
         ZY_INLINE static Signer Conjure()
         {
             UInt64 Key[2] = { };

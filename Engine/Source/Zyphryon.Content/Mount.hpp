@@ -14,7 +14,7 @@
 
 namespace ZyContent
 {
-    /// \brief Defines the interface for a virtual mount point providing read, write, and delete access to asset files.
+    /// \brief Defines the interface for a mount point that enumerates, reads, writes, copies and deletes asset files.
     ///
     /// A mount abstracts an underlying storage system (e.g., filesystem directory, archive file, or remote source).
     class ZY_API Mount : public Retainable<Mount>
@@ -35,7 +35,7 @@ namespace ZyContent
         /// \brief Destructor for proper cleanup in derived classes.
         virtual ~Mount() = default;
 
-        /// \brief Checks if the mount natively supports asynchronous operations.
+        /// \brief Checks whether the mount natively supports asynchronous operations.
         ///
         /// \return `true` if asynchronous operations are supported, otherwise `false`.
         virtual Bool IsAsynchronous() const = 0;
@@ -43,8 +43,7 @@ namespace ZyContent
         /// \brief Enumerates the entries at the specified path within the mount.
         ///
         /// \param Path     The path to enumerate, relative to the mount's root.
-        /// \param Callback The callback function that will be called for each record found.
-        /// \return A sequence of items representing the entries at the specified path.
+        /// \param Callback The callback function that will be called once with the result and every record found.
         virtual void Enumerate(Text Path, AnyRef<OnEnumerate> Callback) const = 0;
 
         /// \brief Deletes the file or directory at the specified path, if it exists.
@@ -57,13 +56,13 @@ namespace ZyContent
         ///
         /// \param Source      The path to the source file, relative to the mount's root.
         /// \param Destination The path to the destination file, relative to the mount's root.
-        /// \param Callback    The callback function that will be called with the result of the copy operation
+        /// \param Callback    The callback function that will be called with the result of the copy operation.
         virtual void Copy(Text Source, Text Destination, AnyRef<OnResult> Callback) = 0;
 
         /// \brief Reads the contents of the file at the specified path.
         ///
         /// \param Path     The path to the file to read, relative to the mount's root.
-        /// \param Callback The callback function that will be called with the file's contents if succeeds.
+        /// \param Callback The callback function that will be called with the result and, on success, the contents.
         virtual void Read(Text Path, AnyRef<OnRead> Callback) = 0;
 
         /// \brief Writes the specified bytes to a file at the given path, creating or overwriting it as necessary.

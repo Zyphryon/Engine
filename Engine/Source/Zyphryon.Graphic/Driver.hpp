@@ -30,8 +30,8 @@ namespace ZyGraphic
 
         /// \brief Initializes the driver with the specified display and rendering parameters.
         ///
-        /// \param Output The output target to render into.
-        /// \param Config The configuration settings for the graphics device.
+        /// \param Output The native window handle to present into.
+        /// \param Config The surface size, formats and presentation mode to start with.
         /// \return `true` if initialization succeeded, `false` otherwise.
         virtual Bool Initialize(Ptr<void> Output, ConstRef<Configuration> Config)
         {
@@ -50,7 +50,7 @@ namespace ZyGraphic
 
         /// \brief Queries the driver and fills the provided structure with device capabilities and adapter information.
         ///
-        /// \param Output The structure to populate with the driver's current device information and capabilities.
+        /// \param Output Receives the driver's device information and capabilities.
         virtual void Probe(Ref<Description> Output) const
         {
 
@@ -58,9 +58,9 @@ namespace ZyGraphic
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
         ///
-        /// \param ID       The identifier for the buffer resource.
-        /// \param Storage  The storage type for the buffer.
-        /// \param Usage    The intended usage of the buffer.
+        /// \param ID       The handle the service allocated for the buffer.
+        /// \param Storage  The CPU access pattern of the buffer.
+        /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
         /// \param Capacity The capacity of the buffer in bytes.
         /// \param Data     The optional initial data to populate the buffer with.
         virtual void CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
@@ -107,7 +107,7 @@ namespace ZyGraphic
 
         /// \brief Creates a render pass resource with the specified color and depth attachments.
         ///
-        /// \param ID     The identifier for the render pass resource.
+        /// \param ID     The handle the service allocated for the render pass.
         /// \param Colors The color attachments for the render pass.
         /// \param Depth  The depth/stencil attachment for the render pass.
         virtual void CreatePass(Object ID, ConstSpan<ColorAttachment> Colors, DepthAttachment Depth)
@@ -125,9 +125,9 @@ namespace ZyGraphic
 
         /// \brief Creates a pipeline resource with the specified shader program, resource interface, and states.
         ///
-        /// \param ID        The identifier for the pipeline resource.
+        /// \param ID        The handle the service allocated for the pipeline.
         /// \param Program   The shader program to use for the pipeline.
-        /// \param Signature The resource bindings the program declares, grouped by update frequency.
+        /// \param Signature The vertex attributes the program's input stage consumes.
         /// \param States    The fixed-function pipeline states to configure.
         virtual void CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
         {
@@ -144,7 +144,7 @@ namespace ZyGraphic
 
         /// \brief Creates a sampler resource with the specified filtering and addressing state.
         ///
-        /// \param ID         The identifier for the sampler resource.
+        /// \param ID         The handle the service allocated for the sampler.
         /// \param Descriptor The filtering, addressing, and comparison state to create.
         virtual void CreateSampler(Object ID, Sampler Descriptor)
         {
@@ -161,11 +161,11 @@ namespace ZyGraphic
 
         /// \brief Creates a texture resource with the specified parameters and optional initial data.
         ///
-        /// \param ID      The identifier for the texture resource.
-        /// \param Layout  The layout of the texture.
+        /// \param ID      The handle the service allocated for the texture.
+        /// \param Layout  The shape of the texture, as 2D, array or cube.
         /// \param Format  The pixel format of the texture.
-        /// \param Storage The storage type for the texture.
-        /// \param Usage   The intended usage of the texture.
+        /// \param Storage The CPU access pattern of the texture.
+        /// \param Usage   The ways the texture is bound, such as sample or target.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
         /// \param Layers  The number of array slices.

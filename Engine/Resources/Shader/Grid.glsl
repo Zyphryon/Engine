@@ -9,8 +9,8 @@
 #ifndef ZY_GRID_INCLUDED
 #define ZY_GRID_INCLUDED
 
-/// How much of a pixel the nearest grid line covers, one pixel wide; fragment stage only.
 #ifdef FRAGMENT_SHADER
+/// How much of a pixel the nearest grid line covers, one pixel wide; fragment stage only.
 float ZyGridLine(float Repeat)
 {
     float Derivate = max(fwidth(Repeat), 1e-8);

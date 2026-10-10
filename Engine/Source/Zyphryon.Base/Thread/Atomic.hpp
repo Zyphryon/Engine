@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Alias for thread-safe atomic storage and lock-free operations on values of type `Type`.
+    /// \brief Represents a value of type \p Type read and written atomically.
     template<typename Type>
-    using Atomic    = std::atomic<Type>;
+    using Atomic = std::atomic<Type>;
 }

@@ -28,7 +28,7 @@ namespace ZyAudio
     struct Driver::Backend
     {
 #if defined(ZY_WEB_THREAD)
-        /// The fixed Web Audio render quantum: 128 interleaved frames per worklet process call.
+        /// The Web Audio render quantum, the frames each worklet process call asks for.
         static constexpr UInt32 kBlock = 128;
 #else
         /// The frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
@@ -87,11 +87,8 @@ namespace ZyAudio
                 }
                 else
                 {
-                    // Not yet started (or suspended): emit silence so the graph keeps pulling without artifacts.
-                    for (UInt32 Index = 0; Index < kBlock * Channels; ++Index)
-                    {
-                        Frame.data[Index] = 0.0f;
-                    }
+                    // Emit silence until the node is connected, so the graph keeps pulling without artifacts.
+                    Zero(Frame.data, kBlock * Channels);
                 }
             }
             return EM_TRUE;
@@ -111,14 +108,18 @@ namespace ZyAudio
             }
 
             // A single stereo output; the mixer always produces interleaved 48 kHz stereo float.
-            int OutputChannels[]                              = { kMixerStride };
-            EmscriptenAudioWorkletNodeCreateOptions Options   = { };
-            Options.numberOfInputs                            = 0;
-            Options.numberOfOutputs                           = 1;
-            Options.outputChannelCounts                       = OutputChannels;
+            int                                     OutputChannels[] = { kMixerStride };
+            EmscriptenAudioWorkletNodeCreateOptions Options          = { };
+            Options.numberOfInputs      = 0;
+            Options.numberOfOutputs     = 1;
+            Options.outputChannelCounts = OutputChannels;
 
             Backend.Node = emscripten_create_wasm_audio_worklet_node(
-                Context, "zyphryon-mixer", AddressOf(Options), WorkletProcess, AddressOf(Backend));
+                Context,
+                "zyphryon-mixer",
+                AddressOf(Options),
+                WorkletProcess,
+                AddressOf(Backend));
 
             // Route the node to the context's speakers and allow the render callback to produce audio.
             emscripten_audio_node_connect(Backend.Node, Context, 0, 0);
@@ -132,29 +133,15 @@ namespace ZyAudio
                 const Context = emscriptenGetAudioObject($0);
                 if (Context)
                 {
-                    const Resume = () => { Context.resume(); };
+                    const Resume = () =>
+                    {
+                        Context.resume();
+                    };
                     document.addEventListener('click',      Resume, { once : true });
                     document.addEventListener('keydown',    Resume, { once : true });
                     document.addEventListener('touchstart', Resume, { once : true });
                 }
             }, Context);
-        }
-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-        static void OnProcessorReady(EMSCRIPTEN_WEBAUDIO_T Context, EM_BOOL Success, Ptr<void> Parameter)
-        {
-            if (!Success)
-            {
-                LOG_E("Audio: Failed to bootstrap the audio worklet processor");
-                return;
-            }
-
-            WebAudioWorkletProcessorCreateOptions Options = { };
-            Options.name = "zyphryon-mixer";
-
-            emscripten_create_wasm_audio_worklet_processor_async(Context, AddressOf(Options), OnNodeReady, Parameter);
         }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -168,7 +155,10 @@ namespace ZyAudio
                 return;
             }
 
-            OnProcessorReady(Context, EM_TRUE, Parameter);
+            WebAudioWorkletProcessorCreateOptions Options = { };
+            Options.name = "zyphryon-mixer";
+
+            emscripten_create_wasm_audio_worklet_processor_async(Context, AddressOf(Options), OnNodeReady, Parameter);
         }
 
 #else
@@ -222,7 +212,11 @@ namespace ZyAudio
 
         // Spin up the dedicated audio worklet thread; the render node is created once it signals ready.
         emscripten_start_wasm_audio_worklet_thread_async(
-            mBackend->Context, mBackend->Stack, Backend::kStackSize, Backend::OnThreadReady, mBackend.Grab());
+            mBackend->Context,
+            mBackend->Stack,
+            Backend::kStackSize,
+            Backend::OnThreadReady,
+            mBackend.Grab());
 
 #else
 
@@ -236,7 +230,10 @@ namespace ZyAudio
                 Module['zyWebAudio'] = Context;
 
                 // Browsers start a context suspended until a user gesture; resume on the first interaction.
-                const Resume = function() { Context.resume(); };
+                const Resume = function()
+                {
+                    Context.resume();
+                };
                 document.addEventListener('click',      Resume, { once : true });
                 document.addEventListener('keydown',    Resume, { once : true });
                 document.addEventListener('touchstart', Resume, { once : true });
@@ -268,7 +265,7 @@ namespace ZyAudio
 #if defined(ZY_WEB_THREAD)
         emscripten_destroy_audio_context(mBackend->Context);
 #else
-        EM_ASM({ Module['zyWebAudio'].close(); }); // ctx.close() inside
+        EM_ASM({ Module['zyWebAudio'].close(); });
 #endif
     }
 
@@ -306,7 +303,7 @@ namespace ZyAudio
         {
             mBackend->Callback(Span(mBackend->Mix, Backend::kBlock * static_cast<UInt32>(kMixerStride)), Backend::kBlock);
 
-            // Copy one interleaved-stereo block from the wasm heap into a fresh buffer and schedule it at 'When'.
+            // Copy one interleaved stereo block from the wasm heap into a fresh buffer and schedule it at the cursor.
             EM_ASM(
             {
                 const Context = Module['zyWebAudio'];
@@ -340,7 +337,8 @@ namespace ZyAudio
     void Driver::Suspend()
     {
 #if defined(ZY_WEB_THREAD)
-        MAIN_THREAD_EM_ASM({
+        MAIN_THREAD_EM_ASM(
+        {
             emscriptenGetAudioObject($0).suspend();
         }, mBackend->Context);
 #else

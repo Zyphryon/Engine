@@ -26,7 +26,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructor initializing all components zero.
+        /// \brief Constructs a vector with all components zero.
         ZY_INLINE constexpr AnyVector3()
             : mX { 0 },
               mY { 0 },
@@ -34,7 +34,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing all components to the same value.
+        /// \brief Constructs a vector with every component set to the same value.
         ///
         /// \param Scalar The scalar value used to initialize all components.
         ZY_INLINE constexpr explicit AnyVector3(Type Scalar)
@@ -44,7 +44,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the vector with specified x, y and z values.
+        /// \brief Constructs a vector from its x, y and z components.
         ///
         /// \param X The x-component of the vector.
         /// \param Y The y-component of the vector.
@@ -56,7 +56,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Upward conversion constructor from a 2D vector, setting z to zero.
+        /// \brief Constructs a vector from a 2D vector of any base type and a z-component.
         ///
         /// \param XY The 2D vector to use for x and y components.
         /// \param Z  The z-component to use (default is zero).
@@ -68,7 +68,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Conversion constructor from another vector with a different base type.
+        /// \brief Constructs a vector from one of another base type.
         ///
         /// \param Other The source vector to convert from.
         template<typename Base>
@@ -100,7 +100,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the vector is normalized.
         ///
-        /// \return `true` if the vector is normalized, `false` otherwise.
+        /// \return `true` if its length is one within tolerance, `false` otherwise.
         ZY_INLINE constexpr Bool IsNormalized() const
             requires(IsReal<Type>)
         {
@@ -156,7 +156,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is parallel to another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if the vectors are parallel, `false` otherwise.
+        /// \return `true` if the vectors lie along one line, either way round, `false` otherwise.
         ZY_INLINE constexpr Bool IsParallel(AnyVector3 Other) const
         {
             return Cross(* this, Other).IsAlmostZero();
@@ -180,6 +180,7 @@ inline namespace ZyMath
         ///
         /// \param XY The 2D vector to use for x and y components.
         /// \param Z  The z-component to use (default is zero).
+        /// \return A reference to this vector after the update.
         template<typename Base>
         ZY_INLINE constexpr Ref<AnyVector3> Set(AnyVector2<Base> XY, Type Z = Type(0))
         {
@@ -241,8 +242,6 @@ inline namespace ZyMath
         }
 
         /// \brief Gets the vector flattened onto the XY plane.
-        ///
-        /// \note Drops the depth, keeping x and y on the 2D vector's own axes.
         ///
         /// \return A new 2D vector holding the (x, y) components.
         ZY_INLINE constexpr AnyVector2<Type> GetXY() const
@@ -403,7 +402,7 @@ inline namespace ZyMath
         /// \brief Divides all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to divide by.
-        /// \return A new vector with the scalar divided into all components.
+        /// \return A new vector with all components divided by the scalar.
         ZY_INLINE constexpr AnyVector3 operator/(Type Scalar) const
         {
             ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
@@ -411,7 +410,7 @@ inline namespace ZyMath
             return AnyVector3(mX / Scalar, mY / Scalar, mZ / Scalar);
         }
 
-        /// \brief Shift left all coordinates of this vector by a scalar.
+        /// \brief Shifts left all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
@@ -423,7 +422,7 @@ inline namespace ZyMath
             return AnyVector3(mX << Scalar, mY << Scalar, mZ << Scalar);
         }
 
-        /// \brief Shift right all coordinates of this vector by a scalar.
+        /// \brief Shifts right all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
@@ -555,7 +554,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is not equal to another vector.
         ///
         /// \param Other The vector to compare to.
-        /// \return `true` if the vectors are not equal, `false` otherwise.
+        /// \return `true` if any component is not approximately equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator!=(AnyVector3 Other) const
         {
             return !(* this == Other);
@@ -747,9 +746,10 @@ inline namespace ZyMath
         ZY_INLINE static Array<Integer, 3> EncodeNormalized(AnyVector3 Value)
             requires IsIntegral<Integer>
         {
-            return Array(::EncodeNormalized<Integer>(Value.GetX()), 
-                         ::EncodeNormalized<Integer>(Value.GetY()), 
-                         ::EncodeNormalized<Integer>(Value.GetZ()));
+            return Array(
+                ::EncodeNormalized<Integer>(Value.GetX()),
+                ::EncodeNormalized<Integer>(Value.GetY()),
+                ::EncodeNormalized<Integer>(Value.GetZ()));
         }
 
         /// \brief Encodes a vector as fixed-point integers, at a given count of steps per unit.
@@ -761,9 +761,10 @@ inline namespace ZyMath
         ZY_INLINE static Array<Integer, 3> EncodeFixed(AnyVector3 Value, Real32 Scale)
             requires IsIntegral<Integer>
         {
-            return Array(::EncodeFixed<Integer>(Value.GetX(), Scale), 
-                         ::EncodeFixed<Integer>(Value.GetY(), Scale), 
-                         ::EncodeFixed<Integer>(Value.GetZ(), Scale));
+            return Array(
+                ::EncodeFixed<Integer>(Value.GetX(), Scale),
+                ::EncodeFixed<Integer>(Value.GetY(), Scale),
+                ::EncodeFixed<Integer>(Value.GetZ(), Scale));
         }
 
         /// \brief Encodes a vector as half-precision lanes, the way a half vertex attribute reads it back.
@@ -789,7 +790,7 @@ inline namespace ZyMath
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return The cross product of the two vectors.
+        /// \return The vector perpendicular to both, whose length is the area they span.
         ZY_INLINE static constexpr AnyVector3 Cross(AnyVector3 P0, AnyVector3 P1)
         {
             const Type X = P0.GetY() * P1.GetZ() - P0.GetZ() * P1.GetY();
@@ -830,16 +831,16 @@ inline namespace ZyMath
 
         /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
         ///
-        /// \param Vector The source vector to clamp.
-        /// \param Min    The vector specifying the minimum bounds.
-        /// \param Max    The vector specifying the maximum bounds.
+        /// \param Vector  The source vector to clamp.
+        /// \param Minimum The vector specifying the minimum bounds.
+        /// \param Maximum The vector specifying the maximum bounds.
         /// \return A vector with each component clamped between the min and max values.
-        ZY_INLINE static constexpr AnyVector3 Clamp(AnyVector3 Vector, AnyVector3 Min, AnyVector3 Max)
+        ZY_INLINE static constexpr AnyVector3 Clamp(AnyVector3 Vector, AnyVector3 Minimum, AnyVector3 Maximum)
         {
             return AnyVector3(
-                ::Clamp(Vector.mX, Min.mX, Max.mX),
-                ::Clamp(Vector.mY, Min.mY, Max.mY),
-                ::Clamp(Vector.mZ, Min.mZ, Max.mZ));
+                ::Clamp(Vector.mX, Minimum.mX, Maximum.mX),
+                ::Clamp(Vector.mY, Minimum.mY, Maximum.mY),
+                ::Clamp(Vector.mZ, Minimum.mZ, Maximum.mZ));
         }
 
         /// \brief Gets a vector with each component floored to the nearest integer.

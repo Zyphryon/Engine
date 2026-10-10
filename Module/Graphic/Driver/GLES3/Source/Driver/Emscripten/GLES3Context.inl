@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <GLES3/gl3.h>
+#include "Zyphryon.Graphic/Metadata.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,14 +32,6 @@ namespace ZyGraphic
         default:
             return true;
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static Bool HasStencil(TextureFormat Format)
-    {
-        return Format == TextureFormat::D24S8UIntNorm || Format == TextureFormat::D32S8UIntNorm;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -70,28 +62,28 @@ namespace ZyGraphic
         EmscriptenWebGLContextAttributes Attributes;
         emscripten_webgl_init_context_attributes(AddressOf(Attributes));
 
-        Attributes.majorVersion          = 2;
-        Attributes.minorVersion          = 0;
-        Attributes.alpha                 = HasAlpha(Config.ColorFormat);
-        Attributes.depth                 = (Config.DepthFormat != TextureFormat::Unspecified);
-        Attributes.stencil               = HasStencil(Config.DepthFormat);
-        Attributes.antialias             = true;
-        Attributes.premultipliedAlpha    = false;
-        Attributes.preserveDrawingBuffer = false;
-        Attributes.powerPreference       = EM_WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE;
+        Attributes.majorVersion                 = 2;
+        Attributes.minorVersion                 = 0;
+        Attributes.alpha                        = HasAlpha(Config.ColorFormat);
+        Attributes.depth                        = (Config.DepthFormat != TextureFormat::Unspecified);
+        Attributes.stencil                      = GetTextureMetadata(Config.DepthFormat).IsStencil;
+        Attributes.antialias                    = true;
+        Attributes.premultipliedAlpha           = false;
+        Attributes.preserveDrawingBuffer        = false;
+        Attributes.powerPreference              = EM_WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE;
         Attributes.failIfMajorPerformanceCaveat = false;
 
         mRenderContext = emscripten_webgl_create_context("!ZyWindowHTML5", AddressOf(Attributes));
 
         if (mRenderContext <= 0)
         {
-            LOG_E("GLES3Context: Failed to create a WebGL 2 (OpenGL ES 3.0) context");
+            LOG_E("Graphics: Failed to create a WebGL 2 (OpenGL ES 3.0) context");
             return false;
         }
 
         if (emscripten_webgl_make_context_current(mRenderContext) != EMSCRIPTEN_RESULT_SUCCESS)
         {
-            LOG_E("GLES3Context: Failed to make the WebGL context current");
+            LOG_E("Graphics: Failed to make the WebGL context current");
 
             emscripten_webgl_destroy_context(mRenderContext);
             mRenderContext = 0;
@@ -109,7 +101,7 @@ namespace ZyGraphic
     {
         if (!Tearless)
         {
-            LOG_W("GLES3Context: Tearing was requested, but the browser always presents on the vertical blank");
+            LOG_W("Graphics: Tearing was requested, but the browser always presents on the vertical blank");
         }
     }
 

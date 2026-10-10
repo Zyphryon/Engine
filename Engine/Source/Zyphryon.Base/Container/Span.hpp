@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Concept satisfied when \p Type exposes a contiguous element sequence via \c GetData() and \c GetSize().
+    /// \brief Concept that is satisfied when \p Type exposes its elements through \c GetData() and \c GetSize().
     template<typename Type>
     concept IsContiguous   = requires (ConstRef<Type> Value)
     {
@@ -28,13 +28,13 @@ inline namespace ZyBase
         { Value.GetSize() };
     };
 
-    /// \brief Concept satisfied when \p Type exposes a contiguous element sequence via \c GetData() and \c GetSize().
+    /// \brief Concept that is satisfied when \p Type is contiguous and its data converts to a pointer to \p Element.
     template<typename Type, typename Element>
     concept IsContiguousOf = IsContiguous<Type> && requires (ConstRef<Type> Value)
     {
         { Value.GetData() } -> IsCastable<ConstPtr<Element>>;
     };
-    
+
     /// \brief Represents a non-owning view over a contiguous sequence of elements of \p Type.
     template<typename Type>
     class Span final
@@ -68,7 +68,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Constructs a span from any contiguous container that satisfies \c IsContiguous.
+        /// \brief Constructs a span from any contiguous container that satisfies \c IsContiguousOf.
         ///
         /// \param Collection The container whose elements to view.
         template<typename Container>
@@ -79,14 +79,14 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Constructs a span from any contiguous container that satisfies \c IsContiguous.
+        /// \brief Constructs a span from any contiguous container that satisfies \c IsContiguousOf.
         ///
         /// \param Collection The container whose elements to view.
         template<typename Container>
-         ZY_INLINE constexpr Span(ConstRef<Container> Collection)
-             requires IsContiguousOf<Container, Type>
-             : mData { Collection.GetData() },
-               mSize { Collection.GetSize() }
+        ZY_INLINE constexpr Span(ConstRef<Container> Collection)
+            requires IsContiguousOf<Container, Type>
+            : mData { Collection.GetData() },
+              mSize { Collection.GetSize() }
         {
         }
 
@@ -111,10 +111,34 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the first element in the viewed sequence.
         ///
-        /// \return A pointer to the first element, or \c nullptr when the span is empty.
+        /// \return A pointer to the first element, or \c nullptr for a default-constructed span.
         ZY_INLINE constexpr Ptr<Type> GetData() const
         {
             return mData;
+        }
+
+        /// \brief Gets the number of elements in the viewed sequence.
+        ///
+        /// \return The element count.
+        ZY_INLINE constexpr UInt GetSize() const
+        {
+            return mSize;
+        }
+
+        /// \brief Gets the size of the viewed sequence in bytes.
+        ///
+        /// \return The total byte count of all elements.
+        ZY_INLINE constexpr UInt GetSizeInBytes() const
+        {
+            return mSize * sizeof(Type);
+        }
+
+        /// \brief Checks whether the span contains no elements.
+        ///
+        /// \return `true` if the span is empty, otherwise `false`.
+        ZY_INLINE constexpr Bool IsEmpty() const
+        {
+            return mSize == 0u;
         }
 
         /// \brief Gets the first element in the span.
@@ -137,44 +161,13 @@ inline namespace ZyBase
             return mData[mSize - 1];
         }
 
-        /// \brief Checks whether the span contains no elements.
-        ///
-        /// \return `true` if the span is empty, otherwise `false`.
-        ZY_INLINE constexpr Bool IsEmpty() const
-        {
-            return mSize == 0u;
-        }
-
-        /// \brief Gets the number of elements in the viewed sequence.
-        ///
-        /// \return The element count.
-        ZY_INLINE constexpr UInt GetSize() const
-        {
-            return mSize;
-        }
-
-        /// \brief Gets the size of the viewed sequence in bytes.
-        ///
-        /// \return The total byte count of all elements.
-        ZY_INLINE constexpr UInt GetSizeInBytes() const
-        {
-            return mSize * sizeof(Type);
-        }
-
         /// \brief Checks whether an element equal to the given value is in the span.
         ///
         /// \param Value The value to look for.
         /// \return `true` if an element compares equal to \p Value, otherwise `false`.
         ZY_INLINE constexpr Bool Contains(ConstRef<Type> Value) const
         {
-            for (UInt Index = 0; Index < mSize; ++Index)
-            {
-                if (mData[Index] == Value)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return ZyBase::Find(mData, mSize, Value) != nullptr;
         }
 
         /// \brief Returns a sub-span from the given offset to the end.
@@ -220,7 +213,7 @@ inline namespace ZyBase
         UInt      mSize;
     };
 
-    /// \brief A non-owning read-only view over a contiguous sequence of elements of \p Type.
+    /// \brief Represents a read-only view over a contiguous sequence of \p Type.
     template<typename Type>
     using ConstSpan = Span<const Type>;
 }

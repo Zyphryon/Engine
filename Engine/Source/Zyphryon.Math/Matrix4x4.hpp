@@ -37,10 +37,10 @@ inline namespace ZyMath
         ///
         /// \param Diagonal The value to set for all diagonal elements.
         ZY_INLINE explicit Matrix4x4(Real32 Diagonal)
-            : Matrix4x4 { Diagonal, 0.0f, 0.0f, 0.0f,
-                          0.0f, Diagonal, 0.0f, 0.0f,
-                          0.0f, 0.0f, Diagonal, 0.0f,
-                          0.0f, 0.0f, 0.0f, Diagonal }
+            : Matrix4x4 { Diagonal, 0.0f,     0.0f,     0.0f,
+                          0.0f,     Diagonal, 0.0f,     0.0f,
+                          0.0f,     0.0f,     Diagonal, 0.0f,
+                          0.0f,     0.0f,     0.0f,     Diagonal }
         {
         }
 
@@ -87,7 +87,7 @@ inline namespace ZyMath
 
         /// \brief Checks if this matrix is the identity matrix.
         ///
-        /// \return `true` if all diagonal elements are approximately 1, `false` otherwise.
+        /// \return `true` if the columns are approximately the X, Y, Z and W unit axes, `false` otherwise.
         ZY_INLINE Bool IsIdentity() const
         {
             return mColumns[0].IsAlmostEqual<kTolerance<Real32>>(Vector4::UnitX())
@@ -108,7 +108,7 @@ inline namespace ZyMath
                 && mColumns[3].IsAlmostEqual(Other.mColumns[3]);
         }
 
-        /// \brief Checks if the upper-left 3×3 sub-matrix is orthogonal.
+        /// \brief Checks if the upper-left 3x3 sub-matrix is orthogonal.
         ///
         /// \return `true` if the basis vectors are mutually orthogonal and normalized, `false` otherwise.
         ZY_INLINE Bool IsOrthogonal() const
@@ -137,7 +137,7 @@ inline namespace ZyMath
 
         /// \brief Gets a mutable reference to a column vector.
         ///
-        /// \param Column The zero-based column index (0–3).
+        /// \param Column The zero-based column index (0-3).
         /// \return A mutable reference to the requested column vector.
         ZY_INLINE Ref<Vector4> GetColumn(UInt32 Column)
         {
@@ -148,7 +148,7 @@ inline namespace ZyMath
 
         /// \brief Gets a column vector by value.
         ///
-        /// \param Column The zero-based column index (0–3).
+        /// \param Column The zero-based column index (0-3).
         /// \return The column vector at the specified index.
         ZY_INLINE Vector4 GetColumn(UInt32 Column) const
         {
@@ -235,9 +235,9 @@ inline namespace ZyMath
 
         /// \brief Gets the rotation component of the transformation matrix as a quaternion.
         ///
-        /// Use \ref Decompose when the matrix may carry a non-uniform scale.
+        /// \note Expects an unscaled basis.
         ///
-        /// \return A \ref Quaternion representing the rotation encoded in the upper-left 3×3 sub-matrix.
+        /// \return A \ref Quaternion representing the rotation encoded in the upper-left 3x3 sub-matrix.
         ZY_INLINE Quaternion GetRotation() const
         {
             return Quaternion::FromDirection(mColumns[2].GetXYZ(), mColumns[1].GetXYZ());
@@ -271,7 +271,7 @@ inline namespace ZyMath
 
         /// \brief Multiplies this matrix by another matrix.
         ///
-        /// \param Other The right-hand matrix operand.
+        /// \param Other The right-hand matrix operand, applied before this one.
         /// \return A new matrix that is the product of the two matrices.
         ZY_INLINE Matrix4x4 operator*(ConstRef<Matrix4x4> Other) const
         {
@@ -343,7 +343,7 @@ inline namespace ZyMath
 
         /// \brief Multiplies this matrix by another matrix in-place.
         ///
-        /// \param Other The matrix to multiply by.
+        /// \param Other The right-hand matrix operand, applied before this one.
         /// \return A reference to the updated matrix.
         ZY_INLINE Ref<Matrix4x4> operator*=(ConstRef<Matrix4x4> Other)
         {
@@ -353,7 +353,7 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is equal to another matrix.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if all corresponding elements are exactly equal, `false` otherwise.
+        /// \return `true` if all corresponding elements are approximately equal, `false` otherwise.
         ZY_INLINE Bool operator==(ConstRef<Matrix4x4> Other) const
         {
             return IsAlmostEqual(Other);
@@ -388,7 +388,7 @@ inline namespace ZyMath
             return Matrix4x4();
         }
 
-        /// \brief Projects a 2D point using a 4×4 transformation matrix.
+        /// \brief Projects a 2D point using a 4x4 transformation matrix.
         ///
         /// \param Matrix The transformation matrix to apply.
         /// \param Vector The 2D point to project.
@@ -407,7 +407,7 @@ inline namespace ZyMath
             return Vector2(Result.GetX() * InvW, Result.GetY() * InvW);
         }
 
-        /// \brief Projects a 3D point using a 4×4 transformation matrix.
+        /// \brief Projects a 3D point using a 4x4 transformation matrix.
         ///
         /// \param Matrix The transformation matrix to apply.
         /// \param Vector The 3D point to project.
@@ -427,7 +427,7 @@ inline namespace ZyMath
             return Vector3(Result.GetX() * InvW, Result.GetY() * InvW, Result.GetZ() * InvW);
         }
 
-        /// \brief Projects a 4D vector using a 4×4 transformation matrix.
+        /// \brief Projects a 4D vector using a 4x4 transformation matrix.
         ///
         /// \param Matrix The transformation matrix to apply.
         /// \param Vector The 4D vector to project.
@@ -446,7 +446,7 @@ inline namespace ZyMath
             return (W != 0.0f ? Result * (1.0f / W) : Result);
         }
 
-        /// \brief Computes the transpose of a 4×4 matrix.
+        /// \brief Computes the transpose of a 4x4 matrix.
         ///
         /// \param Matrix The matrix to transpose.
         /// \return The transposed matrix.
@@ -464,7 +464,7 @@ inline namespace ZyMath
                 Vector4::MergeHigh(Temp1, Temp3));
         }
 
-        /// \brief Computes the inverse of a general 4×4 matrix using cofactor expansion.
+        /// \brief Computes the inverse of a general 4x4 matrix using cofactor expansion.
         ///
         /// \param Matrix The matrix to invert.
         /// \return The inverse of the given matrix.
@@ -472,15 +472,15 @@ inline namespace ZyMath
 
         /// \brief Performs a component-wise linear interpolation between two matrices.
         ///
-        /// \param Start      The starting matrix (returned when \p Alpha is 0).
-        /// \param End        The ending matrix (returned when \p Alpha is 1).
+        /// \param Start      The starting matrix (returned when \p Percentage is 0).
+        /// \param End        The ending matrix (returned when \p Percentage is 1).
         /// \param Percentage The interpolation factor in the range [0, 1].
         /// \return The interpolated matrix.
         static Matrix4x4 Lerp(ConstRef<Matrix4x4> Start, ConstRef<Matrix4x4> End, Real32 Percentage);
 
         /// \brief Creates a left-handed perspective projection matrix with depth in [0, 1].
         ///
-        /// \note Left-handed to match \ref Matrix4x3::CreateDirection.
+        /// \note Left-handed to match \ref Matrix4x3::CreateLook.
         ///
         /// \param FovY   The vertical field-of-view angle.
         /// \param Aspect The viewport aspect ratio (width / height).
@@ -491,7 +491,7 @@ inline namespace ZyMath
 
         /// \brief Creates a left-handed orthographic projection matrix with depth in [0, 1].
         ///
-        /// \note Left-handed to match \ref Matrix4x3::CreateDirection.
+        /// \note Left-handed to match \ref Matrix4x3::CreateLook.
         ///
         /// \param Left   The left boundary of the view volume.
         /// \param Right  The right boundary of the view volume.
@@ -515,7 +515,7 @@ inline namespace ZyMath
             return Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f,
                              0.0f, 1.0f, 0.0f, 0.0f,
                              0.0f, 0.0f, 1.0f, 0.0f,
-                             X,    Y,     Z,   1.0f);
+                             X,    Y,    Z,    1.0f);
         }
 
         /// \brief Creates a non-uniform scaling matrix from a 3D vector.
@@ -536,8 +536,8 @@ inline namespace ZyMath
 
         /// \brief Creates a rotation matrix around the world X axis (pitch).
         ///
-        /// \param Rotation The rotation angle.
-        /// \return A rotation matrix.
+        /// \param Rotation The angle to rotate by.
+        /// \return A matrix that rotates about the X axis.
         ZY_INLINE static Matrix4x4 FromRotationX(Angle Rotation)
         {
             const Real32 C = Angle::Cosine(Rotation);
@@ -551,8 +551,8 @@ inline namespace ZyMath
 
         /// \brief Creates a rotation matrix around the world Y axis (yaw).
         ///
-        /// \param Rotation The rotation angle.
-        /// \return A rotation matrix.
+        /// \param Rotation The angle to rotate by.
+        /// \return A matrix that rotates about the Y axis.
         ZY_INLINE static Matrix4x4 FromRotationY(Angle Rotation)
         {
             const Real32 C = Angle::Cosine(Rotation);
@@ -566,8 +566,8 @@ inline namespace ZyMath
 
         /// \brief Creates a rotation matrix around the world Z axis (roll).
         ///
-        /// \param Rotation The rotation angle.
-        /// \return A rotation matrix.
+        /// \param Rotation The angle to rotate by.
+        /// \return A matrix that rotates about the Z axis.
         ZY_INLINE static Matrix4x4 FromRotationZ(Angle Rotation)
         {
             const Real32 C = Angle::Cosine(Rotation);
@@ -582,7 +582,7 @@ inline namespace ZyMath
         /// \brief Creates a rotation matrix from a quaternion.
         ///
         /// \param Rotation The unit quaternion representing the desired rotation.
-        /// \return A 4×4 rotation matrix equivalent to the quaternion.
+        /// \return A 4x4 rotation matrix equivalent to the quaternion.
         ZY_INLINE static Matrix4x4 FromRotation(Quaternion Rotation)
         {
             const Vector4 Components = Rotation;
@@ -599,34 +599,44 @@ inline namespace ZyMath
             const Vector4 Difference = Symmetric - Antisymmetric;
             const Vector4 Zero       = Vector4::Zero();
 
-            const Vector4 ColumnX = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
-                Vector4::Select<0b0010>(Diagonal, Vector4::SplatX(Sum)), Difference), Zero);
-            const Vector4 ColumnY = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
-                Vector4::Select<0b0010>(Difference, Diagonal), Vector4::SplatY(Sum)), Zero);
-            const Vector4 ColumnZ = Vector4::Select<0b1000>(Vector4::Select<0b0100>(
-                Vector4::Select<0b0001>(Difference, Vector4::SplatZ(Sum)), Diagonal), Zero);
+            const Vector4 ColumnX = Vector4::Select<0b1000>(
+                Vector4::Select<0b0100>(
+                    Vector4::Select<0b0010>(Diagonal, Vector4::SplatX(Sum)),
+                    Difference),
+                Zero);
+            const Vector4 ColumnY = Vector4::Select<0b1000>(
+                Vector4::Select<0b0100>(
+                    Vector4::Select<0b0010>(Difference, Diagonal),
+                    Vector4::SplatY(Sum)),
+                Zero);
+            const Vector4 ColumnZ = Vector4::Select<0b1000>(
+                Vector4::Select<0b0100>(
+                    Vector4::Select<0b0001>(Difference, Vector4::SplatZ(Sum)),
+                    Diagonal),
+                Zero);
+
             return Matrix4x4(ColumnX, ColumnY, ColumnZ, Vector4::UnitW());
         }
 
-        /// \brief Promotes a 2D affine Matrix3x2 to a column-major 4×4 matrix.
+        /// \brief Promotes a 2D affine Matrix3x2 to a column-major 4x4 matrix.
         ///
         /// \param Matrix The 2D affine matrix to promote.
-        /// \return A 4×4 matrix equivalent to the 2D affine transform.
+        /// \return A 4x4 matrix equivalent to the 2D affine transform.
         ZY_INLINE static Matrix4x4 FromMatrix3x2(ConstRef<Matrix3x2> Matrix)
         {
             const Vector3 C0 = Matrix.GetColumn(0);
             const Vector3 C1 = Matrix.GetColumn(1);
 
-            return Matrix4x4(C0.GetX(),  C1.GetX(),  0.0f, 0.0f,
-                             C0.GetY(),  C1.GetY(),  0.0f, 0.0f,
-                             0.0f,            0.0f,  1.0f, 0.0f,
-                             C0.GetZ(),  C1.GetZ(),  0.0f, 1.0f);
+            return Matrix4x4(C0.GetX(), C1.GetX(), 0.0f, 0.0f,
+                             C0.GetY(), C1.GetY(), 0.0f, 0.0f,
+                             0.0f,      0.0f,      1.0f, 0.0f,
+                             C0.GetZ(), C1.GetZ(), 0.0f, 1.0f);
         }
 
-        /// \brief Promotes a 3D affine Matrix4x3 to a column-major 4×4 matrix.
+        /// \brief Promotes a 3D affine Matrix4x3 to a column-major 4x4 matrix.
         ///
         /// \param Matrix The 3D affine matrix to promote.
-        /// \return A 4×4 matrix equivalent to the 3D affine transform.
+        /// \return A 4x4 matrix equivalent to the 3D affine transform.
         ZY_INLINE static Matrix4x4 FromMatrix4x3(ConstRef<Matrix4x3> Matrix)
         {
             const Vector4 Row0 = Matrix.GetColumn(0);
@@ -645,9 +655,9 @@ inline namespace ZyMath
                 Vector4::MergeHigh(Temp1, Temp3));
         }
 
-        /// \brief Creates a combined TRS (translation × rotation × scale) matrix.
+        /// \brief Creates a combined TRS (translation * rotation * scale) matrix.
         ///
-        /// \param Translation The world-space position.
+        /// \param Translation The position the local origin ends up at.
         /// \param Scale       The per-axis scale factors.
         /// \param Rotation    The rotation quaternion (should be normalized).
         /// \return The combined TRS transformation matrix.

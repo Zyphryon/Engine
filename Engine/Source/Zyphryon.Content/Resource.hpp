@@ -26,7 +26,7 @@ namespace ZyContent
     {
     public:
 
-        /// \brief Enumerates the possible loading states of a resource.
+        /// \brief Specifies the loading states of a resource.
         enum class Status : UInt8
         {
             Idle,       ///< Resource has not been requested or is inactive.
@@ -35,7 +35,7 @@ namespace ZyContent
             Failed,     ///< Resource failed to load, parse, or initialize.
         };
 
-        /// \brief Enumerates the cache ownership policies of a resource.
+        /// \brief Specifies the cache ownership policies of a resource.
         enum class Policy : UInt8
         {
             Managed,    ///< Lifetime is controlled by the content service; may be pruned automatically.
@@ -83,7 +83,7 @@ namespace ZyContent
         {
             mStatus.store(Status, std::memory_order_release);
         }
-        
+
         /// \brief Gets the current loading status of the resource.
         ///
         /// \return The current status of the resource.
@@ -97,7 +97,7 @@ namespace ZyContent
         /// \return `true` if the resource has completed or failed, otherwise `false`.
         ZY_INLINE Bool HasFinished() const
         {
-            const Status Current = mStatus.load(std::memory_order_acquire);
+            const Status Current = GetStatus();
             return (Current == Status::Failed || Current == Status::Completed);
         }
 
@@ -106,7 +106,7 @@ namespace ZyContent
         /// \return `true` if the resource failed, otherwise `false`.
         ZY_INLINE Bool HasFailed() const
         {
-            return mStatus.load(std::memory_order_acquire) == Status::Failed;
+            return GetStatus() == Status::Failed;
         }
 
         /// \brief Checks whether the resource loaded successfully.
@@ -114,7 +114,7 @@ namespace ZyContent
         /// \return `true` if the resource completed successfully, otherwise `false`.
         ZY_INLINE Bool HasCompleted() const
         {
-            return mStatus.load(std::memory_order_acquire) == Status::Completed;
+            return GetStatus() == Status::Completed;
         }
 
         /// \brief Sets the memory footprint of the resource.
@@ -178,8 +178,8 @@ namespace ZyContent
 
     private:
 
-        // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
-        // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Uri            mKey;
         Atomic<Status> mStatus;
@@ -215,8 +215,8 @@ namespace ZyContent
         /// \return A reference to the cache managing resources of this type.
         ZY_INLINE static Ref<Cache> GetCache()
         {
-            static Cache kUniqueResourceCache;
-            return kUniqueResourceCache;
+            static Cache Instance;
+            return Instance;
         }
     };
 }

@@ -30,7 +30,7 @@ inline namespace ZyBase
     /// \brief Computes the worst-case compressed size for an input of the given length.
     ///
     /// \param Size The uncompressed input size, in bytes.
-    /// \return The maximum number of bytes `LZ4Encode` may produce.
+    /// \return The maximum number of bytes \ref LZ4Encode may produce.
     ZY_INLINE constexpr UInt32 LZ4Bound(UInt32 Size)
     {
         return Size + (Size / 255) + 16;
@@ -41,8 +41,8 @@ inline namespace ZyBase
     /// \note The encoder performs no bounds checks; sizing `Destination` below `LZ4Bound` is undefined behaviour.
     ///
     /// \param Source      The uncompressed input bytes.
-    /// \param Destination The output buffer receiving the compressed bytes.
-    /// \param Capacity    The capacity of the output buffer, in bytes (must be at least `LZ4Bound(Source size)`).
+    /// \param Destination Receives the compressed bytes.
+    /// \param Capacity    The capacity of the output buffer, in bytes.
     /// \return The number of compressed bytes written.
     ZY_API UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);
 
@@ -51,8 +51,8 @@ inline namespace ZyBase
     /// \note The encoder performs no bounds checks; sizing `Destination` below `LZ4Bound` is undefined behaviour.
     ///
     /// \param Source      The uncompressed input bytes.
-    /// \param Destination The output buffer receiving the compressed bytes.
-    /// \param Capacity    The capacity of the output buffer, in bytes (must be at least `LZ4Bound(Source size)`).
+    /// \param Destination Receives the compressed bytes.
+    /// \param Capacity    The capacity of the output buffer, in bytes.
     /// \param Level       The search depth along each chain, clamped to [`kLZ4LevelMin`, `kLZ4LevelMax`].
     /// \return The number of compressed bytes written.
     ZY_API UInt32 LZ4Encode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity, UInt32 Level);
@@ -60,7 +60,7 @@ inline namespace ZyBase
     /// \brief Decodes a single LZ4 block into the destination buffer.
     ///
     /// \param Source      The compressed input bytes.
-    /// \param Destination The output buffer receiving the decompressed bytes.
+    /// \param Destination Receives the decompressed bytes.
     /// \param Capacity    The capacity of the output buffer, in bytes.
     /// \return The number of bytes written, or `0` on malformed input or overflow.
     ZY_API UInt32 LZ4Decode(ConstSpan<Byte> Source, Ptr<Byte> Destination, UInt32 Capacity);

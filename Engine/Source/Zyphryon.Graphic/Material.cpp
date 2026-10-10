@@ -33,15 +33,19 @@ namespace ZyGraphic
 
     void Material::SetImage(UInt64 Name, ConstRetainer<Image> Image)
     {
-        for (Ref<TextureEntry> Entry : mTextures)
+        const SInt Index = mTextures.Find([Name](ConstRef<TextureEntry> Entry)
         {
-            if (Entry.Hash == Name)
-            {
-                Entry.Image = Image;
-                return;
-            }
+            return Entry.Hash == Name;
+        });
+
+        if (Index >= 0)
+        {
+            mTextures[Index].Image = Image;
         }
-        mTextures.Append(Name, Image);
+        else
+        {
+            mTextures.Append(Name, Image);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -51,14 +55,12 @@ namespace ZyGraphic
     {
         static const Retainer<Image> kNone;
 
-        for (ConstRef<TextureEntry> Entry : mTextures)
+        const SInt Index = mTextures.Find([Name](ConstRef<TextureEntry> Entry)
         {
-            if (Entry.Hash == Name)
-            {
-                return Entry.Image;
-            }
-        }
-        return kNone;
+            return Entry.Hash == Name;
+        });
+
+        return (Index >= 0 ? mTextures[Index].Image : kNone);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -66,16 +68,20 @@ namespace ZyGraphic
 
     void Material::SetSampler(UInt64 Name, Sampler Descriptor)
     {
-        for (Ref<SamplerEntry> Entry : mSamplers)
+        const SInt Index = mSamplers.Find([Name](ConstRef<SamplerEntry> Entry)
         {
-            if (Entry.Hash == Name)
-            {
-                Entry.Descriptor = Descriptor;
-                Entry.Handle     = 0;
-                return;
-            }
+            return Entry.Hash == Name;
+        });
+
+        if (Index >= 0)
+        {
+            mSamplers[Index].Descriptor = Descriptor;
+            mSamplers[Index].Handle     = 0;
         }
-        mSamplers.Append(Name, Descriptor, 0);
+        else
+        {
+            mSamplers.Append(Name, Descriptor, 0);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -83,12 +89,14 @@ namespace ZyGraphic
 
     Object Material::GetSampler(UInt64 Name) const
     {
-        for (ConstRef<SamplerEntry> Entry : mSamplers)
+        const SInt Index = mSamplers.Find([Name](ConstRef<SamplerEntry> Entry)
         {
-            if (Entry.Hash == Name)
-            {
-                return Entry.Handle;
-            }
+            return Entry.Hash == Name;
+        });
+
+        if (Index >= 0)
+        {
+            return mSamplers[Index].Handle;
         }
         return 0;
     }
@@ -98,7 +106,7 @@ namespace ZyGraphic
 
     Bool Material::Upload(Ref<Service> Service)
     {
-        ZY_ASSERT(mHandle == 0, "Material has already been created");
+        ZY_ASSERT(!mHandle, "Material has already been created");
 
         mHandle = Service.CreateMaterial();
 
@@ -114,7 +122,7 @@ namespace ZyGraphic
         {
             Entry.Handle = Service.ObtainSampler(Entry.Descriptor);
         }
-        return (mHandle > 0);
+        return (mHandle != 0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -130,7 +138,7 @@ namespace ZyGraphic
             }
         }
 
-        if (mHandle != 0)
+        if (mHandle)
         {
             Service.DeleteMaterial(mHandle);
 

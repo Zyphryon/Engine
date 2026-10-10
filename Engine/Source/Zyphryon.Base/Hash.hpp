@@ -65,8 +65,8 @@ inline namespace ZyBase
 
         /// \brief Multiplies two 64-bit values and XORs the high and low halves of the 128-bit product.
         ///
-        /// \param Left  The left operand; receives the low 64 bits of the product XOR'd with the high 64 bits.
-        /// \param Right The right operand; receives the high 64 bits of the product.
+        /// \param Left  The left operand.
+        /// \param Right The right operand.
         /// \return A 64-bit hash of the product.
         constexpr UInt64 Mix(UInt64 Left, UInt64 Right)
         {
@@ -74,10 +74,10 @@ inline namespace ZyBase
             return Left ^ Right;
         }
 
-        /// \brief Read a value of type \p Type from potentially unaligned memory.
+        /// \brief Reads a value of type \p Output from memory that may be unaligned.
         ///
         /// \param Source The pointer to the raw bytes to load from.
-        /// \return A value of type \p Type read from the memory pointed to by \p Source.
+        /// \return The value of type \p Output stored at \p Source.
         template<typename Output>
         constexpr Output Read(ConstPtr<Char> Source)
         {
@@ -130,13 +130,11 @@ inline namespace ZyBase
             0xAAAAAAAAAAAAAAAAULL
         };
 
-        // Handle empty input.
         if (Size == 0)
         {
             return Detail::Mix(kSecret[2], kSecret[1]);
         }
 
-        // Initialize the seed.
         UInt64 Seed = Detail::Mix(kSecret[2], kSecret[1]);
         UInt64 A    = 0;
         UInt64 B    = 0;
@@ -260,23 +258,12 @@ inline namespace ZyBase
     template<typename Type>
     consteval UInt64 Hash()
     {
-#if defined(ZY_COMPILER_MSVC)
-        constexpr ConstPtr<Char> Name = __FUNCSIG__;
-#else
-        constexpr ConstPtr<Char> Name = __PRETTY_FUNCTION__;
-#endif
-        UInt Length = 0;
-
-        while (Name[Length] != '\0')
-        {
-            ++Length;
-        }
-        return Hash(Name, Length);
+        return Hash(ZY_SIGNATURE, sizeof(ZY_SIGNATURE) - 1);
     }
 
     /// \brief Combines the hash values of multiple parameters into a single hash value.
     ///
-    /// \note Each parameter is hashed in order, with the previous hash used as the seed for the next.
+    /// \note Swapping two parameters changes the result.
     ///
     /// \param Parameters The parameters to hash and combine.
     /// \return A combined 64-bit hash of all parameters.
@@ -307,7 +294,7 @@ inline namespace ZyBase
 
         /// \brief Computes a 64-bit hash of the object's state.
         ///
-        /// \return A 64-bit hash of the object.
+        /// \return The hash the digest carries.
         ZY_INLINE constexpr UInt64 Hash() const
         {
             return Value;

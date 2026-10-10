@@ -40,12 +40,7 @@ namespace ZyNetwork
 #if !defined(ZY_PLATFORM_WEB)
             mWorker = Thread([this](std::stop_token Token)
             {
-                ZY_PROFILE_THREAD("Network Thread");
-
-                while (!Token.stop_requested())
-                {
-                    Run();
-                }
+                OnWorkerThread(Token);
             });
 #endif
             return true;
@@ -179,8 +174,7 @@ namespace ZyNetwork
         {
             const Guard Lock(mMutex);
 
-            // Traded for when the application has taken everything, since that hands the report back the drained
-            // buffers and the room they already hold, and copies nothing while the main thread waits on this lock.
+            // Swapped when the application took everything, so nothing is copied while it waits on this lock.
             if (mIncoming.IsEmpty())
             {
                 mIncoming.Swap(mReport);
@@ -195,13 +189,26 @@ namespace ZyNetwork
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Executor::OnWorkerThread(ConstRef<std::stop_token> Token)
+    {
+        ZY_PROFILE_THREAD("Network Thread");
+
+        while (!Token.stop_requested())
+        {
+            Run();
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Executor::Post(Connection Link, Order Kind, Delivery Mode, ConstSpan<Byte> Message)
     {
         ZY_PROFILE_SCOPE("Network::Post");
 
         if (Message.GetSize() > kMaxFrame)
         {
-            LOG_W("Network: a message of {0} byte(s) was dropped for being large", Message.GetSize());
+            LOG_W("Network: a message of {0} byte(s) was dropped for being too large", Message.GetSize());
             return;
         }
 
@@ -260,29 +267,27 @@ namespace ZyNetwork
                 continue;
             }
 
-            Retainer<Channel> Endpoint = nullptr;
+            Retainer<Channel> Target;
 
             if (Entry.Transport == Transport::UDP)
             {
-                Endpoint = Entry.Server
+                Target = Entry.Server
                     ? Retainer<Channel>(Retainer<UDP::Server>::Create(Entry.Link, Entry.Origin, Entry.Listener))
                     : Retainer<Channel>(Retainer<UDP::Client>::Create(Entry.Link, Entry.Origin, Entry.Listener));
             }
             else
             {
-                Endpoint = Entry.Server
+                Target = Entry.Server
                     ? Retainer<Channel>(Retainer<TCP::Server>::Create(Entry.Link, Entry.Origin, Entry.Listener))
                     : Retainer<Channel>(Retainer<TCP::Stream>::Create(Entry.Link, Entry.Origin, Entry.Listener));
             }
 
-            if (Endpoint->Open(mWatcher, Entry.Remote))
+            if (Target->Open(mWatcher, Entry.Remote))
             {
-                // Filed at the slot the service already named, rather than at one chosen here, since the
-                // application was handed that slot before this thread ever saw the request.
-                mChannels.Acquire(Entry.Link.GetChannel(), Endpoint);
+                // Filed at the slot the service already handed the application.
+                mChannels.Acquire(Entry.Link.GetChannel(), Target);
 
-                // An endpoint that accepts is open the moment it is bound, and so is one that carries datagrams, since
-                // neither has an attempt to settle. A stream that reaches announces itself once its attempt has.
+                // A listener or a datagram endpoint has no attempt to settle, so it is open once bound.
                 if (Entry.Server || Entry.Transport == Transport::UDP)
                 {
                     mReport.Connect(Entry.Link);
@@ -302,9 +307,9 @@ namespace ZyNetwork
     {
         for (ConstRef<Command> Entry : Batch.Entries)
         {
-            const Ptr<Retainer<Channel>> Endpoint = mChannels.TryGet(Entry.Link.GetChannel());
+            const Ptr<Retainer<Channel>> Target = mChannels.TryGet(Entry.Link.GetChannel());
 
-            if (Endpoint == nullptr)
+            if (Target == nullptr)
             {
                 // An endpoint still waiting on its address has no channel yet, so a close for it waits for it to arrive.
                 if (Entry.Kind == Order::Close && !Entry.Link.IsPeer() && !IsRevoked(Entry.Link))
@@ -317,20 +322,20 @@ namespace ZyNetwork
             switch (Entry.Kind)
             {
             case Order::Send:
-                (* Endpoint)->Send(Entry.Link, Entry.Mode, Batch.GetPayload(Entry));
+                (* Target)->Send(Entry.Link, Entry.Mode, Batch.GetPayload(Entry));
                 break;
             case Order::Broadcast:
-                (* Endpoint)->Broadcast(Entry.Mode, Batch.GetPayload(Entry));
+                (* Target)->Broadcast(Entry.Mode, Batch.GetPayload(Entry));
                 break;
             case Order::Close:
-                (* Endpoint)->Retire(mWatcher, Entry.Link, Reason::Closed, mReport);
+                (* Target)->Retire(mWatcher, Entry.Link, Reason::Closed, mReport);
                 break;
             case Order::Timeout:
             {
                 Real64 Seconds = 0.0;
                 Blit(reinterpret_cast<Ptr<Byte>>(AddressOf(Seconds)), sizeof(Seconds), Batch.GetPayload(Entry).GetData());
 
-                (* Endpoint)->SetTimeout(Entry.Link, Seconds);
+                (* Target)->SetTimeout(Entry.Link, Seconds);
                 break;
             }
             }

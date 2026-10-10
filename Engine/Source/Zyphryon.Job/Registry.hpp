@@ -31,19 +31,10 @@ namespace ZyJob
             /// The work to execute, cleared as soon as it returns so captures do not outlive the job.
             Task   Work;
 
-            /// Links the job into the successor chain of the job it depends on.
-            Slot   Next       = 0;
-
-            /// Head of the chain of jobs that this one gates.
-            Slot   Successor  = 0;
-
-            /// Outstanding claims on the slot: one for the pending execution, plus one if a handle was handed out.
+            /// The claims outstanding on the slot, one for the pending execution plus one if a handle was handed out.
             UInt8  References = 0;
 
-            /// The lane the job runs on.
-            Lane   Target     = Lane::Compute;
-
-            /// Whether the job has finished executing.
+            /// `true` once the job has finished executing.
             Bool   Complete   = false;
         };
 
@@ -59,10 +50,9 @@ namespace ZyJob
 
         /// \brief Takes a free slot and installs the given work in it.
         ///
-        /// \param Work   The job to execute.
-        /// \param Target The lane the job runs on.
-        /// \return The slot the job occupies, carrying one claim for its execution and one for its handle.
-        Slot Acquire(AnyRef<Task> Work, Lane Target);
+        /// \param Work The job to execute.
+        /// \return The slot the job occupies with claims for its execution and its handle, or `0` if the table is full.
+        Slot Acquire(AnyRef<Task> Work);
 
         /// \brief Mints the handle that names the given slot.
         ///
@@ -83,22 +73,6 @@ namespace ZyJob
         ///
         /// \param Value The slot to retire.
         void Retire(Slot Value);
-
-        /// \brief Parks a job on the job it depends on, to be queued when that one completes.
-        ///
-        /// \param Value      The slot of the job to park.
-        /// \param Dependency The job that must complete first.
-        /// \return `true` if the job was parked, or `false` if the dependency is already done and it may queue now.
-        Bool Park(Slot Value, Handle Dependency);
-
-        /// \brief Detaches the chain of jobs the given slot was gating.
-        ///
-        /// \param Value The slot whose successors are being released.
-        /// \return The head of the detached chain, walked through \ref Entry::Next.
-        ZY_INLINE Slot Detach(Slot Value)
-        {
-            return Exchange(mEntries[Index(Value)].Successor, 0);
-        }
 
         /// \brief Drops the captures of every live job and empties the table.
         void Clear();

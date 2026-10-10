@@ -67,7 +67,7 @@ namespace ZyNetwork::TCP
 
     private:
 
-        /// \brief Number of accepts kept out with the platform at once, so peers arrive in batches.
+        /// \brief Maximum number of accepts kept out with the platform at once, so peers arrive in batches.
         static constexpr UInt32 kMaxInvites = 32;
 
         /// \brief Gets the peer a connection names.

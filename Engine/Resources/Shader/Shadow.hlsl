@@ -25,7 +25,7 @@
 /// Taps the filter reads when the penumbra is only a couple of texels wide.
 #define ZY_SHADOW_NARROW 4
 
-/// Soft shadow from a depth map: sharp at contact, softer the further the blocker.
+/// Soft shadow from a depth map, sharp at contact and softer the further the blocker.
 float ZyShadow(
     Texture2D              Depths,
     SamplerState           Point,

@@ -41,12 +41,13 @@ namespace ZyGraphic
                 }
                 else
                 {
-                    const JsonArray Array = Json.GetArray("Value");
+                    const JsonArray Channels = Json.GetArray("Value");
 
-                    Result = Color(Array.GetNumber<Real32>(0),
-                                   Array.GetNumber<Real32>(1),
-                                   Array.GetNumber<Real32>(2),
-                                   Array.GetNumber<Real32>(3));
+                    Result = Color(
+                        Channels.GetNumber<Real32>(0),
+                        Channels.GetNumber<Real32>(1),
+                        Channels.GetNumber<Real32>(2),
+                        Channels.GetNumber<Real32>(3));
                 }
             }
             return Result;
@@ -63,12 +64,13 @@ namespace ZyGraphic
                 }
                 else
                 {
-                    const JsonArray Array = Json.GetArray("Value");
+                    const JsonArray Channels = Json.GetArray("Value");
 
-                    Result = IntColor8(Array.GetNumber<UInt8>(0),
-                                       Array.GetNumber<UInt8>(1),
-                                       Array.GetNumber<UInt8>(2),
-                                       Array.GetNumber<UInt8>(3));
+                    Result = IntColor8(
+                        Channels.GetNumber<UInt8>(0),
+                        Channels.GetNumber<UInt8>(1),
+                        Channels.GetNumber<UInt8>(2),
+                        Channels.GetNumber<UInt8>(3));
                 }
             }
             return Result;
@@ -101,10 +103,11 @@ namespace ZyGraphic
         {
             if (const JsonArray Value = Json.GetArray("Value"); !Value.IsNullOrEmpty())
             {
-                return Array(Value.GetNumber<Real32>(0),
-                             Value.GetNumber<Real32>(1),
-                             Value.GetNumber<Real32>(2),
-                             Value.GetNumber<Real32>(3));
+                return Array(
+                    Value.GetNumber<Real32>(0),
+                    Value.GetNumber<Real32>(1),
+                    Value.GetNumber<Real32>(2),
+                    Value.GetNumber<Real32>(3));
             }
             return Array<Real32, 4>();
         }
@@ -136,10 +139,11 @@ namespace ZyGraphic
         {
             if (const JsonArray Value = Json.GetArray("Value"); !Value.IsNullOrEmpty())
             {
-                return Array(Value.GetNumber<SInt32>(0),
-                             Value.GetNumber<SInt32>(1),
-                             Value.GetNumber<SInt32>(2),
-                             Value.GetNumber<SInt32>(3));
+                return Array(
+                    Value.GetNumber<SInt32>(0),
+                    Value.GetNumber<SInt32>(1),
+                    Value.GetNumber<SInt32>(2),
+                    Value.GetNumber<SInt32>(3));
             }
             return Array<SInt32, 4>();
         }
@@ -171,10 +175,11 @@ namespace ZyGraphic
         {
             if (const JsonArray Value = Json.GetArray("Value"); !Value.IsNullOrEmpty())
             {
-                return Array(Value.GetNumber<UInt32>(0),
-                             Value.GetNumber<UInt32>(1),
-                             Value.GetNumber<UInt32>(2),
-                             Value.GetNumber<UInt32>(3));
+                return Array(
+                    Value.GetNumber<UInt32>(0),
+                    Value.GetNumber<UInt32>(1),
+                    Value.GetNumber<UInt32>(2),
+                    Value.GetNumber<UInt32>(3));
             }
             return Array<UInt32, 4>();
         }

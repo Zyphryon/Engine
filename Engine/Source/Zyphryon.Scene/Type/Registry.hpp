@@ -59,7 +59,7 @@ namespace ZyScene
         /// \brief Gives a component type a trait or takes it away, before the type is first stored.
         ///
         /// \param Identifier The identifier the type answers to.
-        /// \param Which      The trait.
+        /// \param Which      The trait, or several taken together.
         /// \param Enabled    `true` to give it, `false` to take it away.
         void SetTrait(UInt32 Identifier, Trait Which, Bool Enabled);
 
@@ -116,25 +116,25 @@ namespace ZyScene
         /// \brief Gets a registered component type the caller may change, with the lock already held.
         ///
         /// \param Identifier The identifier the type answers to.
-        /// \return The type.
+        /// \return The type, which never moves.
         Ref<Metatype> Lookup(UInt32 Identifier);
 
         /// \brief Finds the component type that answers to a name, with the lock already held.
         ///
-        /// \param Name The name.
+        /// \param Name The name saves know the type by, or the one the compiler gives it.
         /// \return The identifier, or zero when no type answers to the name.
         UInt32 Search(Text Name);
 
         /// \brief Makes an unresolved type the one the code now declares, keeping only its name.
         ///
-        /// \param Known The unresolved type.
+        /// \param Known The unresolved type, overwritten in place.
         /// \param Info  The layout and lifecycle of the type.
         static void Revive(Ref<Metatype> Known, ConstRef<Metatype> Info);
 
         /// \brief Copies a name into the registry, so it outlives the library that handed it in.
         ///
-        /// \param Name The name.
-        /// \return The copy.
+        /// \param Name The name to copy.
+        /// \return The copy, which lives as long as the registry.
         Text Intern(Text Name);
 
     private:

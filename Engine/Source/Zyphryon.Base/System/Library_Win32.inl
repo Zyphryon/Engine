@@ -28,8 +28,7 @@ inline namespace ZyBase
 
         Sequence<Wide, Filesystem::kMaxPathLength> InPath = Unicode::Widen<Filesystem::kMaxPathLength>(Path);
 
-        // Taken with the folder it sits in searched first, so a library standing beside its own dependencies
-        // finds them without the whole of the process's search order being widened for it.
+        // Search the library's own folder first, so dependencies beside it are found.
         mHandle = LoadLibraryExW(InPath.GetData(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
 
         return IsOpen();

@@ -67,13 +67,13 @@ namespace ZyNetwork
 
     struct Proactor::Backend final
     {
-        /// The number of operations the ring makes room for, which caps how many may be out at once.
+        /// \brief Number of operations the ring makes room for, which caps how many may be out at once.
         static constexpr UInt32 kDepth  = 4096;
 
-        /// The tag the read on the beacon is queued under, which names no record.
+        /// \brief Tag the read on the beacon is queued under, which names no record.
         static constexpr UInt64 kBeacon = ~static_cast<UInt64>(0);
 
-        /// The tag an operation whose own completion says nothing is queued under, which names no record either.
+        /// \brief Tag for an operation whose completion is ignored, which names no record either.
         static constexpr UInt64 kIgnore = ~static_cast<UInt64>(1);
 
         /// \brief Represents one operation as the kernel holds it, which outlives the socket it was posted on.
@@ -82,33 +82,30 @@ namespace ZyNetwork
             /// The connection the operation was posted under.
             Connection       Link;
 
-            /// What the operation was asked to do.
+            /// The operation it was asked to do.
             Operation        Kind;
 
             /// The socket the operation was posted on.
             SInt32           Owner;
 
-            /// Where the traffic came from, which an accept and a datagram read both write into.
+            /// The address the traffic came from, which an accept and a datagram read both write into.
             sockaddr_storage Address;
 
-            /// How much of \ref Address the kernel may write, which it answers an accept back in.
+            /// The size of \ref Address the kernel may write, which it answers an accept back in.
             socklen_t        Length;
 
-            /// What an operation carrying an address names its buffer through.
+            /// The message an operation carrying an address names its buffer through.
             msghdr           Message;
 
             /// The one buffer that message names.
             iovec            Buffer;
 
-            /// Where this record sits in the arena, kept so a completion gives it back without being looked for.
+            /// The record's slot in the arena, so a completion gives it back without a search.
             UInt32           Index;
 
             /// The next free record, meaningful only while this one sits on the free list.
             UInt32           Next;
 
-            /// \brief Points the kernel's message at the given bytes and at the record's own address.
-            ///
-            /// \param Data The bytes the operation fills or empties.
             ZY_INLINE void Wrap(ConstSpan<Byte> Data)
             {
                 Buffer.iov_base     = const_cast<Ptr<Byte>>(Data.GetData());
@@ -123,16 +120,16 @@ namespace ZyNetwork
         /// \brief Represents one of the two rings the kernel and this thread hand work across.
         struct Ring final
         {
-            /// Where the mapping begins, kept so it can be given back.
+            /// The start of the mapping, kept so it can be given back.
             Ptr<void>   Base = nullptr;
 
-            /// How much of it was mapped.
+            /// The size of the mapping.
             UInt        Span = 0;
 
-            /// Where whoever takes the work has reached.
+            /// The position whoever takes the work has reached.
             Ptr<UInt32> Head = nullptr;
 
-            /// Where whoever hands it over has reached.
+            /// The position whoever hands it over has reached.
             Ptr<UInt32> Tail = nullptr;
 
             /// The mask every subscript is taken modulo.
@@ -145,22 +142,22 @@ namespace ZyNetwork
         /// The ring's descriptor, which every operation is queued through.
         SInt32            Port       = -1;
 
-        /// The descriptor a rouse is written to, which the ring carries a read on so a wait answers to the application.
+        /// The descriptor a rouse is written to, which the ring keeps a read on so a wait wakes for it.
         SInt32            Beacon     = -1;
 
-        /// What a rouse is read back into, which the kernel needs somewhere lasting for.
+        /// The value a rouse is read back into, which the kernel needs somewhere lasting for.
         UInt64            Token      = 0;
 
-        /// Where operations are handed to the kernel.
+        /// The ring that hands operations to the kernel.
         Ring              Submission;
 
-        /// Where the kernel hands back the ones it has finished.
+        /// The ring the kernel hands finished operations back through.
         Ring              Completion;
 
         /// The submissions themselves, which the ring only holds subscripts into.
         Ptr<io_uring_sqe> Entries    = nullptr;
 
-        /// How much of those submissions was mapped.
+        /// The size of the mapping the submissions sit in.
         UInt              Stride     = 0;
 
         /// The subscripts the kernel reads the submissions in.
@@ -169,21 +166,15 @@ namespace ZyNetwork
         /// The completions themselves.
         Ptr<io_uring_cqe> Results    = nullptr;
 
-        /// Whether the read on the beacon is still out, which is what keeps a second from being posted behind it.
+        /// `true` while the read on the beacon is out, which keeps a second from being posted behind it.
         Bool              Watching   = false;
 
-        /// How many submissions have been queued and not yet handed over.
+        /// The number of submissions queued and not yet handed over.
         UInt32            Queued     = 0;
 
-        /// What the last wait found, kept so the span handed out survives until the next one.
+        /// The events the last wait found, kept so the span handed out survives until the next one.
         Sequence<Event>   Events;
 
-        /// \brief Takes a record and writes down everything an operation is posted with.
-        ///
-        /// \param Link  The connection the operation is posted under.
-        /// \param Kind  The operation being asked for.
-        /// \param Owner The socket the operation is posted on.
-        /// \return The record, ready for the kernel to be handed.
         Ref<Record> Acquire(Connection Link, Operation Kind, SInt32 Owner)
         {
             Ref<Record> Entry = Arena.Take();
@@ -197,9 +188,6 @@ namespace ZyNetwork
             return Entry;
         }
 
-        /// \brief Takes the next submission the ring has room for.
-        ///
-        /// \return The submission to fill in, or `nullptr` when the ring is full.
         Ptr<io_uring_sqe> Reserve()
         {
             const UInt32 Tail = __atomic_load_n(Submission.Tail, __ATOMIC_RELAXED);
@@ -223,7 +211,6 @@ namespace ZyNetwork
             return AddressOf(Entries[Slot]);
         }
 
-        /// \brief Puts a read on the beacon, so that a rouse written to it brings a wait back early.
         void Watch()
         {
             if (Watching)
@@ -243,9 +230,6 @@ namespace ZyNetwork
             }
         }
 
-        /// \brief Hands the kernel everything queued so far.
-        ///
-        /// \return `true` if the kernel took them, `false` otherwise.
         Bool Submit()
         {
             while (Queued > 0)
@@ -267,12 +251,6 @@ namespace ZyNetwork
             return true;
         }
 
-        /// \brief Takes the answer a post gave back, giving the record up when it never reached the kernel.
-        ///
-        /// \param Record  The record the operation was posted with.
-        /// \param Success The answer the call itself gave.
-        /// \param Action  The operation, as it is named if it has to be reported.
-        /// \return `true` when the kernel took the operation, `false` otherwise.
         Bool Settle(Ref<Record> Record, Bool Success, ConstPtr<Char> Action)
         {
             if (Success)
@@ -319,8 +297,7 @@ namespace ZyNetwork
             return false;
         }
 
-        // The two rings share one mapping wherever the kernel supports it, which is the usual case and
-        // saves a mapping and a page of its own.
+        // The two rings share one mapping wherever the kernel supports it.
         const Bool Shared = (Params.features & IORING_FEAT_SINGLE_MMAP) != 0;
 
         mBackend->Submission.Span = Params.sq_off.array + Params.sq_entries * sizeof(UInt32);
@@ -365,11 +342,9 @@ namespace ZyNetwork
         mBackend->Completion.Mask = * reinterpret_cast<Ptr<UInt32>>(Answered + Params.cq_off.ring_mask);
         mBackend->Results         = reinterpret_cast<Ptr<io_uring_cqe>>(Answered + Params.cq_off.cqes);
 
-        // Required rather than worked around, since a kernel that will not take the deadline on the wait itself
-        // needs a timeout operation behind every pass, and none old enough to want that carries the rest of this.
         if ((Params.features & IORING_FEAT_EXT_ARG) == 0)
         {
-            LOG_E("Network: this kernel will not time a wait of its own, which asks for a newer one than 5.11");
+            LOG_E("Network: this kernel will not time a wait of its own, which needs 5.11 or newer");
 
             Stop();
             return false;
@@ -637,8 +612,7 @@ namespace ZyNetwork
     {
         mBackend->Events.Clear();
 
-        // Reached for here only when the harvest below could find no room to replace the read it took, since every
-        // other pass comes in with one already out and this asks nothing of the ring at all.
+        // A no-op unless the last harvest found no room to re-arm the beacon read.
         mBackend->Watch();
 
         __kernel_timespec Deadline;
@@ -649,8 +623,14 @@ namespace ZyNetwork
         Zero(AddressOf(Argument), 1);
         Argument.ts = reinterpret_cast<UInt64>(AddressOf(Deadline));
 
-        syscall(__NR_io_uring_enter, mBackend->Port, mBackend->Queued, 1,
-            IORING_ENTER_GETEVENTS | IORING_ENTER_EXT_ARG, AddressOf(Argument), sizeof(Argument));
+        syscall(
+            __NR_io_uring_enter,
+            mBackend->Port,
+            mBackend->Queued,
+            1,
+            IORING_ENTER_GETEVENTS | IORING_ENTER_EXT_ARG,
+            AddressOf(Argument),
+            sizeof(Argument));
 
         mBackend->Queued = 0;
 

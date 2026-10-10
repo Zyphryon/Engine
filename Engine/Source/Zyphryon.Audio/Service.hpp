@@ -33,17 +33,17 @@ namespace ZyAudio
 
     public:
 
-        /// \brief Constructs the audio service and registers it with the system host.
+        /// \brief Constructs the audio service.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
         /// \brief Advances the audio driver state and processes pending audio operations.
         ///
-        /// \param Delta The elapsed time since the last tick.
+        /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
 
-        /// \brief Initializes the audio service by creating the platform driver and opening the specified device.
+        /// \brief Opens the given output device and registers the audio loaders.
         ///
         /// \param Device The name of the audio output device to open, or an empty string to use the system default.
         /// \return `true` if the device was successfully opened, `false` otherwise.
@@ -51,7 +51,7 @@ namespace ZyAudio
 
         /// \brief Queries the driver and fills the provided structure with the backend, adapter, and available endpoints.
         ///
-        /// \param Output The structure to populate with the driver's current device information.
+        /// \param Output Receives the device description.
         void Probe(Ref<Description> Output) const;
 
         /// \brief Suspends all audio processing.
@@ -89,50 +89,47 @@ namespace ZyAudio
 
         /// \brief Sets the listener's directional cone parameters.
         ///
-        /// \param InnerAngle The inner angle of the cone in degrees.
-        /// \param OuterAngle The outer angle of the cone in degrees.
+        /// \param InnerAngle The width of the cone heard at full gain.
+        /// \param OuterAngle The width of the cone past which only `OuterGain` is heard.
         /// \param OuterGain  The gain applied outside the outer cone (0.0 = silent, 1.0 = full volume).
         void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain);
 
-        /// \brief Plays a sound as a non-spatial source with the specified parameters.
-        ///
-        /// \param Category The audio category for the playback.
-        /// \param Sound    The audio sound to play; the service retains it for the playback's lifetime.
-        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume);
-
-        /// \brief Plays a sound as a spatial source with the specified parameters.
+        /// \brief Plays a sound, as a spatial source when an emitter and a transform are given.
         ///
         /// \param Category  The audio category for the playback.
         /// \param Sound     The audio sound to play; the service retains it for the playback's lifetime.
         /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Emitter   The spatial configuration for the audio source.
-        /// \param Transform The initial world transform of the audio source in 3D space.
+        /// \param Emitter   The spatial configuration of the source, or `nullptr` for a non-spatial playback.
+        /// \param Transform The initial world transform of the source, or `nullptr` for a non-spatial playback.
         /// \return A handle to the playback instance, or `0` if the operation failed.
-        Object Play(Category Category, ConstRetainer<Sound> Sound, Real32 Volume, ConstRef<Emitter> Emitter, ConstRef<Matrix4x3> Transform);
+        Object Play(
+            Category             Category,
+            ConstRetainer<Sound> Sound,
+            Real32               Volume,
+            ConstPtr<Emitter>    Emitter   = nullptr,
+            ConstPtr<Matrix4x3>  Transform = nullptr);
 
         /// \brief Sets whether a specific playback instance should loop.
         ///
-        /// \param Handle  The handle of the playback instance.
+        /// \param Handle  The handle of the playback to change.
         /// \param Looping `true` to enable looping, `false` to disable.
         void SetPlaybackLooping(Object Handle, Bool Looping);
 
         /// \brief Sets the volume for a specific playback instance.
         ///
-        /// \param Handle The handle of the playback instance.
+        /// \param Handle The handle of the playback to change.
         /// \param Volume The new volume value (0.0 = silent, 1.0 = full volume).
         void SetPlaybackVolume(Object Handle, Real32 Volume);
 
         /// \brief Sets the world transform for a specific spatial playback instance.
         ///
-        /// \param Handle    The handle of the playback instance.
+        /// \param Handle    The handle of the spatial playback to move.
         /// \param Transform The new world transform of the audio source in 3D space.
         void SetPlaybackPose(Object Handle, ConstRef<Matrix4x3> Transform);
 
         /// \brief Sets the low-pass cutoff for a specific playback instance.
         ///
-        /// \param Handle The handle of the playback instance.
+        /// \param Handle The handle of the playback to change.
         /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the source unfiltered.
         void SetPlaybackCutoff(Object Handle, Real32 Cutoff);
 
@@ -164,7 +161,7 @@ namespace ZyAudio
         /// \param Handle The handle of the playback instance to resume.
         void Resume(Object Handle);
 
-        /// \brief Stops every playback that is letting the given sound go.
+        /// \brief Stops every playback of the given sound.
         ///
         /// \param Asset The sound to silence every playback of.
         void Silence(ConstRef<Sound> Asset);
@@ -186,12 +183,12 @@ namespace ZyAudio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Driver                         mDriver;
         Mixer                          mMixer;
         Spatializer                    mListener;
         Sequence<Completion>           mNotifications;
         Table<Object, Callback>        mSubscriptions;
         Table<Object, Retainer<Sound>> mResources;
         Freelist<kMaxInstances>        mInstances;
+        Driver                         mDriver;
     };
 }

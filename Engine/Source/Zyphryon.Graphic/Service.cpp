@@ -29,6 +29,7 @@ namespace ZyGraphic
 
     Service::Service(Ref<Host> Host)
         : Subsystem { Host },
+          mSignal   { false },
           mProducer { 0 },
           mConsumer { kMaxFrames - 1 }
     {
@@ -38,6 +39,16 @@ namespace ZyGraphic
             OnWorkerThread(Token);
         });
 #endif
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::OnTick(Real64 Delta)
+    {
+        ZY_PROFILE_SCOPE("Graphic::Tick");
+
+        Flush();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -57,60 +68,49 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnTick(Real64 Delta)
-    {
-        ZY_PROFILE_SCOPE("Graphic::Tick");
-
-        Flush();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Service::Initialize(Text Adapter, Ptr<void> Output, ConstRef<Configuration> Config)
+    Bool Service::Initialize(Text Name, Ptr<void> Output, ConstRef<Configuration> Config)
     {
         ZY_PROFILE_SCOPE("Graphic::Initialize");
 
-        Bool Successful = true;
+        if (mDriver)
+        {
+            return true;
+        }
+
+        mDriver = Switch(Name);
+
+        if (mDriver)
+        {
+            GetProducer().Record<& Service::Setup>(this, Output, Config);
+
+            // The second flush waits out the first, so Setup has run on the GPU thread before the driver is checked.
+            Flush();
+            Flush();
+        }
 
         if (!mDriver)
         {
-            mDriver = Switch(Adapter);
+            mDriver = Unique<Driver>::Create();
 
-            if (mDriver)
-            {
-                GetProducer().Record<& Service::Setup>(this, Output, Config);
-                Flush(); // Handles the immediate encoding and begins transferring data to the GPU.
-                Flush(); // Ensures that all data has been completely processed and synchronized.
-            }
-
-            Successful = (mDriver != nullptr);
-
-            if (!Successful)
-            {
-                mDriver = Unique<Driver>::Create();
-
-                LOG_W("Graphics: Failed to initialize driver, using default driver");
-            }
-            else
-            {
-                mDriver->Probe(mDescription);
-
-                mSnapshot.Tearless = Config.Tearless;
-
-                LOG_I("Graphics: Using {0}", mDescription.Backend);
-                LOG_I("Graphics: Detected Tier ({0})", ZyEnum::GetName(mDescription.Tier));
-
-                for (ConstRef<ZyGraphic::Adapter> Endpoint : mDescription.Adapters)
-                {
-                    LOG_I("Graphics: Found GPU '{0}'", Endpoint.Description);
-                    LOG_I("Graphics:     Memory {0} (video)", Endpoint.Memory);
-                }
-
-                RegisterBuiltinLoaders();
-            }
+            LOG_W("Graphics: Failed to initialize driver, using default driver");
+            return false;
         }
-        return Successful;
+
+        mDriver->Probe(mDescription);
+
+        mSnapshot.Tearless = Config.Tearless;
+
+        LOG_I("Graphics: Using {0}", mDescription.Backend);
+        LOG_I("Graphics: Detected Tier ({0})", ZyEnum::GetName(mDescription.Tier));
+
+        for (ConstRef<ZyGraphic::Adapter> Device : mDescription.Adapters)
+        {
+            LOG_I("Graphics: Found GPU '{0}'", Device.Description);
+            LOG_I("Graphics:     Memory {0} (video)", Device.Memory);
+        }
+
+        RegisterBuiltinLoaders();
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -283,8 +283,7 @@ namespace ZyGraphic
     {
         Enqueue<& Driver::Prepare>(Pass, Name, Viewport, Sequence<Color, kMaxAttachments>(Colors), Depth, Stencil);
 
-        // Mark the beginning of a new render pass, recording the pass handle and the current command buffer
-        // offset so that commit can later slice the commands belonging to this pass.
+        // Commit submits the commands recorded from here on as this pass.
         Ref<InFlightPass> InFlightPass = GetInFlightPass();
         InFlightPass.Handle = Pass;
         InFlightPass.Cursor = mFrames[mProducer].Commands.GetSize();
@@ -295,7 +294,6 @@ namespace ZyGraphic
 
     void Service::Commit()
     {
-        // Submit all commands recorded since the last render pass was prepared, then commit the current render pass.
         Ref<InFlightPass> InFlightPass = GetInFlightPass();
 
         if (const UInt32 Size = mFrames[mProducer].Commands.GetSize(); Size > InFlightPass.Cursor)
@@ -333,8 +331,7 @@ namespace ZyGraphic
         mSignal.wait(true, std::memory_order_acquire);
 #endif
 
-        // Rotate the frame queue so that the next frame becomes writable for the CPU while the previous one
-        // moves into the GPU submission pipeline.
+        // The CPU takes the next frame while the GPU takes this one.
         Swap(mProducer, mConsumer);
 
 #if !defined(ZY_PLATFORM_WEB)
@@ -353,13 +350,10 @@ namespace ZyGraphic
     {
         ZY_PROFILE_SCOPE("Graphic::Consume");
 
-        // Update the in-flight arenas with the latest data from the CPU.
         UploadInFlightFrame(mFrames[mConsumer]);
 
-        // Execute all commands in the consumer buffer, then reset it for reuse.
         GetConsumer().Run();
 
-        // Clears the in-flight command queue.
         mFrames[mConsumer].Commands.Clear();
 
 #if !defined(ZY_PLATFORM_WEB)
@@ -380,7 +374,6 @@ namespace ZyGraphic
             // Put the thread to sleep until the flag indicates there is more work to process.
             mSignal.wait(false, std::memory_order_acquire);
 
-            // Consume all pending commands in the current frame's consumer buffer.
             Consume();
 
             // Clear the busy flag to signal that the GPU has completed its current tasks.
@@ -429,7 +422,6 @@ namespace ZyGraphic
 
         if (Ref<Sequence<Byte>> Data = Arena.Memory; !Data.IsEmpty())
         {
-            // Ensure GPU buffer has enough capacity to hold the new data.
             if (Data.GetSize() > Arena.Capacity)
             {
                 Arena.Capacity = Data.GetSize();
@@ -439,7 +431,6 @@ namespace ZyGraphic
             }
             else
             {
-
 #if defined(ZY_PLATFORM_WEB)
                 mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
 #else
@@ -449,7 +440,7 @@ namespace ZyGraphic
 #endif
             }
 
-            // Clear the data after uploading to the GPU to free up memory on the CPU side.
+            // The writer keeps its storage, so the next frame that spills reuses it.
             Data.Clear();
         }
 
@@ -473,11 +464,22 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::MapInFlightArena(Ref<InFlightArena> Arena)
+    {
+        if (Arena.Buffer)
+        {
+            Arena.Mapping = mDriver->MapBuffer(Arena.Buffer, 0, Arena.Capacity);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::CreateInFlightFrame(Ref<InFlightFrame> Frame)
     {
-        CreateInFlightArena(Frame.Vertices, Usage::Vertex,  8 * 1024 * 1024);    // Initial 8mb
-        CreateInFlightArena(Frame.Indices,  Usage::Index,   2 * 1024 * 1024);    // Initial 2mb
-        CreateInFlightArena(Frame.Uniforms, Usage::Uniform, 2 * 1024 * 1024);    // Initial 2mb
+        CreateInFlightArena(Frame.Vertices, Usage::Vertex,  8 * 1024 * 1024);
+        CreateInFlightArena(Frame.Indices,  Usage::Index,   2 * 1024 * 1024);
+        CreateInFlightArena(Frame.Uniforms, Usage::Uniform, 2 * 1024 * 1024);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -498,15 +500,9 @@ namespace ZyGraphic
         // A frame whose buffers were never created, or a driver that maps nothing, leaves the CPU writer in charge.
         if (mDriver)
         {
-            Array Arenas(AddressOf(Frame.Vertices), AddressOf(Frame.Indices), AddressOf(Frame.Uniforms));
-            
-            for (const Ptr<InFlightArena> Arena : Arenas)
-            {
-                if (Arena->Buffer)
-                {
-                    Arena->Mapping = mDriver->MapBuffer(Arena->Buffer, 0, Arena->Capacity);
-                }
-            }
+            MapInFlightArena(Frame.Vertices);
+            MapInFlightArena(Frame.Indices);
+            MapInFlightArena(Frame.Uniforms);
         }
     }
 

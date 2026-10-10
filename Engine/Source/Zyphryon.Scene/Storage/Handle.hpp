@@ -52,7 +52,7 @@ namespace ZyScene
 
         /// \brief Gets the slot the entity sits in.
         ///
-        /// \return The slot.
+        /// \return The slot, zero for a handle naming nothing.
         ZY_INLINE constexpr UInt32 GetIndex() const
         {
             return static_cast<UInt32>(mValue);
@@ -60,7 +60,7 @@ namespace ZyScene
 
         /// \brief Gets the generation of the slot this handle names.
         ///
-        /// \return The generation.
+        /// \return The generation, raised each time the slot's entity is destroyed.
         ZY_INLINE constexpr UInt32 GetGeneration() const
         {
             return static_cast<UInt32>(mValue >> 32);
@@ -68,7 +68,7 @@ namespace ZyScene
 
         /// \brief Gets the handle as one number, the form it is saved and sent in.
         ///
-        /// \return The handle's value.
+        /// \return The number, slot in the low half and generation in the high one.
         ZY_INLINE constexpr UInt64 GetValue() const
         {
             return mValue;

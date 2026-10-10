@@ -12,9 +12,9 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Motion/Playback.hpp"
 #include "Animation3D.hpp"
 #include "Model3D.hpp"
+#include "Zyphryon.Math/Motion/Playback.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,8 +32,7 @@ namespace ZyRender
 
         /// \brief Represents the scratch space for posing, shared by every animator advanced on one thread.
         ///
-        /// The local poses are written, folded into the palette, and never read again, so they live here once
-        /// per thread instead of once per instance.
+        /// \note Local poses are never read once folded into the palette, so one set per thread is enough.
         class Scratch final
         {
         public:
@@ -113,16 +112,16 @@ namespace ZyRender
             Retainer<Animation3D> Clip;
 
             /// The cursor tracking where the clip has reached.
-            Playback            Cursor;
+            Playback              Cursor;
 
-            /// One bone index per lane, as resolved by \ref Animation3D::Resolve.
-            Sequence<SInt32>    Binding;
+            /// The bone index of every lane, as resolved by \ref Animation3D::Resolve.
+            Sequence<SInt32>      Binding;
 
-            /// Whether the clip has been paired with the rig, so a frame need not rediscover it.
-            Bool                Bound   = false;
+            /// `true` once the clip has been paired with the rig, so a frame need not rediscover it.
+            Bool                  Bound   = false;
 
-            /// Whether the clip writes every component of every bone, so the rest pose may be skipped.
-            Bool                Covered = false;
+            /// `true` when the clip writes every component of every bone, so the rest pose may be skipped.
+            Bool                  Covered = false;
         };
 
         /// \brief Resolves what only changes when the clip does, so a frame need not rediscover it.

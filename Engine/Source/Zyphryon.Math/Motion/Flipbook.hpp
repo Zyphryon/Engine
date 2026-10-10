@@ -113,13 +113,14 @@ inline namespace ZyMath
         /// \return The sum of every frame's time, in seconds.
         ZY_INLINE Real32 GetDuration() const
         {
-            Real32 Total = 0.0f;
-
-            for (ConstRef<Frame> Frame : mFrames)
-            {
-                Total += Frame.Duration;
-            }
-            return Total;
+            return Accumulate(
+                mFrames.GetData(),
+                mFrames.GetSize(),
+                0.0f,
+                [](ConstRef<Frame> Item)
+                {
+                    return Item.Duration;
+                });
         }
 
         /// \brief Gets the run's frames.

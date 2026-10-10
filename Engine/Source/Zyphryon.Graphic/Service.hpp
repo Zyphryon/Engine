@@ -24,7 +24,7 @@ namespace ZyGraphic
 {
     /// \brief Represents the graphics service, managing all GPU resources and rendering operations.
     ///
-    /// Dispatch commands to the active driver through a double-buffered \ref Journal for asynchronous GPU execution.
+    /// \note Commands reach the driver through a double-buffered \ref Journal, run on the GPU thread except on the web.
     class ZY_API Service final : public ZyEngine::Subsystem, public Switchable<Driver>
     {
     public:
@@ -42,13 +42,13 @@ namespace ZyGraphic
         /// \brief Tears down the service by stopping the GPU worker thread and flushing all pending commands.
         void OnTeardown() override;
 
-        /// \brief Initializes the service with the specified graphics adapter and display parameters.
+        /// \brief Initializes the service with the named driver and display parameters.
         ///
-        /// \param Adapter The name of the graphics adapter to use.
-        /// \param Output  The output target to render into.
-        /// \param Config  The configuration settings for the graphics device.
+        /// \param Name   The name of the driver to start, or empty for the highest-priority one.
+        /// \param Output The native window handle to present into.
+        /// \param Config The surface size, formats and presentation mode to start with.
         /// \return `true` if initialization succeeded, `false` otherwise.
-        Bool Initialize(Text Adapter, Ptr<void> Output, ConstRef<Configuration> Config);
+        Bool Initialize(Text Name, Ptr<void> Output, ConstRef<Configuration> Config);
 
         /// \brief Resets the rendering surface to the specified resolution.
         ///
@@ -75,6 +75,8 @@ namespace ZyGraphic
 
         /// \brief Allocates transient vertex data for the current producer frame.
         ///
+        /// \note Fill the transient before the next allocation from the same stream, which may move its memory.
+        ///
         /// \param Count The number of vertices to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated vertices.
         template<typename Format>
@@ -100,6 +102,8 @@ namespace ZyGraphic
 
         /// \brief Allocates transient index data for the current producer frame.
         ///
+        /// \note Fill the transient before the next allocation from the same stream, which may move its memory.
+        ///
         /// \param Count The number of indices to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated indices.
         template<typename Format>
@@ -124,6 +128,8 @@ namespace ZyGraphic
         }
 
         /// \brief Allocates transient uniform data for the current producer frame.
+        ///
+        /// \note Fill the transient before the next allocation from the same stream, which may move its memory.
         ///
         /// \param Count The number of uniform blocks to allocate.
         /// \return A transient mapping the CPU memory and the corresponding GPU stream for the allocated uniforms.
@@ -153,7 +159,7 @@ namespace ZyGraphic
 
         /// \brief Appends an empty command to the current producer frame's journal.
         ///
-        /// \return The appended command, to be filled in before anything else is allocated on this frame.
+        /// \return The appended command, valid until the next command is appended.
         ZY_INLINE Ref<Command> AllocateInFlightCommand()
         {
             Ref<Sequence<Command>> Collection = mFrames[mProducer].Commands;
@@ -162,8 +168,8 @@ namespace ZyGraphic
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
         ///
-        /// \param Storage  The storage type for the buffer.
-        /// \param Usage    The intended usage of the buffer.
+        /// \param Storage  The CPU access pattern of the buffer.
+        /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
         /// \param Capacity The capacity of the buffer in bytes.
         /// \param Data     The optional initial data to populate the buffer with.
         /// \return The identifier of the created buffer resource, or zero if creation failed.
@@ -171,8 +177,8 @@ namespace ZyGraphic
 
         /// \brief Creates an empty buffer resource with the specified capacity.
         ///
-        /// \param Storage  The storage type for the buffer.
-        /// \param Usage    The intended usage of the buffer.
+        /// \param Storage  The CPU access pattern of the buffer.
+        /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
         /// \param Capacity The capacity of the buffer in bytes.
         /// \return The identifier of the created buffer resource, or zero if creation failed.
         ZY_INLINE Object CreateBuffer(Storage Storage, Usage Usage, UInt32 Capacity)
@@ -182,8 +188,8 @@ namespace ZyGraphic
 
         /// \brief Creates a buffer resource sized and populated from the provided data.
         ///
-        /// \param Storage The storage type for the buffer.
-        /// \param Usage   The intended usage of the buffer.
+        /// \param Storage The CPU access pattern of the buffer.
+        /// \param Usage   The ways the buffer is bound, such as vertex or uniform.
         /// \param Data    The initial data to populate the buffer with; the buffer capacity is derived from the data size.
         /// \return The identifier of the created buffer resource, or zero if creation failed.
         ZY_INLINE Object CreateBuffer(Storage Storage, Usage Usage, AnyRef<Blob> Data)
@@ -238,7 +244,7 @@ namespace ZyGraphic
         /// \brief Creates a pipeline resource with the specified shader program, resource interface, and states.
         ///
         /// \param Program   The shader program to use for the pipeline.
-        /// \param Signature The resource bindings the program declares, grouped by update frequency.
+        /// \param Signature The vertex attributes the program's input stage consumes.
         /// \param States    The fixed-function pipeline states to configure.
         /// \return The identifier of the created pipeline resource, or zero if creation failed.
         Object CreatePipeline(AnyRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States);
@@ -256,10 +262,10 @@ namespace ZyGraphic
 
         /// \brief Creates a texture resource with the specified parameters and optional initial data.
         ///
-        /// \param Layout  The layout of the texture.
+        /// \param Layout  The shape of the texture, as 2D, array or cube.
         /// \param Format  The pixel format of the texture.
-        /// \param Storage The storage type for the texture.
-        /// \param Usage   The intended usage of the texture.
+        /// \param Storage The CPU access pattern of the texture.
+        /// \param Usage   The ways the texture is bound, such as sample or target.
         /// \param Width   The width of the texture in pixels.
         /// \param Height  The height of the texture in pixels.
         /// \param Layers  The number of array slices.
@@ -270,12 +276,12 @@ namespace ZyGraphic
 
         /// \brief Creates a texture resource for sampling.
         ///
-        /// \param Layout The layout of the texture.
+        /// \param Layout The shape of the texture, as 2D, array or cube.
         /// \param Format The pixel format of the texture.
         /// \param Width  The width of the texture in pixels.
         /// \param Height The height of the texture in pixels.
         /// \param Layers The number of array slices.
-        /// \param Levels The number of mipmap levels (defaults to 1).
+        /// \param Levels The number of mipmap levels.
         /// \param Data   The optional initial image data to populate the texture with.
         /// \return The identifier of the created texture resource, or zero if creation failed.
         ZY_INLINE Object CreateTexture(TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data)
@@ -343,27 +349,10 @@ namespace ZyGraphic
 
     private:
 
-        /// \brief Initializes the driver, then creates the in-flight resources.
-        ///
-        /// \param Output The output target to render into.
-        /// \param Config The configuration settings for the graphics device.
-        void Setup(Ptr<void> Output, ConstRef<Configuration> Config);
-
-        /// \brief Swaps the producer and consumer journals and signals the GPU thread to begin processing the current frame.
-        void Flush();
-
-        /// \brief Consumes and executes all pending commands in the current consumer journal.
-        void Consume();
-
-        /// \brief Entry point for the background GPU worker thread; processes commands until a stop is requested.
-        ///
-        /// \param Token The stop token used to request termination of the GPU worker thread.
-        void OnWorkerThread(ConstRef<std::stop_token> Token);
-
         /// \brief Holds a mirror of the driver state the producer side must answer for without reaching the GPU thread.
         struct Snapshot final
         {
-            /// Whether presentation waits for the vertical blank.
+            /// `true` when presentation waits for the vertical blank.
             Bool                  Tearless = false;
 
             /// The sampler resource interned for each distinct descriptor, keyed by its hash.
@@ -374,10 +363,10 @@ namespace ZyGraphic
         struct InFlightPass final
         {
             /// The handle to the in-flight render pass.
-            Object Handle;
+            Object Handle = 0;
 
-            /// The current cursor position within the render pass.
-            UInt32 Cursor;
+            /// The index of the pass's first command in the frame's command list.
+            UInt32 Cursor = 0;
         };
 
         /// \brief Holds the GPU buffer for one transient stream and the memory the frame writes it through.
@@ -421,7 +410,24 @@ namespace ZyGraphic
             InFlightPass           Pass;
         };
 
-        /// \brief Returns a reference to the consumer journal currently being processed by the GPU thread.
+        /// \brief Initializes the driver, then creates the in-flight resources.
+        ///
+        /// \param Output The native window handle to present into.
+        /// \param Config The surface size, formats and presentation mode to start with.
+        void Setup(Ptr<void> Output, ConstRef<Configuration> Config);
+
+        /// \brief Swaps the producer and consumer journals and signals the GPU thread to begin processing the current frame.
+        void Flush();
+
+        /// \brief Consumes and executes all pending commands in the current consumer journal.
+        void Consume();
+
+        /// \brief Runs the background GPU worker thread, consuming frames until a stop is requested.
+        ///
+        /// \param Token The stop token used to request termination of the GPU worker thread.
+        void OnWorkerThread(ConstRef<std::stop_token> Token);
+
+        /// \brief Gets a reference to the consumer journal currently being processed by the GPU thread.
         ///
         /// \return The consumer \ref Journal for the current frame.
         ZY_INLINE Ref<Journal> GetConsumer()
@@ -429,7 +435,7 @@ namespace ZyGraphic
             return mFrames[mConsumer].Journal;
         }
 
-        /// \brief Returns a reference to the producer journal being written by the CPU thread.
+        /// \brief Gets a reference to the producer journal being written by the CPU thread.
         ///
         /// \return The producer \ref Journal for the current frame.
         ZY_INLINE Ref<Journal> GetProducer()
@@ -446,7 +452,7 @@ namespace ZyGraphic
             GetProducer().Record<Method>(mDriver.Grab(), Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Returns a reference to the in-flight render pass for the current frame.
+        /// \brief Gets a reference to the in-flight render pass for the current frame.
         ///
         /// \return The in-flight \ref InFlightPass for the current frame.
         ZY_INLINE Ref<InFlightPass> GetInFlightPass()
@@ -462,7 +468,7 @@ namespace ZyGraphic
         /// \param Count  The number of commands to submit.
         void SubmitInFlightPass(UInt32 Offset, UInt32 Count);
 
-        /// \brief Initializes a single \ref InFlightArena by allocating a CPU writer and a GPU buffer.
+        /// \brief Initializes one in-flight arena by creating its GPU buffer, reserving its CPU writer on the web.
         ///
         /// \param Arena    The in-flight arena to initialize.
         /// \param Usage    The intended GPU usage of the buffer backing this arena.
@@ -479,6 +485,11 @@ namespace ZyGraphic
         ///
         /// \param Arena The in-flight arena whose mapping ran out.
         void EvictInFlightArena(Ref<InFlightArena> Arena);
+
+        /// \brief Maps a single \ref InFlightArena, so the CPU writes straight into its buffer.
+        ///
+        /// \param Arena The in-flight arena to map.
+        void MapInFlightArena(Ref<InFlightArena> Arena);
 
         /// \brief Allocates a region of transient memory from the given arena.
         ///
@@ -517,7 +528,7 @@ namespace ZyGraphic
             return Transient<Type>(Address, Stream(Arena.Buffer, Stride, Offset));
         }
 
-        /// \brief Initializes all in-flight resources for each frame.
+        /// \brief Initializes every in-flight arena of one frame.
         ///
         /// \param Frame The in-flight frame to initialize.
         void CreateInFlightFrame(Ref<InFlightFrame> Frame);

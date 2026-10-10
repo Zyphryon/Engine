@@ -1,4 +1,4 @@
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -21,8 +21,6 @@
 inline namespace ZyBase
 {
     /// \brief Represents a lightweight command journal for recording and executing deferred operations.
-    ///
-    /// Records callable objects into a contiguous byte buffer with minimal per-command overhead.
     class Journal final
     {
     public:
@@ -54,7 +52,7 @@ inline namespace ZyBase
             return mBuffer.GetCapacity();
         }
 
-        /// \brief Checks whether the journal contains any recorded commands.
+        /// \brief Checks whether the journal holds no recorded commands.
         ///
         /// \return `true` if no commands are recorded, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
@@ -70,7 +68,7 @@ inline namespace ZyBase
             mBuffer.Reserve(Capacity);
         }
 
-        /// \brief Resets the journal to initial state and releases allocated memory.
+        /// \brief Trims the buffer down to the bytes recorded, leaving it untouched when nothing is recorded.
         ZY_INLINE void Shrink()
         {
             mBuffer.Shrink();
@@ -87,10 +85,10 @@ inline namespace ZyBase
             static constexpr UInt32    Stride   = AlignPowTwo(sizeof(Payload), alignof(OnExecute));
             static constexpr OnExecute Function = [](Ref<Ptr<Byte>> Cursor)
             {
-                Ref<Payload> Pointer = * Launder(reinterpret_cast<Ptr<Payload>>(Cursor));
-                Pointer();
+                Ref<Payload> Command = * Launder(reinterpret_cast<Ptr<Payload>>(Cursor));
+                Command();
 
-                Destruct(Pointer);
+                Destruct(Command);
 
                 Cursor += Stride;
             };
@@ -104,8 +102,9 @@ inline namespace ZyBase
 
         /// \brief Records a deferred method call on a target object.
         ///
-        /// \param Target     The object instance on which to invoke the method.
-        /// \param Parameters The arguments to forward to the method when executed.
+        /// \tparam Method     The member function to invoke.
+        /// \param  Target     The object instance on which to invoke the method.
+        /// \param  Parameters The arguments to forward to the method when executed.
         template<auto Method, typename Object, typename... Arguments>
         ZY_INLINE void Record(Ptr<Object> Target, AnyRef<Arguments>... Parameters)
         {
@@ -116,8 +115,6 @@ inline namespace ZyBase
         }
 
         /// \brief Executes all recorded commands in FIFO order and clears the journal.
-        ///
-        /// Invokes each recorded callable sequentially, destroys captured state, and resets the buffer for reuse.
         ZY_INLINE void Run()
         {
             for (Ptr<Byte> Cursor = mBuffer.GetData(), End = Cursor + mBuffer.GetSize(); Cursor < End;)

@@ -90,7 +90,7 @@ inline namespace ZyBase
 
     /// \brief Returns the number of trailing zero bits in a non-zero \p Word.
     ///
-    /// For a non-zero value this equals the zero-based index of the lowest set bit.
+    /// \note The count equals the index of the lowest set bit.
     ///
     /// \param Word The non-zero value to inspect.
     /// \return A count of trailing zero bits in \p Word.
@@ -135,8 +135,6 @@ inline namespace ZyBase
     }
 
     /// \brief Reinterprets the bits of a value as another type.
-    ///
-    /// This function performs a bitwise cast from one type to another, preserving the underlying bit pattern.
     ///
     /// \param Value The value to cast.
     /// \return The value reinterpreted as the target type.

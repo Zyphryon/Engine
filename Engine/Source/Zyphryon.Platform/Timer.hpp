@@ -30,7 +30,7 @@ namespace ZyPlatform
 
         /// \brief Gets the time elapsed since the last reset or step, and starts measuring again from now.
         ///
-        /// \return Elapsed time in seconds since the last reset or step.
+        /// \return The time elapsed in seconds since the last reset or step.
         ZY_INLINE Real64 Step()
         {
             const Real64 Current = GetSeconds();
@@ -42,12 +42,12 @@ namespace ZyPlatform
 
         /// \brief Gets the current time in seconds since an arbitrary starting point.
         ///
-        /// \return Monotonic time in seconds.
+        /// \return The monotonic time in seconds.
         Real64 GetSeconds() const;
 
         /// \brief Gets the current time in milliseconds since an arbitrary starting point.
         ///
-        /// \return Monotonic time in milliseconds.
+        /// \return The monotonic time in milliseconds.
         ZY_INLINE UInt64 GetMilliseconds() const
         {
             return static_cast<UInt64>(GetSeconds() * 1000.0);
@@ -55,7 +55,7 @@ namespace ZyPlatform
 
         /// \brief Gets the current time in microseconds since an arbitrary starting point.
         ///
-        /// \return Monotonic time in microseconds.
+        /// \return The monotonic time in microseconds.
         ZY_INLINE UInt64 GetMicroseconds() const
         {
             return static_cast<UInt64>(GetSeconds() * 1'000'000.0);
@@ -67,6 +67,6 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Real64 mStart;
-        Real64 mFrequency;
+        Real64 mPeriod;
     };
 }

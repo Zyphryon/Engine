@@ -114,12 +114,12 @@ namespace ZyInput
             {
                 Entry.Phase = Phase::Cancelled;
 
-                Ref<Event> Release         = Output.Append(Event::Type::TouchCancel);
-                Release.TouchAction.ID     = Entry.ID;
-                Release.TouchAction.X      = Entry.X;
-                Release.TouchAction.Y      = Entry.Y;
-                Release.TouchAction.DeltaX = 0.0f;
-                Release.TouchAction.DeltaY = 0.0f;
+                Ref<Event> Cancel         = Output.Append(Event::Type::TouchCancel);
+                Cancel.TouchAction.ID     = Entry.ID;
+                Cancel.TouchAction.X      = Entry.X;
+                Cancel.TouchAction.Y      = Entry.Y;
+                Cancel.TouchAction.DeltaX = 0.0f;
+                Cancel.TouchAction.DeltaY = 0.0f;
             }
         }
     }

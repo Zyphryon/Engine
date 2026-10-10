@@ -86,7 +86,7 @@ namespace ZyNetwork::TCP
         enum class Tag : UInt8
         {
             Message, ///< The rest of the frame is a payload for the application.
-            Ping,    ///< Asks the peer to answer, so one gone quiet can be told from one that has stopped answering.
+            Ping,    ///< Asks the peer to answer, so an idle peer can be told from a dead one.
             Pong,    ///< Answers a ping.
         };
 
@@ -116,8 +116,8 @@ namespace ZyNetwork::TCP
         ///
         /// \param Watcher The proactor the next read is posted to.
         /// \param Time    The current time, in seconds.
-        /// \param Size    The number of bytes the read moved, where none means the peer closed.
-        /// \param Output  Receives every message completed, and the disconnect if the peer closed.
+        /// \param Size    The number of bytes the read moved, which is never zero.
+        /// \param Output  Receives every message the read completed.
         void OnReceive(Ref<Proactor> Watcher, Real64 Time, UInt32 Size, Ref<Mailbox> Output);
 
         /// \brief Acts on a write that finished, taking it off the transmit queue and posting the next.

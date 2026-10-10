@@ -10,7 +10,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <errno.h>
 #include <unistd.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -24,14 +23,12 @@ inline namespace ZyBase
 
     Bool Entropy::Gather(Span<Byte> Output)
     {
-        // Asked for in the mouthfuls the call takes rather than all at once, since it refuses anything wider than
-        // this and answers nothing at all rather than answering in part.
+        // getentropy refuses more than 256 bytes per call, so ask in slices.
         constexpr UInt kMouthful = 256;
 
         for (UInt Taken = 0; Taken < Output.GetSize(); Taken += kMouthful)
         {
-            const UInt Left  = Output.GetSize() - Taken;
-            const UInt Slice = (Left < kMouthful) ? Left : kMouthful;
+            const UInt Slice = Min(Output.GetSize() - Taken, kMouthful);
 
             if (getentropy(Output.GetData() + Taken, Slice) != 0)
             {

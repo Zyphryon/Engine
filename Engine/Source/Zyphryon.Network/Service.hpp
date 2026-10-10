@@ -26,14 +26,14 @@ namespace ZyNetwork
     {
     public:
 
-        /// \brief Constructs the network service and registers it with the system host.
+        /// \brief Constructs the network service.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
         /// \brief Tells the application everything the endpoints have had to say since the last frame.
         ///
-        /// \param Delta The elapsed time in seconds since the previous tick.
+        /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
 
         /// \brief Ends every endpoint and stops the thread that runs them.
@@ -67,8 +67,6 @@ namespace ZyNetwork
 
         /// \brief Sets how long a peer, or every peer of an endpoint, may say nothing before it is taken as gone.
         ///
-        /// \note An endpoint whose peers are quiet by design is given zero, which never gives up on silence at all.
-        ///
         /// \param Link    The peer to set it on, or the endpoint and every peer it holds.
         /// \param Seconds The time silence is put up with, where zero never gives up on it at all.
         void SetTimeout(Connection Link, Real64 Seconds);
@@ -89,7 +87,7 @@ namespace ZyNetwork
 
     private:
 
-        /// \brief Names an endpoint and resolves its address away from both the application's thread and the reactor's.
+        /// \brief Names an endpoint and resolves its address away from the application's thread and the executor's.
         ///
         /// \param Origin    The address the endpoint is opened against.
         /// \param Transport The transport the endpoint carries.
@@ -98,7 +96,12 @@ namespace ZyNetwork
         /// \return The connection naming the endpoint, or an invalid connection if no room was left for it.
         Connection Open(ConstRef<Address> Origin, Transport Transport, ConstRetainer<Handler> Listener, Bool Server);
 
-        /// \brief Tells the application everything the reactor handed over, then drops it.
+        /// \brief Resolves an endpoint's address and hands the endpoint to the executor.
+        ///
+        /// \param Entry The endpoint to open, whose address is resolved in place.
+        void Resolve(AnyRef<Executor::Request> Entry);
+
+        /// \brief Tells the application everything the executor handed over, then drops it.
         void Dispatch();
 
     private:

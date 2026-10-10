@@ -32,34 +32,24 @@ namespace ZyAudio
 
         /// \brief Renders interleaved output frames (audio thread).
         ///
-        /// \param Output The interleaved destination buffer, sized `Frames * channels`.
+        /// \param Output Receives the interleaved frames, sized `Frames * kMixerStride`.
         /// \param Frames The number of frames to render.
         void Render(Span<Real32> Output, UInt32 Frames);
 
         /// \brief Drains the voices that ended since the last call, with the reason each one ended (game thread).
         ///
-        /// \param Output The sequence that receives the ended playbacks.
+        /// \param Output Receives the ended playbacks.
         void Drain(Ref<Sequence<Completion>> Output);
 
-        /// \brief Enqueues a non-spatial playback command.
+        /// \brief Enqueues a playback command, spatial when an emitter and a transform are given.
         ///
         /// \param Handle    The pre-allocated playback handle.
-        /// \param Category  The submix category.
+        /// \param Category  The submix category the voice is routed through.
         /// \param Decoder   The decoder whose ownership transfers to the mixer.
-        /// \param Stride    The decoder's interleaved sample count per frame (stride).
+        /// \param Stride    The decoder's interleaved sample count per frame.
         /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \return `true` if the command was enqueued, `false` if the queue was full.
-        Bool Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume);
-
-        /// \brief Enqueues a spatial playback command.
-        ///
-        /// \param Handle    The pre-allocated playback handle.
-        /// \param Category  The submix category.
-        /// \param Decoder   The decoder whose ownership transfers to the mixer.
-        /// \param Stride    The decoder's interleaved sample count per frame (stride).
-        /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Emitter   The spatial configuration of the source.
-        /// \param Transform The source's world transform.
+        /// \param Emitter   The spatial configuration of the source, or `nullptr` for a non-spatial playback.
+        /// \param Transform The source's world transform, or `nullptr` for a non-spatial playback.
         /// \return `true` if the command was enqueued, `false` if the queue was full.
         Bool Play(
             Object              Handle,
@@ -67,46 +57,46 @@ namespace ZyAudio
             Ptr<Decoder>        Decoder,
             UInt32              Stride,
             Real32              Volume,
-            ConstRef<Emitter>   Emitter,
-            ConstRef<Matrix4x3> Transform);
+            ConstPtr<Emitter>   Emitter   = nullptr,
+            ConstPtr<Matrix4x3> Transform = nullptr);
 
         /// \brief Enqueues a command to set whether a voice loops.
         ///
-        /// \param Handle  The playback handle.
+        /// \param Handle  The playback to change.
         /// \param Looping `true` to loop, `false` to play once.
         void SetLooping(Object Handle, Bool Looping);
 
         /// \brief Enqueues a command to set a voice's volume.
         ///
-        /// \param Handle The playback handle.
-        /// \param Volume The new volume.
+        /// \param Handle The playback to change.
+        /// \param Volume The playback volume (0.0 = silent, 1.0 = full volume).
         void SetVolume(Object Handle, Real32 Volume);
 
         /// \brief Enqueues a command to set a voice's low-pass cutoff.
         ///
-        /// \param Handle The playback handle.
+        /// \param Handle The playback to change.
         /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the voice unfiltered.
         void SetCutoff(Object Handle, Real32 Cutoff);
 
         /// \brief Enqueues a command to set a spatial voice's world transform.
         ///
-        /// \param Handle    The playback handle.
-        /// \param Transform The new world transform.
+        /// \param Handle    The playback to move.
+        /// \param Transform The source's world transform.
         void SetTransform(Object Handle, ConstRef<Matrix4x3> Transform);
 
         /// \brief Enqueues a command to stop a voice.
         ///
-        /// \param Handle The playback handle.
+        /// \param Handle The playback to stop.
         void Stop(Object Handle);
 
         /// \brief Enqueues a command to pause a voice.
         ///
-        /// \param Handle The playback handle.
+        /// \param Handle The playback to pause.
         void Pause(Object Handle);
 
         /// \brief Enqueues a command to resume a voice.
         ///
-        /// \param Handle The playback handle.
+        /// \param Handle The playback to resume.
         void Resume(Object Handle);
 
         /// \brief Enqueues a command to set the listener's world transform.
@@ -116,8 +106,8 @@ namespace ZyAudio
 
         /// \brief Enqueues a command to set the listener's directional cone.
         ///
-        /// \param InnerAngle The inner cone angle.
-        /// \param OuterAngle The outer cone angle.
+        /// \param InnerAngle The width of the cone heard at full gain.
+        /// \param OuterAngle The width of the cone past which only `OuterGain` is heard.
         /// \param OuterGain  The gain applied outside the outer cone.
         void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain);
 
@@ -144,7 +134,7 @@ namespace ZyAudio
 
         /// \brief Gets the master volume.
         ///
-        /// \return The master volume.
+        /// \return The master volume (0.0 = silent, 1.0 = full volume).
         ZY_INLINE Real32 GetMasterVolume() const
         {
             return mMasterVolume.load(std::memory_order_relaxed);
@@ -152,8 +142,8 @@ namespace ZyAudio
 
         /// \brief Sets the volume of a submix category.
         ///
-        /// \param Category The submix category.
-        /// \param Volume   The new volume.
+        /// \param Category The submix category to adjust.
+        /// \param Volume   The submix volume (0.0 = silent, 1.0 = full volume).
         ZY_INLINE void SetSubmixVolume(Category Category, Real32 Volume)
         {
             mSubmixVolume[ZyEnum::Cast(Category)].store(Volume, std::memory_order_relaxed);
@@ -161,11 +151,25 @@ namespace ZyAudio
 
         /// \brief Gets the volume of a submix category.
         ///
-        /// \param Category The submix category.
-        /// \return The submix volume.
+        /// \param Category The submix category to query.
+        /// \return The submix volume (0.0 = silent, 1.0 = full volume).
         ZY_INLINE Real32 GetSubmixVolume(Category Category) const
         {
             return mSubmixVolume[ZyEnum::Cast(Category)].load(std::memory_order_relaxed);
+        }
+
+        /// \brief Ranks a voice from its category and the gain it reaches the listener at.
+        ///
+        /// \note A category floor outranks any gain, so a footstep never takes the slot music or dialogue holds.
+        ///
+        /// \param Category The submix category the voice is routed through.
+        /// \param Gain     The post-attenuation linear gain (range [0, 1]).
+        /// \return The rank, where a larger value names a voice worth keeping over a smaller one.
+        ZY_INLINE static constexpr Real32 Rank(Category Category, Real32 Gain)
+        {
+            // Category floors in declaration order, each above zero so an unmixed slot stays distinguishable at zero.
+            constexpr Array kFloor(3.0f, 2.0f, 4.0f, 1.0f, 5.0f);
+            return kFloor[ZyEnum::Cast(Category)] + Min(Gain, 1.0f);
         }
 
     private:
@@ -173,27 +177,67 @@ namespace ZyAudio
         /// \brief Specifies the kind of a queued control command.
         enum class Op : UInt8
         {
-            Play, Stop, Pause, Resume, Loop, Volume, Cutoff, Move, Listener, Cone
+            Play,           ///< Starts a voice in the slot its handle names.
+            Stop,           ///< Ends a voice, reporting it stopped.
+            Pause,          ///< Holds a voice where it is.
+            Resume,         ///< Lets a paused voice advance again.
+            Loop,           ///< Sets whether a voice loops.
+            Volume,         ///< Sets a voice's volume.
+            Cutoff,         ///< Sets the cutoff a voice's low-pass glides toward.
+            Move,           ///< Sets a spatial voice's position and forward axis.
+            Listener,       ///< Sets the listener's position and basis.
+            Cone,           ///< Sets the listener's cone.
         };
 
         /// \brief Represents a single queued control command transferred from the game thread to the audio thread.
         struct Command final
         {
+            /// The decoder a play command hands over to the voice.
             Ptr<Decoder> Decoder;
+
+            /// The spatial configuration a spatial play command carries.
             Emitter      Emitter;
+
+            /// The world-space position a play, move or listener command carries.
             Vector3      Position;
+
+            /// The normalized forward axis a play, move or listener command carries.
             Vector3      Forward;
+
+            /// The normalized right axis a listener command carries.
             Vector3      Right;
+
+            /// The volume a play or volume command carries.
             Real32       Volume;
+
+            /// The interleaved samples per frame of a play command's decoder.
             UInt32       Stride;
+
+            /// The inner angle a cone command carries.
             Angle        InnerAngle;
+
+            /// The outer angle a cone command carries.
             Angle        OuterAngle;
+
+            /// The gain outside the outer angle a cone command carries.
             Real32       OuterGain;
+
+            /// The cutoff frequency, in hertz, a cutoff command carries.
             Real32       Cutoff;
+
+            /// The playback the command addresses.
             Object       Handle;
+
+            /// The kind of command.
             Op           Kind;
+
+            /// The submix category a play command routes through.
             Category     Category;
+
+            /// `true` when a play command starts a spatial voice.
             Bool         Spatial;
+
+            /// `true` when a loop command turns looping on.
             Bool         Flag;
         };
 
@@ -234,34 +278,16 @@ namespace ZyAudio
 
         /// \brief Renders one sub-block of up to \ref kMixerBlock frames (audio thread).
         ///
-        /// \param Output The interleaved destination for this sub-block.
+        /// \param Output Receives the interleaved frames of this sub-block.
         /// \param Frames The number of frames in this sub-block.
         void Block(Ptr<Real32> Output, UInt32 Frames);
 
-        /// \brief Enqueues a command, dropping it if the queue is full.
+        /// \brief Creates a zeroed command of the given kind for the given playback.
         ///
-        /// \param Command The command to enqueue.
-        /// \return `true` if the command was enqueued, `false` otherwise.
-        ZY_INLINE Bool Submit(ConstRef<Command> Command)
-        {
-            return mCommands.Push(Command);
-        }
-
-    public:
-
-        /// \brief Ranks a voice from its category and the gain it reaches the listener at.
-        ///
-        /// \note A category floor outranks any gain, so a footstep never takes the slot music or dialogue holds.
-        ///
-        /// \param Category The submix category.
-        /// \param Gain     The post-attenuation linear gain (range [0, 1]).
-        /// \return The rank, where a larger value names a voice worth keeping over a smaller one.
-        ZY_INLINE static constexpr Real32 Rank(Category Category, Real32 Gain)
-        {
-            // Category floors in declaration order, each above zero so an unmixed slot stays distinguishable at zero.
-            constexpr Array kFloor(3.0f, 2.0f, 4.0f, 1.0f, 5.0f);
-            return kFloor[ZyEnum::Cast(Category)] + Min(Gain, 1.0f);
-        }
+        /// \param Kind   The operation the command performs.
+        /// \param Handle The playback the command addresses, or none for a listener command.
+        /// \return The command, with every other field zeroed.
+        static Command Make(Op Kind, Object Handle = Object());
 
     private:
 

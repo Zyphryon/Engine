@@ -60,7 +60,9 @@ namespace ZyFormat
         /// \param Parameters The arguments to substitute into the pattern.
         template<typename Input, typename... Arguments>
         ZY_INLINE static constexpr void Format(
-            Ref<Output> Buffer, ConstRef<Input> Pattern, AnyRef<Arguments>... Parameters)
+            Ref<Output>          Buffer,
+            ConstRef<Input>      Pattern,
+            AnyRef<Arguments>... Parameters)
         {
             for (ConstRef<Expression> Expression : ConstSpan<Expression>(Pattern))
             {
@@ -75,7 +77,7 @@ namespace ZyFormat
             }
         }
 
-        /// \brief Formats arguments into the buffer using the given pattern.
+        /// \brief Writes the pattern's literal text into the buffer, dropping its placeholders.
         ///
         /// \param Buffer  The output buffer to write to.
         /// \param Pattern The format pattern containing literal text and placeholders.
@@ -93,7 +95,10 @@ namespace ZyFormat
         /// \brief Holds the left and right padding counts for alignment.
         struct Padding
         {
+            /// The number of padding characters before the content.
             UInt Left  = 0;
+
+            /// The number of padding characters after the content.
             UInt Right = 0;
         };
 
@@ -135,8 +140,8 @@ namespace ZyFormat
 
         /// \brief Appends a formatted integer to the buffer with padding and prefix.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the integer to.
+        /// \param Properties The placeholder giving the width, alignment and padding.
         /// \param Prefix     The sign prefix character ('-', '+', ' ', or '\0').
         /// \param Number     The unsigned integer value to format.
         /// \param Digits     The number of digits in the value.
@@ -185,13 +190,16 @@ namespace ZyFormat
 
         /// \brief Appends a formatted floating-point value to the buffer with padding and prefix.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the number to.
+        /// \param Properties The placeholder giving the precision, width, alignment and padding.
         /// \param Prefix     The sign prefix character ('-', '+', ' ', or '\0').
         /// \param Value      The magnitude of the floating-point value to format.
         template<typename Argument>
         ZY_INLINE static constexpr void AppendReal(
-            Ref<Output> Buffer, Placeholder Properties, Char Prefix, Argument Value)
+            Ref<Output> Buffer,
+            Placeholder Properties,
+            Char        Prefix,
+            Argument    Value)
         {
             if (Properties.Width == 0)
             {
@@ -239,8 +247,8 @@ namespace ZyFormat
 
         /// \brief Appends a floating-point value in fixed decimals under `f`, and in significant digits otherwise.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the digits to.
+        /// \param Properties The placeholder giving the type and precision.
         /// \param Value      The magnitude of the floating-point value to format.
         template<typename Argument>
         ZY_INLINE static constexpr void AppendDigits(Ref<Output> Buffer, Placeholder Properties, Argument Value)
@@ -257,14 +265,18 @@ namespace ZyFormat
 
         /// \brief Appends a text string to the buffer with padding and optional prefix.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the text to.
+        /// \param Properties The placeholder giving the width, alignment and padding.
         /// \param Prefix     The prefix character (typically '\0' for text).
         /// \param Length     The length of the text.
         /// \param Parameter  The text to append.
         template<typename Argument>
         ZY_INLINE static constexpr void AppendText(
-            Ref<Output> Buffer, Placeholder Properties, Char Prefix, UInt Length, AnyRef<Argument> Parameter)
+            Ref<Output>      Buffer,
+            Placeholder      Properties,
+            Char             Prefix,
+            UInt             Length,
+            AnyRef<Argument> Parameter)
         {
             const Padding Pad = Compute(Properties, (Prefix ? 1 : 0) + Length);
 
@@ -288,12 +300,14 @@ namespace ZyFormat
 
         /// \brief Appends a formatted argument to the buffer based on its type.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the argument to.
+        /// \param Properties The placeholder the argument is formatted by.
         /// \param Parameter  The argument to format and append.
         template<typename Argument>
         ZY_INLINE static constexpr void AppendArgument(
-            Ref<Output> Buffer, Placeholder Properties, AnyRef<Argument> Parameter)
+            Ref<Output>      Buffer,
+            Placeholder      Properties,
+            AnyRef<Argument> Parameter)
         {
             using Value = StripAll<Argument>;
 
@@ -422,11 +436,11 @@ namespace ZyFormat
 
         /// \brief Recursively selects and appends the argument at the specified index.
         ///
-        /// \param Buffer     The output buffer.
-        /// \param Properties The placeholder formatting properties.
+        /// \param Buffer     The buffer to append the argument to.
+        /// \param Properties The placeholder the argument is formatted by.
         /// \param Index      The zero-based index of the argument to append.
         /// \param First      The first argument in the parameter pack.
-        /// \param Parameters The remaining arguments.
+        /// \param Parameters The arguments after \p First.
         template<typename Argument, typename... Arguments>
         ZY_INLINE static constexpr void AppendPlaceholder(
             Ref<Output>          Buffer,

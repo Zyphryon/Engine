@@ -22,7 +22,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief A smart pointer for COM objects.
+    /// \brief Represents a smart pointer for COM objects.
     template<typename Type>
     using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
@@ -56,7 +56,7 @@ namespace ZyGraphic
             D3D11_BLEND_OP_SUBTRACT,                // BlendFunction::Subtract
             D3D11_BLEND_OP_REV_SUBTRACT,            // BlendFunction::ReverseSubtract
             D3D11_BLEND_OP_MIN,                     // BlendFunction::Min
-            D3D11_BLEND_OP_MAX                      // BlendFunction::Max
+            D3D11_BLEND_OP_MAX,                     // BlendFunction::Max
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
@@ -113,11 +113,11 @@ namespace ZyGraphic
             D3D11_STENCIL_OP_KEEP,                  // TestAction::Keep
             D3D11_STENCIL_OP_REPLACE,               // TestAction::Replace
             D3D11_STENCIL_OP_ZERO,                  // TestAction::Zero
-            D3D11_STENCIL_OP_DECR,                  // TestAction::Decrease
+            D3D11_STENCIL_OP_DECR,                  // TestAction::Decrement
             D3D11_STENCIL_OP_DECR_SAT,              // TestAction::DecrementSaturate
             D3D11_STENCIL_OP_INVERT,                // TestAction::Invert
-            D3D11_STENCIL_OP_INCR,                  // TestAction::Increase
-            D3D11_STENCIL_OP_INCR_SAT               // TestAction::IncreaseSaturate
+            D3D11_STENCIL_OP_INCR,                  // TestAction::Increment
+            D3D11_STENCIL_OP_INCR_SAT,              // TestAction::IncrementSaturate
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
@@ -134,7 +134,7 @@ namespace ZyGraphic
             D3D11_COMPARISON_EQUAL,                 // TestCondition::Equal
             D3D11_COMPARISON_NOT_EQUAL,             // TestCondition::NotEqual
             D3D11_COMPARISON_LESS,                  // TestCondition::Less
-            D3D11_COMPARISON_LESS_EQUAL             // TestCondition::LessEqual
+            D3D11_COMPARISON_LESS_EQUAL,            // TestCondition::LessEqual
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
@@ -146,7 +146,7 @@ namespace ZyGraphic
             D3D11_TEXTURE_ADDRESS_CLAMP,            // TextureAddress::Clamp
             D3D11_TEXTURE_ADDRESS_BORDER,           // TextureAddress::Border
             D3D11_TEXTURE_ADDRESS_WRAP,             // TextureAddress::Repeat
-            D3D11_TEXTURE_ADDRESS_MIRROR            // TextureAddress::Mirror
+            D3D11_TEXTURE_ADDRESS_MIRROR,           // TextureAddress::Mirror
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
@@ -199,16 +199,16 @@ namespace ZyGraphic
             DXGI_FORMAT_BC6H_SF16,              // TextureFormat::BC6SFloat
             DXGI_FORMAT_BC7_UNORM,              // TextureFormat::BC7UIntNorm
             DXGI_FORMAT_BC7_UNORM_SRGB,         // TextureFormat::BC7UIntNorm_sRGB
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBUIntNorm
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBUIntNorm_sRGB
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBA1UIntNorm
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBA1UIntNorm_sRGB
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBAUIntNorm
-            DXGI_FORMAT_UNKNOWN,                // ETC2RGBAUIntNorm_sRGB
-            DXGI_FORMAT_UNKNOWN,                // EACR11UIntNorm
-            DXGI_FORMAT_UNKNOWN,                // EACR11SIntNorm
-            DXGI_FORMAT_UNKNOWN,                // EACRG11UIntNorm
-            DXGI_FORMAT_UNKNOWN,                // EACRG11SIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBUIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBUIntNorm_sRGB
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBA1UIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBA1UIntNorm_sRGB
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBAUIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::ETC2RGBAUIntNorm_sRGB
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::EACR11UIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::EACR11SIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::EACRG11UIntNorm
+            DXGI_FORMAT_UNKNOWN,                // TextureFormat::EACRG11SIntNorm
             DXGI_FORMAT_R8_SINT,                // TextureFormat::R8SInt
             DXGI_FORMAT_R8_SNORM,               // TextureFormat::R8SIntNorm
             DXGI_FORMAT_R8_UINT,                // TextureFormat::R8UInt

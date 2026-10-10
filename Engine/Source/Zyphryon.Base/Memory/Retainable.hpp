@@ -36,7 +36,7 @@ inline namespace ZyBase
         /// \brief Copying a retainable object is not permitted as it would duplicate reference-count state.
         Retainable(ConstRef<Retainable>) = delete;
 
-        /// \brief Copying a retainable object is not permitted as it would duplicate reference-count state.
+        /// \brief Assigning a retainable object is not permitted as it would duplicate reference-count state.
         Ref<Retainable> operator=(ConstRef<Retainable>) = delete;
 
         /// \brief Increments the reference count.

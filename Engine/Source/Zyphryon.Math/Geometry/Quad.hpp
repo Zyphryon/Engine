@@ -25,10 +25,10 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructor initializing all corners to zero.
+        /// \brief Constructs a quadrilateral with every corner at zero.
         ZY_INLINE constexpr Quad() = default;
 
-        /// \brief Constructor initializing the quadrilateral with specified values.
+        /// \brief Constructs a quadrilateral from its four corners.
         ///
         /// \param C0 The first corner point.
         /// \param C1 The second corner point.
@@ -39,15 +39,15 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the quadrilateral as an axis-aligned rectangle.
+        /// \brief Constructs a quadrilateral covering an axis-aligned rectangle.
         ///
         /// \param Position The top-left corner of the rectangle.
         /// \param Size     The width and height of the rectangle.
         ZY_INLINE constexpr Quad(Vector2 Position, Vector2 Size)
             : mCorners { Position,
-                         Position + Vector2(Size.GetX(), 0),
+                         Position + Vector2(Size.GetX(), 0.0f),
                          Position + Size,
-                         Position + Vector2(0, Size.GetY()) }
+                         Position + Vector2(0.0f, Size.GetY()) }
         {
         }
 
@@ -97,7 +97,7 @@ inline namespace ZyMath
         /// \brief Gets a specific corner of the quadrilateral.
         ///
         /// \param Corner The index of the corner to retrieve (0-3).
-        /// \return A constant reference to the Vector2 coordinate of the specified corner.
+        /// \return The coordinate of the specified corner.
         ZY_INLINE constexpr Vector2 GetCorner(UInt32 Corner) const
         {
             ZY_ASSERT(Corner < 4, "Corner index must be in range [0, 3]");
@@ -157,7 +157,7 @@ inline namespace ZyMath
         ///
         /// \param X The X coordinate of the point.
         /// \param Y The Y coordinate of the point.
-        /// \return `true` if the point is inside the quadrilateral, `false` otherwise.
+        /// \return `true` if the point lies inside the quadrilateral or on its edges, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Real32 X, Real32 Y) const
         {
             return Contains(Vector2(X, Y));
@@ -166,24 +166,24 @@ inline namespace ZyMath
         /// \brief Checks if this quadrilateral contains a point.
         ///
         /// \param Point The point to check.
-        /// \return `true` if the point is inside the quadrilateral, `false` otherwise.
+        /// \return `true` if the point lies inside the quadrilateral or on its edges, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             const Real32 C0 = Vector2::Cross(mCorners[1] - mCorners[0], Point - mCorners[0]);
             const Real32 C1 = Vector2::Cross(mCorners[2] - mCorners[1], Point - mCorners[1]);
             const Real32 C2 = Vector2::Cross(mCorners[3] - mCorners[2], Point - mCorners[2]);
             const Real32 C3 = Vector2::Cross(mCorners[0] - mCorners[3], Point - mCorners[3]);
-            
-            return (C0 >= 0 && C1 >= 0 && C2 >= 0 && C3 >= 0) || 
-                   (C0 <= 0 && C1 <= 0 && C2 <= 0 && C3 <= 0);
+
+            return (C0 >= 0.0f && C1 >= 0.0f && C2 >= 0.0f && C3 >= 0.0f) ||
+                   (C0 <= 0.0f && C1 <= 0.0f && C2 <= 0.0f && C3 <= 0.0f);
         }
 
         /// \brief Checks if this quadrilateral intersects with another quadrilateral.
         ///
-        /// \note Both quadrilaterals must be convex and have corners in consistent winding order.
+        /// \note Both quadrilaterals must be parallelograms, since only two edges of each are tested.
         ///
         /// \param Other The other quadrilateral to check.
-        /// \return `true` if the quads intersect, `false` otherwise.
+        /// \return `true` if the quadrilaterals overlap or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(ConstRef<Quad> Other) const
         {
             return !Disjoint(* this, Other) && !Disjoint(Other, * this);
@@ -207,7 +207,7 @@ inline namespace ZyMath
         /// \return `true` if the quads are not equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator!=(ConstRef<Quad> Other) const
         {
-            return !(*this == Other);
+            return !(* this == Other);
         }
 
     public:
@@ -217,7 +217,7 @@ inline namespace ZyMath
         /// \return An empty quadrilateral.
         ZY_INLINE static constexpr Quad Zero()
         {
-            return Quad(Vector2(0, 0), Vector2(0, 0), Vector2(0, 0), Vector2(0, 0));
+            return Quad(Vector2(0.0f, 0.0f), Vector2(0.0f, 0.0f), Vector2(0.0f, 0.0f), Vector2(0.0f, 0.0f));
         }
 
         /// \brief Gets the unit quadrilateral with size 1.
@@ -225,7 +225,7 @@ inline namespace ZyMath
         /// \return A unit quadrilateral.
         ZY_INLINE static constexpr Quad One()
         {
-            return Quad(Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1));
+            return Quad(Vector2(0.0f, 0.0f), Vector2(1.0f, 0.0f), Vector2(1.0f, 1.0f), Vector2(0.0f, 1.0f));
         }
 
         /// \brief Gets the component-wise minimum of two quads.
@@ -256,8 +256,8 @@ inline namespace ZyMath
 
         /// \brief Linearly interpolates between two quads.
         ///
-        /// \param Start      The starting quadrilateral.
-        /// \param End        The ending quadrilateral.
+        /// \param Start      The quadrilateral at zero.
+        /// \param End        The quadrilateral at one.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A quadrilateral interpolated between the start and end quads.
         ZY_INLINE static constexpr Quad Lerp(ConstRef<Quad> Start, ConstRef<Quad> End, Real32 Percentage)
@@ -273,7 +273,7 @@ inline namespace ZyMath
         /// \param Source The rectangle to transform.
         /// \param Matrix The affine transformation matrix to apply.
         /// \return A quadrilateral resulting from transforming the rectangle with the matrix.
-        ZY_INLINE static Quad Transform(AnyRect<Real32> Source, ConstRef<Matrix4x3> Matrix)
+        ZY_INLINE static Quad Transform(Rect Source, ConstRef<Matrix4x3> Matrix)
         {
             const Vector4 CornerX(Source.GetMinimumX(), Source.GetMaximumX(),
                                   Source.GetMaximumX(), Source.GetMinimumX());
@@ -302,7 +302,7 @@ inline namespace ZyMath
         /// \param Source The rectangle to transform.
         /// \param Matrix The 3x2 transformation matrix to apply.
         /// \return A quadrilateral resulting from transforming the rectangle with the matrix.
-        ZY_INLINE static constexpr Quad Transform(AnyRect<Real32> Source, ConstRef<Matrix3x2> Matrix)
+        ZY_INLINE static constexpr Quad Transform(Rect Source, ConstRef<Matrix3x2> Matrix)
         {
             const Real32 MinX = Source.GetMinimumX();
             const Real32 MaxX = Source.GetMaximumX();
@@ -345,7 +345,7 @@ inline namespace ZyMath
             for (UInt32 Index = 0; Index < 2; ++Index)
             {
                 const Vector2 Edge = Source.mCorners[Index + 1] - Source.mCorners[Index];
-                const Vector2 Axis = Vector2(-Edge.GetY(), Edge.GetX());
+                const Vector2 Axis = Vector2::Perpendicular(Edge);
 
                 Real32 SourceMin = Vector2::Dot(Source.mCorners[0], Axis);
                 Real32 SourceMax = SourceMin;

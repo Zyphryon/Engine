@@ -25,7 +25,7 @@ namespace ZyContent
     {
         for (ConstRef<Entry> Item : Entries)
         {
-            mEntries.Assign(Hash(Item.Path), Item);
+            mEntries.Assign(Digest(Hash(Item.Path)), Item);
         }
     }
 
@@ -44,11 +44,11 @@ namespace ZyContent
     {
         Sequence<Filesystem::Record> Files;
 
-        mEntries.ForEach([&](UInt64, ConstRef<Entry> Record)
+        mEntries.ForEach([&](ConstRef<Digest>, ConstRef<Entry> Item)
         {
-            if (StrStartsWith(Record.Path, Path))
+            if (StrStartsWith(Item.Path, Path))
             {
-                Files.Append(Record.Path, Filesystem::Type::File, Record.Data.GetSize(), 0);
+                Files.Append(Item.Path, Filesystem::Type::File, Item.Data.GetSize(), 0);
             }
         });
         Callback(Filesystem::Result::Success, Move(Files));
@@ -75,9 +75,9 @@ namespace ZyContent
 
     void Memory::Read(Text Path, AnyRef<OnRead> Callback)
     {
-        if (const ConstPtr<Entry> Entry = mEntries.Find(Hash(Path)))
+        if (const ConstPtr<Entry> Item = mEntries.Find(Digest(Hash(Path))))
         {
-            Callback(Filesystem::Result::Success, Blob::Borrow(Entry->Data));
+            Callback(Filesystem::Result::Success, Blob::Borrow(Item->Data));
         }
         else
         {

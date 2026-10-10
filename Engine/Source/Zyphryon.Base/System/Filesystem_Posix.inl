@@ -7,7 +7,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER   ]
+// [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <dirent.h>
@@ -30,7 +30,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result GetResult(SInt32 Error)
+    static Filesystem::Result GetResult(SInt32 Error)
     {
         switch (Error)
         {
@@ -124,24 +124,24 @@ inline namespace ZyBase
                 {
                     struct stat Statistics { };
 
-                    if (fstatat(Handle, Entry->d_name, & Statistics, 0) == 0)
+                    if (fstatat(Handle, Entry->d_name, AddressOf(Statistics), 0) == 0)
                     {
-                        Record Record;
-                        Record.Name = Name;
-                        Record.Time = static_cast<UInt64>(Statistics.st_mtime);
+                        Record Data;
+                        Data.Name = Name;
+                        Data.Time = static_cast<UInt64>(Statistics.st_mtime);
 
                         if (S_ISDIR(Statistics.st_mode))
                         {
-                            Record.Type = Type::Directory;
-                            Record.Size = 0;
+                            Data.Type = Type::Directory;
+                            Data.Size = 0;
                         }
                         else
                         {
-                            Record.Type = Type::File;
-                            Record.Size = static_cast<UInt64>(Statistics.st_size);
+                            Data.Type = Type::File;
+                            Data.Size = static_cast<UInt64>(Statistics.st_size);
                         }
 
-                        if (!Callback(Record))
+                        if (!Callback(Data))
                         {
                             break;
                         }
@@ -184,14 +184,11 @@ inline namespace ZyBase
 
         Blob Buffer;
 
-        if (const Result Result = Read(Source, Buffer); Result == Result::Success)
+        if (const Result Status = Read(Source, Buffer); Status != Result::Success)
         {
-            return Write(Destination, Buffer);
+            return Status;
         }
-        else
-        {
-            return Result;
-        }
+        return Write(Destination, Buffer);
 
 #endif
     }

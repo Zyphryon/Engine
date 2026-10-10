@@ -35,7 +35,7 @@ namespace ZyNetwork
             /// The operation that finished.
             Operation  Kind  = Operation::Rouse;
 
-            /// Why the operation failed, or \ref Reason::None when it did not.
+            /// The reason the operation failed, or \ref Reason::None when it did not.
             Reason     Cause = Reason::None;
 
             /// The number of bytes the operation moved, which is zero for anything that moves none.
@@ -44,7 +44,7 @@ namespace ZyNetwork
             /// The socket a peer arrived on, left closed for anything but an accept.
             Socket     Peer;
 
-            /// Where the traffic came from, left invalid where the platform had nothing to say about it.
+            /// The address the traffic came from, left invalid where the platform had nothing to say about it.
             Endpoint   Origin;
         };
 
@@ -147,7 +147,7 @@ namespace ZyNetwork
             static constexpr UInt32 kBlock  = 256;
 
             /// \brief Value a record's link takes when nothing follows it on the free list.
-            static constexpr UInt32 kVacant = ~static_cast<UInt32>(0);
+            static constexpr UInt32 kVacant = kMaximum<UInt32>;
 
         public:
 
@@ -161,8 +161,8 @@ namespace ZyNetwork
 
             /// \brief Gets a record by where it sits.
             ///
-            /// \param Index The place the record sits.
-            /// \return The record.
+            /// \param Index The index the record carries.
+            /// \return The record at that index.
             ZY_INLINE Ref<Type> Get(UInt32 Index)
             {
                 return (* mPool[Index / kBlock])[Index % kBlock];
@@ -206,7 +206,7 @@ namespace ZyNetwork
                 --mBusy;
             }
 
-            /// \brief Drops every block, which only what the platform has finished with may be among.
+            /// \brief Drops every block, once the platform has given every record back.
             ZY_INLINE void Clear()
             {
                 mPool.Clear();

@@ -88,9 +88,9 @@ namespace ZyFormat
         /// \param Format The format string to parse.
         ZY_INLINE constexpr void Parse(Text Format)
         {
-            UInt Cursor     = 0;
-            UInt Offset     = 0;
-            const UInt Size = Format.GetSize();
+            UInt       Cursor = 0;
+            UInt       Offset = 0;
+            const UInt Size   = Format.GetSize();
 
             while (Cursor < Size)
             {

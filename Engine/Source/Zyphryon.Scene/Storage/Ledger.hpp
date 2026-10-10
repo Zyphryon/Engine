@@ -12,8 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Scene/Types.hpp"
 #include "Handle.hpp"
+#include "Zyphryon.Scene/Types.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -40,9 +40,9 @@ namespace ZyScene
 
         /// \brief Checks whether any reader watches a component for some changes, which is all an unwatched write pays.
         ///
-        /// \param Identifier The component.
-        /// \param Kinds      The changes.
-        /// \return `true` if one does, `false` otherwise.
+        /// \param Identifier The identifier of the component to ask about.
+        /// \param Kinds      The changes, any one of which counts.
+        /// \return `true` if a reader watches any of them, `false` otherwise.
         ZY_INLINE Bool IsWatched(UInt32 Identifier, Pull Kinds) const
         {
             return Identifier < mWatched.GetSize() && (mWatched[Identifier] & static_cast<UInt8>(Kinds));
@@ -50,7 +50,7 @@ namespace ZyScene
 
         /// \brief Checks whether any reader exists at all.
         ///
-        /// \return `true` if one does, `false` otherwise.
+        /// \return `true` if any subscription is open, `false` otherwise.
         ZY_INLINE Bool IsActive() const
         {
             return mCount > 0;
@@ -58,7 +58,7 @@ namespace ZyScene
 
         /// \brief Makes a reader, which sees every change recorded from now on.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to watch.
         /// \param Kind       The change, exactly one.
         /// \return The handle of the subscription, never zero.
         UInt32 Subscribe(UInt32 Identifier, Pull Kind);
@@ -70,9 +70,9 @@ namespace ZyScene
 
         /// \brief Records a change in the list some reader watches.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component that changed.
         /// \param Kind       The change, exactly one.
-        /// \param Actor      The entity.
+        /// \param Actor      The entity that changed.
         /// \param Value      The value leaving on a removal, copied when the component keeps it, or `nullptr`.
         /// \param Source     The index of the chunk the entity sits in before the change.
         void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source);
@@ -80,7 +80,7 @@ namespace ZyScene
         /// \brief Gets the position of the first entry a reader has not read, counted from the list's first ever.
         ///
         /// \param Subscription The handle of the subscription.
-        /// \return The position.
+        /// \return The position, equal to \ref GetEnd once everything is read.
         ZY_INLINE UInt64 GetPosition(UInt32 Subscription) const
         {
             return mSubscriptions[Subscription - 1].Position;
@@ -89,7 +89,7 @@ namespace ZyScene
         /// \brief Gets the position past the last entry of the list a reader watches.
         ///
         /// \param Subscription The handle of the subscription.
-        /// \return The position.
+        /// \return The position the next recorded entry takes.
         ZY_INLINE UInt64 GetEnd(UInt32 Subscription) const
         {
             ConstRef<List> Target = * mLists[mSubscriptions[Subscription - 1].List];
@@ -138,7 +138,7 @@ namespace ZyScene
 
         /// \brief Destroys every value kept for a component before its code goes, leaving the entries without one.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to retire.
         void Retire(UInt32 Identifier);
 
     private:
@@ -190,9 +190,9 @@ namespace ZyScene
 
         /// \brief Gets the index a list of a component and change sits at.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component recorded.
         /// \param Kind       The change, exactly one.
-        /// \return The index.
+        /// \return The index into the lists, three per component.
         ZY_INLINE static UInt32 GetListIndex(UInt32 Identifier, Pull Kind)
         {
             return Identifier * 3 + (static_cast<UInt32>(Kind) >> 1);
@@ -200,18 +200,18 @@ namespace ZyScene
 
         /// \brief Drops the entries every reader of a list is past, once they are at least half of it.
         ///
-        /// \param Index The index of the list.
+        /// \param Index The index of the list, as \ref GetListIndex returns it.
         void Trim(UInt32 Index);
 
         /// \brief Drops a number of entries from the front of a list, destroying the values they kept.
         ///
-        /// \param Index The index of the list.
+        /// \param Index The index of the list, as \ref GetListIndex returns it.
         /// \param Count The number of entries.
         void RemoveFront(UInt32 Index, UInt Count);
 
         /// \brief Drops a number of elements from the front of a sequence, keeping its storage.
         ///
-        /// \param Items The sequence.
+        /// \param Items The sequence to shorten.
         /// \param Count The number of elements, at most as many as it holds.
         template<typename Type>
         ZY_INLINE static void DropFront(Ref<Sequence<Type>> Items, UInt Count)

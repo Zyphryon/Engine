@@ -22,7 +22,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Provides platform-independent interface for file system operations.
+    /// \brief Provides a platform-independent interface for file system operations.
     class ZY_API Filesystem final
     {
     public:
@@ -63,7 +63,7 @@ inline namespace ZyBase
             File,           ///< A regular file.
             Directory,      ///< A directory.
             Link,           ///< A symbolic link.
-            Unknown         ///< An entry of unknown or unsupported type.
+            Unknown,        ///< An entry of unknown or unsupported type.
         };
 
         /// \brief Represents a file system entry returned during directory enumeration.
@@ -107,16 +107,16 @@ inline namespace ZyBase
 
     public:
 
-        /// \brief Gets the path to the user's root directory.
+        /// \brief Gets the folder the application runs from.
         ///
-        /// \return A path to the user's root directory.
+        /// \return The folder of the executable on Windows, the working folder elsewhere.
         static Path GetRootFolder();
 
-        /// \brief Gets the path to the user's home directory.
+        /// \brief Gets the per-user folder an application keeps its data in.
         ///
         /// \param Organization The name of the organization or company.
         /// \param Application  The name of the application.
-        /// \return A path to the user's home directory for the specified application.
+        /// \return The data folder joined with both names, empty when the system has none.
         static Path GetDataFolder(Text Organization, Text Application);
 
         /// \brief Enumerates the entries in a directory.
@@ -155,7 +155,7 @@ inline namespace ZyBase
         ///
         /// \param Source      The path of the directory to be copied.
         /// \param Destination The path where the directory should be copied to.
-        /// \return `true` if all files and directories were successfully copied, `false` otherwise.
+        /// \return A \p Result indicating the success or failure of the operation.
         static Result CopyAll(Text Source, Text Destination);
 
         /// \brief Renames a file or directory at the specified path.
@@ -180,7 +180,7 @@ inline namespace ZyBase
         /// \brief Reads the contents of a file into a binary blob.
         ///
         /// \param Path   The path of the file to be read.
-        /// \param Output The blob where the file contents will be stored.
+        /// \param Output Receives the contents of the file.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Read(Text Path, Ref<Blob> Output);
 
@@ -205,14 +205,14 @@ inline namespace ZyBase
         ///
         /// \param Path   The path of the file to be opened.
         /// \param Access The access the file is opened for.
-        /// \param Output The handle receiving the open file, left closed when the file could not be opened.
+        /// \param Output Receives the open file, left closed when the file could not be opened.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Open(Text Path, Access Access, Ref<Handle> Output);
 
         /// \brief Measures how large the file behind a handle currently is.
         ///
         /// \param Handle The handle to measure.
-        /// \param Output The size in bytes.
+        /// \param Output Receives the size in bytes.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Tell(ConstRef<Handle> Handle, Ref<UInt64> Output);
 
@@ -220,7 +220,7 @@ inline namespace ZyBase
         ///
         /// \param Handle      The handle to read from.
         /// \param Offset      The byte offset within the file at which the read begins.
-        /// \param Destination The buffer receiving the bytes; its size names how many are read.
+        /// \param Destination Receives the bytes, as many as its size.
         /// \return A \p Result indicating the success or failure of the operation.
         static Result Read(ConstRef<Handle> Handle, UInt64 Offset, Span<Byte> Destination);
 

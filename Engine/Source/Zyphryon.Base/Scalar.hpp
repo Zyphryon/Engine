@@ -34,7 +34,7 @@ inline namespace ZyBase
     template<typename Type>
     inline constexpr Type kInfinity  = std::numeric_limits<Type>::infinity();
 
-    /// \brief Mathematical constant representing the minimum finite value for the given type.
+    /// \brief Mathematical constant representing the minimum of an integral type, or the smallest positive normal real.
     template<typename Type>
     inline constexpr Type kMinimum   = std::numeric_limits<Type>::min();
 
@@ -102,8 +102,8 @@ inline namespace ZyBase
 
     /// \brief Computes the remainder of the division of two real numbers.
     ///
-    /// \param Dividend The dividend value.
-    /// \param Divisor  The divisor value.
+    /// \param Dividend The number to divide.
+    /// \param Divisor  The non-zero number to divide by.
     /// \return The remainder of the division of \a Dividend by \a Divisor.
     template<IsReal Type>
     ZY_INLINE Type Mod(Type Dividend, Type Divisor)
@@ -154,8 +154,8 @@ inline namespace ZyBase
 
     /// \brief Computes the power of a base raised to an exponent for real numbers.
     ///
-    /// \param Base     The base value.
-    /// \param Exponent The exponent value.
+    /// \param Base     The number to raise.
+    /// \param Exponent The power to raise it to.
     /// \return The result of raising \p Base to the power of \p Exponent.
     template<IsReal Type>
     ZY_INLINE Type Pow(Type Base, Type Exponent)
@@ -165,8 +165,8 @@ inline namespace ZyBase
 
     /// \brief Computes the power of a base raised to an exponent for integer numbers.
     ///
-    /// \param Base     The base value.
-    /// \param Exponent The exponent value.
+    /// \param Base     The number to raise.
+    /// \param Exponent The power to raise it to.
     /// \return The result of raising \p Base to the power of \p Exponent.
     template<typename Type, typename Power>
     constexpr UInt Pow(Type Base, Power Exponent)
@@ -177,7 +177,7 @@ inline namespace ZyBase
 
     /// \brief Computes 2 raised to the power of the given exponent.
     ///
-    /// \param Exponent The exponent value.
+    /// \param Exponent The power to raise two to.
     /// \return The result of 2 ^ \p Exponent.
     template<IsIntegral Type>
     constexpr UInt Pow2(Type Exponent)
@@ -187,7 +187,7 @@ inline namespace ZyBase
 
     /// \brief Computes 10 raised to the power of the given exponent.
     ///
-    /// \param Exponent The exponent value.
+    /// \param Exponent The power to raise ten to, from 0 to 19.
     /// \return The result of 10 ^ \p Exponent.
     template<IsIntegral Type>
     constexpr UInt64 Pow10(Type Exponent)
@@ -207,7 +207,7 @@ inline namespace ZyBase
 
     /// \brief Computes 10 raised to the power of the given exponent as a real number.
     ///
-    /// \param Exponent The exponent value, where a negative one yields the reciprocal.
+    /// \param Exponent The power to raise ten to.
     /// \return The result of 10 ^ \p Exponent.
     template<IsReal Type>
     ZY_INLINE Type Pow10(SInt32 Exponent)
@@ -393,7 +393,7 @@ inline namespace ZyBase
     /// \param Right      The second value to compare.
     /// \param Additional The remaining values to compare.
     /// \return A copy of the smallest value among all arguments.
-    template <typename T0, typename T1, typename... Tail>
+    template<typename T0, typename T1, typename... Tail>
     constexpr auto Min(T0 Left, T1 Right, Tail... Additional)
     {
         if constexpr (sizeof...(Tail) == 0)
@@ -412,7 +412,7 @@ inline namespace ZyBase
     /// \param Right      The second value to compare.
     /// \param Additional The remaining values to compare.
     /// \return A copy of the largest value among all arguments.
-    template <typename T0, typename T1, typename... Tail>
+    template<typename T0, typename T1, typename... Tail>
     constexpr auto Max(T0 Left, T1 Right, Tail... Additional)
     {
         if constexpr (sizeof...(Tail) == 0)
@@ -472,9 +472,9 @@ inline namespace ZyBase
 
     /// \brief Finds where a scalar value falls between two others.
     ///
-    /// \param Start The scalar value the range begins at.
-    /// \param End   The scalar value the range ends at.
-    /// \param Value The scalar value to place within the range.
+    /// \param Start    The scalar value the range begins at.
+    /// \param End      The scalar value the range ends at.
+    /// \param Position The scalar value to place within the range.
     /// \return The fraction of the range the value falls at, or `0` when the range is empty.
     template<IsReal Value>
     constexpr Value InverseLerp(Value Start, Value End, Value Position)
@@ -498,11 +498,11 @@ inline namespace ZyBase
         return Lerp(From, To, Clamp(InverseLerp(Start, End, Position), Value(0), Value(1)));
     }
 
-    /// \brief Checks if a floating-point number is approximately zero within a specified tolerance.
+    /// \brief Checks whether a floating-point number is approximately zero within a specified tolerance.
     ///
     /// \param Value     The floating-point number to check.
-    /// \param Tolerance The tolerance within which the two numbers are considered equal.
-    /// \return `true` if the number is approximately zero, `false` otherwise.
+    /// \param Tolerance The distance from zero still treated as zero.
+    /// \return `true` if \p Value lies within \p Tolerance of zero, `false` otherwise.
     template<typename Type>
     constexpr Bool IsAlmostZero(Type Value, Type Tolerance = kEpsilon<Type>)
     {
@@ -516,11 +516,11 @@ inline namespace ZyBase
         }
     }
 
-    /// \brief Checks if two floating-point numbers are approximately equal within a specified tolerance.
+    /// \brief Checks whether two floating-point numbers are approximately equal within a specified tolerance.
     ///
     /// \param Left      The first floating-point number to compare.
     /// \param Right     The second floating-point number to compare.
-    /// \param Tolerance The tolerance within which the two numbers are considered equal.
+    /// \param Tolerance The relative difference still treated as equal.
     /// \return `true` if the numbers are approximately equal, `false` otherwise.
     template<typename Type>
     constexpr Bool IsAlmostEqual(Type Left, Type Right, Type Tolerance = kEpsilon<Type>)
@@ -537,7 +537,7 @@ inline namespace ZyBase
         }
     }
 
-    /// \brief Checks if a value is within a specified range, inclusive, considering floating-point precision.
+    /// \brief Checks whether a value is within a specified range, inclusive, considering floating-point precision.
     ///
     /// \param Value   The value to check.
     /// \param Minimum The minimum bound of the range.
@@ -594,15 +594,12 @@ inline namespace ZyBase
 
     /// \brief Returns the number of decimal digits required to represent \p Value.
     ///
-    /// Uses a leading-zero-count table combined with a power-of-ten boundary check to
-    /// determine the digit count in O(1) without any division or loop.
-    ///
-    /// \param Value The integral value to inspect.
+    /// \param Value The non-zero integral value to inspect.
     /// \return The number of decimal digits in the base-10 representation of \p Value.
     template<IsIntegral Type>
     constexpr UInt CountDigitsDecimal(Type Value)
     {
-        using Unsigned = Unsigned<Type>;
+        using Bits = Unsigned<Type>;
 
         static constexpr UInt8 kTable[64] =
         {
@@ -612,14 +609,14 @@ inline namespace ZyBase
              5,  5,  5,  4,  4,  4,  4,  3,  3,  3,  2,  2,  2,  1,  1,  1
         };
 
-        const UInt64 Number = static_cast<UInt64>(static_cast<Unsigned>(Value));
+        const UInt64 Number = static_cast<UInt64>(static_cast<Bits>(Value));
         const UInt64 Digits = kTable[CountLeadingZeros(Number)];
         return Digits - (Number < Pow10(Digits - 1));
     }
 
     /// \brief Returns the number of binary digits required to represent \p Value.
     ///
-    /// \param Value The integral value to inspect.
+    /// \param Value The non-zero integral value to inspect.
     /// \return The number of bits in the binary representation of \p Value.
     template<IsIntegral Type>
     constexpr Type CountDigitsBinary(Type Value)
@@ -629,7 +626,7 @@ inline namespace ZyBase
 
     /// \brief Returns the number of hexadecimal digits required to represent \p Value.
     ///
-    /// \param Value The integral value to inspect.
+    /// \param Value The non-zero integral value to inspect.
     /// \return The number of hex digits in the base-16 representation of \p Value.
     template<IsIntegral Type>
     constexpr UInt CountDigitsHexadecimal(Type Value)
@@ -638,8 +635,6 @@ inline namespace ZyBase
     }
 
     /// \brief Returns the number of digits required to represent \p Value in the given \p Base.
-    ///
-    /// Dispatches at compile time to `CountDigitsDecimal`, `CountDigitsBinary`, or  `CountDigitsHexadecimal`.
     ///
     /// \param Value The integral value to inspect.
     /// \return The number of digits needed to represent \p Value in base \p Base.
@@ -743,7 +738,7 @@ inline namespace ZyBase
 
     /// \brief Decodes a value \ref EncodeNormalized spread over an integer's range.
     ///
-    /// \param Value The encoded value.
+    /// \param Value The integer to decode.
     /// \return The value it stands for, over zero through one or negative one through one.
     template<IsIntegral Type>
     constexpr Real32 DecodeNormalized(Type Value)
@@ -768,10 +763,10 @@ inline namespace ZyBase
     template<IsIntegral Type>
     ZY_INLINE Type EncodeFixed(Real32 Value, Real32 Scale)
     {
-        constexpr Real32 Floor = static_cast<Real32>(kMinimum<Type>);
-        constexpr Real32 Ceil  = static_cast<Real32>(kMaximum<Type>);
+        constexpr Real32 Bottom = static_cast<Real32>(kMinimum<Type>);
+        constexpr Real32 Top    = static_cast<Real32>(kMaximum<Type>);
 
-        return static_cast<Type>(Clamp(Round(Value * Scale), Floor, Ceil));
+        return static_cast<Type>(Clamp(Round(Value * Scale), Bottom, Top));
     }
 
     /// \brief Decodes a value \ref EncodeFixed cut into steps.

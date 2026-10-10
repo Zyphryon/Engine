@@ -85,7 +85,7 @@ namespace ZyGraphic
 
     Bool Technique::Upload(Ref<Service> Service)
     {
-        ZY_ASSERT(mHandle == 0, "Technique has already been created");
+        ZY_ASSERT(!mHandle, "Technique has already been created");
 
         mSchema.Resolve(Service);
 
@@ -94,12 +94,9 @@ namespace ZyGraphic
         // Building the preloaded variants here keeps their shader compile off the frame that first draws them.
         for (const Key Key : mDescription.Preload)
         {
-            if (Key != 0 && !mVariants.Contains(Key))
-            {
-                mVariants.Assign(Key, Compile(Service, Key));
-            }
+            Obtain(Service, Key);
         }
-        return (mHandle > 0);
+        return (mHandle != 0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -118,7 +115,7 @@ namespace ZyGraphic
         }
         mVariants.Clear();
 
-        if (mHandle != 0)
+        if (mHandle)
         {
             Service.DeletePipeline(mHandle);
 
@@ -142,7 +139,6 @@ namespace ZyGraphic
                 Service.Reload(Shader);
             }
         }
-
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -171,7 +167,7 @@ namespace ZyGraphic
 
             Program.Macros.Append(Feature.Macros);
 
-            // Two features writing one block is an authoring mistake, since only the later one survives.
+            // Two features writing one block is an authoring mistake.
             if (Feature.Blocks & Claimed)
             {
                 LOG_W("'{0}' variant {1} lets '{2}' overwrite a state block", GetKey(), Key, Feature.Name);
@@ -193,7 +189,7 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Technique::Converge(Ref<States> Destination, ConstRef<States> Source, UInt8 Blocks) const
+    void Technique::Converge(Ref<States> Destination, ConstRef<States> Source, UInt8 Blocks)
     {
         if (HasBit(Blocks, GetBlockMask(Block::Blend)))
         {

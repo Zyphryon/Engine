@@ -11,22 +11,22 @@
 
 #include "Embedded://Shader/Packing.glsl"
 
-/// The effect a run of text is drawn with, laid out to match `Render::FontEffect`.
+/// Represents the effect a run of text is drawn with, laid out to match `Render::FontEffect`.
 struct ZyFontEffect
 {
     /// The outset color, packed as ZyUnpackTint reads it.
     uint  OutsetTint;
 
-    /// How far the outset is pushed past the stroke, in screen pixels.
+    /// The distance the outset is pushed past the stroke, in screen pixels.
     float OutsetOffset;
 
     /// The outset width as a share of the field range, so it grows with the text.
     float OutsetWidth;
 
-    /// Extra outset width, in screen pixels.
+    /// The extra outset width, in screen pixels.
     float OutsetBias;
 
-    /// How much of the outset fades out, from 0 to 1.
+    /// The share of the outset that fades out, from 0 to 1.
     float OutsetBlur;
 
     /// The blend from the sharp field at 0 to the smooth field at 1.
@@ -42,8 +42,8 @@ float ZyFontMedian(vec3 Sample)
     return max(min(Sample.r, Sample.g), min(max(Sample.r, Sample.g), Sample.b));
 }
 
-/// Screen pixels one field unit spans here, at least one; fragment stage only.
 #ifdef FRAGMENT_SHADER
+/// Screen pixels one field unit spans here, at least one; fragment stage only.
 float ZyFontSpread(vec2 Texture, vec2 Range)
 {
     return max(dot(Range, 1.0 / fwidth(Texture)) * 0.5, 1.0);

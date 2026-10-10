@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <windows.h>
+#include <dbt.h>
 #include <windowsx.h>
 #include <shellscalingapi.h>
 
@@ -167,14 +168,9 @@ namespace ZyPlatform
         case VK_PAUSE:
             return ZyInput::Key::Pause;
         case VK_SHIFT:
-            if (::MapVirtualKeyW(Scancode, MAPVK_VSC_TO_VK_EX) == VK_RSHIFT)
-            {
-                return ZyInput::Key::RightShift;
-            }
-            else
-            {
-                return ZyInput::Key::LeftShift;
-            }
+            return (::MapVirtualKeyW(Scancode, MAPVK_VSC_TO_VK_EX) == VK_RSHIFT)
+                ? ZyInput::Key::RightShift
+                : ZyInput::Key::LeftShift;
         case VK_CONTROL:
             return Extended ? ZyInput::Key::RightCtrl : ZyInput::Key::LeftCtrl;
         case VK_MENU:
@@ -245,7 +241,7 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static DWORD ConvertStyle(Bool Fullscreen, Bool Borderless)
+    static DWORD ConvertStyle(Bool Borderless, Bool Fullscreen)
     {
         DWORD Style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
@@ -263,8 +259,7 @@ namespace ZyPlatform
             }
             else
             {
-                Style |= WS_CAPTION;
-                Style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
+                Style |= WS_CAPTION | WS_MAXIMIZEBOX | WS_THICKFRAME;
             }
         }
         return Style;
@@ -273,8 +268,21 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static RECT Measure(HMONITOR Monitor)
+    {
+        MONITORINFO Info { .cbSize = sizeof(MONITORINFO) };
+        ::GetMonitorInfoW(Monitor, AddressOf(Info));
+        return Info.rcMonitor;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     struct Window::Backend
     {
+        /// The name the window class is registered under.
+        static constexpr ConstPtr<Wide> kClass = L"ZyWindowClass";
+
         /// The native Win32 window handle (HWND) associated with the window.
         HWND  Handle    = nullptr;
 
@@ -318,7 +326,7 @@ namespace ZyPlatform
         ZY_INLINE LRESULT OnWindowMessage(Ptr<Window> Window, UINT Message, WPARAM Arg0, LPARAM Arg1)
         {
             Ref<Dispatcher> Dispatcher = Window->mDispatcher;
-            
+
             switch (Message)
             {
             case WM_DISPLAYCHANGE:
@@ -330,8 +338,8 @@ namespace ZyPlatform
             {
                 switch (Arg0)
                 {
-                case 0x8000: // DBT_DEVICEARRIVAL
-                case 0x8004: // DBT_DEVICEREMOVECOMPLETE
+                case DBT_DEVICEARRIVAL:
+                case DBT_DEVICEREMOVECOMPLETE:
                     Dispatcher.Notify(ZyPlatform::Dispatcher::Notification::Monitor);
                     break;
                 default:
@@ -343,8 +351,8 @@ namespace ZyPlatform
             {
                 const ConstPtr<WINDOWPOS> Parameter = reinterpret_cast<ConstPtr<WINDOWPOS>>(Arg1);
 
-                Window->mX      = Parameter->x;
-                Window->mY      = Parameter->y;
+                Window->mX = Parameter->x;
+                Window->mY = Parameter->y;
                 return ::DefWindowProcW(Handle, Message, Arg0, Arg1);
             }
             case WM_SETFOCUS:
@@ -521,8 +529,8 @@ namespace ZyPlatform
             {
                 if (!Window->IsCursorLocked())
                 {
-                    const UInt32 X = GET_X_LPARAM(Arg1);
-                    const UInt32 Y = GET_Y_LPARAM(Arg1);
+                    const UInt32 X      = GET_X_LPARAM(Arg1);
+                    const UInt32 Y      = GET_Y_LPARAM(Arg1);
                     const SInt32 DeltaX = X - Cursor.x;
                     const SInt32 DeltaY = Y - Cursor.y;
 
@@ -541,7 +549,8 @@ namespace ZyPlatform
                     reinterpret_cast<HRAWINPUT>(Arg1),
                     RID_INPUT,
                     AddressOf(Data),
-                    AddressOf(Size), sizeof(RAWINPUTHEADER));
+                    AddressOf(Size),
+                    sizeof(RAWINPUTHEADER));
 
                 if (Data.header.dwType == RIM_TYPEMOUSE && Window->IsCursorLocked())
                 {
@@ -598,16 +607,16 @@ namespace ZyPlatform
 
             if (Message == WM_NCCREATE)
             {
-                const ConstPtr<CREATESTRUCTW> lpMessage = reinterpret_cast<ConstPtr<CREATESTRUCTW>>(Arg1);
+                const ConstPtr<CREATESTRUCTW> Creation = reinterpret_cast<ConstPtr<CREATESTRUCTW>>(Arg1);
 
-                Instance = static_cast<Ptr<Window>>(lpMessage->lpCreateParams);
+                Instance = static_cast<Ptr<Window>>(Creation->lpCreateParams);
                 Instance->mBackend->Handle = Handle;
 
-                SetWindowLongPtrW(Handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Instance));
+                ::SetWindowLongPtrW(Handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Instance));
             }
             else
             {
-                Instance = reinterpret_cast<Ptr<Window>>(GetWindowLongPtrW(Handle, GWLP_USERDATA));
+                Instance = reinterpret_cast<Ptr<Window>>(::GetWindowLongPtrW(Handle, GWLP_USERDATA));
             }
             if (Instance)
             {
@@ -631,7 +640,7 @@ namespace ZyPlatform
         {
             ::DestroyWindow(mBackend->Handle);
         }
-        UnregisterClassW(L"ZyWindowClass", ::GetModuleHandle(nullptr));
+        ::UnregisterClassW(Backend::kClass, ::GetModuleHandleW(nullptr));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -668,8 +677,8 @@ namespace ZyPlatform
     {
         mTitle = Title;
 
-        Sequence<Wide, MAX_PATH> InTitle = Unicode::Widen<MAX_PATH>(mTitle);
-        ::SetWindowTextW(mBackend->Handle, InTitle.GetData());
+        Sequence<Wide, MAX_PATH> Caption = Unicode::Widen<MAX_PATH>(mTitle);
+        ::SetWindowTextW(mBackend->Handle, Caption.GetData());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -707,40 +716,25 @@ namespace ZyPlatform
             return;
         }
 
+        RECT Bounds = mBackend->Region;
+
         if (Fullscreen)
         {
             ::GetWindowRect(mBackend->Handle, AddressOf(mBackend->Region));
-
-            const HMONITOR Monitor     = ::MonitorFromWindow(mBackend->Handle, MONITOR_DEFAULTTONEAREST);
-            MONITORINFO    MonitorInfo = { .cbSize = sizeof(MONITORINFO) };
-            ::GetMonitorInfoW(Monitor, AddressOf(MonitorInfo));
-
-            ::SetWindowLongPtrW(mBackend->Handle, GWL_STYLE, ConvertStyle(true, true));
-            ::SetWindowLongPtrW(mBackend->Handle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
-
-            ::SetWindowPos(
-                mBackend->Handle,
-                HWND_TOPMOST,
-                MonitorInfo.rcMonitor.left,
-                MonitorInfo.rcMonitor.top,
-                MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left,
-                MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
-                SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+            Bounds = Measure(::MonitorFromWindow(mBackend->Handle, MONITOR_DEFAULTTONEAREST));
         }
-        else
-        {
-            ::SetWindowLongPtrW(mBackend->Handle, GWL_STYLE, ConvertStyle(false, IsBorderless()));
-            ::SetWindowLongPtrW(mBackend->Handle, GWL_EXSTYLE, WS_EX_APPWINDOW);
 
-            ::SetWindowPos(
-                mBackend->Handle,
-                HWND_NOTOPMOST,
-                mBackend->Region.left,
-                mBackend->Region.top,
-                mBackend->Region.right - mBackend->Region.left,
-                mBackend->Region.bottom - mBackend->Region.top,
-                SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
-        }
+        ::SetWindowLongPtrW(mBackend->Handle, GWL_STYLE, ConvertStyle(IsBorderless(), Fullscreen));
+        ::SetWindowLongPtrW(mBackend->Handle, GWL_EXSTYLE, WS_EX_APPWINDOW | (Fullscreen ? WS_EX_TOPMOST : 0));
+
+        ::SetWindowPos(
+            mBackend->Handle,
+            Fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST,
+            Bounds.left,
+            Bounds.top,
+            Bounds.right - Bounds.left,
+            Bounds.bottom - Bounds.top,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
 
         mStates = SetOrClearBit(mStates, State::Fullscreen, Fullscreen);
     }
@@ -761,7 +755,14 @@ namespace ZyPlatform
         const UInt32 Dpi   = ::GetDpiForWindow(mBackend->Handle);
 
         ::AdjustWindowRectExForDpi(AddressOf(Rect), Style, FALSE, 0, Dpi);
-        ::SetWindowPos(mBackend->Handle, nullptr, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, SWP_NOMOVE | SWP_NOZORDER);
+        ::SetWindowPos(
+            mBackend->Handle,
+            nullptr,
+            0,
+            0,
+            Rect.right - Rect.left,
+            Rect.bottom - Rect.top,
+            SWP_NOMOVE | SWP_NOZORDER);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -867,10 +868,10 @@ namespace ZyPlatform
         Win32Class.hInstance     = ::GetModuleHandleW(nullptr);
         Win32Class.hCursor       = ::LoadCursorW(nullptr, IDC_ARROW);
         Win32Class.hbrBackground = nullptr;
-        Win32Class.lpszClassName = L"ZyWindowClass";
+        Win32Class.lpszClassName = Backend::kClass;
         ::RegisterClassExW(AddressOf(Win32Class));
 
-        Sequence<Wide, MAX_PATH> InTitle = Unicode::Widen<MAX_PATH>(Title);
+        Sequence<Wide, MAX_PATH> Caption = Unicode::Widen<MAX_PATH>(Title);
 
         mBackend = Unique<Backend>::Create();
 
@@ -887,7 +888,7 @@ namespace ZyPlatform
             .right  = static_cast<LONG>(Width),
             .bottom = static_cast<LONG>(Height)
         };
-        ::AdjustWindowRectExForDpi(AddressOf(Frame), ConvertStyle(false, Borderless), FALSE, WS_EX_APPWINDOW, DpiX);
+        ::AdjustWindowRectExForDpi(AddressOf(Frame), ConvertStyle(Borderless, false), FALSE, WS_EX_APPWINDOW, DpiX);
 
         mBackend->Region = {
             .left   = X,
@@ -896,17 +897,7 @@ namespace ZyPlatform
             .bottom = Y + (Frame.bottom - Frame.top)
         };
 
-        RECT Bounds = mBackend->Region;
-
-        if (Fullscreen)
-        {
-            MONITORINFO MonitorInfo {
-                .cbSize = sizeof(MONITORINFO) 
-            };
-            ::GetMonitorInfoW(Monitor, AddressOf(MonitorInfo));
-
-            Bounds = MonitorInfo.rcMonitor;
-        }
+        const RECT Bounds = Fullscreen ? Measure(Monitor) : mBackend->Region;
 
         mTitle  = Title;
         mWidth  = Fullscreen ? static_cast<UInt32>(Bounds.right - Bounds.left) : Width;
@@ -916,9 +907,9 @@ namespace ZyPlatform
 
         mBackend->Handle = ::CreateWindowExW(
             WS_EX_APPWINDOW | (Fullscreen ? WS_EX_TOPMOST : 0),
-            L"ZyWindowClass",
-            InTitle.GetData(),
-            ConvertStyle(Fullscreen, Borderless),
+            Backend::kClass,
+            Caption.GetData(),
+            ConvertStyle(Borderless, Fullscreen),
             Bounds.left,
             Bounds.top,
             Bounds.right - Bounds.left,
@@ -928,6 +919,11 @@ namespace ZyPlatform
             Win32Class.hInstance,
             this);
 
-        return (mBackend->Handle != nullptr);
+        if (!mBackend->Handle)
+        {
+            LOG_E("Platform: Failed to create the Win32 window ({0})", ::GetLastError());
+            return false;
+        }
+        return true;
     }
 }

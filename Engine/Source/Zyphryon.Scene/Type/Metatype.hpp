@@ -107,7 +107,7 @@ namespace ZyScene
 
         /// \brief Gives the type a trait or takes it away.
         ///
-        /// \param Which   The trait.
+        /// \param Which   The trait, or several taken together.
         /// \param Enabled `true` to give it, `false` to take it away.
         ZY_INLINE void Set(Trait Which, Bool Enabled)
         {
@@ -116,8 +116,8 @@ namespace ZyScene
 
         /// \brief Checks whether the type carries a trait.
         ///
-        /// \param Which The trait.
-        /// \return `true` if it carries it, `false` otherwise.
+        /// \param Which The trait, or several taken together.
+        /// \return `true` if the type carries every trait given, `false` otherwise.
         ZY_INLINE Bool Has(Trait Which) const
         {
             return HasBit(Traits, Which);
@@ -125,7 +125,7 @@ namespace ZyScene
 
         /// \brief Builds the description of a type the storage moves instances of.
         ///
-        /// \tparam Type The component type.
+        /// \tparam Type The type to describe, empty for a tag.
         /// \return The layout and lifecycle of \p Type.
         template<typename Type>
         static Metatype Of()
@@ -138,8 +138,7 @@ namespace ZyScene
                 static_assert( sizeof(Type) <= 0xFFFF
                            && alignof(Type) <= 0xFF, "A component must fit a 16-bit size and an 8-bit alignment");
 
-                Info.Layout
-                    = ZyReflection::Schema(ConstSpan<ZyReflection::Field>(), Text(), sizeof(Type), alignof(Type));
+                Info.Layout = ZyReflection::Schema(sizeof(Type), alignof(Type));
 
                 // Saves reuse the type's own serialization.
                 if constexpr ((IsSerializable<Type, Archive<Writer>>
@@ -209,7 +208,7 @@ namespace ZyScene
 
         /// \brief Represents the lifecycle of one component type, as the storage runs it over raw bytes.
         ///
-        /// \tparam Type The component type.
+        /// \tparam Type The type the bytes hold.
         template<typename Type>
         struct Lifecycle final
         {
@@ -249,7 +248,8 @@ namespace ZyScene
                     for (UInt Index = 0; Index < Count; ++Index)
                     {
                         ::Construct(
-                            static_cast<Ptr<Type>>(Destination) + Index, static_cast<ConstPtr<Type>>(Source)[Index]);
+                            static_cast<Ptr<Type>>(Destination) + Index,
+                            static_cast<ConstPtr<Type>>(Source)[Index]);
                     }
                 }
                 else
@@ -273,8 +273,8 @@ namespace ZyScene
 
             /// \brief Writes one instance into a save, through the type's own serialization.
             ///
-            /// \param Output The writer.
-            /// \param Source The instance.
+            /// \param Output The save to write into.
+            /// \param Source The instance to write.
             static void Save(Ref<Writer> Output, ConstPtr<void> Source)
             {
                 Archive(Output).Serialize(* const_cast<Ptr<Type>>(static_cast<ConstPtr<Type>>(Source)));
@@ -282,8 +282,8 @@ namespace ZyScene
 
             /// \brief Reads one instance out of a save, over one already built.
             ///
-            /// \param Input  The reader.
-            /// \param Target The instance.
+            /// \param Input  The save to read from.
+            /// \param Target The instance to read over.
             static void Load(Ref<Reader> Input, Ptr<void> Target)
             {
                 Archive(Input).Serialize(* static_cast<Ptr<Type>>(Target));

@@ -26,7 +26,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Owns the platform's native rendering context and presentation surface for the GLES3 driver.
+    /// \brief Represents the platform's native rendering context and presentation surface for the GLES3 driver.
     class GLES3Context final
     {
     public:

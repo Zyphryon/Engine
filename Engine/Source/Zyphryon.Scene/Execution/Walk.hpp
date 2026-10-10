@@ -33,7 +33,7 @@ namespace ZyScene
         ///
         /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose fields are declared for the callback.
-        /// \param Callback The callable.
+        /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
         template<typename Callable>
         static void Run(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
         {
@@ -70,9 +70,7 @@ namespace ZyScene
             Owner.Leave();
         }
 
-        /// \brief Hands every match to a callback, spread over the workers when the last walk says it pays.
-        ///
-        /// \note A cascade is spread one depth at a time, every parent done before the first of its children.
+        /// \brief Hands every match to a callback, spread over the workers when it pays, a cascade one depth at a time.
         ///
         /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose fields are declared for the callback.
@@ -161,7 +159,7 @@ namespace ZyScene
 
         /// \brief Represents the loops of a walk for one list of fields, each known by its position in the callback.
         ///
-        /// \tparam Index  The position of each field.
+        /// \tparam Index The position of each field.
         /// \tparam Parts The fields, in the order the callback takes them.
         template<UInt... Index, typename... Parts>
         struct Kernel<IntegerSequence<UInt, Index...>, Parts...> final
@@ -203,8 +201,8 @@ namespace ZyScene
 
             /// \brief Gets where a field reads for an entity below a parent, climbing when it reads an ancestor's.
             ///
-            /// \param Owner   The storage.
-            /// \param State   The query.
+            /// \param Owner   The storage the query belongs to.
+            /// \param State   The query, naming the component of each field.
             /// \param Where   The places each field of the chunk is read from.
             /// \param Parent  The slot of the parent.
             /// \param Field   The position of the field.
@@ -245,7 +243,7 @@ namespace ZyScene
             /// \param Step  The instances it steps per row, one or zero.
             /// \param First The first row of the page.
             /// \param Last  The row past the last one.
-            /// \return The span.
+            /// \return The span, one instance long when the field does not step.
             template<typename Field>
             ZY_INLINE static Span<typename Field::Value> SpanOf(Ptr<Byte> Base, UInt Step, UInt First, UInt Last)
             {
@@ -256,10 +254,10 @@ namespace ZyScene
 
             /// \brief Works out where each field of one matched chunk is read from.
             ///
-            /// \param Owner The storage.
-            /// \param State The query.
+            /// \param Owner The storage the query belongs to.
+            /// \param State The query, holding the source of each field per match.
             /// \param Match The position of the chunk among the matches.
-            /// \param Into  Receives where each field is read from.
+            /// \param Into  The places to fill.
             static void Prepare(Ref<Storage> Owner, ConstRef<Selection> State, UInt32 Match, Ref<Places> Into)
             {
                 constexpr Bool kTags[kCount + 1]   = { Parts::kTag..., false };
@@ -310,12 +308,12 @@ namespace ZyScene
 
             /// \brief Hands the rows of a stretch of one matched chunk to a callback, page by page.
             ///
-            /// \param Owner    The storage.
-            /// \param State    The query.
+            /// \param Owner    The storage the query belongs to.
+            /// \param State    The query whose matches are walked.
             /// \param Match    The position of the chunk among the matches.
-            /// \param Begin    The first row.
+            /// \param Begin    The first row of the stretch.
             /// \param End      The row past the last one.
-            /// \param Callback The callable.
+            /// \param Callback The callable, handed each row, or each page as spans.
             template<typename Callable>
             static void RunPages(
                 Ref<Storage>        Owner,
@@ -369,8 +367,8 @@ namespace ZyScene
 
             /// \brief Calls back for rows in the order given, jumping between chunks and preparing each on entry.
             ///
-            /// \param Owner    The storage.
-            /// \param State    The query.
+            /// \param Owner    The storage the query belongs to.
+            /// \param State    The query whose matches are walked.
             /// \param Rows     The rows, each the match in the high half and the row in the low one.
             /// \param Callback The callable, which is handed one row at a time.
             template<typename Callable>
@@ -421,9 +419,9 @@ namespace ZyScene
 
             /// \brief Calls back once per row, each field's start held apart so the loop keeps it in a register.
             ///
-            /// \param Owner    The storage.
-            /// \param Callback The callable.
-            /// \param State    The query.
+            /// \param Owner    The storage the query belongs to.
+            /// \param Callback The callable, handed each row.
+            /// \param State    The query whose matches are walked.
             /// \param Handles  The entities of the page.
             /// \param Where    The places each field of the chunk is read from.
             /// \param First    The first row of the page.
@@ -466,10 +464,10 @@ namespace ZyScene
 
             /// \brief Calls back for one entity when it carries every field the callback needs, as a reader does.
             ///
-            /// \param Owner    The storage.
+            /// \param Owner    The storage the entity lives in.
             /// \param State    The selection the reader filters by, whose fields are declared.
             /// \param Actor    The entity, alive and matching.
-            /// \param Callback The callable.
+            /// \param Callback The callable, handed the entity's fields.
             template<typename Callable>
             ZY_INLINE static void RunEntry(
                 Ref<Storage>        Owner,
@@ -489,9 +487,9 @@ namespace ZyScene
 
             /// \brief Finds where one field of an entity is, held, lent, an ancestor's or the world's.
             ///
-            /// \param Owner    The storage.
+            /// \param Owner    The storage the entity lives in.
             /// \param State    The selection, whose fields are declared.
-            /// \param Actor    The entity, alive.
+            /// \param Actor    The entity whose field to find, alive.
             /// \param Position The place of the field in the callback.
             /// \return The first byte of the value, or `nullptr` when there is none or the field is a tag.
             template<typename Field>
@@ -555,9 +553,9 @@ namespace ZyScene
             /// \brief Constructs the work of a spread walk, cut into shares of as many rows each.
             ///
             /// \param Owner    The storage the query belongs to.
-            /// \param State    The query.
-            /// \param Callback The callable.
-            /// \param Begin    The first row.
+            /// \param State    The query whose matches are walked.
+            /// \param Callback The callable each share is walked with.
+            /// \param Begin    The first row the shares cover.
             /// \param End      The row past the last one.
             /// \param Shares   The number of shares to aim at, never zero.
             /// \param Sorted   The rows of an ordered walk, or `nullptr` for the matches laid end to end.
@@ -583,8 +581,8 @@ namespace ZyScene
 
             /// \brief Takes the next share, when one is left, and holds what the calling thread changes in it apart.
             ///
-            /// \param Begin Receives the first row of the share.
-            /// \param Until Receives the row past the last one.
+            /// \param Begin The first row of the share, set when one is taken.
+            /// \param Until The row past the last one, set when one is taken.
             /// \return `true` if a share was taken, `false` when none is left.
             ZY_INLINE Bool Take(Ref<UInt32> Begin, Ref<UInt32> Until)
             {
@@ -616,9 +614,9 @@ namespace ZyScene
 
         /// \brief Checks whether the world holds every singleton the query reads, without which it walks nothing.
         ///
-        /// \param Owner The storage.
-        /// \param State The query.
-        /// \return `true` if every one is there, `false` otherwise.
+        /// \param Owner The storage holding the world entity.
+        /// \param State The query, listing the singletons it reads.
+        /// \return `true` if the world entity holds them all, `false` otherwise.
         ZY_INLINE static Bool HasGlobals(Ref<Storage> Owner, ConstRef<Selection> State)
         {
             for (const UInt32 Identifier : State.Globals)
@@ -633,8 +631,8 @@ namespace ZyScene
 
         /// \brief Gets where the world entity keeps a component.
         ///
-        /// \param Owner      The storage.
-        /// \param Identifier The component.
+        /// \param Owner      The storage holding the world entity.
+        /// \param Identifier The identifier of the component to find.
         /// \return The first byte of the value, or `nullptr` when the world holds none.
         ZY_INLINE static Ptr<Byte> GetSingleton(Ref<Storage> Owner, UInt32 Identifier)
         {
@@ -644,9 +642,9 @@ namespace ZyScene
 
         /// \brief Finds where the archetype an entity is made from, or one it is made from in turn, lends a component.
         ///
-        /// \param Owner      The storage.
+        /// \param Owner      The storage holding the archetypes.
         /// \param Base       The slot of the archetype, or zero for none.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to find.
         /// \return The first byte of the value, or `nullptr` when no archetype up the chain lends it.
         ZY_INLINE static Ptr<Byte> FindLent(Ref<Storage> Owner, UInt32 Base, UInt32 Identifier)
         {
@@ -655,9 +653,9 @@ namespace ZyScene
 
         /// \brief Finds where the nearest entity up a chain keeps a component, held or lent.
         ///
-        /// \param Owner      The storage.
+        /// \param Owner      The storage holding the hierarchy.
         /// \param From       The slot to look at first, or zero for none.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to find.
         /// \return The first byte of the value, or `nullptr` when nothing up the chain carries it.
         ZY_INLINE static Ptr<Byte> FindAncestor(Ref<Storage> Owner, UInt32 From, UInt32 Identifier)
         {
@@ -671,11 +669,11 @@ namespace ZyScene
 
         /// \brief Hands the rows of a stretch of the matches laid end to end to a callback.
         ///
-        /// \param Owner    The storage.
+        /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose offsets are laid out.
-        /// \param Begin    The first row.
+        /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
-        /// \param Callback The callable.
+        /// \param Callback The callable, handed each row, or each page as spans.
         template<typename Callable>
         static void RunRange(
             Ref<Storage>        Owner,
@@ -699,12 +697,12 @@ namespace ZyScene
 
         /// \brief Hands a stretch of rows to a callback, out of the sorted rows of an ordered walk or the matches.
         ///
-        /// \param Owner    The storage.
+        /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose offsets are laid out when the rows are not sorted.
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
-        /// \param Begin    The first row.
+        /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
-        /// \param Callback The callable.
+        /// \param Callback The callable, handed each row, or each page as spans.
         template<typename Callable>
         ZY_INLINE static void RunStretch(
             Ref<Storage>        Owner,
@@ -730,17 +728,17 @@ namespace ZyScene
         /// \brief Finds the match a row of the matches laid end to end falls in.
         ///
         /// \param State The query, whose offsets are laid out.
-        /// \param Row   The row.
+        /// \param Row   The row, counted across the matches laid end to end.
         /// \return The position of the last match starting at or before the row.
         static UInt32 FindMatch(ConstRef<Selection> State, UInt32 Row);
 
         /// \brief Hands a stretch of rows to a callback on this thread, timing it.
         ///
-        /// \param Owner    The storage.
+        /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose offsets are laid out when the rows are not sorted.
-        /// \param Begin    The first row.
+        /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one, which is past the first.
-        /// \param Callback The callable.
+        /// \param Callback The callable, handed each row, or each page as spans.
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         /// \return The seconds one row took.
         template<typename Callable>
@@ -759,9 +757,9 @@ namespace ZyScene
 
         /// \brief Spreads a stretch of rows over the caller and the compute workers, in shares of a few microseconds.
         ///
-        /// \param Owner    The storage.
+        /// \param Owner    The storage the query belongs to.
         /// \param State    The query, whose cost per row is known and whose offsets are laid out when not sorted.
-        /// \param Begin    The first row.
+        /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
         /// \param Callback The callable, thread-safe and changing only its own entity.
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
@@ -826,9 +824,9 @@ namespace ZyScene
 
         /// \brief Hands every match to a callback parents first, sorting the rows by how deep they stand.
         ///
-        /// \param Owner    The storage.
-        /// \param State    The query.
-        /// \param Callback The callable.
+        /// \param Owner    The storage the query belongs to.
+        /// \param State    The query whose matches are walked.
+        /// \param Callback The callable, handed one row at a time.
         template<typename Callable>
         static void RunOrdered(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
         {
@@ -845,7 +843,7 @@ namespace ZyScene
 
         /// \brief Hands every match to a callback parents first, each depth spread over the workers when it pays.
         ///
-        /// \param Owner    The storage.
+        /// \param Owner    The storage the query belongs to.
         /// \param State    The query, which is ordered.
         /// \param Callback The callable, reading only what the depths above it wrote and writing only in place.
         template<typename Callable>
@@ -896,22 +894,22 @@ namespace ZyScene
 
         /// \brief Gathers the rows of every match and sorts them parents first, behind the rows as gathered.
         ///
-        /// \param Owner The storage.
-        /// \param State The query.
+        /// \param Owner The storage holding the hierarchy.
+        /// \param State The query, which keeps the gathered rows and where each depth ends.
         /// \return The position of the first sorted row among the gathered ones.
         static UInt32 Sort(Ref<Storage> Owner, Ref<Selection> State);
 
         /// \brief Checks whether the rows an ordered walk sorted last are still where they were and as deep.
         ///
-        /// \param Owner The storage.
-        /// \param State The query.
+        /// \param Owner The storage holding the hierarchy.
+        /// \param State The query, holding the rows it sorted last.
         /// \return `true` if every row holds the entity it held and no link changed since, `false` otherwise.
         static Bool IsSorted(Ref<Storage> Owner, ConstRef<Selection> State);
 
         /// \brief Gets the key an ordered walk gathers a row under.
         ///
         /// \param Match The position of the chunk among the matches.
-        /// \param Row   The row.
+        /// \param Row   The row in that chunk.
         /// \return The key, the match in the high half and the row in the low one.
         ZY_INLINE static constexpr UInt64 Pack(UInt32 Match, UInt32 Row)
         {
@@ -920,12 +918,12 @@ namespace ZyScene
 
         /// \brief Hands the rows of a stretch of one matched chunk to a callback, through the loops for its fields.
         ///
-        /// \param Owner    The storage.
-        /// \param State    The query.
+        /// \param Owner    The storage the query belongs to.
+        /// \param State    The query whose matches are walked.
         /// \param Match    The position of the chunk among the matches.
-        /// \param Begin    The first row.
+        /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
-        /// \param Callback The callable.
+        /// \param Callback The callable, handed each row, or each page as spans.
         template<typename Callable>
         ZY_INLINE static void RunChunk(
             Ref<Storage>        Owner,
@@ -942,7 +940,7 @@ namespace ZyScene
         ///
         /// \param Base The first instance in the page, or the one place every row reads it from.
         /// \param Step The instances it steps per row, one or zero.
-        /// \param Row  The row.
+        /// \param Row  The row within the page.
         /// \return The value, a pointer to it, or a fresh tag.
         template<typename Field>
         ZY_INLINE static decltype(auto) Fetch(Ptr<Byte> Base, UInt Step, UInt Row)
@@ -970,10 +968,10 @@ namespace ZyScene
 
         /// \brief Calls back for one entity, handing it first when the callback asks for it.
         ///
-        /// \param Owner     The storage.
-        /// \param Callback  The callable.
-        /// \param Actor     The entity.
-        /// \param Arguments The fields.
+        /// \param Owner     The storage the entity lives in.
+        /// \param Callback  The callable, handed the fields.
+        /// \param Actor     The entity the fields belong to.
+        /// \param Arguments The value or pointer of each field, in the callback's order.
         template<typename Callable, typename... Values>
         ZY_INLINE static void Call(
             Ref<Storage>      Owner,

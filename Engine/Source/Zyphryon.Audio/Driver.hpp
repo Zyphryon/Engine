@@ -25,9 +25,9 @@ namespace ZyAudio
     {
     public:
 
-        /// \brief Callback invoked on the audio thread to fill an interleaved 32-bit float output buffer.
+        /// \brief Represents the callback that fills an interleaved float buffer on the audio thread.
         ///
-        /// \param Output The destination buffer, to fill with interleaved samples.
+        /// \param Output Receives the interleaved samples, sized `Frames * kMixerStride`.
         /// \param Frames The number of frames requested by the device for this invocation.
         using Callback = Delegate<void(Span<Real32> Output, UInt32 Frames)>;
 
@@ -51,7 +51,7 @@ namespace ZyAudio
 
         /// \brief Fills the provided structure with the backend name, device, and available endpoints.
         ///
-        /// \param Output The structure to populate with the driver's current device information.
+        /// \param Output Receives the device description.
         void Probe(Ref<Description> Output) const;
 
         /// \brief Advances the driver on the main thread.

@@ -1,9 +1,15 @@
-# CMakeApplyCompileOptions.cmake
-#
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 # Applies the engine's standard compiler and linker settings to a target.
 #
 # Configurations:
-#   Debug          Unoptimized, instrumented, sanitized.
+#   Debug          Unoptimized and instrumented, with AddressSanitizer under GCC and Clang.
 #   RelWithDebInfo Optimized as Release, minus whole-program optimization, plus symbols and frame pointers.
 #   Release        Fully optimized and stripped.
 #
@@ -17,9 +23,9 @@ FUNCTION(ZyApplyOptions TARGET)
 
         TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE _WIN32_WINNT=0x0A00 _CRT_SECURE_NO_WARNINGS NOMINMAX UNICODE)
 
-    ENDIF (WIN32)
+    ENDIF ()
 
-    IF     (EMSCRIPTEN)
+    IF    (EMSCRIPTEN)
 
         TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
@@ -77,9 +83,11 @@ FUNCTION(ZyApplyOptions TARGET)
             >
         )
 
-        IF (ZY_WEB_THREAD)
+        IF    (ZY_WEB_THREAD)
+
             TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE ZY_WEB_THREAD)
-        ENDIF  ()
+
+        ENDIF ()
 
     ELSEIF (MSVC)
 
@@ -155,12 +163,12 @@ FUNCTION(ZyApplyOptions TARGET)
             $<$<CONFIG:Debug>: -fsanitize=address>
         )
 
-        IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        IF    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
             TARGET_COMPILE_OPTIONS(${TARGET} PRIVATE -fno-fat-lto-objects -Wno-changes-meaning)
 
-        ENDIF()
+        ENDIF ()
 
-    ENDIF  ()
+    ENDIF ()
 
 ENDFUNCTION()

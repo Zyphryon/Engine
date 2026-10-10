@@ -26,7 +26,7 @@ namespace ZyEngine
     {
     protected:
 
-        /// \brief Constructor that resolves the dependency from the given host.
+        /// \brief Constructs the dependency, resolving its service from the given host.
         ///
         /// \param Host The host used to look up the service.
         ZY_INLINE explicit Dependency(Ref<Subsystem::Host> Host)

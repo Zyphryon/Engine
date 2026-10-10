@@ -22,12 +22,8 @@ namespace ZyContent
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Disk::Disk(Text Path)
-        : mPath { Path }
+        : mPath { StrTrimRight(Path, '/') }
     {
-        if (StrEndsWith(mPath, "/"))
-        {
-            mPath.RemoveLast();
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,12 +41,12 @@ namespace ZyContent
     {
         Sequence<Filesystem::Record> Files;
 
-        const auto OnEnumerate = [& Files](ConstRef<Filesystem::Record> Record)
+        const auto Collect = [& Files](ConstRef<Filesystem::Record> Record)
         {
             Files.Append(Record);
             return true;
         };
-        const Filesystem::Result Result = Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), OnEnumerate);
+        const Filesystem::Result Result = Filesystem::Enumerate(Filesystem::Path::Join(mPath, '/', Path), Collect);
         Callback(Result, Move(Files));
     }
 

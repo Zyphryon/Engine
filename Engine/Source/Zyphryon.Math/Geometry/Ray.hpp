@@ -26,14 +26,14 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the ray at the origin, pointing along the elevation axis.
+        /// \brief Constructs a ray at the origin, pointing along the elevation axis.
         ZY_INLINE constexpr Ray()
             : mDirection { Vector3::UnitY() },
               mInverse   { Reciprocal(Vector3::UnitY()) }
         {
         }
 
-        /// \brief Initializes the ray with the given origin and direction.
+        /// \brief Constructs a ray from an origin and a direction.
         ///
         /// \param Origin    The point the ray starts from.
         /// \param Direction The direction the ray travels, which must already be normalized.
@@ -168,7 +168,7 @@ inline namespace ZyMath
 
         /// \brief Gets a ray that travels nowhere and hits nothing.
         ///
-        /// \return An invalid ray.
+        /// \return A ray with a zero direction.
         ZY_INLINE static constexpr Ray Invalid()
         {
             return Ray(Vector3::Zero(), Vector3::Zero());
@@ -218,7 +218,10 @@ inline namespace ZyMath
         /// \param Limit    The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the volume within the limit, `false` otherwise.
         ZY_INLINE static Bool Intersects(
-            ConstRef<Ray> Source, ConstRef<Box> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
+            ConstRef<Ray> Source,
+            ConstRef<Box> Volume,
+            Ref<Real32>   Distance,
+            Real32        Limit = kInfinity<Real32>)
         {
             Real32 Exit = 0.0f;
 
@@ -284,7 +287,10 @@ inline namespace ZyMath
         /// \param Limit    The furthest distance along the ray to consider.
         /// \return `true` if the ray meets the sphere within the limit, `false` otherwise.
         ZY_INLINE static Bool Intersects(
-            ConstRef<Ray> Source, ConstRef<Sphere> Volume, Ref<Real32> Distance, Real32 Limit = kInfinity<Real32>)
+            ConstRef<Ray>    Source,
+            ConstRef<Sphere> Volume,
+            Ref<Real32>      Distance,
+            Real32           Limit = kInfinity<Real32>)
         {
             Real32 Exit = 0.0f;
 
@@ -391,7 +397,12 @@ inline namespace ZyMath
         /// \param Far     The exit distance, pulled back in place.
         /// \return `false` once the interval collapses, meaning the ray misses the volume.
         ZY_INLINE static Bool Clip(
-            Real32 Origin, Real32 Inverse, Real32 Minimum, Real32 Maximum, Ref<Real32> Near, Ref<Real32> Far)
+            Real32      Origin,
+            Real32      Inverse,
+            Real32      Minimum,
+            Real32      Maximum,
+            Ref<Real32> Near,
+            Ref<Real32> Far)
         {
             // A ray that does not travel along this axis clips nothing, since its interval is unbounded.
             if (Abs(Inverse) >= kUnbounded)

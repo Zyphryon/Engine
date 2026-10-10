@@ -20,7 +20,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Represents an affine 2D transformation matrix, stored as the two non-constant rows of a 2x3.
+    /// \brief Represents an affine 2D transformation matrix, stored as the two non-constant rows of a 3x3.
     class Matrix3x2 final
     {
     public:
@@ -44,23 +44,23 @@ inline namespace ZyMath
         {
         }
 
+        /// \brief Checks if the matrix is an identity matrix.
+        ///
+        /// \return `true` if the stored columns are approximately (1, 0, 0) and (0, 1, 0), `false` otherwise.
+        ZY_INLINE constexpr Bool IsIdentity() const
+        {
+            return mColumns[0].IsAlmostEqual(1.0f, 0.0f, 0.0f) && mColumns[1].IsAlmostEqual(0.0f, 1.0f, 0.0f);
+        }
+
         /// \brief Checks if this matrix is approximately equal to another matrix within a tolerance.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if the matrices are approximately equal, `false` otherwise.
+        /// \return `true` if all corresponding elements are within the default floating-point tolerance, `false` otherwise.
         ZY_INLINE constexpr Bool IsAlmostEqual(ConstRef<Matrix3x2> Other) const
         {
             return mColumns[0] == Other.mColumns[0] && mColumns[1] == Other.mColumns[1];
         }
 
-        /// \brief Checks if the matrix is an identity matrix.
-        ///
-        /// \return `true` if the matrix is identity, `false` otherwise.
-        ZY_INLINE constexpr Bool IsIdentity() const
-        {
-            return mColumns[0].IsAlmostEqual(1.0f, 0.0f, 0.0f) && mColumns[1].IsAlmostEqual(0.0f, 1.0f, 0.0f);
-        }
-    
         /// \brief Gets a column vector from the matrix.
         ///
         /// \param Column The zero-based index of the column to access.
@@ -78,6 +78,8 @@ inline namespace ZyMath
         /// \return The column vector at the specified index.
         ZY_INLINE constexpr Vector3 GetColumn(UInt32 Column) const
         {
+            ZY_ASSERT(Column < 2, "GetColumn index out of range");
+
             return mColumns[Column];
         }
 
@@ -105,9 +107,9 @@ inline namespace ZyMath
             return Vector2(mColumns[0].GetZ(), mColumns[1].GetZ());
         }
 
-        /// \brief Gets the scale vector derived from the basis vectors lengths.
+        /// \brief Gets the scale vector derived from the lengths of the basis vectors.
         ///
-        /// \return The scale vector.
+        /// \return The length of each basis vector.
         ZY_INLINE Vector2 GetScale() const
         {
             const Real32 ScaleX = GetBasisX().GetLength();
@@ -156,7 +158,7 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is equal to another matrix.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if the matrices are equal, `false` otherwise.
+        /// \return `true` if all corresponding elements are approximately equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(ConstRef<Matrix3x2> Other) const
         {
             return IsAlmostEqual(Other);
@@ -165,7 +167,7 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is not equal to another matrix.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if the matrices are not equal, `false` otherwise.
+        /// \return `true` if any corresponding element differs, `false` otherwise.
         ZY_INLINE constexpr Bool operator!=(ConstRef<Matrix3x2> Other) const
         {
             return !(* this == Other);
@@ -242,22 +244,23 @@ inline namespace ZyMath
             const Vector3 C0 = Matrix.mColumns[0];
             const Vector3 C1 = Matrix.mColumns[1];
 
-            return Vector2(C0.GetX() * Vector.GetX() + C0.GetY() * Vector.GetY() + C0.GetZ(),
-                           C1.GetX() * Vector.GetX() + C1.GetY() * Vector.GetY() + C1.GetZ());
+            return Vector2(
+                C0.GetX() * Vector.GetX() + C0.GetY() * Vector.GetY() + C0.GetZ(),
+                C1.GetX() * Vector.GetX() + C1.GetY() * Vector.GetY() + C1.GetZ());
         }
 
         /// \brief Creates a translation matrix.
         ///
-        /// \param Vector The translation vector.
+        /// \param Vector The offset to translate by.
         /// \return The translation matrix.
         ZY_INLINE static constexpr Matrix3x2 FromTranslation(Vector2 Vector)
         {
             return Matrix3x2(1.0f, 0.0f, Vector.GetX(), 0.0f, 1.0f, Vector.GetY());
         }
 
-        /// \brief Creates a uniform scaling matrix.
+        /// \brief Creates a scaling matrix.
         ///
-        /// \param Vector The scale vector.
+        /// \param Vector The factor to scale by along each axis.
         /// \return The scaling matrix.
         ZY_INLINE static constexpr Matrix3x2 FromScale(Vector2 Vector)
         {
@@ -266,7 +269,7 @@ inline namespace ZyMath
 
         /// \brief Creates a rotation matrix from an angle.
         ///
-        /// \param Rotation The rotation angle.
+        /// \param Rotation The angle to rotate by.
         /// \return The rotation transformation matrix.
         ZY_INLINE static Matrix3x2 FromRotation(Angle Rotation)
         {
@@ -322,11 +325,10 @@ inline namespace ZyMath
 
         /// \brief Creates a transformation matrix from translation, scale, rotation, and origin components.
         ///
-        /// \param Origin      The center point around which scale, rotation, and skew are applied.
+        /// \param Origin      The center point around which scale and rotation are applied.
         /// \param Translation The final position offset applied after all transformations.
         /// \param Scale       The scaling factors along the X and Y axes.
-        /// \param Rotation    The rotation angle (in radians or degrees based on Angle type).
-        ///
+        /// \param Rotation    The angle to rotate by.
         /// \return The transformation matrix combining scale, rotation, and translation around the given origin.
         ZY_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation)
         {
@@ -348,9 +350,8 @@ inline namespace ZyMath
         /// \param Origin      The center point around which scale, rotation, and skew are applied.
         /// \param Translation The final position offset applied after all transformations.
         /// \param Scale       The scaling factors along the X and Y axes.
-        /// \param Rotation    The rotation angle (in radians or degrees based on Angle type).
+        /// \param Rotation    The angle to rotate by.
         /// \param Skew        The shear angles: X skew shears horizontally, Y skew shears vertically.
-        ///
         /// \return The transformation matrix combining scale, rotation, skew, and translation around the given origin.
         ZY_INLINE static Matrix3x2 FromTransform(
             Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
@@ -377,8 +378,8 @@ inline namespace ZyMath
         /// \return The matrix with the translation applied.
         ZY_INLINE static constexpr Matrix3x2 WithTranslation(ConstRef<Matrix3x2> Matrix, Vector2 Offset)
         {
-            const Vector3 Column0 = Matrix.GetColumn(0);
-            const Vector3 Column1 = Matrix.GetColumn(1);
+            const Vector3 Column0 = Matrix.mColumns[0];
+            const Vector3 Column1 = Matrix.mColumns[1];
 
             return Matrix3x2(Column0.GetX(), Column0.GetY(), Column0.GetZ() + Offset.GetX(),
                              Column1.GetX(), Column1.GetY(), Column1.GetZ() + Offset.GetY());
@@ -391,8 +392,8 @@ inline namespace ZyMath
         /// \return The matrix with the scaling applied.
         ZY_INLINE static constexpr Matrix3x2 WithScale(ConstRef<Matrix3x2> Matrix, Vector2 Factor)
         {
-            const Vector3 Column0 = Matrix.GetColumn(0);
-            const Vector3 Column1 = Matrix.GetColumn(1);
+            const Vector3 Column0 = Matrix.mColumns[0];
+            const Vector3 Column1 = Matrix.mColumns[1];
 
             return Matrix3x2(Column0.GetX() * Factor.GetX(), Column0.GetY() * Factor.GetX(), Column0.GetZ(),
                              Column1.GetX() * Factor.GetY(), Column1.GetY() * Factor.GetY(), Column1.GetZ());

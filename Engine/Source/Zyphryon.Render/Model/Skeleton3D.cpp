@@ -75,8 +75,7 @@ namespace ZyRender
             const Matrix4x3 Transform
                 = Matrix4x3::FromTransform(Local.Position[Index], Local.Scale[Index], Local.Rotation[Index]);
 
-            // The parent is already final, since the ordering guarantees it was reached first, so a single
-            // multiply carries this bone the whole way into skeleton space.
+            // The parent was reached first, so one multiply takes the bone into skeleton space.
             if (const SInt16 Owner = mBones[Index].Parent; Owner == kRoot)
             {
                 Output[Index] = Transform;

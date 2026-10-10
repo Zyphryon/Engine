@@ -82,7 +82,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the color is opaque (alpha channel is at maximum value).
         ///
-        /// \return `true` if the color is opaque, `false` otherwise.
+        /// \return `true` if the alpha is at its maximum, `false` otherwise.
         ZY_INLINE constexpr Bool IsOpaque() const
         {
             return GetAlpha() == Limit();
@@ -90,7 +90,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the color is transparent (alpha channel is below maximum value).
         ///
-        /// \return `true` if the color is transparent, `false` otherwise.
+        /// \return `true` if the alpha is below its maximum, `false` otherwise.
         ZY_INLINE constexpr Bool IsTransparent() const
         {
             return GetAlpha() < Limit();
@@ -105,7 +105,7 @@ inline namespace ZyMath
             const UInt32 G = Narrow(mComponents[1]);
             const UInt32 B = Narrow(mComponents[2]);
             const UInt32 A = Narrow(mComponents[3]);
-            return (A << 24) | (B  << 16) | (G << 8) | R;
+            return (A << 24) | (B << 16) | (G << 8) | R;
         }
 
         /// \brief Converts a floating-point color to an 8-bit integer color.
@@ -149,10 +149,11 @@ inline namespace ZyMath
         /// \return A new color that is the sum of this color and the input color.
         ZY_INLINE constexpr AnyColor operator+(AnyColor Other) const
         {
-            return AnyColor(mComponents[0] + Other.mComponents[0],
-                            mComponents[1] + Other.mComponents[1],
-                            mComponents[2] + Other.mComponents[2],
-                            mComponents[3] + Other.mComponents[3]);
+            return AnyColor(
+                mComponents[0] + Other.mComponents[0],
+                mComponents[1] + Other.mComponents[1],
+                mComponents[2] + Other.mComponents[2],
+                mComponents[3] + Other.mComponents[3]);
         }
 
         /// \brief Adds a scalar to all channels of this color.
@@ -170,10 +171,11 @@ inline namespace ZyMath
         /// \return A new color that is the difference of the two colors.
         ZY_INLINE constexpr AnyColor operator-(AnyColor Other) const
         {
-            return AnyColor(mComponents[0] - Other.mComponents[0],
-                            mComponents[1] - Other.mComponents[1],
-                            mComponents[2] - Other.mComponents[2],
-                            mComponents[3] - Other.mComponents[3]);
+            return AnyColor(
+                mComponents[0] - Other.mComponents[0],
+                mComponents[1] - Other.mComponents[1],
+                mComponents[2] - Other.mComponents[2],
+                mComponents[3] - Other.mComponents[3]);
         }
 
         /// \brief Subtracts a scalar from all channels of this color.
@@ -191,10 +193,11 @@ inline namespace ZyMath
         /// \return A new color that is the product of the two colors.
         ZY_INLINE constexpr AnyColor operator*(AnyColor Other) const
         {
-            return AnyColor(mComponents[0] * Other.mComponents[0],
-                            mComponents[1] * Other.mComponents[1],
-                            mComponents[2] * Other.mComponents[2],
-                            mComponents[3] * Other.mComponents[3]);
+            return AnyColor(
+                mComponents[0] * Other.mComponents[0],
+                mComponents[1] * Other.mComponents[1],
+                mComponents[2] * Other.mComponents[2],
+                mComponents[3] * Other.mComponents[3]);
         }
 
         /// \brief Multiplies all channels of this color by a scalar.
@@ -217,10 +220,11 @@ inline namespace ZyMath
             ZY_ASSERT(!::IsAlmostZero(Other.mComponents[2]), "Division by zero (Blue)");
             ZY_ASSERT(!::IsAlmostZero(Other.mComponents[3]), "Division by zero (Alpha)");
 
-            return AnyColor(mComponents[0] / Other.mComponents[0],
-                            mComponents[1] / Other.mComponents[1],
-                            mComponents[2] / Other.mComponents[2],
-                            mComponents[3] / Other.mComponents[3]);
+            return AnyColor(
+                mComponents[0] / Other.mComponents[0],
+                mComponents[1] / Other.mComponents[1],
+                mComponents[2] / Other.mComponents[2],
+                mComponents[3] / Other.mComponents[3]);
         }
 
         /// \brief Divides all channels of this color by a scalar.
@@ -340,7 +344,7 @@ inline namespace ZyMath
         template<typename Primitive = Type>
         ZY_INLINE static constexpr Primitive Limit()
         {
-            if constexpr(IsReal<Primitive>)
+            if constexpr (IsReal<Primitive>)
             {
                 return 1.0f;
             }
@@ -350,7 +354,7 @@ inline namespace ZyMath
             }
         }
 
-        /// \brief Narrows a channel to the eight bits a packed colour stores it in.
+        /// \brief Narrows a channel to the eight bits a packed color stores it in.
         ///
         /// \param Channel The channel to narrow.
         /// \return The channel spread over zero through 255 and rounded to the nearest step for real types.
@@ -374,7 +378,9 @@ inline namespace ZyMath
         {
             const Type Value = ::Clamp(Channel, Type(0), Limit());
 
-            return (Value <= Type(0.04045)) ? (Value / Type(12.92)) : Pow((Value + Type(0.055)) / Type(1.055), Type(2.4));
+            return (Value <= Type(0.04045))
+                ? (Value / Type(12.92))
+                : Pow((Value + Type(0.055)) / Type(1.055), Type(2.4));
         }
 
         /// \brief Encodes a linear channel into sRGB space.
@@ -385,7 +391,20 @@ inline namespace ZyMath
         {
             const Type Value = ::Clamp(Channel, Type(0), Limit());
 
-            return (Value <= Type(0.0031308)) ? (Value * Type(12.92)) : (Type(1.055) * Pow(Value, Type(1) / Type(2.4)) - Type(0.055));
+            return (Value <= Type(0.0031308))
+                ? (Value * Type(12.92))
+                : (Type(1.055) * Pow(Value, Type(1) / Type(2.4)) - Type(0.055));
+        }
+
+        /// \brief Blends one channel toward another through real arithmetic.
+        ///
+        /// \param From       The channel at zero.
+        /// \param To         The channel at one.
+        /// \param Percentage The interpolation factor, in the range [0, 1].
+        /// \return The blended channel.
+        ZY_INLINE static constexpr Type Blend(Type From, Type To, Real32 Percentage)
+        {
+            return static_cast<Type>(::Lerp(static_cast<Real32>(From), static_cast<Real32>(To), Percentage));
         }
 
     public:
@@ -393,7 +412,7 @@ inline namespace ZyMath
         /// \brief Constructs a color from a hexadecimal string in the format "#RRGGBB" or "#RRGGBBAA".
         ///
         /// \param Hexadecimal The hexadecimal color string to parse.
-        /// \return The parsed color, or transparent black if the format is invalid.
+        /// \return The parsed color, where a channel that fails to parse reads as zero and a missing alpha as opaque.
         ZY_INLINE static constexpr AnyColor FromHexadecimal(Text Hexadecimal)
         {
             UInt Cursor = 0;
@@ -402,7 +421,9 @@ inline namespace ZyMath
             const UInt8 R = StrExtractNumber<16, UInt8>(Hexadecimal, Cursor);
             const UInt8 G = StrExtractNumber<16, UInt8>(Hexadecimal, Cursor);
             const UInt8 B = StrExtractNumber<16, UInt8>(Hexadecimal, Cursor);
-            const UInt8 A = (Hexadecimal.GetSize() >= 8) ? StrExtractNumber<16, UInt8>(Hexadecimal, Cursor) : Limit<UInt8>();
+            const UInt8 A = (Hexadecimal.GetSize() >= 8)
+                ? StrExtractNumber<16, UInt8>(Hexadecimal, Cursor)
+                : Limit<UInt8>();
 
             if constexpr (IsReal<Type>)
             {
@@ -418,7 +439,7 @@ inline namespace ZyMath
         /// \brief Converts a color from 8-bit RGBA format to 32-bit floating-point format.
         ///
         /// \param Color The color in 8-bit RGBA format to convert.
-        /// \return The converted color in 32-bit floating-point format, with each channel normalized to the range [0, 1].
+        /// \return The color in 32-bit floating-point format, with each channel normalized to [0, 1].
         ZY_INLINE static constexpr AnyColor<Real32> FromColor8(AnyColor<UInt8> Color)
         {
             constexpr Real32 kInvLimit = 1.0f / Limit<UInt8>();
@@ -434,13 +455,15 @@ inline namespace ZyMath
         ///
         /// \param Hue   The hue in turns, where one full revolution of the color wheel spans [0, 1).
         /// \param Alpha The alpha component in the range [0, 255].
-        /// \return The color corresponding to the given hue.
+        /// \return The color at that hue, at full saturation and brightness.
         ZY_INLINE static constexpr AnyColor FromHue(Real32 Hue, UInt8 Alpha = 255)
         {
             const Real32 H = (Hue - Floor(Hue)) * 6.0f;
             const Real32 X = 1.0f - Abs(Mod(H, 2.0f) - 1.0f);
 
-            Real32 R = 0.0f, G = 0.0f, B = 0.0f;
+            Real32 R = 0.0f;
+            Real32 G = 0.0f;
+            Real32 B = 0.0f;
 
             switch (static_cast<UInt32>(H))
             {
@@ -474,19 +497,21 @@ inline namespace ZyMath
             {
                 constexpr Real32 kInvLimit = 1.0f / Limit<UInt8>();
 
-                return AnyColor(static_cast<Type>(R),
-                                static_cast<Type>(G),
-                                static_cast<Type>(B),
-                                static_cast<Type>(Alpha * kInvLimit));
+                return AnyColor(
+                    static_cast<Type>(R),
+                    static_cast<Type>(G),
+                    static_cast<Type>(B),
+                    static_cast<Type>(Alpha * kInvLimit));
             }
             else
             {
                 constexpr Real32 kLimit = static_cast<Real32>(Limit<Type>());
 
-                return AnyColor(static_cast<Type>(R * kLimit),
-                                static_cast<Type>(G * kLimit),
-                                static_cast<Type>(B * kLimit),
-                                static_cast<Type>(Alpha));
+                return AnyColor(
+                    static_cast<Type>(R * kLimit),
+                    static_cast<Type>(G * kLimit),
+                    static_cast<Type>(B * kLimit),
+                    static_cast<Type>(Alpha));
             }
         }
 
@@ -544,6 +569,7 @@ inline namespace ZyMath
         ///
         /// \param Intensity The value replicated across the red, green, and blue components.
         /// \param Alpha     The alpha component value.
+        /// \return A grayscale color with the given intensity and alpha.
         ZY_INLINE static constexpr AnyColor Gray(Type Intensity, Type Alpha = Limit())
         {
             return AnyColor(Intensity, Intensity, Intensity, Alpha);
@@ -604,10 +630,11 @@ inline namespace ZyMath
         /// \return A color with the component-wise minimum values.
         ZY_INLINE static constexpr AnyColor Min(AnyColor First, AnyColor Second)
         {
-            return AnyColor(::Min(First.GetRed(),   Second.GetRed()),
-                            ::Min(First.GetGreen(), Second.GetGreen()),
-                            ::Min(First.GetBlue(),  Second.GetBlue()),
-                            ::Min(First.GetAlpha(), Second.GetAlpha()));
+            return AnyColor(
+                ::Min(First.GetRed(),   Second.GetRed()),
+                ::Min(First.GetGreen(), Second.GetGreen()),
+                ::Min(First.GetBlue(),  Second.GetBlue()),
+                ::Min(First.GetAlpha(), Second.GetAlpha()));
         }
 
         /// \brief Returns the component-wise maximum of two colors.
@@ -617,29 +644,31 @@ inline namespace ZyMath
         /// \return A color with the component-wise maximum values.
         ZY_INLINE static constexpr AnyColor Max(AnyColor First, AnyColor Second)
         {
-            return AnyColor(::Max(First.GetRed(),   Second.GetRed()),
-                            ::Max(First.GetGreen(), Second.GetGreen()),
-                            ::Max(First.GetBlue(),  Second.GetBlue()),
-                            ::Max(First.GetAlpha(), Second.GetAlpha()));
+            return AnyColor(
+                ::Max(First.GetRed(),   Second.GetRed()),
+                ::Max(First.GetGreen(), Second.GetGreen()),
+                ::Max(First.GetBlue(),  Second.GetBlue()),
+                ::Max(First.GetAlpha(), Second.GetAlpha()));
         }
 
         /// \brief Clamps each channel of a color between a minimum and maximum value.
         ///
-        /// \param Color   The input color.
+        /// \param Color   The color to clamp.
         /// \param Minimum The minimum allowed channel value.
         /// \param Maximum The maximum allowed channel value.
         /// \return A color with the component values clamped.
         ZY_INLINE static constexpr AnyColor Clamp(AnyColor Color, Type Minimum, Type Maximum)
         {
-            return AnyColor(::Clamp(Color.GetRed(),   Minimum, Maximum),
-                            ::Clamp(Color.GetGreen(), Minimum, Maximum),
-                            ::Clamp(Color.GetBlue(),  Minimum, Maximum),
-                            ::Clamp(Color.GetAlpha(), Minimum, Maximum));
+            return AnyColor(
+                ::Clamp(Color.GetRed(),   Minimum, Maximum),
+                ::Clamp(Color.GetGreen(), Minimum, Maximum),
+                ::Clamp(Color.GetBlue(),  Minimum, Maximum),
+                ::Clamp(Color.GetAlpha(), Minimum, Maximum));
         }
 
         /// \brief Clamps all channels of a color to the valid range [0, Limit].
         ///
-        /// \param Color The input color.
+        /// \param Color The color to clamp.
         /// \return A color with all channels saturated to the legal range.
         ZY_INLINE static constexpr AnyColor Saturate(AnyColor Color)
         {
@@ -648,67 +677,71 @@ inline namespace ZyMath
 
         /// \brief Multiplies the RGB channels of two colors component-wise.
         ///
-        /// \param First  The first color.
-        /// \param Second The second color.
+        /// \param First  The color to modulate.
+        /// \param Second The color whose RGB channels scale it.
         /// \return A color with modulated RGB and the alpha of \p First.
         ZY_INLINE static constexpr AnyColor Modulate(AnyColor First, AnyColor Second)
             requires(IsReal<Type>)
         {
-            const Type Red   = (First.GetRed() * Second.GetRed());
-            const Type Green = (First.GetGreen() * Second.GetGreen());
-            const Type Blue  = (First.GetBlue() * Second.GetBlue());
+            const Type Red   = First.GetRed()   * Second.GetRed();
+            const Type Green = First.GetGreen() * Second.GetGreen();
+            const Type Blue  = First.GetBlue()  * Second.GetBlue();
             return AnyColor(Red, Green, Blue, First.GetAlpha());
         }
 
         /// \brief Multiplies the RGB channels of a color by a scalar.
         ///
-        /// \param Color  The input color.
+        /// \param Color  The color to scale.
         /// \param Scalar The factor applied to the red, green, and blue channels.
         /// \return A color with modulated RGB and the alpha of \p Color.
         ZY_INLINE static constexpr AnyColor Modulate(AnyColor Color, Type Scalar)
             requires(IsReal<Type>)
         {
-            const Type Red   = (Color.GetRed() * Scalar);
-            const Type Green = (Color.GetGreen() * Scalar);
-            const Type Blue  = (Color.GetBlue() * Scalar);
+            const Type Red   = Color.GetRed()   * Scalar;
+            const Type Green = Color.GetGreen() * Scalar;
+            const Type Blue  = Color.GetBlue()  * Scalar;
             return AnyColor(Red, Green, Blue, Color.GetAlpha());
         }
 
         /// \brief Multiplies the RGB channels of a color by those of a real one, holding them in range.
         ///
-        /// \param First  The first color.
+        /// \param First  The color to modulate.
         /// \param Second The real color whose channels scale it.
         /// \return A color with modulated RGB and the alpha of \p First.
         ZY_INLINE static constexpr AnyColor Modulate(AnyColor First, AnyColor<Real32> Second)
             requires(!IsReal<Type>)
         {
-            constexpr Real32 Maximum = static_cast<Real32>(Limit());
+            constexpr Real32 kLimit = static_cast<Real32>(Limit());
 
             const Real32 Red   = static_cast<Real32>(First.GetRed())   * Second.GetRed();
             const Real32 Green = static_cast<Real32>(First.GetGreen()) * Second.GetGreen();
             const Real32 Blue  = static_cast<Real32>(First.GetBlue())  * Second.GetBlue();
 
             return AnyColor(
-                ::Clamp(Red,   0.0f, Maximum),
-                ::Clamp(Green, 0.0f, Maximum),
-                ::Clamp(Blue,  0.0f, Maximum),
+                ::Clamp(Red,   0.0f, kLimit),
+                ::Clamp(Green, 0.0f, kLimit),
+                ::Clamp(Blue,  0.0f, kLimit),
                 First.GetAlpha());
         }
 
-        /// \brief Returns the inverted color (1 - channel).
+        /// \brief Inverts the RGB channels of a color, subtracting each from the channel limit.
         ///
-        /// \param Color The input color.
-        /// \return A color where each RGB channel is inverted. Alpha is preserved.
+        /// \param Color The color to invert.
+        /// \return The inverted color, with the alpha of \p Color.
         ZY_INLINE static constexpr AnyColor Invert(AnyColor Color)
         {
-            return AnyColor(Limit() - Color.GetRed(), Limit() - Color.GetGreen(), Limit() - Color.GetBlue(), Color.GetAlpha());
+            return AnyColor(
+                Limit() - Color.GetRed(),
+                Limit() - Color.GetGreen(),
+                Limit() - Color.GetBlue(),
+                Color.GetAlpha());
         }
 
         /// \brief Returns the same color with another alpha.
         ///
         /// \param Color The input color, whose RGB channels are kept.
         /// \param Alpha The alpha the result takes.
-        /// \return A color with the RGB channels of \a Color and the given alpha.
+        /// \return A color with the RGB channels of \p Color and the given alpha.
         ZY_INLINE static constexpr AnyColor WithAlpha(AnyColor Color, Type Alpha)
         {
             return AnyColor(Color.GetRed(), Color.GetGreen(), Color.GetBlue(), Alpha);
@@ -718,7 +751,7 @@ inline namespace ZyMath
         ///
         /// \param Color   The input color, whose RGB channels are kept.
         /// \param Opacity The factor the alpha is scaled by, where 0 is fully transparent and 1 leaves it as it is.
-        /// \return A color with the RGB channels of \a Color and its alpha scaled by \a Opacity.
+        /// \return A color with the RGB channels of \p Color and its alpha scaled by \p Opacity.
         ZY_INLINE static constexpr AnyColor Fade(AnyColor Color, Real32 Opacity)
         {
             if constexpr (IsReal<Type>)
@@ -727,9 +760,9 @@ inline namespace ZyMath
             }
             else
             {
-                constexpr Real32 Maximum = static_cast<Real32>(Limit());
+                constexpr Real32 kLimit = static_cast<Real32>(Limit());
 
-                const Real32 Alpha = ::Clamp(static_cast<Real32>(Color.GetAlpha()) * Opacity, 0.0f, Maximum);
+                const Real32 Alpha = ::Clamp(static_cast<Real32>(Color.GetAlpha()) * Opacity, 0.0f, kLimit);
                 return WithAlpha(Color, static_cast<Type>(Alpha + 0.5f));
             }
         }
@@ -739,19 +772,14 @@ inline namespace ZyMath
         /// \param Start      The starting color value.
         /// \param End        The ending color value.
         /// \param Percentage The interpolation factor, in the range [0, 1].
-        /// \return The color value interpolated between \a Start and \a End.
+        /// \return The color value interpolated between \p Start and \p End.
         ZY_INLINE static constexpr AnyColor Lerp(ConstRef<AnyColor> Start, ConstRef<AnyColor> End, Real32 Percentage)
         {
-            const auto Blend = [Percentage](Type From, Type To)
-            {
-                return static_cast<Type>(::Lerp(static_cast<Real32>(From), static_cast<Real32>(To), Percentage));
-            };
-
             return AnyColor(
-                Blend(Start.GetRed(),   End.GetRed()),
-                Blend(Start.GetGreen(), End.GetGreen()),
-                Blend(Start.GetBlue(),  End.GetBlue()),
-                Blend(Start.GetAlpha(), End.GetAlpha()));
+                Blend(Start.GetRed(),   End.GetRed(),   Percentage),
+                Blend(Start.GetGreen(), End.GetGreen(), Percentage),
+                Blend(Start.GetBlue(),  End.GetBlue(),  Percentage),
+                Blend(Start.GetAlpha(), End.GetAlpha(), Percentage));
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.
@@ -771,7 +799,7 @@ inline namespace ZyMath
             }
             else
             {
-                static_assert(false, "The colour has no name for the type it holds");
+                static_assert(false, "The color has no name for the type it holds");
             }
             return Presentation;
         }
@@ -781,7 +809,7 @@ inline namespace ZyMath
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Array<Type , 4> mComponents;
+        Array<Type, 4> mComponents;
     };
 
     /// \brief Represents a color with 32-bit floating-point channels in the normalized range [0, 1].

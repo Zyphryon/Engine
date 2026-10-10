@@ -40,7 +40,7 @@ namespace ZyScene
 
         /// \brief Checks whether the system names one of a world.
         ///
-        /// \return `true` if it does, `false` for one that names nothing.
+        /// \return `true` if it holds a handle, `false` for one that names nothing or was destroyed.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return mHandle != 0;

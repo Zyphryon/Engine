@@ -78,7 +78,7 @@ namespace ZyNetwork
         /// \param Output Receives the host and port, left unchanged if the endpoint cannot be converted.
         void Describe(Ref<Address> Output) const;
 
-        /// \brief Writes the address out in the one form this build weighs it by.
+        /// \brief Writes the address out in a canonical form, the same bytes for the same peer.
         ///
         /// \param Output Receives the address, which must have room for \ref kCapacity bytes.
         /// \return The number of bytes written, or zero where the address is of no family this build knows.
@@ -86,7 +86,7 @@ namespace ZyNetwork
 
         /// \brief Computes a 64-bit hash of the address the endpoint refers to.
         ///
-        /// \return A 64-bit hash of the endpoint.
+        /// \return The hash of the canonical address, or `0` for a family this build does not know.
         ZY_INLINE UInt64 Hash() const
         {
             Byte       Digest[kCapacity];

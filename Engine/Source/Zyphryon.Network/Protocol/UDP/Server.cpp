@@ -109,14 +109,7 @@ namespace ZyNetwork::UDP
 
         mPeers.ForEachOrRemove([&](ConstRef<Peer> Entry)
         {
-            if (mTimeout > 0.0 && Time - Entry.Freshness > mTimeout)
-            {
-                Output.Disconnect(Entry.Link, Reason::Timeout);
-
-                Forget(Entry);
-                return true;
-            }
-            return false;
+            return Lapse(Time, Entry, Output);
         });
 
         Drain(Watcher, Time);
@@ -238,8 +231,6 @@ namespace ZyNetwork::UDP
             return;
         }
 
-        // Sent out of the endpoint's own room like any other datagram, so an address that never answers costs
-        // nothing but the moment it takes to leave and is never written down anywhere.
         const auto  Index = mFlights.Allocate();
         Ref<Flight> Carry = mFlights[Index];
 
@@ -259,9 +250,50 @@ namespace ZyNetwork::UDP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Server::Absorb(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, UInt32 Size, Ref<Mailbox> Output)
+    {
+        Ref<Peer>        Entry = mPeers[Slot];
+        const Connection Link  = Entry.Link;
+
+        Entry.Freshness = mClock;
+
+        Entry.Session.Parse(
+            Time,
+            ConstSpan(mInbound.GetData() + kEnvelope, Size - kEnvelope),
+            [&](Delivery Mode, ConstSpan<Byte> Message)
+            {
+                Output.Message(Link, Mode, Message);
+            });
+
+        if (Entry.Session.IsBroken())
+        {
+            LOG_W("Network: a peer sent a packet this build cannot read and was let go of");
+
+            Retire(Watcher, Link, Reason::Protocol, Output);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Server::Forget(ConstRef<Peer> Entry)
     {
         mRegistry.Erase(Digest(Entry.Remote.Hash()));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Server::Lapse(Real64 Time, ConstRef<Peer> Entry, Ref<Mailbox> Output)
+    {
+        if (mTimeout > 0.0 && Time - Entry.Freshness > mTimeout)
+        {
+            Output.Disconnect(Entry.Link, Reason::Timeout);
+
+            Forget(Entry);
+            return true;
+        }
+        return false;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -310,10 +342,8 @@ namespace ZyNetwork::UDP
             return false;
         }
 
-        // Built into room the endpoint owns rather than the peer's own, so the peer may be let go of while the
-        // datagram it asked for is still on its way.
-        const auto   Index = mFlights.Allocate();
-        Ref<Flight>  Carry = mFlights[Index];
+        const auto  Index = mFlights.Allocate();
+        Ref<Flight> Carry = mFlights[Index];
 
         const Ptr<Byte> Data = Carry.Data.GetData();
         const UInt32    Size = Entry.Session.Build(Time, Span(Data + kEnvelope, Carry.Data.GetCapacity() - kEnvelope));
@@ -328,8 +358,7 @@ namespace ZyNetwork::UDP
         Carry.Peer = Slot;
         mCursor    = Slot.GetSlot();
 
-        // Posted under the room it went out of rather than under the peer, since that is what the answer has to
-        // name for the room to be taken back, and a write is reported to nobody else.
+        // Posted under the flight rather than the peer, since the completion has to name the flight to free it.
         const Connection Link = mLink.Derive(Index.Rebind<kMaxPeers>());
 
         if (!Watcher.Send(mSocket, Link, ConstSpan(Data, kEnvelope + Size), Entry.Remote))
@@ -348,30 +377,6 @@ namespace ZyNetwork::UDP
         if (mState == State::Live && !IsAwaiting(Operation::Receive))
         {
             Await(Operation::Receive, Watcher.ReceiveFrom(mSocket, mLink, mInbound));
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Server::Absorb(Ref<Proactor> Watcher, Real64 Time, Connection::Peer Slot, UInt32 Size, Ref<Mailbox> Output)
-    {
-        Ref<Peer>        Entry = mPeers[Slot];
-        const Connection Link  = Entry.Link;
-
-        Entry.Freshness = mClock;
-
-        Entry.Session.Parse(Time, ConstSpan(mInbound.GetData() + kEnvelope, Size - kEnvelope),
-            [&](Delivery Mode, ConstSpan<Byte> Message)
-            {
-                Output.Message(Link, Mode, Message);
-            });
-
-        if (Entry.Session.IsBroken())
-        {
-            LOG_W("Network: a peer sent further ahead than it may and was let go of");
-
-            Retire(Watcher, Link, Reason::Protocol, Output);
         }
     }
 

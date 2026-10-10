@@ -45,26 +45,18 @@ namespace ZyGraphic
             return false;
         }
 
-        const TextureLayout   Layout  = Input.Read<TextureLayout>();
-        const TextureFormat   Format  = Input.Read<TextureFormat>();
-        const UInt16          Width   = Input.Read<UInt16>();
-        const UInt16          Height  = Input.Read<UInt16>();
-        const UInt16          Layers  = Input.Read<UInt16>();
-        const UInt8           Mipmaps = Input.Read<UInt8>();
-        const UInt32          Size    = Input.Read<UInt32>();
-        const ConstSpan<Byte> Payload = Input.ReadBlock<UInt32, Byte>();
+        const TextureLayout Layout  = Input.Read<TextureLayout>();
+        const TextureFormat Format  = Input.Read<TextureFormat>();
+        const UInt16        Width   = Input.Read<UInt16>();
+        const UInt16        Height  = Input.Read<UInt16>();
+        const UInt16        Layers  = Input.Read<UInt16>();
+        const UInt8         Mipmaps = Input.Read<UInt8>();
 
-        if (Size == 0 || Payload.IsEmpty())
-        {
-            LOG_W("'{0}' has empty texture data", Asset.GetKey());
-            return false;
-        }
-
-        Blob Buffer = LZ4Expand(Payload, Size);
+        Blob Buffer = Input.ReadBlockCompressed<UInt32>();
 
         if (!Buffer)
         {
-            LOG_W("'{0}' failed to decompress ({1} != {2})", Asset.GetKey(), Payload.GetSize(), Size);
+            LOG_W("'{0}' has an invalid texture payload", Asset.GetKey());
             return false;
         }
 

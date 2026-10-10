@@ -27,14 +27,14 @@ namespace ZyScene
     {
     public:
 
-        /// \brief Constructs the scene service and registers it with the system host.
+        /// \brief Constructs the scene service, declaring the world's clock.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
         /// \brief Advances the world's clock, then runs every phase in order.
         ///
-        /// \param Delta The elapsed time since the last tick.
+        /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
 
         /// \brief Gets the world's time, scaled by the timescale.
@@ -44,7 +44,7 @@ namespace ZyScene
         {
             return GetWorld().Get<const Clock>()->GetAbsolute();
         }
-        
+
         /// \brief Sets how fast the world's clock runs against real time, where zero holds it still.
         ///
         /// \param Timescale The multiplier applied to each tick.

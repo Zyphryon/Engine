@@ -19,15 +19,15 @@ namespace ZyPlatform
     {
     public:
 
-        /// \brief Platform-specific handle to the monitor.
+        /// \brief The handle the platform knows the monitor by.
         using Handle = Ptr<void>;
 
         /// \brief Specifies the characteristics of a monitor.
         enum class Attribute : UInt8
         {
-            None      = 0,          ///< No special attributes.
-            Primary   = 1 << 0,     ///< The monitor is the primary display.
-            HDR       = 1 << 1,     ///< The monitor supports HDR.
+            None    = 0,        ///< No special attributes.
+            Primary = 1 << 0,   ///< The monitor is the primary display.
+            HDR     = 1 << 1,   ///< The monitor supports HDR.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Attribute)
 
@@ -170,7 +170,7 @@ namespace ZyPlatform
 
         /// \brief Sets an attribute for the monitor.
         ///
-        /// \param Attribute The attribute to assign to the monitor.
+        /// \param Attribute The attribute to add to those already set.
         ZY_INLINE void SetAttribute(Attribute Attribute)
         {
             mAttributes = SetBit(mAttributes, Attribute);

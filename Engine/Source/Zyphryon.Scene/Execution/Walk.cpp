@@ -148,7 +148,7 @@ namespace ZyScene
         {
             return false;
         }
-        
+
         // Every row of every match against the entity it held then, a page at a time.
         ConstPtr<Handle> Expected = State.Snapshot.GetData();
 

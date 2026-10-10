@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Format/Processor.hpp"
+#include "Symbol.hpp"
 #include "Unicode.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -23,8 +24,7 @@ inline namespace ZyBase
 {
     /// \brief Represents a mutable string container with optional inline storage.
     ///
-    /// When \p Capacity is zero, the string uses heap allocation and grows dynamically.
-    /// When \p Capacity is greater than zero, the string uses stack storage with a fixed upper bound.
+    /// \tparam Capacity The most characters held inline, or zero for a heap-backed string that grows.
     template<UInt Capacity>
     class String final
     {
@@ -38,7 +38,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a string with pre-allocated storage for \p Length characters.
         ///
-        /// \param Length The initial length of the string. Must be less than or equal to \p Capacity.
+        /// \param Length The number of characters to reserve room for, at most \p Capacity for a fixed string.
         ZY_INLINE constexpr String(UInt Length)
         {
             Reserve(Length);
@@ -52,7 +52,9 @@ inline namespace ZyBase
             Assign(Content);
         }
 
-        /// \brief Constructs a string with a repeated character.
+        /// \brief Constructs a string filled to its capacity with one character.
+        ///
+        /// \note A heap-backed string has no capacity yet and is left empty.
         ///
         /// \param Character The character to fill the string with.
         ZY_INLINE constexpr String(Char Character)
@@ -86,7 +88,7 @@ inline namespace ZyBase
             Seal();
         }
 
-        /// \brief Returns a pointer to the mutable character data.
+        /// \brief Gets a pointer to the mutable character data.
         ///
         /// \return A pointer to the first character, which a terminator always follows.
         ZY_INLINE constexpr Ptr<Char> GetData()
@@ -101,7 +103,7 @@ inline namespace ZyBase
             return mBuffer.GetData();
         }
 
-        /// \brief Returns a pointer to the const character data.
+        /// \brief Gets a pointer to the const character data.
         ///
         /// \return A read-only pointer to the first character, which a terminator always follows.
         ZY_INLINE constexpr ConstPtr<Char> GetData() const
@@ -116,7 +118,7 @@ inline namespace ZyBase
             return mBuffer.GetData();
         }
 
-        /// \brief Returns the number of characters in the string.
+        /// \brief Gets the number of characters in the string.
         ///
         /// \return A count of characters currently in the string.
         ZY_INLINE constexpr UInt GetSize() const
@@ -124,7 +126,7 @@ inline namespace ZyBase
             return mBuffer.GetSize();
         }
 
-        /// \brief Returns the maximum number of characters the string can hold without reallocation.
+        /// \brief Gets the maximum number of characters the string can hold without reallocation.
         ///
         /// \return A maximum character count the string can hold without reallocation.
         ZY_INLINE constexpr UInt GetCapacity() const
@@ -139,7 +141,7 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Checks if the string is empty.
+        /// \brief Checks whether the string is empty.
         ///
         /// \return `true` if the string contains no characters, `false` otherwise.
         ZY_INLINE constexpr Bool IsEmpty() const
@@ -147,7 +149,7 @@ inline namespace ZyBase
             return mBuffer.IsEmpty();
         }
 
-        /// \brief Checks if the string has reached its maximum capacity.
+        /// \brief Checks whether the string has reached its maximum capacity.
         ///
         /// \return `true` if the string is at capacity, `false` otherwise.
         ZY_INLINE constexpr Bool IsFull() const
@@ -238,9 +240,9 @@ inline namespace ZyBase
             Seal();
         }
 
-        /// \brief Appends a unicode codepoint as UTF-8 encoded bytes.
+        /// \brief Appends a Unicode codepoint as UTF-8.
         ///
-        /// \param Codepoint The unicode codepoint to encode.
+        /// \param Codepoint The codepoint to encode.
         ZY_INLINE constexpr void AppendCodepoint(UInt32 Codepoint)
         {
             const UInt Offset = mBuffer.GetSize();
@@ -251,7 +253,7 @@ inline namespace ZyBase
 
         /// \brief Appends an integral number to the end of the string.
         ///
-        /// \param Number    The number to append.
+        /// \param Number    The number to append, which must not be negative.
         /// \param Digits    The number of digits to append.
         /// \param Base      The numerical base to use.
         /// \param Uppercase `true` to use uppercase letters for bases greater than 10, `false` for lowercase.
@@ -383,9 +385,9 @@ inline namespace ZyBase
             Seal();
         }
 
-        /// \brief Removes up to \p Count characters from the end of the string.
+        /// \brief Removes the last \p Count characters from the string.
         ///
-        /// \param Count The maximum number of characters to remove from the end of the string.
+        /// \param Count The number of characters to remove, from one to the size.
         ZY_INLINE constexpr void RemoveLast(UInt Count)
         {
             mBuffer.Remove(mBuffer.GetSize() - Count, Count);
@@ -451,9 +453,7 @@ inline namespace ZyBase
         /// \return A new text view over the remaining characters, which is empty when the offset is the size.
         ZY_INLINE constexpr Text Slice(UInt Offset) const
         {
-            ZY_ASSERT(Offset <= mBuffer.GetSize(), "Slice offset exceeds string size");
-
-            return Text(GetData() + Offset, mBuffer.GetSize() - Offset);
+            return Text(* this).Slice(Offset);
         }
 
         /// \brief Creates a subview of this string of exactly the given length from the given offset.
@@ -463,9 +463,7 @@ inline namespace ZyBase
         /// \return A new text view representing the subview.
         ZY_INLINE constexpr Text Slice(UInt Offset, UInt Count) const
         {
-            ZY_ASSERT(Offset + Count <= mBuffer.GetSize(), "Slice range exceeds string size");
-
-            return Text(GetData() + Offset, Count);
+            return Text(* this).Slice(Offset, Count);
         }
 
         /// \brief Formats the string using a runtime pattern and parameters.
@@ -478,8 +476,6 @@ inline namespace ZyBase
             Clear();
 
             ZyFormat::Processor<String>::Format(* this, Pattern, Parameters...);
-
-            Seal();
         }
 
         /// \brief Formats the string using a compile-time pattern and parameters.
@@ -494,22 +490,14 @@ inline namespace ZyBase
             Clear();
 
             ZyFormat::Processor<String>::Format(* this, kPattern, Parameters...);
-
-            Seal();
         }
 
         /// \brief Computes a 64-bit hash of the string.
         ///
-        /// Uses FNV-1a at compile time and the engine's runtime hash otherwise.
-        ///
-        /// \return A 64-bit hash of the character data, or zero if the view is empty.
+        /// \return A 64-bit hash of the characters, or zero if the string is empty.
         ZY_INLINE constexpr UInt64 Hash() const
         {
-            if (const UInt Size = GetSize(); Size > 0)
-            {
-                return ZyBase::Hash(mBuffer.GetData(), Size);
-            }
-            return 0;
+            return Text(* this).Hash();
         }
 
         /// \brief Accesses a character at the specified index.
@@ -530,26 +518,26 @@ inline namespace ZyBase
             return mBuffer[Index];
         }
 
-        /// \brief Checks if this string is equal to the given text.
+        /// \brief Checks whether this string is equal to the given text.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if the strings are equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(Text Other) const
         {
-            return GetSize() == Other.GetSize() && ::Compare(GetData(), Other.GetData(), GetSize());
+            return Text(* this) == Other;
         }
 
-        /// \brief Checks if this string is equal to the given text.
+        /// \brief Checks whether this string is equal to a string literal.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if the strings are equal, `false` otherwise.
         template<UInt Count>
         ZY_INLINE constexpr Bool operator==(const Char (& Other)[Count]) const
         {
-            return GetSize() == Count - 1 && ::Compare(GetData(), Other, GetSize());
+            return Text(* this) == Text(Other);
         }
 
-        /// \brief Checks if this string is equal to another string.
+        /// \brief Checks whether this string is equal to another string.
         ///
         /// \param Other The string to compare with.
         /// \return `true` if the strings are equal, `false` otherwise.
@@ -558,40 +546,40 @@ inline namespace ZyBase
             return (* this) == Text(Other);
         }
 
-        /// \brief Checks if this string is lexicographically less than the given text.
+        /// \brief Checks whether this string is lexicographically less than the given text.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if this string is less than the given text, `false` otherwise.
         ZY_INLINE constexpr Bool operator<(Text Other) const
         {
-            return Compare(Other) < 0;
+            return StrCompare(* this, Other) < 0;
         }
 
-        /// \brief Checks if this string is lexicographically less than or equal to the given text.
+        /// \brief Checks whether this string is lexicographically less than or equal to the given text.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if this string is less than or equal to the given text, `false` otherwise.
         ZY_INLINE constexpr Bool operator<=(Text Other) const
         {
-            return Compare(Other) <= 0;
+            return StrCompare(* this, Other) <= 0;
         }
 
-        /// \brief Checks if this string is lexicographically greater than the given text.
+        /// \brief Checks whether this string is lexicographically greater than the given text.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if this string is greater than the given text, `false` otherwise.
         ZY_INLINE constexpr Bool operator>(Text Other) const
         {
-            return Compare(Other) > 0;
+            return StrCompare(* this, Other) > 0;
         }
 
-        /// \brief Checks if this string is lexicographically greater than or equal to the given text.
+        /// \brief Checks whether this string is lexicographically greater than or equal to the given text.
         ///
         /// \param Other The text to compare with.
         /// \return `true` if this string is greater than or equal to the given text, `false` otherwise.
         ZY_INLINE constexpr Bool operator>=(Text Other) const
         {
-            return Compare(Other) >= 0;
+            return StrCompare(* this, Other) >= 0;
         }
 
         /// \brief Assigns a single character to the string, replacing its entire contents.
@@ -617,7 +605,7 @@ inline namespace ZyBase
             return (* this);
         }
 
-        /// \brief Assigns a null-Seald string literal to the string, replacing its entire contents.
+        /// \brief Assigns a string literal to the string, replacing its entire contents.
         ///
         /// \param Literal The string literal to assign.
         /// \return A reference to this string.
@@ -684,36 +672,21 @@ inline namespace ZyBase
 
             for (UInt Index = 0; Index < Content.GetSize(); )
             {
-                const Wide Unit = Content[Index++];
+                const Wide Unit      = Content[Index++];
+                UInt32     Codepoint = static_cast<UInt32>(Unit);
 
-                UInt32 Codepoint;
-
-                if (Unit >= 0xD800 && Unit <= 0xDBFF)
-                {
-                    if (Index < Content.GetSize())
-                    {
-                        if (const Wide Low = Content[Index++]; Low >= 0xDC00 && Low <= 0xDFFF)
-                        {
-                            Codepoint = 0x10000 + ((static_cast<UInt32>(Unit - 0xD800) << 10) | (Low - 0xDC00));
-                        }
-                        else
-                        {
-                            Codepoint = 0xFFFD;
-                            --Index;
-                        }
-                    }
-                    else
-                    {
-                        Codepoint = 0xFFFD;
-                    }
-                }
-                else if (Unit >= 0xDC00 && Unit <= 0xDFFF)
+                if (Unit >= 0xD800 && Unit <= 0xDFFF)
                 {
                     Codepoint = 0xFFFD;
-                }
-                else
-                {
-                    Codepoint = static_cast<UInt32>(Unit);
+
+                    if (Unit <= 0xDBFF &&
+                        Index < Content.GetSize() &&
+                        Content[Index] >= 0xDC00 &&
+                        Content[Index] <= 0xDFFF)
+                    {
+                        Codepoint = 0x10000 + ((static_cast<UInt32>(Unit - 0xD800) << 10) | (Content[Index] - 0xDC00));
+                        ++Index;
+                    }
                 }
 
                 Result.AppendCodepoint(Codepoint);
@@ -740,24 +713,10 @@ inline namespace ZyBase
                     continue;
                 }
 
-                const UInt Digits    = (Marker == 'u' ? 4 : 8);
-                UInt32     Codepoint = 0;
-                UInt       Read      = 0;
-
-                for (; Read < Digits && Index + 2 + Read < Content.GetSize(); ++Read)
-                {
-                    const Char Digit = Content[Index + 2 + Read];
-                    const UInt Value = Digit >= '0' && Digit <= '9' ? Digit - '0'
-                                     : Digit >= 'a' && Digit <= 'f' ? Digit - 'a' + 10
-                                     : Digit >= 'A' && Digit <= 'F' ? Digit - 'A' + 10
-                                     : 16;
-
-                    if (Value > 15)
-                    {
-                        break;
-                    }
-                    Codepoint = (Codepoint << 4) | static_cast<UInt32>(Value);
-                }
+                const UInt   Digits    = (Marker == 'u' ? 4 : 8);
+                const Text   Hex       = Content.Slice(Index + 2, Min(Digits, Content.GetSize() - Index - 2));
+                UInt         Read      = 0;
+                const UInt32 Codepoint = StrExtractNumber<16, UInt32>(Hex, Read);
 
                 // An escape that was never finished is the writer's own text, and is left exactly as it stood.
                 if (Read < Digits)
@@ -822,14 +781,14 @@ inline namespace ZyBase
 
         /// \brief Ensures the underlying buffer is null-terminated at \ref GetData().
         ///
-        /// \note Must be called after any operation that mutates the buffer's contents or size.
+        /// \note Must be called after any operation that changes the size.
         ZY_INLINE constexpr void Seal()
         {
             const UInt Size = mBuffer.GetSize();
 
             if constexpr (Capacity > 0)
             {
-                ZY_ASSERT(Capacity >= Size, "Requested reserve length exceeds fixed capacity");
+                ZY_ASSERT(Capacity >= Size, "String size exceeds fixed capacity");
             }
             else
             {
@@ -866,22 +825,6 @@ inline namespace ZyBase
             Seal();
         }
 
-        /// \brief Performs three-way lexicographic comparison with the given text.
-        ///
-        /// \param Other The text to compare with.
-        /// \return A negative value if this string is less than \p Other, zero if equal, positive if greater.
-        ZY_INLINE constexpr SInt Compare(Text Other) const
-        {
-            for (UInt Index = 0, Limit = Min(GetSize(), Other.GetSize()); Index < Limit; ++Index)
-            {
-                if (const SInt Diff = mBuffer[Index] - Other[Index]; Diff != 0)
-                {
-                    return Diff;
-                }
-            }
-            return static_cast<SInt>(GetSize()) - static_cast<SInt>(Other.GetSize());
-        }
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -891,19 +834,19 @@ inline namespace ZyBase
     };
 
     /// \brief A heap-backed string with dynamic length and no inline storage limit.
-    using Str   = String<0>;
+    using Str    = String<0>;
 
     /// \brief A stack-backed string with a fixed capacity of 14 characters.
-    using Str16 = String<14>;
+    using Str16  = String<14>;
 
     /// \brief A stack-backed string with a fixed capacity of 30 characters.
-    using Str32 = String<30>;
+    using Str32  = String<30>;
 
     /// \brief A stack-backed string with a fixed capacity of 46 characters.
-    using Str48 = String<46>;
+    using Str48  = String<46>;
 
     /// \brief A stack-backed string with a fixed capacity of 62 characters.
-    using Str64 = String<62>;
+    using Str64  = String<62>;
 
     /// \brief A stack-backed string with a fixed capacity of 126 characters.
     using Str128 = String<126>;
@@ -915,7 +858,11 @@ inline namespace ZyBase
     /// \param Significant The most significant digits to write, from one to fifteen.
     ZY_API void StrWriteReal(Ref<Str32> Output, Real64 Number, UInt Significant);
 
-    /// \brief Allow concatenation of a string with a text literal.
+    /// \brief Concatenates a string and a text into a new string.
+    ///
+    /// \param Left  The string that comes first.
+    /// \param Right The text that follows it.
+    /// \return A new string holding both.
     template<UInt Capacity>
     constexpr String<Capacity> operator+(ConstRef<String<Capacity>> Left, Text Right)
     {
@@ -927,7 +874,11 @@ inline namespace ZyBase
         return Result;
     }
 
-    /// \brief Allow concatenation of a text literal with a string.
+    /// \brief Concatenates a text and a string into a new string.
+    ///
+    /// \param Left  The text that comes first.
+    /// \param Right The string that follows it.
+    /// \return A new string holding both.
     template<UInt Capacity>
     constexpr String<Capacity> operator+(Text Left, ConstRef<String<Capacity>> Right)
     {

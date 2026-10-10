@@ -14,7 +14,7 @@
 
 #include "Vector3.hpp"
 
-#if defined(ZY_ARCH_X86_64)
+#if   defined(ZY_ARCH_X86_64)
 #include <immintrin.h>
 #elif defined(ZY_ARCH_ARM64)
 #include <arm_neon.h>
@@ -28,20 +28,20 @@
 
 inline namespace ZyMath
 {
-    /// \brief Represents a generic vector with (x, y, z, w) floating-point components.
+    /// \brief Represents a SIMD vector with (x, y, z, w) floating-point components.
     class ZY_API ZY_ALIGN(16) Vector4 final
     {
     public:
- 
-        /// \brief Constructor initializing all components to zero.
+
+        /// \brief Constructs a vector with all components zero.
         ZY_INLINE Vector4();
 
-        /// \brief Constructor initializing all components to the same scalar value.
+        /// \brief Constructs a vector with every component set to the same value.
         ///
         /// \param Scalar The scalar value used to initialize all components.
         ZY_INLINE Vector4(Real32 Scalar);
 
-        /// \brief Constructor initializing the vector with specified x, y, z, and w values.
+        /// \brief Constructs a vector from its x, y, z and w components.
         ///
         /// \param X The x-component of the vector.
         /// \param Y The y-component of the vector.
@@ -49,7 +49,7 @@ inline namespace ZyMath
         /// \param W The w-component of the vector (default is 0.0f).
         ZY_INLINE Vector4(Real32 X, Real32 Y, Real32 Z, Real32 W = 0.0f);
 
-        /// \brief Constructor initializing the vector with a 3D vector and the remaining component.
+        /// \brief Constructs a vector from a 3D vector and a w-component.
         ///
         /// \param XYZ The vector supplying the x, y and z components.
         /// \param W   The w-component of the vector (default is 0.0f).
@@ -58,7 +58,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the vector with four contiguous 32-bit floats.
+        /// \brief Constructs a vector from four contiguous 32-bit floats.
         ///
         /// \param Values The four contiguous 32-bit floats to read, at an address that must be 16-byte aligned.
         ZY_INLINE Vector4(ConstPtr<Real32> Values);
@@ -68,19 +68,20 @@ inline namespace ZyMath
         /// \param Output Receives the four components, at an address that must be 16-byte aligned.
         ZY_INLINE void Store(Ptr<Real32> Output) const;
 
-        /// \brief Checks if all components are true when interpreted as booleans.
+        /// \brief Checks if every lane of a comparison mask is set.
         ///
-        /// \return `true` if all components contain non-zero values, `false` otherwise.
+        /// \return `true` if every lane has its sign bit set, `false` otherwise.
         ZY_INLINE Bool IsAllTrue() const;
 
-        /// \brief Checks if any component is true when interpreted as a boolean.
+        /// \brief Checks if any lane of a comparison mask is set.
         ///
-        /// \return `true` if any component contains a non-zero value, `false` otherwise.
+        /// \return `true` if any lane has its sign bit set, `false` otherwise.
         ZY_INLINE Bool IsAnyTrue() const;
 
         /// \brief Checks if the vector is approximately a zero vector.
         ///
-        /// \return `true` if the squared length is within the tolerance, `false` otherwise.
+        /// \tparam Tolerance The largest length still counted as zero.
+        /// \return `true` if the length is within the tolerance, `false` otherwise.
         template<Real32 Tolerance = kEpsilon<Real32>>
         ZY_INLINE Bool IsAlmostZero() const
         {
@@ -89,6 +90,7 @@ inline namespace ZyMath
 
         /// \brief Checks if this vector is approximately equal to another vector.
         ///
+        /// \tparam Tolerance The largest difference per component still counted as equal.
         /// \param Other The vector to compare to.
         /// \return `true` if all components are within the tolerance, `false` otherwise.
         template<Real32 Tolerance = kEpsilon<Real32>>
@@ -99,6 +101,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the vector is normalized.
         ///
+        /// \tparam Tolerance The largest gap between the squared length and one.
         /// \return `true` if the squared length is approximately 1.0f, `false` otherwise.
         template<Real32 Tolerance = kTolerance<Real32>>
         ZY_INLINE Bool IsNormalized() const
@@ -109,7 +112,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is parallel to another vector (based on the XYZ components).
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if the vectors are parallel, `false` otherwise.
+        /// \return `true` if their XYZ parts lie along one line, either way round, `false` otherwise.
         ZY_INLINE Bool IsParallel(Vector4 Other) const
         {
             return Cross3(* this, Other).IsAlmostZero();
@@ -207,9 +210,9 @@ inline namespace ZyMath
         /// \return The sum of all four components (X + Y + Z + W).
         ZY_INLINE Real32 ReduceSum() const;
 
-        /// \brief Reduces the vector by subtracting components sequentially.
+        /// \brief Reduces the vector by subtracting its components in pairs.
         ///
-        /// \return The result of subtracting components sequentially (X - Y - Z - W).
+        /// \return The result of (X - Y) - (Z - W).
         ZY_INLINE Real32 ReduceSubtract() const;
 
         /// \brief Reduces the vector by finding the minimum component.
@@ -230,6 +233,12 @@ inline namespace ZyMath
             return Max(Pair, Swizzle<2, 3, 0, 1>(Pair)).GetX();
         }
 
+        /// \brief Adds another vector to this vector.
+        ///
+        /// \param Other The vector to add.
+        /// \return A new vector that is the sum of this vector and the input vector.
+        ZY_INLINE Vector4 operator+(Vector4 Other) const;
+
         /// \brief Adds a scalar to all components of this vector.
         ///
         /// \param Scalar The scalar value to add.
@@ -238,6 +247,17 @@ inline namespace ZyMath
         {
             return (* this) + Vector4(Scalar);
         }
+
+        /// \brief Negates the vector.
+        ///
+        /// \return A new vector that is the negation of this vector.
+        ZY_INLINE Vector4 operator-() const;
+
+        /// \brief Subtracts another vector from this vector.
+        ///
+        /// \param Other The vector to subtract.
+        /// \return A new vector that is the difference of the two vectors.
+        ZY_INLINE Vector4 operator-(Vector4 Other) const;
 
         /// \brief Subtracts a scalar from all components of this vector.
         ///
@@ -248,6 +268,12 @@ inline namespace ZyMath
             return (* this) - Vector4(Scalar);
         }
 
+        /// \brief Multiplies all components of this vector by another vector.
+        ///
+        /// \param Other The vector to multiply by.
+        /// \return A new vector with component-wise multiplication.
+        ZY_INLINE Vector4 operator*(Vector4 Other) const;
+
         /// \brief Multiplies all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar value to multiply.
@@ -257,6 +283,12 @@ inline namespace ZyMath
             return (* this) * Vector4(Scalar);
         }
 
+        /// \brief Divides all components of this vector by another vector.
+        ///
+        /// \param Other The vector to divide by.
+        /// \return A new vector with component-wise division.
+        ZY_INLINE Vector4 operator/(Vector4 Other) const;
+
         /// \brief Divides all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar value to divide by.
@@ -265,35 +297,6 @@ inline namespace ZyMath
         {
             return (* this) / Vector4(Scalar);
         }
-
-        /// \brief Adds another vector to this vector.
-        ///
-        /// \param Other The vector to add.
-        /// \return A new vector that is the sum of this vector and the input vector.
-        ZY_INLINE Vector4 operator+(Vector4 Other) const;
-
-        /// \brief Subtracts another vector from this vector.
-        ///
-        /// \param Other The vector to subtract.
-        /// \return A new vector that is the difference of the two vectors.
-        ZY_INLINE Vector4 operator-(Vector4 Other) const;
-
-        /// \brief Multiplies all components of this vector by another vector.
-        ///
-        /// \param Other The vector to multiply by.
-        /// \return A new vector with component-wise multiplication.
-        ZY_INLINE Vector4 operator*(Vector4 Other) const;
-
-        /// \brief Divides all components of this vector by another vector.
-        ///
-        /// \param Other The vector to divide by.
-        /// \return A new vector with component-wise division.
-        ZY_INLINE Vector4 operator/(Vector4 Other) const;
-
-        /// \brief Negates the vector.
-        ///
-        /// \return A new vector that is the negation of this vector.
-        ZY_INLINE Vector4 operator-() const;
 
         /// \brief Computes the bitwise NOT of this vector.
         ///
@@ -318,42 +321,6 @@ inline namespace ZyMath
         /// \return A new vector with component-wise bitwise XOR.
         ZY_INLINE Vector4 operator^(Vector4 Other) const;
 
-        /// \brief Adds a scalar value to all components of this vector in-place.
-        ///
-        /// \param Scalar The scalar value to add.
-        /// \return A reference to the updated vector.
-        ZY_INLINE Ref<Vector4> operator+=(Real32 Scalar)
-        {
-            return (* this) = (* this) + Scalar;
-        }
-
-        /// \brief Subtracts a scalar value from all components of this vector in-place.
-        ///
-        /// \param Scalar The scalar value to subtract.
-        /// \return A reference to the updated vector.
-        ZY_INLINE Ref<Vector4> operator-=(Real32 Scalar)
-        {
-            return (* this) = (* this) - Scalar;
-        }
-
-        /// \brief Multiplies all components of this vector by a scalar value in-place.
-        ///
-        /// \param Scalar The scalar value to multiply.
-        /// \return A reference to the updated vector.
-        ZY_INLINE Ref<Vector4> operator*=(Real32 Scalar)
-        {
-            return (* this) = (* this) * Scalar;
-        }
-
-        /// \brief Divides all components of this vector by a scalar value in-place.
-        ///
-        /// \param Scalar The scalar value to divide by.
-        /// \return A reference to the updated vector.
-        ZY_INLINE Ref<Vector4> operator/=(Real32 Scalar)
-        {
-            return (* this) = (* this) / Scalar;
-        }
-
         /// \brief Adds another vector to this vector in-place.
         ///
         /// \param Other The vector to add.
@@ -361,6 +328,15 @@ inline namespace ZyMath
         ZY_INLINE Ref<Vector4> operator+=(Vector4 Other)
         {
             return (* this) = (* this) + Other;
+        }
+
+        /// \brief Adds a scalar value to all components of this vector in-place.
+        ///
+        /// \param Scalar The scalar value to add.
+        /// \return A reference to the updated vector.
+        ZY_INLINE Ref<Vector4> operator+=(Real32 Scalar)
+        {
+            return (* this) = (* this) + Scalar;
         }
 
         /// \brief Subtracts another vector from this vector in-place.
@@ -372,6 +348,15 @@ inline namespace ZyMath
             return (* this) = (* this) - Other;
         }
 
+        /// \brief Subtracts a scalar value from all components of this vector in-place.
+        ///
+        /// \param Scalar The scalar value to subtract.
+        /// \return A reference to the updated vector.
+        ZY_INLINE Ref<Vector4> operator-=(Real32 Scalar)
+        {
+            return (* this) = (* this) - Scalar;
+        }
+
         /// \brief Multiplies this vector by another vector in-place.
         ///
         /// \param Other The vector to multiply by.
@@ -381,6 +366,15 @@ inline namespace ZyMath
             return (* this) = (* this) * Other;
         }
 
+        /// \brief Multiplies all components of this vector by a scalar value in-place.
+        ///
+        /// \param Scalar The scalar value to multiply.
+        /// \return A reference to the updated vector.
+        ZY_INLINE Ref<Vector4> operator*=(Real32 Scalar)
+        {
+            return (* this) = (* this) * Scalar;
+        }
+
         /// \brief Divides this vector by another vector in-place.
         ///
         /// \param Other The vector to divide by.
@@ -388,6 +382,15 @@ inline namespace ZyMath
         ZY_INLINE Ref<Vector4> operator/=(Vector4 Other)
         {
             return (* this) = (* this) / Other;
+        }
+
+        /// \brief Divides all components of this vector by a scalar value in-place.
+        ///
+        /// \param Scalar The scalar value to divide by.
+        /// \return A reference to the updated vector.
+        ZY_INLINE Ref<Vector4> operator/=(Real32 Scalar)
+        {
+            return (* this) = (* this) / Scalar;
         }
 
         /// \brief Computes the bitwise AND of this vector with another vector in-place.
@@ -417,30 +420,6 @@ inline namespace ZyMath
             return (* this) = (* this) ^ Other;
         }
 
-        /// \brief Compares this vector with another for component-wise less-than relationship.
-        ///
-        /// \param Other The vector to compare against.
-        /// \return A new vector with component-wise comparison results (all bits set if true).
-        ZY_INLINE Vector4 operator<(Vector4 Other) const;
-
-        /// \brief Compares this vector with another for component-wise greater-than relationship.
-        ///
-        /// \param Other The vector to compare against.
-        /// \return A new vector with component-wise comparison results (all bits set if true).
-        ZY_INLINE Vector4 operator>(Vector4 Other) const;
-
-        /// \brief Compares this vector with another for component-wise less-than or equal relationship.
-        ///
-        /// \param Other The vector to compare against.
-        /// \return A new vector with component-wise comparison results (all bits set if true).
-        ZY_INLINE Vector4 operator<=(Vector4 Other) const;
-
-        /// \brief Compares this vector with another for component-wise greater-than or equal relationship.
-        ///
-        /// \param Other The vector to compare against.
-        /// \return A new vector with component-wise comparison results (all bits set if true).
-        ZY_INLINE Vector4 operator>=(Vector4 Other) const;
-
         /// \brief Compares this vector with another for component-wise equality.
         ///
         /// \param Other The vector to compare against.
@@ -452,6 +431,30 @@ inline namespace ZyMath
         /// \param Other The vector to compare against.
         /// \return A new vector with component-wise comparison results (all bits set if unequal).
         ZY_INLINE Vector4 operator!=(Vector4 Other) const;
+
+        /// \brief Compares this vector with another for component-wise less-than relationship.
+        ///
+        /// \param Other The vector to compare against.
+        /// \return A new vector with component-wise comparison results (all bits set if true).
+        ZY_INLINE Vector4 operator<(Vector4 Other) const;
+
+        /// \brief Compares this vector with another for component-wise less-than or equal relationship.
+        ///
+        /// \param Other The vector to compare against.
+        /// \return A new vector with component-wise comparison results (all bits set if true).
+        ZY_INLINE Vector4 operator<=(Vector4 Other) const;
+
+        /// \brief Compares this vector with another for component-wise greater-than relationship.
+        ///
+        /// \param Other The vector to compare against.
+        /// \return A new vector with component-wise comparison results (all bits set if true).
+        ZY_INLINE Vector4 operator>(Vector4 Other) const;
+
+        /// \brief Compares this vector with another for component-wise greater-than or equal relationship.
+        ///
+        /// \param Other The vector to compare against.
+        /// \return A new vector with component-wise comparison results (all bits set if true).
+        ZY_INLINE Vector4 operator>=(Vector4 Other) const;
 
         /// \brief Gets a string representation of this object.
         ///
@@ -516,7 +519,7 @@ inline namespace ZyMath
             return Vector4(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
-        /// \brief Projects the source vector onto the target vector using XYZ components only (W ignored).
+        /// \brief Projects the source vector onto the target vector, leaving W out of the dot products.
         ///
         /// \param Source The vector to be projected.
         /// \param Target The vector onto which the source is projected.
@@ -544,23 +547,63 @@ inline namespace ZyMath
         /// \brief Normalizes the XYZ components of a vector to unit length, scaling W along with them.
         ///
         /// \param Vector The vector to normalize.
-        /// \return The vector scaled by the length of its XYZ components.
+        /// \return The vector divided by its XYZ length, or unchanged when that length is almost zero.
         ZY_INLINE static Vector4 Normalize3(Vector4 Vector)
         {
             const Real32 Length = Vector.GetXYZ().GetLength();
             return ::IsAlmostZero(Length) ? Vector : Vector / Length;
         }
 
-        /// \brief Reflects the incident vector over the given normal using XYZ components only (W ignored).
+        /// \brief Reflects the incident vector over the given normal, leaving W out of the dot product.
         ///
         /// \param Incident The incoming vector to reflect.
-        /// \param Normal   The surface normal to reflect across (should be normalized).
+        /// \param Normal   The surface normal to reflect across, unit length with W at zero.
         /// \return The reflected vector.
         ZY_INLINE static Vector4 Reflect(Vector4 Incident, Vector4 Normal)
         {
             ZY_ASSERT(Normal.IsNormalized(), "Normal must be normalized before reflection");
 
             return Incident - Normal * (2.0f * Dot3(Incident, Normal));
+        }
+
+        /// \brief Encodes a vector into the whole range of an integer per lane.
+        ///
+        /// \param Value The vector to encode, each lane held to the range the integer spans.
+        /// \return The lanes in order, each spread over the integer's range.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeNormalized(Vector4 Value)
+            requires IsIntegral<Integer>
+        {
+            return Array(
+                ::EncodeNormalized<Integer>(Value.GetX()),
+                ::EncodeNormalized<Integer>(Value.GetY()),
+                ::EncodeNormalized<Integer>(Value.GetZ()),
+                ::EncodeNormalized<Integer>(Value.GetW()));
+        }
+
+        /// \brief Encodes a vector as fixed-point integers, at a given count of steps per unit.
+        ///
+        /// \param Value The vector to encode.
+        /// \param Scale The count of steps one unit is cut into.
+        /// \return The lanes in order, each in steps and held to what the integer can carry.
+        template<typename Integer>
+        ZY_INLINE static Array<Integer, 4> EncodeFixed(Vector4 Value, Real32 Scale)
+            requires IsIntegral<Integer>
+        {
+            return Array(
+                ::EncodeFixed<Integer>(Value.GetX(), Scale),
+                ::EncodeFixed<Integer>(Value.GetY(), Scale),
+                ::EncodeFixed<Integer>(Value.GetZ(), Scale),
+                ::EncodeFixed<Integer>(Value.GetW(), Scale));
+        }
+
+        /// \brief Encodes a vector as half-precision lanes, the way a half vertex attribute reads it back.
+        ///
+        /// \param Value The vector to encode.
+        /// \return The lanes in order, each rounded to the nearest half.
+        ZY_INLINE static Array<Half, 4> EncodeHalf(Vector4 Value)
+        {
+            return Array(Half(Value.GetX()), Half(Value.GetY()), Half(Value.GetZ()), Half(Value.GetW()));
         }
 
         /// \brief Computes the dot product of two vectors.
@@ -584,44 +627,6 @@ inline namespace ZyMath
         /// \return A vector containing the cross product of the XYZ components, with W = 0.
         ZY_INLINE static Vector4 Cross3(Vector4 P0, Vector4 P1);
 
-        /// \brief Encodes a vector into the whole range of an integer per lane.
-        ///
-        /// \param Value The vector to encode, each lane held to the range the integer spans.
-        /// \return The lanes in order, each spread over the integer's range.
-        template<typename Integer>
-        ZY_INLINE static Array<Integer, 4> EncodeNormalized(Vector4 Value)
-            requires IsIntegral<Integer>
-        {
-            return Array(::EncodeNormalized<Integer>(Value.GetX()), 
-                         ::EncodeNormalized<Integer>(Value.GetY()), 
-                         ::EncodeNormalized<Integer>(Value.GetZ()), 
-                         ::EncodeNormalized<Integer>(Value.GetW()));
-        }
-
-        /// \brief Encodes a vector as fixed-point integers, at a given count of steps per unit.
-        ///
-        /// \param Value The vector to encode.
-        /// \param Scale The count of steps one unit is cut into.
-        /// \return The lanes in order, each in steps and held to what the integer can carry.
-        template<typename Integer>
-        ZY_INLINE static Array<Integer, 4> EncodeFixed(Vector4 Value, Real32 Scale)
-            requires IsIntegral<Integer>
-        {
-            return Array(::EncodeFixed<Integer>(Value.GetX(), Scale), 
-                         ::EncodeFixed<Integer>(Value.GetY(), Scale), 
-                         ::EncodeFixed<Integer>(Value.GetZ(), Scale), 
-                         ::EncodeFixed<Integer>(Value.GetW(), Scale));
-        }
-
-        /// \brief Encodes a vector as half-precision lanes, the way a half vertex attribute reads it back.
-        ///
-        /// \param Value The vector to encode.
-        /// \return The lanes in order, each rounded to the nearest half.
-        ZY_INLINE static Array<Half, 4> EncodeHalf(Vector4 Value)
-        {
-            return Array(Half(Value.GetX()), Half(Value.GetY()), Half(Value.GetZ()), Half(Value.GetW()));
-        }
-
         /// \brief Gets the component-wise minimum of two vectors.
         ///
         /// \param P0 The first vector.
@@ -644,13 +649,13 @@ inline namespace ZyMath
 
         /// \brief Clamps each component of a vector between corresponding min and max components.
         ///
-        /// \param Vector The source vector to clamp.
-        /// \param Min    The vector specifying the minimum bounds.
-        /// \param Max    The vector specifying the maximum bounds.
+        /// \param Vector  The source vector to clamp.
+        /// \param Minimum The vector specifying the minimum bounds.
+        /// \param Maximum The vector specifying the maximum bounds.
         /// \return A vector with each component clamped between the min and max values.
-        ZY_INLINE static Vector4 Clamp(Vector4 Vector, Vector4 Min, Vector4 Max)
+        ZY_INLINE static Vector4 Clamp(Vector4 Vector, Vector4 Minimum, Vector4 Maximum)
         {
-            return Vector4::Max(Vector4::Min(Vector, Max), Min);
+            return Max(Min(Vector, Maximum), Minimum);
         }
 
         /// \brief Gets a vector with each component floored to the nearest integer.
@@ -671,10 +676,10 @@ inline namespace ZyMath
         /// \return A vector with the reciprocal square root of each component.
         ZY_INLINE static Vector4 ReciprocalSqrt(Vector4 Vector);
 
-        /// \brief Computes the fast reciprocal square root of each component.
+        /// \brief Computes an approximate reciprocal square root of each component.
         ///
-        /// \param Vector The vector to compute fast reciprocal square root of.
-        /// \return A vector with the fast reciprocal square root of each component.
+        /// \param Vector The vector to compute the reciprocal square root of.
+        /// \return A vector with an approximate reciprocal square root of each component.
         ZY_INLINE static Vector4 ReciprocalSqrtFast(Vector4 Vector);
 
         /// \brief Computes the square root of each component.
@@ -683,10 +688,10 @@ inline namespace ZyMath
         /// \return A vector with the square root of each component.
         ZY_INLINE static Vector4 Sqrt(Vector4 Vector);
 
-        /// \brief Computes the fast square root of each component.
+        /// \brief Computes an approximate square root of each component.
         ///
-        /// \param Vector The vector to compute fast square root of.
-        /// \return A vector with the fast square root of each component.
+        /// \param Vector The vector to compute the square root of.
+        /// \return A vector with an approximate square root of each component.
         ZY_INLINE static Vector4 SqrtFast(Vector4 Vector);
 
         /// \brief Shuffles components with another vector using template indices.
@@ -697,7 +702,7 @@ inline namespace ZyMath
         /// \tparam W The lane of \p P1 to place in the W component (0-3).
         /// \param P0 The vector supplying the X and Y components.
         /// \param P1 The vector supplying the Z and W components.
-        /// \return A new vector with shuffled components.
+        /// \return The vector (P0[X], P0[Y], P1[Z], P1[W]).
         template<SInt X, SInt Y, SInt Z, SInt W>
         ZY_INLINE static Vector4 Shuffle(Vector4 P0, Vector4 P1);
 
@@ -708,7 +713,7 @@ inline namespace ZyMath
         /// \tparam Z The index for the Z component (0-3).
         /// \tparam W The index for the W component (0-3).
         /// \param Vector The vector to swizzle.
-        /// \return A new vector with swizzled components from input vector.
+        /// \return The vector (Vector[X], Vector[Y], Vector[Z], Vector[W]).
         template<SInt X, SInt Y, SInt Z, SInt W>
         ZY_INLINE static Vector4 Swizzle(Vector4 Vector)
         {
@@ -760,11 +765,11 @@ inline namespace ZyMath
         template<UInt8 Mask>
         ZY_INLINE static Vector4 Select(Vector4 P0, Vector4 P1);
 
-        /// \brief Selects components from two vectors based on a dynamic mask.
+        /// \brief Selects components from two vectors based on a comparison mask.
         ///
-        /// \param P0 The vector to select from when mask components are zero.
-        /// \param P1 The vector to select from when mask components are non-zero.
-        /// \param Mask The mask vector (non-zero components select from P1).
+        /// \param P0   The vector to select from where a mask lane is clear.
+        /// \param P1   The vector to select from where a mask lane is set.
+        /// \param Mask The comparison mask, each lane either all bits set or all bits clear.
         /// \return A new vector with selected components.
         ZY_INLINE static Vector4 Select(Vector4 P0, Vector4 P1, Vector4 Mask);
 
@@ -772,40 +777,40 @@ inline namespace ZyMath
         ///
         /// \param P0 The first vector providing lower components.
         /// \param P1 The second vector providing lower components.
-        /// \return A new vector with lower components from both vectors merged.
+        /// \return The vector (P0.x, P0.y, P1.x, P1.y).
         ZY_INLINE static Vector4 MergeLow(Vector4 P0, Vector4 P1);
 
         /// \brief Merges the higher components of two vectors.
         ///
         /// \param P0 The first vector providing higher components.
         /// \param P1 The second vector providing higher components.
-        /// \return A new vector with higher components from both vectors merged.
+        /// \return The vector (P0.z, P0.w, P1.z, P1.w).
         ZY_INLINE static Vector4 MergeHigh(Vector4 P0, Vector4 P1);
 
         /// \brief Zips the lower components of two vectors.
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return A new vector with lower components from both vectors zipped.
+        /// \return The vector (P0.x, P1.x, P0.y, P1.y).
         ZY_INLINE static Vector4 ZipLow(Vector4 P0, Vector4 P1);
 
         /// \brief Zips the higher components of two vectors.
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return A new vector with higher components from both vectors zipped.
+        /// \return The vector (P0.z, P1.z, P0.w, P1.w).
         ZY_INLINE static Vector4 ZipHigh(Vector4 P0, Vector4 P1);
 
         /// \brief Swizzles a vector to arrange components as (0, 0, 2, 2).
         ///
         /// \param Vector The vector to swizzle.
-        /// \return A new vector with components rearranged.
+        /// \return The vector (Vector.x, Vector.x, Vector.z, Vector.z).
         ZY_INLINE static Vector4 Swizzle0022(Vector4 Vector);
 
         /// \brief Swizzles a vector to arrange components as (1, 1, 3, 3).
         ///
         /// \param Vector The vector to swizzle.
-        /// \return A new vector with components rearranged.
+        /// \return The vector (Vector.y, Vector.y, Vector.w, Vector.w).
         ZY_INLINE static Vector4 Swizzle1133(Vector4 Vector);
 
         /// \brief Provides the name this type is registered under in the reflection system.
@@ -818,14 +823,12 @@ inline namespace ZyMath
 
     private:
 
+        /// \brief Represents the platform SIMD register.
 #if   defined(ZY_ARCH_X86_64)
-        /// \brief Underlying platform SIMD register type.
         using Type = __m128;
 #elif defined(ZY_ARCH_ARM64)
-        /// \brief Underlying platform SIMD register type.
         using Type = float32x4_t;
 #elif defined(ZY_ARCH_WASM32) || defined(ZY_ARCH_WASM64)
-        /// \brief Underlying platform SIMD register type.
         using Type = v128_t;
 #endif
 
@@ -842,7 +845,7 @@ inline namespace ZyMath
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-         Type mData;
+        Type mData;
     };
 }
 

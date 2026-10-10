@@ -26,7 +26,7 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "tex" };
 
     public:

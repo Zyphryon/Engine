@@ -27,15 +27,26 @@ namespace ZyPlatform
     {
     public:
 
-        /// \brief Constructs the platform service and registers it with the system host.
+        /// \brief Constructs the platform service.
         ///
         /// \param Host The system context that owns and manages this service.
         explicit Service(Ref<Host> Host);
 
         /// \brief Processes platform events and updates window state each frame.
         ///
-        /// \param Delta The elapsed time in seconds since the previous tick.
+        /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
+
+        /// \brief Initializes the platform window with the specified configuration.
+        ///
+        /// \param Target     The name of the monitor to open the window on, or empty for the primary one.
+        /// \param Title      The title to display in the window's title bar.
+        /// \param Width      The width of the window at standard density, scaled to the monitor and clamped to it.
+        /// \param Height     The height of the window at standard density, scaled to the monitor and clamped to it.
+        /// \param Borderless `true` to create the window without borders or title bar.
+        /// \param Fullscreen `true` to create the window in fullscreen mode.
+        /// \return `true` if the window was successfully initialized, otherwise `false`.
+        Bool Initialize(Text Target, Text Title, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 
         /// \brief Gets the display managed by the platform service.
         ///
@@ -44,17 +55,6 @@ namespace ZyPlatform
         {
             return mDisplay;
         }
-
-        /// \brief Initializes the platform window with the specified configuration.
-        ///
-        /// \param Target     The target monitor on which to create the window.
-        /// \param Title      The title to display in the window's title bar.
-        /// \param Width      The width of the window in pixels.
-        /// \param Height     The height of the window in pixels.
-        /// \param Borderless `true` to create the window without borders or title bar.
-        /// \param Fullscreen `true` to create the window in fullscreen mode.
-        /// \return `true` if the window was successfully initialized, otherwise `false`.
-        Bool Initialize(Text Target, Text Title, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 
         /// \brief Gets the primary window managed by the platform service.
         ///

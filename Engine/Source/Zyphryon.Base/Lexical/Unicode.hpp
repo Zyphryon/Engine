@@ -138,10 +138,7 @@ inline namespace ZyBase
 
         /// \brief Converts a text to a null-terminated sequence of UTF-16 code units.
         ///
-        /// \note Encodes each codepoint of \p Content as one or two UTF-16 code units. A fixed-capacity result spends
-        ///       one slot on the terminator, so at most `Capacity - 1` code units of text fit. Content that would not
-        ///       fit yields an empty sequence rather than a truncated one: a shortened path still names a real,
-        ///       different file, and silently acting on the wrong one is worse than failing.
+        /// \note A fixed-capacity result fits at most `Capacity - 1` code units.
         ///
         /// \param Content The text to convert.
         /// \return A sequence of UTF-16 code units, or an empty sequence when \p Content does not fit.
@@ -231,7 +228,7 @@ inline namespace ZyBase
         /// \brief Counts the characters of a text.
         ///
         /// \param Content The text to count.
-        /// \return The number of characters, each byte that continues none counted as one.
+        /// \return The number of bytes that are not continuation bytes.
         ZY_INLINE static constexpr UInt Count(Text Content)
         {
             UInt Result = 0;
@@ -245,7 +242,7 @@ inline namespace ZyBase
 
         /// \brief Gets the offset after the character at an offset.
         ///
-        /// \param Content The text.
+        /// \param Content The text to step through.
         /// \param Offset  The offset of the character.
         /// \return The offset after it, at most the size of the text.
         ZY_INLINE static constexpr UInt Next(Text Content, UInt Offset)
@@ -267,7 +264,7 @@ inline namespace ZyBase
 
         /// \brief Gets the offset of the character before an offset.
         ///
-        /// \param Content The text.
+        /// \param Content The text to step through.
         /// \param Offset  The offset after the character.
         /// \return The offset it starts at, or `0` at the start of the text.
         ZY_INLINE static constexpr UInt Previous(Text Content, UInt Offset)
@@ -289,8 +286,8 @@ inline namespace ZyBase
 
         /// \brief Takes an offset back to the start of the character it falls inside, so it never splits one.
         ///
-        /// \param Content The text.
-        /// \param Offset  The offset.
+        /// \param Content The text the offset falls in.
+        /// \param Offset  The byte offset to take back.
         /// \return The offset of the character's first byte, at most the size of the text.
         ZY_INLINE static constexpr UInt Snap(Text Content, UInt Offset)
         {
@@ -305,7 +302,7 @@ inline namespace ZyBase
 
         /// \brief Gets the start of the next word, past the rest of the word and the gap after it.
         ///
-        /// \param Content The text.
+        /// \param Content The text to step through.
         /// \param Offset  The offset to step from.
         /// \return The offset, or the size of the text past the last word.
         ZY_INLINE static constexpr UInt Forward(Text Content, UInt Offset)
@@ -326,7 +323,7 @@ inline namespace ZyBase
 
         /// \brief Gets the start of the word before an offset, past the gap before it.
         ///
-        /// \param Content The text.
+        /// \param Content The text to step through.
         /// \param Offset  The offset to step from.
         /// \return The offset, or `0` before the first word.
         ZY_INLINE static constexpr UInt Backward(Text Content, UInt Offset)
@@ -347,7 +344,7 @@ inline namespace ZyBase
 
         /// \brief Finds the run of word characters, or of the others, holding the character at an offset.
         ///
-        /// \param Content The text.
+        /// \param Content The text to search.
         /// \param Offset  The offset of the character; past the end, the last character is taken.
         /// \param Start   Receives where the run starts.
         /// \param End     Receives where the run ends.
@@ -360,10 +357,7 @@ inline namespace ZyBase
                 return;
             }
 
-            // Past the end, the run holding the last character is taken.
-            const UInt At   = Offset < Content.GetSize()
-                ? Previous(Content, Next(Content, Offset))
-                : Previous(Content, Content.GetSize());
+            const UInt At   = Previous(Content, Next(Content, Offset));
             const Bool Kind = IsWord(Peek(Content, At));
 
             Start = At;
@@ -382,7 +376,7 @@ inline namespace ZyBase
 
         /// \brief Gets how many bytes the sequence a byte leads takes.
         ///
-        /// \param Lead The byte.
+        /// \param Lead The first byte of the sequence.
         /// \return The count, from one to four, or `0` when the byte cannot lead a sequence.
         ZY_INLINE static constexpr UInt GetSize(Char Lead)
         {
@@ -409,7 +403,7 @@ inline namespace ZyBase
 
         /// \brief Gets how many bytes a codepoint takes once encoded.
         ///
-        /// \param Codepoint The codepoint.
+        /// \param Codepoint The codepoint to measure.
         /// \return The count, from one to four.
         ZY_INLINE static constexpr UInt GetLength(UInt32 Codepoint)
         {
@@ -418,8 +412,8 @@ inline namespace ZyBase
 
         /// \brief Checks whether a byte continues a sequence, rather than leading one.
         ///
-        /// \param Byte The byte.
-        /// \return `true` if it continues a sequence, `false` otherwise.
+        /// \param Byte The byte to test.
+        /// \return `true` if the byte is of the form `10xxxxxx`, `false` otherwise.
         ZY_INLINE static constexpr Bool IsContinuation(Char Byte)
         {
             return (static_cast<UInt8>(Byte) & 0xC0) == 0x80;
@@ -427,8 +421,8 @@ inline namespace ZyBase
 
         /// \brief Checks whether a codepoint belongs to a word, as a letter, a digit or an underscore does.
         ///
-        /// \param Codepoint The codepoint.
-        /// \return `true` if it belongs to a word, `false` otherwise.
+        /// \param Codepoint The codepoint to test.
+        /// \return `true` if the codepoint is a letter, a digit or an underscore, `false` otherwise.
         ZY_INLINE static constexpr Bool IsWord(UInt32 Codepoint)
         {
             // Past ASCII, everything but the spaces and the general punctuation is taken as a letter.

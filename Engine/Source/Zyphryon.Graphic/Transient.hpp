@@ -35,17 +35,16 @@ namespace ZyGraphic
         /// \brief Constructs a transient allocation from a pointer and stream descriptor.
         ///
         /// \param Address    The pointer to the start of the buffer region.
-        /// \param Descriptor The stream descriptor defining the buffer layout.
+        /// \param Descriptor The buffer, stride and offset the region sits at.
         ZY_INLINE Transient(Ptr<Type> Address, Stream Descriptor)
             : mAddress    { Address },
               mDescriptor { Descriptor }
         {
-
         }
 
         /// \brief Gets the stream descriptor associated with this transient allocation.
         ///
-        /// \return The stream descriptor defining the buffer layout.
+        /// \return The buffer, stride and offset the region sits at.
         ZY_INLINE Stream GetStream() const
         {
             return mDescriptor;
@@ -86,7 +85,7 @@ namespace ZyGraphic
             return mAddress[Index];
         }
 
-        /// \brief Returns a const reference to the element at the given index.
+        /// \brief Gets a const reference to the element at the given index.
         ///
         /// \param Index The zero-based index of the element to access.
         /// \return A const reference to the element at \p Index.

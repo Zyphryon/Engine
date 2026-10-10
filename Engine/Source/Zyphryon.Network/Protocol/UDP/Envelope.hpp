@@ -26,7 +26,7 @@ namespace ZyNetwork::UDP
     /// \brief Specifies what a datagram carries, which the byte it opens with says.
     enum class Envelope : UInt8
     {
-        Data,      ///< Whatever follows is a record's own packet.
+        Data,      ///< Whatever follows is a session's own packet.
         Challenge, ///< The endpoint asks whoever sent to show that the address it sent from reaches it.
         Answer,    ///< What was asked for, sent back unchanged.
     };

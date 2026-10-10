@@ -12,8 +12,8 @@
 
 #include "SNDLoader.hpp"
 #include "Zyphryon.Audio/Decoder/Adaptive.hpp"
-#include "Zyphryon.Audio/Decoder/Opus.hpp"
 #include "Zyphryon.Audio/Decoder/Linear.hpp"
+#include "Zyphryon.Audio/Decoder/Opus.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -24,28 +24,11 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Unique<Decoder> DecodeLinear(ConstRef<Blob> Data, ConstRef<Sound> Asset)
+    template<typename Type, typename Sample>
+    static Unique<Decoder> Decode(ConstRef<Blob> Data, ConstRef<Sound> Asset)
     {
-        const ConstSpan Samples(Data.GetData<SInt16>(), Data.GetSize() / sizeof(SInt16));
-        return Unique<Codec::Linear>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static Unique<Decoder> DecodeAdaptive(ConstRef<Blob> Data, ConstRef<Sound> Asset)
-    {
-        const ConstSpan Samples(Data.GetData<Byte>(), Data.GetSize());
-        return Unique<Codec::Adaptive>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    static Unique<Decoder> DecodeOpus(ConstRef<Blob> Data, ConstRef<Sound> Asset)
-    {
-        const ConstSpan Samples(Data.GetData<Byte>(), Data.GetSize());
-        return Unique<Codec::Opus>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
+        const ConstSpan Samples(Data.GetData<Sample>(), Data.GetSize() / sizeof(Sample));
+        return Unique<Type>::Create(Samples, Asset.GetFrequency(), Asset.GetStride(), Asset.GetFrames());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -75,18 +58,10 @@ namespace ZyAudio
             return false;
         }
 
-        const Encoding        Format    = Input.Read<Encoding>();
-        const UInt16          Stride    = Input.Read<UInt16>();
-        const UInt32          Frequency = Input.Read<UInt32>();
-        const UInt64          Frames    = Input.Read<UInt64>();
-        const UInt32          Size      = Input.Read<UInt32>();
-        const ConstSpan<Byte> Payload   = Input.ReadBlock<UInt32, Byte>();
-
-        if (Size == 0 || Payload.IsEmpty())
-        {
-            LOG_W("'{0}' has empty sound data", Asset.GetKey());
-            return false;
-        }
+        const Encoding Format    = Input.Read<Encoding>();
+        const UInt16   Stride    = Input.Read<UInt16>();
+        const UInt32   Frequency = Input.Read<UInt32>();
+        const UInt64   Frames    = Input.Read<UInt64>();
 
         if (Stride == 0 || Stride > kMixerStride)
         {
@@ -94,33 +69,33 @@ namespace ZyAudio
             return false;
         }
 
-        Blob Buffer = LZ4Expand(Payload, Size);
+        Blob Buffer = Input.ReadBlockCompressed<UInt32>();
 
         if (!Buffer)
         {
-            LOG_W("'{0}' failed to decompress ({1} != {2})", Asset.GetKey(), Payload.GetSize(), Size);
+            LOG_W("'{0}' has an invalid sound payload", Asset.GetKey());
             return false;
         }
 
         // The baker resamples to the mixer's clock, so the decoder is a reader rather than a converter.
-        Sound::Codec Codec;
+        Sound::Codec Factory;
 
         switch (Format)
         {
         case Encoding::Linear:
-            Codec = DecodeLinear;
+            Factory = Decode<Codec::Linear, SInt16>;
             break;
         case Encoding::Adaptive:
-            Codec = DecodeAdaptive;
+            Factory = Decode<Codec::Adaptive, Byte>;
             break;
         case Encoding::Opus:
-            Codec = DecodeOpus;
+            Factory = Decode<Codec::Opus, Byte>;
             break;
         default:
             break;
         }
 
-        Asset.Load(Frames, Frequency, Stride, Move(Codec), Move(Buffer));
+        Asset.Load(Frames, Frequency, Stride, Move(Factory), Move(Buffer));
         return true;
     }
 }

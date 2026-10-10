@@ -29,7 +29,7 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void MixAccumulate(Ptr<Real32> Dst, ConstPtr<Real32> Src, UInt32 Count, Real32 Start, Real32 End)
+    static void MixAccumulate(Ptr<Real32> Destination, ConstPtr<Real32> Source, UInt32 Count, Real32 Start, Real32 End)
     {
         if (Count == 0)
         {
@@ -45,9 +45,9 @@ namespace ZyAudio
         UInt32 Index = 0;
         for (; Index < Vectorized; Index += 4)
         {
-            const Vector4 Samples(Src + Index);
-            const Vector4 Accumulated = Vector4(Dst + Index) + Samples * Gain;
-            Accumulated.Store(Dst + Index);
+            const Vector4 Samples(Source + Index);
+            const Vector4 Accumulated = Vector4(Destination + Index) + Samples * Gain;
+            Accumulated.Store(Destination + Index);
 
             Gain = Gain + Advance;
         }
@@ -55,8 +55,8 @@ namespace ZyAudio
         Real32 Scalar = Start + Step * Index;
         for (; Index < Count; ++Index)
         {
-            Dst[Index] += Src[Index] * Scalar;
-            Scalar     += Step;
+            Destination[Index] += Source[Index] * Scalar;
+            Scalar             += Step;
         }
     }
 
@@ -95,12 +95,9 @@ namespace ZyAudio
         }
 
         // Free the voices that finished this render and report why each one ended.
-        mVoices.ForEach([this](Ref<Voice> Voice)
+        mVoices.ForEachOrRemove([this](ConstRef<Voice> Voice)
         {
-            if (Voice.Finished && mCompletions.Push(Completion(Voice.Handle, Voice.Reason)))
-            {
-                mVoices.Free(Voice.Handle);
-            }
+            return Voice.Finished && mCompletions.Push(Completion(Voice.Handle, Voice.Reason));
         });
     }
 
@@ -118,43 +115,31 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Mixer::Play(Object Handle, Category Category, Ptr<Decoder> Decoder, UInt32 Stride, Real32 Volume)
-    {
-        Command Command { };
-        Command.Kind     = Op::Play;
-        Command.Handle   = Handle;
-        Command.Category = Category;
-        Command.Spatial  = false;
-        Command.Volume   = Volume;
-        Command.Decoder  = Decoder;
-        Command.Stride   = Stride;
-        return Submit(Command);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Bool Mixer::Play(
         Object              Handle,
         Category            Category,
         Ptr<Decoder>        Decoder,
         UInt32              Stride,
         Real32              Volume,
-        ConstRef<Emitter>   Emitter,
-        ConstRef<Matrix4x3> Transform)
+        ConstPtr<Emitter>   Emitter,
+        ConstPtr<Matrix4x3> Transform)
     {
-        Command Command { };
-        Command.Kind      = Op::Play;
-        Command.Handle    = Handle;
-        Command.Category  = Category;
-        Command.Spatial   = true;
-        Command.Volume    = Volume;
-        Command.Decoder   = Decoder;
-        Command.Stride    = Stride;
-        Command.Emitter   = Emitter;
-        Command.Position  = Transform.GetTranslation();
-        Command.Forward   = Vector3::Normalize(Transform.GetForward());
-        return Submit(Command);
+        ZY_ASSERT(!Emitter == !Transform, "A spatial playback needs both an emitter and a transform");
+
+        Command Command  = Make(Op::Play, Handle);
+        Command.Category = Category;
+        Command.Spatial  = (Emitter != nullptr);
+        Command.Volume   = Volume;
+        Command.Decoder  = Decoder;
+        Command.Stride   = Stride;
+
+        if (Emitter)
+        {
+            Command.Emitter  = * Emitter;
+            Command.Position = Transform->GetTranslation();
+            Command.Forward  = Vector3::Normalize(Transform->GetForward());
+        }
+        return mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -162,11 +147,9 @@ namespace ZyAudio
 
     void Mixer::SetLooping(Object Handle, Bool Looping)
     {
-        Command Command { };
-        Command.Kind   = Op::Loop;
-        Command.Handle = Handle;
-        Command.Flag   = Looping;
-        Submit(Command);
+        Command Command = Make(Op::Loop, Handle);
+        Command.Flag    = Looping;
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -174,11 +157,9 @@ namespace ZyAudio
 
     void Mixer::SetVolume(Object Handle, Real32 Volume)
     {
-        Command Command { };
-        Command.Kind   = Op::Volume;
-        Command.Handle = Handle;
-        Command.Volume = Volume;
-        Submit(Command);
+        Command Command = Make(Op::Volume, Handle);
+        Command.Volume  = Volume;
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -186,11 +167,9 @@ namespace ZyAudio
 
     void Mixer::SetCutoff(Object Handle, Real32 Cutoff)
     {
-        Command Command { };
-        Command.Kind   = Op::Cutoff;
-        Command.Handle = Handle;
-        Command.Cutoff = Cutoff;
-        Submit(Command);
+        Command Command = Make(Op::Cutoff, Handle);
+        Command.Cutoff  = Cutoff;
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -198,12 +177,10 @@ namespace ZyAudio
 
     void Mixer::SetTransform(Object Handle, ConstRef<Matrix4x3> Transform)
     {
-        Command Command { };
-        Command.Kind     = Op::Move;
-        Command.Handle   = Handle;
+        Command Command  = Make(Op::Move, Handle);
         Command.Position = Transform.GetTranslation();
         Command.Forward  = Vector3::Normalize(Transform.GetForward());
-        Submit(Command);
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -211,10 +188,7 @@ namespace ZyAudio
 
     void Mixer::Stop(Object Handle)
     {
-        Command Command { };
-        Command.Kind   = Op::Stop;
-        Command.Handle = Handle;
-        Submit(Command);
+        mCommands.Push(Make(Op::Stop, Handle));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -222,10 +196,7 @@ namespace ZyAudio
 
     void Mixer::Pause(Object Handle)
     {
-        Command Command { };
-        Command.Kind   = Op::Pause;
-        Command.Handle = Handle;
-        Submit(Command);
+        mCommands.Push(Make(Op::Pause, Handle));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -233,10 +204,7 @@ namespace ZyAudio
 
     void Mixer::Resume(Object Handle)
     {
-        Command Command { };
-        Command.Kind   = Op::Resume;
-        Command.Handle = Handle;
-        Submit(Command);
+        mCommands.Push(Make(Op::Resume, Handle));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -244,12 +212,11 @@ namespace ZyAudio
 
     void Mixer::SetListener(ConstRef<Matrix4x3> Transform)
     {
-        Command Command { };
-        Command.Kind     = Op::Listener;
+        Command Command  = Make(Op::Listener);
         Command.Position = Transform.GetTranslation();
         Command.Forward  = Vector3::Normalize(Transform.GetForward());
         Command.Right    = Vector3::Normalize(Transform.GetRight());
-        Submit(Command);
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -257,12 +224,11 @@ namespace ZyAudio
 
     void Mixer::SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
     {
-        Command Command { };
-        Command.Kind       = Op::Cone;
+        Command Command    = Make(Op::Cone);
         Command.InnerAngle = InnerAngle;
         Command.OuterAngle = OuterAngle;
         Command.OuterGain  = OuterGain;
-        Submit(Command);
+        mCommands.Push(Command);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -289,12 +255,6 @@ namespace ZyAudio
             Voice.Stride     = static_cast<UInt16>(Command.Stride);
             Voice.Spatial    = Command.Spatial;
             Voice.Volume     = Command.Volume;
-            Voice.Looping    = false;
-            Voice.Paused     = false;
-            Voice.Finished   = false;
-            Voice.Primed     = false;
-            Voice.Reason     = Reason::Completed;
-            Voice.Gain       = Vector2(1.0f, 1.0f);
 
             // A voice ranks at nothing until it has mixed once, so a sound is never stolen before it is heard.
             mRanks[Command.Handle.GetSlot() - 1].store(0.0f, std::memory_order_relaxed);
@@ -406,12 +366,13 @@ namespace ZyAudio
 
         // Publishes what the voice is worth this block, so the game thread can weigh a newcomer against it.
         mRanks[Voice.Handle.GetSlot() - 1].store(
-            Rank(Voice.Category, Max(TargetLeft, TargetRight)), std::memory_order_relaxed);
+            Rank(Voice.Category, Max(TargetLeft, TargetRight)),
+            std::memory_order_relaxed);
 
         if (!Voice.Primed)
         {
-            Voice.Gain = Vector2(TargetLeft, TargetRight);
-            Voice.Primed     = true;
+            Voice.Gain   = Vector2(TargetLeft, TargetRight);
+            Voice.Primed = true;
         }
 
         Glide(Voice, Frames);
@@ -619,5 +580,16 @@ namespace ZyAudio
             Output[Frame * kMixerStride + 0] = Clamp(mMasterLeft[Frame]  * Master, -1.0f, 1.0f);
             Output[Frame * kMixerStride + 1] = Clamp(mMasterRight[Frame] * Master, -1.0f, 1.0f);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Mixer::Command Mixer::Make(Op Kind, Object Handle)
+    {
+        Command Command { };
+        Command.Kind   = Kind;
+        Command.Handle = Handle;
+        return Command;
     }
 }

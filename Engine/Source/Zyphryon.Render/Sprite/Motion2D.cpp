@@ -23,14 +23,11 @@ namespace ZyRender
 
     ConstPtr<Motion2D::Lane> Motion2D::Find(UInt64 Bone) const
     {
-        for (ConstRef<Lane> Entry : mLanes)
+        const SInt Index = mLanes.Find([Bone](ConstRef<Lane> Entry)
         {
-            if (Entry.Bone == Bone)
-            {
-                return AddressOf(Entry);
-            }
-        }
-        return nullptr;
+            return Entry.Bone == Bone;
+        });
+        return Index < 0 ? nullptr : AddressOf(mLanes[Index]);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -59,7 +56,6 @@ namespace ZyRender
             }
         }
 
-        // A lane with no bone is kept past the last one, so bones given later can still claim it.
         const Bool Complete = Unplaced.IsEmpty();
 
         for (Ref<Lane> Entry : Unplaced)
@@ -138,8 +134,8 @@ namespace ZyRender
             Into  = Wraps ? static_cast<SInt32>(First->Keyframe) + static_cast<SInt32>(mCycle) : From;
         }
 
-        const Real32 Span  = static_cast<Real32>(Into - From);
-        const Real32 Share = Span > 0.0f ? static_cast<Real32>(Keyframe - From) / Span : 0.0f;
+        const Real32 Gap   = static_cast<Real32>(Into - From);
+        const Real32 Share = Gap > 0.0f ? static_cast<Real32>(Keyframe - From) / Gap : 0.0f;
 
         Output.Offset = Before->Offset + (After->Offset - Before->Offset) * Share;
         Output.Roll   = Before->Roll + Angle::Between(Before->Roll, After->Roll) * Share;

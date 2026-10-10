@@ -27,7 +27,7 @@ namespace ZyAI
     public:
 
         /// \brief Destroys the host.
-        ZY_INLINE virtual ~Host() = default;
+        virtual ~Host() = default;
 
         /// \brief Ticks a leaf.
         ///
@@ -35,7 +35,7 @@ namespace ZyAI
         /// \param Fresh   `true` when the leaf starts, `false` when it resumes after returning \ref Status::Running.
         /// \param Elapsed The time since the leaf started, in seconds.
         /// \param Board   The blackboard of the brain being ticked.
-        /// \return The status of the leaf.
+        /// \return The status the leaf reached, \ref Status::Running to be resumed next tick.
         virtual Status Tick(UInt32 Index, Bool Fresh, Real64 Elapsed, Ref<Blackboard> Board) = 0;
 
         /// \brief Stops a running leaf that will not be resumed.

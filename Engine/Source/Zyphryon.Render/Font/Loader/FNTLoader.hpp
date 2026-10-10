@@ -25,12 +25,20 @@ namespace ZyRender
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "fnt" };
 
     public:
 
         /// \see ZyContent::Loader::Load(Ref<ZyContent::Service>, Ref<ZyContent::Scope>, AnyRef<Blob>)
         Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
+
+    private:
+
+        /// \brief The tag of the chunk holding the kerning pairs.
+        static constexpr UInt32 kKerning = 'K' | ('E' << 8) | ('R' << 16) | ('N' << 24);
+
+        /// \brief The tag of the chunk holding one atlas page.
+        static constexpr UInt32 kAtlas   = 'A' | ('T' << 8) | ('L' << 16) | ('S' << 24);
     };
 }

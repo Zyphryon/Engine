@@ -93,14 +93,11 @@ namespace ZyRender
         /// \return The clip, or `nullptr` when the sheet has no clip by that name.
         ZY_INLINE ConstPtr<Clip> FindClip(UInt64 Name) const
         {
-            for (ConstRef<Clip> Entry : mClips)
+            const SInt Index = mClips.Find([Name](ConstRef<Clip> Entry)
             {
-                if (Entry.Name == Name)
-                {
-                    return AddressOf(Entry);
-                }
-            }
-            return nullptr;
+                return Entry.Name == Name;
+            });
+            return Index < 0 ? nullptr : AddressOf(mClips[Index]);
         }
 
     private:

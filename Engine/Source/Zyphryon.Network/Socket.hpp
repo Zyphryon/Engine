@@ -26,7 +26,7 @@ namespace ZyNetwork
     public:
 
         /// \brief The value a descriptor takes when it refers to no socket.
-        static constexpr UInt64 kInvalid = ~static_cast<UInt64>(0);
+        static constexpr UInt64 kInvalid = kMaximum<UInt64>;
 
     public:
 
@@ -52,6 +52,14 @@ namespace ZyNetwork
             return mHandle != kInvalid;
         }
 
+        /// \brief Gets the platform's descriptor for the socket.
+        ///
+        /// \return The descriptor, or \ref kInvalid if the socket is closed.
+        ZY_INLINE UInt64 GetHandle() const
+        {
+            return mHandle;
+        }
+
         /// \brief Opens a socket of the given transport, ready to be bound or associated.
         ///
         /// \param Transport The transport the socket will carry.
@@ -61,14 +69,6 @@ namespace ZyNetwork
 
         /// \brief Closes the socket, releasing it back to the platform.
         void Close();
-
-        /// \brief Gets the platform's descriptor for the socket.
-        ///
-        /// \return The descriptor, or \ref kInvalid if the socket is closed.
-        ZY_INLINE UInt64 GetHandle() const
-        {
-            return mHandle;
-        }
 
         /// \brief Binds the socket to a local address.
         ///

@@ -84,7 +84,7 @@ namespace ZyAI
         /// \return `true` when the entry exists, otherwise `false`.
         ZY_INLINE Bool Has(Text Key) const
         {
-            return mEntries.Find(Key) != nullptr;
+            return mEntries.Contains(Key);
         }
 
         /// \brief Removes an entry.

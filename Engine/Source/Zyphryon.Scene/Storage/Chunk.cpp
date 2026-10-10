@@ -165,10 +165,7 @@ namespace ZyScene
 
     void Chunk::SetAddition(UInt32 Identifier, Ptr<Chunk> Target)
     {
-        if (Identifier >= mAdditions.GetSize())
-        {
-            mAdditions.Advance(Identifier + 1 - mAdditions.GetSize());
-        }
+        mAdditions.Expand(Identifier + 1);
         mAdditions[Identifier] = Target;
     }
 
@@ -177,10 +174,7 @@ namespace ZyScene
 
     void Chunk::SetRemoval(UInt32 Identifier, Ptr<Chunk> Target)
     {
-        if (Identifier >= mRemovals.GetSize())
-        {
-            mRemovals.Advance(Identifier + 1 - mRemovals.GetSize());
-        }
+        mRemovals.Expand(Identifier + 1);
         mRemovals[Identifier] = Target;
     }
 

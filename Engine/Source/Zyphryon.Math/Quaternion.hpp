@@ -68,7 +68,7 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if the quaternion is the zero quaternion.
-        /// 
+        ///
         /// \return `true` if all components are approximately zero, `false` otherwise.
         ZY_INLINE Bool IsAlmostZero() const
         {
@@ -76,7 +76,7 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if all components are approximately equal to the given values.
-        /// 
+        ///
         /// \param X The value to compare with the X component.
         /// \param Y The value to compare with the Y component.
         /// \param Z The value to compare with the Z component.
@@ -88,23 +88,23 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if the quaternion is normalized.
-        /// 
-        /// \return `true` if the quaternion is normalized, `false` otherwise.
+        ///
+        /// \return `true` if its length is one within tolerance, `false` otherwise.
         ZY_INLINE Bool IsNormalized() const
         {
             return mData.IsNormalized();
         }
 
         /// \brief Checks if the quaternion is finite.
-        /// 
-        /// \return `true` if the quaternion is finite, `false` otherwise.
+        ///
+        /// \return `true` if no component is NaN or infinite, `false` otherwise.
         ZY_INLINE Bool IsFinite() const
         {
             return mData.IsFinite();
         }
 
         /// \brief Gets the x-component of the quaternion.
-        /// 
+        ///
         /// \return The x-component.
         ZY_INLINE Real32 GetX() const
         {
@@ -112,7 +112,7 @@ inline namespace ZyMath
         }
 
         /// \brief Gets the y-component of the quaternion.
-        /// 
+        ///
         /// \return The y-component.
         ZY_INLINE Real32 GetY() const
         {
@@ -120,7 +120,7 @@ inline namespace ZyMath
         }
 
         /// \brief Gets the z-component of the quaternion.
-        /// 
+        ///
         /// \return The z-component.
         ZY_INLINE Real32 GetZ() const
         {
@@ -128,7 +128,7 @@ inline namespace ZyMath
         }
 
         /// \brief Gets the w-component of the quaternion.
-        /// 
+        ///
         /// \return The w-component.
         ZY_INLINE Real32 GetW() const
         {
@@ -136,7 +136,7 @@ inline namespace ZyMath
         }
 
         /// \brief Calculates the length (magnitude) of the quaternion.
-        /// 
+        ///
         /// \return The length of the quaternion.
         ZY_INLINE Real32 GetLength() const
         {
@@ -144,7 +144,7 @@ inline namespace ZyMath
         }
 
         /// \brief Calculates the squared length of the quaternion.
-        /// 
+        ///
         /// \return The squared length of the quaternion (no square root).
         ZY_INLINE Real32 GetLengthSquared() const
         {
@@ -152,57 +152,57 @@ inline namespace ZyMath
         }
 
         /// \brief Gets the forward (Z+) direction vector rotated by this quaternion.
-        /// 
-        /// \return The forward direction in world space as a Vector3.
+        ///
+        /// \return The forward direction in world space.
         ZY_INLINE Vector3 GetForward() const
         {
             return Rotate(* this, Vector3::UnitZ());
         }
 
-        /// \brief Gets the backward (Z–) direction vector rotated by this quaternion.
-        /// 
-        /// \return The backward direction in world space as a Vector3.
+        /// \brief Gets the backward (Z-) direction vector rotated by this quaternion.
+        ///
+        /// \return The backward direction in world space.
         ZY_INLINE Vector3 GetBackward() const
         {
             return -GetForward();
         }
 
         /// \brief Gets the up (Y+) direction vector rotated by this quaternion.
-        /// 
-        /// \return The up direction in world space as a Vector3.
+        ///
+        /// \return The up direction in world space.
         ZY_INLINE Vector3 GetUp() const
         {
             return Rotate(* this, Vector3::UnitY());
         }
 
-        /// \brief Gets the down (Y–) direction vector rotated by this quaternion.
-        /// 
-        /// \return The down direction in world space as a Vector3.
+        /// \brief Gets the down (Y-) direction vector rotated by this quaternion.
+        ///
+        /// \return The down direction in world space.
         ZY_INLINE Vector3 GetDown() const
         {
             return -GetUp();
         }
 
         /// \brief Gets the right (X+) direction vector rotated by this quaternion.
-        /// 
-        /// \return The right direction in world space as a Vector3.
+        ///
+        /// \return The right direction in world space.
         ZY_INLINE Vector3 GetRight() const
         {
             return Rotate(* this, Vector3::UnitX());
         }
 
-        /// \brief Gets the left (X–) direction vector rotated by this quaternion.
-        /// 
-        /// \return The left direction in world space as a Vector3.
+        /// \brief Gets the left (X-) direction vector rotated by this quaternion.
+        ///
+        /// \return The left direction in world space.
         ZY_INLINE Vector3 GetLeft() const
         {
             return -GetRight();
         }
 
-        /// \brief Extracts the axis-angle representation from this quaternion.
+        /// \brief Gets the rotation axis and angle of this quaternion.
         ///
-        /// \param Rotation The output angle of rotation in radians.
-        /// \return The normalized rotation axis as a Vector3.
+        /// \param Rotation Receives the rotation angle.
+        /// \return The normalized rotation axis, or the X axis when the angle is near zero.
         ZY_INLINE Vector3 GetAxis(Ref<Angle> Rotation) const
         {
             ZY_ASSERT(IsNormalized(), "Quaternion must be normalized to extract axis-angle");
@@ -210,8 +210,8 @@ inline namespace ZyMath
             const Real32 CosHalfAngle = Clamp(GetW(), -1.0f, 1.0f);
             const Real32 Sin          = Sqrt(1.0f - CosHalfAngle * CosHalfAngle);
 
-            Rotation = 2.0f * Angle::FromCosine(CosHalfAngle).GetRadians();
-            return (Sin > kEpsilon<Real32>) ? Vector3(GetX(), GetY(), GetZ()) / Sin : Vector3::UnitX();
+            Rotation = Angle::FromCosine(CosHalfAngle) * 2.0f;
+            return (Sin > kEpsilon<Real32>) ? mData.GetXYZ() / Sin : Vector3::UnitX();
         }
 
         /// \brief Decomposes the quaternion into Euler angles (pitch, yaw, roll).
@@ -220,7 +220,7 @@ inline namespace ZyMath
         Vector3 ToEulerAngles() const;
 
         /// \brief Adds another quaternion to this quaternion.
-        /// 
+        ///
         /// \param Other The quaternion to add.
         /// \return A new quaternion that is the sum of this quaternion and the input quaternion.
         ZY_INLINE Quaternion operator+(Quaternion Other) const
@@ -229,7 +229,7 @@ inline namespace ZyMath
         }
 
         /// \brief Negates the quaternion.
-        /// 
+        ///
         /// \return A new quaternion that is the negation of this quaternion.
         ZY_INLINE Quaternion operator-() const
         {
@@ -237,7 +237,7 @@ inline namespace ZyMath
         }
 
         /// \brief Subtracts another quaternion from this quaternion.
-        /// 
+        ///
         /// \param Other The quaternion to subtract.
         /// \return A new quaternion that is the difference of the two quaternions.
         ZY_INLINE Quaternion operator-(Quaternion Other) const
@@ -245,9 +245,9 @@ inline namespace ZyMath
             return Quaternion(mData - Other.mData);
         }
 
-        /// \brief Multiplies the quaternion components by another quaternion (Hamilton product).
+        /// \brief Multiplies this quaternion by another (Hamilton product).
         ///
-        /// \param Other The quaternion to multiply.
+        /// \param Other The rotation applied before this one.
         /// \return A new quaternion with the combined rotation.
         ZY_INLINE Quaternion operator*(Quaternion Other) const
         {
@@ -291,9 +291,9 @@ inline namespace ZyMath
             return (* this);
         }
 
-        /// \brief Multiplies the quaternion components by another quaternion (Hamilton product).
-        /// 
-        /// \param Other The quaternion to multiply.
+        /// \brief Multiplies this quaternion by another in place (Hamilton product).
+        ///
+        /// \param Other The rotation applied before this one.
         /// \return A reference to the updated quaternion.
         ZY_INLINE Ref<Quaternion> operator*=(Quaternion Other)
         {
@@ -311,18 +311,18 @@ inline namespace ZyMath
         }
 
         /// \brief Checks if this quaternion is equal to another quaternion.
-        /// 
+        ///
         /// \param Other The quaternion to compare to.
-        /// \return `true` if all vectors are approximately equal, `false` otherwise.
+        /// \return `true` if the quaternions are approximately equal or opposite, `false` otherwise.
         ZY_INLINE Bool operator==(Quaternion Other) const
         {
             return mData.IsAlmostEqual(Other.mData) || mData.IsAlmostEqual(-Other.mData);
         }
 
         /// \brief Checks if this quaternion is not equal to another quaternion.
-        /// 
+        ///
         /// \param Other The quaternion to compare to.
-        /// \return `true` if the vectors are not equal, `false` otherwise.
+        /// \return `true` if the quaternions are neither approximately equal nor opposite, `false` otherwise.
         ZY_INLINE Bool operator!=(Quaternion Other) const
         {
             return !(* this == Other);
@@ -352,37 +352,37 @@ inline namespace ZyMath
     public:
 
         /// \brief Normalizes the given quaternion.
-        /// 
-        /// \param Quaternion The quaternion to normalize.
+        ///
+        /// \param Value The quaternion to normalize.
         /// \return The normalized quaternion.
-        ZY_INLINE static Quaternion Normalize(Quaternion Quaternion)
+        ZY_INLINE static Quaternion Normalize(Quaternion Value)
         {
-            return ::Quaternion(Vector4::Normalize(Quaternion.mData));
+            return Quaternion(Vector4::Normalize(Value.mData));
         }
 
-        /// \brief Conjugate the given quaternion.
-        /// 
-        /// \param Quaternion The quaternion to conjugate.
+        /// \brief Conjugates the given quaternion.
+        ///
+        /// \param Value The quaternion to conjugate.
         /// \return The conjugated quaternion.
-        ZY_INLINE static Quaternion Conjugate(Quaternion Quaternion)
+        ZY_INLINE static Quaternion Conjugate(Quaternion Value)
         {
-            return ZyMath::Quaternion(Quaternion.mData * Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
+            return Quaternion(Value.mData * Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
         }
 
-        /// \brief Invert the given quaternion.
-        /// 
-        /// \param Quaternion The quaternion to invert. Must be normalized if representing a rotation.
+        /// \brief Inverts the given quaternion.
+        ///
+        /// \param Value The quaternion to invert, which must not be zero.
         /// \return The inverse quaternion.
-        ZY_INLINE static Quaternion Inverse(Quaternion Quaternion)
+        ZY_INLINE static Quaternion Inverse(Quaternion Value)
         {
-            const Real32 LengthSquared = Quaternion.GetLengthSquared();
+            const Real32 LengthSquared = Value.GetLengthSquared();
             ZY_ASSERT(LengthSquared > kEpsilon<Real32>, "Cannot invert a zero-length quaternion");
 
-            return ZyMath::Quaternion(Conjugate(Quaternion).mData / LengthSquared);
+            return Quaternion(Conjugate(Value).mData / LengthSquared);
         }
 
         /// \brief Computes the dot product of two quaternions.
-        /// 
+        ///
         /// \param P0 The first quaternion.
         /// \param P1 The second quaternion.
         /// \return The dot product of the two quaternions.
@@ -408,8 +408,8 @@ inline namespace ZyMath
         }
 
         /// \brief Creates a quaternion from an angle and an axis of rotation.
-        /// 
-        /// \param Rotation The rotation angle (in radians).
+        ///
+        /// \param Rotation The angle to rotate by.
         /// \param Axis     The axis to rotate around (normalized).
         /// \return The quaternion representing the rotation.
         ZY_INLINE static Quaternion FromAngles(Angle Rotation, Vector3 Axis)
@@ -436,17 +436,16 @@ inline namespace ZyMath
         }
 
         /// \brief Creates a quaternion from Euler angles.
-        /// 
+        ///
         /// \param Angles The pitch, yaw and roll as X, Y and Z, in radians.
         /// \return The quaternion representing the combined rotation.
         static Quaternion FromEulerAngles(Vector3 Angles);
 
-        /// \brief Generates a quaternion from the given direction and up vectors.
-        /// 
+        /// \brief Creates a quaternion from the given direction and up vectors.
+        ///
         /// \param Direction The desired forward (normalized) direction vector.
         /// \param Up        The desired up (normalized) vector.
-        /// 
-        /// \return The quaternion representing the rotation from the given direction and up vectors.
+        /// \return The rotation turning the Z axis onto \p Direction and the Y axis toward \p Up.
         static Quaternion FromDirection(Vector3 Direction, Vector3 Up);
 
         /// \brief Performs a spherical linear interpolation between two quaternions.

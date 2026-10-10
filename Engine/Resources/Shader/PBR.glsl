@@ -77,19 +77,31 @@ float ZyBounces(float Roughness, float NoV)
     float Root  = sqrt(max(NoV, 0.05));
     vec4  Along = vec4(1.0, Root, Root * Root, Root * Root * Root);
     vec4  Terms = vec4(
-        dot(ZY_BOUNCES_0, Along), dot(ZY_BOUNCES_1, Along), dot(ZY_BOUNCES_2, Along), dot(ZY_BOUNCES_3, Along));
+        dot(ZY_BOUNCES_0, Along),
+        dot(ZY_BOUNCES_1, Along),
+        dot(ZY_BOUNCES_2, Along),
+        dot(ZY_BOUNCES_3, Along));
 
     return max(dot(vec4(1.0, Rough, Rough * Rough, Rough * Rough * Rough), Terms), 0.0);
 }
 
-/// The BRDF terms every light on a point shares, for one view.
+/// Holds the BRDF terms every light on a point shares, for one view.
 struct ZyLobe
 {
-    float NoV;         ///< Cosine of normal and view, kept above zero.
-    float Alpha;       ///< Floored roughness, squared.
-    vec3  Environment; ///< Reflectance under light from every side.
-    vec3  Scatter;     ///< Diffuse per unit of light, less what the specular took.
-    vec3  Gain;        ///< Boost to the single bounce for the bounces GGX leaves out.
+    /// The cosine of normal and view, kept above zero.
+    float NoV;
+
+    /// The floored roughness, squared.
+    float Alpha;
+
+    /// The reflectance under light from every side.
+    vec3  Environment;
+
+    /// The diffuse per unit of light, less what the specular took.
+    vec3  Scatter;
+
+    /// The boost to the single bounce for the bounces GGX leaves out.
+    vec3  Gain;
 };
 
 /// Builds the BRDF terms every light on a point shares.

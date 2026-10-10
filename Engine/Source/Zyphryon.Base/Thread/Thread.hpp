@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief A wrapper around `std::jthread` that provides automatic joining on destruction.
+    /// \brief Represents a thread of execution that joins itself on destruction.
     using Thread   = std::jthread;
 
     /// \brief Identifies a thread, equal only to the identifier of the same thread.

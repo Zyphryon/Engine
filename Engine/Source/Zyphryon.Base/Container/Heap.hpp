@@ -63,7 +63,7 @@ inline namespace ZyBase
             return mData.GetSize();
         }
 
-        /// \brief Reserves room for the given number of elements, so growing holds no allocation.
+        /// \brief Reserves room for the given number of elements, so pushing that many allocates nothing.
         ///
         /// \param Capacity The number of elements to make room for.
         ZY_INLINE void Reserve(UInt Capacity)

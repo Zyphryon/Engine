@@ -48,7 +48,7 @@ namespace ZyRender
             /// The glyph's bounds in texture coordinates, within its atlas page.
             Rect   Atlas;
 
-            /// Advance width (pen movement in X after drawing this glyph).
+            /// The pen's advance along x after drawing the glyph, in font units.
             Real32 Advance;
 
             /// The atlas page the glyph was baked onto, which selects the material to draw it with.
@@ -58,35 +58,35 @@ namespace ZyRender
         /// \brief Represents the metrics of the font typeface.
         struct Metrics final
         {
-            /// Nominal font size used when generating glyphs.
+            /// The nominal size the glyphs were generated at.
             Real32 Size               = 0.0f;
 
-            /// Signed distance field spread value.
+            /// The spread of the signed distance field.
             Real32 Distance           = 0.0f;
 
-            /// Distance from baseline to top of typical ascenders.
+            /// The distance from the baseline to the top of typical ascenders.
             Real32 Ascender           = 0.0f;
 
-            /// Distance from baseline to bottom of typical descenders.
+            /// The distance from the baseline to the bottom of typical descenders.
             Real32 Descender          = 0.0f;
 
-            /// Vertical offset from baseline to top of underline.
+            /// The vertical offset from the baseline to the top of the underline.
             Real32 UnderlineOffset    = 0.0f;
 
-            /// Total vertical space occupied by the underline.
+            /// The total vertical space the underline takes.
             Real32 UnderlineSize      = 0.0f;
 
-            /// Visual thickness of the underline stroke.
+            /// The visual thickness of the underline stroke.
             Real32 UnderlineThickness = 0.0f;
         };
 
-        /// \brief Table mapping codepoints to glyphs.
+        /// \brief The glyphs, keyed by codepoint.
         using Glyphs  = Table<UInt32, Glyph>;
 
-        /// \brief Table mapping character pairs to kerning adjustments.
+        /// \brief The kerning adjustments, keyed by codepoint pair.
         using Kerning = Table<UInt64, Real32>;
 
-        /// \brief Sequence holding one material per atlas page, indexed by \c Glyph::Page.
+        /// \brief The materials, one per atlas page, indexed by \c Glyph::Page.
         using Atlases = Sequence<Retainer<ZyGraphic::Material>>;
 
     public:
@@ -96,9 +96,9 @@ namespace ZyRender
         /// \param Key The URI key identifying this font resource.
         explicit Font(AnyRef<ZyContent::Uri> Key);
 
-        /// \brief Initializes the font with metrics, glyph data, kerning pairs, and a material.
+        /// \brief Initializes the font with its metrics, glyphs, kerning pairs and one material per atlas page.
         ///
-        /// \param Metrics The font metrics.
+        /// \param Metrics The size, field spread, ascent, descent and underline of the face.
         /// \param Glyphs  The table of glyphs indexed by Unicode codepoint.
         /// \param Kerning The table of kerning adjustments for character pairs.
         /// \param Atlases The materials, one per atlas page, indexed by \c Glyph::Page.
@@ -106,7 +106,7 @@ namespace ZyRender
 
         /// \brief Gets the font metrics describing ascent, descent, and underline properties.
         ///
-        /// \return The font metrics structure.
+        /// \return The metrics the font was set up with.
         ZY_INLINE ConstRef<Metrics> GetMetrics() const
         {
             return mMetrics;
@@ -166,14 +166,17 @@ namespace ZyRender
         template<typename Callable>
         void Shape(Text Content, Vector2 Spacing, AnyRef<Callable> Callback) const
         {
-            const Real32 LineHeight = (mMetrics.Ascender - mMetrics.Descender) + Spacing.GetY();
+            const Real32 LineHeight = GetLineHeight(1.0f) + Spacing.GetY();
 
             Real32 PenX     = 0.0f;
             Real32 LineY    = 0.0f;
             UInt32 Previous = 0;
+            UInt   Offset   = 0;
 
-            Unicode::Iterate(Content, [&](UInt32 Codepoint)
+            while (Offset < Content.GetSize())
             {
+                const UInt32 Codepoint = Unicode::Decode(Content, Offset);
+
                 switch (Codepoint)
                 {
                 case '\r':
@@ -187,7 +190,7 @@ namespace ZyRender
                     break;
                 default:
                 {
-                    if (const ConstPtr<Glyph> Glyph = GetGlyph(Codepoint); Glyph)
+                    if (const ConstPtr<Glyph> Glyph = GetGlyph(Codepoint))
                     {
                         if (Previous)
                         {
@@ -197,7 +200,7 @@ namespace ZyRender
                         Callback(Placement {
                             .Local = Glyph->Local + Vector2(PenX, LineY),
                             .Atlas = Glyph->Atlas,
-                            .Page        = Glyph->Page
+                            .Page  = Glyph->Page
                         });
 
                         PenX    += Glyph->Advance;
@@ -206,7 +209,7 @@ namespace ZyRender
                     break;
                 }
                 }
-            });
+            }
         }
 
         /// \brief Computes the bounding rectangle for the given text when rendered at the specified size.
@@ -217,20 +220,14 @@ namespace ZyRender
         /// \return The bounding rectangle in pixels.
         Rect Enclose(Text Content, Real32 Size, Vector2 Spacing = Vector2()) const
         {
-            Real32 MinimumX = 0.0f;
-            Real32 MaximumX = 0.0f;
-            Real32 MinimumY = 0.0f;
-            Real32 MaximumY = 0.0f;
+            Rect Bounds = Rect::Zero();
 
             // The box always holds the origin, so an empty string still measures as a point rather than as nothing.
             Shape(Content, Spacing, [&](ConstRef<Placement> Placement)
             {
-                MinimumX = Min(MinimumX, Placement.Local.GetMinimumX());
-                MaximumX = Max(MaximumX, Placement.Local.GetMaximumX());
-                MinimumY = Min(MinimumY, Placement.Local.GetMinimumY());
-                MaximumY = Max(MaximumY, Placement.Local.GetMaximumY());
+                Bounds = Rect::Union(Bounds, Placement.Local);
             });
-            return Rect(MinimumX, MinimumY, MaximumX, MaximumY) * Size;
+            return Bounds * Size;
         }
 
     public:

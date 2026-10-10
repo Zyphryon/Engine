@@ -20,15 +20,14 @@
 
 inline namespace ZyBase
 {
-    /// \brief Writes a value tree as JSON text, indented or on one line.
+    /// \brief Represents a writer that turns a value tree into JSON text, indented or on one line.
     class ZY_API JsonWriter final
     {
     public:
 
         /// \brief Constructs a writer that indents each level of nesting by the given text.
         ///
-        /// \param Indent The text one level of nesting is indented by, where empty writes everything on one line,
-        ///               with no line breaks and no space after a colon.
+        /// \param Indent The text each level of nesting is indented by, or empty to write everything on one line.
         explicit JsonWriter(Text Indent);
 
         /// \brief Writes a value and everything it holds.

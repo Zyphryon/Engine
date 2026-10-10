@@ -31,7 +31,7 @@ inline namespace ZyBase
 
         for (UInt Index = 1; Index < Count; ++Index)
         {
-            mStorage.Append(Str(StrConvert(Arguments[Index])));
+            mStorage.Append(StrConvert(Arguments[Index]));
         }
 
         for (UInt Index = 0; Index < mStorage.GetSize(); ++Index)
@@ -78,15 +78,10 @@ inline namespace ZyBase
 
     ConstPtr<Environment::Switch> Environment::Find(Text Name) const
     {
-        for (UInt Index = mSwitches.GetSize(); Index > 0; --Index)
+        const SInt Index = mSwitches.FindLast([Name](ConstRef<Switch> Entry)
         {
-            ConstRef<Switch> Entry = mSwitches[Index - 1];
-
-            if (StrEqualCaseInsensitive(Entry.Name, Name))
-            {
-                return AddressOf(Entry);
-            }
-        }
-        return nullptr;
+            return StrEqualCaseInsensitive(Entry.Name, Name);
+        });
+        return Index >= 0 ? AddressOf(mSwitches[static_cast<UInt>(Index)]) : nullptr;
     }
 }

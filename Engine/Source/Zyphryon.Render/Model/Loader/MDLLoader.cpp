@@ -33,13 +33,13 @@ namespace ZyRender
 
         if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
             return false;
         }
 
         if (!Document.IsObject())
         {
-            LOG_W("'{0}' is not a valid model manifest", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid model manifest", Asset->GetKey());
             return false;
         }
 
@@ -52,7 +52,7 @@ namespace ZyRender
         }
         else
         {
-            LOG_W("'{0}' model manifest has no mesh", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' model manifest has no mesh", Asset->GetKey());
             return false;
         }
 

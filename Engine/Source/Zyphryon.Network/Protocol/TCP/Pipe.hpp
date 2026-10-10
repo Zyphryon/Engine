@@ -25,10 +25,8 @@ namespace ZyNetwork
     {
     public:
 
-        /// The bytes a length prefix occupies at the front of each frame.
+        /// \brief Number of bytes a length prefix takes at the front of each frame.
         static constexpr UInt kHeader = sizeof(UInt32);
-
-    public:
 
         /// \brief Specifies what the front of a pipe holds.
         enum class Front : UInt8
@@ -36,7 +34,7 @@ namespace ZyNetwork
             Bare,    ///< Not even a length has arrived yet.
             Partial, ///< A length arrived, with the frame it counts still short.
             Whole,   ///< A frame has entirely arrived, ready to be taken.
-            Broken,  ///< A length arrived that no frame may be, which nothing after can be trusted past.
+            Broken,  ///< A length arrived beyond what any frame may be, so nothing after it can be trusted.
         };
 
     public:
@@ -162,7 +160,7 @@ namespace ZyNetwork
 
         /// \brief Takes the whole frame waiting at the front, stepping past it.
         ///
-        /// \return The payload of the frame taken, behind its length no longer.
+        /// \return The payload of the frame taken, without its length.
         ZY_INLINE ConstSpan<Byte> Take()
         {
             ZY_ASSERT(IsWhole(), "No whole frame is waiting at the front");

@@ -39,12 +39,12 @@ namespace ZyAudio
         /// \brief Populates the sound with audio data and its associated metadata.
         ///
         /// \param Frames    The total number of PCM frames in the sound.
-        /// \param Frequency The sample rate of the audio data, in Hz.
+        /// \param Frequency The sample rate of the audio data, in hertz.
         /// \param Stride    The number of channels per PCM frame.
         /// \param Codec     The codec used to create decoders for this sound's audio data.
         /// \param Samples   The raw audio data for the sound, either PCM or encoded bytes.
         void Load(UInt64 Frames, UInt32 Frequency, UInt16 Stride, AnyRef<Codec> Codec, AnyRef<Blob> Samples);
-        
+
         /// \see ZyContent::Resource::OnReload(Ref<ZyEngine::Subsystem::Host>)
         void OnReload(Ref<ZyEngine::Subsystem::Host> Host) override;
 
@@ -74,7 +74,7 @@ namespace ZyAudio
 
         /// \brief Gets the sample rate of the sound.
         ///
-        /// \return The frequency in Hz.
+        /// \return The frequency in hertz.
         ZY_INLINE UInt32 GetFrequency() const
         {
             return mFrequency;

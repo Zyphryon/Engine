@@ -24,17 +24,17 @@ inline namespace ZyBase
 {
     /// \brief Represents a parsed command line, exposed as named switches plus ordered operands.
     ///
-    /// A switch is written as `--name`, `--name=value`, `--name value`, or `--no-name`.
+    /// \note A switch is written as `--name`, `--name=value`, `--name value`, or `--no-name`.
     class ZY_API Environment final
     {
     public:
 
-        /// \brief Constructs an empty option set.
+        /// \brief Constructs an environment with no switches or operands.
         ZY_INLINE Environment() = default;
 
         /// \brief Parses a raw argument vector, skipping the program name.
         ///
-        /// \param Count     The number of entries in \p Environment.
+        /// \param Count     The number of entries in \p Arguments.
         /// \param Arguments The argument vector, as handed to `main`.
         void Parse(UInt Count, ConstPtr<ConstPtr<Char>> Arguments);
 
@@ -75,7 +75,6 @@ inline namespace ZyBase
                 return Default;
             }
 
-            // A switch supplied without a value asserts the flag; `--no-name` is rewritten to "false" while parsing.
             if (Entry->Value.IsEmpty())
             {
                 return true;
@@ -121,9 +120,7 @@ inline namespace ZyBase
         template<IsEnum Type>
         ZY_INLINE Type GetEnum(Text Name, Type Default) const
         {
-            const Text Value = GetText(Name, Text::Empty());
-
-            return Value.IsEmpty() ? Default : ZyEnum::Cast<Type>(Value, Default);
+            return ZyEnum::Cast<Type>(GetText(Name, Text::Empty()), Default);
         }
 
         /// \brief Gets the operands, in the order they appeared.

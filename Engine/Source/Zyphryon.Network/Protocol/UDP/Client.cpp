@@ -33,7 +33,7 @@ namespace ZyNetwork::UDP
 
     Client::~Client()
     {
-        ZY_ASSERT(Channel::IsQuiet(), "A datagram was destroyed while the platform still held an operation of its own");
+        ZY_ASSERT(Channel::IsQuiet(), "A client was destroyed while the platform still held an operation of its own");
 
         mSocket.Close();
     }
@@ -151,8 +151,7 @@ namespace ZyNetwork::UDP
 
         const Ptr<Byte> Data = mTransmit.GetData();
 
-        // Answered ahead of anything else and on its own, since nothing this end says is read at all until the
-        // endpoint has taken the address on, and the answer is the only thing that makes it do so.
+        // The answer goes out first and alone, since the endpoint reads nothing from this address until it arrives.
         if (mAnswering)
         {
             mAnswering = false;
@@ -193,7 +192,9 @@ namespace ZyNetwork::UDP
             switch (static_cast<Envelope>(mInbound[0]))
             {
             case Envelope::Data:
-                mSession.Parse(Time, ConstSpan(mInbound.GetData() + kEnvelope, Size - kEnvelope),
+                mSession.Parse(
+                    Time,
+                    ConstSpan(mInbound.GetData() + kEnvelope, Size - kEnvelope),
                     [&](Delivery Mode, ConstSpan<Byte> Message)
                     {
                         Output.Message(mLink, Mode, Message);
@@ -201,7 +202,7 @@ namespace ZyNetwork::UDP
 
                 if (mSession.IsBroken())
                 {
-                    LOG_W("Network: the peer sent further ahead than it may and was let go of");
+                    LOG_W("Network: the peer sent a packet this build cannot read and was let go of");
 
                     Retire(Watcher, mLink, Reason::Protocol, Output);
                     return;

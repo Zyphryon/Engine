@@ -21,7 +21,7 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Slot Registry::Acquire(AnyRef<Task> Work, Lane Target)
+    Slot Registry::Acquire(AnyRef<Task> Work)
     {
         if (mAllocator.IsFull())
         {
@@ -33,10 +33,7 @@ namespace ZyJob
 
         Ref<Entry> Job = mEntries[Index(Value)];
         Job.Work       = Forward<Task>(Work);
-        Job.Next       = 0;
-        Job.Successor  = 0;
         Job.References = 2;
-        Job.Target     = Target;
         Job.Complete   = false;
 
         return Value;
@@ -73,33 +70,12 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Registry::Park(Slot Value, Handle Dependency)
-    {
-        const Slot Blocker = Resolve(Dependency);
-
-        // A dependency that is stale or already finished gates nothing, so the job is free to queue immediately.
-        if (Blocker == 0 || mEntries[Index(Blocker)].Complete)
-        {
-            return false;
-        }
-
-        mEntries[Index(Value)].Next        = mEntries[Index(Blocker)].Successor;
-        mEntries[Index(Blocker)].Successor = Value;
-        return true;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Registry::Clear()
     {
-        for (UInt32 Index = 1; Index <= static_cast<UInt32>(mAllocator.GetTop()); ++Index)
+        mAllocator.ForEach([this](Handle::Slot Value)
         {
-            if (mAllocator.IsOccupied(static_cast<Handle::Slot>(Index)))
-            {
-                mEntries[Index - 1].Work = Task();
-            }
-        }
+            mEntries[Index(Value)].Work = Task();
+        });
         mAllocator.Clear();
     }
 }

@@ -12,7 +12,7 @@
 
 #include "GLES3Module.hpp"
 #include "GLES3Driver.hpp"
-#include <Zyphryon.Graphic/Service.hpp>
+#include "Zyphryon.Graphic/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -41,12 +41,15 @@ namespace ZyGraphic
 
     void GLES3Module::OnAttach(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        if (ConstRetainer<Service> Service = Host.GetService<ZyGraphic::Service>())
+        if (ConstRetainer<Service> Graphic = Host.GetService<Service>())
         {
-            Service->Register(GetName(), []() -> Unique<Driver>
-            {
-                return Unique<GLES3Driver>::Create();
-            }, Service::Priority::Low);
+            Graphic->Register(
+                GetName(),
+                []() -> Unique<Driver>
+                {
+                    return Unique<GLES3Driver>::Create();
+                },
+                Service::Priority::Low);
         }
     }
 
@@ -55,9 +58,9 @@ namespace ZyGraphic
 
     void GLES3Module::OnDetach(Ref<ZyEngine::Subsystem::Host> Host)
     {
-        if (ConstRetainer<Service> Service = Host.GetService<ZyGraphic::Service>())
+        if (ConstRetainer<Service> Graphic = Host.GetService<Service>())
         {
-            Service->Unregister(GetName());
+            Graphic->Unregister(GetName());
         }
     }
 }

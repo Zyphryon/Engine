@@ -19,7 +19,7 @@ namespace ZyAudio
     {
     public:
 
-        /// \brief Maximum interleaved stride (samples per frame) the interpolation window can hold.
+        /// \brief The maximum interleaved stride, in samples per frame, the interpolation window can hold.
         static constexpr UInt16 kMaxStride = 8;
 
     public:
@@ -39,8 +39,8 @@ namespace ZyAudio
 
         /// \brief Constructs a resampler converting from a source rate to a target rate.
         ///
-        /// \param Source The sample rate of the incoming frames, in Hz.
-        /// \param Target The sample rate the output frames are produced at, in Hz.
+        /// \param Source The sample rate of the incoming frames, in hertz.
+        /// \param Target The sample rate the output frames are produced at, in hertz.
         /// \param Stride The number of interleaved samples per frame.
         ZY_INLINE Resampler(UInt32 Source, UInt32 Target, UInt16 Stride)
             : mStep     { static_cast<Real64>(Source) / Target },
@@ -149,8 +149,8 @@ namespace ZyAudio
         /// \brief Estimates how many output frames a source of the given length yields at a target rate.
         ///
         /// \param Frames The number of source frames at the source rate.
-        /// \param Source The sample rate of the source, in Hz.
-        /// \param Target The sample rate to convert to, in Hz.
+        /// \param Source The sample rate of the source, in hertz.
+        /// \param Target The sample rate to convert to, in hertz.
         /// \return The number of output frames produced at the target rate.
         ZY_INLINE static UInt64 Estimate(UInt64 Frames, UInt32 Source, UInt32 Target)
         {
@@ -162,8 +162,8 @@ namespace ZyAudio
         /// \param Input    The interleaved source samples.
         /// \param Stride   The number of interleaved samples per frame.
         /// \param Frames   The number of source frames in \p Input.
-        /// \param Source   The sample rate of \p Input, in Hz.
-        /// \param Target   The sample rate to convert to, in Hz.
+        /// \param Source   The sample rate of \p Input, in hertz.
+        /// \param Target   The sample rate to convert to, in hertz.
         /// \param Produced Receives the number of output frames written into the returned buffer.
         /// \return A newly allocated buffer holding the resampled interleaved PCM.
         ZY_INLINE static Blob Convert(

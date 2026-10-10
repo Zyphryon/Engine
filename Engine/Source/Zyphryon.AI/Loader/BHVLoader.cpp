@@ -119,13 +119,13 @@ namespace ZyAI
 
         if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
             return false;
         }
 
         if (!Document.IsObject())
         {
-            LOG_W("'{0}' is not a valid behaviour", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid behaviour", Asset->GetKey());
             return false;
         }
 
@@ -136,7 +136,7 @@ namespace ZyAI
 
         if (!ReadNode(Root.GetObject("Root"), 0, Nodes, Arguments))
         {
-            LOG_W("'{0}' has an invalid node", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an invalid node", Asset->GetKey());
             return false;
         }
 

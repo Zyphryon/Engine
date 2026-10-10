@@ -27,7 +27,7 @@ namespace ZyNetwork
     {
     public:
 
-        /// \brief Maximum time, in seconds, a peer may say nothing before it is taken as gone.
+        /// \brief Default time, in seconds, a peer may say nothing before it is taken as gone.
         static constexpr Real64 kMaxSilence = 10.0;
 
         /// \brief Specifies the lifecycle of an endpoint.
@@ -76,7 +76,7 @@ namespace ZyNetwork
             return (mState == State::Retired) ? mCause : Reason::None;
         }
 
-        /// \brief Checks whether the platform still holds an operation of this endpoint's.
+        /// \brief Checks whether the platform holds no operation of this endpoint's.
         ///
         /// \return `true` when the platform holds nothing of this endpoint's, otherwise `false`.
         virtual Bool IsQuiet() const
@@ -88,7 +88,7 @@ namespace ZyNetwork
         ///
         /// \param Watcher The proactor the first operations are posted to.
         /// \param Address The resolved address to open against.
-        /// \return `true` when the endpoint is carrying traffic, otherwise `false`.
+        /// \return `true` when the endpoint opened and posted its first operations, otherwise `false`.
         virtual Bool Open(Ref<Proactor> Watcher, ConstRef<Endpoint> Address) = 0;
 
         /// \brief Checks whether a peer is open and able to carry traffic.

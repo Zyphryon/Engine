@@ -84,7 +84,7 @@ inline namespace ZyBase
         ///
         /// \param Collection The collection of elements to copy into the sequence.
         template<typename Container>
-        ZY_INLINE constexpr Sequence(ConstRef<Container> Collection)
+        ZY_INLINE Sequence(ConstRef<Container> Collection)
             requires IsContiguousOf<Container, Type>
             : mData     { nullptr },
               mSize     { 0 },
@@ -106,7 +106,7 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the contiguous element storage.
         ///
-        /// \return A pointer to the first element, or \c nullptr when empty.
+        /// \return A pointer to the first element, or \c nullptr when nothing is allocated.
         ZY_INLINE Ptr<Type> GetData()
         {
             return mData;
@@ -114,7 +114,7 @@ inline namespace ZyBase
 
         /// \brief Gets a read-only pointer to the contiguous element storage.
         ///
-        /// \return A pointer to the first element, or \c nullptr when empty.
+        /// \return A pointer to the first element, or \c nullptr when nothing is allocated.
         ZY_INLINE ConstPtr<Type> GetData() const
         {
             return mData;
@@ -187,20 +187,20 @@ inline namespace ZyBase
         /// \brief Constructs a new element at the end of the sequence.
         ///
         /// \param Parameters The arguments to forward to the element's constructor.
-        /// \return A reference to the newly Appended element.
+        /// \return A reference to the newly appended element.
         template<typename... Arguments>
         ZY_INLINE Ref<Type> Append(AnyRef<Arguments>... Parameters)
         {
             if (mSize == mCapacity)
             {
-                Grow(mCapacity > 0 ? mCapacity * 2 : 16);
+                Reallocate(mCapacity > 0 ? mCapacity * 2 : 16);
             }
             return Construct<Type>(mData + mSize++, Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Appends multiple elements from a contiguous container to the end of the sequence.
         ///
-        /// \param Elements The container of elements to Append.
+        /// \param Elements The container of elements to append.
         template<typename Container>
         ZY_INLINE void Append(AnyRef<Container> Elements)
             requires IsContiguousOf<Container, Type>
@@ -209,7 +209,7 @@ inline namespace ZyBase
 
             if (const UInt Required = mSize + Size; Required > mCapacity)
             {
-                Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
+                Reallocate(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
             }
 
             if constexpr (IsTriviallyCopyable<Type>)
@@ -228,16 +228,17 @@ inline namespace ZyBase
 
         /// \brief Inserts a new element at the specified index, shifting subsequent elements right.
         ///
-        /// \param Index The zero-based index where the element should be inserted.
-        /// \param Element The arguments to forward to the element's constructor.
+        /// \param Index      The zero-based index where the element should be inserted.
+        /// \param Parameters The arguments to forward to the element's constructor.
+        /// \return A reference to the inserted element.
         template<typename... Arguments>
-        ZY_INLINE Ref<Type> Insert(UInt Index, AnyRef<Arguments>... Element)
+        ZY_INLINE Ref<Type> Insert(UInt Index, AnyRef<Arguments>... Parameters)
         {
             ZY_ASSERT(Index <= mSize, "Sequence insertion index is out of bounds");
 
             if (mSize == mCapacity)
             {
-                Grow(mCapacity > 0 ? mCapacity * 2 : 16);
+                Reallocate(mCapacity > 0 ? mCapacity * 2 : 16);
             }
 
             const Ptr<Type> Data = GetData();
@@ -261,13 +262,13 @@ inline namespace ZyBase
             }
 
             ++mSize;
-            return Construct<Type>(Data + Index, Forward<Arguments>(Element)...);
+            return Construct<Type>(Data + Index, Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Inserts multiple elements at the specified index, shifting subsequent elements right.
         ///
         /// \param Index    The zero-based index where elements should be inserted.
-        /// \param Elements The span of elements to insert.
+        /// \param Elements The container of elements to insert.
         template<typename Container>
         ZY_INLINE void Insert(UInt Index, AnyRef<Container> Elements)
             requires IsContiguousOf<Container, Type>
@@ -279,7 +280,7 @@ inline namespace ZyBase
 
             if (Required > mCapacity)
             {
-                Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
+                Reallocate(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
             }
 
             const Ptr<Type> Data = GetData();
@@ -334,9 +335,9 @@ inline namespace ZyBase
             }
             else
             {
-                for (UInt Element = Index + 1; Element < mSize; ++Element)
+                for (UInt Source = Index + 1; Source < mSize; ++Source)
                 {
-                    mData[Element - 1] = Move(mData[Element]);
+                    mData[Source - 1] = Move(mData[Source]);
                 }
                 Destruct<Type>(mData[mSize - 1]);
             }
@@ -366,9 +367,9 @@ inline namespace ZyBase
                     Destruct<Type>(mData[Index + Offset]);
                 }
 
-                for (UInt Element = Index + Length; Element < mSize; ++Element)
+                for (UInt Source = Index + Length; Source < mSize; ++Source)
                 {
-                    Relocate<Type>(mData[Element - Length], Move(mData[Element]));
+                    Relocate<Type>(mData[Source - Length], Move(mData[Source]));
                 }
             }
 
@@ -392,7 +393,6 @@ inline namespace ZyBase
             }
             return false;
         }
-
 
         /// \brief Removes every element for which \p Predicate returns `true`, shifting the survivors left.
         ///
@@ -454,7 +454,9 @@ inline namespace ZyBase
 
         /// \brief Removes the element at the given index by swapping it with the last element.
         ///
-        /// \param Index The zero-based index of the element to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Index The zero-based index of the element to remove.
         ZY_INLINE void RemoveFast(UInt Index)
         {
             ZY_ASSERT(Index < mSize, "Sequence index is out of bounds");
@@ -470,7 +472,9 @@ inline namespace ZyBase
 
         /// \brief Removes the first element for which \p Predicate returns `true` by swapping it with the last element.
         ///
-        /// \param Predicate The unary predicate used to identify the element to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Predicate The unary predicate used to identify the element to remove.
         /// \return `true` if an element was found and removed, otherwise `false`.
         template<typename Callable>
         ZY_INLINE Bool RemoveFastIf(AnyRef<Callable> Predicate)
@@ -488,7 +492,9 @@ inline namespace ZyBase
 
         /// \brief Removes all elements for which \p Predicate returns `true` by swapping with the last element.
         ///
-        /// \param Predicate The unary predicate used to identify elements to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Predicate The unary predicate used to identify elements to remove.
         /// \return The number of elements removed.
         template<typename Callable>
         ZY_INLINE UInt RemoveFastSomeIf(AnyRef<Callable> Predicate)
@@ -562,14 +568,8 @@ inline namespace ZyBase
         /// \return The index of the first occurrence, or -1 if not found.
         ZY_INLINE SInt Find(ConstRef<Type> Element) const
         {
-            for (UInt Index = 0; Index < mSize; ++Index)
-            {
-                if (mData[Index] == Element)
-                {
-                    return Index;
-                }
-            }
-            return -1;
+            const ConstPtr<Type> Found = ZyBase::Find(GetData(), GetSize(), Element);
+            return Found ? Found - GetData() : -1;
         }
 
         /// \brief Finds the first element matching the specified predicate.
@@ -618,6 +618,17 @@ inline namespace ZyBase
             return Find(Element) != -1;
         }
 
+        /// \brief Checks whether the sequence contains an element matching the specified predicate.
+        ///
+        /// \param Predicate The unary predicate used to identify the element.
+        /// \return `true` if a matching element is found, otherwise `false`.
+        template<typename Callable>
+        ZY_INLINE Bool Contains(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
+        {
+            return Find(Predicate) != -1;
+        }
+
         /// \brief Orders the elements in place by ascending value.
         ZY_INLINE void Sort()
         {
@@ -631,17 +642,6 @@ inline namespace ZyBase
         ZY_INLINE void Sort(AnyRef<Callable> Comparator)
         {
             ZyBase::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
-        }
-
-        /// \brief Checks whether the sequence contains an element matching the specified predicate.
-        ///
-        /// \param Predicate The unary predicate used to identify the element.
-        /// \return `true` if a matching element is found, otherwise `false`.
-        template<typename Callable>
-        ZY_INLINE Bool Contains(AnyRef<Callable> Predicate) const
-            requires IsInvocable<Callable, ConstRef<Type>>
-        {
-            return Find(Predicate) != -1;
         }
 
         /// \brief Destroys all elements without releasing the underlying heap storage.
@@ -664,7 +664,7 @@ inline namespace ZyBase
         {
             if (const UInt Required = mSize + Size; Required > mCapacity)
             {
-                Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
+                Reallocate(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(16u, Required));
             }
 
             const UInt Offset = mSize;
@@ -685,8 +685,6 @@ inline namespace ZyBase
 
         /// \brief Fills \p Size elements with \p Element, advancing the size accordingly.
         ///
-        /// For trivial element types this lowers to a single `memset`-equivalent call.
-        ///
         /// \param Element The value to assign to each new slot.
         /// \param Size    The number of elements to fill.
         ZY_INLINE void Fill(ConstRef<Type> Element, UInt Size)
@@ -697,7 +695,7 @@ inline namespace ZyBase
             {
                 if (const UInt Required = mSize + Size; Required > mCapacity)
                 {
-                    Grow(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(static_cast<UInt>(16), Required));
+                    Reallocate(mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(static_cast<UInt>(16), Required));
                 }
                 mSize += Size;
             }
@@ -736,16 +734,16 @@ inline namespace ZyBase
         {
             if (Capacity > mCapacity)
             {
-                Grow(Capacity);
+                Reallocate(Capacity);
             }
         }
 
-        /// \brief Reduces the capacity to match the current size, freeing unused memory.
+        /// \brief Reduces the capacity to the current size, keeping the buffer when the sequence is empty.
         ZY_INLINE void Shrink()
         {
             if (mSize < mCapacity && mSize != 0)
             {
-                Grow(mSize);
+                Reallocate(mSize);
             }
         }
 
@@ -815,7 +813,7 @@ inline namespace ZyBase
         /// \brief Reallocates the heap buffer to hold at least \p Capacity elements, moving all existing elements.
         ///
         /// \param Capacity The new minimum number of elements the buffer must accommodate.
-        ZY_INLINE void Grow(UInt Capacity)
+        ZY_INLINE void Reallocate(UInt Capacity)
         {
             const UInt      Size = mSize;
             const Ptr<Type> Data = Allocate<Type>(Capacity);
@@ -851,7 +849,7 @@ inline namespace ZyBase
         UInt32    mCapacity;
     };
 
-    /// \brief A stack-backed contiguous sequence of \p Type elements with a fixed capacity of \p Count.
+    /// \brief Represents a contiguous sequence of \p Type elements stored inline, with a fixed capacity of \p Count.
     template<typename Type, UInt Count>
         requires (Count > 0)
     class Sequence<Type, Count> final
@@ -949,7 +947,7 @@ inline namespace ZyBase
 
         /// \brief Checks whether the sequence has reached its fixed capacity.
         ///
-        /// \return `true` if no more elements can be Appended, otherwise `false`.
+        /// \return `true` if no more elements can be appended, otherwise `false`.
         ZY_INLINE constexpr Bool IsFull() const
         {
             return mSize == Count;
@@ -998,7 +996,7 @@ inline namespace ZyBase
         /// \brief Constructs a new element at the end of the sequence.
         ///
         /// \param Parameters The arguments to forward to the element's constructor.
-        /// \return A reference to the newly Appended element.
+        /// \return A reference to the newly appended element.
         template<typename... Arguments>
         ZY_INLINE constexpr Ref<Type> Append(AnyRef<Arguments>... Parameters)
         {
@@ -1007,9 +1005,9 @@ inline namespace ZyBase
             return mStorage.Construct(mSize++, Forward<Arguments>(Parameters)...);
         }
 
-        /// \brief Appends multiple elements from a span to the end of the sequence.
+        /// \brief Appends multiple elements from a contiguous container to the end of the sequence.
         ///
-        /// \param Elements The span of elements to Append.
+        /// \param Elements The container of elements to append.
         template<typename Container>
         ZY_INLINE constexpr void Append(AnyRef<Container> Elements)
             requires IsContiguousOf<Container, Type>
@@ -1024,12 +1022,12 @@ inline namespace ZyBase
 
         /// \brief Inserts a new element at the specified index, shifting subsequent elements right.
         ///
-        /// \param Index The zero-based index where the element should be inserted.
-        /// \param Element The element to insert.
+        /// \param Index      The zero-based index where the element should be inserted.
+        /// \param Parameters The arguments to forward to the element's constructor.
         template<typename... Arguments>
-        ZY_INLINE constexpr void Insert(UInt Index, AnyRef<Arguments>... Element)
+        ZY_INLINE constexpr void Insert(UInt Index, AnyRef<Arguments>... Parameters)
         {
-            ZY_ASSERT(Index <= mSize && Index + 1 <= Count, "Insertion index is out of bounds or capacity is full");
+            ZY_ASSERT(Index <= mSize && mSize < Count, "Insertion index is out of bounds or capacity is full");
 
             if (Index < mSize)
             {
@@ -1038,21 +1036,21 @@ inline namespace ZyBase
                 mStorage.Destruct(Index);
             }
 
-            mStorage.Construct(Index, Forward<Arguments>(Element)...);
+            mStorage.Construct(Index, Forward<Arguments>(Parameters)...);
             ++mSize;
         }
 
         /// \brief Inserts multiple elements at the specified index, shifting subsequent elements right.
         ///
         /// \param Index    The zero-based index where elements should be inserted.
-        /// \param Elements The span of elements to insert.
+        /// \param Elements The container of elements to insert.
         template<typename Container>
         ZY_INLINE constexpr void Insert(UInt Index, AnyRef<Container> Elements)
             requires IsContiguousOf<Container, Type>
         {
             const UInt Size = Elements.GetSize();
 
-            ZY_ASSERT(Index <= mSize && Index + Size <= Count, "Insertion index is out of bounds or capacity is full");
+            ZY_ASSERT(Index <= mSize && mSize + Size <= Count, "Insertion index is out of bounds or capacity is full");
 
             if (Size == 0)
             {
@@ -1125,7 +1123,6 @@ inline namespace ZyBase
             return false;
         }
 
-
         /// \brief Removes every element for which \p Predicate returns `true`, shifting the survivors left.
         ///
         /// \note Unlike \ref RemoveFastSomeIf the elements that stay keep the order they were in.
@@ -1186,7 +1183,9 @@ inline namespace ZyBase
 
         /// \brief Removes the element at the given index by swapping it with the last element.
         ///
-        /// \param Index The zero-based index of the element to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Index The zero-based index of the element to remove.
         ZY_INLINE constexpr void RemoveFast(UInt Index)
         {
             ZY_ASSERT(Index < mSize, "Sequence index is out of bounds");
@@ -1200,7 +1199,9 @@ inline namespace ZyBase
 
         /// \brief Removes the first element for which \p Predicate returns `true` by swapping it with the last element.
         ///
-        /// \param Predicate The unary predicate used to identify the element to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Predicate The unary predicate used to identify the element to remove.
         /// \return `true` if an element was found and removed, otherwise `false`.
         template<typename Callable>
         ZY_INLINE constexpr Bool RemoveFastIf(AnyRef<Callable> Predicate)
@@ -1218,7 +1219,9 @@ inline namespace ZyBase
 
         /// \brief Removes all elements for which \p Predicate returns `true` by swapping with the last element.
         ///
-        /// \param Predicate The unary predicate used to identify elements to remove. Does not preserve insertion order.
+        /// \note Does not keep the order of the remaining elements.
+        ///
+        /// \param Predicate The unary predicate used to identify elements to remove.
         /// \return The number of elements removed.
         template<typename Callable>
         ZY_INLINE constexpr UInt RemoveFastSomeIf(AnyRef<Callable> Predicate)
@@ -1256,14 +1259,8 @@ inline namespace ZyBase
         /// \return The index of the first occurrence, or -1 if not found.
         ZY_INLINE constexpr SInt Find(ConstRef<Type> Element) const
         {
-            for (UInt Index = 0; Index < mSize; ++Index)
-            {
-                if (mStorage[Index] == Element)
-                {
-                    return Index;
-                }
-            }
-            return -1;
+            const ConstPtr<Type> Found = ZyBase::Find(GetData(), GetSize(), Element);
+            return Found ? Found - GetData() : -1;
         }
 
         /// \brief Finds the first element matching the specified predicate.
@@ -1312,6 +1309,17 @@ inline namespace ZyBase
             return Find(Element) != -1;
         }
 
+        /// \brief Checks whether the sequence contains an element matching the specified predicate.
+        ///
+        /// \param Predicate The unary predicate used to identify the element.
+        /// \return `true` if a matching element is found, otherwise `false`.
+        template<typename Callable>
+        ZY_INLINE constexpr Bool Contains(AnyRef<Callable> Predicate) const
+            requires IsInvocable<Callable, ConstRef<Type>>
+        {
+            return Find(Predicate) != -1;
+        }
+
         /// \brief Orders the elements in place by ascending value.
         ZY_INLINE constexpr void Sort()
         {
@@ -1325,17 +1333,6 @@ inline namespace ZyBase
         ZY_INLINE constexpr void Sort(AnyRef<Callable> Comparator)
         {
             ZyBase::Sort(GetData(), GetSize(), Forward<Callable>(Comparator));
-        }
-
-        /// \brief Checks whether the sequence contains an element matching the specified predicate.
-        ///
-        /// \param Predicate The unary predicate used to identify the element.
-        /// \return `true` if a matching element is found, otherwise `false`.
-        template<typename Callable>
-        ZY_INLINE constexpr Bool Contains(AnyRef<Callable> Predicate) const
-            requires IsInvocable<Callable, ConstRef<Type>>
-        {
-            return Find(Predicate) != -1;
         }
 
         /// \brief Destroys all elements without affecting the fixed-size storage.
@@ -1377,9 +1374,7 @@ inline namespace ZyBase
             mSize += Size;
         }
 
-        /// \brief Fills \p Length elements with \p Element, advancing the size accordingly.
-        ///
-        /// For trivial element types this lowers to a single `memset`-equivalent call.
+        /// \brief Fills \p Size elements with \p Element, advancing the size accordingly.
         ///
         /// \param Element The value to assign to each new slot.
         /// \param Size    The number of elements to fill.

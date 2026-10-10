@@ -53,7 +53,7 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnTick(Real64 Time)
+    void Service::OnTick(Real64 Delta)
     {
         ZY_PROFILE_SCOPE("Job::Tick");
 
@@ -68,7 +68,7 @@ namespace ZyJob
 #if !defined(ZY_HAS_THREADS)
         // Every lane lands here, so a load burst is spread over frames rather than run to the end in one callback.
         const ZyPlatform::Timer Clock    = ZyPlatform::Timer();
-        const Real64            Deadline = Clock.GetSeconds() + static_cast<Real64>(kMaxTickBudget) / 1000.0;
+        const Real64            Deadline = Clock.GetSeconds() + kMaxTickBudget;
 #endif
 
         for (; Count > 0; --Count)
@@ -103,8 +103,6 @@ namespace ZyJob
         {
             Guard Guard(mMutex);
             Overflow = Move(mOverflow);
-            
-            mOverflow.Clear();
         }
 
         for (Ref<Task> Work : Overflow)
@@ -148,7 +146,7 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Handle Service::Submit(Lane Target, AnyRef<Task> Work, Handle Dependency)
+    Handle Service::Submit(Lane Target, AnyRef<Task> Work)
     {
         const Lane Actual = Reconcile(Target);
 
@@ -159,17 +157,12 @@ namespace ZyJob
         {
             Guard Guard(mMutex);
 
-            if (const Slot Value = mRegistry.Acquire(Forward<Task>(Work), Actual); Value)
+            if (const Slot Value = mRegistry.Acquire(Forward<Task>(Work)); Value)
             {
                 Result = mRegistry.Mint(Value);
+                Queued = true;
 
-                // Park the job on its dependency rather than queueing it, and let that job's completion release it.
-                Queued = !mRegistry.Park(Value, Dependency);
-
-                if (Queued)
-                {
-                    GetExecutor(Actual).Push(Value);
-                }
+                GetExecutor(Actual).Push(Value);
             }
             else if (Actual == Lane::Main && GetThreadID() != mMain)
             {
@@ -214,9 +207,7 @@ namespace ZyJob
                 return;
             }
 
-            // Rather than idle, drain the lane this thread is allowed to run; this is what keeps a waiting
-            // thread from wasting a core, and on a platform without workers it is the only thing that makes
-            // progress at all.
+            // Rather than idle, run queued compute work, since without workers nothing else runs it.
             if (const Slot Stolen = GetExecutor(Reconcile(Lane::Compute)).Pop(); Stolen != 0)
             {
                 Lock.unlock();
@@ -235,46 +226,11 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Block(Handle Job)
-    {
-        ZY_PROFILE_SCOPE("Job::Block");
-
-        Lock Lock(mMutex);
-
-        while (true)
-        {
-            const Slot Value = mRegistry.Resolve(Job);
-
-            if (Value == 0 || mRegistry[Value].Complete)
-            {
-                mRegistry.Retire(Value);
-                return;
-            }
-
-            mGate.wait(Lock);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Service::Discard(Handle Job)
     {
         Guard Guard(mMutex);
 
         mRegistry.Retire(mRegistry.Resolve(Job));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Service::IsComplete(Handle Job) const
-    {
-        Guard Guard(mMutex);
-
-        // A stale handle means the slot was already recycled, which only happens once the job has finished.
-        const Slot Value = mRegistry.Resolve(Job);
-        return (Value == 0 || mRegistry[Value].Complete);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -291,38 +247,16 @@ namespace ZyJob
         // Consume it, since a waiter may recycle the slot the instant it observes it.
         Job.Work.Consume();
 
-        Array<Bool, kMaxLanes> Woken { };
-
         {
             Guard Guard(mMutex);
 
             Job.Complete = true;
-
-            for (Slot Next = mRegistry.Detach(Value); Next != 0; )
-            {
-                const Slot Following = mRegistry[Next].Next;
-                const Lane Target    = mRegistry[Next].Target;
-
-                GetExecutor(Target).Push(Next);
-
-                Woken[static_cast<UInt32>(Target)] = true;
-
-                Next = Following;
-            }
 
             mRegistry.Retire(Value);
         }
 
         // Waiters key off any completion, since a helping wait has to re-check its own job after each one.
         mGate.notify_all();
-
-        for (UInt32 Index = 0; Index < kMaxLanes; ++Index)
-        {
-            if (Woken[Index])
-            {
-                mExecutors[Index].Signal();
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

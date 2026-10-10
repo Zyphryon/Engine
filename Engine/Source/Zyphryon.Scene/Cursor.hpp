@@ -42,7 +42,7 @@ namespace ZyScene
 
         /// \brief Constructs a cursor of a world, seeing every change from now on, archetypes and sleepers left out.
         ///
-        /// \param Owner The world.
+        /// \param Owner The world whose lists the cursor reads.
         ZY_INLINE explicit Cursor(Ref<Storage> Owner)
             : Cursor(Owner, WithoutHidden(Owner))
         {
@@ -79,9 +79,12 @@ namespace ZyScene
         /// \brief Cursors are not copied, since each owns its position.
         Cursor(ConstRef<Cursor> Other) = delete;
 
+        /// \brief Cursors are not assigned, since each owns its position.
+        Ref<Cursor> operator=(ConstRef<Cursor> Other) = delete;
+
         /// \brief Checks whether the cursor reads a list of a world.
         ///
-        /// \return `true` if it does, `false` if it reads nothing.
+        /// \return `true` if it is subscribed to a list, `false` for one made empty or moved from.
         ZY_INLINE Bool IsValid() const
         {
             return mHandles.GetFront() != 0;
@@ -93,7 +96,7 @@ namespace ZyScene
         template<typename Callable>
         void Each(AnyRef<Callable> Callback)
         {
-            ZY_ASSERT(mHandles.GetFront(), "The cursor reads nothing");
+            ZY_ASSERT(IsValid(), "The cursor reads nothing");
 
             if constexpr (List::kKind == Pull::Removed)
             {
@@ -105,9 +108,6 @@ namespace ZyScene
             }
         }
 
-        /// \brief Cursors are not assigned, since each owns its position.
-        Ref<Cursor> operator=(ConstRef<Cursor> Other) = delete;
-
     private:
 
         /// The component the list is about.
@@ -115,7 +115,7 @@ namespace ZyScene
 
         /// \brief Constructs a cursor filtering entries by a selection it owns from here on.
         ///
-        /// \param Owner The world.
+        /// \param Owner The world whose lists the cursor reads.
         /// \param State The selection, whose terms are declared.
         ZY_INLINE Cursor(Ref<Storage> Owner, AnyRef<Unique<Selection>> State)
             : mOwner      { AddressOf(Owner) },
@@ -127,7 +127,7 @@ namespace ZyScene
 
         /// \brief Subscribes to the list of each change the reader asks for, additions first.
         ///
-        /// \param Owner The world.
+        /// \param Owner The world keeping the lists.
         /// \return The handle of each subscription.
         ZY_INLINE static Array<UInt32, List::kSize> Subscribe(Ref<Storage> Owner)
         {
@@ -144,8 +144,8 @@ namespace ZyScene
 
         /// \brief Makes a selection that leaves archetypes and sleepers out.
         ///
-        /// \param Owner The world.
-        /// \return The selection.
+        /// \param Owner The world naming the archetype and sleeper markers.
+        /// \return The selection, with no other terms.
         ZY_INLINE static Unique<Selection> WithoutHidden(Ref<Storage> Owner)
         {
             Unique<Selection> State = Unique<Selection>::Create();
@@ -156,7 +156,7 @@ namespace ZyScene
 
         /// \brief Checks whether a reader of removals asked for archetypes.
         ///
-        /// \param Owner The world.
+        /// \param Owner The world naming the archetype marker.
         /// \param State The selection the reader was described with.
         /// \return `true` if it reads archetypes alone, `false` if it reads everything else.
         ZY_INLINE static Bool WantsArchetypes(Ref<Storage> Owner, ConstRef<Selection> State)
@@ -166,8 +166,8 @@ namespace ZyScene
 
         /// \brief Keeps the selection of a list, whose entries are matched against it.
         ///
-        /// \param Owner The world.
-        /// \param State The selection.
+        /// \param Owner The world that keeps the selection current.
+        /// \param State The terms of the reader, handed over.
         /// \return The selection kept current by the world, or `nullptr` for removals asking for nothing more.
         ZY_INLINE static Ptr<Selection> Adopt(Ref<Storage> Owner, AnyRef<Unique<Selection>> State)
         {
@@ -200,15 +200,16 @@ namespace ZyScene
             ZY_ASSERT(!kValue || Registry::Get().GetMetatype(IdentifierOf<Type>()).Has(Trait::Keeps),
                 "A removal hands its value only when the component is declared to keep it");
 
+            const UInt32 Feed  = mHandles.GetFront();
             Ref<Ledger>  Lists = mOwner->mLedger;
-            const UInt64 End   = Lists.GetEnd(mHandles.GetFront());
+            const UInt64 End   = Lists.GetEnd(Feed);
 
             // What the callback changes waits like in any walk.
             mOwner->Enter();
 
-            for (UInt64 Next = Lists.GetPosition(mHandles.GetFront()); Next < End; ++Next)
+            for (UInt64 Next = Lists.GetPosition(Feed); Next < End; ++Next)
             {
-                const Handle Actor = Lists.GetActor(mHandles.GetFront(), Next);
+                const Handle Actor = Lists.GetActor(Feed, Next);
 
                 // Archetypes go only to a reader that asked for them, and then nothing else does.
                 if (Directory::IsArchetype(Actor.GetIndex()) != mArchetypes)
@@ -219,7 +220,7 @@ namespace ZyScene
                 // Terms are matched against the chunk the entity left, which a gone entity no longer has.
                 if (mState)
                 {
-                    const UInt32 Source = Lists.GetSource(mHandles.GetFront(), Next);
+                    const UInt32 Source = Lists.GetSource(Feed, Next);
 
                     if (Source >= mState->Positions.GetSize() || mState->Positions[Source] == 0)
                     {
@@ -229,7 +230,7 @@ namespace ZyScene
 
                 if constexpr (kValue)
                 {
-                    const ConstPtr<Byte> Bytes = Lists.GetValue(mHandles.GetFront(), Next);
+                    const ConstPtr<Byte> Bytes = Lists.GetValue(Feed, Next);
                     Callback(Entity(mOwner, Actor), * reinterpret_cast<ConstPtr<Type>>(Bytes));
                 }
                 else
@@ -238,7 +239,7 @@ namespace ZyScene
                 }
             }
 
-            Lists.SetPosition(mHandles.GetFront(), End);
+            Lists.SetPosition(Feed, End);
             mOwner->Leave();
         }
 
@@ -267,7 +268,7 @@ namespace ZyScene
                 Ends[Index] = Lists.GetEnd(mHandles[Index]);
             }
 
-            // What the callback changes waits like in any walk, and entries it causes wait for the next read.
+            // What the callback changes waits like in any walk.
             mOwner->Enter();
 
             for (UInt Index = 0; Index < List::kSize; ++Index)
@@ -289,12 +290,12 @@ namespace ZyScene
 
         /// \brief Checks whether an entity is still alive and still matches the terms the reader asked for.
         ///
-        /// \param Actor The entity.
-        /// \return `true` if it does, `false` otherwise.
+        /// \param Actor The entity an entry names.
+        /// \return `true` if it is alive and its chunk matches the terms, `false` otherwise.
         ZY_INLINE Bool Matches(Handle Actor) const
         {
-            ConstRef<Directory> Directory = mOwner->mDirectory;
-            return Directory.IsAlive(Actor) && mState->GetPosition(* Directory[Actor.GetIndex()].Holder) != 0;
+            ConstRef<Directory> Slots = mOwner->mDirectory;
+            return Slots.IsAlive(Actor) && mState->GetPosition(* Slots[Actor.GetIndex()].Holder) != 0;
         }
 
     private:

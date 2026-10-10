@@ -22,7 +22,6 @@
 namespace ZyNetwork::UDP
 {
     /// \brief Represents everything one peer has been handed to say and everything it has heard back.
-    /// TODO: Current support: Unreliable (Only)
     class Session final
     {
     public:
@@ -40,8 +39,9 @@ namespace ZyNetwork::UDP
 
         /// \brief Constructs a session that has neither said nor heard anything.
         ZY_INLINE Session()
+            : mSequence { 0 },
+              mBroken   { false }
         {
-            Reset();
         }
 
         /// \brief Forgets everything said and everything heard, as though nothing ever had been.
@@ -110,8 +110,6 @@ namespace ZyNetwork::UDP
                 const UInt16 Size = Read<UInt16>(Packet.GetData() + Cursor);
                 Cursor += sizeof(UInt16);
 
-                // A message reaching past the datagram that carried it is one nothing framing this the same way
-                // could have written, so the peer is taken as speaking something other than this.
                 if (Cursor + Size > Packet.GetSize())
                 {
                     LOG_E("Network: a peer sent a message longer than the datagram it arrived in");
@@ -140,17 +138,17 @@ namespace ZyNetwork::UDP
             /// The newest packet the far end had seen, left at nothing until something counts them.
             UInt16 Acknowledge = 0;
 
-            /// Which packets behind \ref Ack it had also seen, left at nothing until something answers for them.
+            /// The packets behind \ref Acknowledge it had also seen, left at nothing until something answers for them.
             UInt64 Bits        = 0;
         };
 
         /// \brief Represents a message handed over and not yet sent.
         struct Parcel final
         {
-            /// Where its payload sits among those waiting to go out.
+            /// The offset of its payload among those waiting to go out.
             UInt32   Offset = 0;
 
-            /// How long that payload is.
+            /// The length of its payload, in bytes.
             UInt16   Size   = 0;
 
             /// The guarantee it was handed over under.
@@ -173,7 +171,7 @@ namespace ZyNetwork::UDP
         /// \brief Reads a number written the way this build writes them.
         ///
         /// \param Input The bytes to read it from.
-        /// \return The number read.
+        /// \return The number, read least significant byte first.
         template<typename Type>
         ZY_INLINE static Type Read(ConstPtr<Byte> Input)
         {
@@ -188,7 +186,7 @@ namespace ZyNetwork::UDP
 
         /// \brief Writes a number so a build on any machine reads back what this one wrote.
         ///
-        /// \param Output Receives the number.
+        /// \param Output Receives the number, least significant byte first.
         /// \param Value  The number to write.
         template<typename Type>
         ZY_INLINE static void Write(Ptr<Byte> Output, Type Value)

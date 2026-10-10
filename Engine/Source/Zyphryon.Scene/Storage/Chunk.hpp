@@ -21,7 +21,7 @@
 
 namespace ZyScene
 {
-    /// \brief Represents the entities holding one set of components made from one archetype, in pages that never move.
+    /// \brief Represents the entities holding one set of components made from one archetype, in pages fixed once full.
     class ZY_API Chunk final
     {
         friend class Entity;
@@ -93,7 +93,7 @@ namespace ZyScene
 
         /// \brief Checks whether the entities here are archetypes.
         ///
-        /// \return `true` if they are, `false` otherwise.
+        /// \return `true` if the entities here are archetypes, `false` otherwise.
         ZY_INLINE Bool IsArchetype() const
         {
             return mArchetype;
@@ -117,7 +117,7 @@ namespace ZyScene
 
         /// \brief Gets the column a component is stored in.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to look for.
         /// \return The column, or \ref kTag when it is carried without data, or \ref kAbsent when it is not carried.
         ZY_INLINE SInt16 Find(UInt32 Identifier) const
         {
@@ -126,7 +126,7 @@ namespace ZyScene
 
         /// \brief Checks whether every entity here carries a component.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to look for.
         /// \return `true` if it is carried, with data or as a tag, `false` otherwise.
         ZY_INLINE Bool Has(UInt32 Identifier) const
         {
@@ -144,7 +144,7 @@ namespace ZyScene
 
         /// \brief Gets the columns that hold data, tags left out.
         ///
-        /// \return The columns.
+        /// \return The columns, widest alignment first.
         ZY_INLINE ConstSpan<Column> GetColumns() const
         {
             return mColumns;
@@ -152,8 +152,8 @@ namespace ZyScene
 
         /// \brief Gets where one row keeps one column's instance.
         ///
-        /// \param Index The column.
-        /// \param Row   The row.
+        /// \param Index The column, as \ref Find returns it.
+        /// \param Row   The row the instance belongs to.
         /// \return The first byte of the instance.
         ZY_INLINE Ptr<Byte> At(UInt32 Index, UInt32 Row) const
         {
@@ -163,8 +163,8 @@ namespace ZyScene
 
         /// \brief Gets the entity sitting at a row.
         ///
-        /// \param Row The row.
-        /// \return The entity.
+        /// \param Row The row, which must be in use.
+        /// \return The handle of the entity in that row.
         ZY_INLINE Handle GetHandle(UInt32 Row) const
         {
             return GetHandles(Row)[GetPlace(Row)];
@@ -172,7 +172,7 @@ namespace ZyScene
 
         /// \brief Gets the handles that open the page a row sits in.
         ///
-        /// \param Row The row.
+        /// \param Row Any row of the page.
         /// \return The first handle of the page, which the place of each row in it indexes.
         ZY_INLINE Ptr<Handle> GetHandles(UInt32 Row) const
         {
@@ -181,7 +181,7 @@ namespace ZyScene
 
         /// \brief Gets the page a row sits in.
         ///
-        /// \param Row The row.
+        /// \param Row Any row of the page.
         /// \return The first byte of the page.
         ZY_INLINE Ptr<Byte> GetPage(UInt32 Row) const
         {
@@ -198,7 +198,7 @@ namespace ZyScene
 
         /// \brief Gets where a row sits inside its page.
         ///
-        /// \param Row The row.
+        /// \param Row The row, counted across every page.
         /// \return The row within the page.
         ZY_INLINE UInt32 GetPlace(UInt32 Row) const
         {
@@ -223,7 +223,7 @@ namespace ZyScene
 
         /// \brief Takes a row out whose components were already moved away or destroyed, filling it with the last row.
         ///
-        /// \param Row The row.
+        /// \param Row The row to take out.
         /// \return The entity moved into the row, which names nothing when the row was the last one.
         ZY_INLINE Handle Release(UInt32 Row)
         {
@@ -255,7 +255,7 @@ namespace ZyScene
 
         /// \brief Takes a row out, destroying what it still holds and filling it with the last row.
         ///
-        /// \param Row The row.
+        /// \param Row The row to take out.
         /// \return The entity moved into the row, which names nothing when the row was the last one.
         ZY_INLINE Handle Erase(UInt32 Row)
         {
@@ -271,13 +271,13 @@ namespace ZyScene
 
         /// \brief Remembers the chunk reached by adding a component.
         ///
-        /// \param Identifier The component.
-        /// \param Target     The chunk.
+        /// \param Identifier The identifier of the component added.
+        /// \param Target     The chunk the addition leads to.
         void SetAddition(UInt32 Identifier, Ptr<Chunk> Target);
 
         /// \brief Gets the chunk reached by adding a component, once that edge was found.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component added.
         /// \return The chunk, or `nullptr` until the edge is known.
         ZY_INLINE Ptr<Chunk> GetAddition(UInt32 Identifier) const
         {
@@ -286,13 +286,13 @@ namespace ZyScene
 
         /// \brief Remembers the chunk reached by removing a component.
         ///
-        /// \param Identifier The component.
-        /// \param Target     The chunk.
+        /// \param Identifier The identifier of the component removed.
+        /// \param Target     The chunk the removal leads to.
         void SetRemoval(UInt32 Identifier, Ptr<Chunk> Target);
 
         /// \brief Gets the chunk reached by removing a component, once that edge was found.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component removed.
         /// \return The chunk, or `nullptr` until the edge is known.
         ZY_INLINE Ptr<Chunk> GetRemoval(UInt32 Identifier) const
         {
@@ -301,7 +301,7 @@ namespace ZyScene
 
         /// \brief Sets the chunk an entity lands in once it is given everything this chunk's components bring along.
         ///
-        /// \param Target The chunk.
+        /// \param Target The chunk to land in.
         ZY_INLINE void SetClosure(Ptr<Chunk> Target)
         {
             mClosure = Target;
@@ -321,7 +321,7 @@ namespace ZyScene
         ///
         /// \param Info        The type of the instances.
         /// \param Destination The storage to move them into.
-        /// \param Source      The instances.
+        /// \param Source      The first instance to move.
         /// \param Count       The number of instances.
         ZY_INLINE static void Relocate(ConstRef<Metatype> Info, Ptr<Byte> Destination, Ptr<Byte> Source, UInt Count)
         {
@@ -339,7 +339,7 @@ namespace ZyScene
         ///
         /// \param Info        The type of the instances.
         /// \param Destination The storage to copy them into.
-        /// \param Source      The instances.
+        /// \param Source      The first instance to copy.
         /// \param Count       The number of instances.
         ZY_INLINE static void Copy(ConstRef<Metatype> Info, Ptr<Byte> Destination, ConstPtr<Byte> Source, UInt Count)
         {
@@ -372,7 +372,7 @@ namespace ZyScene
         /// \brief Destroys instances, leaving their storage to be reused.
         ///
         /// \param Info   The type of the instances.
-        /// \param Target The first instance.
+        /// \param Target The first instance to destroy.
         /// \param Count  The number of instances.
         ZY_INLINE static void Destruct(ConstRef<Metatype> Info, Ptr<Byte> Target, UInt Count)
         {
@@ -385,7 +385,7 @@ namespace ZyScene
         /// \brief Builds default instances in unconstructed storage.
         ///
         /// \param Info   The type of the instances.
-        /// \param Target The first instance.
+        /// \param Target The storage to build them in.
         /// \param Count  The number of instances.
         ZY_INLINE static void Construct(ConstRef<Metatype> Info, Ptr<Byte> Target, UInt Count)
         {
@@ -401,13 +401,13 @@ namespace ZyScene
 
     private:
 
-        /// \brief The rows the first page starts with, doubled until a page is full.
+        /// The rows the first page starts with, doubled until a page is full.
         static constexpr UInt32 kFirstRows     = 16;
 
-        /// \brief The bytes a full page holds about, so a walk leaves its loop rarely whatever the size of a row.
+        /// The bytes a full page holds about, so a walk leaves its loop rarely whatever the size of a row.
         static constexpr UInt32 kPageBytes     = 262'144;
 
-        /// \brief The alignment of every page, and the gap between runs, so runs of equal rows never share cache sets.
+        /// The alignment of every page, and the gap between runs, so runs of equal rows never share cache sets.
         static constexpr UInt32 kPageAlignment = 64;
 
         /// \brief Checks whether a column sits before another, wider alignment first.
@@ -422,8 +422,8 @@ namespace ZyScene
 
         /// \brief Gets where one row keeps a component, stepping by the type's own size rather than its column's.
         ///
-        /// \param Identifier The identifier of the component type to locate.
-        /// \param Row        The row within the chunk that holds the instance.
+        /// \param Identifier The identifier of the component to read.
+        /// \param Row        The row the instance belongs to.
         /// \return The instance, or `nullptr` when the component is absent, a tag, or bytes of an unresolved type.
         template<typename Type>
         ZY_INLINE Ptr<Type> Fetch(UInt32 Identifier, UInt32 Row) const

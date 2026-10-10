@@ -21,13 +21,13 @@
 
 inline namespace ZyMath
 {
-    /// \brief Provides smooth interpolation between two values over time.
+    /// \brief Represents a value eased from a start to an end over time.
     template<typename Type>
     class Tween final
     {
     public:
 
-        /// \brief Creates a tween that stands still at nothing.
+        /// \brief Constructs a tween with no duration, resting at the default value.
         ZY_INLINE Tween()
             : Tween(Type(), Type(), 0.0)
         {
@@ -38,7 +38,7 @@ inline namespace ZyMath
         /// \param Start    The starting value of the tween.
         /// \param End      The target value of the tween.
         /// \param Time     The total duration of the tween in seconds.
-        /// \param Function The easing function to use (default: Linear).
+        /// \param Function The easing function to shape the progress with.
         /// \param Delay    The time the tween holds at its start before it moves, in seconds.
         ZY_INLINE Tween(Type Start, Type End, Real64 Time, Easing Function = Easing::Linear, Real64 Delay = 0.0)
             : mStart       { Start },
@@ -74,7 +74,7 @@ inline namespace ZyMath
 
         /// \brief Advances the tween by the specified time delta.
         ///
-        /// \param Delta The time elapsed since last update in seconds.
+        /// \param Delta The time elapsed since the last tick, in seconds.
         /// \return The current interpolated value.
         ZY_INLINE Type Tick(Real64 Delta)
         {
@@ -103,15 +103,15 @@ inline namespace ZyMath
             }
         }
 
-        /// \brief Checks if the tween hasn't started yet.
+        /// \brief Checks whether the tween has neither a duration nor a delay.
         ///
-        /// \return `true` if the tween is idling, `false` otherwise.
+        /// \return `true` when both are zero, otherwise `false`.
         ZY_INLINE Bool IsIdle() const
         {
             return IsAlmostZero(mTime) && IsAlmostZero(mDelay);
         }
 
-        /// \brief Checks if the tween has completed.
+        /// \brief Checks whether the tween has completed.
         ///
         /// \return `true` if the tween has reached its end value, `false` otherwise.
         ZY_INLINE Bool IsComplete() const

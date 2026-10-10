@@ -41,7 +41,7 @@ namespace ZyScene
 
         /// \brief Checks whether the component names a type at all.
         ///
-        /// \return `true` if it names one, `false` otherwise.
+        /// \return `true` if the identifier is not zero, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return mIdentifier != 0;
@@ -66,7 +66,7 @@ namespace ZyScene
 
         /// \brief Gets the name saves know the type by.
         ///
-        /// \return The name.
+        /// \return The name, the compiler's unless the type was declared under another.
         ZY_INLINE Text GetName() const
         {
             return GetInfo().Name;
@@ -98,7 +98,7 @@ namespace ZyScene
 
         /// \brief Checks whether saves carry the type.
         ///
-        /// \return `true` if they do, `false` otherwise.
+        /// \return `true` if the type carries \ref Trait::Serializable, `false` otherwise.
         ZY_INLINE Bool IsSerializable() const
         {
             return GetInfo().Has(Trait::Serializable);
@@ -106,7 +106,7 @@ namespace ZyScene
 
         /// \brief Checks whether instances read the type from their archetype.
         ///
-        /// \return `true` if they do, `false` otherwise.
+        /// \return `true` if the type carries \ref Trait::Inheritable, `false` otherwise.
         ZY_INLINE Bool IsInheritable() const
         {
             return GetInfo().Has(Trait::Inheritable);
@@ -164,7 +164,7 @@ namespace ZyScene
 
         /// \brief Gets the component a type answers to, registering it the first time it is asked about.
         ///
-        /// \return The component.
+        /// \return The component, which always names a type.
         template<typename Type>
         ZY_INLINE static Component Of()
         {

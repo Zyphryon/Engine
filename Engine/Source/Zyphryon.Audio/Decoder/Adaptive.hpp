@@ -87,7 +87,7 @@ namespace ZyAudio::Codec
         /// \brief The largest index the step table accepts.
         static constexpr SInt32 kStepLimit     = 88;
 
-        /// \brief The quantiser step each index selects, as defined by IMA ADPCM.
+        /// \brief The quantizer step each index selects, as defined by IMA ADPCM.
         static constexpr SInt32 kStepTable[89] =
         {
             7,     8,     9,     10,    11,    12,    13,    14,    16,    17,

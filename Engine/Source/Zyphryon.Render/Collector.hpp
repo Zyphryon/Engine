@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2021-2026 by Agustin Alvarez. All rights reserved.
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -50,8 +50,8 @@ namespace ZyRender
 
             /// \brief Constructs an entry with the specified type and slot.
             ///
-            /// \param Type The type of object associated with this entry.
-            /// \param Slot The slot of object associated with this entry.
+            /// \param Type The tag naming which kind of object to draw.
+            /// \param Slot The index of the object among those of its kind.
             ZY_INLINE constexpr Object(UInt8 Type, UInt32 Slot)
                 : Type { Type },
                   Slot { Slot }
@@ -65,7 +65,7 @@ namespace ZyRender
             /// The key used for sorting this command within the rendering queue, whose state bits also batch it.
             UInt64 Order;
 
-            /// The index of the command's associated resource slot, which may be used for binding during rendering.
+            /// The object the command draws, by its type tag and slot.
             Object Entry;
 
             /// \brief Constructs an empty command with default order and entry values.
@@ -77,7 +77,7 @@ namespace ZyRender
             /// \brief Constructs a command with the specified order and entry values.
             ///
             /// \param Order The key used for sorting this command within the rendering queue.
-            /// \param Entry The index of the command's associated object.
+            /// \param Entry The object the command draws, by its type tag and slot.
             ZY_INLINE constexpr Command(UInt64 Order, Object Entry)
                 : Order { Order },
                   Entry { Entry }
@@ -103,11 +103,11 @@ namespace ZyRender
 
         /// \brief Pushes a rendering command into the collector for later sorting and submission.
         ///
-        /// \param Entry    The index of the command's associated resource slot, which may be used for binding during rendering.
+        /// \param Entry    The object the command draws, by its type tag and slot.
         /// \param Depth    The depth value for sorting the command, typically in the range [0, 1].
         /// \param Group    The value that splits batches beyond pipeline and material, such as the mesh a draw reads.
-        /// \param Pipeline The graphics pipeline to use for rendering, which must not be null.
-        /// \param Material The material to use for rendering, which may be null for default material.
+        /// \param Pipeline The handle of the pipeline to draw with, which must not be zero.
+        /// \param Material The handle of the material to bind, or zero for none.
         ZY_INLINE void Push(Object Entry, Real32 Depth, UInt16 Group, UInt16 Pipeline, UInt16 Material)
         {
             mQueue.Append(GenerateOrderKey(mPhase, Pipeline, Material, Group, Depth), Entry);
@@ -115,7 +115,7 @@ namespace ZyRender
 
         /// \brief Drains the open phase, invoking a callback for each batch of commands it collected.
         ///
-        /// \param Callback The function to call for each batch of commands, which receives a span of commands.
+        /// \param Callback The callable invoked with each batch's object type and its commands, in sorted order.
         template<typename Function>
         ZY_INLINE void Poll(AnyRef<Function> Callback)
         {
@@ -133,18 +133,15 @@ namespace ZyRender
                 mScratch = Blob::Allocate<Command>(Size);
             }
 
-            // Sort the queue by the full sort key to ensure correct rendering order.
             const ConstPtr<Command> Sorted = RadixSort64(mQueue.GetData(), mScratch.GetData<Command>(), Size);
 
             UInt32            Start = 0;
             ConstPtr<Command> Base  = Sorted;
 
-            // Iterate through the queue and batch commands with identical pipeline, material, and group.
             for (UInt32 End = 1; End < Size; ++End)
             {
                 if (ConstRef<Command> Current = Sorted[End]; (Current.Order & Mask) != (Base->Order & Mask))
                 {
-                    // Invoke the callback for the current batch of commands.
                     Callback(Base->Entry.Type, ConstSpan(Base, End - Start));
 
                     Start = End;
@@ -155,23 +152,19 @@ namespace ZyRender
             // Invoke the callback for the final batch, which a non-empty queue always leaves open.
             Callback(Base->Entry.Type, ConstSpan(Base, Size - Start));
 
-            // Clear the command queue after processing it.
             mQueue.Clear();
         }
 
     private:
 
-        /// \brief Defines a type alias for a queue of rendering commands.
-        using Queue = Sequence<Command>;
-
         /// The bits of an order key that identify a batch, indexed by queue.
         static constexpr UInt64 kGroupMask[]
         {
-            0xFFFFFFFFFF000000ull,  ///< Opaque:      [Pipeline|Material|Group] sit in the high 40 bits.
-            0x000000FFFFFFFFFFull,  ///< Transparent: [Pipeline|Material|Group] sit in the low 40 bits.
+            0xFFFFFFFFFF000000ull,  // Opaque keys batch on their high 40 bits.
+            0x000000FFFFFFFFFFull,  // Transparent keys batch on their low 40 bits.
         };
 
-        /// \brief Sorts rendering commands using an in-place least-significant-digit radix sort.
+        /// \brief Sorts commands by order key with a radix sort that alternates between the two buffers.
         ///
         /// \param Input  The input buffer containing the commands to sort.
         /// \param Output The output buffer with space for at least \p Count commands.
@@ -181,16 +174,20 @@ namespace ZyRender
 
         /// \brief Generates a sort key for a draw command based on rendering state and priority.
         ///
-        /// \param Priority The rendering priority of the draw command, which determines the sorting strategy.
+        /// \param Phase    The rendering priority of the draw command, which determines the sorting strategy.
         /// \param Pipeline The graphics pipeline used for the draw call.
         /// \param Material The material used for the draw call.
         /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that encodes rendering state for optimal draw call ordering.
         ZY_INLINE static constexpr UInt64 GenerateOrderKey(
-            Priority Priority, UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
+            Priority Phase,
+            UInt16   Pipeline,
+            UInt16   Material,
+            UInt16   Group,
+            Real32   Depth)
         {
-            return (Priority == Priority::Opaque)
+            return (Phase == Priority::Opaque)
                 ? GenerateOpaqueOrderKey(Pipeline, Material, Group, Depth)
                 : GenerateAlphaOrderKey(Pipeline, Material, Group, Depth);
         }
@@ -203,7 +200,10 @@ namespace ZyRender
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort opaque draw calls for optimal rendering order.
         ZY_INLINE static constexpr UInt64 GenerateOpaqueOrderKey(
-            UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
+            UInt16 Pipeline,
+            UInt16 Material,
+            UInt16 Group,
+            Real32 Depth)
         {
             return (static_cast<UInt64>(Pipeline & 0x3FFu)  << 54) |    // [10:Pipeline]
                    (static_cast<UInt64>(Material & 0x3FFFu) << 40) |    // [14:Material]
@@ -219,7 +219,10 @@ namespace ZyRender
         /// \param Depth    The depth value for sorting the draw call.
         /// \return A 64-bit key that can be used to sort transparent draw calls for correct back-to-front rendering order.
         ZY_INLINE static constexpr UInt64 GenerateAlphaOrderKey(
-            UInt16 Pipeline, UInt16 Material, UInt16 Group, Real32 Depth)
+            UInt16 Pipeline,
+            UInt16 Material,
+            UInt16 Group,
+            Real32 Depth)
         {
             return (static_cast<UInt64>(DepthToBits(1.0f - Depth))  << 40) |   // [24:Depth]
                    (static_cast<UInt64>(Pipeline & 0x3FFu)          << 30) |   // [10:Pipeline]
@@ -243,8 +246,8 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Priority mPhase;
-        Queue    mQueue;
-        Blob     mScratch;
+        Priority          mPhase;
+        Sequence<Command> mQueue;
+        Blob              mScratch;
     };
 }

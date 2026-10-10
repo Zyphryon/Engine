@@ -24,10 +24,10 @@ namespace ZyAudio
 
     public:
 
-        /// The lowest cutoff the section accepts, under which a source is inaudible rather than muffled.
+        /// \brief The lowest cutoff the section accepts, under which a source is inaudible rather than muffled.
         static constexpr Real32 kMinimumCutoff = 20.0f;
 
-        /// The resonance of the section, placing its two poles on a Butterworth circle.
+        /// \brief The resonance of the section, placing its two poles on a Butterworth circle.
         static constexpr Real32 kQuality       = 0.70710678f;
 
     public:

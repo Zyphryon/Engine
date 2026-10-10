@@ -172,63 +172,6 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Sequence<Entity> World::Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root)
-    {
-        ZY_ASSERT(!mDeferral.IsWalking(), "A save cannot be read while a query walks");
-
-        Sequence<Entity> Roots;
-        Reader           Stream(Input);
-
-        if (Stream.GetAvailable() < sizeof(UInt32) + sizeof(UInt16)
-            || Stream.Read<UInt32>() != kMagic
-            || Stream.Read<UInt16>() != kVersion)
-        {
-            LOG_W("Scene: The bytes are not a save this version reads");
-            return Roots;
-        }
-
-        const UInt32              Home   = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
-        Handle                    Target = Root.IsAlive() ? Root.GetHandle() : Handle();
-        Sequence<UInt32>          Types;
-        Sequence<UInt32>          Made;
-        Sequence<UInt32>          Identifiers;
-        Sequence<ConstSpan<Byte>> Payloads;
-
-        while (Stream.GetAvailable() >= 2 * sizeof(UInt32))
-        {
-            const UInt32 Kind  = Stream.Read<UInt32>();
-            Reader       Scope = Stream.Split(Stream.Read<UInt32>());
-
-            // A name this build does not know comes back as an unresolved type, its values kept as bytes.
-            for (UInt32 Count = Kind == kTypes ? Scope.Read<UInt32>() : 0; Count > 0; --Count)
-            {
-                Types.Append(Registry::Get().Acquire(Scope.ReadText()));
-            }
-
-            const UInt32 Records = Kind == kEntities ? Scope.Read<UInt32>() : 0;
-
-            for (UInt32 Count = 0; Count < Records && Scope.GetAvailable() > 0; ++Count)
-            {
-                const UInt32 Owner = Scope.Read<UInt32>();
-
-                if (Owner == 0)
-                {
-                    Made.Append(Make(Scope, Types, Home, Exchange(Target, Handle()), Identifiers, Payloads));
-                    Roots.Append(this, mDirectory.GetHandle(Made.GetBack()));
-                }
-                else
-                {
-                    const UInt32 Above = Owner <= Made.GetSize() ? Made[Owner - 1] : Home;
-                    Made.Append(Make(Scope, Types, Above, Handle(), Identifiers, Payloads));
-                }
-            }
-        }
-        return Roots;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void World::Registered(ConstSpan<UInt32> Identifiers)
     {
         for (const UInt32 Identifier : Identifiers)
@@ -306,6 +249,63 @@ namespace ZyScene
         {
             Emit(Output, Child, Local, Indices, Names, Count);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Sequence<Entity> World::Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root)
+    {
+        ZY_ASSERT(!mDeferral.IsWalking(), "A save cannot be read while a query walks");
+
+        Sequence<Entity> Roots;
+        Reader           Stream(Input);
+
+        if (Stream.GetAvailable() < sizeof(UInt32) + sizeof(UInt16)
+            || Stream.Read<UInt32>() != kMagic
+            || Stream.Read<UInt16>() != kVersion)
+        {
+            LOG_W("Scene: The bytes are not a save this version reads");
+            return Roots;
+        }
+
+        const UInt32              Home   = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
+        Handle                    Target = Root.IsAlive() ? Root.GetHandle() : Handle();
+        Sequence<UInt32>          Types;
+        Sequence<UInt32>          Made;
+        Sequence<UInt32>          Identifiers;
+        Sequence<ConstSpan<Byte>> Payloads;
+
+        while (Stream.GetAvailable() >= 2 * sizeof(UInt32))
+        {
+            const UInt32 Kind  = Stream.Read<UInt32>();
+            Reader       Scope = Stream.Split(Stream.Read<UInt32>());
+
+            // A name this build does not know comes back as an unresolved type, its values kept as bytes.
+            for (UInt32 Count = Kind == kTypes ? Scope.Read<UInt32>() : 0; Count > 0; --Count)
+            {
+                Types.Append(Registry::Get().Acquire(Scope.ReadText()));
+            }
+
+            const UInt32 Records = Kind == kEntities ? Scope.Read<UInt32>() : 0;
+
+            for (UInt32 Count = 0; Count < Records && Scope.GetAvailable() > 0; ++Count)
+            {
+                const UInt32 Owner = Scope.Read<UInt32>();
+
+                if (Owner == 0)
+                {
+                    Made.Append(Make(Scope, Types, Home, Exchange(Target, Handle()), Identifiers, Payloads));
+                    Roots.Append(this, mDirectory.GetHandle(Made.GetBack()));
+                }
+                else
+                {
+                    const UInt32 Above = Owner <= Made.GetSize() ? Made[Owner - 1] : Home;
+                    Made.Append(Make(Scope, Types, Above, Handle(), Identifiers, Payloads));
+                }
+            }
+        }
+        return Roots;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

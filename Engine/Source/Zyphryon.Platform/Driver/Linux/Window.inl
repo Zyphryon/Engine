@@ -572,6 +572,7 @@ namespace ZyPlatform
                 case Button5:
                     Dispatcher.QueueMouseScroll(0.0f, -1.0f);
                     break;
+                // X11 has no names for the buttons past the fifth.
                 case 6:
                     Dispatcher.QueueMouseScroll(-1.0f, 0.0f);
                     break;
@@ -912,20 +913,19 @@ namespace ZyPlatform
         mBackend->Close = mBackend->GetAtom("WM_DELETE_WINDOW");
         ::XSetWMProtocols(mBackend->Connection, mBackend->Handle, AddressOf(mBackend->Close), 1);
 
-        // A held key then repeats as presses alone, which the input service drops, rather than as releases and presses.
+        // A held key then repeats as presses alone, which Held tells apart, rather than as releases and presses.
         ::XkbSetDetectableAutoRepeat(mBackend->Connection, 1, nullptr);
 
         mBackend->Selection = mBackend->GetAtom("CLIPBOARD");
         mBackend->Encoding  = mBackend->GetAtom("UTF8_STRING");
         mBackend->Targets   = mBackend->GetAtom("TARGETS");
 
-        // A fully transparent 1x1 cursor, bound while the pointer is locked.
         XColor Color { };
         mBackend->Stipple = ::XCreatePixmap(mBackend->Connection, mBackend->Handle, 1, 1, 1);
         mBackend->Blank   = ::XCreatePixmapCursor(
             mBackend->Connection, mBackend->Stipple, mBackend->Stipple, AddressOf(Color), AddressOf(Color), 0, 0);
 
-        // The input method turns keystrokes into text; without one, only the raw key events are reported.
+        // Without an input method only the raw key events are reported.
         if (mBackend->Method = ::XOpenIM(mBackend->Connection, nullptr, nullptr, nullptr); mBackend->Method)
         {
             mBackend->Context = ::XCreateIC(

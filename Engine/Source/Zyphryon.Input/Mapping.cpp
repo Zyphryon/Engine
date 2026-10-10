@@ -34,6 +34,40 @@ namespace ZyInput
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static Bool Decode(JsonObject Item, Ref<Binding> Output)
+    {
+        Output.Scale = Item.GetNumber<Real32>("Scale", 1.0f);
+
+        if (Item.Contains("Key"))
+        {
+            Output.Kind = Source::Key;
+            return Parse(Item, "Key", Output.Positive);
+        }
+
+        if (Item.Contains("Button"))
+        {
+            Output.Kind = Source::Button;
+            return Parse(Item, "Button", Output.Button);
+        }
+
+        if (Item.Contains("Axis"))
+        {
+            Output.Kind = Source::Axis;
+            return Parse(Item, "Axis", Output.Axis);
+        }
+
+        if (Item.Contains("Negative") && Item.Contains("Positive"))
+        {
+            Output.Kind = Source::Pair;
+            return Parse(Item, "Negative", Output.Negative) && Parse(Item, "Positive", Output.Positive);
+        }
+
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Mapping::Bind(Text Action, ConstRef<Binding> Binding)
     {
         Define(Action).Bindings.Append(Binding);
@@ -103,54 +137,7 @@ namespace ZyInput
     {
         mActions.ForEach([&](UInt64, Ref<Entry> Entry)
         {
-            const JsonArray List = Root.GetArray(Entry.Name);
-
-            if (List.IsNull())
-            {
-                return;
-            }
-
-            Entry.Bindings.Clear();
-
-            for (UInt Index = 0; Index < List.GetSize(); ++Index)
-            {
-                const JsonObject Item = List.GetObject(Index);
-
-                Binding Result;
-                Result.Scale = Item.GetNumber<Real32>("Scale", 1.0f);
-
-                Bool Valid = false;
-
-                if (Item.Contains("Key"))
-                {
-                    Result.Kind = Source::Key;
-                    Valid       = Parse(Item, "Key", Result.Positive);
-                }
-                else if (Item.Contains("Button"))
-                {
-                    Result.Kind = Source::Button;
-                    Valid       = Parse(Item, "Button", Result.Button);
-                }
-                else if (Item.Contains("Axis"))
-                {
-                    Result.Kind = Source::Axis;
-                    Valid       = Parse(Item, "Axis", Result.Axis);
-                }
-                else if (Item.Contains("Negative") && Item.Contains("Positive"))
-                {
-                    Result.Kind = Source::Pair;
-                    Valid       = Parse(Item, "Negative", Result.Negative) && Parse(Item, "Positive", Result.Positive);
-                }
-
-                if (Valid)
-                {
-                    Entry.Bindings.Append(Result);
-                }
-                else
-                {
-                    LOG_W("Input: Skipped binding {0} of '{1}', which names no input", Index, Entry.Name);
-                }
-            }
+            Restore(Entry, Root.GetArray(Entry.Name));
         });
     }
 
@@ -161,34 +148,7 @@ namespace ZyInput
     {
         mActions.ForEach([&](UInt64, ConstRef<Entry> Entry)
         {
-            JsonArray List = Root.SetArray(Entry.Name);
-
-            for (ConstRef<Binding> Item : Entry.Bindings)
-            {
-                JsonObject Output = List.AddObject();
-
-                switch (Item.Kind)
-                {
-                case Source::Key:
-                    Output.SetEnum("Key", Item.Positive);
-                    break;
-                case Source::Button:
-                    Output.SetEnum("Button", Item.Button);
-                    break;
-                case Source::Pair:
-                    Output.SetEnum("Negative", Item.Negative);
-                    Output.SetEnum("Positive", Item.Positive);
-                    break;
-                case Source::Axis:
-                    Output.SetEnum("Axis", Item.Axis);
-                    break;
-                }
-
-                if (Item.Scale != 1.0f)
-                {
-                    Output.SetNumber("Scale", Item.Scale);
-                }
-            }
+            Store(Entry, Root.SetArray(Entry.Name));
         });
     }
 
@@ -197,18 +157,14 @@ namespace ZyInput
 
     Ref<Mapping::Entry> Mapping::Define(Text Action)
     {
-        const UInt64 Identifier = Identify(Action);
+        Ref<Entry> Result = mActions.FindOrInsert(Identify(Action));
 
-        if (const Ptr<Entry> Existing = mActions.Find(Identifier))
+        if (Result.Name.IsEmpty())
         {
-            return (* Existing);
+            Result.Name = Action;
         }
 
-        Entry Created;
-        Created.Name = Action;
-        mActions.Assign(Identifier, Move(Created));
-
-        return (* mActions.Find(Identifier));
+        return Result;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -243,5 +199,63 @@ namespace ZyInput
             break;
         }
         return 0.0f;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Mapping::Restore(Ref<Entry> Entry, JsonArray List)
+    {
+        if (List.IsNull())
+        {
+            return;
+        }
+
+        Entry.Bindings.Clear();
+
+        for (UInt Index = 0; Index < List.GetSize(); ++Index)
+        {
+            if (Binding Result; Decode(List.GetObject(Index), Result))
+            {
+                Entry.Bindings.Append(Result);
+            }
+            else
+            {
+                LOG_W("Input: Skipped binding {0} of '{1}', which names no input", Index, Entry.Name);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Mapping::Store(ConstRef<Entry> Entry, JsonArray List)
+    {
+        for (ConstRef<Binding> Item : Entry.Bindings)
+        {
+            JsonObject Output = List.AddObject();
+
+            switch (Item.Kind)
+            {
+            case Source::Key:
+                Output.SetEnum("Key", Item.Positive);
+                break;
+            case Source::Button:
+                Output.SetEnum("Button", Item.Button);
+                break;
+            case Source::Pair:
+                Output.SetEnum("Negative", Item.Negative);
+                Output.SetEnum("Positive", Item.Positive);
+                break;
+            case Source::Axis:
+                Output.SetEnum("Axis", Item.Axis);
+                break;
+            }
+
+            if (Item.Scale != 1.0f)
+            {
+                Output.SetNumber("Scale", Item.Scale);
+            }
+        }
     }
 }

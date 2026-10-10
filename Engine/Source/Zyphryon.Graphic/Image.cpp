@@ -54,7 +54,7 @@ namespace ZyGraphic
 
     Bool Image::Upload(Ref<Service> Service)
     {
-        ZY_ASSERT(mHandle == 0, "Image has already been created");
+        ZY_ASSERT(!mHandle, "Image has already been created");
 
         mHandle = Service.CreateTexture(mLayout, mFormat, mWidth, mHeight, mLayers, mLevels, Move(mData));
         return (mHandle != 0);
@@ -65,7 +65,7 @@ namespace ZyGraphic
 
     void Image::Unload(Ref<Service> Service)
     {
-        if (mHandle != 0)
+        if (mHandle)
         {
             Service.DeleteTexture(mHandle);
 

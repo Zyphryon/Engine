@@ -67,13 +67,13 @@ namespace ZyScene
         /// The component each field hands out, in order.
         Sequence<UInt32>           Fields;
 
-        /// How each field is read.
+        /// The way each field is read.
         Sequence<Mode>             Modes;
 
         /// The matched chunks, in the order they were made.
         Sequence<Ptr<Chunk>>       Chunks;
 
-        /// Where each matched chunk keeps each field, one run per match.
+        /// The source of each field in each matched chunk, one run per match.
         Sequence<UInt16>           Sources;
 
         /// The position of each chunk among the matches plus one, indexed by chunk.
@@ -82,7 +82,7 @@ namespace ZyScene
         /// The first row of each matched chunk for a spread walk, or the row past each depth for a sorted one.
         Sequence<UInt32>           Offsets;
 
-        /// How deep each row an ordered walk gathered stands.
+        /// The depth of each row an ordered walk gathered.
         Sequence<UInt32>           Depths;
 
         /// The chunk and row of each row an ordered walk gathered, then the same rows sorted by depth behind them.
@@ -109,7 +109,7 @@ namespace ZyScene
         /// `true` when matches are visited parents first.
         Bool                       Ordered;
 
-        /// `true` when the last walk that could choose spread.
+        /// `true` when the last walk that could spread did.
         Bool                       Spread;
 
         /// \brief Constructs a selection that asks for nothing and matches nothing.
@@ -128,25 +128,25 @@ namespace ZyScene
 
         /// \brief Checks whether a chunk answers the query.
         ///
-        /// \param Target The chunk.
+        /// \param Target The chunk to test.
         /// \param Slots  The directory, which knows what archetypes lend.
-        /// \return `true` if it does, `false` otherwise.
+        /// \return `true` if the chunk sees everything asked for and nothing excluded, `false` otherwise.
         Bool Matches(ConstRef<Chunk> Target, ConstRef<Directory> Slots) const;
 
         /// \brief Adds, refreshes or removes a chunk that is new or whose archetype changed.
         ///
-        /// \param Target The chunk.
+        /// \param Target The chunk to match again.
         /// \param Slots  The directory, which knows what archetypes lend.
         void Update(Ptr<Chunk> Target, ConstRef<Directory> Slots);
 
         /// \brief Takes a chunk out of the matches, if it is there, keeping the others in order.
         ///
-        /// \param Target The chunk.
+        /// \param Target The chunk to take out.
         void Remove(ConstPtr<Chunk> Target);
 
         /// \brief Gets the position of a chunk among the matches.
         ///
-        /// \param Target The chunk.
+        /// \param Target The chunk to look for.
         /// \return The position plus one, or zero when the chunk does not answer.
         ZY_INLINE UInt32 GetPosition(ConstRef<Chunk> Target) const
         {
@@ -156,7 +156,7 @@ namespace ZyScene
         /// \brief Gets where a matched chunk keeps a field.
         ///
         /// \param Match The position of the chunk among the matches.
-        /// \param Field The field.
+        /// \param Field The position of the field among \ref Fields.
         /// \return The column, or one of the sources above.
         ZY_INLINE UInt16 GetSource(UInt32 Match, UInt32 Field) const
         {

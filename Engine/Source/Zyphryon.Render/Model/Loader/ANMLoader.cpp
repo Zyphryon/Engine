@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "ANMLoader.hpp"
-#include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Render/Model/Animation3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -24,18 +23,28 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     template<typename Type>
-    static void ReadTrack(Ref<Reader> Input, Ref<Track<Type>> Track, Real32 Rate, UInt32 Count, Interpolation Mode, Bool Tangents)
+    static Bool ReadTrack(Ref<Reader> Input, Ref<Track<Type>> Track, Real32 Rate, UInt32 Count, Interpolation Mode, Bool Fixed)
     {
+        // A component the baker found unchanging is stored once instead of once per tick.
+        const UInt32 Keys     = Fixed ? 1u : Count;
+        const Bool   Tangents = Mode == Interpolation::Hermite && !Fixed;
+
+        if (Input.GetAvailable() < Keys * sizeof(Type) * (Tangents ? 3 : 1))
+        {
+            return false;
+        }
+
         Track.SetRate(Rate);
         Track.SetInterpolation(Mode);
-        Track.SetValues(Input.Read<ConstPtr<Type>>(Count * sizeof(Type)), Count);
+        Track.SetValues(Input.Read<ConstPtr<Type>>(Keys * sizeof(Type)), Keys);
 
         if (Tangents)
         {
-            const ConstPtr<Type> Incoming = Input.Read<ConstPtr<Type>>(Count * sizeof(Type));
-            const ConstPtr<Type> Outgoing = Input.Read<ConstPtr<Type>>(Count * sizeof(Type));
-            Track.SetTangents(Incoming, Outgoing, Count);
+            const ConstPtr<Type> Incoming = Input.Read<ConstPtr<Type>>(Keys * sizeof(Type));
+            const ConstPtr<Type> Outgoing = Input.Read<ConstPtr<Type>>(Keys * sizeof(Type));
+            Track.SetTangents(Incoming, Outgoing, Keys);
         }
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -43,19 +52,19 @@ namespace ZyRender
 
     Bool ANMLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
+        const Retainer<Animation3D> Asset = Retainer<Animation3D>::Cast(Scope.GetResource());
+
         Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('A' << 8) | ('N' << 16) | ('M' << 24)))
         {
-            LOG_W("'{0}' is not a ZANM file (bad magic)", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a ZANM file (bad magic)", Asset->GetKey());
             return false;
         }
 
-        const UInt16 Version = Input.Read<UInt16>();
-
-        if (Version != 1)
+        if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{0}' has an unsupported ZANM version", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an unsupported ZANM version", Asset->GetKey());
             return false;
         }
 
@@ -77,46 +86,19 @@ namespace ZyRender
 
             if (Rate <= 0.0f || Count == 0)
             {
-                LOG_W("'{0}' has lane {1} with no cadence or no keys", Scope.GetResource()->GetKey(), Index);
+                LOG_W("'{0}' has lane {1} with no cadence or no keys", Asset->GetKey(), Index);
                 return false;
             }
 
             // One lane per bone is a must.
-            const auto IsPresent = [Name](ConstRef<Animation3D::Lane> Entry)
+            const Bool Repeated = Lanes.Contains([Name](ConstRef<Animation3D::Lane> Entry)
             {
                 return Entry.Name == Name;
-            };
+            });
 
-            if (Lanes.Contains(IsPresent))
+            if (Repeated)
             {
-                LOG_W("'{0}' has lane {1} repeating a bone", Scope.GetResource()->GetKey(), Index);
-                return false;
-            }
-
-            // A component the baker found unchanging is stored once instead of once per tick.
-            const auto GetRate = [Count, Fixed](Component Which)
-            {
-                return HasBit(Fixed, Which) ? 1u : Count;
-            };
-
-            const auto HasTangents = [Mode, Fixed](Component Which)
-            {
-                return Mode == Interpolation::Hermite && !HasBit(Fixed, Which);
-            };
-
-            const auto GetStride = [&](Component Which, UInt Size)
-            {
-                return GetRate(Which) * Size * (HasTangents(Which) ? 3 : 1);
-            };
-
-            const UInt Length =
-                  (HasBit(Mask,Component::Position) ? GetStride(Component::Position, sizeof(Vector3))    : 0)
-                + (HasBit(Mask,Component::Scale)    ? GetStride(Component::Scale,    sizeof(Vector3))    : 0)
-                + (HasBit(Mask,Component::Rotation) ? GetStride(Component::Rotation, sizeof(Quaternion)) : 0);
-
-            if (Input.GetAvailable() < Length)
-            {
-                LOG_W("'{0}' has lane {1} truncated", Scope.GetResource()->GetKey(), Index);
+                LOG_W("'{0}' has lane {1} repeating a bone", Asset->GetKey(), Index);
                 return false;
             }
 
@@ -124,23 +106,18 @@ namespace ZyRender
             Entry.Name   = Name;
             Entry.Timing = Cadence(Rate, Count);
 
-            if (HasBit(Mask,Component::Position))
-            {
-                ReadTrack(Input, Entry.Position, Rate, GetRate(Component::Position), Mode, HasTangents(Component::Position));
-            }
+            const Bool Complete
+                =  (!HasBit(Mask, Component::Position) || ReadTrack(Input, Entry.Position, Rate, Count, Mode, HasBit(Fixed, Component::Position)))
+                && (!HasBit(Mask, Component::Scale)    || ReadTrack(Input, Entry.Scale,    Rate, Count, Mode, HasBit(Fixed, Component::Scale)))
+                && (!HasBit(Mask, Component::Rotation) || ReadTrack(Input, Entry.Rotation, Rate, Count, Mode, HasBit(Fixed, Component::Rotation)));
 
-            if (HasBit(Mask,Component::Scale))
+            if (!Complete)
             {
-                ReadTrack(Input, Entry.Scale, Rate, GetRate(Component::Scale), Mode, HasTangents(Component::Scale));
-            }
-
-            if (HasBit(Mask,Component::Rotation))
-            {
-                ReadTrack(Input, Entry.Rotation, Rate, GetRate(Component::Rotation), Mode, HasTangents(Component::Rotation));
+                LOG_W("'{0}' has lane {1} truncated", Asset->GetKey(), Index);
+                return false;
             }
         }
 
-        const Retainer<Animation3D> Asset = Retainer<Animation3D>::Cast(Scope.GetResource());
         Asset->Arrange(Move(Lanes));
         Asset->SetExtent(Extent);
 

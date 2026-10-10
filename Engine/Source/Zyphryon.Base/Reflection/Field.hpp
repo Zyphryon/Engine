@@ -91,7 +91,7 @@ namespace ZyReflection
         /// \return The tag of the field, empty unless the value was given one.
         ZY_INLINE constexpr Text GetTag() const
         {
-            return HasTrait(Trait::Tagged) || mKind == Kind::Opaque ? mExtra.Label : Text::Empty();
+            return (HasTrait(Trait::Tagged) || mKind == Kind::Opaque) ? mExtra.Label : Text::Empty();
         }
 
         /// \brief Gets the lowest value a number takes.
@@ -161,7 +161,7 @@ namespace ZyReflection
         /// \brief Checks whether the field is reached through the specified type.
         ///
         /// \tparam Type The type the field is expected to reach through.
-        /// \return `true` when the field reaches through that type, otherwise `false`.
+        /// \return `true` if \p Type has the field's size and alignment, `false` otherwise.
         template<typename Type>
         ZY_INLINE constexpr Bool Owns() const
         {
@@ -171,7 +171,7 @@ namespace ZyReflection
         /// \brief Checks whether the field carries the specified trait.
         ///
         /// \param Mask The trait to look for.
-        /// \return `true` when the field carries it, otherwise `false`.
+        /// \return `true` if the field carries every trait in \p Mask, `false` otherwise.
         ZY_INLINE constexpr Bool HasTrait(Trait Mask) const
         {
             return (mTraits & Mask) == Mask;
@@ -319,23 +319,17 @@ namespace ZyReflection
             constexpr Kind Tag  = OnTag<typename Access::Value>();
 
             static_assert(Tag != Kind::None,
-                "The value has no kind: specialize Reflection::Classify for its type, or Reflection::Describe it");
+                "The value has no kind: specialize ZyReflection::Classify for its type, or ZyReflection::Describe it");
             static_assert(Flat || Tag != Kind::Structure,
                 "A described value is declared with Field::Nested, so a walk can step into its fields");
             static_assert(!Access::kIsData || !IsAnyOf<typename Access::Value, Text>,
                 "A member that is a view owns none of its characters: hold them, and hand back a view from a getter");
 
-            if constexpr (Flat)
-            {
-                Detail::Borrow<Getter, Kind::Structure>();
-            }
-            else
-            {
-                Detail::Borrow<Getter, Tag>();
-            }
+            Detail::Borrow<Getter, Flat ? Kind::Structure : Tag>();
 
             return Compose<Getter, Setter, Tag, Flat>(
-                Text(Name, Count - 1), OnExtra<typename Access::Value, Tag>());
+                Text(Name, Count - 1),
+                OnExtra<typename Access::Value, Tag>());
         }
 
         /// \brief Describes a value that has fields of its own, which a walk steps into.
@@ -350,7 +344,7 @@ namespace ZyReflection
             using Access  = Detail::Accessor<decltype(Getter)>;
             using Content = typename Access::Value;
 
-            static_assert(IsDescribed<Content>, "A nested value needs a Reflection::Describe of its own");
+            static_assert(IsDescribed<Content>, "A nested value needs a ZyReflection::Describe of its own");
             static_assert(Detail::Matches<Content>(), "The fields of the nested value belong to another type");
 
             Detail::Borrow<Getter, Kind::Structure>();
@@ -396,14 +390,7 @@ namespace ZyReflection
 
             static_assert(Tag == Kind::Text, "A name a tool picks reads and writes as a value");
 
-            if constexpr (Flat)
-            {
-                Detail::Borrow<Getter, Kind::Structure>();
-            }
-            else
-            {
-                Detail::Borrow<Getter, Tag>();
-            }
+            Detail::Borrow<Getter, Flat ? Kind::Structure : Tag>();
 
             const Extra Slot {
                 .Label = Text(Filter, Length - 1)
@@ -445,10 +432,10 @@ namespace ZyReflection
             }                  Limit;
 
             /// The named values an enumerated field chooses between.
-            ConstSpan<Option> Options;
+            ConstSpan<Option>  Options;
 
             /// The fields of the value a nested field steps into.
-            ConstSpan<Field>  Nested;
+            ConstSpan<Field>   Nested;
 
             /// The tag naming who understands a value this module cannot describe.
             Text               Label;
@@ -459,26 +446,33 @@ namespace ZyReflection
 
         /// \brief Constructs a field from its name, its handlers and whatever its kind needs.
         ///
-        /// \param Tag   The kind the field carries.
-        /// \param Name  The name of the field, which outlives it.
-        /// \param Read  The handler that reads the field out of an instance.
-        /// \param Write The handler that writes the field back, or `nullptr` when the field is read-only.
+        /// \param Tag    The kind the field carries.
+        /// \param Name   The name of the field, which outlives it.
+        /// \param Read   The handler that reads the field out of an instance.
+        /// \param Write  The handler that writes the field back, or `nullptr` when the field is read-only.
         /// \param Slot   The bounds, options, fields or tag the kind needs.
         /// \param Traits The operations allowed on the field beside reading it.
-        /// \param Size  The width of the type the field is reached through.
-        /// \param Align The alignment of the type the field is reached through.
+        /// \param Size   The width of the type the field is reached through.
+        /// \param Align  The alignment of the type the field is reached through.
         ZY_INLINE constexpr Field(
-            Kind Tag, Text Name, Reader Read, Writer Write, Extra Slot, Trait Traits, UInt Size, UInt Align)
+            Kind   Tag,
+            Text   Name,
+            Reader Read,
+            Writer Write,
+            Extra  Slot,
+            Trait  Traits,
+            UInt   Size,
+            UInt   Align)
             : mName       { Name },
               mReader     { Read },
               mWriter     { Write },
               mExtra      { Slot },
               mKind       { Tag },
               mTraits     { Traits },
-              mSize  { static_cast<UInt16>(Size) },
-              mAlignment { static_cast<UInt8>(Align) }
+              mSize       { static_cast<UInt16>(Size) },
+              mAlignment  { static_cast<UInt8>(Align) }
         {
-            ZY_ASSERT(Size <= 65535 && Align <= 255, "A described type is at most 65535 bytes wide");
+            ZY_ASSERT(Size <= 65535 && Align <= 255, "A described type is at most 65535 bytes wide and 255 aligned");
         }
 
         /// \brief Checks whether the kind of the field is one that keeps bounds.
@@ -490,9 +484,6 @@ namespace ZyReflection
         }
 
         /// \brief Gets the kind a value is edited as, which for a flat wrapper is the kind of its one part.
-        ///
-        /// \note Asking for both and choosing between them would demand a layout of every value that has none,
-        ///       so the question is asked once, of the shape the value actually has.
         ///
         /// \return The kind the value is edited as.
         template<typename Content>
@@ -531,10 +522,10 @@ namespace ZyReflection
             }
         }
 
-        /// \brief Picks the read handler the kind wants, since only one of the two may be instantiated.
+        /// \brief Picks the read handler the kind wants, since only the chosen one may be instantiated.
         ///
-        /// \return The locator for a value reached in place, or the plain reader for one carried by value.
-        template<auto Getter, Kind Tag, Bool Flat = false>
+        /// \return The flat reader, the locator for a value reached in place, or the plain reader.
+        template<auto Getter, Kind Tag, Bool Flat>
         ZY_INLINE static constexpr Reader OnReader()
         {
             if constexpr (Flat)
@@ -551,30 +542,36 @@ namespace ZyReflection
             }
         }
 
-        /// \brief Picks the write handler the accessor can serve, since only one of the two may be instantiated.
+        /// \brief Picks the write handler the accessors can serve, since only the chosen one may be instantiated.
         ///
-        /// \return The writer for the accessor, or `nullptr` when there is no way to write through it.
-        template<auto Handle, Kind Tag, Bool IsSetter, Bool Flat = false>
+        /// \return The writer for the accessors, or `nullptr` when there is no way to write through them.
+        template<auto Getter, auto Setter, Kind Tag, Bool Flat>
         ZY_INLINE static constexpr Writer OnWriter()
         {
+            constexpr Bool Settable = !IsAnyOf<decltype(Setter), Null>;
+
             if constexpr (Flat)
             {
-                if constexpr (IsSetter)
+                if constexpr (Settable)
                 {
-                    return OnWriteWhole<Handle>;
+                    return OnWriteWhole<Setter>;
                 }
                 else
                 {
-                    return OnWriteFlat<Handle>;
+                    return OnWriteFlat<Getter>;
                 }
             }
             else if constexpr (Tag == Kind::List)
             {
                 return nullptr;
             }
-            else if constexpr (IsSetter || Detail::Accessor<decltype(Handle)>::kIsData)
+            else if constexpr (Settable)
             {
-                return OnWrite<Handle, Tag>;
+                return OnWrite<Setter, Tag>;
+            }
+            else if constexpr (Detail::Accessor<decltype(Getter)>::kIsData)
+            {
+                return OnWrite<Getter, Tag>;
             }
             else
             {
@@ -593,25 +590,23 @@ namespace ZyReflection
             using Access = Detail::Accessor<decltype(Getter)>;
             using Owner  = typename Access::Owner;
 
-            constexpr Reader Read   = OnReader<Getter, Tag, Flat>();
-            constexpr Trait  Marked = (Detail::IsNamed<typename Access::Value> ? Trait::Tagged : Trait { }) | Extras;
+            constexpr Trait Marked = (Detail::IsNamed<typename Access::Value> ? Trait::Tagged : Trait { }) | Extras;
 
-            if constexpr (IsAnyOf<decltype(Setter), Null>)
-            {
-                return Field(
-                    Tag, Name, Read, OnWriter<Getter, Tag, false, Flat>(), Slot, Marked, sizeof(Owner), alignof(Owner));
-            }
-            else
-            {
-                return Field(
-                    Tag, Name, Read, OnWriter<Setter, Tag, true, Flat>(), Slot, Marked, sizeof(Owner), alignof(Owner));
-            }
+            return Field(
+                Tag,
+                Name,
+                OnReader<Getter, Tag, Flat>(),
+                OnWriter<Getter, Setter, Tag, Flat>(),
+                Slot,
+                Marked,
+                sizeof(Owner),
+                alignof(Owner));
         }
 
-        /// \brief Read handler generated for an accessor by the field factories.
+        /// \brief Reads the field out of an instance through its accessor.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
-        /// \return The value read.
+        /// \return The field's value, encoded as \p Tag.
         template<auto Handle, Kind Tag>
         ZY_INLINE static Value OnRead(Ptr<void> Instance)
         {
@@ -629,7 +624,7 @@ namespace ZyReflection
             }
         }
 
-        /// \brief Write handler generated for an accessor by the field factories.
+        /// \brief Writes the field into an instance through its accessor.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
         /// \param Input    The value to write.
@@ -673,7 +668,7 @@ namespace ZyReflection
             }
         }
 
-        /// \brief Read handler for a value shown in place of the one part it holds.
+        /// \brief Reads the one part a flat value holds.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
         /// \return The value that part reads as.
@@ -685,7 +680,7 @@ namespace ZyReflection
             return Describe<Content>::kFields[0].Read(OnAddress<Handle>(Instance));
         }
 
-        /// \brief Write handler for a flat value the owner wants handed to it rather than written in place.
+        /// \brief Writes a flat value by handing a whole one to the owner's setter.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
         /// \param Input    The value to write into that part.
@@ -701,8 +696,8 @@ namespace ZyReflection
 
             (static_cast<Ptr<typename Access::Owner>>(Instance)->*Handle)(Move(Whole));
         }
-        
-        /// \brief Write handler for a value shown in place of the one part it holds.
+
+        /// \brief Writes the one part a flat value holds, in place.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
         /// \param Input    The value to write into that part.
@@ -714,7 +709,7 @@ namespace ZyReflection
             Describe<Content>::kFields[0].Write(OnAddress<Handle>(Instance), Input);
         }
 
-        /// \brief Read handler generated for a value reached in place, which hands back where it lies.
+        /// \brief Reads the address of a value reached in place.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
         /// \return The address of the value inside the instance.

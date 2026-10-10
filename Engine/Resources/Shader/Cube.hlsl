@@ -178,8 +178,8 @@ float ZyCubeShadow(
     const float B     = -Far * Near / (Far - Near);
 
     // One world unit at the receiver's depth, as a share of the atlas.
-    const float  Spread = Atlas.y * 0.5 / (Per * Distance);
-    const float  Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
+    const float Spread = Atlas.y * 0.5 / (Per * Distance);
+    const float Search = clamp(Source * 0.5 * Spread, Texel * 1.5, Texel * ZY_CUBE_WIDEST);
 
     float Found = 0.0;
     float Count = 0.0;

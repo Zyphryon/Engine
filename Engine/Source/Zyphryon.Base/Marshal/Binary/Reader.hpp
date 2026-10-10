@@ -97,10 +97,10 @@ inline namespace ZyBase
             mOffset += static_cast<UInt32>(Min(Length, static_cast<UInt>(GetAvailable())));
         }
 
-        /// \brief Creates a new reader representing a sub‑range of the current buffer.
+        /// \brief Splits off a reader over the next bytes and advances this one past them.
         ///
-        /// \param Length The length of the sub‑range in bytes.
-        /// \return A reader positioned at the start of the sub‑range.
+        /// \param Length The length of the sub-range in bytes.
+        /// \return A reader positioned at the start of the sub-range.
         ZY_INLINE Reader Split(UInt Length)
         {
             const UInt32 Offset = mOffset;
@@ -113,7 +113,7 @@ inline namespace ZyBase
         /// \brief Reads a value of the specified type without advancing the offset.
         ///
         /// \param Size The number of bytes to read.
-        /// \return The value read, or a default‑constructed instance if out of bounds.
+        /// \return The value read, or a default-constructed instance if out of bounds.
         template<typename Type>
         ZY_INLINE Type Peek(UInt Size = sizeof(Type))
         {
@@ -139,7 +139,7 @@ inline namespace ZyBase
         /// \brief Reads a value of the specified type and advances the offset.
         ///
         /// \param Size The number of bytes to read.
-        /// \return The value read, or a default‑constructed instance if out of bounds.
+        /// \return The value read, or a default-constructed instance if out of bounds.
         template<typename Type>
         ZY_INLINE Type Read(UInt Size = sizeof(Type))
         {
@@ -149,7 +149,7 @@ inline namespace ZyBase
             return Result;
         }
 
-        /// \brief Reads an unsigned integer encoded with variable‑length encoding.
+        /// \brief Reads an unsigned integer encoded with variable-length encoding.
         ///
         /// \return The decoded unsigned integer value.
         template<typename Type = UInt>
@@ -159,10 +159,10 @@ inline namespace ZyBase
 
             for (UInt Position = 0, Limit = (sizeof(Type) * 8u + 6u) / 7u; Position < Limit; ++Position)
             {
-                const UInt8 Byte = Read<UInt8>();
-                Result          |= static_cast<Type>(Byte & 0x7Fu) << (7u * Position);
+                const UInt8 Octet = Read<UInt8>();
+                Result           |= static_cast<Type>(Octet & 0x7Fu) << (7u * Position);
 
-                if ((Byte & 0x80u) == 0)
+                if ((Octet & 0x80u) == 0)
                 {
                     break;
                 }
@@ -170,7 +170,7 @@ inline namespace ZyBase
             return Result;
         }
 
-        /// \brief Reads a signed integer encoded with variable‑length encoding.
+        /// \brief Reads a signed integer encoded with variable-length encoding.
         ///
         /// \return The decoded signed integer value.
         template<typename Type = SInt>
@@ -182,7 +182,7 @@ inline namespace ZyBase
             return static_cast<Type>((Value >> 1) ^ -(Value & 1));
         }
 
-        /// \brief Reads a UTF‑8 text string prefixed with its length.
+        /// \brief Reads a UTF-8 text string prefixed with its length.
         ///
         /// \note The result views the reader's buffer, so it lasts only as long as that buffer does.
         ///

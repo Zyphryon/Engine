@@ -1,10 +1,15 @@
-# CMakeRegisterModule.cmake
-#
-# Registers an engine module so applications can automatically discover,
-# link, and instantiate it.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+# Registers an engine module so applications can discover, link and instantiate it.
 #
 # Usage:
-#   ZyRegisterModule(TARGET <target> HEADER <header> CLASS  <class>)
+#   ZyRegisterModule(TARGET <target> HEADER <header> CLASS <class>)
 FUNCTION(ZyRegisterModule)
 
     SET(OPTIONS)

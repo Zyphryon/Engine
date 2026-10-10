@@ -34,7 +34,7 @@ namespace ZyRender
         /// \brief The texture arrays one bank is made of, one per layer.
         using Bank   = Array<ZyGraphic::Object, Layers>;
 
-        /// \brief The Format the layers of every page are stored in, in layer order.
+        /// \brief The formats the layers of every page are stored in, in layer order.
         using Format = Array<ZyGraphic::TextureFormat, Layers>;
 
     public:
@@ -134,7 +134,7 @@ namespace ZyRender
         /// \brief Gets the texture array one layer of a bank is stored in.
         ///
         /// \param Bank  The bank to read, as \ref GetBank names it for a page lent.
-        /// \param Layer The layer to read, in the order the Format were given.
+        /// \param Layer The layer to read, in the order the formats were given.
         /// \return The array, a slice per page of the bank, in that layer's format.
         ZY_INLINE ZyGraphic::Object GetTexture(UInt32 Bank, UInt32 Layer = 0) const
         {

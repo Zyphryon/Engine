@@ -40,7 +40,7 @@ namespace ZyAudio
 
         /// \brief Sets the attenuation model for the emitter.
         ///
-        /// \param Attenuation The attenuation model to use.
+        /// \param Attenuation The curve the gain falls along between the inner and outer radius.
         ZY_INLINE void SetAttenuation(Attenuation Attenuation)
         {
             mAttenuation = Attenuation;
@@ -48,7 +48,7 @@ namespace ZyAudio
 
         /// \brief Gets the attenuation model of the emitter.
         ///
-        /// \return The attenuation model.
+        /// \return The curve the gain falls along between the inner and outer radius.
         ZY_INLINE Attenuation GetAttenuation() const
         {
             return mAttenuation;
@@ -69,7 +69,7 @@ namespace ZyAudio
 
         /// \brief Gets the inner radius of the emitter.
         ///
-        /// \return The inner radius.
+        /// \return The distance within which the sound plays at full volume.
         ZY_INLINE Real32 GetInnerRadius() const
         {
             return mInnerRadius;
@@ -77,7 +77,7 @@ namespace ZyAudio
 
         /// \brief Gets the outer radius of the emitter.
         ///
-        /// \return The outer radius.
+        /// \return The distance past which the sound is fully attenuated.
         ZY_INLINE Real32 GetOuterRadius() const
         {
             return mOuterRadius;
@@ -85,8 +85,8 @@ namespace ZyAudio
 
         /// \brief Sets the cone parameters for directional sound attenuation.
         ///
-        /// \param InnerAngle The inner cone angle.
-        /// \param OuterAngle The outer cone angle.
+        /// \param InnerAngle The width of the cone heard at full gain.
+        /// \param OuterAngle The width of the cone past which only `OuterGain` is heard.
         /// \param OuterGain  The gain applied outside the outer cone (range [0, 1]).
         ZY_INLINE void SetCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
         {
@@ -102,7 +102,7 @@ namespace ZyAudio
 
         /// \brief Gets the inner cone angle of the emitter.
         ///
-        /// \return The inner cone angle.
+        /// \return The width of the cone heard at full gain.
         ZY_INLINE Angle GetInnerAngle() const
         {
             return mInnerAngle;
@@ -110,7 +110,7 @@ namespace ZyAudio
 
         /// \brief Gets the outer cone angle of the emitter.
         ///
-        /// \return The outer cone angle.
+        /// \return The width of the cone past which only the outer gain is heard.
         ZY_INLINE Angle GetOuterAngle() const
         {
             return mOuterAngle;
@@ -118,15 +118,13 @@ namespace ZyAudio
 
         /// \brief Gets the outer cone gain of the emitter.
         ///
-        /// \return The outer cone gain.
+        /// \return The gain heard outside the outer cone.
         ZY_INLINE Real32 GetOuterGain() const
         {
             return mOuterGain;
         }
 
         /// \brief Sets the low-pass cutoff a voice starts at when it plays through this emitter.
-        ///
-        /// \note A cutoff of zero leaves the source unfiltered.
         ///
         /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the source unfiltered.
         ZY_INLINE void SetCutoff(Real32 Cutoff)

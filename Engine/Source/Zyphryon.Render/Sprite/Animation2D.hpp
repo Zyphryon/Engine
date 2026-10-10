@@ -142,7 +142,7 @@ namespace ZyRender
 
         /// \brief Sets how the clip plays once started.
         ///
-        /// \param Status The playback mode.
+        /// \param Status The mode the clip plays in.
         ZY_INLINE void SetStatus(Status Status)
         {
             mStatus = Status;
@@ -150,7 +150,7 @@ namespace ZyRender
 
         /// \brief Gets how the clip plays once started.
         ///
-        /// \return The playback mode.
+        /// \return The mode the clip plays in.
         ZY_INLINE Status GetStatus() const
         {
             return mStatus;
@@ -168,7 +168,7 @@ namespace ZyRender
         ///
         /// \note Elastic and bounce easings are refused, since they step back through frames already shown.
         ///
-        /// \param Easing The easing function.
+        /// \param Easing The easing that warps when each frame shows.
         ZY_INLINE void SetEasing(Easing Easing)
         {
             ZY_ASSERT(IsMonotonic(Easing), "Frames must be walked in one direction");
@@ -178,7 +178,7 @@ namespace ZyRender
 
         /// \brief Gets the easing applied to the clip's timeline.
         ///
-        /// \return The easing function.
+        /// \return The easing that warps when each frame shows.
         ZY_INLINE Easing GetEasing() const
         {
             return mEasing;
@@ -194,7 +194,7 @@ namespace ZyRender
 
         /// \brief Gets how many facing directions the clip is drawn in.
         ///
-        /// \return The number of directions.
+        /// \return The number of directions, at least `1`.
         ZY_INLINE UInt8 GetDirections() const
         {
             return mDirections;
@@ -234,7 +234,7 @@ namespace ZyRender
 
         /// \brief Sets whether the sheet holds only half the directions, the other half drawn as their mirror.
         ///
-        /// \param Mirrored The flag, `true` to mirror the far half from the near half, `false` to give every direction its own row.
+        /// \param Mirrored `true` to mirror the far half from the near half, `false` to give every direction its own row.
         ZY_INLINE void SetMirrored(Bool Mirrored)
         {
             mMirrored = Mirrored;

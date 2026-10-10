@@ -101,7 +101,7 @@ namespace ZyNetwork
         /// \brief Maximum time, in milliseconds, a pass waits before it gives the endpoints their turn regardless.
         static constexpr UInt32 kMaxIdle     = 100;
 
-        /// \brief Number of passes a teardown waits before saying that the platform has stopped answering.
+        /// \brief Number of passes between each warning that a teardown is still waiting on the platform.
         static constexpr UInt32 kMaxPatience = 50;
 
         /// \brief Specifies what the application asked the endpoints to do.
@@ -119,7 +119,7 @@ namespace ZyNetwork
             /// The connection the order concerns.
             Connection Link;
 
-            /// What was asked for.
+            /// The order that was asked for.
             Order      Kind   = Order::Close;
 
             /// The guarantee a message was sent under, meaningless for anything else.
@@ -135,7 +135,7 @@ namespace ZyNetwork
         /// \brief Represents what the application has asked for and not yet had carried out.
         struct Outbox final
         {
-            /// What the application asked for, in the order it asked.
+            /// The orders the application asked for, in the order it asked.
             Sequence<Command> Entries;
 
             /// The payloads those orders carry, one behind the other.
@@ -162,6 +162,11 @@ namespace ZyNetwork
 
         /// \brief Takes what the platform finished, carries out what was asked for, and gives every endpoint its turn.
         void Run();
+
+        /// \brief Runs passes on the network thread until it is asked to stop.
+        ///
+        /// \param Token The token the thread is asked to stop through.
+        void OnWorkerThread(ConstRef<std::stop_token> Token);
 
         /// \brief Writes down one thing for the endpoints to do on their next pass.
         ///
@@ -193,7 +198,7 @@ namespace ZyNetwork
         /// \brief Takes back every close written down for an endpoint's slot before the endpoint arrived to be opened.
         ///
         /// \param Link The endpoint being opened.
-        /// \return `true` if the application closed this very endpoint while its address was being resolved.
+        /// \return `true` if the application closed it while its address was being resolved, `false` otherwise.
         Bool Revoke(Connection Link);
 
         /// \brief Checks whether a close is written down for an endpoint that has not arrived to be opened yet.
@@ -202,10 +207,7 @@ namespace ZyNetwork
         /// \return `true` if the application closed it while its address was being resolved, `false` otherwise.
         ZY_INLINE Bool IsRevoked(Connection Link) const
         {
-            return mRevoked.Contains([Link](ConstRef<Connection> Entry)
-            {
-                return Entry == Link;
-            });
+            return mRevoked.Contains(Link);
         }
 
         /// \brief Gives every endpoint its moment, and lets go of the ones that ended and have gone quiet.

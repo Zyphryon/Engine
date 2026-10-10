@@ -9,7 +9,7 @@
 #ifndef ZY_AFFINE_INCLUDED
 #define ZY_AFFINE_INCLUDED
 
-/// An instance's three axes and the point it stands at.
+/// Represents an instance's three axes and the point it stands at.
 struct ZyAffine
 {
     /// The instance's X axis, in the space it is placed in.

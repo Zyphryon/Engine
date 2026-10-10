@@ -39,6 +39,7 @@ namespace ZyNetwork
         /// \param Code The opcode, which the application keeps apart from every other message it exchanges.
         ZY_INLINE explicit Signal(Opcode Code)
             : mElapsed  { kRepeat },
+              mValue    { },
               mOpcode   { Code },
               mSequence { 0 },
               mFresh    { false }
@@ -55,7 +56,7 @@ namespace ZyNetwork
 
         /// \brief Gets the value, which is what was last set on the sender and last received on the receiver.
         ///
-        /// \return The value.
+        /// \return The newest value, set or received.
         ZY_INLINE ConstRef<Type> Get() const
         {
             return mValue;
@@ -63,7 +64,7 @@ namespace ZyNetwork
 
         /// \brief Takes the value if a newer one was received since it was last taken.
         ///
-        /// \param Value Receives the value.
+        /// \param Value Receives the newer value, left untouched when none arrived.
         /// \return `true` if a newer value had arrived, `false` if nothing came since the last take.
         ZY_INLINE Bool Poll(Ref<Type> Value)
         {
@@ -80,7 +81,7 @@ namespace ZyNetwork
         /// \brief Writes the message when the value changed since it was last said, or has held for \ref kRepeat.
         ///
         /// \param Delta  The time since the last tick, in seconds.
-        /// \param Output The stream to write the message into, which the sender then sends unreliably.
+        /// \param Output Receives the message, which the sender then sends unreliably.
         /// \return `true` if a message was written, `false` if there was nothing to say yet.
         Bool Tick(Real64 Delta, Ref<Writer> Output)
         {
@@ -128,9 +129,9 @@ namespace ZyNetwork
             }
 
             // A datagram that arrives behind a newer one has nothing to say.
-            if (const UInt16 Sequence = Input.Read<UInt16>(); static_cast<SInt16>(Sequence - mSequence) > 0)
+            if (const UInt16 Stamp = Input.Read<UInt16>(); static_cast<SInt16>(Stamp - mSequence) > 0)
             {
-                mSequence = Sequence;
+                mSequence = Stamp;
                 mFresh    = true;
 
                 Archive(Input).Serialize(mValue);
@@ -147,19 +148,7 @@ namespace ZyNetwork
         /// \return `true` if they hold the same bytes, `false` otherwise.
         ZY_INLINE static Bool Same(ConstRef<Writer> First, ConstRef<Writer> Second)
         {
-            if (First.GetSize() != Second.GetSize())
-            {
-                return false;
-            }
-
-            for (UInt32 Index = 0, Limit = First.GetSize(); Index < Limit; ++Index)
-            {
-                if (First.GetData()[Index] != Second.GetData()[Index])
-                {
-                    return false;
-                }
-            }
-            return true;
+            return First.GetSize() == Second.GetSize() && Compare(First.GetData(), Second.GetData(), First.GetSize());
         }
 
     private:

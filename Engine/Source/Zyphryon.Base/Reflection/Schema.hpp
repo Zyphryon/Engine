@@ -27,7 +27,7 @@ namespace ZyReflection
 
         /// \brief Constructs a schema over no fields.
         ZY_INLINE constexpr Schema()
-            : mSize      { 0 },
+            : mWidth     { 0 },
               mAlignment { 0 }
         {
         }
@@ -35,18 +35,18 @@ namespace ZyReflection
         /// \brief Constructs a schema over the fields of a type of the given shape.
         ///
         /// \param Fields    The fields to view, which must outlive the schema.
-        /// \param Name      The name of the field.
+        /// \param Name      The name the type named itself with, empty when it named none.
         /// \param Size      The width of the type the fields are reached through, or zero when it is not known.
         /// \param Alignment The alignment of the type the fields are reached through, or zero when it is not known.
         ZY_INLINE constexpr explicit Schema(ConstSpan<Field> Fields, Text Name, UInt Size = 0, UInt Alignment = 0)
             : mFields    { Fields },
               mName      { Name },
-              mSize      { static_cast<UInt16>(Size) },
+              mWidth     { static_cast<UInt16>(Size) },
               mAlignment { static_cast<UInt8>(Alignment) }
         {
         }
 
-        /// \brief Constructs a schema over the fields of a type of the given shape.
+        /// \brief Constructs a schema over no fields, for a type of the given shape.
         ///
         /// \param Size      The width of the type the fields are reached through, or zero when it is not known.
         /// \param Alignment The alignment of the type the fields are reached through, or zero when it is not known.
@@ -84,7 +84,7 @@ namespace ZyReflection
         /// \return The width in bytes, or zero when the schema was taken from a field rather than from a type.
         ZY_INLINE constexpr UInt GetWidth() const
         {
-            return mSize;
+            return mWidth;
         }
 
         /// \brief Gets the alignment of the type the schema describes.
@@ -137,18 +137,18 @@ namespace ZyReflection
         template<typename Type>
         ZY_INLINE static constexpr Schema Of()
         {
-            static_assert(IsDescribed<Type>, "The type has no Reflection::Describe of its own");
+            static_assert(IsDescribed<Type>, "The type has no ZyReflection::Describe of its own");
 
             return Schema(ConstSpan<Field>(Describe<Type>::kFields), Detail::TagOf<Type>(), sizeof(Type), alignof(Type));
         }
 
         /// \brief Gets the schema of the value a nested field steps into.
         ///
-        /// \param Value The field to step into.
+        /// \param Source The field to step into.
         /// \return The schema of the value, empty when the field steps into nothing.
-        ZY_INLINE static constexpr Schema Of(ConstRef<Field> Value)
+        ZY_INLINE static constexpr Schema Of(ConstRef<Field> Source)
         {
-            return Schema(Value.GetNested(), Text::Empty());
+            return Schema(Source.GetNested(), Text::Empty());
         }
 
     private:
@@ -158,7 +158,7 @@ namespace ZyReflection
 
         ConstSpan<Field> mFields;
         Text             mName;
-        UInt16           mSize;
+        UInt16           mWidth;
         UInt8            mAlignment;
     };
 }

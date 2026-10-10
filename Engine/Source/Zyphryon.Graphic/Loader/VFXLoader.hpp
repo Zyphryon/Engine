@@ -26,7 +26,7 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "vfx" };
 
     public:
@@ -37,24 +37,10 @@ namespace ZyGraphic
         /// \param Tier     The tier the device reaches, which every technique is compiled for as `ZY_TIER`.
         VFXLoader(ShaderLanguage Language, Tier Tier);
 
-        /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
+        /// \see ZyContent::Loader::Load(Ref<ZyContent::Service>, Ref<ZyContent::Scope>, AnyRef<Blob>)
         Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
 
     private:
-
-        /// \brief Parses a technique's properties section, every block of it, over the given states.
-        ///
-        /// \param Section    The JSON object containing the properties section.
-        /// \param States     The states each declared block is parsed over and written back into.
-        /// \param Attributes Receives the vertex attributes, left as-is if the layout declares none.
-        void LoadProperties(JsonObject Section, Ref<States> States, Ref<Attributes> Attributes);
-
-        /// \brief Parses the blend, depth and rasterizer blocks of a properties section, the ones a feature may replace.
-        ///
-        /// \param Section The JSON object containing the properties section.
-        /// \param States  The states each declared block is parsed over and written back into.
-        /// \return The bitmask of the blocks the section declared, built from \ref Technique::Block.
-        UInt8 LoadPatch(JsonObject Section, Ref<States> States);
 
         /// \brief Parses a program section, resolving the shader modules declared for the loader's language.
         ///
@@ -69,12 +55,6 @@ namespace ZyGraphic
             JsonObject              Section,
             Ref<Sequence<Macro>>    Macros,
             Ref<Technique::Shaders> Shaders);
-
-        /// \brief Parses the defines of a program section.
-        ///
-        /// \param Section The JSON object containing the program section.
-        /// \param Macros  Receives the preprocessor macros the section declares, appended to what it holds.
-        void LoadDefines(JsonObject Section, Ref<Sequence<Macro>> Macros);
 
     private:
 

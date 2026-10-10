@@ -22,8 +22,8 @@ namespace ZyContent
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Service::Service(Ref<Host> Host)
-        : Subsystem  { Host },
-          Locator    { Host }
+        : Subsystem { Host },
+          Locator   { Host }
     {
     }
 
@@ -34,13 +34,6 @@ namespace ZyContent
     {
         ZY_PROFILE_SCOPE("Content::Tick");
 
-        // A count of zero means nothing has been queued since the last drain, so the lock guarding the queue is
-        // skipped rather than taken to find it empty.
-        if (mParserPending.load(std::memory_order_relaxed) == 0)
-        {
-            return;
-        }
-
         {
             const Guard Lock(mParserMutex);
 
@@ -49,8 +42,6 @@ namespace ZyContent
                 return Scope.Poll();
             });
         }
-
-        mParserPending.fetch_sub(static_cast<UInt32>(mParserReady.GetSize()), std::memory_order_relaxed);
 
         for (ConstRef<Scope> Scope : mParserReady)
         {
@@ -104,17 +95,10 @@ namespace ZyContent
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            if (Mount->IsAsynchronous())
+            Route(Mount, [Key, Mount, Callback = Move(Callback)] mutable
             {
                 Mount->Enumerate(Key.GetPath(), Move(Callback));
-            }
-            else
-            {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[Key, Mount, Callback = Move(Callback)] mutable
-                {
-                    Mount->Enumerate(Key.GetPath(), Move(Callback));
-                });
-            }
+            });
         }
         else
         {
@@ -129,17 +113,10 @@ namespace ZyContent
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            if (Mount->IsAsynchronous())
+            Route(Mount, [Key, Mount, Callback = Move(Callback)] mutable
             {
                 Mount->Delete(Key.GetPath(), Move(Callback));
-            }
-            else
-            {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[Key, Mount, Callback = Move(Callback)] mutable
-                {
-                    Mount->Delete(Key.GetPath(), Move(Callback));
-                });
-            }
+            });
         }
         else
         {
@@ -156,18 +133,10 @@ namespace ZyContent
 
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Source.GetSchema()))))
         {
-            if (Mount->IsAsynchronous())
+            Route(Mount, [Source, Destination, Mount, Callback = Move(Callback)] mutable
             {
                 Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
-            }
-            else
-            {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,
-                    [Source, Destination, Mount, Callback = Move(Callback)] mutable
-                {
-                    Mount->Copy(Source.GetPath(), Destination.GetPath(), Move(Callback));
-                });
-            }
+            });
         }
         else
         {
@@ -182,17 +151,10 @@ namespace ZyContent
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            if (Mount->IsAsynchronous())
+            Route(Mount, [Key, Mount, Callback = Move(Callback)] mutable
             {
                 Mount->Read(Key.GetPath(), Move(Callback));
-            }
-            else
-            {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[Key, Mount, Callback = Move(Callback)] mutable
-                {
-                    Mount->Read(Key.GetPath(), Move(Callback));
-                });
-            }
+            });
         }
         else
         {
@@ -205,17 +167,9 @@ namespace ZyContent
 
     void Service::Read(ConstRef<Uri> Key, ZyJob::Lane Lane, AnyRef<Mount::OnRead> Callback)
     {
-        mParserPending.fetch_add(1, std::memory_order_relaxed);
-
         Read(Key, [this, Lane, Callback = Move(Callback)](Filesystem::Result Result, Blob Data) mutable
         {
-            GetService<ZyJob::Service>().Dispatch(Lane,
-                [this, Result, Data = Move(Data), Callback = Move(Callback)] mutable
-            {
-                Callback(Result, Move(Data));
-
-                mParserPending.fetch_sub(1, std::memory_order_release);
-            });
+            Deliver(Lane, Result, Move(Data), Move(Callback));
         });
     }
 
@@ -226,18 +180,10 @@ namespace ZyContent
     {
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            if (Mount->IsAsynchronous())
+            Route(Mount, [Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
             {
                 Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
-            }
-            else
-            {
-                GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,
-                    [Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
-                {
-                    Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
-                });
-            }
+            });
         }
         else
         {
@@ -250,8 +196,7 @@ namespace ZyContent
 
     void Service::Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function)
     {
-        const Digest Needle(Hash(Key.GetPath()));
-        mSubscriptions.FindOrInsert(Needle).Append(Move(Function));
+        mSubscriptions.FindOrInsert(Digest(Hash(Key.GetPath()))).Append(Move(Function));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -260,6 +205,22 @@ namespace ZyContent
     void Service::Unsubscribe(ConstRef<Uri> Key)
     {
         mSubscriptions.Erase(Digest(Hash(Key.GetPath())));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Deliver(
+        ZyJob::Lane           Lane,
+        Filesystem::Result    Result,
+        AnyRef<Blob>          Data,
+        AnyRef<Mount::OnRead> Callback)
+    {
+        GetService<ZyJob::Service>().Dispatch(Lane,
+            [Result, Data = Move(Data), Callback = Move(Callback)] mutable
+        {
+            Callback(Result, Move(Data));
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -274,33 +235,10 @@ namespace ZyContent
 
         if (Asset->Transition(Resource::Status::Idle, Resource::Status::Queued))
         {
-            // Increment the count of pending parser jobs.
-            mParserPending.fetch_add(1, std::memory_order_relaxed);
-
-            if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Asset->GetKey().GetSchema()))))
+            Read(Asset->GetKey(), [this, Asset](Filesystem::Result Result, Blob Data)
             {
-                if (Mount->IsAsynchronous())
-                {
-                    Mount->Read(Asset->GetKey().GetPath(), [this, Asset](Filesystem::Result Result, AnyRef<Blob> Data)
-                    {
-                        OnAssetParse(Result, Asset, Move(Data));
-                    });
-                }
-                else
-                {
-                    GetService<ZyJob::Service>().Dispatch(ZyJob::Lane::IO,[this, Mount, Asset]
-                    {
-                        Mount->Read(Asset->GetKey().GetPath(), [this, Asset](Filesystem::Result Result, AnyRef<Blob> Data)
-                        {
-                            OnAssetParse(Result, Asset, Move(Data));
-                        });
-                    });
-                }
-            }
-            else
-            {
-                OnAssetParse(Filesystem::Result::Inexistent, Asset, Blob());
-            }
+                OnAssetParse(Result, Asset, Move(Data));
+            });
         }
     }
 
@@ -315,7 +253,6 @@ namespace ZyContent
         // Release what the previous load created, which also resets the status back to idle.
         OnAssetDelete(* Asset);
 
-        // Reschedule the resource through the standard pipeline.
         OnAssetRequest(Asset, nullptr);
     }
 
@@ -327,17 +264,15 @@ namespace ZyContent
         Scope Scope(Asset);
         Bool  Successful = false;
 
+        ConstRef<Uri> Key = Asset->GetKey();
+
         if (Result == Filesystem::Result::Success)
         {
-            ConstRef<Uri> Key = Scope.GetResource()->GetKey();
-
             if (ConstRetainer<Loader> Loader = mLoaders.FindOrDefault(Digest(Hash(Key.GetExtension()))))
             {
-                if (Loader->Load(* this, Scope, Move(Data)))
-                {
-                    Successful = true;
-                }
-                else
+                Successful = Loader->Load(* this, Scope, Move(Data));
+
+                if (!Successful)
                 {
                     LOG_W("Content: Failed to parse '{0}'", Key.GetFilename());
                 }
@@ -349,7 +284,7 @@ namespace ZyContent
         }
         else
         {
-            LOG_W("Content: Failed to read asset '{0}' = '{1}'", Asset->GetKey().GetPath(), ZyEnum::GetName(Result));
+            LOG_W("Content: Failed to read asset '{0}' = '{1}'", Key.GetPath(), ZyEnum::GetName(Result));
         }
 
         if (!Successful)
@@ -357,7 +292,7 @@ namespace ZyContent
             Asset->SetStatus(Resource::Status::Failed);
         }
 
-        Guard Guard(mParserMutex);
+        const Guard Lock(mParserMutex);
         mParserList.Append(Move(Scope));
     }
 
@@ -370,22 +305,13 @@ namespace ZyContent
 
         if (Complete)
         {
-            LOG_D("Content: Loading '{0}'", Asset.GetKey().GetUrl());
+            LOG_D("Content: Loading '{0}'", Asset.GetKey());
 
-            // Invoke the resource's creation hook to allow it to realize any system-side state.
             Complete = Asset.OnCreate(GetHost());
 
-            if (Complete)
-            {
-                Asset.SetStatus(Resource::Status::Completed);
-            }
-            else
-            {
-                Asset.SetStatus(Resource::Status::Failed);
-            }
+            Asset.SetStatus(Complete ? Resource::Status::Completed : Resource::Status::Failed);
         }
 
-        // Notify listeners based on the final status of the asset.
         if (Complete)
         {
             OnAssetCompleted.Broadcast(Asset);
@@ -395,7 +321,7 @@ namespace ZyContent
             OnAssetFailed.Broadcast(Asset);
         }
 
-        // Consume the one-shot subscriptions delegate if one exists for this asset.
+        // Subscriptions fire once, so they are taken out before they run.
         if (Sequence<Callback> Listeners; mSubscriptions.Extract(Digest(Hash(Asset.GetKey().GetPath())), Listeners))
         {
             for (Ref<Callback> Listener : Listeners)
@@ -410,12 +336,10 @@ namespace ZyContent
 
     void Service::OnAssetDelete(Ref<Resource> Asset)
     {
-        LOG_D("Content: Unloading '{0}'", Asset.GetKey().GetUrl());
+        LOG_D("Content: Unloading '{0}'", Asset.GetKey());
 
-        // Invoke the resource's deletion hook to release any system-side state acquired during creation.
         Asset.OnDelete(GetHost());
 
-        // Reset the resource's status to reflect that it is no longer loaded.
         Asset.SetStatus(Resource::Status::Idle);
     }
 }

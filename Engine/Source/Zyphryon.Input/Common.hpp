@@ -187,24 +187,24 @@ namespace ZyInput
             Unknown,      ///< Unknown event.
         };
 
-        /// Event-specific type.
+        /// The kind of event.
         Type Kind;
 
-        /// Event-specific data.
+        /// The data the event carries, read through the member its kind names.
         union
         {
             /// \brief Holds the data for \ref Type::KeyType.
             ///
-            /// \warning \c Text is a non-owning view into the poller's internal buffer.
+            /// \note The text is a view into the poller's buffer, not a copy.
             struct
             {
-                Text Content;
+                Text Content; ///< The text typed, as UTF-8.
             } KeyType;
 
             /// \brief Holds the data for \ref Type::KeyUp, \ref Type::KeyDown and \ref Type::KeyRepeat.
             struct
             {
-                Key  Key; ///< Physical key code.
+                Key Key; ///< Physical key code.
             } KeyAction;
 
             /// \brief Holds the data for \ref Type::MouseMove.
@@ -267,7 +267,7 @@ namespace ZyInput
 
         /// \brief Constructs an event with the specified type.
         ///
-        /// \param Kind The event type to initialize.
+        /// \param Kind The kind of event to construct.
         template<typename Type>
         ZY_INLINE Event(Type Kind)
             : Kind { Kind }

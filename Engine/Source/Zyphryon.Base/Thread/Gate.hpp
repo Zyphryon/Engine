@@ -20,6 +20,6 @@
 
 inline namespace ZyBase
 {
-    /// \brief A synchronization primitive that blocks one or more threads until a condition is signaled.
+    /// \brief Represents a condition that blocks one or more threads until it is signaled.
     using Gate = std::condition_variable;
 }

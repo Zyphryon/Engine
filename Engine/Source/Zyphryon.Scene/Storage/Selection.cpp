@@ -24,8 +24,6 @@ namespace ZyScene
 
     Bool Selection::Matches(ConstRef<Chunk> Target, ConstRef<Directory> Slots) const
     {
-        const UInt32 Base = Target.GetBase();
-
         for (const UInt32 Identifier : Owned)
         {
             if (!Target.Has(Identifier))
@@ -36,7 +34,7 @@ namespace ZyScene
 
         for (const UInt32 Identifier : Required)
         {
-            if (!Target.Has(Identifier) && !Slots.FindLent(Base, Identifier))
+            if (!Slots.Sees(Target, Identifier))
             {
                 return false;
             }
@@ -44,7 +42,7 @@ namespace ZyScene
 
         for (const UInt32 Identifier : Excluded)
         {
-            if (Target.Has(Identifier) || Slots.FindLent(Base, Identifier))
+            if (Slots.Sees(Target, Identifier))
             {
                 return false;
             }
@@ -52,12 +50,10 @@ namespace ZyScene
 
         for (ConstRef<Sequence<UInt32>> Group : Alternatives)
         {
-            Bool Carried = false;
-
-            for (UInt32 Index = 0; !Carried && Index < Group.GetSize(); ++Index)
+            const Bool Carried = Group.Contains([&Slots, &Target](UInt32 Identifier)
             {
-                Carried = Target.Has(Group[Index]) || Slots.FindLent(Base, Group[Index]);
-            }
+                return Slots.Sees(Target, Identifier);
+            });
 
             if (!Carried)
             {
@@ -81,10 +77,7 @@ namespace ZyScene
 
         const UInt32 Index = Target->GetIndex();
 
-        if (Index >= Positions.GetSize())
-        {
-            Positions.Advance(Index + 1 - Positions.GetSize());
-        }
+        Positions.Expand(Index + 1);
 
         if (Positions[Index] == 0)
         {
@@ -166,10 +159,9 @@ namespace ZyScene
 
     UInt Selection::Count() const
     {
-        static constexpr auto Accumulator = [](Ptr<Chunk> Target)
+        return Accumulate(Chunks.GetData(), Chunks.GetSize(), static_cast<UInt>(0), [](Ptr<Chunk> Target)
         {
             return Target->GetSize();
-        };
-        return Accumulate(Chunks.GetData(), Chunks.GetSize(), 0, Accumulator);
+        });
     }
 }

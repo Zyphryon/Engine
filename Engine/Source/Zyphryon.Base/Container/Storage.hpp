@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Represents a union providing uninitialized, contiguous storage for \p Count elements of \p Type.
+    /// \brief Represents uninitialized, contiguous storage for \p Count elements of \p Type.
     template<typename Type, UInt Count>
     class Storage final
     {
@@ -28,7 +28,7 @@ inline namespace ZyBase
 
     public:
 
-        /// \brief Constructs the union, leaving the internal storage uninitialized.
+        /// \brief Constructs the storage, leaving the slots uninitialized.
         ZY_INLINE constexpr Storage()
         {
             if consteval
@@ -37,10 +37,9 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Destructs the union.
+        /// \brief Destructs the storage, leaving the slots to their owner.
         ZY_INLINE constexpr ~Storage()
         {
-
         }
 
         /// \brief Gets a pointer to the contiguous element storage.
@@ -129,7 +128,7 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Swaps the elements at the specified indices.
+        /// \brief Move-assigns the element at one index onto another.
         ///
         /// \param Source      The zero-based index of the source element.
         /// \param Destination The zero-based index of the destination element.
@@ -138,11 +137,11 @@ inline namespace ZyBase
             mBlock.mData[Destination] = ::Move(mBlock.mData[Source]);
         }
 
-        /// \brief Swaps a range of elements starting at the specified indices.
+        /// \brief Move-assigns a range of elements front to back, so a shift to the left may overlap.
         ///
-        /// \param Offset The zero-based index of the first element to swap.
-        /// \param Target The zero-based index of the first element to swap with.
-        /// \param Size   The number of elements to swap.
+        /// \param Offset The zero-based index of the first source element.
+        /// \param Target The zero-based index of the first destination element.
+        /// \param Size   The number of elements to move.
         ZY_INLINE constexpr void Swap(UInt Offset, UInt Target, UInt Size)
         {
             if constexpr (IsTriviallyCopyable<Type>)
@@ -168,7 +167,7 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Move-assigns a range of elements backward; safe when \p Target > \p Offset (right shift, overlapping).
+        /// \brief Move-assigns a range of elements back to front, so a shift to the right may overlap.
         ///
         /// \param Offset The zero-based index of the first source element.
         /// \param Target The zero-based index of the first destination element.
@@ -230,7 +229,7 @@ inline namespace ZyBase
 
         /// \brief Relocates a range of elements from another storage to this storage.
         ///
-        /// \param Other  The source storage.
+        /// \param Other  The storage the elements move out of.
         /// \param Offset The zero-based index of the first element to relocate from the source storage.
         /// \param Target The zero-based index of the first element to relocate to in this storage.
         /// \param Size   The number of elements to relocate.
@@ -284,6 +283,7 @@ inline namespace ZyBase
         {
             Type mData[Count];
 
+            /// \brief Constructs the slots value-initialized, for constant evaluation only.
             ZY_INLINE constexpr Block()
                 : mData { }
             {

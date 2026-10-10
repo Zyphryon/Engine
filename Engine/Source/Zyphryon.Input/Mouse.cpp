@@ -76,14 +76,13 @@ namespace ZyInput
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mouse::ReleaseAllButtons(Ref<Sequence<Event> > Output)
+    void Mouse::ReleaseAllButtons(Ref<Sequence<Event>> Output)
     {
-        for (UInt Index = mThisButtons.FindFirstSet(); Index < kMaxButtons; Index = mThisButtons.FindFirstSet())
+        mThisButtons.ForEach([&](UInt Index)
         {
             Ref<Event> Release         = Output.Append(Event::Type::MouseUp);
             Release.MouseAction.Button = static_cast<Button>(Index);
-
-            mThisButtons.Reset(Index);
-        }
+        });
+        mThisButtons.Reset();
     }
 }

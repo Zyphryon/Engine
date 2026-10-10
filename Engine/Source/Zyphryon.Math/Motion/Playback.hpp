@@ -59,17 +59,10 @@ inline namespace ZyMath
             mClock = Time;
             mFresh = false;
 
-            if (mPlaying && !IsEndless(mRepeat, mLaps))
+            if (mPlaying && IsComplete())
             {
-                const Real64 Local   = GetElapsed();
-                const Real64 Length  = GetLength(mDuration, mRepeat, mLaps);
-                const Bool   Forward = mSpeed >= 0.0f;
-
-                if (Forward ? Local >= Length : Local <= 0.0)
-                {
-                    mOffset  = Forward ? Length : 0.0;
-                    mPlaying = false;
-                }
+                mOffset  = mSpeed >= 0.0f ? GetLength(mDuration, mRepeat, mLaps) : 0.0;
+                mPlaying = false;
             }
         }
 
@@ -98,7 +91,6 @@ inline namespace ZyMath
         ZY_INLINE void Stop()
         {
             mOffset  = 0.0;
-            mEpoch   = mClock;
             mPlaying = false;
             mFresh   = true;
         }
@@ -208,7 +200,7 @@ inline namespace ZyMath
             return mPlaying ? mOffset + mSpeed * (mClock - mEpoch) : mOffset;
         }
 
-        /// \brief Gets the current playback direction, accounting for mirror reflection.
+        /// \brief Checks whether the cursor moves forward, accounting for mirror reflection.
         ///
         /// \return `true` when advancing forward, `false` when reversed.
         ZY_INLINE Bool IsForward() const
@@ -220,7 +212,7 @@ inline namespace ZyMath
             return mSpeed >= 0.0f;
         }
 
-        /// \brief Checks whether the cursor was stood somewhere, and not advanced since.
+        /// \brief Checks whether the cursor was played, stopped or sought since it last advanced.
         ///
         /// \return `true` until the next advance, `false` after it.
         ZY_INLINE Bool IsFresh() const
@@ -230,7 +222,7 @@ inline namespace ZyMath
 
         /// \brief Checks whether the cursor is currently advancing.
         ///
-        /// \return `true` if playing, `false` otherwise.
+        /// \return `true` from `Play` until the next pause, stop or end, `false` otherwise.
         ZY_INLINE Bool IsPlaying() const
         {
             return mPlaying;
@@ -238,7 +230,7 @@ inline namespace ZyMath
 
         /// \brief Checks whether a cursor that does not run forever has reached the end of its last lap.
         ///
-        /// \return `true` if the cursor is complete, `false` otherwise.
+        /// \return `true` if the cursor has reached its last lap's end, or zero going backward, `false` otherwise.
         ZY_INLINE Bool IsComplete() const
         {
             if (!IsEndless(mRepeat, mLaps))
@@ -248,31 +240,6 @@ inline namespace ZyMath
             }
             return false;
         }
-
-    private:
-
-        /// \brief Checks whether a repeat policy runs forever, so it never reaches an end.
-        ///
-        /// \param Mode The behavior once the end is reached.
-        /// \param Laps The number of laps a looping or mirrored cursor runs, where `0` runs forever.
-        /// \return `true` if a looping or mirrored policy has no lap count, `false` otherwise.
-        ZY_INLINE static Bool IsEndless(Repeat Mode, UInt32 Laps)
-        {
-            return Mode != Repeat::Once && Laps == 0;
-        }
-
-        /// \brief Gets the local time the last lap of a repeat policy ends at.
-        ///
-        /// \param Duration The length of one lap, in seconds.
-        /// \param Mode     The behavior once the end is reached.
-        /// \param Laps     The number of laps a looping or mirrored cursor runs.
-        /// \return The duration times the laps run, in seconds, meaningful only when the policy is not endless.
-        ZY_INLINE static Real64 GetLength(Real64 Duration, Repeat Mode, UInt32 Laps)
-        {
-            return Mode == Repeat::Once ? Duration : Duration * static_cast<Real64>(Laps);
-        }
-
-    public:
 
         /// \brief Maps a local time onto the cursor time a repeat policy gives it, as a cursor holding it would.
         ///
@@ -306,6 +273,29 @@ inline namespace ZyMath
             }
             }
             return 0.0;
+        }
+
+    private:
+
+        /// \brief Checks whether a repeat policy runs forever, so it never reaches an end.
+        ///
+        /// \param Mode The behavior once the end is reached.
+        /// \param Laps The number of laps a looping or mirrored cursor runs, where `0` runs forever.
+        /// \return `true` if a looping or mirrored policy has no lap count, `false` otherwise.
+        ZY_INLINE static Bool IsEndless(Repeat Mode, UInt32 Laps)
+        {
+            return Mode != Repeat::Once && Laps == 0;
+        }
+
+        /// \brief Gets the local time the last lap of a repeat policy ends at.
+        ///
+        /// \param Duration The length of one lap, in seconds.
+        /// \param Mode     The behavior once the end is reached.
+        /// \param Laps     The number of laps a looping or mirrored cursor runs.
+        /// \return The duration times the laps run, in seconds, meaningful only when the policy is not endless.
+        ZY_INLINE static Real64 GetLength(Real64 Duration, Repeat Mode, UInt32 Laps)
+        {
+            return Mode == Repeat::Once ? Duration : Duration * static_cast<Real64>(Laps);
         }
 
     private:

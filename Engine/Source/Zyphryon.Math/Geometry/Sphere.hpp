@@ -26,13 +26,13 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the sphere to center (0.0f, 0.0f, 0.0f) with radius 0.0f.
+        /// \brief Constructs a sphere at the origin with a radius of zero.
         ZY_INLINE constexpr Sphere()
             : mRadius { 0.0f }
         {
         }
 
-        /// \brief Initializes the sphere with the given center and radius.
+        /// \brief Constructs a sphere from a center and a radius.
         ///
         /// \param Center The center point.
         /// \param Radius The radius.
@@ -42,7 +42,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Initializes the sphere with the given components.
+        /// \brief Constructs a sphere from the coordinates of its center and a radius.
         ///
         /// \param X      The center's x-coordinate.
         /// \param Y      The center's y-coordinate.
@@ -106,7 +106,7 @@ inline namespace ZyMath
 
         /// \brief Sets the sphere's radius.
         ///
-        /// \param Radius The radius.
+        /// \param Radius The radius, never negative.
         ZY_INLINE constexpr void SetRadius(Real32 Radius)
         {
             ZY_ASSERT(Radius >= 0.0f, "Sphere radius cannot be negative");
@@ -173,7 +173,7 @@ inline namespace ZyMath
 
         /// \brief Gets the shortest distance between two spheres' surfaces.
         ///
-        /// \param Other The other sphere.
+        /// \param Other The sphere to measure to.
         /// \return The distance, negative when the two overlap.
         ZY_INLINE Real32 GetDistance(Sphere Other) const
         {
@@ -182,8 +182,8 @@ inline namespace ZyMath
 
         /// \brief Grows the sphere by an amount.
         ///
-        /// \param Amount The amount to grow by.
-        /// \return The grown sphere.
+        /// \param Amount The length to add to the radius.
+        /// \return The sphere with its radius grown by \p Amount.
         ZY_INLINE constexpr Sphere Expand(Real32 Amount) const
         {
             return Sphere(mCenter, mRadius + Amount);
@@ -191,8 +191,8 @@ inline namespace ZyMath
 
         /// \brief Shrinks the sphere by an amount, never past nothing.
         ///
-        /// \param Amount The amount to shrink by.
-        /// \return The shrunken sphere.
+        /// \param Amount The length to take off the radius.
+        /// \return The sphere with its radius shrunk by \p Amount, never below zero.
         ZY_INLINE constexpr Sphere Contract(Real32 Amount) const
         {
             return Sphere(mCenter, Max(0.0f, mRadius - Amount));
@@ -201,7 +201,7 @@ inline namespace ZyMath
         /// \brief Checks if this sphere completely contains another sphere.
         ///
         /// \param Other The other sphere to check.
-        /// \return `true` if this sphere contains the other, `false` otherwise.
+        /// \return `true` if \p Other lies inside this sphere, even touching its surface, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Sphere Other) const
         {
             if (mRadius >= Other.mRadius)
@@ -216,7 +216,7 @@ inline namespace ZyMath
         /// \brief Checks if this sphere contains a point.
         ///
         /// \param Point The point to check.
-        /// \return `true` if the point is inside the sphere, `false` otherwise.
+        /// \return `true` if the point lies inside the sphere or on its surface, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Vector3 Point) const
         {
             return mCenter.GetDistanceSquared(Point) <= (mRadius * mRadius);
@@ -225,7 +225,7 @@ inline namespace ZyMath
         /// \brief Checks if this sphere intersects with another sphere.
         ///
         /// \param Other The other sphere to check.
-        /// \return `true` if the spheres intersect, `false` otherwise.
+        /// \return `true` if the spheres overlap or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(Sphere Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
@@ -255,10 +255,10 @@ inline namespace ZyMath
 
         /// \brief Gets a sphere that contains nothing and is grown into.
         ///
-        /// \return An invalid sphere.
+        /// \return A sphere with a radius of minus one.
         ZY_INLINE static constexpr Sphere Invalid()
         {
-            return Sphere(Vector3(0.0f, 0.0f, 0.0f), -1.0f);
+            return Sphere(Vector3::Zero(), -1.0f);
         }
 
         /// \brief Gets the unit sphere centered at origin with radius 1.0.
@@ -266,7 +266,7 @@ inline namespace ZyMath
         /// \return A unit sphere.
         ZY_INLINE static constexpr Sphere Unit()
         {
-            return Sphere(Vector3(0.0f, 0.0f, 0.0f), 1.0f);
+            return Sphere(Vector3::Zero(), 1.0f);
         }
 
         /// \brief Creates a sphere from a circle that lies on the XY plane.
@@ -291,7 +291,7 @@ inline namespace ZyMath
 
         /// \brief Canonicalizes a sphere by ensuring its radius is non-negative.
         ///
-        /// \param Source The sphere to canonicalize.
+        /// \param Source The sphere whose radius may be negative.
         /// \return A sphere with non-negative radius.
         ZY_INLINE static constexpr Sphere Canonicalize(Sphere Source)
         {
@@ -345,7 +345,7 @@ inline namespace ZyMath
         /// \brief Gets the smallest sphere containing a box.
         ///
         /// \param Source The box to enclose.
-        /// \return The bounding sphere.
+        /// \return The sphere centered on the box, reaching its corners.
         ZY_INLINE static Sphere Enclose(ConstRef<Box> Source)
         {
             const Vector3 Center = (Source.GetMinimum() + Source.GetMaximum()) * 0.5f;
@@ -357,7 +357,7 @@ inline namespace ZyMath
         ///
         /// \param Source The sphere to transform.
         /// \param Matrix The transform to apply.
-        /// \return The transformed sphere.
+        /// \return The sphere with its center moved and its radius scaled by the largest axis scale.
         ZY_INLINE static Sphere Transform(Sphere Source, ConstRef<Matrix4x3> Matrix)
         {
             const Vector3 Center = Matrix4x3::Project(Matrix, Source.mCenter);

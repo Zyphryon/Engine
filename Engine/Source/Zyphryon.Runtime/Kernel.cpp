@@ -48,6 +48,7 @@ namespace ZyRuntime
     void Kernel::Save(JsonObject Root)
     {
 #if !defined(ZY_MODE_HEADLESS)
+
         if (ConstRetainer<ZyPlatform::Service> Platform = GetService<ZyPlatform::Service>())
         {
             ConstRef<ZyPlatform::Window> Window = Platform->GetWindow();
@@ -62,10 +63,11 @@ namespace ZyRuntime
             }
         }
 
-        if (ConstRetainer<ZyGraphic::Service> Graphics = GetService<ZyGraphic::Service>())
+        if (ConstRetainer<ZyGraphic::Service> Graphic = GetService<ZyGraphic::Service>())
         {
-            mStartup.SetGraphicsTearless(Graphics->IsTearless());
+            mStartup.SetGraphicsTearless(Graphic->IsTearless());
         }
+
 #endif
 
         mStartup.Save(Root);
@@ -91,7 +93,7 @@ namespace ZyRuntime
             return;
         }
 
-        // Capture the current time in seconds using high-resolution nanosecond timer.
+        // Start the frame clock now, so the first delta leaves out the time spent starting up.
         mTimer.Reset();
 
 #if !defined(ZY_PLATFORM_WEB)
@@ -99,7 +101,7 @@ namespace ZyRuntime
         // An application that failed to initialize is terminated without ever being ticked.
         while (mAlive && Tick())
         {
-            // Intentionally empty - all logic runs inside Tick()
+            // Every frame runs inside Tick.
         }
 
 #else
@@ -197,23 +199,23 @@ namespace ZyRuntime
         Ref<ZyPlatform::Window> Window = Platform->GetWindow();
 
         LOG_I("Kernel: Initializing graphic service");
-        ZyGraphic::Configuration GraphicsConfig;
-        GraphicsConfig.Tearless    = mStartup.IsGraphicsTearless();
-        GraphicsConfig.Width       = Window.GetWidth();
-        GraphicsConfig.Height      = Window.GetHeight();
-        GraphicsConfig.ColorFormat = mStartup.GetGraphicsColorFormat();
-        GraphicsConfig.DepthFormat = mStartup.GetGraphicsDepthFormat();
+        ZyGraphic::Configuration Config;
+        Config.Tearless    = mStartup.IsGraphicsTearless();
+        Config.Width       = Window.GetWidth();
+        Config.Height      = Window.GetHeight();
+        Config.ColorFormat = mStartup.GetGraphicsColorFormat();
+        Config.DepthFormat = mStartup.GetGraphicsDepthFormat();
 
-        if (GraphicsConfig.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
+        if (Config.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
         {
             const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
 
-            GraphicsConfig.ColorFormat = (Monitor && Monitor->IsHDR())
+            Config.ColorFormat = (Monitor && Monitor->IsHDR())
                 ? ZyGraphic::TextureFormat::RGBA16Float
                 : ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB;
         }
 
-        if (!Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), GraphicsConfig))
+        if (!Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), Config))
         {
             LOG_E("Kernel: Failed to initialize graphic service");
             return false;
@@ -229,12 +231,11 @@ namespace ZyRuntime
 
 #endif
 
-        // Initialize the application after all services are ready.
         mAlive = OnInitialize();
 
 #if !defined(ZY_MODE_HEADLESS)
 
-        // Make sure the display is visible after everything is set up.
+        // Show the window only once the application has started.
         Window.SetVisible(mAlive);
 
 #endif
@@ -249,10 +250,8 @@ namespace ZyRuntime
     {
         const Real64 Delta = mTimer.Step();
 
-        // Dispatch the tick to the application-defined update logic.
         OnTick(Delta);
 
-        // Update all registered services with the current frame delta.
         ZyEngine::Subsystem::Host::Tick(Delta);
 
         ZY_PROFILE_FRAME;
@@ -264,7 +263,6 @@ namespace ZyRuntime
 
     void Kernel::Terminate()
     {
-        // Invoke the application-defined shutdown logic before services are torn down.
         OnTerminate();
 
         Shutdown();
@@ -275,13 +273,12 @@ namespace ZyRuntime
 
     void Kernel::Shutdown()
     {
-        // Detaches external modules to the engine, allowing them to clean up any resources they allocated.
+        // Modules detach while the services they registered with are still alive.
         for (Ref<Unique<ZyEngine::Module>> Module : mModules)
         {
             Module->OnDetach(* this);
         }
 
-        // Destroy all registered services and release remaining engine resources.
         Teardown();
 
         // The application no longer owns `main`, so this is the last place its log tail can be written out.

@@ -21,7 +21,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Encapsulate the HLSL shader compiler.
+    /// \brief Represents the HLSL shader compiler.
     class D3D11Compiler final
     {
     public:
@@ -32,13 +32,13 @@ namespace ZyGraphic
         /// \brief Destructs the compiler instance.
         ~D3D11Compiler();
 
-        /// \brief Compiles a HLSL shader into DXBC bytecode from the given source code and macros.
+        /// \brief Compiles an HLSL shader into DXBC bytecode from the given source code and macros.
         ///
         /// \param Code   The shader source code to compile.
-        /// \param Tier   The shader compilation tier.
+        /// \param Tier   The feature tier, which picks the shader model.
         /// \param Stage  The shader stage (vertex, pixel, etc.) for which to compile the code.
-        /// \param Macros Optional macros to define during compilation.
-        /// \return A pointer to the compiled shader bytecode blob.
+        /// \param Macros The macros to define during compilation, ended by a null entry.
+        /// \return The compiled bytecode, which the caller releases, or `nullptr` when compilation fails.
         Ptr<ID3DBlob> Compile(ConstRef<Blob> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros);
 
     private:
@@ -57,11 +57,11 @@ namespace ZyGraphic
         /// \brief List of available D3DCompiler profiles, indexed by \ref Tier.
         static constexpr LPCSTR  kProfiles[][2] =
         {
-            { nullptr,  nullptr  },  ///< Level1.
-            { "vs_4_0", "ps_4_0" },  ///< Level2.
-            { "vs_5_0", "ps_5_0" },  ///< Level3.
-            { "vs_5_0", "ps_5_0" },  ///< Level4.
-            { "vs_5_0", "ps_5_0" },  ///< Level5.
+            { nullptr,  nullptr  },  // Tier::Level1
+            { "vs_4_0", "ps_4_0" },  // Tier::Level2
+            { "vs_5_0", "ps_5_0" },  // Tier::Level3
+            { "vs_5_0", "ps_5_0" },  // Tier::Level4
+            { "vs_5_0", "ps_5_0" },  // Tier::Level5
         };
 
     private:

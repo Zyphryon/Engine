@@ -7,7 +7,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER   ]
+// [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <shlobj.h>
@@ -21,27 +21,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Type GetType(DWORD Attributes)
-    {
-        if (Attributes & FILE_ATTRIBUTE_DIRECTORY)
-        {
-            return Filesystem::Type::Directory;
-        }
-        if (Attributes & FILE_ATTRIBUTE_ARCHIVE)
-        {
-            return Filesystem::Type::File;
-        }
-        if (Attributes & FILE_ATTRIBUTE_REPARSE_POINT)
-        {
-            return Filesystem::Type::Link;
-        }
-        return Filesystem::Type::Unknown;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Filesystem::Result GetResult(DWORD Error)
+    static Filesystem::Result GetResult(DWORD Error)
     {
         switch (Error)
         {
@@ -86,16 +66,16 @@ inline namespace ZyBase
         Wide Buffer[kMaxPathLength];
 
         const DWORD Size = GetModuleFileNameW(nullptr, Buffer, kMaxPathLength);
-        ZY_ASSERT(Size != 0, "Failed to get module filename.");
+        ZY_ASSERT(Size != 0, "Failed to get module filename");
 
-        Path Result = Path::ConvertFromUTF16(ConstSpan(Buffer, Size));
+        Path Root = Path::ConvertFromUTF16(ConstSpan(Buffer, Size));
 
-        if (const SInt Slash = StrFindLast(Result, '\\'))
+        if (const SInt Slash = StrFindLast(Root, '\\'))
         {
-            Result.RemoveLast(Result.GetSize() - Slash - 1);
+            Root.RemoveLast(Root.GetSize() - Slash - 1);
         }
-        Result.Replace('\\', '/');
-        return Result;
+        Root.Replace('\\', '/');
+        return Root;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -103,15 +83,15 @@ inline namespace ZyBase
 
     Filesystem::Path Filesystem::GetDataFolder(Text Organization, Text Application)
     {
-        PWSTR Path = nullptr;
+        PWSTR Folder = nullptr;
 
-        if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, nullptr, AddressOf(Path))))
+        if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, nullptr, AddressOf(Folder))))
         {
             return Text::Empty();
         }
 
-        String<kMaxPathLength> Buffer = Path::ConvertFromUTF16(StrConvert(Path));
-        CoTaskMemFree(Path);
+        Path Buffer = Path::ConvertFromUTF16(StrConvert(Folder));
+        CoTaskMemFree(Folder);
 
         if (!Organization.IsEmpty())
         {
@@ -149,9 +129,14 @@ inline namespace ZyBase
 
                 if (!(Name[0] == L'.' && (Name.GetSize() == 1 || (Name[1] == L'.' && Name.GetSize() == 2))))
                 {
+                    const DWORD Attributes = Entry.dwFileAttributes;
+
                     Record Data;
                     Data.Name = Path::ConvertFromUTF16(Name);
-                    Data.Type = GetType(Entry.dwFileAttributes);
+                    Data.Type = (Attributes & FILE_ATTRIBUTE_DIRECTORY)     ? Type::Directory
+                              : (Attributes & FILE_ATTRIBUTE_ARCHIVE)       ? Type::File
+                              : (Attributes & FILE_ATTRIBUTE_REPARSE_POINT) ? Type::Link
+                              : Type::Unknown;
                     Data.Size = (static_cast<UInt64>(Entry.nFileSizeHigh) << 32) | Entry.nFileSizeLow;
                     Data.Time = (static_cast<UInt64>(Entry.ftLastWriteTime.dwHighDateTime) << 32) | Entry.ftLastWriteTime.dwLowDateTime;
 
@@ -180,7 +165,9 @@ inline namespace ZyBase
         {
             return Result::Success;
         }
-        return (GetLastError() == ERROR_ALREADY_EXISTS ? Result::Success : GetResult(GetLastError()));
+
+        const DWORD Error = GetLastError();
+        return Error == ERROR_ALREADY_EXISTS ? Result::Success : GetResult(Error);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

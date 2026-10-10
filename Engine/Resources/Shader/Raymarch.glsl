@@ -90,8 +90,10 @@ float ZyRaymarchLattice(sampler2DArray Lattice, vec2 Plane, float Height, float 
     float Lower  = Layer - Slices * floor(Layer / Slices);
     float Upper  = (Lower + 1.0 < Slices) ? Lower + 1.0 : 0.0;
 
-    return mix(textureLod(Lattice, vec3(Uv, Lower), 0.0).r,
-               textureLod(Lattice, vec3(Uv, Upper), 0.0).r, Rise * Rise * (3.0 - 2.0 * Rise));
+    return mix(
+        textureLod(Lattice, vec3(Uv, Lower), 0.0).r,
+        textureLod(Lattice, vec3(Uv, Upper), 0.0).r,
+        Rise * Rise * (3.0 - 2.0 * Rise));
 }
 
 /// The first full-size texel of the 2x2 block a half-size texel covers.

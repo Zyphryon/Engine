@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "JsonValue.hpp"
+#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -20,7 +21,6 @@
 
 inline namespace ZyBase
 {
-    /// \brief A JSON object type forward declaration.
     class JsonObject;
 
     /// \brief Provides a convenient interface for manipulating JSON arrays.
@@ -32,7 +32,6 @@ inline namespace ZyBase
         ZY_INLINE JsonArray()
             : mNode { nullptr }
         {
-
         }
 
         /// \brief Constructs a JSON array from a JSON value node.
@@ -44,15 +43,15 @@ inline namespace ZyBase
             ZY_ASSERT(mNode->IsArray(), "Node is not an array.");
         }
 
-        /// \brief Checks if the array is null.
+        /// \brief Checks whether the array is null.
         ///
-        /// \return `true` if the array is null, `false` otherwise.
+        /// \return `true` if the array wraps no node or a null one, `false` otherwise.
         ZY_INLINE Bool IsNull() const
         {
             return (mNode == nullptr || mNode->IsNull());
         }
 
-        /// \brief Checks if the array is empty.
+        /// \brief Checks whether the array is empty.
         ///
         /// \return `true` if the array is empty, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
@@ -60,7 +59,7 @@ inline namespace ZyBase
             return mNode->GetArray().IsEmpty();
         }
 
-        /// \brief Checks if the array is null or empty.
+        /// \brief Checks whether the array is null or empty.
         ///
         /// \return `true` if the array is null or empty, `false` otherwise.
         ZY_INLINE Bool IsNullOrEmpty() const
@@ -91,16 +90,9 @@ inline namespace ZyBase
         /// \return The boolean value, or the default if the element is not a boolean.
         ZY_INLINE Bool GetBool(UInt Index, Bool Default = false) const
         {
-            if (Index < GetSize())
-            {
-                ConstRef<JsonValue> Value = mNode->GetArray()[Index];
+            const ConstPtr<JsonValue> Value = Find(Index);
 
-                if (Value.IsBool())
-                {
-                    return Value.GetBool();
-                }
-            }
-            return Default;
+            return (Value && Value->IsBool()) ? Value->GetBool() : Default;
         }
 
         /// \brief Appends a numeric value to the array.
@@ -120,16 +112,9 @@ inline namespace ZyBase
         template<IsNumeric Type>
         ZY_INLINE Type GetNumber(UInt Index, Type Default = { }) const
         {
-            if (Index < GetSize())
-            {
-                ConstRef<JsonValue> Value = mNode->GetArray()[Index];
+            const ConstPtr<JsonValue> Value = Find(Index);
 
-                if (Value.IsNumber())
-                {
-                    return Value.GetNumber<Type>();
-                }
-            }
-            return Default;
+            return (Value && Value->IsNumber()) ? Value->GetNumber<Type>() : Default;
         }
 
         /// \brief Appends a string value to the array.
@@ -137,7 +122,7 @@ inline namespace ZyBase
         /// \param Value The text value to append.
         ZY_INLINE void AddString(Text Value)
         {
-            mNode->GetArray().Append(Str(Value));
+            mNode->GetArray().Append(Value);
         }
 
         /// \brief Gets the string value at the specified index.
@@ -147,16 +132,9 @@ inline namespace ZyBase
         /// \return The string value, or the default if the element is not a string.
         ZY_INLINE Text GetString(UInt Index, Text Default = Text::Empty()) const
         {
-            if (Index < GetSize())
-            {
-                ConstRef<JsonValue> Value = mNode->GetArray()[Index];
+            const ConstPtr<JsonValue> Value = Find(Index);
 
-                if (Value.IsString())
-                {
-                    return Value.GetString();
-                }
-            }
-            return Default;
+            return (Value && Value->IsString()) ? Value->GetString() : Default;
         }
 
         /// \brief Appends an enumeration value to the array as its name.
@@ -165,7 +143,7 @@ inline namespace ZyBase
         template<IsEnum Type>
         ZY_INLINE void AddEnum(Type Value)
         {
-            mNode->GetArray().Append(Str(ZyEnum::GetName(Value)));
+            mNode->GetArray().Append(ZyEnum::GetName(Value));
         }
 
         /// \brief Gets the enumeration value at the specified index.
@@ -174,18 +152,11 @@ inline namespace ZyBase
         /// \param Default The value to return if the element is not a valid enumeration name.
         /// \return The parsed enumeration value, or the default if the element is not a valid name.
         template<IsEnum Type>
-        ZY_INLINE Type GetEnum(UInt Index, Type Default = {}) const
+        ZY_INLINE Type GetEnum(UInt Index, Type Default = { }) const
         {
-            if (Index < GetSize())
-            {
-                ConstRef<JsonValue> Value = mNode->GetArray()[Index];
+            const ConstPtr<JsonValue> Value = Find(Index);
 
-                if (Value.IsString())
-                {
-                    return ZyEnum::Cast<Type>(Value.GetString(), Default);
-                }
-            }
-            return Default;
+            return (Value && Value->IsString()) ? ZyEnum::Cast<Type>(Value->GetString(), Default) : Default;
         }
 
         /// \brief Appends a new array to the array and returns a wrapper for it.
@@ -205,16 +176,9 @@ inline namespace ZyBase
         /// \return A JSON array wrapper, or a null wrapper if the element is not an array.
         ZY_INLINE JsonArray GetArray(UInt Index) const
         {
-            if (Index < GetSize())
-            {
-                Ref<JsonValue> Value = mNode->GetArray()[Index];
+            const Ptr<JsonValue> Value = Find(Index);
 
-                if (Value.IsArray())
-                {
-                    return JsonArray(Value);
-                }
-            }
-            return JsonArray();
+            return (Value && Value->IsArray()) ? JsonArray(* Value) : JsonArray();
         }
 
         /// \brief Appends a new object to the array and returns a wrapper for it.
@@ -228,9 +192,9 @@ inline namespace ZyBase
         /// \return A JSON object wrapper, or a null wrapper if the element is not an object.
         JsonObject GetObject(UInt Index) const;
 
-        /// \brief Formats the JSON value into an output buffer.
+        /// \brief Gets a string representation of this object.
         ///
-        /// \param Buffer The buffer to format into.
+        /// \param Buffer The string buffer to write the output to.
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
@@ -242,6 +206,17 @@ inline namespace ZyBase
             {
                 Buffer.Append("Null");
             }
+        }
+
+    private:
+
+        /// \brief Gets the element at the given index.
+        ///
+        /// \param Index The zero-based index of the element.
+        /// \return The element, or \c nullptr when the index is out of range.
+        ZY_INLINE Ptr<JsonValue> Find(UInt Index) const
+        {
+            return Index < GetSize() ? AddressOf(mNode->GetArray()[Index]) : nullptr;
         }
 
     private:

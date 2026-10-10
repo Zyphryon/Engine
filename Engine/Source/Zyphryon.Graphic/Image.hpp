@@ -33,7 +33,7 @@ namespace ZyGraphic
 
         /// \brief Sets up the image with specified parameters and raw data.
         ///
-        /// \param Layout The memory layout of the image data.
+        /// \param Layout The shape of the image, as 2D, array or cube.
         /// \param Format The pixel format of the image data.
         /// \param Width  The width of the image in pixels.
         /// \param Height The height of the image in pixels.
@@ -44,7 +44,7 @@ namespace ZyGraphic
 
         /// \brief Gets the native GPU handle for this image.
         ///
-        /// \return The GPU object handle.
+        /// \return The texture handle, or `0` before upload.
         ZY_INLINE Object GetHandle() const
         {
             return mHandle;

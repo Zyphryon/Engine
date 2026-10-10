@@ -125,13 +125,13 @@ namespace ZyRender
 
         if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Scope.GetResource()->GetKey(), Error);
+            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
             return false;
         }
 
         if (!Document.IsObject())
         {
-            LOG_W("'{0}' is not a valid 2D sheet", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a valid 2D sheet", Asset->GetKey());
             return false;
         }
 
@@ -169,7 +169,7 @@ namespace ZyRender
 
                 if (!ReadFrames(Definition, Clip.Frames))
                 {
-                    LOG_W("'{0}' has a clip with too many frames or an easing that steps back", Scope.GetResource()->GetKey());
+                    LOG_W("'{0}' has a clip with too many frames or an easing that steps back", Asset->GetKey());
                     return false;
                 }
                 ReadMotion(Definition, Clip.Motion);
@@ -181,7 +181,7 @@ namespace ZyRender
 
         if (!Asset->SetClips(Move(Clips)))
         {
-            LOG_W("'{0}' has lanes for bones it does not list, or two lanes for one bone", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has lanes for bones it does not list, or two lanes for one bone", Asset->GetKey());
         }
         return true;
     }

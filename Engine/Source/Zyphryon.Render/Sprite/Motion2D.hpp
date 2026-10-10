@@ -125,7 +125,7 @@ namespace ZyRender
         /// \brief Gets a lane for writing.
         ///
         /// \param Index The index of the lane.
-        /// \return The lane.
+        /// \return The lane, for its keys to be written into.
         ZY_INLINE Ref<Lane> GetLane(UInt32 Index)
         {
             return mLanes[Index];

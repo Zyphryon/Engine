@@ -114,7 +114,7 @@ namespace ZyRender
             mActive = Active;
         }
 
-        /// \brief Gets the active state of the pass.
+        /// \brief Checks whether the pass runs when the graph does.
         ///
         /// \return `true` if the pass is active, otherwise `false`.
         ZY_INLINE Bool IsActive() const
@@ -133,7 +133,7 @@ namespace ZyRender
         /// \brief Gets a color attachment.
         ///
         /// \param Index The color attachment index, in declaration order.
-        /// \return A read-only reference to the color attachment.
+        /// \return The attachment declared at that index.
         ZY_INLINE ConstRef<ColorAttachment> GetColor(UInt32 Index = 0)
         {
             return mColorAttachment[Index];
@@ -141,7 +141,7 @@ namespace ZyRender
 
         /// \brief Gets the pass's color attachments.
         ///
-        /// \return A read-only reference to the color attachment list.
+        /// \return The color attachments, in declaration order.
         ZY_INLINE ConstSpan<ColorAttachment> GetColors() const
         {
             return mColorAttachment;
@@ -157,7 +157,7 @@ namespace ZyRender
 
         /// \brief Gets the depth attachment.
         ///
-        /// \return A read-only reference to the depth attachment.
+        /// \return The depth attachment, whose target is \ref kNone when the pass has none.
         ZY_INLINE ConstRef<DepthAttachment> GetDepth() const
         {
             return mDepthAttachment;
@@ -173,7 +173,7 @@ namespace ZyRender
 
         /// \brief Gets the pass's inputs.
         ///
-        /// \return A read-only reference to the input list.
+        /// \return The inputs, in declaration order.
         ZY_INLINE ConstSpan<InputAttachment> GetInputs() const
         {
             return mInputAttachment;
@@ -182,7 +182,7 @@ namespace ZyRender
         /// \brief Executes the pass, recording its draw commands through the encoder.
         ///
         /// \param Encoder The encoder used to build this pass's draw commands.
-        /// \param Graph   The graph being drawn, which the pass reads every target it samples from.
+        /// \param Graph   The graph being drawn, from which the pass reads every target it samples.
         virtual void Run(Ref<Encoder> Encoder, ConstRef<class Graph> Graph) = 0;
 
     protected:

@@ -45,7 +45,7 @@ inline namespace ZyMath
 
         /// \brief Gets one of the planes, as an inward-facing normal and the distance along it.
         ///
-        /// \param Plane The side to get.
+        /// \param Plane The side whose plane to get.
         /// \return The plane, its normal in the first three components and its distance in the fourth.
         Vector4 GetPlane(Side Plane) const;
 
@@ -77,7 +77,7 @@ inline namespace ZyMath
 
     private:
 
-        /// \brief Four planes side by side, one register per coefficient, so all four are tested at once.
+        /// \brief Represents four planes side by side, one register per coefficient, so all four are tested at once.
         ///
         /// \note The registers hold the X, Y and Z of the four normals, then the four distances.
         using Quartet = Array<Vector4, 4>;
@@ -89,7 +89,7 @@ inline namespace ZyMath
 
         /// \brief Measures how far a point lies inside each of four planes at once.
         ///
-        /// \param Group The four planes.
+        /// \param Group The four planes to measure against.
         /// \param X     The X coordinate of the point, in every lane.
         /// \param Y     The Y coordinate of the point, in every lane.
         /// \param Z     The Z coordinate of the point, in every lane.

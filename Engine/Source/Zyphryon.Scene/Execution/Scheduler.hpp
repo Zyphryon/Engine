@@ -27,10 +27,10 @@ namespace ZyScene
         /// \brief Constructs a scheduler with no phase and no system.
         Scheduler();
 
-        /// \brief Prevents copying a scheduler, since a running system points into its own.
+        /// \brief Schedulers are not copied, since a running system points into its own.
         Scheduler(ConstRef<Scheduler> Other) = delete;
 
-        /// \brief Prevents assigning a scheduler, since a running system points into its own.
+        /// \brief Schedulers are not assigned, since a running system points into its own.
         Ref<Scheduler> operator=(ConstRef<Scheduler> Other) = delete;
 
         /// \brief Creates a phase, which runs its systems in the order they were created when its turn comes.
@@ -43,13 +43,13 @@ namespace ZyScene
 
         /// \brief Adds a system or task to the end of a phase.
         ///
-        /// \param Name    The name of the system.
-        /// \param Phase   The phase.
+        /// \param Name    The name profiles and logs show.
+        /// \param Phase   The handle of the phase to run it in.
         /// \param Rate    The progresses between two runs, one to run on every one.
-        /// \param Runner  The callable the phase runs.
+        /// \param Run     The callable the phase runs.
         /// \param Package The module that declares it, or zero.
         /// \return The handle of the system, never zero.
-        UInt32 CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Runner, UInt32 Package);
+        UInt32 CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
 
         /// \brief Takes a system out of its phase, so it runs no more.
         ///
@@ -70,7 +70,7 @@ namespace ZyScene
 
         /// \brief Takes out every system and phase a module declared.
         ///
-        /// \param Package The module.
+        /// \param Package The handle of the module, as the world imported it.
         void Discard(UInt32 Package);
 
         /// \brief Runs every phase once, in order, and every system in each, in the order they were created.
@@ -153,6 +153,19 @@ namespace ZyScene
             {
             }
         };
+
+        /// \brief Finds a system by its handle.
+        ///
+        /// \param Handle The handle of the system.
+        /// \return The system, or `nullptr` when no system answers to the handle or it was purged.
+        ZY_INLINE Ptr<Routine> Find(UInt32 Handle) const
+        {
+            if (Handle == 0 || Handle > mSystems.GetSize() || !mSystems[Handle - 1])
+            {
+                return nullptr;
+            }
+            return AddressOf(* mSystems[Handle - 1]);
+        }
 
     private:
 

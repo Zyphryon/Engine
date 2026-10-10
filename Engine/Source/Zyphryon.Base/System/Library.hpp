@@ -69,7 +69,7 @@ inline namespace ZyBase
 
         /// \brief Checks whether a library is held.
         ///
-        /// \return `true` when one is held, `false` otherwise.
+        /// \return `true` if the last \ref Open succeeded and no \ref Close followed, `false` otherwise.
         ZY_INLINE Bool IsOpen() const
         {
             return mHandle != nullptr;

@@ -26,14 +26,14 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructor initializing all components zero.
+        /// \brief Constructs a vector with all components zero.
         ZY_INLINE constexpr AnyVector2()
             : mX { 0 },
               mY { 0 }
         {
         }
 
-        /// \brief Constructor initializing all components to the same value.
+        /// \brief Constructs a vector with every component set to the same value.
         ///
         /// \param Scalar The scalar value used to initialize all components.
         ZY_INLINE constexpr explicit AnyVector2(Type Scalar)
@@ -42,7 +42,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructor initializing the vector with specified x and y values.
+        /// \brief Constructs a vector from its x and y components.
         ///
         /// \param X The x-component of the vector.
         /// \param Y The y-component of the vector.
@@ -52,7 +52,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Conversion constructor from another vector with a different base type.
+        /// \brief Constructs a vector from one of another base type.
         ///
         /// \param Other The source vector to convert from.
         template<typename Base>
@@ -82,9 +82,9 @@ inline namespace ZyMath
 
         /// \brief Checks if the vector is normalized.
         ///
-        /// \return `true` if the vector is normalized, `false` otherwise.
+        /// \return `true` if its length is one within tolerance, `false` otherwise.
         ZY_INLINE constexpr Bool IsNormalized() const
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             return ::IsAlmostEqual(GetLengthSquared(), Type(1), kTolerance<Type>);
         }
@@ -137,7 +137,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is parallel to another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if the vectors are parallel, `false` otherwise.
+        /// \return `true` if the vectors lie along one line, either way round, `false` otherwise.
         ZY_INLINE constexpr Bool IsParallel(AnyVector2 Other) const
         {
             return ::IsAlmostZero(Cross(* this, Other));
@@ -195,7 +195,7 @@ inline namespace ZyMath
         ///
         /// \return The length of the vector.
         ZY_INLINE Type GetLength() const
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             return Sqrt(GetLengthSquared());
         }
@@ -229,7 +229,7 @@ inline namespace ZyMath
         /// \param Target The vector to calculate the distance to.
         /// \return The distance between the two vectors.
         ZY_INLINE Type GetDistance(AnyVector2 Target) const
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             const AnyVector2 Difference = (* this) - Target;
             return Difference.GetLength();
@@ -281,7 +281,7 @@ inline namespace ZyMath
         ///
         /// \return The angle in radians (range [-π, π]).
         ZY_INLINE Angle GetAngle() const
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             return Angle::FromCartesian(mX, mY);
         }
@@ -291,7 +291,7 @@ inline namespace ZyMath
         /// \param Other The other vector to compare with.
         /// \return The angle in radians between the two vectors (range [0, π]).
         ZY_INLINE Angle GetAngle(AnyVector2 Other) const
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             const Type Length = GetLength() * Other.GetLength();
             ZY_ASSERT(!::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
@@ -376,7 +376,7 @@ inline namespace ZyMath
         /// \brief Divides all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to divide by.
-        /// \return A new vector with the scalar divided into all components.
+        /// \return A new vector with all components divided by the scalar.
         ZY_INLINE constexpr AnyVector2 operator/(Type Scalar) const
         {
             ZY_ASSERT(!::IsAlmostZero(Scalar), "Division by zero");
@@ -384,7 +384,7 @@ inline namespace ZyMath
             return AnyVector2(mX / Scalar, mY / Scalar);
         }
 
-        /// \brief Shift left all coordinates of this vector by a scalar.
+        /// \brief Shifts left all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
@@ -396,7 +396,7 @@ inline namespace ZyMath
             return AnyVector2(mX << Scalar, mY << Scalar);
         }
 
-        /// \brief Shift right all coordinates of this vector by a scalar.
+        /// \brief Shifts right all components of this vector by a scalar.
         ///
         /// \param Scalar The scalar to shift by.
         /// \return A new vector with the components shifted.
@@ -528,7 +528,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is not equal to another vector.
         ///
         /// \param Other The vector to compare to.
-        /// \return `true` if the vectors are not equal, `false` otherwise.
+        /// \return `true` if any component is not approximately equal, `false` otherwise.
         ZY_INLINE constexpr Bool operator!=(AnyVector2 Other) const
         {
             return !(* this == Other);
@@ -614,12 +614,12 @@ inline namespace ZyMath
             return AnyVector2(Type(0), Type(1));
         }
 
-        /// \brief Gets the unit vector pointing at the given angle, the inverse of `GetAngle`.
+        /// \brief Creates the unit vector pointing at the given angle, the inverse of `GetAngle`.
         ///
         /// \param Direction The angle measured from the X-axis toward the Y-axis.
         /// \return The unit vector (cos, sin) of the angle.
         ZY_INLINE static AnyVector2 FromAngle(Angle Direction)
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             return AnyVector2(Angle::Cosine(Direction), Angle::Sine(Direction));
         }
@@ -627,7 +627,7 @@ inline namespace ZyMath
         /// \brief Gets a vector perpendicular to the given vector.
         ///
         /// \param Vector The vector to compute the perpendicular of.
-        /// \return A vector perpendicular to the input vector.
+        /// \return The vector turned a quarter counter-clockwise, (-y, x).
         ZY_INLINE static constexpr AnyVector2 Perpendicular(AnyVector2 Vector)
         {
             return AnyVector2(-Vector.GetY(), Vector.GetX());
@@ -639,7 +639,7 @@ inline namespace ZyMath
         /// \param Target The vector onto which the source is projected.
         /// \return The projection of source onto target.
         ZY_INLINE static constexpr AnyVector2 Project(AnyVector2 Source, AnyVector2 Target)
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             const Type Denominator = Dot(Target, Target);
             ZY_ASSERT(!::IsAlmostZero(Denominator), "Cannot project onto zero-length vector");
@@ -652,7 +652,7 @@ inline namespace ZyMath
         /// \param Vector The vector to normalize.
         /// \return A normalized vector.
         ZY_INLINE static AnyVector2 Normalize(AnyVector2 Vector)
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             const Type Length = Vector.GetLength();
             ZY_ASSERT(!::IsAlmostZero(Length), "Cannot normalize a zero-length vector");
@@ -666,20 +666,20 @@ inline namespace ZyMath
         /// \param Normal   The surface normal to reflect across (should be normalized).
         /// \return The reflected vector.
         ZY_INLINE static constexpr AnyVector2 Reflect(AnyVector2 Incident, AnyVector2 Normal)
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             ZY_ASSERT(Normal.IsNormalized(), "Normal must be normalized");
 
             return Incident - Normal * (Type(2) * Dot(Incident, Normal));
         }
 
-        /// \brief Rotates a vector by a given angle in radians.
+        /// \brief Rotates a vector by a given angle.
         ///
         /// \param Vector   The vector to rotate.
-        /// \param Rotation The angles to rotate the vector.
+        /// \param Rotation The angle to rotate the vector by.
         /// \return A new rotated vector.
         ZY_INLINE static AnyVector2 Rotate(AnyVector2 Vector, Angle Rotation)
-            requires (IsReal<Type>)
+            requires(IsReal<Type>)
         {
             const Type C = Angle::Cosine(Rotation);
             const Type S = Angle::Sine(Rotation);
@@ -732,20 +732,18 @@ inline namespace ZyMath
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return The scalar cross product of the two vectors.
+        /// \return The scalar cross product, positive when \p P1 lies counter-clockwise of \p P0.
         ZY_INLINE static constexpr Type Cross(AnyVector2 P0, AnyVector2 P1)
         {
             return P0.GetX() * P1.GetY() - P0.GetY() * P1.GetX();
         }
 
-        /// \brief Computes the 2D equivalent of a scalar triple product for three points.
+        /// \brief Computes the signed area of the parallelogram spanned by (P1 - P0) and (P2 - P0).
         ///
-        /// This calculates the signed area of the parallelogram formed by (P1-P0) and (P2-P0).
-        ///
-        /// \param P0 The first vector.
-        /// \param P1 The second vector.
-        /// \param P2 The third vector.
-        /// \return The scalar triple product value.
+        /// \param P0 The corner both edges start from.
+        /// \param P1 The end of the first edge.
+        /// \param P2 The end of the second edge.
+        /// \return The signed area, twice that of the triangle the three points form.
         ZY_INLINE static constexpr Type Cross(AnyVector2 P0, AnyVector2 P1, AnyVector2 P2)
         {
             return (P0.GetX() - P2.GetX()) * (P1.GetY() - P2.GetY()) - (P0.GetY() - P2.GetY()) * (P1.GetX() - P2.GetX());
@@ -782,13 +780,13 @@ inline namespace ZyMath
 
         /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
         ///
-        /// \param Vector The source vector to clamp.
-        /// \param Min    The vector specifying the minimum bounds.
-        /// \param Max    The vector specifying the maximum bounds.
+        /// \param Vector  The source vector to clamp.
+        /// \param Minimum The vector specifying the minimum bounds.
+        /// \param Maximum The vector specifying the maximum bounds.
         /// \return A vector with each component clamped between the min and max values.
-        ZY_INLINE static constexpr AnyVector2 Clamp(AnyVector2 Vector, AnyVector2 Min, AnyVector2 Max)
+        ZY_INLINE static constexpr AnyVector2 Clamp(AnyVector2 Vector, AnyVector2 Minimum, AnyVector2 Maximum)
         {
-            return AnyVector2(::Clamp(Vector.mX, Min.mX, Max.mX), ::Clamp(Vector.mY, Min.mY, Max.mY));
+            return AnyVector2(::Clamp(Vector.mX, Minimum.mX, Maximum.mX), ::Clamp(Vector.mY, Minimum.mY, Maximum.mY));
         }
 
         /// \brief Gets a vector with each component floored to the nearest integer.
@@ -819,7 +817,7 @@ inline namespace ZyMath
         /// \return `true` when the walk reached the last cell, `false` when a step stopped it.
         template<typename Callable>
         ZY_INLINE static constexpr Bool Walk(AnyVector2 From, AnyVector2 Into, AnyRef<Callable> Visit)
-            requires (IsIntegral<Type>)
+            requires(IsIntegral<Type>)
         {
             const SInt64 SpanX = ::Abs(static_cast<SInt64>(Into.GetX()) - From.GetX());
             const SInt64 SpanY = ::Abs(static_cast<SInt64>(Into.GetY()) - From.GetY());
@@ -857,7 +855,6 @@ inline namespace ZyMath
                     {
                         return false;
                     }
-                    
                     Where = Where + Across + Along;
                     ++X;
                     ++Y;

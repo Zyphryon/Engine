@@ -27,21 +27,21 @@ namespace ZyPlatform
 
     public:
 
-        /// \brief Defines the native platform handle type for the window.
+        /// \brief The native handle the platform knows the window by.
         using Handle = Ptr<void>;
 
     public:
 
         /// \brief Constructs a new window.
         ///
-        /// \param Dispatcher The dispatcher to handle events.
+        /// \param Dispatcher The dispatcher the window queues its events into.
         ZY_INLINE Window(Ref<Dispatcher> Dispatcher)
             : mDispatcher { Dispatcher },
               mX          { 0 },
               mY          { 0 },
               mWidth      { 0 },
               mHeight     { 0 },
-              mStates     { 0 }
+              mStates     { State::None }
         {
         }
 
@@ -50,7 +50,7 @@ namespace ZyPlatform
 
         /// \brief Gets the native platform handle for graphics API interop.
         ///
-        /// \return The opaque native handle that needs to be casted to the concrete platform type at the call site.
+        /// \return The opaque native handle, cast to the platform's own type by the caller.
         Handle GetHandle() const;
 
         /// \brief Sets the title of the window.
@@ -112,18 +112,18 @@ namespace ZyPlatform
             return HasBit(mStates, State::Focused);
         }
 
-        /// \brief Sets the fullscreen state of the window.
-        ///
-        /// \param Fullscreen `true` to set the window to fullscreen mode, otherwise `false`.
-        void SetFullscreen(Bool Fullscreen);
-
         /// \brief Checks whether the window is in borderless mode.
         ///
-        /// \return `true` if borderless, otherwise `false`.
+        /// \return `true` if the window has no border or title bar, `false` otherwise.
         ZY_INLINE Bool IsBorderless() const
         {
             return HasBit(mStates, State::Borderless);
         }
+
+        /// \brief Sets the fullscreen state of the window.
+        ///
+        /// \param Fullscreen `true` to set the window to fullscreen mode, otherwise `false`.
+        void SetFullscreen(Bool Fullscreen);
 
         /// \brief Checks whether the window is in fullscreen mode.
         ///
@@ -135,7 +135,7 @@ namespace ZyPlatform
 
         /// \brief Checks whether the window is in windowed mode.
         ///
-        /// \return `true` if windowed, otherwise `false`.
+        /// \return `true` if the window is not fullscreen, `false` otherwise.
         ZY_INLINE Bool IsWindowed() const
         {
             return !IsFullscreen();
@@ -194,19 +194,20 @@ namespace ZyPlatform
 
     private:
 
-        /// \brief Describes the state of the window.
+        /// \brief Specifies the state of the window.
         enum class State : UInt8
         {
-            Visible    = 1 << 0,   ///< Indicates that the window is visible.
-            Focused    = 1 << 1,   ///< Indicates that the window is focused.
-            Locked     = 1 << 2,   ///< Indicates that the window cursor is locked.
-            Held       = 1 << 3,   ///< Indicates that the window is being held.
-            Borderless = 1 << 4,   ///< Indicates that the window is borderless.
-            Fullscreen = 1 << 5,   ///< Indicates that the window is fullscreen.
+            None       = 0,        ///< The window has no state set.
+            Visible    = 1 << 0,   ///< The window is visible.
+            Focused    = 1 << 1,   ///< The window is focused.
+            Locked     = 1 << 2,   ///< The cursor is locked.
+            Held       = 1 << 3,   ///< The frame is being resized by hand, so resizes wait until it is let go.
+            Borderless = 1 << 4,   ///< The window is borderless.
+            Fullscreen = 1 << 5,   ///< The window is fullscreen.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(State)
 
-        /// \brief Initialize the platform-specific implementation of the window.
+        /// \brief Initializes the platform-specific implementation of the window.
         ///
         /// \param Title      The title of the window.
         /// \param X          The initial X position of the window.
@@ -218,7 +219,7 @@ namespace ZyPlatform
         /// \return `true` if the window was successfully initialized, otherwise `false`.
         Bool Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 
-        /// \brief Drains the platform's event queue, translating each event into a dispatcher notification.
+        /// \brief Drains the platform's event queue, translating each event into a dispatcher event.
         void Poll();
 
     private:

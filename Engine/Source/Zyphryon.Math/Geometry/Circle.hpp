@@ -27,13 +27,13 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the circle to center (0.0f, 0.0f) with radius 0.0f.
+        /// \brief Constructs a circle at the origin with a radius of zero.
         ZY_INLINE constexpr Circle()
             : mRadius { 0.0f }
         {
         }
 
-        /// \brief Constructor initializing the circle with specified center and radius.
+        /// \brief Constructs a circle from a center and a radius.
         ///
         /// \param Center The center point of the circle.
         /// \param Radius The radius of the circle.
@@ -44,7 +44,7 @@ inline namespace ZyMath
             ZY_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
         }
 
-        /// \brief Constructor initializing the circle with specified center coordinates and radius.
+        /// \brief Constructs a circle from the coordinates of its center and a radius.
         ///
         /// \param X      The x-coordinate of the center.
         /// \param Y      The y-coordinate of the center.
@@ -66,7 +66,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the circle is valid (radius >= 0).
         ///
-        /// \return `true` if the circle is valid, `false` otherwise.
+        /// \return `true` if the radius is zero or more, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return mRadius >= 0.0f;
@@ -83,7 +83,7 @@ inline namespace ZyMath
         /// \brief Sets the center and radius of the circle.
         ///
         /// \param Center The new center point.
-        /// \param Radius The new radius.
+        /// \param Radius The new radius, never negative.
         ZY_INLINE constexpr void Set(Vector2 Center, Real32 Radius)
         {
             mCenter = Center;
@@ -108,7 +108,7 @@ inline namespace ZyMath
 
         /// \brief Sets the radius of the circle.
         ///
-        /// \param Radius The new radius.
+        /// \param Radius The new radius, never negative.
         ZY_INLINE constexpr void SetRadius(Real32 Radius)
         {
             ZY_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
@@ -167,8 +167,8 @@ inline namespace ZyMath
 
         /// \brief Expands the circle by the given amount.
         ///
-        /// \param Amount The amount to expand by.
-        /// \return The expanded circle.
+        /// \param Amount The length to add to the radius.
+        /// \return The circle with its radius grown by \p Amount.
         ZY_INLINE constexpr Circle Expand(Real32 Amount) const
         {
             return Circle(mCenter, mRadius + Amount);
@@ -176,8 +176,8 @@ inline namespace ZyMath
 
         /// \brief Contracts the circle by the given amount.
         ///
-        /// \param Amount The amount to contract by.
-        /// \return The contracted circle.
+        /// \param Amount The length to take off the radius.
+        /// \return The circle with its radius shrunk by \p Amount, never below zero.
         ZY_INLINE constexpr Circle Contract(Real32 Amount) const
         {
             return Circle(mCenter, Max(0.0f, mRadius - Amount));
@@ -186,7 +186,7 @@ inline namespace ZyMath
         /// \brief Checks if this circle completely contains another circle.
         ///
         /// \param Other The other circle to check.
-        /// \return `true` if this circle contains the other, `false` otherwise.
+        /// \return `true` if \p Other lies inside this circle, even touching its edge, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Circle Other) const
         {
             if (mRadius >= Other.mRadius)
@@ -201,7 +201,7 @@ inline namespace ZyMath
         /// \brief Checks if this circle contains a point.
         ///
         /// \param Point The point to check.
-        /// \return `true` if the point is inside the circle, `false` otherwise.
+        /// \return `true` if the point lies inside the circle or on its edge, `false` otherwise.
         ZY_INLINE constexpr Bool Contains(Vector2 Point) const
         {
             return mCenter.GetDistanceSquared(Point) <= (mRadius * mRadius);
@@ -210,7 +210,7 @@ inline namespace ZyMath
         /// \brief Checks if this circle intersects with another circle.
         ///
         /// \param Other The other circle to check.
-        /// \return `true` if the circles intersect, `false` otherwise.
+        /// \return `true` if the circles overlap or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(Circle Other) const
         {
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
@@ -248,11 +248,11 @@ inline namespace ZyMath
 
         /// \brief Canonicalizes a circle by ensuring its radius is non-negative.
         ///
-        /// \param Source The circle to canonicalize.
+        /// \param Source The circle whose radius may be negative.
         /// \return A circle with non-negative radius.
         ZY_INLINE static constexpr Circle Canonicalize(Circle Source)
         {
-            return ::Circle(Source.mCenter, Abs(Source.mRadius));
+            return Circle(Source.mCenter, Abs(Source.mRadius));
         }
 
         /// \brief Gets the bounding circle of two circles.
@@ -283,21 +283,21 @@ inline namespace ZyMath
 
         /// \brief Anchors a circle relative to a pivot point.
         ///
-        /// \param Source The source circle.
-        /// \param Origin The pivot point for anchoring.
-        /// \return A circle anchored according to the pivot.
+        /// \param Source The circle to place, its center taken as the anchor.
+        /// \param Origin The point to put on the anchor, as an offset from the center in diameters.
+        /// \return The circle moved so that point sits where its center was.
         ZY_INLINE static constexpr Circle Anchor(Circle Source, Pivot2D Origin)
         {
-            const Real32 Diameter = Source.GetRadius() * 2;
+            const Real32 Diameter = Source.GetDiameter();
 
             const Vector2 Translation(Origin.GetX() * Diameter, Origin.GetY() * Diameter);
-            return ::Circle(Source.GetCenter() - Translation, Source.GetRadius());
+            return Circle(Source.GetCenter() - Translation, Source.GetRadius());
         }
 
         /// \brief Linearly interpolates between two circles.
         ///
-        /// \param Start      The starting circle.
-        /// \param End        The ending circle.
+        /// \param Start      The circle at zero.
+        /// \param End        The circle at one.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A circle interpolated between the start and end circle.
         ZY_INLINE static constexpr Circle Lerp(Circle Start, Circle End, Real32 Percentage)
@@ -308,11 +308,11 @@ inline namespace ZyMath
             return Circle(::Lerp(Start.mCenter, End.mCenter, Percentage), Radius);
         }
 
-        /// \brief Transform a circle using an affine transformation matrix.
+        /// \brief Transforms a circle using an affine transformation matrix.
         ///
         /// \param Source The circle to transform.
         /// \param Matrix The affine transformation matrix to apply.
-        /// \return A circle resulting from transforming the circle with the matrix.
+        /// \return The circle with its center moved and its radius scaled by the larger axis scale.
         ZY_INLINE static Circle Transform(Circle Source, ConstRef<Matrix4x3> Matrix)
         {
             // Transposed once, since the projection and both axis lengths read the columns.
@@ -322,14 +322,14 @@ inline namespace ZyMath
             const Real32  ScaleX = Columns.AxisX.GetXYZ().GetLength();
             const Real32  ScaleY = Columns.AxisY.GetXYZ().GetLength();
 
-            return ::Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
+            return Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
         }
 
-        /// \brief Transform a circle using a 3x2 transformation matrix.
+        /// \brief Transforms a circle using a 3x2 transformation matrix.
         ///
         /// \param Source The circle to transform.
         /// \param Matrix The 3x2 transformation matrix to apply.
-        /// \return A circle resulting from transforming the circle with the matrix.
+        /// \return The circle with its center moved and its radius scaled by the larger axis scale.
         ZY_INLINE static Circle Transform(Circle Source, ConstRef<Matrix3x2> Matrix)
         {
             const Vector2 Center = Matrix3x2::Project(Matrix, Source.GetCenter());
@@ -337,7 +337,7 @@ inline namespace ZyMath
             const Real32 ScaleX = Matrix.GetBasisX().GetLength();
             const Real32 ScaleY = Matrix.GetBasisY().GetLength();
 
-            return ::Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
+            return Circle(Center, Source.GetRadius() * ::Max(ScaleX, ScaleY));
         }
 
         /// \brief Provides the name this type is registered under in the reflection system.

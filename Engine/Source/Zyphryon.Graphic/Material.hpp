@@ -57,7 +57,7 @@ namespace ZyGraphic
 
         /// \brief Gets the resource handle for this material.
         ///
-        /// \return The material's object handle.
+        /// \return The material slot, or `0` before upload.
         ZY_INLINE Object GetHandle() const
         {
             return mHandle;
@@ -92,7 +92,7 @@ namespace ZyGraphic
         /// \brief Gets the sampler resource bound to the named sampler.
         ///
         /// \param Name The pre-hashed sampler name.
-        /// \return The sampler resource bound to the texture, or null 0 if none.
+        /// \return The sampler resource resolved for the name, or zero if none.
         Object GetSampler(UInt64 Name) const;
 
         /// \brief Gets every sampler set by this material.
@@ -124,7 +124,7 @@ namespace ZyGraphic
         /// \brief Gets a uniform value by its pre-hashed name.
         ///
         /// \param Key The pre-hashed uniform name.
-        /// \return Pointer to the uniform value, or null if not found.
+        /// \return A pointer to the uniform value, or null if not found.
         ZY_INLINE ConstPtr<Parameter> GetParameter(UInt64 Key) const
         {
             return mParameters.Find(Key);

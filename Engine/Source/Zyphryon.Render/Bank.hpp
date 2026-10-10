@@ -12,7 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <Zyphryon.Graphic/Service.hpp>
+#include "Zyphryon.Graphic/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -32,7 +32,7 @@ namespace ZyRender
         /// \brief Represents one interned run, by the page it landed on and where on that page it sits.
         struct Slot final
         {
-            /// Where the run sits on its page, which is what an instance carries.
+            /// The position of the run on its page, which is what an instance carries.
             UInt16 Index;
 
             /// The page the run was interned into, which is what keeps its batch apart from another page's.

@@ -63,7 +63,7 @@ inline namespace ZyBase
 
         /// \brief Gets the highest slot that has been allocated.
         ///
-        /// \return The highest slot that has been allocated.
+        /// \return The highest allocated slot, counted from one, or 0 if no slots are allocated.
         ZY_INLINE constexpr UInt GetTop() const
         {
             return mAllocator.GetTop();
@@ -71,7 +71,7 @@ inline namespace ZyBase
 
         /// \brief Gets the number of currently allocated objects.
         ///
-        /// \return The number of currently allocated objects.
+        /// \return The allocated object count.
         ZY_INLINE constexpr UInt GetCount() const
         {
             return mAllocator.GetCount();
@@ -79,7 +79,7 @@ inline namespace ZyBase
 
         /// \brief Gets the maximum number of objects that can be allocated.
         ///
-        /// \return The maximum number of objects that can be allocated.
+        /// \return The object capacity.
         ZY_INLINE constexpr UInt GetCapacity() const
         {
             return Capacity;
@@ -302,15 +302,14 @@ inline namespace ZyBase
             return mStorage[Handle.GetSlot() - 1];
         }
 
-        /// \brief Serializes the state of the object to or from the specified archive.
+        /// \brief Serializes the pool's slots and objects to or from the specified archive.
         ///
-        /// \param Archive The archive to serialize the object with.
+        /// \param Archive The archive to serialize the pool with.
         template<typename Serializer>
         ZY_INLINE void Serialize(Serializer Archive)
         {
             Archive.Serialize(mAllocator);
 
-            // Serialize each element in the storage array.
             for (UInt Index = 1; Index <= mAllocator.GetTop(); ++Index)
             {
                 if (mAllocator.IsOccupied(static_cast<Slot>(Index)))

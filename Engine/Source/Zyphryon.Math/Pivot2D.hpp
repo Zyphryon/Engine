@@ -19,9 +19,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Constructs a pivot point at the origin (0.0, 0.0).
-        ///
-        /// \remarks This represents the top-left corner in normalized coordinates.
+        /// \brief Constructs a pivot point at the bottom-left corner (0.0, 0.0).
         ZY_INLINE constexpr Pivot2D()
             : mX { 0.0f },
               mY { 0.0f }
@@ -66,7 +64,7 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Predefined pivot point at the top-left corner (0.0, 1.0).
+        /// \brief Gets the pivot at the top-left corner (0.0, 1.0).
         ///
         /// \return A pivot point representing the top-left corner.
         ZY_INLINE static constexpr Pivot2D LeftTop()
@@ -74,7 +72,7 @@ inline namespace ZyMath
             return Pivot2D(0.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the middle-left edge (0.0, 0.5).
+        /// \brief Gets the pivot at the middle-left edge (0.0, 0.5).
         ///
         /// \return A pivot point representing the middle-left edge.
         ZY_INLINE static constexpr Pivot2D LeftMiddle()
@@ -82,7 +80,7 @@ inline namespace ZyMath
             return Pivot2D(0.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-left corner (0.0, 0.0).
+        /// \brief Gets the pivot at the bottom-left corner (0.0, 0.0).
         ///
         /// \return A pivot point representing the bottom-left corner.
         ZY_INLINE static constexpr Pivot2D LeftBottom()
@@ -90,7 +88,7 @@ inline namespace ZyMath
             return Pivot2D(0.0f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the top-center edge (0.5, 1.0).
+        /// \brief Gets the pivot at the top-center edge (0.5, 1.0).
         ///
         /// \return A pivot point representing the top-center edge.
         ZY_INLINE static constexpr Pivot2D CenterTop()
@@ -98,7 +96,7 @@ inline namespace ZyMath
             return Pivot2D(0.5f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the center (0.5, 0.5).
+        /// \brief Gets the pivot at the center (0.5, 0.5).
         ///
         /// \return A pivot point representing the center.
         ZY_INLINE static constexpr Pivot2D CenterMiddle()
@@ -106,7 +104,7 @@ inline namespace ZyMath
             return Pivot2D(0.5f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-center edge (0.5, 0.0).
+        /// \brief Gets the pivot at the bottom-center edge (0.5, 0.0).
         ///
         /// \return A pivot point representing the bottom-center edge.
         ZY_INLINE static constexpr Pivot2D CenterBottom()
@@ -114,7 +112,7 @@ inline namespace ZyMath
             return Pivot2D(0.5f, 0.0f);
         }
 
-        /// \brief Predefined pivot point at the top-right corner (1.0, 1.0).
+        /// \brief Gets the pivot at the top-right corner (1.0, 1.0).
         ///
         /// \return A pivot point representing the top-right corner.
         ZY_INLINE static constexpr Pivot2D RightTop()
@@ -122,7 +120,7 @@ inline namespace ZyMath
             return Pivot2D(1.0f, 1.0f);
         }
 
-        /// \brief Predefined pivot point at the middle-right edge (1.0, 0.5).
+        /// \brief Gets the pivot at the middle-right edge (1.0, 0.5).
         ///
         /// \return A pivot point representing the middle-right edge.
         ZY_INLINE static constexpr Pivot2D RightMiddle()
@@ -130,7 +128,7 @@ inline namespace ZyMath
             return Pivot2D(1.0f, 0.5f);
         }
 
-        /// \brief Predefined pivot point at the bottom-right corner (1.0, 0.0).
+        /// \brief Gets the pivot at the bottom-right corner (1.0, 0.0).
         ///
         /// \return A pivot point representing the bottom-right corner.
         ZY_INLINE static constexpr Pivot2D RightBottom()

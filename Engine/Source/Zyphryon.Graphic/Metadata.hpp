@@ -1,4 +1,4 @@
-﻿// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -25,7 +25,7 @@ namespace ZyGraphic
     {
         UInt32 BitsPerPixel : 8;    ///< The total number of bits per pixel, or per block when compressed.
         UInt32 BlockSize    : 4;    ///< The edge length of a compression block, or one when uncompressed.
-        UInt32 Components   : 3;    ///< The number of colour components.
+        UInt32 Components   : 3;    ///< The number of color components.
         UInt32 IsDepth      : 1;    ///< The format carries depth information.
         UInt32 IsStencil    : 1;    ///< The format carries stencil information.
         UInt32 IsSRGB       : 1;    ///< The format is sRGB-encoded.
@@ -52,7 +52,7 @@ namespace ZyGraphic
 
         /// \brief Checks whether the format can carry values outside the unit range.
         ///
-        /// \return `true` when the format is a colour format with a real range, otherwise `false`.
+        /// \return `true` when the format is a color format with a real range, otherwise `false`.
         constexpr Bool IsHDR() const
         {
             return IsFloat && !IsDepth;
@@ -60,7 +60,7 @@ namespace ZyGraphic
 
         /// \brief Checks whether the format can be sampled in a shader.
         ///
-        /// \return `true` when the format is a colour format, otherwise `false`.
+        /// \return `true` when the format is a color format, otherwise `false`.
         constexpr Bool IsSampler() const
         {
             return Components && !IsDepth && !IsStencil;
@@ -327,7 +327,7 @@ namespace ZyGraphic
     /// \return The extent of the level, never smaller than one pixel.
     constexpr UInt32 GetLevelExtent(UInt16 Extent, UInt8 Level)
     {
-        return static_cast<UInt16>(Max(1u, static_cast<UInt32>(Extent) >> Level));
+        return Max(1u, static_cast<UInt32>(Extent) >> Level);
     }
 
     /// \brief Gets the number of levels in a complete mip chain.
@@ -337,13 +337,7 @@ namespace ZyGraphic
     /// \return The level count down to and including the one-pixel level.
     constexpr UInt8 GetLevelCount(UInt16 Width, UInt16 Height)
     {
-        UInt8 Count = 1;
-
-        for (UInt32 Extent = Max(Width, Height); Extent > 1; Extent >>= 1)
-        {
-            ++Count;
-        }
-        return Count;
+        return static_cast<UInt8>(Max(1u, CountSignificantBits<UInt32>(Max(Width, Height))));
     }
 
     /// \brief Gets the row pitch of a mip level.
@@ -411,7 +405,7 @@ namespace ZyGraphic
         UInt8 IsFloat    : 1;   ///< The value stores floating-point components.
         UInt8 IsSigned   : 1;   ///< The value can represent negative components.
         UInt8 IsBoolean  : 1;   ///< The value is a single true or false rather than a number.
-        UInt8 IsColour   : 1;   ///< The components are the channels of a colour.
+        UInt8 IsColour   : 1;   ///< The components are the channels of a color.
 
         /// \brief Checks whether the value carries whole numbers rather than real ones.
         ///
@@ -424,7 +418,7 @@ namespace ZyGraphic
 
     /// \brief Gets the metadata of a uniform.
     ///
-    /// \param Type The uniform to query.
+    /// \param Type The uniform type to query.
     /// \return The metadata of the uniform.
     constexpr UniformMetadata GetUniformMetadata(Uniform Type)
     {

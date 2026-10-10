@@ -21,74 +21,74 @@
 
 inline namespace ZyBase
 {
-    /// \brief Type of the `nullptr` literal, for overloads that take it explicitly.
+    /// \brief Represents the type of the `nullptr` literal, for overloads that take it explicitly.
     using Null     = decltype(nullptr);
 
-    /// \brief Boolean value (`true` or `false`).
+    /// \brief Represents a boolean value (`true` or `false`).
     using Bool     = bool;
 
-    /// \brief Exact 8-bit unsigned byte type.
+    /// \brief Represents an exact 8-bit unsigned byte.
     using Byte     = uint8_t;
 
-    /// \brief Platform-native character type.
+    /// \brief Represents the platform-native character.
     using Char     = char;
 
-    /// \brief Exact 16-bit unsigned character type.
+    /// \brief Represents the platform wide character, 16-bit on Windows and 32-bit elsewhere.
     using Wide     = wchar_t;
 
-    /// \brief Signed integer with the maximum width supported by the platform.
+    /// \brief Represents a signed integer as wide as a pointer.
     using SInt     = intptr_t;
 
-    /// \brief Unsigned integer with the maximum width supported by the platform.
+    /// \brief Represents an unsigned integer as wide as a pointer.
     using UInt     = uintptr_t;
 
-    /// \brief 8-bit signed integer (-128 to 127).
+    /// \brief Represents an 8-bit signed integer (-128 to 127).
     using SInt8    = int8_t;
 
-    /// \brief 8-bit unsigned integer (0 to 255).
+    /// \brief Represents an 8-bit unsigned integer (0 to 255).
     using UInt8    = uint8_t;
 
-    /// \brief 16-bit signed integer (-32,768 to 32,767).
+    /// \brief Represents a 16-bit signed integer (-32,768 to 32,767).
     using SInt16   = int16_t;
 
-    /// \brief 16-bit unsigned integer (0 to 65,535).
+    /// \brief Represents a 16-bit unsigned integer (0 to 65,535).
     using UInt16   = uint16_t;
 
-    /// \brief 32-bit signed integer (-2,147,483,648 to 2,147,483,647).
+    /// \brief Represents a 32-bit signed integer (-2,147,483,648 to 2,147,483,647).
     using SInt32   = int32_t;
 
-    /// \brief 32-bit unsigned integer (0 to 4,294,967,295).
+    /// \brief Represents a 32-bit unsigned integer (0 to 4,294,967,295).
     using UInt32   = uint32_t;
 
-    /// \brief 64-bit signed integer (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
+    /// \brief Represents a 64-bit signed integer (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
     using SInt64   = int64_t;
 
-    /// \brief 64-bit unsigned integer (0 to 18,446,744,073,709,551,615).
+    /// \brief Represents a 64-bit unsigned integer (0 to 18,446,744,073,709,551,615).
     using UInt64   = uint64_t;
 
-    /// \brief Single-precision floating point number (typically 32-bit).
+    /// \brief Represents a single-precision floating point number (typically 32-bit).
     using Real32   = float;
 
-    /// \brief Double-precision floating point number (typically 64-bit).
+    /// \brief Represents a double-precision floating point number (typically 64-bit).
     using Real64   = double;
 
-    /// \brief Raw pointer to a mutable object of type `Type`.
+    /// \brief Represents a raw pointer to a mutable object of type `Type`.
     template<typename Type>
     using Ptr      = Type *;
 
-    /// \brief Raw pointer to a const object of type `Type`.
+    /// \brief Represents a raw pointer to a const object of type `Type`.
     template<typename Type>
     using ConstPtr = const Type *;
 
-    /// \brief Non-owning lvalue reference to a mutable object of type `Type`.
+    /// \brief Represents a non-owning lvalue reference to a mutable object of type `Type`.
     template<typename Type>
     using Ref      = Type &;
 
-    /// \brief Non-owning lvalue reference to a const object of type `Type`.
+    /// \brief Represents a non-owning lvalue reference to a const object of type `Type`.
     template<typename Type>
     using ConstRef = const Type &;
 
-    /// \brief Forwarding reference for perfect forwarding in deduced template contexts.
+    /// \brief Represents a forwarding reference for perfect forwarding in deduced template contexts.
     template<typename Type>
-    using AnyRef    = Type &&;
+    using AnyRef   = Type &&;
 }

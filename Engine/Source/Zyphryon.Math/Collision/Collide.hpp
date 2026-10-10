@@ -21,7 +21,7 @@
 
 inline namespace ZyMath
 {
-    /// \brief Provides the tests for whether two standing volumes share a spot, and the shortest way one has to move to be clear.
+    /// \brief Provides the tests for whether two standing volumes overlap, and the shortest way out.
     ///
     /// \note This is the case \ref Sweep declines: a pair already overlapping has no face the motion came in through.
     class ZY_API Collide final
@@ -88,6 +88,12 @@ inline namespace ZyMath
         /// \param Under    `true` when the first volume stands below the second.
         /// \param Contact  Receives the way out and the depth along it.
         /// \return `true` always, so a caller may hand the answer straight back.
-        static Bool Escapes(Vector2 Apart, Real32 Span, Real32 Ground, Real32 Standing, Bool Under, Ref<Manifold> Contact);
+        static Bool Escapes(
+            Vector2       Apart,
+            Real32        Span,
+            Real32        Ground,
+            Real32        Standing,
+            Bool          Under,
+            Ref<Manifold> Contact);
     };
 }

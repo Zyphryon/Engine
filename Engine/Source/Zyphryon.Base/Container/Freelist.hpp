@@ -64,7 +64,7 @@ inline namespace ZyBase
 
         /// \brief Gets the number of currently allocated slots.
         ///
-        /// \return The number of currently allocated slots.
+        /// \return The allocated slot count.
         ZY_INLINE constexpr UInt GetCount() const
         {
             return mSize;
@@ -72,7 +72,7 @@ inline namespace ZyBase
 
         /// \brief Gets the highest currently-valid slot, usable as an inclusive iteration bound.
         ///
-        /// \return The highest allocated slot (1-based), or 0 if no slots are allocated.
+        /// \return The highest allocated slot, counted from one, or 0 if no slots are allocated.
         ZY_INLINE constexpr UInt GetTop() const
         {
             return (mSize == 0 ? 0 : mTop + 1);
@@ -80,7 +80,7 @@ inline namespace ZyBase
 
         /// \brief Gets the maximum number of slots that can be allocated.
         ///
-        /// \return The maximum number of slots that can be allocated.
+        /// \return The slot capacity.
         ZY_INLINE constexpr UInt GetCapacity() const
         {
             return Capacity;
@@ -267,18 +267,18 @@ inline namespace ZyBase
                     UInt32 Occupied = 0;
                     Archive.Serialize(Occupied);
 
-                    Epoch Stamp = 0;
+                    Epoch Age = 0;
 
                     if constexpr (EpochBits > 0)
                     {
-                        Archive.Serialize(Stamp);
+                        Archive.Serialize(Age);
                     }
 
                     ZY_ASSERT(Occupied > 0 && Occupied <= Capacity, "Read a slot outside the freelist's capacity");
 
                     if (Occupied > 0 && Occupied <= Capacity)
                     {
-                        Adopt(Key(static_cast<Slot>(Occupied), Stamp));
+                        Adopt(Key(static_cast<Slot>(Occupied), Age));
                     }
                 }
             }
@@ -293,8 +293,8 @@ inline namespace ZyBase
 
                         if constexpr (EpochBits > 0)
                         {
-                            Epoch Stamp = mEpochs[Index - 1];
-                            Archive.Serialize(Stamp);
+                            Epoch Age = mEpochs[Index - 1];
+                            Archive.Serialize(Age);
                         }
                     }
                 }

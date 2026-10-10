@@ -22,7 +22,7 @@ namespace ZyScene
 {
     class World;
 
-    /// \brief Represents what every declaration holds, whatever it declares, and the telling of its world.
+    /// \brief Represents what every declaration holds, and tells its world once it is done.
     class ZY_API Enrollment
     {
     protected:
@@ -37,7 +37,7 @@ namespace ZyScene
 
         /// \brief Tells the world the components are declared, reading back the values it kept as bytes for them.
         ///
-        /// \param Identifiers The components.
+        /// \param Identifiers The identifiers of the components declared.
         void Finish(ConstSpan<UInt32> Identifiers);
 
     protected:
@@ -124,8 +124,7 @@ namespace ZyScene
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Authored() &&
         {
-            Apply(Trait::Serializable);
-            return Apply(Trait::Inheritable);
+            return Apply(Trait::Serializable | Trait::Inheritable);
         }
 
         /// \brief Brings other components along wherever these are added, which may be only declared here.
@@ -140,7 +139,7 @@ namespace ZyScene
 
         /// \brief Gives the components how a tool shows them and where it may put them.
         ///
-        /// \param Label  The label.
+        /// \param Label  The name a tool shows for them.
         /// \param Group  The heading they are listed under, or empty for none.
         /// \param Icon   The codepoint of the glyph shown beside their label, or zero for none.
         /// \param Policy The places a tool may put them.
@@ -160,7 +159,7 @@ namespace ZyScene
 
         /// \brief Gives the described components the text saying what they are for.
         ///
-        /// \param Tooltip The text.
+        /// \param Tooltip The text a tool shows on request.
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Hinted(Text Tooltip) &&
         {
@@ -217,7 +216,7 @@ namespace ZyScene
 
         /// \brief Gives every component a trait.
         ///
-        /// \param Which The trait.
+        /// \param Which The trait, or several taken together.
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Apply(Trait Which)
         {

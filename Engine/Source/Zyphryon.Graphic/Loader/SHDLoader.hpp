@@ -25,12 +25,12 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief An array with the extension supported by this content loader.
+        /// \brief The extensions this content loader handles.
         static constexpr Text kTypes[] = { "glsl", "hlsl" };
 
     public:
 
-        /// \see Loader::Load(Ref<Service>, Ref<Scope>, AnyRef<Blob>)
+        /// \see ZyContent::Loader::Load(Ref<ZyContent::Service>, Ref<ZyContent::Scope>, AnyRef<Blob>)
         Bool Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data) override;
     };
 }

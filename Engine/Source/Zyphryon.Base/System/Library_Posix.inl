@@ -28,8 +28,7 @@ inline namespace ZyBase
 
         const Filesystem::Path Local(Path);
 
-        // Bound whole as it is taken, so a symbol missing from it is known now rather than at the call that
-        // wanted it; and kept to itself, so two libraries naming the same symbol do not answer for each other.
+        // Resolve every symbol now and keep them private, so two libraries never clash over a name.
         mHandle = dlopen(Local.GetData(), RTLD_NOW | RTLD_LOCAL);
 
         return IsOpen();

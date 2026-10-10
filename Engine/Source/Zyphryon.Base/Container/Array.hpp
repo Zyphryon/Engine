@@ -86,7 +86,7 @@ inline namespace ZyBase
 
         /// \brief Gets the first element in the array.
         ///
-        /// \return A reference to the first element.
+        /// \return A read-only reference to the first element.
         ZY_INLINE constexpr ConstRef<Type> GetFront() const
         {
             return mData[0];
@@ -102,7 +102,7 @@ inline namespace ZyBase
 
         /// \brief Gets the last element in the array.
         ///
-        /// \return A reference to the last element.
+        /// \return A read-only reference to the last element.
         ZY_INLINE constexpr ConstRef<Type> GetBack() const
         {
             return mData[Count - 1];
@@ -119,17 +119,11 @@ inline namespace ZyBase
         /// \brief Finds the first occurrence of the specified element.
         ///
         /// \param Element The element to search for.
-        /// \return The index of the first occurrence, or Count if not found.
+        /// \return The index of the first occurrence, or \p Count if not found.
         ZY_INLINE constexpr UInt Find(ConstRef<Type> Element) const
         {
-            for (UInt Index = 0; Index < Count; ++Index)
-            {
-                if (mData[Index] == Element)
-                {
-                    return Index;
-                }
-            }
-            return Count;
+            const ConstPtr<Type> Found = ZyBase::Find(mData, Count, Element);
+            return Found ? static_cast<UInt>(Found - mData) : Count;
         }
 
         /// \brief Checks whether the array contains the specified element.
@@ -170,7 +164,7 @@ inline namespace ZyBase
         /// \brief Gets the element at the specified index.
         ///
         /// \param Index The zero-based index of the element to access.
-        /// \return A reference to the requested element.
+        /// \return A read-only reference to the requested element.
         ZY_INLINE constexpr ConstRef<Type> operator[](UInt Index) const
         {
             ZY_ASSERT(Index < Count, "Array index is out of bounds");
@@ -195,7 +189,7 @@ inline namespace ZyBase
         Type mData[Count];
     };
 
-    /// \brief Deduction guide for constructing an Array from a parameter pack.
+    /// \brief Deduces the element type and count of an array from its constructor arguments.
     ///
     /// \tparam Arguments The types of the arguments used to deduce the element type and count.
     template<typename... Arguments>

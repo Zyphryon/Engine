@@ -36,11 +36,11 @@ namespace ZyScene
 
         /// \brief Constructs an entity of a world.
         ///
-        /// \param Owner  The world the entity lives in.
-        /// \param Handle The handle naming it there.
-        ZY_INLINE constexpr Entity(Ptr<Storage> Owner, Handle Handle)
+        /// \param Owner The world the entity lives in.
+        /// \param Actor The handle naming it there.
+        ZY_INLINE constexpr Entity(Ptr<Storage> Owner, Handle Actor)
             : mStorage { Owner },
-              mID      { Handle.GetValue() }
+              mID      { Actor.GetValue() }
         {
         }
 
@@ -54,7 +54,7 @@ namespace ZyScene
 
         /// \brief Gets the handle naming the entity in its world.
         ///
-        /// \return The handle.
+        /// \return The handle, invalid for an entity that names nothing.
         ZY_INLINE constexpr Handle GetHandle() const
         {
             return Handle(mID);
@@ -202,7 +202,7 @@ namespace ZyScene
 
         /// \brief Gives the entity a default component named at runtime, unless it holds or inherits one already.
         ///
-        /// \param Type The component.
+        /// \param Type The component to add.
         /// \return This entity.
         ZY_INLINE Entity Add(Component Type) const
         {
@@ -250,7 +250,7 @@ namespace ZyScene
 
         /// \brief Takes a component named at runtime off the entity.
         ///
-        /// \param Type The component.
+        /// \param Type The component to take off.
         /// \return This entity.
         ZY_INLINE Entity Remove(Component Type) const
         {
@@ -260,7 +260,7 @@ namespace ZyScene
 
         /// \brief Checks whether the entity carries a component, held or inherited.
         ///
-        /// \return `true` if it does, `false` otherwise.
+        /// \return `true` if it holds the component or its archetype lends it, `false` otherwise.
         template<typename Type>
         ZY_INLINE Bool Has() const
         {
@@ -269,8 +269,8 @@ namespace ZyScene
 
         /// \brief Checks whether the entity carries a component named at runtime, held or inherited.
         ///
-        /// \param Type The component.
-        /// \return `true` if it does, `false` otherwise or when it is not alive.
+        /// \param Type The component to look for.
+        /// \return `true` if it holds it or its archetype lends it, `false` otherwise or when it is not alive.
         ZY_INLINE Bool Has(Component Type) const
         {
             const ConstPtr<Directory::Slot> Entry = GetSlot();
@@ -290,7 +290,7 @@ namespace ZyScene
 
         /// \brief Checks whether the entity holds a component named at runtime itself rather than inheriting it.
         ///
-        /// \param Type The component.
+        /// \param Type The component to look for.
         /// \return `true` if it holds it, `false` if it inherits it, lacks it or is not alive.
         ZY_INLINE Bool Owns(Component Type) const
         {
@@ -372,7 +372,7 @@ namespace ZyScene
 
         /// \brief Gets a component named at runtime the entity carries, held or inherited.
         ///
-        /// \param Type The component.
+        /// \param Type The component to look up.
         /// \return The first byte of the component, or `nullptr` when it is missing, a tag, or the entity is not alive.
         ZY_INLINE Ptr<void> Get(Component Type) const
         {
@@ -456,7 +456,7 @@ namespace ZyScene
 
         /// \brief Records that a component named at runtime and written in place changed, for readers of its changes.
         ///
-        /// \param Type The component.
+        /// \param Type The component that changed.
         /// \return This entity, which records nothing once it is gone, like a load finishing after it.
         ZY_INLINE Entity Notify(Component Type) const
         {
@@ -469,7 +469,7 @@ namespace ZyScene
 
         /// \brief Writes the bytes of a component the entity holds itself, as saves carry it, behind their length.
         ///
-        /// \param Output The writer.
+        /// \param Output The writer to append the length and bytes to.
         /// \return `true` when written, `false` when the entity does not hold it or saves never carry it.
         template<typename Type>
         ZY_INLINE Bool Write(Ref<Writer> Output) const
@@ -479,8 +479,8 @@ namespace ZyScene
 
         /// \brief Writes the bytes of a component named at runtime the entity holds itself, behind their length.
         ///
-        /// \param Type   The component.
-        /// \param Output The writer.
+        /// \param Type   The component to write.
+        /// \param Output The writer to append the length and bytes to.
         /// \return `true` when written, `false` when the entity does not hold it, saves never carry it or it is gone.
         ZY_INLINE Bool Write(Component Type, Ref<Writer> Output) const
         {
@@ -500,13 +500,18 @@ namespace ZyScene
                 return false;
             }
 
-            Output.WriteBlock<UInt32>([&Holder, Row, Column](Ref<Writer> Block)
+            // A tag is saved as an empty block.
+            if (Column == Chunk::kTag)
             {
-                if (Column >= 0)
+                Output.Write<UInt32>(0);
+            }
+            else
+            {
+                Output.WriteBlock<UInt32>([&Holder, Row, Column](Ref<Writer> Block)
                 {
                     Holder.GetColumns()[Column].Info->Save(Block, Holder.At(Column, Row));
-                }
-            });
+                });
+            }
             return true;
         }
 
@@ -522,7 +527,7 @@ namespace ZyScene
 
         /// \brief Reads what \ref Write wrote over a component named at runtime, adding it when the entity lacks it.
         ///
-        /// \param Type  The component.
+        /// \param Type  The component the bytes belong to.
         /// \param Input The reader, at the length.
         /// \return This entity.
         ZY_INLINE Entity Read(Component Type, Ref<Reader> Input) const
@@ -535,7 +540,7 @@ namespace ZyScene
         /// \brief Makes the entity the last child of another, taking it from any parent it had.
         ///
         /// \param Parent The entity to attach it to, or one naming nothing to detach.
-        /// \return `true` if it stands there now, `false` otherwise.
+        /// \return `true` if it moved, `false` when a child of the parent has its name or the parent stands beneath it.
         ZY_INLINE Bool Attach(Entity Parent) const
         {
             if (!IsFree(Parent.IsAlive() ? Parent.GetIndex() : 0, GetName()) || Parent.IsDescendantOf(* this, true))
@@ -561,7 +566,7 @@ namespace ZyScene
         ZY_INLINE Entity GetParent() const
         {
             const ConstPtr<Directory::Slot> Entry = GetSlot();
-            return Entry && Entry->Parent ? Entity(mStorage, mStorage->mDirectory.GetHandle(Entry->Parent)) : Entity();
+            return Wrap(Entry ? Entry->Parent : 0);
         }
 
         /// \brief Checks whether anything is attached beneath the entity, without visiting it.
@@ -585,7 +590,7 @@ namespace ZyScene
             {
                 // Read ahead, so the callback can detach or destroy the child.
                 const UInt32 Next = mStorage->mDirectory[Cursor].Next;
-                Callback(Entity(mStorage, mStorage->mDirectory.GetHandle(Cursor)));
+                Callback(Wrap(Cursor));
                 Cursor = Next;
             }
         }
@@ -596,18 +601,11 @@ namespace ZyScene
         template<typename Callable>
         ZY_INLINE void Descendants(AnyRef<Callable> Callback) const
         {
-            const ConstPtr<Directory::Slot> Entry = GetSlot();
-
-            for (UInt32 Cursor = Entry ? Entry->First : 0; Cursor;)
+            Children([&Callback](Entity Child)
             {
-                // Read ahead, so the callback can detach or destroy the child.
-                const UInt32 Next  = mStorage->mDirectory[Cursor].Next;
-                const Entity Child = Entity(mStorage, mStorage->mDirectory.GetHandle(Cursor));
-
                 Callback(Child);
                 Child.Descendants(Callback);
-                Cursor = Next;
-            }
+            });
         }
 
         /// \brief Finds a child of the entity by the name it was given.
@@ -616,8 +614,7 @@ namespace ZyScene
         /// \return The child, or one that names nothing when none answers to the name or the entity is not alive.
         ZY_INLINE Entity Lookup(Text Name) const
         {
-            const UInt32 Found = IsAlive() ? mStorage->FindChild(GetIndex(), Name) : 0;
-            return Found ? Entity(mStorage, mStorage->mDirectory.GetHandle(Found)) : Entity();
+            return Wrap(IsAlive() ? mStorage->FindChild(GetIndex(), Name) : 0);
         }
 
         /// \brief Finds the nearest ancestor that carries a component, held or lent.
@@ -631,7 +628,7 @@ namespace ZyScene
 
             if (Found && mStorage->mDirectory.FindAncestor(Found, IdentifierOf<Type>()))
             {
-                return Entity(mStorage, mStorage->mDirectory.GetHandle(Found));
+                return Wrap(Found);
             }
             return Entity();
         }
@@ -676,8 +673,7 @@ namespace ZyScene
         ZY_INLINE Entity GetArchetype() const
         {
             const ConstPtr<Directory::Slot> Entry = GetSlot();
-            const UInt32                    Base  = Entry ? Entry->Holder->GetBase() : 0;
-            return Base ? Entity(mStorage, mStorage->mDirectory.GetHandle(Base)) : Entity();
+            return Wrap(Entry ? Entry->Holder->GetBase() : 0);
         }
 
         /// \brief Hands every entity made straight from this archetype to a callback, archetypes made from it included.
@@ -784,9 +780,9 @@ namespace ZyScene
 
         /// \brief Writes a component that cannot be written in place.
         ///
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to write.
         /// \param Column     The column the entity holds it in, or negative when it holds none.
-        /// \param Data       The value.
+        /// \param Data       The value to write.
         template<typename Type, typename Value>
         void Store(UInt32 Identifier, SInt16 Column, AnyRef<Value> Data) const
         {
@@ -807,7 +803,7 @@ namespace ZyScene
 
         /// \brief Gets the slot number of the entity.
         ///
-        /// \return The slot number.
+        /// \return The slot number, the low half of the identifier.
         ZY_INLINE constexpr UInt32 GetIndex() const
         {
             return static_cast<UInt32>(mID);
@@ -815,19 +811,28 @@ namespace ZyScene
 
         /// \brief Gets the chunk the entity sits in.
         ///
-        /// \return The chunk.
+        /// \return The chunk its row lives in.
         ZY_INLINE Ref<Chunk> GetChunk() const
         {
             ZY_ASSERT(IsAlive(), "The entity is not alive");
             return * mStorage->mDirectory[GetIndex()].Holder;
         }
 
-        /// \brief Gets the directory slot of the entity, which reads answer nothing without.
+        /// \brief Gets the directory slot of the entity, without which every read answers nothing.
         ///
         /// \return The slot, or `nullptr` for an entity destroyed or never made.
         ZY_INLINE ConstPtr<Directory::Slot> GetSlot() const
         {
             return mStorage ? mStorage->mDirectory.FindSlot(GetHandle()) : nullptr;
+        }
+
+        /// \brief Gets the entity in a slot of the same world.
+        ///
+        /// \param Index The slot number, or zero for none.
+        /// \return The entity, or one that names nothing for slot zero.
+        ZY_INLINE Entity Wrap(UInt32 Index) const
+        {
+            return Index ? Entity(mStorage, mStorage->mDirectory.GetHandle(Index)) : Entity();
         }
 
         /// \brief Checks whether a name is free among the children of a parent.

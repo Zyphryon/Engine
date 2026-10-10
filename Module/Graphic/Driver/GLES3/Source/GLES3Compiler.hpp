@@ -20,12 +20,12 @@
 
 namespace ZyGraphic
 {
-    /// \brief Compiles and links the engine's shared GLSL into OpenGL programs for the GLES3 driver.
+    /// \brief Represents the compiler that builds the engine's GLSL into OpenGL programs for the GLES3 driver.
     class GLES3Compiler final
     {
     public:
 
-        /// \brief Pairs a GLSL binding name (a uniform block or sampler) with its assigned binding point.
+        /// \brief Represents a GLSL binding name (a uniform block or sampler) paired with its binding point.
         struct GLES3Binding final
         {
             /// The name of the binding.
@@ -74,7 +74,7 @@ namespace ZyGraphic
         /// \brief Reads the outcome of a link, applies the program's bindings and releases its stages.
         ///
         /// \param Handle The program whose link was issued by \ref Compile.
-        /// \param Build  What \ref Compile handed back for it.
+        /// \param Build  The build \ref Compile handed back for it.
         /// \return `true` when the program linked and is ready to draw with, otherwise `false`.
         Bool Finish(GLuint Handle, Ref<GLES3Build> Build) const;
 
@@ -88,17 +88,11 @@ namespace ZyGraphic
         /// \return The shader name, or `0` when it could not be created.
         GLuint Compile(ShaderStage Stage, ConstRef<Blob> Source, ConstRef<Sequence<Macro>> Macros) const;
 
-        /// \brief Parses the GLSL source to extract uniform-block bindings.
+        /// \brief Scans GLSL source for the uniform blocks and samplers it binds explicitly.
         ///
-        /// \param Source The GLSL source to parse.
-        /// \param Blocks The sequence to populate with extracted bindings.
-        void Parse(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Blocks) const;
-
-        /// \brief Parses the GLSL source to extract sampler declarations, in the order they are declared.
-        ///
-        /// \param Source   The GLSL source module to scan.
-        /// \param Samplers The sequence each newly seen declaration is appended to.
-        void Sample(ConstRef<Blob> Source, Ref<Sequence<GLES3Binding>> Samplers) const;
+        /// \param Source The GLSL source module to scan.
+        /// \param Build  Receives each uniform block found, and each sampler not declared before.
+        void Parse(ConstRef<Blob> Source, Ref<GLES3Build> Build) const;
 
     private:
 

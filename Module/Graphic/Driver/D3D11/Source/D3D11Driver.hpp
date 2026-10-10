@@ -18,7 +18,7 @@
 #include <d3d11_4.h>
 
 #if defined(ZY_PROFILE_BACKEND_TRACY)
-    #include <tracy/TracyD3D11.hpp>
+#include <tracy/TracyD3D11.hpp>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -27,7 +27,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Encapsulate the graphic driver implementation using Direct3D 11.
+    /// \brief Represents the graphic driver implemented over Direct3D 11.
     class D3D11Driver final : public Driver
     {
     public:
@@ -91,80 +91,113 @@ namespace ZyGraphic
 
         /// \see Driver::Commit(Object)
         void Commit(Object Pass) override;
+
     private:
 
-        /// \brief Internal wrapper for Direct3D 11 buffer resources.
-        using  D3D11Buffer  = ComPtr<ID3D11Buffer>;
+        /// \brief Represents a Direct3D 11 buffer.
+        using D3D11Buffer = ComPtr<ID3D11Buffer>;
 
-        /// \brief Internal wrapper for a single Direct3D 11 color attachment inside a render pass.
+        /// \brief Represents a single Direct3D 11 color attachment of a render pass.
         struct D3D11ColorAttachment final
         {
-            ComPtr<ID3D11Resource>         Target;
-            ComPtr<ID3D11RenderTargetView> TargetResource;
+            /// The view the pass renders into.
+            ComPtr<ID3D11RenderTargetView> Target;
+
+            /// The operation performed on the attachment when the pass begins.
             Action                         LoadAction  = Action::Clear;
+
+            /// The operation performed on the attachment when the pass ends.
             Action                         StoreAction = Action::Discard;
         };
 
-        /// \brief Internal wrapper for Direct3D 11 depth/stencil attachment resources.
-        struct D3D11DepthStencilAttachment final
-        {
-            ComPtr<ID3D11DepthStencilView> Target;
-            Action                         DepthLoadAction    = Action::Discard;
-            Action                         DepthStoreAction   = Action::Discard;
-            Action                         StencilLoadAction  = Action::Discard;
-            Action                         StencilStoreAction = Action::Discard;
-        };
-
-        /// \brief Internal wrapper for Direct3D 11 render pass resources.
+        /// \brief Represents a Direct3D 11 render pass.
         struct D3D11Pass final
         {
+            /// The color attachments, in binding order.
             Sequence<D3D11ColorAttachment, kMaxAttachments> Colors;
-            D3D11DepthStencilAttachment                     DepthStencil;
+
+            /// The depth-stencil view, empty when the pass has no depth attachment.
+            ComPtr<ID3D11DepthStencilView>                  DepthStencil;
+
+            /// The load and store actions of the depth attachment.
+            DepthAttachment                                 Depth;
         };
 
-        /// \brief Internal wrapper for Direct3D 11 pipeline resources (compiled shaders plus fixed-function state).
+        /// \brief Represents a Direct3D 11 pipeline, its compiled shaders plus fixed-function state.
         struct D3D11Pipeline final
         {
+            /// The vertex shader.
             ComPtr<ID3D11VertexShader>      VS;
+
+            /// The pixel shader.
             ComPtr<ID3D11PixelShader>       PS;
+
+            /// The blend state.
             ComPtr<ID3D11BlendState>        BS;
+
+            /// The depth-stencil state.
             ComPtr<ID3D11DepthStencilState> DS;
+
+            /// The rasterizer state.
             ComPtr<ID3D11RasterizerState>   RS;
+
+            /// The input layout, empty when the pipeline reads no vertex attributes.
             ComPtr<ID3D11InputLayout>       IL;
+
+            /// The primitive topology.
             D3D11_PRIMITIVE_TOPOLOGY        PT = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
         };
 
-        /// \brief Internal wrapper for Direct3D 11 sampler resources.
-        using  D3D11Sampler = ComPtr<ID3D11SamplerState>;
+        /// \brief Represents a Direct3D 11 sampler.
+        using D3D11Sampler = ComPtr<ID3D11SamplerState>;
 
-        /// \brief Internal wrapper for Direct3D 11 texture resources.
+        /// \brief Represents a Direct3D 11 texture.
         struct D3D11Texture final
         {
+            /// The texture resource.
             ComPtr<ID3D11Texture2D>          Object;
+
+            /// The shader resource view, empty when the texture is not sampled.
             ComPtr<ID3D11ShaderResourceView> Resource;
+
+            /// The format the texture was created with.
             TextureFormat                    Format = TextureFormat::Unspecified;
+
+            /// The number of mip levels.
             UINT                             Levels = 1;
+
+            /// The number of array slices, six for a cube.
             UINT                             Layers = 1;
         };
 
-        /// \brief Direct3D 11 device capabilities and feature support.
+        /// \brief Holds the swapchain settings the driver keeps across resets.
         struct D3D11Properties final
         {
-            Bool          Tearless    = true;
-            Bool          Tearing     = false;
-            TextureFormat ColorFormat = TextureFormat::Unspecified;
-            TextureFormat DepthFormat = TextureFormat::Unspecified;
+            /// The configuration the swapchain was last built or resized with.
+            Configuration Config { };
+
+            /// `true` when the factory allows tearing presentation.
+            Bool          Tearing = false;
         };
 
-        /// \brief Internal wrapper for the profiler's view of the device, and the one zone a pass is timed by.
+        /// \brief Represents the profiler's view of the device, and the one zone a pass is timed by.
         struct D3D11Profiler final
         {
 #if defined(ZY_PROFILE_BACKEND_TRACY)
+            /// The Tracy context the zones belong to.
             TracyD3D11Ctx                        Context = nullptr;
+
+            /// The storage of the zone that times the open pass.
             ZY_ALIGN(tracy::D3D11ZoneScope) Byte Zone[sizeof(tracy::D3D11ZoneScope)];
+
+            /// `true` while a zone is open.
             Bool                                 Opened  = false;
 #endif
 
+            /// \brief Creates the profiler context for the device.
+            ///
+            /// \param Device    The device the zones are timed on.
+            /// \param Immediate The context the zones are recorded into.
             ZY_INLINE void Initialize(Ptr<ID3D11Device> Device, Ptr<ID3D11DeviceContext> Immediate)
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY)
@@ -172,6 +205,9 @@ namespace ZyGraphic
 #endif
             }
 
+            /// \brief Opens the zone a pass is timed by.
+            ///
+            /// \param Name The name the zone is shown with.
             ZY_INLINE void Open(Text Name)
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY)
@@ -179,13 +215,22 @@ namespace ZyGraphic
 
                 static constexpr Char kZone[] = "D3D11Driver::Prepare";
 
-                Construct<tracy::D3D11ZoneScope>(reinterpret_cast<Ptr<tracy::D3D11ZoneScope>>(Zone),
-                    Context, static_cast<UInt32>(__LINE__), __FILE__, sizeof(__FILE__) - 1,
-                    kZone, sizeof(kZone) - 1, Name.GetData(), Name.GetSize(), true);
+                Construct<tracy::D3D11ZoneScope>(
+                    reinterpret_cast<Ptr<tracy::D3D11ZoneScope>>(Zone),
+                    Context,
+                    static_cast<UInt32>(__LINE__),
+                    __FILE__,
+                    sizeof(__FILE__) - 1,
+                    kZone,
+                    sizeof(kZone) - 1,
+                    Name.GetData(),
+                    Name.GetSize(),
+                    true);
                 Opened = true;
 #endif
             }
 
+            /// \brief Closes the zone opened by \ref Open, if any.
             ZY_INLINE void Close()
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY)
@@ -197,11 +242,12 @@ namespace ZyGraphic
 #endif
             }
 
+            /// \brief Gathers whatever the timing queries have answered.
             ZY_INLINE void Collect()
             {
 #if defined(ZY_PROFILE_BACKEND_TRACY)
                 TracyD3D11Collect(Context);
-#endif                
+#endif
             }
         };
 
@@ -219,37 +265,37 @@ namespace ZyGraphic
         ///
         /// \param Pass   The render pass to associate with the swapchain.
         /// \param Window The native window handle to create the swapchain for.
-        /// \param Config The configuration settings for the swapchain.
+        /// \param Config The size and formats of the swapchain.
         void CreateSwapchain(Ref<D3D11Pass> Pass, HWND Window, ConstRef<Configuration> Config);
 
         /// \brief Creates the render targets and depth resources for a swapchain-backed render pass.
         ///
         /// \param Pass   The render pass to create resources for.
-        /// \param Config The configuration settings for the swapchain.
+        /// \param Config The size and formats of the swapchain.
         void CreateSwapchainResources(Ref<D3D11Pass> Pass, ConstRef<Configuration> Config) const;
 
-        /// \brief Applies the vertex buffer and index buffer resources for a draw item.
+        /// \brief Applies the vertex buffer bindings for a draw item.
         ///
-        /// \param Oldest The oldest draw item that was submitted.
-        /// \param Newest The newest draw item that is being submitted.
+        /// \param Oldest The previously submitted draw item.
+        /// \param Newest The draw item being submitted.
         void ApplyVertexResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
         /// \brief Applies the sampler state resources for a draw item.
         ///
-        /// \param Oldest The oldest draw item that was submitted.
-        /// \param Newest The newest draw item that is being submitted.
+        /// \param Oldest The previously submitted draw item.
+        /// \param Newest The draw item being submitted.
         void ApplySamplerResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
         /// \brief Applies the texture resources for a draw item.
         ///
-        /// \param Oldest The oldest draw item that was submitted.
-        /// \param Newest The newest draw item that is being submitted.
+        /// \param Oldest The previously submitted draw item.
+        /// \param Newest The draw item being submitted.
         void ApplyTextureResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
         /// \brief Applies the uniform resources for a draw item.
         ///
-        /// \param Oldest The oldest draw item that was submitted.
-        /// \param Newest The newest draw item that is being submitted.
+        /// \param Oldest The previously submitted draw item.
+        /// \param Newest The draw item being submitted.
         void ApplyUniformResources(ConstRef<Command> Oldest, ConstRef<Command> Newest) const;
 
     private:

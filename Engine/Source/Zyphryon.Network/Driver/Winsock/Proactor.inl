@@ -48,7 +48,8 @@ namespace ZyNetwork
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Ptr<void> Discover(SOCKET Handle, GUID Name)
+    template<typename Type>
+    static Type Discover(SOCKET Handle, GUID Name)
     {
         Ptr<void> Address = nullptr;
         DWORD     Written = 0;
@@ -69,7 +70,7 @@ namespace ZyNetwork
             LOG_E("Network: an entry point the platform only names at runtime was not there ({0})", WSAGetLastError());
             return nullptr;
         }
-        return Address;
+        return reinterpret_cast<Type>(Address);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -80,13 +81,13 @@ namespace ZyNetwork
         /// \brief Represents one operation as the platform holds it, which outlives the socket it was posted on.
         struct Record final
         {
-            /// What the platform threads its completion through, which must lead the record for the cast back.
+            /// The header the platform threads its completion through, which must lead the record for the cast back.
             OVERLAPPED       Header;
 
             /// The connection the operation was posted under.
             Connection       Link;
 
-            /// What the operation was asked to do.
+            /// The operation it was asked to do.
             Operation        Kind;
 
             /// The socket the operation was posted on, which is what the platform is asked for its result.
@@ -98,21 +99,18 @@ namespace ZyNetwork
             /// The buffer the operation fills or empties, as the platform names one.
             WSABUF           Buffer;
 
-            /// Where the traffic came from, two of them because an accept answers with both ends of what it took on.
+            /// The addresses the traffic came from, two since an accept writes both ends.
             sockaddr_storage Address[2];
 
-            /// How much of \ref Address the platform may write, which it answers a datagram read back in.
+            /// The size of \ref Address the platform may write, which it answers a datagram read back in.
             INT              Length;
 
-            /// Where this record sits in the arena, kept so a completion gives it back without being looked for.
+            /// The record's slot in the arena, so a completion gives it back without a search.
             UInt32           Index;
 
             /// The next free record, meaningful only while this one sits on the free list.
             UInt32           Next;
 
-            /// \brief Points the platform's buffer at the given bytes.
-            ///
-            /// \param Data The bytes the operation fills or empties.
             ZY_INLINE void Wrap(ConstSpan<Byte> Data)
             {
                 Buffer.buf = const_cast<Ptr<Char>>(reinterpret_cast<ConstPtr<Char>>(Data.GetData()));
@@ -124,9 +122,9 @@ namespace ZyNetwork
         Registry<Record>          Arena;
 
         /// The platform's completion queue, which every attached socket answers to.
-        HANDLE                    Port = nullptr;
+        HANDLE                    Port      = nullptr;
 
-        /// What the last wait found, kept so the span handed out survives until the next one.
+        /// The events the last wait found, kept so the span handed out survives until the next one.
         Sequence<Event>           Events;
 
         /// The entry point an accept is posted through, which the platform only names at runtime.
@@ -138,12 +136,6 @@ namespace ZyNetwork
         /// The entry point that pulls the two addresses back out of what an accept wrote.
         LPFN_GETACCEPTEXSOCKADDRS OnUnpack  = nullptr;
 
-        /// \brief Takes a record and writes down everything an operation is posted with.
-        ///
-        /// \param Link  The connection the operation is posted under.
-        /// \param Kind  The operation being asked for.
-        /// \param Owner The socket the operation is posted on.
-        /// \return The record, ready for the platform to be handed.
         Ref<Record> Acquire(Connection Link, Operation Kind, SOCKET Owner)
         {
             Ref<Record> Entry = Arena.Take();
@@ -160,12 +152,6 @@ namespace ZyNetwork
             return Entry;
         }
 
-        /// \brief Takes the answer a post gave back, giving the record up when it never reached the platform.
-        ///
-        /// \param Record  The record the operation was posted with.
-        /// \param Success The answer the call itself gave.
-        /// \param Action  The operation, as it is named if it has to be reported.
-        /// \return `true` when the platform took the operation, `false` otherwise.
         Bool Settle(Ref<Record> Record, Bool Success, ConstPtr<Char> Action)
         {
             if (Success)
@@ -216,8 +202,7 @@ namespace ZyNetwork
             return false;
         }
 
-        // Opened only to be asked, since the platform names these entry points through a socket rather than through
-        // a library, and any socket of the provider that serves them answers for all of them.
+        // Opened only to ask for the entry points, which any socket of the provider answers for.
         const SOCKET Oracle = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
 
         if (Oracle == INVALID_SOCKET)
@@ -228,9 +213,9 @@ namespace ZyNetwork
             return false;
         }
 
-        mBackend->OnAccept  = reinterpret_cast<LPFN_ACCEPTEX>(Discover(Oracle, WSAID_ACCEPTEX));
-        mBackend->OnConnect = reinterpret_cast<LPFN_CONNECTEX>(Discover(Oracle, WSAID_CONNECTEX));
-        mBackend->OnUnpack  = reinterpret_cast<LPFN_GETACCEPTEXSOCKADDRS>(Discover(Oracle, WSAID_GETACCEPTEXSOCKADDRS));
+        mBackend->OnAccept  = Discover<LPFN_ACCEPTEX>(Oracle, WSAID_ACCEPTEX);
+        mBackend->OnConnect = Discover<LPFN_CONNECTEX>(Oracle, WSAID_CONNECTEX);
+        mBackend->OnUnpack  = Discover<LPFN_GETACCEPTEXSOCKADDRS>(Oracle, WSAID_GETACCEPTEXSOCKADDRS);
 
         closesocket(Oracle);
 
@@ -300,7 +285,12 @@ namespace ZyNetwork
     Bool Proactor::Accept(ConstRef<Socket> Handle, Connection Link, ConstRef<Endpoint> Family)
     {
         const SOCKET Taken = WSASocketW(
-            Family.GetData<sockaddr>()->sa_family, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
+            Family.GetData<sockaddr>()->sa_family,
+            SOCK_STREAM,
+            IPPROTO_TCP,
+            nullptr,
+            0,
+            WSA_FLAG_OVERLAPPED);
 
         if (Taken == INVALID_SOCKET)
         {
@@ -323,7 +313,7 @@ namespace ZyNetwork
             AddressOf(Written),
             AddressOf(Entry.Header));
 
-        if (!mBackend->Settle(Entry, Result, "WSAAccept"))
+        if (!mBackend->Settle(Entry, Result, "AcceptEx"))
         {
             closesocket(Taken);
             return false;
@@ -357,7 +347,7 @@ namespace ZyNetwork
             0,
             nullptr,
             AddressOf(Entry.Header));
-        return mBackend->Settle(Entry, Result, "WSAConnect");
+        return mBackend->Settle(Entry, Result, "ConnectEx");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

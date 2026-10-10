@@ -51,7 +51,7 @@ namespace ZyNetwork
         struct Session final
         {
             /// The socket the browser opened, which every call about it names.
-            EMSCRIPTEN_WEBSOCKET_T Handle = 0;
+            EMSCRIPTEN_WEBSOCKET_T Handle   = 0;
 
             /// The connection whatever finishes on it is reported under.
             Connection             Link;
@@ -59,40 +59,34 @@ namespace ZyNetwork
             /// The backend a callback reports into, since the browser threads only one pointer of its own through.
             Ptr<Backend>           Owner    = nullptr;
 
-            /// What the browser has handed over and no read has taken yet.
+            /// The bytes the browser has handed over and no read has taken yet.
             Sequence<Byte>         Inbound;
 
             /// The buffer a read waits to be filled with, which stands only while one waits.
             Span<Byte>             Buffer;
 
-            /// Why the socket ended, kept so a read posted after the fact is answered rather than left waiting.
+            /// The reason the socket ended, kept so a read posted afterwards is still answered.
             Reason                 Cause    = Reason::None;
 
-            /// Whether an attempt to reach the peer is still outstanding.
+            /// `true` while an attempt to reach the peer is outstanding.
             Bool                   Reaching = false;
 
-            /// Whether a read is still outstanding.
+            /// `true` while a read is outstanding.
             Bool                   Reading  = false;
 
-            /// Whether the peer ever answered, which tells a socket that failed to reach from one that was cut.
+            /// `true` once the peer has answered, which tells a socket that failed to reach from one that was cut.
             Bool                   Opened   = false;
         };
 
         /// The sockets the browser holds, kept behind a pointer each so a callback's own never moves under it.
         Table<UInt64, Unique<Session>> Arena;
 
-        /// What has finished since the last wait, which the browser adds to whenever it runs the callbacks.
+        /// The events finished since the last wait, which the browser adds to whenever it runs the callbacks.
         Sequence<Event>                Ready;
 
-        /// What the last wait found, kept so the span handed out survives until the next one.
+        /// The events the last wait found, kept so the span handed out survives until the next one.
         Sequence<Event>                Events;
 
-        /// \brief Writes down that something finished on a socket, for the next wait to hand over.
-        ///
-        /// \param Entry The socket the operation was posted on.
-        /// \param Kind  The operation that finished.
-        /// \param Cause The reason it failed, or \ref Reason::None when it did not.
-        /// \param Size  The number of bytes it moved.
         void Post(ConstRef<Session> Entry, Operation Kind, Reason Cause, UInt32 Size)
         {
             Ref<Event> Report = Ready.Append();
@@ -102,9 +96,6 @@ namespace ZyNetwork
             Report.Size  = Size;
         }
 
-        /// \brief Fills whatever read waits on a socket from what the browser has already handed over.
-        ///
-        /// \param Entry The socket to take from.
         void Pump(Ref<Session> Entry)
         {
             if (!Entry.Reading || Entry.Inbound.IsEmpty())
@@ -112,8 +103,7 @@ namespace ZyNetwork
                 return;
             }
 
-            // Taken a read's worth at a time, since the browser hands over whole messages and one of them may be
-            // wider than the buffer offered for it, leaving the rest for the read that follows.
+            // A read's worth at a time, since one message may be wider than the buffer offered for it.
             const UInt Size = Min(Entry.Buffer.GetSize(), Entry.Inbound.GetSize());
 
             Blit(Entry.Buffer.GetData(), Size, Entry.Inbound.GetData());
@@ -123,11 +113,7 @@ namespace ZyNetwork
             Post(Entry, Operation::Receive, Reason::None, static_cast<UInt32>(Size));
         }
 
-        /// \brief Gives back everything a socket still had outstanding, which one that ends has to before it goes.
-        ///
-        /// \param Entry The socket that ended.
-        /// \param Cause The reason it ended.
-        void Settle(Ref<Session> Entry, Reason Cause)
+        void Abandon(Ref<Session> Entry, Reason Cause)
         {
             Entry.Cause = Cause;
 
@@ -144,22 +130,12 @@ namespace ZyNetwork
             }
         }
 
-        /// \brief Finds the socket a handle names.
-        ///
-        /// \param Handle The socket to look for.
-        /// \return The socket, or `nullptr` when none was ever taken on under that handle.
         Ptr<Session> Find(ConstRef<Socket> Handle)
         {
             const Ptr<Unique<Session>> Slot = Arena.Find(Handle.GetHandle());
             return Slot ? Slot->Grab() : nullptr;
         }
 
-        /// \brief Acts on the browser saying that a socket has reached its peer.
-        ///
-        /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   The event the browser reported about it.
-        /// \param Context The socket it happened on.
-        /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnOpen(SInt32 Kind, ConstPtr<EmscriptenWebSocketOpenEvent> Event, Ptr<void> Context)
         {
             Ref<Session> Entry = * static_cast<Ptr<Session>>(Context);
@@ -173,12 +149,6 @@ namespace ZyNetwork
             return EM_TRUE;
         }
 
-        /// \brief Acts on the browser handing over a message a peer sent.
-        ///
-        /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   The event the browser reported about it.
-        /// \param Context The socket it arrived on.
-        /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnMessage(SInt32 Kind, ConstPtr<EmscriptenWebSocketMessageEvent> Event, Ptr<void> Context)
         {
             Ref<Session> Entry = * static_cast<Ptr<Session>>(Context);
@@ -189,36 +159,18 @@ namespace ZyNetwork
                 return EM_TRUE;
             }
 
-            // Kept rather than handed straight over, since the browser decides when a message arrives and the
-            // endpoint decides when it offers somewhere to put one, and the two rarely line up.
+            // Kept, since the browser decides when a message arrives and the endpoint when room is offered.
             Entry.Inbound.Append(ConstSpan(Event->data, Event->numBytes));
 
             Entry.Owner->Pump(Entry);
             return EM_TRUE;
         }
 
-        /// \brief Acts on the browser saying that a socket went wrong.
-        ///
-        /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   The event the browser reported about it.
-        /// \param Context The socket it happened on.
-        /// \return `true` always, since the browser only asks so a page may swallow the event.
-        static EM_BOOL OnError(SInt32 Kind, ConstPtr<EmscriptenWebSocketErrorEvent> Event, Ptr<void> Context)
-        {
-            return EM_TRUE;
-        }
-
-        /// \brief Acts on the browser saying that a socket has ended.
-        ///
-        /// \param Kind    The event the browser named, which is the one this was registered for.
-        /// \param Event   The event the browser reported about it.
-        /// \param Context The socket that ended.
-        /// \return `true` always, since the browser only asks so a page may swallow the event.
         static EM_BOOL OnClose(SInt32 Kind, ConstPtr<EmscriptenWebSocketCloseEvent> Event, Ptr<void> Context)
         {
             Ref<Session> Entry = * static_cast<Ptr<Session>>(Context);
 
-            Entry.Owner->Settle(Entry, Entry.Opened ? Translate(Event->code) : Reason::Unreachable);
+            Entry.Owner->Abandon(Entry, Entry.Opened ? Translate(Event->code) : Reason::Unreachable);
             return EM_TRUE;
         }
     };
@@ -281,7 +233,6 @@ namespace ZyNetwork
 
         emscripten_websocket_set_onopen_callback(Entry->Handle, Entry, Backend::OnOpen);
         emscripten_websocket_set_onmessage_callback(Entry->Handle, Entry, Backend::OnMessage);
-        emscripten_websocket_set_onerror_callback(Entry->Handle, Entry, Backend::OnError);
         emscripten_websocket_set_onclose_callback(Entry->Handle, Entry, Backend::OnClose);
 
         return true;
@@ -296,12 +247,11 @@ namespace ZyNetwork
         {
             emscripten_websocket_set_onopen_callback(Entry->Handle, nullptr, nullptr);
             emscripten_websocket_set_onmessage_callback(Entry->Handle, nullptr, nullptr);
-            emscripten_websocket_set_onerror_callback(Entry->Handle, nullptr, nullptr);
             emscripten_websocket_set_onclose_callback(Entry->Handle, nullptr, nullptr);
 
             emscripten_websocket_close(Entry->Handle, 1000, nullptr);
 
-            mBackend->Settle(* Entry, Reason::Closed);
+            mBackend->Abandon(* Entry, Reason::Closed);
             mBackend->Arena.Erase(Handle.GetHandle());
         }
     }
@@ -320,7 +270,7 @@ namespace ZyNetwork
 
     Bool Proactor::Connect(ConstRef<Socket> Handle, Connection Link, ConstRef<Endpoint> Address)
     {
-        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle); Entry != nullptr)
+        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle))
         {
             Entry->Link     = Link;
             Entry->Reaching = true;
@@ -334,7 +284,7 @@ namespace ZyNetwork
 
     Bool Proactor::Receive(ConstRef<Socket> Handle, Connection Link, Span<Byte> Buffer)
     {
-        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle); Entry != nullptr)
+        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle))
         {
             Entry->Link    = Link;
             Entry->Buffer  = Buffer;
@@ -346,7 +296,7 @@ namespace ZyNetwork
             }
             else
             {
-                mBackend->Settle(* Entry, Entry->Cause);
+                mBackend->Abandon(* Entry, Entry->Cause);
             }
             return true;
         }
@@ -367,7 +317,7 @@ namespace ZyNetwork
 
     Bool Proactor::Send(ConstRef<Socket> Handle, Connection Link, ConstSpan<Byte> Buffer)
     {
-        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle); Entry != nullptr)
+        if (const Ptr<Backend::Session> Entry = mBackend->Find(Handle))
         {
             Entry->Link = Link;
 

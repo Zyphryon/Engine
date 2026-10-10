@@ -26,14 +26,14 @@ namespace ZyNetwork::UDP
     {
     public:
 
-        /// \brief Constructs a datagram that will reach for a peer.
+        /// \brief Constructs a client that will reach for a peer.
         ///
-        /// \param Link     The connection naming this datagram.
+        /// \param Link     The connection naming this client.
         /// \param Address  The address it reaches for.
         /// \param Listener The handler told about it.
         Client(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener);
 
-        /// \brief Destroys the datagram, closing whatever socket it still holds.
+        /// \brief Destroys the client, closing whatever socket it still holds.
         ~Client() override;
 
         /// \see Channel::Verify(Connection)
@@ -78,7 +78,7 @@ namespace ZyNetwork::UDP
         /// \param Watcher The proactor the next read is posted to.
         /// \param Time    The current time, in seconds.
         /// \param Size    The number of bytes the read moved, where none is a datagram that said nothing.
-        /// \param Output  Receives the message, unless the datagram carried something this build cannot read.
+        /// \param Output  Receives every message read from the datagram.
         void OnReceive(Ref<Proactor> Watcher, Real64 Time, UInt32 Size, Ref<Mailbox> Output);
 
         /// \brief Acts on a write that finished, posting whatever datagram waits behind it.

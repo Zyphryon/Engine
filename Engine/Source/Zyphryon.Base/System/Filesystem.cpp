@@ -48,11 +48,29 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::Ensure(Text Path)
     {
-        if (const SInt Separator = StrFindLast(Path, '/'); Separator > 0)
+        const Text Parent = StrBeforeLast(Path, '/');
+
+        return Parent.IsEmpty() ? Result::Success : MakeAll(Parent);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool CopyEntry(Text Source, Text Destination, ConstRef<Filesystem::Record> Entry,
+        Ref<Filesystem::Result> Status)
+    {
+        const Filesystem::Path From = Filesystem::Path::Print<"{0}/{1}">(Source, Entry.Name);
+        const Filesystem::Path To   = Filesystem::Path::Print<"{0}/{1}">(Destination, Entry.Name);
+
+        if (Entry.Type == Filesystem::Type::Directory)
         {
-            return Filesystem::MakeAll(Path.Slice(0, static_cast<UInt>(Separator)));
+            Status = Filesystem::CopyAll(From, To);
         }
-        return Result::Success;
+        else if (Entry.Type == Filesystem::Type::File)
+        {
+            Status = Filesystem::Copy(From, To);
+        }
+        return Status == Filesystem::Result::Success;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -60,35 +78,31 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::CopyAll(Text Source, Text Destination)
     {
-        Result Result = Result::Success;
-
-        if (Result = Make(Destination); Result != Result::Success)
+        if (Make(Destination) != Result::Success)
         {
             return Result::Incomplete;
         }
 
-        Enumerate(Source, [&](ConstRef<Record> Entry) -> Bool
-        {
-            const Path CurrentSource      = Path::Print<"{0}/{1}">(Source, Entry.Name);
-            const Path CurrentDestination = Path::Print<"{0}/{1}">(Destination, Entry.Name);
+        Result Status = Result::Success;
 
-            if (Entry.Type == Type::Directory)
-            {
-                if (Result = CopyAll(CurrentSource, CurrentDestination); Result != Result::Success)
-                {
-                    return false;
-                }
-            }
-            else if (Entry.Type == Type::File)
-            {
-                if (Result = Copy(CurrentSource, CurrentDestination); Result != Result::Success)
-                {
-                    return false;
-                }
-            }
-            return true;
+        Enumerate(Source, [&](ConstRef<Record> Entry)
+        {
+            return CopyEntry(Source, Destination, Entry, Status);
         });
-        return Result;
+        return Status;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool DeleteEntry(Text Directory, ConstRef<Filesystem::Record> Entry, Ref<Filesystem::Result> Status)
+    {
+        const Filesystem::Path Current = Filesystem::Path::Print<"{0}/{1}">(Directory, Entry.Name);
+
+        Status = (Entry.Type == Filesystem::Type::Directory) ? Filesystem::DeleteAll(Current)
+                                                             : Filesystem::Delete(Current);
+
+        return Status == Filesystem::Result::Success;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -96,22 +110,18 @@ inline namespace ZyBase
 
     Filesystem::Result Filesystem::DeleteAll(Text Directory)
     {
-        Result Result = Result::Success;
+        Result Status = Result::Success;
 
-        Enumerate(Directory, [&](ConstRef<Record> Entry) -> Bool
+        Enumerate(Directory, [&](ConstRef<Record> Entry)
         {
-            const Path Current = Path::Print<"{0}/{1}">(Directory, Entry.Name);
-
-            Result = (Entry.Type == Type::Directory) ? DeleteAll(Current) : Delete(Current);
-
-            return (Result == Result::Success);
+            return DeleteEntry(Directory, Entry, Status);
         });
 
-        if (Result == Result::Success)
+        if (Status == Result::Success)
         {
             return Delete(Directory);
         }
-        return Result;
+        return Status;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -41,7 +41,7 @@ namespace ZyPlatform
 
         for (ConstRef<Monitor> Monitor : mDisplay.GetMonitors())
         {
-            LOG_I("Platform: Found Monitor '{0}' {1}x{2} @ {3} Hz, DPI {4:.2f}",
+            LOG_I("Platform: Found monitor '{0}' {1}x{2} @ {3} Hz, scale {4:.2f}",
                 Monitor.GetName(),
                 Monitor.GetWidth(),
                 Monitor.GetHeight(),
@@ -57,16 +57,13 @@ namespace ZyPlatform
     {
         ZY_PROFILE_SCOPE("Platform::Tick");
 
-        // Poll system messages (platform-specific).
         mWindow.Poll();
 
-        // Process system notifications.
         if (mDispatcher.IsNotified(Dispatcher::Notification::Monitor))
         {
             mDisplay.Poll();
         }
 
-        // Forwards all queued input events to the input service.
         if (ConstRetainer<ZyInput::Service> Input = GetHost().GetService<ZyInput::Service>())
         {
             mDispatcher.Drain(mEvents);
@@ -93,7 +90,7 @@ namespace ZyPlatform
 
         if (!Target.IsEmpty() && Target != Monitor.GetName())
         {
-            LOG_W("Platform: Can't find monitor '{0}', default to '{1}'", Target, Monitor.GetName());
+            LOG_W("Platform: Can't find monitor '{0}', defaulting to '{1}'", Target, Monitor.GetName());
         }
 
         Width  = Min(static_cast<UInt32>(Round(Width * Monitor.GetScale())), Monitor.GetWidth());

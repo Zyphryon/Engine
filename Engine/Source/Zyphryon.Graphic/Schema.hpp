@@ -73,7 +73,7 @@ namespace ZyGraphic
             /// The hash identifying the name a material binds its image under.
             UInt64        Hash     = 0;
 
-            /// The colour of the fallback's single texel, packed with red in the lowest byte.
+            /// The color of the fallback's single texel, packed with red in the lowest byte.
             UInt32        Texel    = 0;
 
             /// The layout the fallback is created with, which must match what the program samples.
@@ -82,7 +82,7 @@ namespace ZyGraphic
             /// The format the texel is stored in, which settles whether it reads back as linear or as sRGB.
             TextureFormat Format   = TextureFormat::RGBA8UIntNorm;
 
-            /// Whether the texture declares a fallback at all.
+            /// `true` when the texture declares a fallback.
             Bool          Declared = false;
 
             /// The texture created from the texel, or zero until the technique is uploaded or when none is declared.
@@ -116,9 +116,9 @@ namespace ZyGraphic
         /// \brief Declares the texture bound at a register when a material supplies none.
         ///
         /// \param Register The register the texture was declared at.
-        /// \param Texel    The colour of the fallback's single texel, packed with red in the lowest byte.
+        /// \param Texel    The color of the fallback's single texel, packed with red in the lowest byte.
         /// \param Layout   The layout the fallback is created with.
-        /// \param Format   The format the texel is stored in, one of the four-byte colour formats.
+        /// \param Format   The format the texel is stored in, one of the four-byte color formats.
         ZY_INLINE void SetFallback(UInt8 Register, UInt32 Texel, TextureLayout Layout, TextureFormat Format)
         {
             ZY_ASSERT(Register < mTextures.GetSize(), "Fallback set on an undeclared texture");

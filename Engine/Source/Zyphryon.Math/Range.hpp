@@ -1,5 +1,5 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Copyright (C) 2025-2026 Zyphryon contributors (see AUTHORS.md)
+// Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 //
@@ -119,11 +119,11 @@ inline namespace ZyMath
         {
             if constexpr (IsReal<Type>)
             {
-                return Random.template NextReal<Type>(mMinimum, mMaximum);
+                return Random.NextReal<Type>(mMinimum, mMaximum);
             }
             else
             {
-                return Random.template NextInteger<Type>(mMinimum, mMaximum);
+                return Random.NextInteger<Type>(mMinimum, mMaximum);
             }
         }
 

@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <emscripten.h>
+#include <emscripten/emscripten.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -25,8 +25,9 @@ namespace ZyPlatform
     {
         mMonitors.Clear();
 
-        SInt32 Width, Height;
-        ::emscripten_get_screen_size(AddressOf(Width), AddressOf(Height));
+        SInt32 Width;
+        SInt32 Height;
+        emscripten_get_screen_size(AddressOf(Width), AddressOf(Height));
 
         Ref<Monitor> Entry = mMonitors.Append(nullptr);
         Entry.SetName("Display");

@@ -21,13 +21,13 @@
 
 inline namespace ZyBase
 {
-    /// \brief Represents a fixed-size bitset backed by an inline array of platform-width words; no heap allocation is performed.
+    /// \brief Represents a fixed-size bitset held inline in an array of \p Word.
     template<UInt Size, typename Word = UInt>
     class Bitset final
     {
         static_assert(Size > 0, "Bitset size must be greater than zero");
 
-        /// \brief All bits set in a word (all ones).
+        /// \brief The word with every bit set.
         static constexpr Word kWordFull  = ~Word(0);
 
         /// \brief The number of bits in a single storage word.
@@ -35,6 +35,9 @@ inline namespace ZyBase
 
         /// \brief The number of words required to store \p Size bits.
         static constexpr UInt kWordCount = (Size + kWordBits - 1u) / kWordBits;
+
+        /// \brief The bits of the last word that lie inside the bitset.
+        static constexpr Word kLastMask  = (Size % kWordBits) ? ((Word(1) << (Size % kWordBits)) - 1u) : kWordFull;
 
     public:
 
@@ -44,7 +47,7 @@ inline namespace ZyBase
         {
         }
 
-        /// \brief Tests whether the bit at the given index is set.
+        /// \brief Checks whether the bit at the given index is set.
         ///
         /// \param Index The zero-based bit index to test.
         /// \return `true` if the bit is set, otherwise `false`.
@@ -141,9 +144,6 @@ inline namespace ZyBase
                 }
             }
 
-            // Check the last (possibly partial) word.
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1) << kRemainder) - 1u) : kWordFull;
             return (mData[kWordCount - 1] & kLastMask) == kLastMask;
         }
 
@@ -182,9 +182,6 @@ inline namespace ZyBase
         /// \return The zero-based index of the first clear bit, or \p Size if all bits are set.
         ZY_INLINE constexpr UInt FindFirstClear() const
         {
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1u) << kRemainder) - 1u) : kWordFull;
-
             for (UInt Index = 0u; Index < kWordCount; ++Index)
             {
                 const Word Mask = (Index == kWordCount - 1) ? kLastMask : kWordFull;
@@ -206,9 +203,6 @@ inline namespace ZyBase
         {
             const UInt StartWord = Offset / kWordBits;
             const UInt StartBit  = Offset % kWordBits;
-
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1u) << kRemainder) - 1u) : kWordFull;
 
             for (UInt Index = StartWord; Index < kWordCount; ++Index)
             {
@@ -246,17 +240,14 @@ inline namespace ZyBase
         /// \return The zero-based index of the last set bit at or before \p Offset, or \p Size if no such bit exists.
         ZY_INLINE constexpr UInt FindLastSet(UInt Offset) const
         {
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1u) << kRemainder) - 1u) : kWordFull;
-
             const UInt StartWord = Offset / kWordBits;
 
             for (UInt Index = StartWord + 1; Index-- > 0;)
             {
-                const Word Clamp = (Index == kWordCount - 1) ? kLastMask : kWordFull;
+                const Word Valid = (Index == kWordCount - 1) ? kLastMask : kWordFull;
                 const Word Mask  = (Index == StartWord) ? ((Word(1) << ((Offset % kWordBits) + 1)) - 1u) : kWordFull;
 
-                if (const Word Masked = mData[Index] & Clamp & Mask)
+                if (const Word Masked = mData[Index] & Valid & Mask)
                 {
                     return Index * kWordBits + (kWordBits - 1 - CountLeadingZeros(Masked));
                 }
@@ -269,9 +260,6 @@ inline namespace ZyBase
         /// \return The zero-based index of the last clear bit, or \p Size if all bits are set.
         ZY_INLINE constexpr UInt FindLastClear() const
         {
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1u) << kRemainder) - 1u) : kWordFull;
-
             for (UInt Index = kWordCount; Index-- > 0;)
             {
                 const Word Mask = (Index == kWordCount - 1) ? kLastMask : kWordFull;
@@ -320,9 +308,6 @@ inline namespace ZyBase
         /// \return A bitset holding every bit this one does not.
         ZY_INLINE constexpr Bitset operator~() const
         {
-            constexpr UInt kRemainder = Size % kWordBits;
-            constexpr Word kLastMask  = kRemainder ? ((Word(1) << kRemainder) - 1u) : kWordFull;
-
             Bitset Result;
 
             for (UInt Index = 0; Index < kWordCount; ++Index)
@@ -364,14 +349,7 @@ inline namespace ZyBase
         /// \return `true` if every bit agrees, otherwise `false`.
         ZY_INLINE constexpr Bool operator==(ConstRef<Bitset> Other) const
         {
-            for (UInt Index = 0; Index < kWordCount; ++Index)
-            {
-                if (mData[Index] != Other.mData[Index])
-                {
-                    return false;
-                }
-            }
-            return true;
+            return mData == Other.mData;
         }
 
     private:

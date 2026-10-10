@@ -257,6 +257,9 @@ namespace ZyPlatform
 
     struct Window::Backend
     {
+        /// The target the html5 calls find the canvas by, registered in specialHTMLTargets by Initialize.
+        static constexpr ConstPtr<Char> kCanvas = "!ZyWindowHTML5";
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -278,6 +281,7 @@ namespace ZyPlatform
 
                 if (const Text Data = StrConvert(Event->key); !Data.IsEmpty())
                 {
+                    // Named keys such as Shift spell more than one character and are not text.
                     UInt Cursor = 0;
                     Unicode::Decode(Data, Cursor);
 
@@ -344,6 +348,7 @@ namespace ZyPlatform
                 Real32 DeltaY = Event->deltaY;
                 Real32 DeltaX = Event->deltaX;
 
+                // Scales the browser's pixels, lines or pages to the notches the desktop drivers report.
                 switch (Event->deltaMode)
                 {
                 case DOM_DELTA_PIXEL:
@@ -423,7 +428,7 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnCanvasFullscreen(SInt32, ConstPtr<void> Reserved, Ptr<void> Context)
+        static EM_BOOL OnCanvasFullscreen(SInt32, ConstPtr<void>, Ptr<void> Context)
         {
             OnTabResize(0, nullptr, Context);
             return EM_TRUE;
@@ -432,17 +437,18 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static EM_BOOL OnTabResize(SInt32, ConstPtr<EmscriptenUiEvent> Event, Ptr<void> Context)
+        static EM_BOOL OnTabResize(SInt32, ConstPtr<EmscriptenUiEvent>, Ptr<void> Context)
         {
             if (const Ptr<Window> Canvas = static_cast<Ptr<Window>>(Context))
             {
-                Real64 Width, Height;
-                emscripten_get_element_css_size("!ZyWindowHTML5", AddressOf(Width), AddressOf(Height));
+                Real64 Width;
+                Real64 Height;
+                emscripten_get_element_css_size(kCanvas, AddressOf(Width), AddressOf(Height));
 
                 if (Canvas->IsBorderless())
                 {
-                    const Real64 DPI = EM_ASM_DOUBLE({ return window.devicePixelRatio || 1.0; });
-                    emscripten_set_canvas_element_size("!ZyWindowHTML5", Width * DPI, Height * DPI);
+                    const Real64 DPI = emscripten_get_device_pixel_ratio();
+                    emscripten_set_canvas_element_size(kCanvas, Width * DPI, Height * DPI);
                 }
 
                 Canvas->mWidth  = static_cast<UInt32>(Width);
@@ -502,16 +508,16 @@ namespace ZyPlatform
 
     Window::~Window()
     {
-        emscripten_set_keydown_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_keyup_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_mousemove_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_mousedown_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_mouseup_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_wheel_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_touchstart_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_touchend_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_touchmove_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
-        emscripten_set_touchcancel_callback("!ZyWindowHTML5", nullptr, EM_TRUE, nullptr);
+        emscripten_set_keydown_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_keyup_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_mousemove_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_mousedown_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_mouseup_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_wheel_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_touchstart_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_touchend_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_touchmove_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
+        emscripten_set_touchcancel_callback(Backend::kCanvas, nullptr, EM_TRUE, nullptr);
         emscripten_set_focus_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, nullptr);
         emscripten_set_blur_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, nullptr);
         emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, nullptr);
@@ -533,6 +539,7 @@ namespace ZyPlatform
 
     void Window::Poll()
     {
+        // The browser delivers every event through the callbacks as it happens.
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -553,7 +560,7 @@ namespace ZyPlatform
 
     void Window::SetPosition(SInt32 X, SInt32 Y)
     {
-        // NOTE: Not supported by the browser.
+        // The browser does not let a page move its window.
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -580,7 +587,7 @@ namespace ZyPlatform
         const UInt Length = static_cast<UInt>(EM_ASM_INT({ return lengthBytesUTF8(Module.zyClipboard || ""); }));
 
         Str Result;
-        
+
         if (Length != 0)
         {
             Result.Append('\0', Length);
@@ -632,26 +639,25 @@ namespace ZyPlatform
 
     void Window::SetFullscreen(Bool Fullscreen)
     {
+        if (Fullscreen == IsFullscreen())
+        {
+            return;
+        }
+
         if (Fullscreen)
         {
-            if (!IsFullscreen())
-            {
-                EmscriptenFullscreenStrategy Strategy { };
-                Strategy.scaleMode                     = EMSCRIPTEN_FULLSCREEN_SCALE_DEFAULT;
-                Strategy.canvasResolutionScaleMode     = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF;
-                Strategy.filteringMode                 = EMSCRIPTEN_FULLSCREEN_FILTERING_DEFAULT;
-                Strategy.canvasResizedCallback         = Window::Backend::OnCanvasFullscreen;
-                Strategy.canvasResizedCallbackUserData = this;
+            EmscriptenFullscreenStrategy Strategy { };
+            Strategy.scaleMode                     = EMSCRIPTEN_FULLSCREEN_SCALE_DEFAULT;
+            Strategy.canvasResolutionScaleMode     = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF;
+            Strategy.filteringMode                 = EMSCRIPTEN_FULLSCREEN_FILTERING_DEFAULT;
+            Strategy.canvasResizedCallback         = Backend::OnCanvasFullscreen;
+            Strategy.canvasResizedCallbackUserData = this;
 
-                emscripten_request_fullscreen_strategy("!ZyWindowHTML5", EM_TRUE, AddressOf(Strategy));
-            }
+            emscripten_request_fullscreen_strategy(Backend::kCanvas, EM_TRUE, AddressOf(Strategy));
         }
         else
         {
-            if (IsFullscreen())
-            {
-                emscripten_exit_fullscreen();
-            }
+            emscripten_exit_fullscreen();
         }
     }
 
@@ -662,10 +668,10 @@ namespace ZyPlatform
     {
         mWidth  = Width;
         mHeight = Height;
-        emscripten_set_element_css_size("!ZyWindowHTML5", mWidth, mHeight);
+        emscripten_set_element_css_size(Backend::kCanvas, mWidth, mHeight);
 
-        const Real32 DPI = EM_ASM_DOUBLE({ return window.devicePixelRatio || 1.0; });
-        emscripten_set_canvas_element_size("!ZyWindowHTML5", mWidth * DPI, mHeight  * DPI);
+        const Real32 DPI = static_cast<Real32>(emscripten_get_device_pixel_ratio());
+        emscripten_set_canvas_element_size(Backend::kCanvas, mWidth * DPI, mHeight * DPI);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -673,7 +679,7 @@ namespace ZyPlatform
 
     void Window::SetCursorPosition(UInt32 X, UInt32 Y)
     {
-        // NOTE: Not supported by the browser.
+        // The browser does not let a page move the cursor.
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -683,7 +689,7 @@ namespace ZyPlatform
     {
         if (Lock)
         {
-            emscripten_request_pointerlock("!ZyWindowHTML5", EM_TRUE);
+            emscripten_request_pointerlock(Backend::kCanvas, EM_TRUE);
         }
         else
         {
@@ -696,7 +702,7 @@ namespace ZyPlatform
 
     Bool Window::Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
     {
-        // Register the canvas element as a special target for emscripten's HTML5 event system.
+        // The html5 calls below find the canvas by this name.
         EM_ASM(
         {
             specialHTMLTargets['!ZyWindowHTML5'] = Module.canvas;
@@ -710,7 +716,7 @@ namespace ZyPlatform
         }
         else
         {
-            const Real32 DPI = EM_ASM_DOUBLE({ return window.devicePixelRatio || 1.0; });
+            const Real32 DPI = static_cast<Real32>(emscripten_get_device_pixel_ratio());
             SetSize(Width / DPI, Height / DPI);
         }
 
@@ -732,23 +738,50 @@ namespace ZyPlatform
             });
         });
 
-        // Register HTML5 event callbacks for the canvas window.
-        emscripten_set_keydown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasKeyDown);
-        emscripten_set_keyup_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasKeyUp);
-        emscripten_set_mousemove_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseMove);
-        emscripten_set_mousedown_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonDown>);
-        emscripten_set_mouseup_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonUp>);
-        emscripten_set_wheel_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasMouseWheel);
-        emscripten_set_touchstart_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchDown>);
-        emscripten_set_touchend_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchUp>);
-        emscripten_set_touchmove_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouch<& Dispatcher::QueueTouchMove>);
-        emscripten_set_touchcancel_callback("!ZyWindowHTML5", this, EM_TRUE, Window::Backend::OnCanvasTouchCancel);
-        emscripten_set_focus_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Window::Backend::OnTabFocus);
-        emscripten_set_blur_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Window::Backend::OnTabFocus);
-        emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Window::Backend::OnTabResize);
-        emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, this, EM_TRUE, Window::Backend::OnDocumentFullscreen);
-        emscripten_set_pointerlockchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, this, EM_TRUE, Window::Backend::OnDocumentLock);
-        emscripten_set_visibilitychange_callback(this, EM_TRUE, Window::Backend::OnTabVisibility);
+        emscripten_set_keydown_callback(Backend::kCanvas, this, EM_TRUE, Backend::OnCanvasKeyDown);
+        emscripten_set_keyup_callback(Backend::kCanvas, this, EM_TRUE, Backend::OnCanvasKeyUp);
+        emscripten_set_mousemove_callback(Backend::kCanvas, this, EM_TRUE, Backend::OnCanvasMouseMove);
+        emscripten_set_mousedown_callback(
+            Backend::kCanvas,
+            this,
+            EM_TRUE,
+            Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonDown>);
+        emscripten_set_mouseup_callback(
+            Backend::kCanvas,
+            this,
+            EM_TRUE,
+            Backend::OnCanvasMouseButton<& Dispatcher::QueueMouseButtonUp>);
+        emscripten_set_wheel_callback(Backend::kCanvas, this, EM_TRUE, Backend::OnCanvasMouseWheel);
+        emscripten_set_touchstart_callback(
+            Backend::kCanvas,
+            this,
+            EM_TRUE,
+            Backend::OnCanvasTouch<& Dispatcher::QueueTouchDown>);
+        emscripten_set_touchend_callback(
+            Backend::kCanvas,
+            this,
+            EM_TRUE,
+            Backend::OnCanvasTouch<& Dispatcher::QueueTouchUp>);
+        emscripten_set_touchmove_callback(
+            Backend::kCanvas,
+            this,
+            EM_TRUE,
+            Backend::OnCanvasTouch<& Dispatcher::QueueTouchMove>);
+        emscripten_set_touchcancel_callback(Backend::kCanvas, this, EM_TRUE, Backend::OnCanvasTouchCancel);
+        emscripten_set_focus_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Backend::OnTabFocus);
+        emscripten_set_blur_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Backend::OnTabFocus);
+        emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, EM_TRUE, Backend::OnTabResize);
+        emscripten_set_fullscreenchange_callback(
+            EMSCRIPTEN_EVENT_TARGET_DOCUMENT,
+            this,
+            EM_TRUE,
+            Backend::OnDocumentFullscreen);
+        emscripten_set_pointerlockchange_callback(
+            EMSCRIPTEN_EVENT_TARGET_DOCUMENT,
+            this,
+            EM_TRUE,
+            Backend::OnDocumentLock);
+        emscripten_set_visibilitychange_callback(this, EM_TRUE, Backend::OnTabVisibility);
         return true;
     }
 }

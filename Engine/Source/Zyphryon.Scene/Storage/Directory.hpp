@@ -69,8 +69,8 @@ namespace ZyScene
 
         /// \brief Checks whether a handle still names a living entity.
         ///
-        /// \param Actor The handle.
-        /// \return `true` if it does, `false` otherwise.
+        /// \param Actor The handle, which may be stale or name nothing.
+        /// \return `true` if its slot holds an entity of the same generation, `false` otherwise.
         ZY_INLINE Bool IsAlive(Handle Actor) const
         {
             const UInt32 Index = Actor.GetIndex();
@@ -109,7 +109,7 @@ namespace ZyScene
         /// \brief Gets the handle naming the entity alive in a slot.
         ///
         /// \param Index The slot number.
-        /// \return The handle.
+        /// \return The handle, with the slot's current generation.
         ZY_INLINE Handle GetHandle(UInt32 Index) const
         {
             return Handle(Index, mSlots[Index].Generation);
@@ -154,7 +154,7 @@ namespace ZyScene
         /// \brief Gets what an archetype lends of a component, the nearest one up the chain holding it deciding.
         ///
         /// \param Base       The slot of the archetype, or zero.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to look for.
         /// \return The value, \ref kPresent for a tag, or `nullptr` when nothing lends it.
         ZY_INLINE ConstPtr<Byte> FindLent(UInt32 Base, UInt32 Identifier) const
         {
@@ -176,9 +176,9 @@ namespace ZyScene
 
         /// \brief Gets what an entity in a chunk sees of a component, held or lent.
         ///
-        /// \param Target     The chunk.
-        /// \param Row        The row.
-        /// \param Identifier The component.
+        /// \param Target     The chunk the entity sits in.
+        /// \param Row        The row the entity sits at.
+        /// \param Identifier The identifier of the component to look for.
         /// \return The value, \ref kPresent for a tag, or `nullptr` when it sees none.
         ZY_INLINE ConstPtr<Byte> FindValue(ConstRef<Chunk> Target, UInt32 Row, UInt32 Identifier) const
         {
@@ -189,10 +189,20 @@ namespace ZyScene
             return FindLent(Target.GetBase(), Identifier);
         }
 
+        /// \brief Checks whether an entity in a chunk sees a component, held or lent.
+        ///
+        /// \param Target     The chunk the entity sits in.
+        /// \param Identifier The identifier of the component to look for.
+        /// \return `true` if the chunk holds the component or its archetype lends it, `false` otherwise.
+        ZY_INLINE Bool Sees(ConstRef<Chunk> Target, UInt32 Identifier) const
+        {
+            return Target.Has(Identifier) || FindLent(Target.GetBase(), Identifier);
+        }
+
         /// \brief Gets what the nearest entity up a chain sees of a component, held or lent.
         ///
         /// \param Cursor     The slot to look at first, or zero for none, which receives the slot found, or zero.
-        /// \param Identifier The component.
+        /// \param Identifier The identifier of the component to look for.
         /// \return The value, \ref kPresent for a tag, or `nullptr` when nothing up the chain sees it.
         ZY_INLINE ConstPtr<Byte> FindAncestor(Ref<UInt32> Cursor, UInt32 Identifier) const
         {
@@ -210,8 +220,8 @@ namespace ZyScene
 
         /// \brief Gets a slot.
         ///
-        /// \param Index The slot number.
-        /// \return The slot.
+        /// \param Index The slot number, below \ref GetSize.
+        /// \return The slot, which moves when a slot is added.
         ZY_INLINE Ref<Slot> operator[](UInt32 Index)
         {
             return mSlots[Index];
@@ -219,8 +229,8 @@ namespace ZyScene
 
         /// \brief Gets a slot to read.
         ///
-        /// \param Index The slot number.
-        /// \return The slot.
+        /// \param Index The slot number, below \ref GetSize.
+        /// \return The slot, which moves when a slot is added.
         ZY_INLINE ConstRef<Slot> operator[](UInt32 Index) const
         {
             return mSlots[Index];
@@ -230,8 +240,8 @@ namespace ZyScene
 
         /// \brief Checks whether a slot is one archetypes are handed.
         ///
-        /// \param Index The slot number.
-        /// \return `true` if it is, `false` otherwise.
+        /// \param Index The slot number, in use or not.
+        /// \return `true` if it lies in the archetype range, `false` otherwise.
         ZY_INLINE static constexpr Bool IsArchetype(UInt32 Index)
         {
             return Index > kMinRangeArchetypes && Index <= kMaxRangeArchetypes;

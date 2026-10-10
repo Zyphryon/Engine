@@ -31,7 +31,7 @@ inline namespace ZyBase
 
         static_assert(Capacity > 0 && (Capacity & (Capacity - 1)) == 0, "Ring capacity must be a power of two");
 
-        /// \brief The mask that wraps a running index into a slot, which works since the capacity is a power of two.
+        /// \brief The mask that wraps a running index into a slot.
         static constexpr UInt32 kMask = Capacity - 1;
 
     public:
@@ -63,7 +63,7 @@ inline namespace ZyBase
 
         /// \brief Attempts to pop a value from the ring (consumer side).
         ///
-        /// \param Value The destination that receives the dequeued value.
+        /// \param Value Receives the dequeued value, left untouched when the ring is empty.
         /// \return `true` if a value was dequeued, `false` if the ring is empty.
         ZY_INLINE Bool Pop(Ref<Type> Value)
         {

@@ -18,11 +18,11 @@ namespace ZyJob
     enum class Lane : UInt8
     {
         Main,       ///< Runs on the main thread, drained once per frame during \ref Service::OnTick.
-        Compute,    ///< Runs on a background worker sized to the machine's core count.
+        Compute,    ///< Runs on a pool of background workers sized to the machine's core count.
         IO,         ///< Runs on a small pool reserved for work that blocks in the kernel, such as filesystem access.
     };
 
-    /// \brief Number of distinct lanes, used to size the per-lane pool storage.
+    /// \brief Number of distinct lanes, used to size the per-lane executors.
     inline constexpr UInt32 kMaxLanes = ZyEnum::Count<Lane>();
 
     /// \brief Maximum number of jobs that may be in flight at once.

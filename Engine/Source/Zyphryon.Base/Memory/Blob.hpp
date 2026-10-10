@@ -25,7 +25,7 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief The type of the callable used to release the buffer when the blob is destroyed or cleared.
+        /// \brief Represents the callable that releases the buffer when the blob is destroyed or cleared.
         using Deleter = Delegate<void(Ptr<Byte>), DelegateInlineSize::Smallest>;
 
     public:
@@ -50,7 +50,7 @@ inline namespace ZyBase
         }
 
         /// \brief Copy-constructing a blob is not allowed.
-        ZY_INLINE Blob(ConstRef<Blob>) = delete;
+        Blob(ConstRef<Blob>) = delete;
 
         /// \brief Constructs a blob by transferring ownership from \p Other.
         ///
@@ -137,7 +137,7 @@ inline namespace ZyBase
         }
 
         /// \brief Copy-assigning a blob is not allowed.
-        ZY_INLINE Ref<Blob> operator=(ConstRef<Blob>) = delete;
+        Ref<Blob> operator=(ConstRef<Blob>) = delete;
 
         /// \brief Move-assigns a blob by transferring ownership from \p Other.
         ///
@@ -150,13 +150,13 @@ inline namespace ZyBase
                 Clear();
 
                 mData    = Exchange(Other.mData, nullptr);
-                mSize    = Exchange(Other.mSize, 0);
+                mSize    = Exchange(Other.mSize, 0u);
                 mDeleter = Move(Other.mDeleter);
             }
             return (* this);
         }
 
-        /// \brief Checks if the blob is empty (i.e., holds no memory).
+        /// \brief Checks whether the blob holds no memory.
         ///
         /// \return `true` if the blob is empty, `false` otherwise.
         ZY_INLINE Bool operator==(Null) const
@@ -164,7 +164,7 @@ inline namespace ZyBase
             return mData == nullptr;
         }
 
-        /// \brief Checks if the blob is not empty (i.e., holds memory).
+        /// \brief Checks whether the blob holds memory.
         ///
         /// \return `true` if the blob is not empty, `false` otherwise.
         ZY_INLINE Bool operator!=(Null) const
@@ -172,7 +172,7 @@ inline namespace ZyBase
             return mData != nullptr;
         }
 
-        /// \brief Checks if the blob is not empty (i.e., holds memory).
+        /// \brief Checks whether the blob holds memory.
         ///
         /// \return `true` if the blob is not empty, `false` otherwise.
         ZY_INLINE explicit operator Bool() const
@@ -191,9 +191,9 @@ inline namespace ZyBase
         {
             const UInt Size = sizeof(Type) * Count;
 
-            return Blob(new Byte[Size], Size, [](Ptr<Byte> Data)
+            return Blob(ZyBase::Allocate(Size), Size, [](Ptr<Byte> Data)
             {
-                ::delete[] Data;
+                Free(Data);
             });
         }
 
@@ -205,7 +205,7 @@ inline namespace ZyBase
         ZY_INLINE static Blob Copy(ConstSpan<Type> Span)
         {
             Blob Result = Allocate<Type>(Span.GetSize());
-            Result.Copy(Span.GetData(), static_cast<UInt32>(Span.GetSize() * sizeof(Type)));
+            Result.Copy(Span.GetData(), static_cast<UInt32>(Span.GetSizeInBytes()));
             return Result;
         }
 
@@ -219,7 +219,6 @@ inline namespace ZyBase
         {
             return Blob(const_cast<Ptr<Byte>>(Data), Count * sizeof(Type), [](Ptr<Byte>)
             {
-                // Non-owning — intentionally does not free the wrapped memory.
             });
         }
 

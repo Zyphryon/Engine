@@ -41,7 +41,7 @@ namespace ZyAudio::Codec
 
         if (Samples.GetSize() < kHeader)
         {
-            LOG_E("Audio: the Opus payload is too small to hold its directory");
+            LOG_E("Audio: The Opus payload is too small to hold its directory");
             return;
         }
 
@@ -54,7 +54,7 @@ namespace ZyAudio::Codec
 
         if (mPacketFrames == 0 || mPacketFrames > kMaxPacketFrames || Samples.GetSize() < Directory)
         {
-            LOG_E("Audio: the Opus payload declares a directory it cannot hold");
+            LOG_E("Audio: The Opus payload declares a directory it cannot hold");
             return;
         }
 
@@ -76,7 +76,7 @@ namespace ZyAudio::Codec
 
         if (Result != OPUS_OK)
         {
-            LOG_E("Audio: failed to create the Opus decoder ({0})", StrConvert(::opus_strerror(Result)));
+            LOG_E("Audio: Failed to create the Opus decoder ({0})", StrConvert(::opus_strerror(Result)));
 
             mHandle = nullptr;
             return;
@@ -134,42 +134,6 @@ namespace ZyAudio::Codec
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 Opus::Expand(UInt32 Packet)
-    {
-        if (mStaged == Packet + 1)
-        {
-            return mStagedFrames;
-        }
-
-        if (Packet >= mLengths.GetSize())
-        {
-            return 0;
-        }
-
-        const UInt32 Origin = mOffsets.GetData<UInt32>()[Packet];
-
-        const SInt32 Produced = ::opus_decode_float(
-            static_cast<Ptr<::OpusDecoder>>(mHandle),
-            mPackets.GetData() + Origin,
-            mLengths[Packet],
-            mStaging.GetData<Real32>(),
-            kMaxPacketFrames,
-            0);
-
-        if (Produced < 0)
-        {
-            LOG_E("Audio: failed to decode an Opus packet ({0})", StrConvert(::opus_strerror(Produced)));
-            return 0;
-        }
-
-        mStaged       = Packet + 1;
-        mStagedFrames = static_cast<UInt32>(Produced);
-        return mStagedFrames;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     UInt64 Opus::Read(Span<Real32> Output)
     {
         if (mHandle == nullptr)
@@ -213,5 +177,41 @@ namespace ZyAudio::Codec
     {
         const UInt64 Advance = Min(Frames, mFrames - mCursor);
         return (Advance > 0 && Seek(mCursor + Advance) ? Advance : 0);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt32 Opus::Expand(UInt32 Packet)
+    {
+        if (mStaged == Packet + 1)
+        {
+            return mStagedFrames;
+        }
+
+        if (Packet >= mLengths.GetSize())
+        {
+            return 0;
+        }
+
+        const UInt32 Origin = mOffsets.GetData<UInt32>()[Packet];
+
+        const SInt32 Produced = ::opus_decode_float(
+            static_cast<Ptr<::OpusDecoder>>(mHandle),
+            mPackets.GetData() + Origin,
+            mLengths[Packet],
+            mStaging.GetData<Real32>(),
+            kMaxPacketFrames,
+            0);
+
+        if (Produced < 0)
+        {
+            LOG_E("Audio: Failed to decode an Opus packet ({0})", StrConvert(::opus_strerror(Produced)));
+            return 0;
+        }
+
+        mStaged       = Packet + 1;
+        mStagedFrames = static_cast<UInt32>(Produced);
+        return mStagedFrames;
     }
 }

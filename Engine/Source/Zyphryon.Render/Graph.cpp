@@ -55,12 +55,11 @@ namespace ZyRender
         // Whatever the blueprint restated or the output moved since the last run is realized before anything draws.
         Reconcile();
 
-        // Bind the frame-global uniforms shared by every pass and draw this frame.
         mEncoder.SetFrame(Frame);
 
         for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
         {
-            Ref<Pass>      Stage = (* mBlueprint.mPasses[Index]);
+            Ref<Pass>      Stage = * mBlueprint.mPasses[Index];
             ConstRef<Step> Entry = mSteps[Index];
 
             if (!Stage.IsActive())
@@ -106,10 +105,7 @@ namespace ZyRender
     {
         const ConstSpan<Target> Targets = mBlueprint.GetTargets();
 
-        while (mSlots.GetSize() < Targets.GetSize())
-        {
-            mSlots.Append(Slot());
-        }
+        mSlots.Expand(Targets.GetSize());
 
         // Realize a texture of the graph's own for every target whose shape is not the one it already holds.
         Bool Realized = false;
@@ -119,34 +115,34 @@ namespace ZyRender
             ConstRef<Target> Description = Targets[Index];
             Ref<Slot>        Entry       = mSlots[Index];
 
-            UInt16 Sized;
-            UInt16 Tall;
+            UInt16 Width;
+            UInt16 Height;
 
             switch (Description.Sizing)
             {
             case Target::Scale::Full:
-                Sized = mWidth;
-                Tall  = mHeight;
+                Width  = mWidth;
+                Height = mHeight;
                 break;
             case Target::Scale::Half:
-                Sized = mWidth  / 2;
-                Tall  = mHeight / 2;
+                Width  = mWidth  / 2;
+                Height = mHeight / 2;
                 break;
             case Target::Scale::Quarter:
-                Sized = mWidth  / 4;
-                Tall  = mHeight / 4;
+                Width  = mWidth  / 4;
+                Height = mHeight / 4;
                 break;
             default:
-                Sized = Description.Width;
-                Tall  = Description.Height;
+                Width  = Description.Width;
+                Height = Description.Height;
                 break;
             }
 
-            Sized = Max(1, Sized);
-            Tall  = Max(1, Tall);
+            Width  = Max(1, Width);
+            Height = Max(1, Height);
 
             // A texture already standing in the shape it is asked for again is left where it is.
-            if (Entry.Texture && Entry.Format == Description.Format && Entry.Width == Sized && Entry.Height == Tall)
+            if (Entry.Texture && Entry.Format == Description.Format && Entry.Width == Width && Entry.Height == Height)
             {
                 continue;
             }
@@ -157,9 +153,9 @@ namespace ZyRender
             }
 
             Entry.Format  = Description.Format;
-            Entry.Width   = Sized;
-            Entry.Height  = Tall;
-            Entry.Texture = mService->CreateTexture(Description.Format, Sized, Tall, 1);
+            Entry.Width   = Width;
+            Entry.Height  = Height;
+            Entry.Texture = mService->CreateTexture(Description.Format, Width, Height, 1);
             Realized      = true;
         }
 
@@ -169,20 +165,12 @@ namespace ZyRender
             return;
         }
 
-        for (ConstRef<Step> Entry : mSteps)
-        {
-            // The display surface is not the graph's to destroy.
-            if (Entry.Handle != ZyGraphic::kDisplay)
-            {
-                mService->DeletePass(Entry.Handle);
-            }
-        }
-        mSteps.Clear();
+        Unbake();
 
         // Bake one step per pass over the textures the graph just realized.
         for (UInt32 Index = 0, Limit = mBlueprint.mPasses.GetSize(); Index < Limit; ++Index)
         {
-            ConstRef<Pass>                   Stage  = (* mBlueprint.mPasses[Index]);
+            ConstRef<Pass>                   Stage  = * mBlueprint.mPasses[Index];
             ConstSpan<Pass::ColorAttachment> Colors = Stage.GetColors();
             Ref<Step>                        Entry  = mSteps.Append();
 
@@ -226,13 +214,8 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Graph::Release()
+    void Graph::Unbake()
     {
-        for (ConstRef<Slot> Entry : mSlots)
-        {
-            mService->DeleteTexture(Entry.Texture);
-        }
-
         for (ConstRef<Step> Entry : mSteps)
         {
             // The display surface is not the graph's to destroy.
@@ -241,8 +224,20 @@ namespace ZyRender
                 mService->DeletePass(Entry.Handle);
             }
         }
-
-        mSlots.Clear();
         mSteps.Clear();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Graph::Release()
+    {
+        for (ConstRef<Slot> Entry : mSlots)
+        {
+            mService->DeleteTexture(Entry.Texture);
+        }
+
+        Unbake();
+        mSlots.Clear();
     }
 }

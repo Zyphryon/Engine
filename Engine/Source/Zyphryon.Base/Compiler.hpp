@@ -12,8 +12,6 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-inline namespace ZyBase
-{
 /// \def ZY_ARCH_X86_64
 /// \brief Defined when targeting 64-bit x86-64 architecture.
 
@@ -51,6 +49,9 @@ inline namespace ZyBase
 
 /// \def ZY_PLATFORM_MACOS
 /// \brief Defined when targeting the macOS platform.
+
+/// \def ZY_PLATFORM_POSIX
+/// \brief Defined when targeting a POSIX platform (Web, Android, Linux or macOS).
 #if   defined(_WIN32)
 #   define ZY_PLATFORM_WINDOWS
 #elif defined(__EMSCRIPTEN__)
@@ -104,10 +105,8 @@ inline namespace ZyBase
 /// \brief Forces the compiler to inline the decorated function unconditionally.
 #if   defined(ZY_COMPILER_MSVC)
 #   define ZY_INLINE __forceinline
-#elif defined(ZY_COMPILER_GCC) || defined(ZY_COMPILER_CLANG)
-#   define ZY_INLINE inline __attribute__((always_inline))
 #else
-#   define ZY_INLINE inline
+#   define ZY_INLINE inline __attribute__((always_inline))
 #endif
 
 /// \def ZY_EXPORT
@@ -154,14 +153,12 @@ inline namespace ZyBase
 /// \brief Allows a member to share its address with another member, enabling zero-size optimization for empty types.
 #if   defined(ZY_COMPILER_MSVC)
 #   define ZY_COMPRESSED [[msvc::no_unique_address]]
-#elif defined(ZY_COMPILER_GCC) || defined(ZY_COMPILER_CLANG)
-#   define ZY_COMPRESSED [[no_unique_address]]
 #else
-#   define ZY_COMPRESSED
+#   define ZY_COMPRESSED [[no_unique_address]]
 #endif
 
 /// \def ZY_ALIGN
-/// \brief Applies a compiler-specific alignment requirement to the decorated declaration.
+/// \brief Aligns the decorated declaration to \p Alignment bytes.
 #define ZY_ALIGN(Alignment) alignas(Alignment)
 
 /// \def ZY_ALIGN_CPU
@@ -169,13 +166,19 @@ inline namespace ZyBase
 #define ZY_ALIGN_CPU        alignas(alignof(void *))
 
 /// \def ZY_DEBUG_BREAK
-/// \brief Triggers an unconditional debug breakpoint; has no effect in a non-debug build.
+/// \brief Triggers a debug breakpoint on MSVC and a trap elsewhere, in every build.
 #if   defined(ZY_COMPILER_MSVC)
 #   define ZY_DEBUG_BREAK() __debugbreak()
-#elif defined(ZY_COMPILER_GCC) || defined(ZY_COMPILER_CLANG)
-#   define ZY_DEBUG_BREAK() __builtin_trap()
 #else
-#   define ZY_DEBUG_BREAK()
+#   define ZY_DEBUG_BREAK() __builtin_trap()
+#endif
+
+/// \def ZY_SIGNATURE
+/// \brief Expands to the full signature of the enclosing function, as a string.
+#if   defined(ZY_COMPILER_MSVC)
+#   define ZY_SIGNATURE __FUNCSIG__
+#else
+#   define ZY_SIGNATURE __PRETTY_FUNCTION__
 #endif
 
 /// \def ZY_ASSERT
@@ -185,4 +188,3 @@ inline namespace ZyBase
 #else
 #   define ZY_ASSERT(Condition, Message) ((Condition) ? (void)0 : (ZY_DEBUG_BREAK(), (void)0))
 #endif
-}

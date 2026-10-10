@@ -101,7 +101,8 @@ vec3 ZyTonemapGt(
 /// Gran Turismo tonemap with the engine's default shape.
 vec3 ZyTonemapGt(vec3 Color)
 {
-    return ZyTonemapGt(Color,
+    return ZyTonemapGt(
+        Color,
         ZY_GT_PEAK,
         ZY_GT_CONTRAST,
         ZY_GT_LINEAR_START,

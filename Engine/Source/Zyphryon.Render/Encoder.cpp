@@ -83,7 +83,6 @@ namespace ZyRender
 
     Ref<Encoder::Binder> Encoder::Binder::SetMesh(ConstRef<ZyGraphic::Mesh> Mesh)
     {
-        // Bind one stream per interleaved block, in slot order (matching the technique's layout).
         const ZyGraphic::Object Vertices = Mesh.GetVertices();
 
         for (const ZyGraphic::VertexSlot Slot : ZyEnum::GetValues<ZyGraphic::VertexSlot>())
@@ -95,6 +94,7 @@ namespace ZyRender
 
             const ZyGraphic::Mesh::Binding Block = Mesh.GetBinding(Slot);
 
+            // A block interleaved with a stream already bound reads through that stream.
             Bool Bound = false;
 
             for (const ZyGraphic::Stream Stream : mCommand.Vertices)

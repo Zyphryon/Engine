@@ -22,7 +22,7 @@ namespace ZyNetwork::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Stream::Stream(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener)
-        : Channel { Link, Address, Listener },
+        : Channel  { Link, Address, Listener },
           mExpiry  { 0.0 },
           mProbe   { 0.0 },
           mCompact { 0.0 },
@@ -71,7 +71,7 @@ namespace ZyNetwork::TCP
         mState = State::Pending;
 
         Await(Operation::Connect);
-        return IsAwaiting(Operation::Connect);
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -163,7 +163,7 @@ namespace ZyNetwork::TCP
         {
             mTransmit.Compact();
             mOutbound.Compact();
-            
+
             mTrim = Time + kMaxHoard;
         }
 

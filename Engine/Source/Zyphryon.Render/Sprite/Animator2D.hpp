@@ -177,25 +177,25 @@ namespace ZyRender
 
         /// \brief Sets the playback cursor running over a clip's frames.
         ///
-        /// \param Sequence  The frames of the clip to play.
+        /// \param Frames    The frames of the clip to play.
         /// \param Timestamp The time playback starts, in seconds.
         /// \param Phase     The share of the clip to start at, counted the way it plays.
-        void Restart(ConstRef<Animation2D> Sequence, Real64 Timestamp, Real64 Phase);
+        void Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real64 Phase);
 
         /// \brief Moves the playback cursor over a clip's frames and records every frame entered on the way.
         ///
-        /// \param Time     The current time, in seconds.
-        /// \param Sequence The frames of the clip being played.
-        /// \param Visited  Receives the frames entered, in the order they were entered.
-        void Step(Real64 Time, ConstRef<Animation2D> Sequence, Ref<Visited> Visited);
+        /// \param Time    The current time, in seconds.
+        /// \param Frames  The frames of the clip being played.
+        /// \param Visited Receives the frames entered, in the order they were entered.
+        void Step(Real64 Time, ConstRef<Animation2D> Frames, Ref<Visited> Visited);
 
         /// \brief Finds the frame the playback cursor is on, holding the final frame once a pass reaches its end.
         ///
-        /// \param Sequence The clip being played.
+        /// \param Frames The clip being played.
         /// \return The index of the frame.
-        ZY_INLINE UInt8 Locate(ConstRef<Animation2D> Sequence) const
+        ZY_INLINE UInt8 Locate(ConstRef<Animation2D> Frames) const
         {
-            const UInt32 Count = Sequence.GetCount();
+            const UInt32 Count = Frames.GetCount();
             const Real64 Local = mPlayback.GetTime();
 
             if (Count == 0)
@@ -204,7 +204,7 @@ namespace ZyRender
             }
 
             // The far end of a pass shows the last frame, where the run would otherwise wrap to the first.
-            return static_cast<UInt8>(Local >= mPlayback.GetDuration() ? Count - 1 : Sequence.Locate(Local));
+            return static_cast<UInt8>(Local >= mPlayback.GetDuration() ? Count - 1 : Frames.Locate(Local));
         }
 
         /// \brief Gets which pass over the clip an unwrapped local time falls in.
@@ -225,7 +225,7 @@ namespace ZyRender
 
         /// \brief Checks whether frames are entered in rising order during a pass.
         ///
-        /// \param Pass   The index of the pass.
+        /// \param Pass   The index of the pass, as \ref GetPass counts them.
         /// \param Rising The direction local time is moving, `true` when it grows.
         /// \return `true` when frames are entered from first to last, otherwise `false`.
         ZY_INLINE Bool IsAscending(SInt64 Pass, Bool Rising) const

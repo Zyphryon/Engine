@@ -30,10 +30,10 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief A factory function that produces a new implementation instance.
+        /// \brief Defines the factory function that produces a new implementation instance.
         using Factory = Unique<Interface>(*)();
 
-        /// \brief The type used for naming registered factories.
+        /// \brief Defines the type registered factories are named by.
         using Name    = Str16;
 
         /// \brief Specifies how strongly an implementation is preferred when the caller names none.
@@ -110,11 +110,7 @@ inline namespace ZyBase
         /// \return A unique pointer to the new instance, or empty if no factory was found.
         ZY_INLINE Unique<Interface> Switch(Text Name)
         {
-            // Nothing was asked for, so whichever implementation ranks highest stands in for it.
-            const Str16 Fallback = (Name.IsEmpty() ? GetDefault() : Str16());
-            const Text  Wanted   = (Name.IsEmpty() ? Fallback.Slice(0) : Name);
-
-            const Ptr<Entry> Candidate = mRegistry.Find(Wanted);
+            const Ptr<Entry> Candidate = Name.IsEmpty() ? mRegistry.Find(GetDefault()) : mRegistry.Find(Name);
             return Candidate ? Candidate->Build() : Unique<Interface>();
         }
 
@@ -131,13 +127,13 @@ inline namespace ZyBase
         };
 
         /// \brief Defines the table entry each registration is stored as.
-        using Record = typename Table<Str16, Entry>::Pair;
+        using Record = typename Table<Name, Entry>::Pair;
 
     protected:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Table<Str16, Entry> mRegistry;
+        Table<Name, Entry> mRegistry;
     };
 }

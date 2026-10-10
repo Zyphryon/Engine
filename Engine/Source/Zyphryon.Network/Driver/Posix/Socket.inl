@@ -33,7 +33,6 @@ namespace ZyNetwork
         if (Flags < 0 || fcntl(Handle, F_SETFL, Flags | O_NONBLOCK) < 0)
         {
             LOG_E("Network: a socket could not be made non-blocking ({0})", errno);
-
             return false;
         }
 
@@ -65,7 +64,8 @@ namespace ZyNetwork
             return false;
         }
 
-        const SInt32 Handle = socket(Family.GetData<sockaddr>()->sa_family,
+        const SInt32 Handle = socket(
+            Family.GetData<sockaddr>()->sa_family,
             (Transport == Transport::TCP) ? SOCK_STREAM : SOCK_DGRAM,
             (Transport == Transport::TCP) ? IPPROTO_TCP : IPPROTO_UDP);
 

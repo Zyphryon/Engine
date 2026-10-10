@@ -118,18 +118,26 @@ namespace ZyNetwork::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static Bool Reap(Ref<Proactor> Watcher, Real64 Time, ConstRetainer<Stream> Peer, Ref<Mailbox> Output)
+    {
+        Peer->Tick(Watcher, Time, Output);
+
+        if (const Reason Cause = Peer->GetCause(); Cause != Reason::None && Peer->IsQuiet())
+        {
+            Output.Disconnect(Peer->GetLink(), Cause);
+            return true;
+        }
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Server::Tick(Ref<Proactor> Watcher, Real64 Time, Ref<Mailbox> Output)
     {
         mPeers.ForEachOrRemove([&](ConstRetainer<Stream> Peer)
         {
-            Peer->Tick(Watcher, Time, Output);
-
-            if (const Reason Cause = Peer->GetCause(); Cause != Reason::None && Peer->IsQuiet())
-            {
-                Output.Disconnect(Peer->GetLink(), Cause);
-                return true;
-            }
-            return false;
+            return Reap(Watcher, Time, Peer, Output);
         });
 
         Invite(Watcher);
@@ -151,12 +159,9 @@ namespace ZyNetwork::TCP
 
     void Server::Broadcast(Delivery Delivery, ConstSpan<Byte> Message)
     {
-        mPeers.ForEach([Delivery, Message](ConstRetainer<Stream> Peer)
+        mPeers.ForEach([&](ConstRetainer<Stream> Peer)
         {
-            if (Peer->Verify(Peer->GetLink()))
-            {
-                Peer->Send(Peer->GetLink(), Delivery, Message);
-            }
+            Peer->Send(Peer->GetLink(), Delivery, Message);
         });
     }
 
@@ -267,10 +272,11 @@ namespace ZyNetwork::TCP
         const Connection::Peer Slot = mPeers.Allocate();
         const Connection       Link = mLink.Derive(Slot);
 
-        mPeers[Slot] = Retainer<Stream>::Create(Link, Address, mListener, Peer);
-        mPeers[Slot]->SetTimeout(Link, mTimeout);
+        Ref<Retainer<Stream>> Entry = mPeers[Slot];
+        Entry = Retainer<Stream>::Create(Link, Address, mListener, Peer);
+        Entry->SetTimeout(Link, mTimeout);
 
-        if (mPeers[Slot]->Adopt(Watcher))
+        if (Entry->Adopt(Watcher))
         {
             Output.Connect(Link);
         }

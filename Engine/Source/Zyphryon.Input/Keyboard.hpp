@@ -26,7 +26,7 @@ namespace ZyInput
     public:
 
         /// \brief The total number of supported keys.
-        constexpr static UInt32 kMaxKeys = ZyEnum::Count<Key>();
+        static constexpr UInt32 kMaxKeys = ZyEnum::Count<Key>();
 
     public:
 
@@ -34,6 +34,8 @@ namespace ZyInput
         void Begin();
 
         /// \brief Processes a single input event to update the keyboard state.
+        ///
+        /// \param Event The event to apply if it is a key press or release.
         void Process(ConstRef<Event> Event);
 
         /// \brief Clears all stored key states for both the current and previous frames.
@@ -41,10 +43,10 @@ namespace ZyInput
 
         /// \brief Marks every key as released, keeping the previous frame so the transition is reported.
         ///
-        /// \param Output Receives one release event per input that was held.
+        /// \param Output Receives one release event per key that was held.
         void ReleaseAllKeys(Ref<Sequence<Event>> Output);
 
-        /// \brief Checks if a key was pressed during the current frame.
+        /// \brief Checks whether a key was pressed during the current frame.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key was pressed this frame, otherwise `false`.
@@ -53,7 +55,7 @@ namespace ZyInput
             return !mLastKeys.Test(ZyEnum::Cast(Key)) && mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
-        /// \brief Checks if a key is currently held down.
+        /// \brief Checks whether a key is currently held down.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key is held, otherwise `false`.
@@ -62,7 +64,7 @@ namespace ZyInput
             return mThisKeys.Test(ZyEnum::Cast(Key));
         }
 
-        /// \brief Checks if a key was released during the current frame.
+        /// \brief Checks whether a key was released during the current frame.
         ///
         /// \param Key The key to check.
         /// \return `true` if the key was released this frame, otherwise `false`.

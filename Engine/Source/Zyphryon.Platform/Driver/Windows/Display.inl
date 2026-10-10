@@ -29,7 +29,7 @@ namespace ZyPlatform
         MONITORINFOEXW Info { };
         Info.cbSize = sizeof(Info);
 
-        if (GetMonitorInfoW(Handle, AddressOf(Info)))
+        if (::GetMonitorInfoW(Handle, AddressOf(Info)))
         {
             Ref<Monitor> Monitor = Output->Append(Handle);
             Monitor.SetName(Str::ConvertFromUTF16(StrConvert(Info.szDevice)));
@@ -60,11 +60,9 @@ namespace ZyPlatform
     {
         mMonitors.Clear();
 
-        // Enumerate all monitors and populate basic information.
-        EnumDisplayMonitors(nullptr, nullptr, OnEnumerateMonitor, reinterpret_cast<LPARAM>(AddressOf(mMonitors)));
+        ::EnumDisplayMonitors(nullptr, nullptr, OnEnumerateMonitor, reinterpret_cast<LPARAM>(AddressOf(mMonitors)));
 
-        // Query advanced display configuration to retrieve detailed properties using the DisplayConfig API.
-
+        // The friendly names, HDR state and refresh rates come from the DisplayConfig paths, matched by GDI name.
         UINT32 PathCount = 0;
         UINT32 ModeCount = 0;
 
@@ -79,7 +77,13 @@ namespace ZyPlatform
         Paths.Advance(PathCount);
         Modes.Advance(ModeCount);
 
-        if (FAILED(::QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, AddressOf(PathCount), Paths.GetData(), AddressOf(ModeCount), Modes.GetData(), nullptr)))
+        if (FAILED(::QueryDisplayConfig(
+            QDC_ONLY_ACTIVE_PATHS,
+            AddressOf(PathCount),
+            Paths.GetData(),
+            AddressOf(ModeCount),
+            Modes.GetData(),
+            nullptr)))
         {
             return;
         }
@@ -103,39 +107,41 @@ namespace ZyPlatform
                 return Monitor.GetName() == Name;
             });
 
-            if (Slot >= 0)
+            if (Slot < 0)
             {
-                Ref<Monitor> Entry = mMonitors[Slot];
+                continue;
+            }
 
-                DISPLAYCONFIG_TARGET_DEVICE_NAME TargetName { };
-                TargetName.header.type      = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
-                TargetName.header.size      = sizeof(TargetName);
-                TargetName.header.adapterId = Path.targetInfo.adapterId;
-                TargetName.header.id        = Path.targetInfo.id;
+            Ref<Monitor> Entry = mMonitors[Slot];
 
-                if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(TargetName.header))))
+            DISPLAYCONFIG_TARGET_DEVICE_NAME TargetName { };
+            TargetName.header.type      = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+            TargetName.header.size      = sizeof(TargetName);
+            TargetName.header.adapterId = Path.targetInfo.adapterId;
+            TargetName.header.id        = Path.targetInfo.id;
+
+            if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(TargetName.header))))
+            {
+                Entry.SetName(Str::ConvertFromUTF16(StrConvert(TargetName.monitorFriendlyDeviceName)));
+            }
+
+            DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO ColorInfo { };
+            ColorInfo.header.type      = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
+            ColorInfo.header.size      = sizeof(ColorInfo);
+            ColorInfo.header.adapterId = Path.targetInfo.adapterId;
+            ColorInfo.header.id        = Path.targetInfo.id;
+
+            if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(ColorInfo.header))))
+            {
+                if (ColorInfo.advancedColorEnabled != 0)
                 {
-                    Entry.SetName(Str::ConvertFromUTF16(StrConvert(TargetName.monitorFriendlyDeviceName)));
+                    Entry.SetAttribute(Monitor::Attribute::HDR);
                 }
+            }
 
-                DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO ColorInfo { };
-                ColorInfo.header.type      = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
-                ColorInfo.header.size      = sizeof(ColorInfo);
-                ColorInfo.header.adapterId = Path.targetInfo.adapterId;
-                ColorInfo.header.id        = Path.targetInfo.id;
-
-                if (SUCCEEDED(::DisplayConfigGetDeviceInfo(AddressOf(ColorInfo.header))))
-                {
-                    if (ColorInfo.advancedColorEnabled != 0)
-                    {
-                        Entry.SetAttribute(Monitor::Attribute::HDR);
-                    }
-                }
-
-                if (Path.targetInfo.refreshRate.Denominator != 0)
-                {
-                    Entry.SetFrequency(Path.targetInfo.refreshRate.Numerator / Path.targetInfo.refreshRate.Denominator);
-                }
+            if (Path.targetInfo.refreshRate.Denominator != 0)
+            {
+                Entry.SetFrequency(Path.targetInfo.refreshRate.Numerator / Path.targetInfo.refreshRate.Denominator);
             }
         }
     }

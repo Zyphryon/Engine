@@ -107,7 +107,7 @@ namespace ZyScene
         if (Above.First == 0)
         {
             Above.First = Index;
-            Entry.Prev   = Index;
+            Entry.Prev  = Index;
         }
         else
         {

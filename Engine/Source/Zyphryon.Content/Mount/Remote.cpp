@@ -26,13 +26,9 @@ namespace ZyContent
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Remote::Remote(Text Address)
-        : mAddress { Address },
+        : mAddress { StrTrimRight(Address, '/') },
           mActive  { 0 }
     {
-        if (StrEndsWith(mAddress, "/"))
-        {
-            mAddress.RemoveLast();
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -128,68 +124,71 @@ namespace ZyContent
         // The bytes are wanted whole rather than in pieces, which is what a blob is.
         Attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
         Attributes.userData   = Handle;
-        Attributes.onsuccess  = [](Ptr<emscripten_fetch_t> Fetch)
-        {
-            const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);
-            const UInt32       Size   = static_cast<UInt32>(Fetch->numBytes);
-            const Ptr<Byte>    Data   = new Byte[Size];
+        Attributes.onsuccess  = &Remote::OnSuccess;
+        Attributes.onerror    = &Remote::OnFailure;
 
-            // Everything wanted from the fetch is taken before it is closed, which frees what it holds.
-            Blit(Data, Size, Fetch->data);
-            emscripten_fetch_close(Fetch);
-
-            Close(Handle, Filesystem::Result::Success, Data, Size);
-        };
-        Attributes.onerror    = [](Ptr<emscripten_fetch_t> Fetch)
-        {
-            const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);
-            const UInt32       Status = Fetch->status;
-
-            emscripten_fetch_close(Fetch);
-
-            // Being told to slow down is not an answer about the file, so the same question is asked again.
-            if (Status == kTooMany && Handle->Attempt < kMaxAttempts)
-            {
-                Ref<Remote> Owner = * Handle->Owner;
-
-                Owner.mQueue.Append(Handle);
-                --Owner.mActive;
-
-                Owner.Pump();
-                return;
-            }
-
-            // A file that is not there and an address that cannot be reached are told apart, since only one
-            // of them is worth asking about again.
-            Close(Handle, Status == 404 ? Filesystem::Result::Inexistent : Filesystem::Result::Unknown, nullptr, 0);
-        };
-
-        Str Address = Str::Print<"{0}/{1}">(mAddress, Handle->Path);
-        Address.Append('\0');
+        const Str Address = Str::Join(mAddress, '/', Handle->Path);
 
         emscripten_fetch(AddressOf(Attributes), Address.GetData());
 
 #endif // ZY_PLATFORM_WEB
     }
 
+#if defined(ZY_PLATFORM_WEB)
+
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Remote::Close(Ptr<Request> Handle, Filesystem::Result Result, Ptr<Byte> Data, UInt32 Size)
+    void Remote::OnSuccess(Ptr<emscripten_fetch_t> Fetch)
+    {
+        const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);
+
+        // Everything wanted from the fetch is taken before it is closed, which frees what it holds.
+        Blob Data = Blob::Copy(ConstSpan<Byte>(
+            reinterpret_cast<ConstPtr<Byte>>(Fetch->data),
+            static_cast<UInt32>(Fetch->numBytes)));
+        emscripten_fetch_close(Fetch);
+
+        Close(Handle, Filesystem::Result::Success, Move(Data));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Remote::OnFailure(Ptr<emscripten_fetch_t> Fetch)
+    {
+        const Ptr<Request> Handle = static_cast<Ptr<Request>>(Fetch->userData);
+        const UInt32       Status = Fetch->status;
+
+        emscripten_fetch_close(Fetch);
+
+        // Being told to slow down is not an answer about the file, so the same question is asked again.
+        if (Status == kTooMany && Handle->Attempt < kMaxAttempts)
+        {
+            Ref<Remote> Owner = * Handle->Owner;
+
+            Owner.mQueue.Append(Handle);
+            --Owner.mActive;
+
+            Owner.Pump();
+            return;
+        }
+
+        // A file that is not there and an address that cannot be reached are told apart, since only one
+        // of them is worth asking about again.
+        Close(Handle, Status == kMissing ? Filesystem::Result::Inexistent : Filesystem::Result::Unknown, Blob());
+    }
+
+#endif // ZY_PLATFORM_WEB
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Remote::Close(Ptr<Request> Handle, Filesystem::Result Result, AnyRef<Blob> Data)
     {
         Ref<Remote> Owner = * Handle->Owner;
 
-        if (Data)
-        {
-            Handle->Callback(Result, Blob(Data, Size, [](Ptr<Byte> Address)
-            {
-                delete[] Address;
-            }));
-        }
-        else
-        {
-            Handle->Callback(Result, Blob());
-        }
+        Handle->Callback(Result, Move(Data));
 
         delete Handle;
 

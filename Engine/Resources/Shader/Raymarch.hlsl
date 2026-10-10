@@ -91,8 +91,10 @@ float ZyRaymarchLattice(
     const float  Lower  = Layer - Slices * floor(Layer / Slices);
     const float  Upper  = (Lower + 1.0 < Slices) ? Lower + 1.0 : 0.0;
 
-    return lerp(Lattice.SampleLevel(Wrap, float3(Uv, Lower), 0.0),
-                Lattice.SampleLevel(Wrap, float3(Uv, Upper), 0.0), Rise * Rise * (3.0 - 2.0 * Rise));
+    return lerp(
+        Lattice.SampleLevel(Wrap, float3(Uv, Lower), 0.0),
+        Lattice.SampleLevel(Wrap, float3(Uv, Upper), 0.0),
+        Rise * Rise * (3.0 - 2.0 * Rise));
 }
 
 /// The first full-size texel of the 2x2 block a half-size texel covers.

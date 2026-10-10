@@ -60,12 +60,11 @@ namespace ZyInput
 
     void Keyboard::ReleaseAllKeys(Ref<Sequence<Event>> Output)
     {
-        for (UInt Index = mThisKeys.FindFirstSet(); Index < kMaxKeys; Index = mThisKeys.FindFirstSet())
+        mThisKeys.ForEach([&](UInt Index)
         {
             Ref<Event> Release    = Output.Append(Event::Type::KeyUp);
             Release.KeyAction.Key = static_cast<Key>(Index);
-
-            mThisKeys.Reset(Index);
-        }
+        });
+        mThisKeys.Reset();
     }
 }

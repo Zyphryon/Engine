@@ -27,10 +27,10 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief Initializes the line to points (0.0f, 0.0f) and (0.0f, 0.0f).
+        /// \brief Constructs a line with both points at the origin.
         ZY_INLINE constexpr Line() = default;
 
-        /// \brief Constructor initializing the line with specified start and end points.
+        /// \brief Constructs a line from a start point and an end point.
         ///
         /// \param Start The start point of the line.
         /// \param End   The end point of the line.
@@ -50,7 +50,7 @@ inline namespace ZyMath
 
         /// \brief Checks if the line is valid.
         ///
-        /// \return `true` if the line is valid, `false` otherwise.
+        /// \return `true` if the start and end differ, `false` otherwise.
         ZY_INLINE constexpr Bool IsValid() const
         {
             return mStart != mEnd;
@@ -142,6 +142,7 @@ inline namespace ZyMath
 
         /// \brief Calculates the normal vector of the line.
         ///
+        /// \tparam Clockwise `true` for the normal `Vector2::Perpendicular` gives, `false` for its negation.
         /// \return The normalized normal vector of the line.
         template<Bool Clockwise = false>
         ZY_INLINE constexpr Vector2 GetNormal() const
@@ -163,7 +164,7 @@ inline namespace ZyMath
         /// \brief Gets a point on the line segment by linear interpolation.
         ///
         /// \param Factor The interpolation parameter (0 = start, 1 = end).
-        /// \return The interpolated point.
+        /// \return The point \p Factor of the way from start to end.
         ZY_INLINE constexpr Vector2 GetPoint(Real32 Factor) const
         {
             return ::Lerp(mStart, mEnd, Factor);
@@ -190,7 +191,7 @@ inline namespace ZyMath
         /// \brief Checks if this line segment intersects with another line segment.
         ///
         /// \param Other The other line segment to check for intersection.
-        /// \return `true` if the line segments intersect, `false` otherwise.
+        /// \return `true` if the segments cross or touch, `false` otherwise.
         ZY_INLINE constexpr Bool Test(Line Other) const
         {
             const Real32 O1 = Vector2::Cross(mStart, mEnd, Other.mStart);
@@ -198,21 +199,21 @@ inline namespace ZyMath
             const Real32 O3 = Vector2::Cross(Other.mStart, Other.mEnd, mStart);
             const Real32 O4 = Vector2::Cross(Other.mStart, Other.mEnd, mEnd);
 
-            if ((O1 * O2 < 0) && (O3 * O4 < 0))
+            if ((O1 * O2 < 0.0f) && (O3 * O4 < 0.0f))
             {
                 return true;
             }
 
-            return (::IsAlmostZero(O1) && Contains(Other.mStart)
-                ||  ::IsAlmostZero(O2) && Contains(Other.mEnd)
-                ||  ::IsAlmostZero(O3) && Other.Contains(mStart)
-                ||  ::IsAlmostZero(O4) && Other.Contains(mEnd));
+            return ((::IsAlmostZero(O1) && Contains(Other.mStart))
+                ||  (::IsAlmostZero(O2) && Contains(Other.mEnd))
+                ||  (::IsAlmostZero(O3) && Other.Contains(mStart))
+                ||  (::IsAlmostZero(O4) && Other.Contains(mEnd)));
         }
 
         /// \brief Checks if this line is equal to another line.
         ///
         /// \param Other The line to compare to.
-        /// \return `true` if both points are approximately equal, `false` otherwise.
+        /// \return `true` if both points approximately match, in either order, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(Line Other) const
         {
             return (mStart == Other.mStart && mEnd == Other.mEnd) ||
@@ -259,12 +260,12 @@ inline namespace ZyMath
 
         /// \brief Anchors a line relative to a pivot point.
         ///
-        /// \param Source The source line.
-        /// \param Origin The pivot point for anchoring.
-        /// \return A line anchored according to the pivot.
+        /// \param Source The line to place, its start taken as the anchor.
+        /// \param Origin The point to put on the anchor, as an offset from the start in shares of the size.
+        /// \return The line moved so that point sits where its start was.
         ZY_INLINE static constexpr Line Anchor(Line Source, Pivot2D Origin)
         {
-            const Vector2 Size = Vector2::Max(Source.GetStart(), Source.GetEnd()) - Vector2::Min(Source.GetStart(), Source.GetEnd());
+            const Vector2 Size = Vector2::Abs(Source.GetEnd() - Source.GetStart());
             const Vector2 Translation(Origin.GetX() * Size.GetX(), Origin.GetY() * Size.GetY());
 
             return Line(Source.GetStart() - Translation, Source.GetEnd() - Translation);
@@ -272,8 +273,8 @@ inline namespace ZyMath
 
         /// \brief Linearly interpolates between two lines.
         ///
-        /// \param Start      The starting line.
-        /// \param End        The ending line.
+        /// \param Start      The line at zero.
+        /// \param End        The line at one.
         /// \param Percentage The interpolation percentage (range between 0 and 1).
         /// \return A line interpolated between the start and end lines.
         ZY_INLINE static constexpr Line Lerp(Line Start, Line End, Real32 Percentage)
@@ -284,11 +285,11 @@ inline namespace ZyMath
                         ::Lerp(Start.mEnd,   End.mEnd,   Percentage));
         }
 
-        /// \brief Transform a line using a 4x4 transformation matrix.
+        /// \brief Transforms a line using an affine transformation matrix.
         ///
         /// \param Source The line to transform.
         /// \param Matrix The affine transformation matrix to apply.
-        /// \return A line resulting from transforming the line with the matrix.
+        /// \return The line with both points transformed.
         ZY_INLINE static Line Transform(Line Source, ConstRef<Matrix4x3> Matrix)
         {
             const Vector4 RowX = Matrix.GetColumn(0);
@@ -303,11 +304,11 @@ inline namespace ZyMath
             return Line(Vector2(OutX.GetX(), OutY.GetX()), Vector2(OutX.GetY(), OutY.GetY()));
         }
 
-        /// \brief Transform a line using a 3x2 transformation matrix.
+        /// \brief Transforms a line using a 3x2 transformation matrix.
         ///
         /// \param Source The line to transform.
         /// \param Matrix The 3x2 transformation matrix to apply.
-        /// \return A line resulting from transforming the line with the matrix.
+        /// \return The line with both points transformed.
         ZY_INLINE static constexpr Line Transform(Line Source, ConstRef<Matrix3x2> Matrix)
         {
             return Line(Matrix3x2::Project(Matrix, Source.GetStart()),

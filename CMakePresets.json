@@ -14,7 +14,7 @@
       "name": "debug",
       "inherits": "base",
       "displayName": "Debug",
-      "description": "Unoptimized, instrumented, sanitized.",
+      "description": "Unoptimized and instrumented, with AddressSanitizer under GCC and Clang.",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {

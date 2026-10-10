@@ -34,7 +34,7 @@ inline namespace ZyBase
         /// \brief Constructs a half from a single-precision value, rounding to nearest with ties to even.
         ///
         /// \param Value The value to narrow.
-        ZY_INLINE explicit constexpr Half(Real32 Value)
+        ZY_INLINE constexpr explicit Half(Real32 Value)
             : mBits { Encode(Value) }
         {
         }
@@ -89,7 +89,7 @@ inline namespace ZyBase
         /// \brief Narrows a single-precision value into a binary16 bit pattern.
         ///
         /// \param Value The value to encode.
-        /// \return The encoded bits.
+        /// \return The binary16 bit pattern nearest to \p Value.
         ZY_INLINE static constexpr UInt16 Encode(Real32 Value)
         {
             const UInt32 Bits     = CastBit<UInt32>(Value);
@@ -135,7 +135,7 @@ inline namespace ZyBase
 
         /// \brief Widens a binary16 bit pattern into a single-precision value.
         ///
-        /// \param Bits The encoded bits.
+        /// \param Bits The binary16 bit pattern to widen.
         /// \return The exact single-precision equivalent.
         ZY_INLINE static constexpr Real32 Decode(UInt16 Bits)
         {

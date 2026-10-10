@@ -45,7 +45,7 @@ namespace ZyGraphic
 
         /// \brief Sets the shader source data.
         ///
-        /// \param Source The shader data blob.
+        /// \param Source The source code of the shader.
         ZY_INLINE void SetSource(AnyRef<Blob> Source)
         {
             SetFootprint(Source.GetSize());
@@ -55,15 +55,15 @@ namespace ZyGraphic
 
         /// \brief Gets the shader source data.
         ///
-        /// \return A constant view over the shader data.
+        /// \return The source code as bytes.
         ZY_INLINE ConstSpan<Byte> GetSource() const
         {
-            return ConstSpan(mSource.GetData<Byte>(), mSource.GetSize());
+            return mSource;
         }
 
         /// \brief Gets the shader source data as text.
         ///
-        /// \return A constant view over the shader data.
+        /// \return The source code as text.
         ZY_INLINE Text GetText() const
         {
             return Text(mSource.GetData<Char>(), mSource.GetSize());
@@ -113,7 +113,6 @@ namespace ZyGraphic
 
             for (ConstRef<Fragment> Fragment : mFragments)
             {
-                // A zero count asks `Slice` for everything that remains, so an empty gap is skipped instead.
                 if (Fragment.Offset > Cursor)
                 {
                     Result.Append(Source.Slice(Cursor, Fragment.Offset - Cursor));
@@ -121,8 +120,7 @@ namespace ZyGraphic
 
                 if (Fragment.Module->HasFailed())
                 {
-                    LOG_W("Shader: '{0}' includes '{1}', which never loaded",
-                        GetKey().GetUrl(), Fragment.Module->GetKey().GetUrl());
+                    LOG_W("Shader: '{0}' includes '{1}', which never loaded", GetKey(), Fragment.Module->GetKey());
                 }
                 else
                 {

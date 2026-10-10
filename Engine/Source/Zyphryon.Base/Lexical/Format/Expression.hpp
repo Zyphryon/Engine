@@ -37,7 +37,7 @@ namespace ZyFormat
 
         /// \brief Constructs an expression from a placeholder.
         ///
-        /// \param Properties The placeholder properties.
+        /// \param Properties The placeholder parsed out of the format string.
         ZY_INLINE constexpr Expression(Placeholder Properties)
             : Properties { Properties }
         {
@@ -53,9 +53,9 @@ namespace ZyFormat
         {
         }
 
-        /// \brief Checks if this expression is a placeholder.
+        /// \brief Checks whether this expression is a placeholder.
         ///
-        /// \return  `true` if this expression is a placeholder, `false` if it is literal text.
+        /// \return `true` if this expression is a placeholder, `false` if it is literal text.
         ZY_INLINE constexpr Bool IsPlaceholder() const
         {
             return (Offset == 0 && Length == 0);

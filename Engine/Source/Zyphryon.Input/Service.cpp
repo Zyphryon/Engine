@@ -31,14 +31,12 @@ namespace ZyInput
 
     void Service::Process(ConstSpan<Event> Frame)
     {
-        ZY_PROFILE_SCOPE("Input::Tick");
+        ZY_PROFILE_SCOPE("Input::Process");
 
-        // Updates the state of each input device for the new frame.
         mMouse.Begin();
         mKeyboard.Begin();
         mTouch.Begin();
 
-        // Processes low-level input events for each device.
         for (ConstRef<Event> Event : Frame)
         {
             switch (Event.Kind)
@@ -61,13 +59,11 @@ namespace ZyInput
                 mTouch.Process(Event);
                 break;
             case Event::Type::WindowFocus:
-            {
                 if (!Event.WindowFocus.State)
                 {
                     ResetOnFocusLost();
                 }
                 break;
-            }
             default:
                 break;
             }
@@ -75,12 +71,12 @@ namespace ZyInput
 
         mMapping.Update(mKeyboard, mMouse);
 
-        // Processes high-level input events for each device.
+        // Handlers run after every device has updated, so they read this frame's state.
         for (ConstRef<Event> Event : Frame)
         {
             if (Event.Kind == Event::Type::WindowFocus && !Event.WindowFocus.State)
             {
-                for (ConstRef<ZyInput::Event> Release: mSynthetic)
+                for (ConstRef<ZyInput::Event> Release : mSynthetic)
                 {
                     Invoke(Release);
                 }

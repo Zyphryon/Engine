@@ -249,7 +249,7 @@ namespace ZyReflection
 
         /// \brief Creates a value carrying a type `Base` cannot name, as the bytes that type measures.
         ///
-        /// \param  Content The value to carry.
+        /// \param Content The value to carry.
         /// \return A value of `Kind::Foreign`.
         template<typename Type>
         ZY_INLINE static Value FromForeign(ConstRef<Type> Content)

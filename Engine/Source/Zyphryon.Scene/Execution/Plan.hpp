@@ -64,7 +64,7 @@ namespace ZyScene
 
     /// \brief Represents a span parameter reduced to the field of the element it spans.
     ///
-    /// \tparam Element The element.
+    /// \tparam Element The component the span holds, `const` when only read.
     template<typename Element>
     struct FieldOf<Span<Element>> final
     {
@@ -77,7 +77,7 @@ namespace ZyScene
 
     /// \brief Represents the fields a callback asks a walk for, in the order it takes them.
     ///
-    /// \tparam Parts The fields.
+    /// \tparam Parts The \ref Field of each parameter, in order.
     template<typename... Parts>
     struct Fieldset
     {
@@ -90,7 +90,7 @@ namespace ZyScene
 
         /// \brief Gets what stands for these fields, the same for every callback asking for them.
         ///
-        /// \return The key.
+        /// \return The address of a byte only these fields have.
         ZY_INLINE static ConstPtr<void> GetKey()
         {
             return AddressOf(kKey);
@@ -121,7 +121,7 @@ namespace ZyScene
 
         /// \brief Writes one field into a selection, as walks read it.
         ///
-        /// \param State The selection.
+        /// \param State The selection to write the field into.
         template<typename Field>
         static void AddField(Ref<Selection> State)
         {
@@ -168,8 +168,8 @@ namespace ZyScene
 
         /// \brief Adds a component to a list of terms unless it is there already.
         ///
-        /// \param Terms      The list.
-        /// \param Identifier The component.
+        /// \param Terms      The required or owned terms to add to.
+        /// \param Identifier The identifier of the component to add.
         ZY_INLINE static void AddTerm(Ref<Sequence<UInt32>> Terms, UInt32 Identifier)
         {
             if (!Terms.Contains(Identifier))
@@ -194,7 +194,7 @@ namespace ZyScene
 
     /// \brief Represents the parameters of a callback taking the entity ahead of its fields.
     ///
-    /// \tparam First The entity.
+    /// \tparam First The first parameter, an \ref Entity by value or reference.
     /// \tparam Rest  The fields, in order.
     template<typename First, typename... Rest>
         requires IsAnyOf<StripAll<First>, Entity>

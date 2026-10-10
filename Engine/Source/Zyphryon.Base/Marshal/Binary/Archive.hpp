@@ -21,21 +21,21 @@
 
 inline namespace ZyBase
 {
-    /// \brief Concept that defines the serialization interface for types.
+    /// \brief Concept that is satisfied when \p Type has a Serialize method taking \p Serializer.
     template<typename Type, typename Serializer>
     concept IsSerializable = requires(Ref<Type> Object, Ref<Serializer> Archive)
     {
         Object.Serialize(Archive);
     };
 
-    /// \brief Concept that checks if a type is a collection.
+    /// \brief Concept that is satisfied when \p Type is contiguous and names its Element type.
     template<typename Type>
     concept IsContainer = IsContiguous<Type> && requires
     {
         typename Type::Element;
     };
 
-    /// \brief Concept that checks if a type is an associative key-value container.
+    /// \brief Concept that is satisfied when \p Type is a key-value table that can reserve and reindex.
     template<typename Type>
     concept IsAssociative = requires(Ref<Type> Object, UInt Size)
     {
@@ -46,7 +46,7 @@ inline namespace ZyBase
         Object.GetSize();
     };
 
-    /// \brief Concept that checks if a type can be resized.
+    /// \brief Concept that is satisfied when \p Type can grow with Advance.
     template<typename Type>
     concept IsResizable = requires(Ref<Type> Object, UInt Size)
     {
@@ -61,10 +61,10 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief `true` if this archive reads values from a buffer, `false` otherwise.
+        /// `true` if this archive reads values from a buffer, `false` otherwise.
         static constexpr Bool IsReader = IsAnyOf<Object, Reader>;
 
-        /// \brief `true` if this archive writes values to a buffer, `false` otherwise.
+        /// `true` if this archive writes values to a buffer, `false` otherwise.
         static constexpr Bool IsWriter = IsAnyOf<Object, Writer>;
 
     public:
@@ -99,18 +99,7 @@ inline namespace ZyBase
         ZY_INLINE void Serialize(Ref<Type> Value)
             requires (!IsContainer<Type> && !IsAssociative<Type>)
         {
-            if constexpr (IsAnyOf<Type, Bool>)
-            {
-                if constexpr (IsReader)
-                {
-                    Value = mArchive.template Read<Bool>();
-                }
-                else
-                {
-                    mArchive.template Write<Bool>(Value);
-                }
-            }
-            else if constexpr (IsEnum<Type>)
+            if constexpr (IsEnum<Type>)
             {
                 using Underlying = Underlying<Type>;
 
@@ -158,19 +147,19 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Serializes a contiguous container by writing its size followed by its elements.
+        /// \brief Serializes a contiguous container, preceded by its size when it can be resized.
         ///
         /// \param Value The container to read into or write from.
         template<typename Type>
         ZY_INLINE void Serialize(Ref<Type> Value)
             requires IsContiguousOf<Type, typename Type::Element>
         {
+            using Element = Type::Element;
+
             if constexpr (IsResizable<Type>)
             {
                 if constexpr (IsReader)
                 {
-                    using Element = Type::Element;
-
                     Value.Clear();
                     Value.Advance(SerializeCount(IsTriviallyCopyable<Element> ? sizeof(Element) : 1));
                 }
@@ -180,15 +169,15 @@ inline namespace ZyBase
                 }
             }
 
-            if constexpr (IsTriviallyCopyable<typename Type::Element>)
+            if constexpr (IsTriviallyCopyable<Element>)
             {
                 SerializeBlock(Value.GetData(), Value.GetSize());
             }
             else
             {
-                for (Ref<typename Type::Element> Element: Value)
+                for (Ref<Element> Item : Value)
                 {
-                    Serialize(Element);
+                    Serialize(Item);
                 }
             }
         }
@@ -222,7 +211,7 @@ inline namespace ZyBase
                         Serialize(Entry.First);
                         Serialize(Entry.Second);
 
-                        Value.Assign(Entry.First, Move(Entry.Second));
+                        Value.Assign(Move(Entry.First), Move(Entry.Second));
                     }
                 }
             }
@@ -257,13 +246,13 @@ inline namespace ZyBase
         {
             const UInt Count = mArchive.template ReadUInt<UInt32>();
 
-            return (Count <= mArchive.GetAvailable() / Max<UInt>(Stride, 1)) ? Count : 0;
+            return (Count <= mArchive.GetAvailable() / Stride) ? Count : 0;
         }
 
         /// \brief Serializes a contiguous block of trivially copyable elements as raw bytes.
         ///
         /// \param Data  The pointer to the first element.
-        /// \param Count The number of elements.
+        /// \param Count The number of elements to serialize.
         template<typename Type>
         ZY_INLINE void SerializeBlock(Ptr<Type> Data, UInt Count)
         {
@@ -271,10 +260,8 @@ inline namespace ZyBase
 
             if constexpr (IsReader)
             {
-                // The reader yields nothing when the block runs past the end, which would otherwise reach
-                // `Blit` as a copy from address zero. A short read leaves zeroes, the way `Reader::Read`
-                // hands back a default-constructed value rather than a partial one.
-                if (const ConstPtr<Byte> Source = mArchive.template Read<ConstPtr<Byte> >(Size))
+                // A block running past the end reads as zeroes.
+                if (const ConstPtr<Byte> Source = mArchive.template Read<ConstPtr<Byte>>(Size))
                 {
                     Blit(Data, Size, Source);
                 }

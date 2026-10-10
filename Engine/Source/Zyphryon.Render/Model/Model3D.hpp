@@ -13,8 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Skeleton3D.hpp"
-#include "Zyphryon.Graphic/Mesh.hpp"
 #include "Zyphryon.Graphic/Material.hpp"
+#include "Zyphryon.Graphic/Mesh.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -51,7 +51,7 @@ namespace ZyRender
         /// \brief Sets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \param Skeleton The skeleton resource to reference.
-        ZY_INLINE void SetSkeleton(ConstRetainer<ZyRender::Skeleton3D> Skeleton)
+        ZY_INLINE void SetSkeleton(ConstRetainer<Skeleton3D> Skeleton)
         {
             mSkeleton = Skeleton;
         }
@@ -59,7 +59,7 @@ namespace ZyRender
         /// \brief Gets the bone hierarchy this model's geometry is skinned to.
         ///
         /// \return The referenced skeleton resource, or null when the model does not deform.
-        ZY_INLINE ConstRetainer<ZyRender::Skeleton3D> GetSkeleton() const
+        ZY_INLINE ConstRetainer<Skeleton3D> GetSkeleton() const
         {
             return mSkeleton;
         }
@@ -82,7 +82,7 @@ namespace ZyRender
 
         /// \brief Gets the model's full material table.
         ///
-        /// \return A read-only view over the material table.
+        /// \return The materials, indexed by the slot each primitive names.
         ZY_INLINE ConstSpan<Retainer<ZyGraphic::Material>> GetMaterials() const
         {
             return mMaterials;
@@ -102,7 +102,7 @@ namespace ZyRender
         /// \brief Uploads the model's exclusively-owned mesh and materials to the GPU.
         ///
         /// \param Service The graphic service used to create the resources.
-        /// \return `true` on success.
+        /// \return `true` always.
         Bool Upload(Ref<ZyGraphic::Service> Service);
 
         /// \brief Unloads the model's exclusively-owned mesh and materials from the GPU.
@@ -131,7 +131,7 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Retainer<ZyGraphic::Mesh>               mMesh;
-        Retainer<ZyRender::Skeleton3D>          mSkeleton;
+        Retainer<Skeleton3D>                    mSkeleton;
         Sequence<Retainer<ZyGraphic::Material>> mMaterials;
     };
 }

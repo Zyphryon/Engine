@@ -66,7 +66,7 @@ namespace ZyRender
 
         /// \brief Gets the projection matrix of the camera.
         ///
-        /// \return The projection matrix.
+        /// \return The projection, as last given to \ref SetProjection.
         ZY_INLINE ConstRef<Matrix4x4> GetProjection() const
         {
             return mProjection;

@@ -57,7 +57,7 @@ namespace ZyInput
 
         /// \brief Replaces the bindings of every defined action the document names.
         ///
-        /// \note Actions the document leaves out keep their bindings, and names it holds that no action has are ignored.
+        /// \note Actions the document leaves out keep their bindings, and names matching no action are ignored.
         ///
         /// \param Root The object holding one array of bindings per action name.
         void Load(JsonObject Root);
@@ -66,6 +66,15 @@ namespace ZyInput
         ///
         /// \param Root The object to write one array of bindings per action name under.
         void Save(JsonObject Root) const;
+
+        /// \brief Gets the identifier an action is queried by.
+        ///
+        /// \param Action The name of the action.
+        /// \return The identifier, the same on every build, so it can be a compile-time constant.
+        ZY_INLINE static constexpr UInt64 Identify(Text Action)
+        {
+            return Hash(Action);
+        }
 
         /// \brief Visits every action that was pressed or released during the current frame.
         ///
@@ -115,7 +124,7 @@ namespace ZyInput
         /// \brief Gets the value an action reads this frame.
         ///
         /// \param Action The identifier of the action.
-        /// \return The keys and buttons bound to it, kept within [-1, 1], plus how far its mouse axes moved.
+        /// \return The keys and buttons bound to it, kept within [-1, 1], plus its mouse axes and the values fed to it.
         ZY_INLINE Real32 GetValue(UInt64 Action) const
         {
             const ConstPtr<Entry> Entry = mActions.Find(Action);
@@ -160,16 +169,17 @@ namespace ZyInput
         /// \return The binding's value, already scaled.
         static Real32 Read(ConstRef<Binding> Binding, ConstRef<Keyboard> Keyboard, ConstRef<Mouse> Mouse);
 
-    public:
-
-        /// \brief Gets the identifier an action is queried by.
+        /// \brief Replaces the bindings of an action with the ones a list holds.
         ///
-        /// \param Action The name of the action.
-        /// \return The identifier, the same on every build, so it can be a compile-time constant.
-        ZY_INLINE static constexpr UInt64 Identify(Text Action)
-        {
-            return Hash(Action);
-        }
+        /// \param Entry The action to fill.
+        /// \param List  The list of bindings, or null to leave the action as it is.
+        static void Restore(Ref<Entry> Entry, JsonArray List);
+
+        /// \brief Writes the bindings of an action into a list.
+        ///
+        /// \param Entry The action to write.
+        /// \param List  The list to add one object per binding to.
+        static void Store(ConstRef<Entry> Entry, JsonArray List);
 
     private:
 

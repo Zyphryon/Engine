@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Represents a compile-time fixed-capacity string symbol for efficient string interning and comparison.
+    /// \brief Represents a string literal held by value, usable as a template argument.
     ///
     /// \tparam Capacity The total capacity including null terminator (must be >= 1).
     template<UInt Capacity>
@@ -36,7 +36,7 @@ inline namespace ZyBase
             ::Copy(_mData, Capacity, Literal);
         }
 
-        /// \brief Returns a pointer to the symbol's character data.
+        /// \brief Gets a pointer to the symbol's character data.
         ///
         /// \return A pointer to the first character (includes null terminator at index GetSize()).
         ZY_INLINE constexpr ConstPtr<Char> GetData() const
@@ -60,7 +60,7 @@ inline namespace ZyBase
             return Capacity;
         }
 
-        /// \brief Checks if the symbol is empty (capacity of 1 means only null terminator).
+        /// \brief Checks whether the symbol is empty.
         ///
         /// \return `true` if the symbol contains no characters, `false` otherwise.
         ZY_INLINE constexpr Bool IsEmpty() const
@@ -68,7 +68,7 @@ inline namespace ZyBase
             return Capacity <= 1;
         }
 
-        /// \brief Computes a 64-bit FNV-1a hash of the symbol.
+        /// \brief Computes a 64-bit hash of the symbol.
         ///
         /// \return A 64-bit hash of the character data.
         ZY_INLINE constexpr UInt64 Hash() const
@@ -87,29 +87,25 @@ inline namespace ZyBase
             return _mData[Index];
         }
 
-        /// \brief Checks if this symbol is equal to another symbol.
+        /// \brief Checks whether this symbol is equal to another symbol.
         ///
         /// \param Other The symbol to compare with.
-        /// \return `true` if both symbols have the same capacity and content, `false` otherwise.
+        /// \return `true` if both symbols hold the same characters, `false` otherwise.
         ZY_INLINE constexpr Bool operator==(ConstRef<Symbol> Other) const
         {
-            if constexpr (Capacity != Other.GetCapacity())
-            {
-                return false;
-            }
             return Compare(_mData, Other._mData, Capacity);
         }
 
-        /// \brief Checks if this symbol is not equal to another symbol.
+        /// \brief Checks whether this symbol is not equal to another symbol.
         ///
         /// \param Other The symbol to compare with.
-        /// \return `true` if symbols differ in capacity or content, `false` otherwise.
+        /// \return `true` if the symbols hold different characters, `false` otherwise.
         ZY_INLINE constexpr Bool operator!=(ConstRef<Symbol> Other) const
         {
             return !(*this == Other);
         }
 
-        /// \brief Checks if this symbol is equal to a text view.
+        /// \brief Checks whether this symbol is equal to a text view.
         ///
         /// \param Other The text view to compare with.
         /// \return `true` if the symbol content matches the text view, `false` otherwise.
@@ -118,7 +114,7 @@ inline namespace ZyBase
             return GetSize() == Other.GetSize() && Compare(_mData, Other.GetData(), GetSize());
         }
 
-        /// \brief Checks if this symbol is not equal to a text view.
+        /// \brief Checks whether this symbol is not equal to a text view.
         ///
         /// \param Other The text view to compare with.
         /// \return `true` if the symbol content differs from the text view, `false` otherwise.

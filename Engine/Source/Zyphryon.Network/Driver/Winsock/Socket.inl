@@ -25,12 +25,11 @@ namespace ZyNetwork
 
     static Bool Prepare(SOCKET Handle, Transport Transport)
     {
-        ULONG Pending = 1;
+        ULONG Enable = 1;
 
-        if (ioctlsocket(Handle, FIONBIO, AddressOf(Pending)) != 0)
+        if (ioctlsocket(Handle, FIONBIO, AddressOf(Enable)) != 0)
         {
             LOG_E("Network: a socket could not be made non-blocking ({0})", WSAGetLastError());
-
             return false;
         }
 
@@ -38,7 +37,12 @@ namespace ZyNetwork
         {
             BOOL Immediate = TRUE;
 
-            setsockopt(Handle, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<ConstPtr<Char>>(AddressOf(Immediate)), sizeof(Immediate));
+            setsockopt(
+                Handle,
+                IPPROTO_TCP,
+                TCP_NODELAY,
+                reinterpret_cast<ConstPtr<Char>>(AddressOf(Immediate)),
+                sizeof(Immediate));
         }
         else
         {
@@ -47,7 +51,16 @@ namespace ZyNetwork
             BOOL  Reset   = FALSE;
             DWORD Ignored = 0;
 
-            WSAIoctl(Handle, SIO_UDP_CONNRESET, AddressOf(Reset), sizeof(Reset), nullptr, 0, AddressOf(Ignored), nullptr, nullptr);
+            WSAIoctl(
+                Handle,
+                SIO_UDP_CONNRESET,
+                AddressOf(Reset),
+                sizeof(Reset),
+                nullptr,
+                0,
+                AddressOf(Ignored),
+                nullptr,
+                nullptr);
         }
         return true;
     }
@@ -65,9 +78,13 @@ namespace ZyNetwork
             return false;
         }
 
-        const SOCKET Handle = WSASocketW(Family.GetData<sockaddr>()->sa_family,
+        const SOCKET Handle = WSASocketW(
+            Family.GetData<sockaddr>()->sa_family,
             (Transport == Transport::TCP) ? SOCK_STREAM : SOCK_DGRAM,
-            (Transport == Transport::TCP) ? IPPROTO_TCP : IPPROTO_UDP, nullptr, 0, WSA_FLAG_OVERLAPPED);
+            (Transport == Transport::TCP) ? IPPROTO_TCP : IPPROTO_UDP,
+            nullptr,
+            0,
+            WSA_FLAG_OVERLAPPED);
 
         if (Handle == INVALID_SOCKET)
         {
@@ -108,7 +125,12 @@ namespace ZyNetwork
         {
             DWORD False = 0;
 
-            setsockopt(mHandle, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<ConstPtr<Char>>(AddressOf(False)), sizeof(False));
+            setsockopt(
+                mHandle,
+                IPPROTO_IPV6,
+                IPV6_V6ONLY,
+                reinterpret_cast<ConstPtr<Char>>(AddressOf(False)),
+                sizeof(False));
         }
 
         if (bind(mHandle, Address.GetData<sockaddr>(), static_cast<SInt32>(Address.GetSize())) != 0)

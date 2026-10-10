@@ -22,15 +22,15 @@ namespace ZyContent
         /// \brief Constructs an empty URI.
         ZY_INLINE Uri() = default;
 
-        /// \brief Constructs an URI from a text view.
+        /// \brief Constructs a URI from a text view.
         ///
-        /// \param Url The URL string to parse.
+        /// \param Url The URL to hold.
         ZY_INLINE Uri(Text Url)
             : mUrl { Url }
         {
         }
 
-        /// \brief Constructs an URI from a null-terminated string literal.
+        /// \brief Constructs a URI from a null-terminated string literal.
         ///
         /// \param Literal The string literal to copy into the URI.
         template<UInt Count>
@@ -41,7 +41,7 @@ namespace ZyContent
 
         /// \brief Constructs a URI from a string.
         ///
-        /// \param Url The URL string to parse.
+        /// \param Url The URL to hold.
         ZY_INLINE Uri(AnyRef<Str> Url)
             : mUrl { Move(Url) }
         {
@@ -97,7 +97,7 @@ namespace ZyContent
 
         /// \brief Gets the path component of the URI.
         ///
-        /// \return The path portion after the schema, or the full URL if no schema.
+        /// \return The path portion after the schema, or empty if none.
         ZY_INLINE Text GetPath() const
         {
             return StrAfter(mUrl, "://");
@@ -137,7 +137,7 @@ namespace ZyContent
 
         /// \brief Computes a 64-bit hash of the object's state.
         ///
-        /// \return A 64-bit hash of the object.
+        /// \return A 64-bit hash of the URL.
         ZY_INLINE UInt64 Hash() const
         {
             return ZyBase::Hash(mUrl);
@@ -150,6 +150,15 @@ namespace ZyContent
         ZY_INLINE void Serialize(Serializer Archive)
         {
             Archive.Serialize(mUrl);
+        }
+
+        /// \brief Gets a string representation of this object.
+        ///
+        /// \param Buffer The string buffer to write the output to.
+        template<typename Output>
+        ZY_INLINE void OnFormat(Ref<Output> Buffer) const
+        {
+            Buffer.Append(mUrl);
         }
 
     public:
@@ -186,8 +195,8 @@ namespace ZyContent
 
     private:
 
-        // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
-        // -=-=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=--=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Str mUrl;
     };

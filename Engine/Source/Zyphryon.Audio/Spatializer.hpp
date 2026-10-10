@@ -28,7 +28,8 @@ namespace ZyAudio
 
         /// \brief Constructs a spatializer with default parameters.
         ZY_INLINE Spatializer()
-            : mRight      { Vector3::UnitX() },
+            : mPosition   { },
+              mRight      { Vector3::UnitX() },
               mForward    { -Vector3::UnitZ() },
               mInnerAngle { Angle::FromDegrees(360.0f) },
               mOuterAngle { Angle::FromDegrees(360.0f) },
@@ -50,8 +51,8 @@ namespace ZyAudio
 
         /// \brief Sets the listener's directional cone parameters.
         ///
-        /// \param InnerAngle The inner cone angle.
-        /// \param OuterAngle The outer cone angle.
+        /// \param InnerAngle The width of the cone heard at full gain.
+        /// \param OuterAngle The width of the cone past which only `OuterGain` is heard.
         /// \param OuterGain  The gain applied outside the outer cone (range [0, 1]).
         ZY_INLINE void SetListenerCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
         {

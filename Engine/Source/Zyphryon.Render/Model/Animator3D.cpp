@@ -62,7 +62,7 @@ namespace ZyRender
         // The bone count is unknown until the rig lands, so Update sizes the palette instead.
         mPalette.Clear();
 
-        // Force a rebind: a freed rig replaced at the same address would compare equal.
+        // A new model may carry another rig, so every source pairs with it again.
         for (Ref<Source> Entry : mSources)
         {
             Entry.Bound = false;
@@ -89,13 +89,13 @@ namespace ZyRender
             Retire(mSources[mActive ^ 1]);
         }
 
-        Ref<Source> Target = mSources[mActive];
-        Target.Clip  = Animation;
-        Target.Bound = false;
+        Ref<Source> Incoming = mSources[mActive];
+        Incoming.Clip  = Animation;
+        Incoming.Bound = false;
 
         // A clip still loading carries neither its length nor its lanes; Rebind adopts both once they land.
-        Target.Cursor.SetRepeat(Mode);
-        Target.Cursor.Play();
+        Incoming.Cursor.SetRepeat(Mode);
+        Incoming.Cursor.Play();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

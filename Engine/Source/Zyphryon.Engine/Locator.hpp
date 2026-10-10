@@ -26,7 +26,7 @@ namespace ZyEngine
     {
     public:
 
-        /// \brief Constructor that resolves all dependencies from the given host.
+        /// \brief Constructs the locator, resolving every service from the given host.
         ///
         /// \param Host The host used to look up each service.
         ZY_INLINE explicit Locator(Ref<Subsystem::Host> Host)
@@ -44,7 +44,7 @@ namespace ZyEngine
         {
             return Dependency<Type>::Fetch();
         }
-        
+
         /// \brief Gets the resolved instance of the specified service type.
         ///
         /// \return A constant reference to the resolved service instance.

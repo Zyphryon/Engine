@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "SKLLoader.hpp"
-#include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Render/Model/Skeleton3D.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,19 +24,19 @@ namespace ZyRender
 
     Bool SKLLoader::Load(Ref<ZyContent::Service> Service, Ref<ZyContent::Scope> Scope, AnyRef<Blob> Data)
     {
+        const Retainer<Skeleton3D> Asset = Retainer<Skeleton3D>::Cast(Scope.GetResource());
+
         Reader Input(Data);
 
         if (Input.Read<UInt32>() != ('Z' | ('S' << 8) | ('K' << 16) | ('L' << 24)))
         {
-            LOG_W("'{0}' is not a ZSKL file (bad magic)", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' is not a ZSKL file (bad magic)", Asset->GetKey());
             return false;
         }
 
-        const UInt16 Version = Input.Read<UInt16>();
-
-        if (Version != 1)
+        if (Input.Read<UInt16>() != 1)
         {
-            LOG_W("'{0}' has an unsupported ZSKL version", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has an unsupported ZSKL version", Asset->GetKey());
             return false;
         }
 
@@ -48,19 +47,19 @@ namespace ZyRender
 
         if (Input.GetAvailable() < Length)
         {
-            LOG_W("'{0}' has a truncated ZSKL bone table", Scope.GetResource()->GetKey());
+            LOG_W("'{0}' has a truncated ZSKL bone table", Asset->GetKey());
             return false;
         }
 
         Sequence<Skeleton3D::Bone> Bones;
-        Bones.Advance(Count);
 
         if (Count > 0)
         {
-            Blit(Bones.GetData(), Length, Input.Read<ConstPtr<Skeleton3D::Bone>>(static_cast<UInt32>(Length)));
+            Bones.Append(ConstSpan<Skeleton3D::Bone>(
+                Input.Read<ConstPtr<Skeleton3D::Bone>>(static_cast<UInt32>(Length)),
+                static_cast<UInt>(Count)));
         }
 
-        const Retainer<Skeleton3D> Asset = Retainer<Skeleton3D>::Cast(Scope.GetResource());
         Asset->SetBones(Move(Bones));
         return true;
     }

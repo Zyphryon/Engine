@@ -63,7 +63,7 @@ namespace ZyInput
         ///
         /// \param Key   The key to read.
         /// \param Scale The value the action reads while the key is held.
-        /// \return The binding.
+        /// \return The binding to pass to \ref Mapping::Bind.
         ZY_INLINE static constexpr Binding FromKey(Key Key, Real32 Scale = 1.0f)
         {
             Binding Result;
@@ -77,7 +77,7 @@ namespace ZyInput
         ///
         /// \param Button The button to read.
         /// \param Scale  The value the action reads while the button is held.
-        /// \return The binding.
+        /// \return The binding to pass to \ref Mapping::Bind.
         ZY_INLINE static constexpr Binding FromButton(ZyInput::Button Button, Real32 Scale = 1.0f)
         {
             Binding Result;
@@ -92,7 +92,7 @@ namespace ZyInput
         /// \param Negative The key that reads minus one.
         /// \param Positive The key that reads plus one.
         /// \param Scale    The value each end is multiplied by.
-        /// \return The binding.
+        /// \return The binding to pass to \ref Mapping::Bind.
         ZY_INLINE static constexpr Binding FromKeys(Key Negative, Key Positive, Real32 Scale = 1.0f)
         {
             Binding Result;
@@ -107,7 +107,7 @@ namespace ZyInput
         ///
         /// \param Axis  The axis to read.
         /// \param Scale The value one unit of movement reads as.
-        /// \return The binding.
+        /// \return The binding to pass to \ref Mapping::Bind.
         ZY_INLINE static constexpr Binding FromAxis(ZyInput::Axis Axis, Real32 Scale = 1.0f)
         {
             Binding Result;

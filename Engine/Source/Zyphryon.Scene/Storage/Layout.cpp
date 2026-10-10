@@ -102,21 +102,6 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Layout::SetCopy(UInt32 Archetype, Ptr<Chunk> Holder, Bool AsArchetype, Ptr<Chunk> Target)
-    {
-        Ref<Lineage> Line = GetLineage(Archetype);
-
-        if (Line.Shape != Holder)
-        {
-            Line.Shape  = Holder;
-            Line.Copies = Array<Ptr<Chunk>, 2>(nullptr, nullptr);
-        }
-        Line.Copies[AsArchetype] = Target;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Layout::UpdateHeirs(UInt32 Archetype, ConstRef<Directory> Slots)
     {
         if (GetHeirChunks(Archetype).IsEmpty())
@@ -158,6 +143,21 @@ namespace ZyScene
         Line.Shape  = nullptr;
         Line.Copies = Array<Ptr<Chunk>, 2>(nullptr, nullptr);
         return ZyBase::Move(Line.Heirs);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Layout::SetCopy(UInt32 Archetype, Ptr<Chunk> Holder, Bool AsArchetype, Ptr<Chunk> Target)
+    {
+        Ref<Lineage> Line = GetLineage(Archetype);
+
+        if (Line.Shape != Holder)
+        {
+            Line.Shape  = Holder;
+            Line.Copies = Array<Ptr<Chunk>, 2>(nullptr, nullptr);
+        }
+        Line.Copies[AsArchetype] = Target;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -212,10 +212,7 @@ namespace ZyScene
     {
         const UInt32 Kin = Archetype - kMinRangeArchetypes - 1;
 
-        if (Kin >= mLineages.GetSize())
-        {
-            mLineages.Advance(Kin + 1 - mLineages.GetSize());
-        }
+        mLineages.Expand(Kin + 1);
         return mLineages[Kin];
     }
 

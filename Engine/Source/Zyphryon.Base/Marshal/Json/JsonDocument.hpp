@@ -43,7 +43,7 @@ inline namespace ZyBase
         /// \brief Serializes a JSON value to text.
         ///
         /// \param Value  The value to serialize.
-        /// \param Indent The string used for indentation (default is two spaces).
+        /// \param Indent The text each level of nesting is indented by, or empty to write everything on one line.
         /// \return The serialized JSON text with formatting.
         static Str Dump(ConstRef<JsonValue> Value, Text Indent = "  ");
     };

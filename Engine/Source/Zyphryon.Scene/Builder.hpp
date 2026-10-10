@@ -57,7 +57,7 @@ namespace ZyScene
         /// \brief Makes a system that walks what its callback asks for, or only calls it when it asks for nothing.
         ///
         /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
-        /// \return The system.
+        /// \return The handle of the new system.
         template<typename Callable>
         System Appoint(AnyRef<Callable> Callback)
         {
@@ -82,10 +82,7 @@ namespace ZyScene
 
                 if (Unasked && !mState->Globals.IsEmpty() && mState->Globals.GetSize() == mState->Fields.GetSize())
                 {
-                    for (const UInt32 Identifier : mState->Globals)
-                    {
-                        mState->Required.Append(Identifier);
-                    }
+                    mState->Required.Append(mState->Globals);
                 }
             }
 
@@ -102,7 +99,7 @@ namespace ZyScene
 
         /// \brief Makes a system that reads a pull list.
         ///
-        /// \param Callback The callable, taking the entity first, then the value the entry is about.
+        /// \param Callback The callable, taking fields like a query, or the entity and maybe its old value for removals.
         /// \return The system, whose cursor goes with it.
         template<typename Reader, typename Callable>
         System Subscribe(AnyRef<Callable> Callback)
@@ -112,23 +109,23 @@ namespace ZyScene
 
         /// \brief Makes the query this description asks for.
         ///
-        /// \return The query.
+        /// \return The query, archetypes and sleepers left out unless asked.
         Query Enlist();
 
         /// \brief Hands a runner to the scheduler as the system this description names.
         ///
         /// \param Runner The runner, called when the system's turn comes.
-        /// \return The system.
+        /// \return The handle of the new system.
         System Install(AnyRef<Delegate<void()>> Runner);
 
         /// \brief Gets the storage of the world the description is made in.
         ///
-        /// \return The storage.
+        /// \return The world itself, as its storage.
         Ref<Storage> GetStorage() const;
 
         /// \brief Hands the terms over, archetypes and sleepers left out unless the description asked for them.
         ///
-        /// \return The terms.
+        /// \return The terms asked for so far.
         ZY_INLINE Unique<Selection> Take()
         {
             if (!mShown.Prefab)
@@ -144,7 +141,7 @@ namespace ZyScene
 
         /// \brief Leaves out whatever carries a marker, unless the description asked for it.
         ///
-        /// \param Marker The marker.
+        /// \param Marker The identifier of the tag to leave out.
         ZY_INLINE void Hide(UInt32 Marker)
         {
             if (!mState->Required.Contains(Marker))
@@ -341,21 +338,21 @@ namespace ZyScene
         ///
         /// \return The description, which leaves sleepers out like a query unless it asks for them.
         template<typename List>
-        ZY_INLINE Builder<ZyScene::Cursor<List>> Reads() &&
+        ZY_INLINE Builder<Cursor<List>> Reads() &&
             requires IsAnyOf<Kind, System>
         {
-            return Builder<ZyScene::Cursor<List>>(Move(static_cast<Ref<Draft>>(* this)));
+            return Builder<Cursor<List>>(Move(static_cast<Ref<Draft>>(* this)));
         }
 
         /// \brief Makes the system, handing it the callback whose parameters give its fields.
         ///
         /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
-        /// \return The system.
+        /// \return The handle of the new system.
         template<typename Callable>
-        ZY_INLINE ZyScene::System Each(AnyRef<Callable> Callback) &&
+        ZY_INLINE System Each(AnyRef<Callable> Callback) &&
             requires (!IsAnyOf<Kind, Query>)
         {
-            if constexpr (IsAnyOf<Kind, ZyScene::System>)
+            if constexpr (IsAnyOf<Kind, System>)
             {
                 return Appoint(Forward<Callable>(Callback));
             }

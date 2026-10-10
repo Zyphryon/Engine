@@ -15,7 +15,6 @@
 #include "Compiler.hpp"
 #include "Primitive.hpp"
 #include <concepts>
-#include <cstdint>
 #include <type_traits>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,7 +24,7 @@
 inline namespace ZyBase
 {
     /// \brief Selects between \p True and \p False at compile time based on a boolean \p Result.
-    template<bool Result, class True, class False>
+    template<Bool Result, typename True, typename False>
     using Select        = std::conditional_t<Result, True, False>;
 
     /// \brief Strips lvalue and rvalue reference qualifiers from \p Type, yielding the bare value type.
@@ -36,7 +35,7 @@ inline namespace ZyBase
     template<typename Type>
     using StripPtr      = std::remove_pointer_t<Type>;
 
-    /// \brief Removes all pointer and reference qualifiers, as well as const/volatile qualifiers from a type.
+    /// \brief Strips references and const/volatile qualifiers from \p Type, decaying arrays and functions to pointers.
     template<typename Type>
     using StripAll      = std::decay_t<Type>;
 
@@ -48,7 +47,7 @@ inline namespace ZyBase
     template<typename... Arguments>
     using Common        = std::common_type_t<Arguments...>;
 
-    /// \brief Produces the underlying integral type of enumeration.
+    /// \brief Produces the underlying integral type of an enumeration.
     template<typename Type>
     using Underlying    = std::underlying_type_t<Type>;
 
@@ -62,7 +61,7 @@ inline namespace ZyBase
 
     /// \brief Selects the smallest unsigned integer type that can represent values up to \p Limit.
     template<auto Limit>
-    using Integer       = Smallest<Limit, uint8_t, Smallest<Limit, uint16_t, Smallest<Limit, uint32_t, uint64_t>>>;
+    using Integer       = Smallest<Limit, UInt8, Smallest<Limit, UInt16, Smallest<Limit, UInt32, UInt64>>>;
 
     /// \brief Yields `void` for any well-formed \p Type, used to detect valid types in SFINAE contexts.
     template<typename Type>
@@ -73,99 +72,99 @@ inline namespace ZyBase
     using Pointer       = std::add_pointer_t<Type>;
 
     /// \brief Concept that is satisfied when \p From is implicitly convertible to \p To.
-    template<class From, class To>
+    template<typename From, typename To>
     concept IsCastable  = std::is_convertible_v<From, To>;
 
     /// \brief Concept that is satisfied when \p Base is a base class of \p Derived.
-    template<class Base, class Derived>
+    template<typename Base, typename Derived>
     concept IsDerived   = std::is_base_of_v<Base, Derived>;
 
     /// \brief Concept that is satisfied when \p Type is a scoped or unscoped enumeration.
-    template<class Type>
+    template<typename Type>
     concept IsEnum      = std::is_enum_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is the same as at least one type in \p Types.
-    template<class Type, class ...Types>
+    template<typename Type, typename... Types>
     concept IsAnyOf     = (std::same_as<Type, Types> || ...);
 
     /// \brief Concept that is satisfied when \p Type can be invoked with \p Arguments.
-    template<class Type, class ...Arguments>
+    template<typename Type, typename... Arguments>
     concept IsInvocable = std::is_invocable_v<Type, Arguments...>;
 
     /// \brief Concept that is satisfied when \p Type is const-qualified.
-    template<class Type>
+    template<typename Type>
     concept IsImmutable = std::is_const_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is an integral type.
-    template<class Type>
+    template<typename Type>
     concept IsIntegral  = std::is_integral_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is a pointer type.
-    template<class Type>
+    template<typename Type>
     concept IsPointer   = std::is_pointer_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is a floating-point type.
-    template<class Type>
+    template<typename Type>
     concept IsReal      = std::is_floating_point_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is a numeric type (integral or floating-point).
-    template<class Type>
+    template<typename Type>
     concept IsNumeric   = IsIntegral<Type> || IsReal<Type>;
 
     /// \brief Concept that is satisfied when \p Type is trivially copyable.
-    template<class Type>
+    template<typename Type>
     concept IsTriviallyCopyable = std::is_trivially_copyable_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is trivially constructible.
-    template<class Type>
+    template<typename Type>
     concept IsTriviallyConstructible = std::is_trivially_constructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is trivially destructible.
-    template<class Type>
+    template<typename Type>
     concept IsTriviallyDestructible = std::is_trivially_destructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type can be constructed without arguments.
-    template<class Type>
+    template<typename Type>
     concept IsDefaultConstructible = std::is_default_constructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type can be constructed from another instance of itself.
-    template<class Type>
+    template<typename Type>
     concept IsCopyConstructible = std::is_copy_constructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type can be assigned from another instance of itself.
-    template<class Type>
+    template<typename Type>
     concept IsCopyAssignable = std::is_copy_assignable_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type can be constructed by taking over another instance.
-    template<class Type>
+    template<typename Type>
     concept IsMoveConstructible = std::is_move_constructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type can be assigned by taking over another instance.
-    template<class Type>
+    template<typename Type>
     concept IsMoveAssignable = std::is_move_assignable_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is trivially move constructible.
-    template<class Type>
+    template<typename Type>
     concept IsTriviallyMoveConstructible = std::is_trivially_move_constructible_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is trivially move assignable.
-    template<class Type>
+    template<typename Type>
     concept IsTriviallyMoveAssignable = std::is_trivially_move_assignable_v<Type>;
 
-    /// \brief Concept that is satisfied when \p Type is an signed arithmetic type.
-    template<class Type>
+    /// \brief Concept that is satisfied when \p Type is a signed arithmetic type.
+    template<typename Type>
     concept IsSigned    = std::is_signed_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is an unsigned arithmetic type.
-    template<class Type>
+    template<typename Type>
     concept IsUnsigned  = std::is_unsigned_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is `void`.
-    template<class Type>
+    template<typename Type>
     concept IsVoid      = std::is_void_v<Type>;
 
     /// \brief Concept that is satisfied when \p Type is empty.
-    template<class Type>
+    template<typename Type>
     concept IsEmpty     = std::is_empty_v<Type>;
 
     /// \brief Represents an empty type used as a dummy value.

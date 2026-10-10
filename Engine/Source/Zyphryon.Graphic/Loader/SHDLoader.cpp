@@ -23,26 +23,29 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Text ParseInclude(Text Line)
+    static void LoadInclude(
+        Ref<ZyContent::Service> Service,
+        Ref<ZyContent::Scope>   Scope,
+        Ref<Shader>             Asset,
+        Text                    Source,
+        Text                    Line)
     {
         const Text Body = StrTrim(Line);
 
         if (!StrStartsWith(Body, "#include"))
         {
-            return Text::Empty();
+            return;
         }
 
-        const SInt Opening = StrFind(Body, '"');
-
-        if (Opening < 0)
+        if (const Text Path = StrBefore(StrAfter(Body, '"'), '"'); !Path.IsEmpty())
         {
-            return Text::Empty();
+            const Retainer<Shader> Module = Service.Load<Shader>(Path, AddressOf(Scope));
+
+            Asset.AddInclude(
+                Module,
+                static_cast<UInt32>(Line.GetData() - Source.GetData()),
+                static_cast<UInt32>(Line.GetSize()));
         }
-
-        const Text Quoted  = Body.Slice(static_cast<UInt>(Opening) + 1);
-        const SInt Closing = StrFind(Quoted, '"');
-
-        return (Closing < 0 ? Text::Empty() : Quoted.Slice(0, static_cast<UInt>(Closing)));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -56,14 +59,7 @@ namespace ZyGraphic
 
         StrSplit(Source, '\n', [&](Text Line)
         {
-            if (const Text Path = ParseInclude(Line); !Path.IsEmpty())
-            {
-                const Retainer<Shader> Module = Service.Load<Shader>(ZyContent::Uri(Path), AddressOf(Scope));
-
-                Asset->AddInclude(Module,
-                    static_cast<UInt32>(Line.GetData() - Source.GetData()),
-                    static_cast<UInt32>(Line.GetSize()));
-            }
+            LoadInclude(Service, Scope, * Asset, Source, Line);
         });
 
         Asset->SetSource(Move(Data));

@@ -28,10 +28,10 @@ namespace ZyGraphic
     {
     public:
 
-        /// \brief Type alias for the bitmask selecting which features a variant compiles with.
+        /// \brief Represents the bitmask selecting which features a variant compiles with.
         using Key = UInt32;
 
-        /// \brief Type alias for an array of shader modules indexed by pipeline stage.
+        /// \brief Represents the shader module of each pipeline stage.
         using Shaders = Array<Retainer<Shader>, ZyEnum::Count<ShaderStage>()>;
 
         /// \brief Specifies the groups of fixed-function state a feature replaces as a whole.
@@ -97,12 +97,12 @@ namespace ZyGraphic
 
         /// \brief Constructs a technique resource with the given content key.
         ///
-        /// \param Key The unique content key identifying this pipeline.
+        /// \param Key The unique content key identifying this technique.
         explicit Technique(AnyRef<ZyContent::Uri> Key);
 
         /// \brief Sets up the technique with the given description and schema.
         ///
-        /// \param Description The description containing the technique's configuration.
+        /// \param Description The base parts, features and preloaded variants to build from.
         /// \param Schema      The named resources the encoder fills the pipeline's bindings with.
         void Setup(AnyRef<Description> Description, AnyRef<Schema> Schema);
 
@@ -137,12 +137,14 @@ namespace ZyGraphic
         /// \return The bitmask holding the feature's bit, or zero if the technique declares no such feature.
         ZY_INLINE Key ResolveByName(Text Name) const
         {
-            for (UInt Index = 0, Limit = mDescription.Features.GetSize(); Index < Limit; ++Index)
+            const SInt Index = mDescription.Features.Find([Name](ConstRef<Feature> Entry)
             {
-                if (mDescription.Features[Index].Name == Name)
-                {
-                    return (1u << Index);
-                }
+                return Entry.Name == Name;
+            });
+
+            if (Index >= 0)
+            {
+                return (1u << Index);
             }
 
             LOG_W("'{0}' declares no feature named '{1}'", GetKey(), Name);
@@ -155,12 +157,19 @@ namespace ZyGraphic
         /// \return The bitmask holding the feature's bit, or zero if no feature is gated on that texture.
         ZY_INLINE Key ResolveByTexture(UInt64 Name) const
         {
-            for (UInt Index = 0, Limit = mDescription.Features.GetSize(); Name && Index < Limit; ++Index)
+            if (!Name)
             {
-                if (mDescription.Features[Index].Texture == Name)
-                {
-                    return (1u << Index);
-                }
+                return 0;
+            }
+
+            const SInt Index = mDescription.Features.Find([Name](ConstRef<Feature> Entry)
+            {
+                return Entry.Texture == Name;
+            });
+
+            if (Index >= 0)
+            {
+                return (1u << Index);
             }
             return 0;
         }
@@ -233,7 +242,7 @@ namespace ZyGraphic
         /// \param Destination The states each replaced block is written into.
         /// \param Source      The feature's states, which every block it replaces is complete in.
         /// \param Blocks      The bitmask of the blocks to copy, built from \ref Block.
-        void Converge(Ref<States> Destination, ConstRef<States> Source, UInt8 Blocks) const;
+        static void Converge(Ref<States> Destination, ConstRef<States> Source, UInt8 Blocks);
 
         /// \brief Creates the pipeline backing a variant.
         ///

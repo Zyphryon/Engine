@@ -47,14 +47,7 @@ inline namespace ZyBase
         /// \brief Destroys the writer and releases the underlying storage.
         ZY_INLINE ~Writer()
         {
-            if (mData)
-            {
-                ::operator delete[](mData);
-
-                mData     = nullptr;
-                mSize     = 0;
-                mCapacity = 0;
-            }
+            ::operator delete[](mData);
         }
 
         /// \brief Transfers ownership of the written data to a new blob.
@@ -62,7 +55,7 @@ inline namespace ZyBase
         /// \return A blob containing the written data.
         ZY_INLINE Blob Detach()
         {
-            Blob Memory = Blob(mData, mSize, [](Ptr<Byte> Data)
+            Blob Memory(mData, mSize, [](Ptr<Byte> Data)
             {
                 ::operator delete[](Data);
             });
@@ -156,17 +149,6 @@ inline namespace ZyBase
             Write(AddressOf(Value), sizeof(Type));
         }
 
-        /// \brief Writes a signed integer using variable-length zigzag encoding.
-        ///
-        /// \param Value The signed integer value to encode and write.
-        template<typename Type = SInt>
-        ZY_INLINE void WriteInt(Type Value)
-        {
-            using Unsigned = Unsigned<Type>;
-
-            WriteUInt((static_cast<Unsigned>(Value) << 1) ^ (Value >> (sizeof(Type) * 8 - 1)));
-        }
-
         /// \brief Writes an unsigned integer using variable-length encoding.
         ///
         /// \param Value The unsigned integer value to encode and write.
@@ -179,6 +161,17 @@ inline namespace ZyBase
                 Value >>= 7u;
             }
             Write<UInt8>(static_cast<UInt8>(Value) & 0x7Fu);
+        }
+
+        /// \brief Writes a signed integer using variable-length zigzag encoding.
+        ///
+        /// \param Value The signed integer value to encode and write.
+        template<typename Type = SInt>
+        ZY_INLINE void WriteInt(Type Value)
+        {
+            using Unsigned = Unsigned<Type>;
+
+            WriteUInt((static_cast<Unsigned>(Value) << 1) ^ (Value >> (sizeof(Type) * 8 - 1)));
         }
 
         /// \brief Writes a text string prefixed with its character count.
@@ -209,7 +202,21 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Writes a block of bytes packed into a single LZ4 block.
+        /// \brief Writes a data block with a length prefix, using a user-defined function to populate the contents.
+        ///
+        /// \param Trampoline The user-defined function that writes the block contents.
+        template<typename Header, typename Function>
+        ZY_INLINE void WriteBlock(AnyRef<Function> Trampoline)
+        {
+            const UInt Offset = mSize;
+            Write<Header>(static_cast<Header>(0));
+            Trampoline(* this);
+
+            const Header Length = static_cast<Header>(mSize - (Offset + sizeof(Header)));
+            Blit(mData + Offset, sizeof(Header), AddressOf(Length));
+        }
+
+        /// \brief Writes a block of bytes LZ4-packed, or raw when packing does not shrink them.
         ///
         /// \param Value The bytes to pack.
         /// \param Level The search depth for matches, or `0` to take the fast encoder.
@@ -224,22 +231,6 @@ inline namespace ZyBase
 
             Write<Header>(Value.GetSize());
             WriteBlock<Header>(Size < Value.GetSize() ? ConstSpan<Byte>(Packed.GetData<Byte>(), Size) : Value);
-        }
-
-        /// \brief Writes a data block with a length prefix, using a user-defined function to populate the contents.
-        ///
-        /// \param Trampoline The user-defined function that writes the block contents.
-        template<typename Header, typename Function>
-        ZY_INLINE void WriteBlock(AnyRef<Function> Trampoline)
-        {
-            const UInt Offset = mSize;
-            Write<Header>(static_cast<Header>(0));
-
-            // Invoke the user-defined function to write the segment data.
-            Trampoline(* this);
-
-            const Header Length = static_cast<Header>(mSize - (Offset + sizeof(Header)));
-            Blit(mData + Offset, sizeof(Header), AddressOf(Length));
         }
 
     private:

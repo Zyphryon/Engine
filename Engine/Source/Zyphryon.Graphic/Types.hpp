@@ -24,8 +24,8 @@ namespace ZyGraphic
     /// \brief Specifies the graphic configuration constants.
     enum : UInt32
     {
-        /// \brief Identifier for the default display used for rendering.
-        kDisplay        = 0x00000,
+        /// \brief The identifier of the default display used for rendering.
+        kDisplay        = 0x0000,
 
         /// \brief The maximum number of color attachments in a render pass.
         kMaxAttachments = 0x0008,
@@ -152,7 +152,7 @@ namespace ZyGraphic
     /// \brief Describes shader source languages used by the shader compiler frontend.
     enum class ShaderLanguage : UInt8
     {
-        None,   ///< No Shading language.
+        None,   ///< No shading language.
         HLSL,   ///< High-Level Shading Language used primarily with Direct3D.
         GLSL,   ///< OpenGL Shading Language used for OpenGL pipelines.
     };
@@ -228,7 +228,7 @@ namespace ZyGraphic
         Anisotropic2x,   ///< Anisotropic filtering with max 2x samples.
         Anisotropic4x,   ///< Anisotropic filtering with max 4x samples.
         Anisotropic8x,   ///< Anisotropic filtering with max 8x samples.
-        Anisotropic16x   ///< Anisotropic filtering with max 16x samples.
+        Anisotropic16x,  ///< Anisotropic filtering with max 16x samples.
     };
 
     /// \brief Describes the format of texture data.
@@ -309,7 +309,7 @@ namespace ZyGraphic
         D32S8UIntNorm,              ///< 32-bit floating-point depth + 8-bit stencil.
     };
 
-    /// \brief Describes the layout of texture resource.
+    /// \brief Describes the layout of a texture resource.
     enum class TextureLayout : UInt8
     {
         Texture2D,      ///< 2D texture.
@@ -410,10 +410,10 @@ namespace ZyGraphic
         TexCoord5,     ///< Defines the sixth set of texture coordinates.
         TexCoord6,     ///< Defines the seventh set of texture coordinates.
         TexCoord7,     ///< Defines the eighth set of texture coordinates.
-        Custom0,       ///< Defines the first custom vertex.
-        Custom1,       ///< Defines the second custom vertex.
-        Custom2,       ///< Defines the third custom vertex.
-        Custom3,       ///< Defines the fourth custom vertex.
+        Custom0,       ///< Defines the first custom vertex attribute.
+        Custom1,       ///< Defines the second custom vertex attribute.
+        Custom2,       ///< Defines the third custom vertex attribute.
+        Custom3,       ///< Defines the fourth custom vertex attribute.
         None,          ///< No semantic assigned.
     };
 
@@ -426,7 +426,7 @@ namespace ZyGraphic
     >;
 
     /// \brief Defines the handle used for identifying GPU resources.
-    using Object  = UInt16;
+    using Object = UInt16;
 
     /// \brief Represents a display mode supported by the graphics device.
     struct Resolution final
@@ -457,19 +457,19 @@ namespace ZyGraphic
     /// \brief Describes the capabilities and limits of the graphics device.
     struct Capabilities final
     {
-        /// Indicates whether the graphics device supports S3TC texture compression.
+        /// `true` when the graphics device supports S3TC texture compression.
         Bool   SupportsFormatS3TC    = false;
 
-        /// Indicates whether the graphics device supports RGTC texture compression.
+        /// `true` when the graphics device supports RGTC texture compression.
         Bool   SupportsFormatRGTC    = false;
 
-        /// Indicates whether the graphics device supports BPTC texture compression.
+        /// `true` when the graphics device supports BPTC texture compression.
         Bool   SupportsFormatBPTC    = false;
 
-        /// Indicates whether the graphics device supports ETC2 texture compression.
+        /// `true` when the graphics device supports ETC2 texture compression.
         Bool   SupportsFormatETC2    = false;
 
-        /// Indicates whether the graphics device supports vertex base offset.
+        /// `true` when the graphics device supports a base vertex offset.
         Bool   SupportsBaseVertex    = false;
 
         /// The maximum supported texture dimension (width and height) in pixels.
@@ -506,7 +506,7 @@ namespace ZyGraphic
     /// \brief Describes the configuration settings for the graphics device.
     struct Configuration final
     {
-        /// Whether presentation waits for the vertical blank.
+        /// `true` when presentation waits for the vertical blank.
         Bool          Tearless;
 
         /// The width of the graphics device in pixels.
@@ -528,7 +528,7 @@ namespace ZyGraphic
         /// The graphics backend currently in use (e.g., Direct3D 11, OpenGL ES 3.x).
         Str16             Backend      = "None";
 
-        /// The shader model supported by the graphics device.
+        /// The feature tier the graphics device reaches.
         Tier              Tier         = Tier::Level1;
 
         /// The shader language supported by the driver.
@@ -544,10 +544,10 @@ namespace ZyGraphic
     /// \brief Describes a rectangular scissor region for pixel clipping during rendering.
     struct Scissor final
     {
-        /// The X screen coordinate of the region’s origin, in pixels.
+        /// The X screen coordinate of the region's origin, in pixels.
         UInt16 X      = 0;
 
-        /// The Y screen coordinate of the region’s origin, in pixels.
+        /// The Y screen coordinate of the region's origin, in pixels.
         UInt16 Y      = 0;
 
         /// The width of the scissor region, in pixels.
@@ -642,7 +642,7 @@ namespace ZyGraphic
         UInt8        Divisor  = 0;
     };
 
-    /// \brief Type alias for the vertex attributes a program's input stage consumes.
+    /// \brief Represents the vertex attributes a program's input stage consumes.
     using Attributes = Sequence<Attribute, kMaxAttributes>;
 
     /// \brief Describes a buffer stream used for vertex, index, or uniform input.
@@ -685,7 +685,7 @@ namespace ZyGraphic
         /// The border color used when wrap mode border is selected.
         TextureBorder  Border       = TextureBorder::OpaqueBlack;
 
-        /// \brief Checks if the sampler configuration is the default configuration.
+        /// \brief Checks whether the sampler configuration is the default configuration.
         ///
         /// \return `true` if the sampler is in its default state, `false` otherwise.
         ZY_INLINE Bool IsDefault() const
@@ -715,7 +715,7 @@ namespace ZyGraphic
         /// The shader modules for each pipeline stage (vertex, fragment, etc.).
         Array<Blob, ZyEnum::Count<ShaderStage>()> Modules;
 
-        /// Preprocessor macros used during shader compilation.
+        /// The preprocessor macros used during shader compilation.
         Sequence<Macro>                           Macros;
     };
 
@@ -729,85 +729,85 @@ namespace ZyGraphic
     /// \brief Describes the fixed-function GPU state for a rendering pipeline.
     struct States final
     {
-        /// Face culling mode (e.g., back-face or front-face culling).
+        /// The face culling mode.
         Cull           Cull                  = Cull::Back;
 
-        /// Polygon fill mode (solid or wireframe).
+        /// The polygon fill mode.
         Fill           Fill                  = Fill::Solid;
 
-        /// Enables or disables scissor testing.
+        /// `true` when the scissor test is enabled.
         Bool           Scissor               = false;
 
-        /// Source blend factor for color channels.
+        /// The source blend factor for the color channels.
         BlendFactor    BlendSrcColor         = BlendFactor::One;
 
-        /// Destination blend factor for the color channels.
+        /// The destination blend factor for the color channels.
         BlendFactor    BlendDstColor         = BlendFactor::Zero;
 
-        /// Blend operation for color channels.
+        /// The blend equation for the color channels.
         BlendFunction  BlendEquationColor    = BlendFunction::Add;
 
-        /// Source blend factor for the alpha channel.
+        /// The source blend factor for the alpha channel.
         BlendFactor    BlendSrcAlpha         = BlendFactor::One;
 
-        /// Destination blend factor for the alpha channel.
+        /// The destination blend factor for the alpha channel.
         BlendFactor    BlendDstAlpha         = BlendFactor::Zero;
 
-        /// Blend function for the alpha channel.
+        /// The blend equation for the alpha channel.
         BlendFunction  BlendEquationAlpha    = BlendFunction::Add;
 
-        /// Write mask controlling which color channels are affected.
+        /// The write mask selecting which color channels are written.
         Channel        Channel               = Channel::RGBA;
 
-        /// Enables or disables depth clipping.
+        /// `true` when fragments are clipped against the depth range.
         Bool           DepthClip             = true;
 
-        /// Enables or disables writing to the depth buffer.
+        /// `true` when the depth buffer is written.
         Bool           DepthMask             = true;
 
-        /// Depth comparison function used for depth testing.
+        /// The comparison used for the depth test.
         TestCondition  DepthTest             = TestCondition::LessEqual;
 
-        /// Constant offset added to fragment depth.
+        /// The constant offset added to each fragment's depth.
         Real32         DepthBias             = 0.0f;
 
-        /// Multiplier applied to fragment slope for depth biasing.
+        /// The multiplier applied to a fragment's slope when biasing its depth.
         Real32         DepthBiasSlope        = 0.0f;
 
-        /// Maximum value applied to depth bias (clamping).
+        /// The largest depth bias applied.
         Real32         DepthBiasClamp        = 0.0f;
 
-        /// Bitmask selecting readable bits of the stencil buffer.
+        /// The bitmask selecting the stencil bits read.
         UInt8          StencilReadMask       = 0xFF;
 
-        /// Bitmask selecting writable bits of the stencil buffer.
+        /// The bitmask selecting the stencil bits written.
         UInt8          StencilWriteMask      = 0xFF;
 
-        /// Stencil comparison function for front-facing geometry.
+        /// The stencil comparison for front-facing geometry.
         TestCondition  StencilFrontTest      = TestCondition::Always;
 
-        /// Action when stencil test fails (front-facing).
+        /// The action when the stencil test fails on front faces.
         TestAction     StencilFrontFail      = TestAction::Keep;
 
-        /// Action when stencil passes but depth test fails (front-facing).
+        /// The action when the stencil test passes but the depth test fails on front faces.
         TestAction     StencilFrontDepthFail = TestAction::Keep;
 
-        /// Action when both stencil and depth tests pass (front-facing).
+        /// The action when both the stencil and depth tests pass on front faces.
         TestAction     StencilFrontDepthPass = TestAction::Keep;
 
-        /// Stencil comparison function for back-facing geometry.
+        /// The stencil comparison for back-facing geometry.
         TestCondition  StencilBackTest       = TestCondition::Always;
 
-        /// Action when stencil test fails (back-facing).
+        /// The action when the stencil test fails on back faces.
         TestAction     StencilBackFail       = TestAction::Keep;
 
-        /// Action when stencil passes but depth test fails (back-facing).
+        /// The action when the stencil test passes but the depth test fails on back faces.
         TestAction     StencilBackDepthFail  = TestAction::Keep;
 
-        /// Action when both stencil and depth tests pass (back-facing).
+        /// The action when both the stencil and depth tests pass on back faces.
         TestAction     StencilBackDepthPass  = TestAction::Keep;
 
-        /// Primitive topology used for vertex interpretation.
+        /// The primitive topology vertices are assembled into.
         Primitive      Topology              = Primitive::TriangleList;
 
         /// \brief Checks whether blending does anything a plain write would not.
@@ -866,16 +866,16 @@ namespace ZyGraphic
     /// \brief Represents a complete draw item, encapsulating all state and resources needed for a single draw call.
     struct Command final
     {
-        /// \brief Maximum number of sampler bindings allowed per draw command.
+        /// \brief The maximum number of sampler bindings allowed per draw command.
         static constexpr UInt8 kMaxSamplers = 0x10;
 
-        /// \brief Maximum number of texture bindings allowed per draw command.
+        /// \brief The maximum number of texture bindings allowed per draw command.
         static constexpr UInt8 kMaxTextures = 0x10;
 
-        /// \brief Maximum number of uniform buffer bindings allowed per draw command.
+        /// \brief The maximum number of uniform buffer bindings allowed per draw command.
         static constexpr UInt8 kMaxUniforms = 0x04;
 
-        /// \brief Maximum number of vertex buffer streams allowed per draw command.
+        /// \brief The maximum number of vertex buffer streams allowed per draw command.
         static constexpr UInt8 kMaxVertices = 0x08;
 
         /// The scissor rectangle defining the pixel area affected by rendering.
@@ -900,7 +900,7 @@ namespace ZyGraphic
         Sequence<Object, kMaxSamplers>  Samplers;
 
         /// The list of texture bindings for the shader stages used in the draw call.
-        Sequence<Object,  kMaxTextures> Textures;
+        Sequence<Object, kMaxTextures>  Textures;
 
         /// The parameters defining the draw call, including vertex count, instance count, and offsets.
         Invocation                      Parameters;

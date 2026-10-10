@@ -1,5 +1,11 @@
-# CMakeApplyEmbedded.cmake
-#
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+## Copyright (C) 2021-2026 by Agustin L. Alvarez. All rights reserved.
+##
+## This work is licensed under the terms of the MIT license.
+##
+## For a copy, see <https://opensource.org/licenses/MIT>.
+## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 # Materializes every resource directory registered with ZyRegisterResources() into a consumer application,
 # generating <target>.Embedded.{hpp,cpp} that exposes:
 #
@@ -17,11 +23,10 @@ FUNCTION(ZyApplyResources TARGET)
 
     FILE(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
-    # The public declaration is identical on every platform.
     FILE(WRITE "${GENERATED_HEADER}" [=[
 #pragma once
 
-#include <Zyphryon.Content/Service.hpp>
+#include "Zyphryon.Content/Service.hpp"
 
 void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
 ]=])
@@ -37,6 +42,14 @@ void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
         LIST(GET PARTS 0 PREFIX)
         LIST(GET PARTS 1 DIRECTORY)
 
+        SET(LEAD "")
+
+        IF(PREFIX)
+
+            SET(LEAD "${PREFIX}/")
+
+        ENDIF()
+
         FILE(GLOB_RECURSE FILES CONFIGURE_DEPENDS "${DIRECTORY}/*")
 
         FOREACH(FILE ${FILES})
@@ -45,15 +58,8 @@ void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
             FILE(READ "${FILE}" CONTENT HEX)
             STRING(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," CONTENT "${CONTENT}")
 
-            # Join prefix and relative path, avoiding a leading slash when no prefix is set.
-            IF(PREFIX)
-                SET(PATH "${PREFIX}/${RELATIVE}")
-            ELSE()
-                SET(PATH "${RELATIVE}")
-            ENDIF()
-
-            STRING(APPEND BLOBS   "    static const Byte kBlob${INDEX}[] = { ${CONTENT} };\n")
-            STRING(APPEND ENTRIES "        { Text(\"${PATH}\"), ConstSpan<Byte>(kBlob${INDEX}, sizeof(kBlob${INDEX})) },\n")
+            STRING(APPEND BLOBS   "static const Byte kBlob${INDEX}[] = { ${CONTENT} };\n")
+            STRING(APPEND ENTRIES "    { Text(\"${LEAD}${RELATIVE}\"), ConstSpan<Byte>(kBlob${INDEX}, sizeof(kBlob${INDEX})) },\n")
 
             MATH(EXPR INDEX "${INDEX} + 1")
 
@@ -63,7 +69,7 @@ void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
 
     IF(INDEX EQUAL 0)
 
-        # Nothing registered: emit a no-op so the application still links.
+        # With nothing registered, emit an empty function so the application still links.
         SET(SOURCE "#include \"${TARGET}.Embedded.hpp\"\n\n")
         STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<ZyContent::Service> Service)\n{\n}\n")
 
@@ -71,11 +77,10 @@ void ZyRegisterEmbedded(Ref<ZyContent::Service> Service);
 
         SET(SOURCE "#include \"Zyphryon.Content/Mount/Memory.hpp\"\n")
         STRING(APPEND SOURCE "#include \"${TARGET}.Embedded.hpp\"\n\n")
-        STRING(APPEND SOURCE "namespace\n{\n")
         STRING(APPEND SOURCE "${BLOBS}\n")
-        STRING(APPEND SOURCE "    static const ZyContent::Memory::Entry kEmbedded[] =\n    {\n")
+        STRING(APPEND SOURCE "static const ZyContent::Memory::Entry kEmbedded[] =\n{\n")
         STRING(APPEND SOURCE "${ENTRIES}")
-        STRING(APPEND SOURCE "    };\n}\n\n")
+        STRING(APPEND SOURCE "};\n\n")
         STRING(APPEND SOURCE "void ZyRegisterEmbedded(Ref<ZyContent::Service> Service)\n{\n")
         STRING(APPEND SOURCE "    Service.AddMount(\"Embedded\", Retainer<ZyContent::Memory>::Create(ConstSpan<ZyContent::Memory::Entry>(kEmbedded)));\n")
         STRING(APPEND SOURCE "}\n")

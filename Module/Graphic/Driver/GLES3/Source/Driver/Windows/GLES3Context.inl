@@ -33,7 +33,18 @@ namespace ZyGraphic
         ::RegisterClassExW(AddressOf(Class));
 
         const HWND Window = ::CreateWindowExW(
-            0, Class.lpszClassName, L"", 0, 0, 0, 1, 1, nullptr, nullptr, Class.hInstance, nullptr);
+            0,
+            Class.lpszClassName,
+            L"",
+            0,
+            0,
+            0,
+            1,
+            1,
+            nullptr,
+            nullptr,
+            Class.hInstance,
+            nullptr);
         const HDC  Device = ::GetDC(Window);
 
         PIXELFORMATDESCRIPTOR Descriptor { };
@@ -145,13 +156,13 @@ namespace ZyGraphic
     {
         if (!BootstrapExtensions())
         {
-            LOG_E("GLES3Context: Failed to resolve WGL extensions (is a GPU driver installed?)");
+            LOG_E("Graphics: Failed to resolve WGL extensions (is a GPU driver installed?)");
             return false;
         }
 
         if (!GLAD_WGL_ARB_create_context || !GLAD_WGL_ARB_pixel_format)
         {
-            LOG_E("GLES3Context: Driver lacks WGL_ARB_create_context / WGL_ARB_pixel_format");
+            LOG_E("Graphics: Driver lacks WGL_ARB_create_context / WGL_ARB_pixel_format");
             return false;
         }
 
@@ -160,7 +171,7 @@ namespace ZyGraphic
 
         if (mDeviceContext == nullptr)
         {
-            LOG_E("GLES3Context: Failed to get device context");
+            LOG_E("Graphics: Failed to get device context");
             return false;
         }
 
@@ -199,9 +210,18 @@ namespace ZyGraphic
 
         SInt32 PixelFormat;
         UINT   PixelCount;
-        if (!wglChoosePixelFormatARB(mDeviceContext, KeyPairs, nullptr, 1, AddressOf(PixelFormat), AddressOf(PixelCount)) || PixelCount == 0)
+
+        const BOOL Chosen = wglChoosePixelFormatARB(
+            mDeviceContext,
+            KeyPairs,
+            nullptr,
+            1,
+            AddressOf(PixelFormat),
+            AddressOf(PixelCount));
+
+        if (!Chosen || PixelCount == 0)
         {
-            LOG_E("GLES3Context: Failed to choose a compatible pixel format");
+            LOG_E("Graphics: Failed to choose a compatible pixel format");
             return false;
         }
 
@@ -210,7 +230,7 @@ namespace ZyGraphic
 
         if (!::SetPixelFormat(mDeviceContext, PixelFormat, AddressOf(Descriptor)))
         {
-            LOG_E("GLES3Context: Failed to set the pixel format");
+            LOG_E("Graphics: Failed to set the pixel format");
             return false;
         }
 
@@ -230,13 +250,13 @@ namespace ZyGraphic
 
         if (mRenderContext == nullptr)
         {
-            LOG_E("GLES3Context: Failed to create an OpenGL 3.3 core context");
+            LOG_E("Graphics: Failed to create an OpenGL 3.3 core context");
             return false;
         }
 
         if (!::wglMakeCurrent(mDeviceContext, mRenderContext))
         {
-            LOG_E("GLES3Context: Failed to make the OpenGL context current");
+            LOG_E("Graphics: Failed to make the OpenGL context current");
 
             ::wglDeleteContext(mRenderContext);
             mRenderContext = nullptr;
@@ -245,7 +265,7 @@ namespace ZyGraphic
 
         if (gladLoaderLoadGL() == 0)
         {
-            LOG_E("GLES3Context: Failed to load OpenGL 3.3 entry points");
+            LOG_E("Graphics: Failed to load OpenGL 3.3 entry points");
             return false;
         }
 

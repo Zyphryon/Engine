@@ -29,7 +29,7 @@ namespace ZyFormat
         /// The minimum field width for the formatted output.
         UInt8 Width     = 0;
 
-        /// The decimals of a real written under `f`, or the maximum width for strings.
+        /// The decimals of a real written under `f`.
         UInt8 Precision = 6;
 
         /// The padding character used when the output is shorter than the width.
@@ -41,13 +41,13 @@ namespace ZyFormat
         /// The sign character: '+' for always show, ' ' for space on positive, '-' for only negative.
         Char  Sign      = '-';
 
-        /// The type character specifying the format type (e.g., 'd', 'x', 'f', 's').
+        /// The type character, such as `x`, `X`, `b`, `B`, `c` or `f`.
         Char  Type      = 0;
 
         /// \brief Default constructs an inactive placeholder.
         ZY_INLINE constexpr Placeholder() = default;
 
-        /// \brief Parses a format specification string into a placeholder.
+        /// \brief Constructs a placeholder by parsing a format specification.
         ///
         /// \param Specification The format specification string (e.g., "0:>+010.2f").
         ZY_INLINE constexpr Placeholder(Text Specification)

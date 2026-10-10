@@ -35,10 +35,10 @@ namespace ZyAudio
         /// The render callback the service installs; the mixer fills \c Mix through it each block.
         Driver::Callback Callback;
 
-        /// The flag raised while output is suspended, so the worker writes silence instead of pulling the mixer.
+        /// `true` while output is suspended, so the worker writes silence instead of pulling the mixer.
         Atomic<Bool>     Suspended { false };
 
-        /// The flag raised when the worker abandoned the stream, so silence can be told apart from a dead endpoint.
+        /// `true` once the worker abandoned the stream after an unrecoverable write error.
         Atomic<Bool>     Faulted   { false };
 
         /// The interleaved stereo scratch the mixer fills each block before it is written to \c Device.
