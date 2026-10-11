@@ -221,11 +221,10 @@ inline namespace ZyBase
             1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22
         };
 
-        if (Exponent < 0)
-        {
-            return static_cast<Type>(1.0 / Pow10<Real64>(-Exponent));
-        }
-        return Exponent < 23 ? static_cast<Type>(kPow10Table[Exponent]) : Pow(Type(10), static_cast<Type>(Exponent));
+        const SInt32 Magnitude = Exponent < 0 ? -Exponent : Exponent;
+        const Real64 Power     = Magnitude < 23 ? kPow10Table[Magnitude] : Pow(10.0, static_cast<Real64>(Magnitude));
+
+        return static_cast<Type>(Exponent < 0 ? 1.0 / Power : Power);
     }
 
     /// \brief Computes the square root of the given number.
