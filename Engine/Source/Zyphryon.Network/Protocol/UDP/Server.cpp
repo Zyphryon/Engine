@@ -308,19 +308,24 @@ namespace ZyNetwork::UDP
             return;
         }
 
-        // Resumed from where the last drain left off so no peer is served first every time.
+        // Resumed after the last peer served, and the start is held fixed so every round visits each peer once.
+        const UInt Start = mCursor;
+        mCursor = (Start + 1) % Top;
+
         while (!mFlights.IsFull())
         {
             UInt32 Sent = 0;
 
             for (UInt Step = 0; Step < Top && !mFlights.IsFull(); ++Step)
             {
-                const Connection::Peer Slot
-                    = mPeers.GetKey(static_cast<Connection::Peer::Slot>(1 + (mCursor + Step) % Top));
+                const UInt             Position = (Start + Step) % Top;
+                const Connection::Peer Slot     = mPeers.GetKey(static_cast<Connection::Peer::Slot>(1 + Position));
 
-                if (const Ptr<Peer> Entry = mPeers.TryGet(Slot))
+                if (const Ptr<Peer> Entry = mPeers.TryGet(Slot); Entry && Push(Watcher, Time, Slot, * Entry))
                 {
-                    Sent += Push(Watcher, Time, Slot, * Entry) ? 1 : 0;
+                    mCursor = 1 + Position;
+
+                    ++Sent;
                 }
             }
 
@@ -329,7 +334,6 @@ namespace ZyNetwork::UDP
                 break;
             }
         }
-        mCursor = (mCursor + 1) % Top;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -356,7 +360,6 @@ namespace ZyNetwork::UDP
 
         Data[0]    = ZyEnum::Cast(Envelope::Data);
         Carry.Peer = Slot;
-        mCursor    = Slot.GetSlot();
 
         // Posted under the flight rather than the peer, since the completion has to name the flight to free it.
         const Connection Link = mLink.Derive(Index.Rebind<kMaxPeers>());

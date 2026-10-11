@@ -369,10 +369,14 @@ inline namespace ZyBase
             }
 
             const SInt64 Exponent = StrExtractNumber<10, SInt64>(mContent, mCursor);
-            Value *= Pow(10.0, static_cast<Real64>(Down ? -Exponent : Exponent));
+
+            if (Value != 0.0)
+            {
+                Value *= Pow(10.0, static_cast<Real64>(Down ? -Exponent : Exponent));
+            }
         }
 
-        if (IsInf(Value))
+        if (IsInf(Value) || IsNaN(Value))
         {
             return Fail(Start, "A number is too large to hold");
         }

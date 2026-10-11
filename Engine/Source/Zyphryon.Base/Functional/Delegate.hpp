@@ -71,7 +71,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(Return (* Function)(Arguments...))
             : mStorage { },
               mExecute { AddressOf(InvokeFunction) },
-              mManage  { AddressOf(ManagePlain) }
+              mManage  { AddressOf(ManagePlain<sizeof(Function)>) }
         {
             * reinterpret_cast<Return(**)(Arguments...)>(mStorage) = Function;
         }
@@ -84,7 +84,7 @@ inline namespace ZyBase
         ZY_INLINE constexpr Delegate(Constant<Method>, Ptr<Type> Object)
             : mStorage { },
               mExecute { AddressOf(InvokeMethod<Method, Type>) },
-              mManage  { AddressOf(ManagePlain) }
+              mManage  { AddressOf(ManagePlain<sizeof(Object)>) }
         {
             * reinterpret_cast<Ptr<Ptr<Type>>>(mStorage) = Object;
         }
@@ -149,7 +149,7 @@ inline namespace ZyBase
             Reset();
             * reinterpret_cast<Ptr<Ptr<Type>>>(mStorage) = Object;
             mExecute = AddressOf(InvokeMethod<Method, Type>);
-            mManage  = AddressOf(ManagePlain);
+            mManage  = AddressOf(ManagePlain<sizeof(Object)>);
         }
 
         /// \brief Binds a function pointer to the delegate.
@@ -160,7 +160,7 @@ inline namespace ZyBase
             Reset();
             * reinterpret_cast<Return(**)(Arguments...)>(mStorage) = Function;
             mExecute = AddressOf(InvokeFunction);
-            mManage  = AddressOf(ManagePlain);
+            mManage  = AddressOf(ManagePlain<sizeof(Function)>);
         }
 
         /// \brief Binds a lambda or callable object to the delegate.
@@ -270,7 +270,7 @@ inline namespace ZyBase
             {
                 return false;
             }
-            return Compare(mStorage, Other.mStorage, kCapacity);
+            return mManage(Operation::Compare, const_cast<Ptr<Byte>>(mStorage), Other.mStorage);
         }
 
         /// \brief Calls the bound function with the provided arguments.
@@ -332,12 +332,13 @@ inline namespace ZyBase
             Copy,       ///< Builds a copy of the source's callable in the target.
             Move,       ///< Hands the source's callable over to the target, leaving the source to be forgotten.
             Release,    ///< Destroys the target's callable.
+            Compare,    ///< Checks whether the target holds the same callable as the source.
         };
 
         /// \brief Type alias for the internal trampoline function signature.
         using Execute = Return(*)(ConstPtr<void>, Arguments...);
 
-        /// \brief Type alias for the internal function that copies, moves and releases the callable.
+        /// \brief Type alias for the internal function that copies, moves, releases and compares the callable.
         using Manage = Bool(*)(Operation, Ptr<void>, ConstPtr<void>);
 
         /// \brief Resets the delegate to an empty state, releasing any resources.
@@ -374,7 +375,7 @@ inline namespace ZyBase
                 Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeStack<Type>);
-                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain) : AddressOf(ManageStack<Type>);
+                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain<ZyBase::IsEmpty<Type> ? 0 : sizeof(Type)>) : AddressOf(ManageStack<Type>);
             }
             else
             {
@@ -436,17 +437,22 @@ inline namespace ZyBase
             return true;
         }
 
-        /// \brief Manages a function pointer, object pointer or trivially copyable callable as plain bytes.
+        /// \brief Manages a function pointer, object pointer or trivially copyable callable of \p Size bytes as plain bytes.
         ///
         /// \param Action The operation to perform.
-        /// \param Target The buffer to copy or move into.
-        /// \param Source The buffer to copy or move from.
-        /// \return `true` always.
+        /// \param Target The buffer to copy or move into, or to compare.
+        /// \param Source The buffer to copy or move from, or to compare against.
+        /// \return `false` when the compared callables differ, `true` otherwise.
+        template<UInt Size>
         ZY_INLINE static Bool ManagePlain(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
-            if (Action != Operation::Release)
+            if (Action == Operation::Copy || Action == Operation::Move)
             {
                 Copy(static_cast<Ptr<Byte>>(Target), kCapacity, static_cast<ConstPtr<Byte>>(Source));
+            }
+            else if (Action == Operation::Compare)
+            {
+                return Compare(static_cast<ConstPtr<Byte>>(Target), static_cast<ConstPtr<Byte>>(Source), Size);
             }
             return true;
         }
@@ -454,9 +460,9 @@ inline namespace ZyBase
         /// \brief Manages a callable held in the buffer itself, through its own constructors and destructor.
         ///
         /// \param Action The operation to perform.
-        /// \param Target The buffer to copy or move into, or whose callable is released.
-        /// \param Source The buffer to copy or move from.
-        /// \return `false` when asked to copy a callable that cannot be copied, `true` otherwise.
+        /// \param Target The buffer to copy or move into, or whose callable is released or compared.
+        /// \param Source The buffer to copy or move from, or to compare against.
+        /// \return `false` when asked to copy a callable that cannot be copied or the compared callables differ, `true` otherwise.
         template<typename Callable>
         ZY_INLINE static Bool ManageStack(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
@@ -484,6 +490,8 @@ inline namespace ZyBase
             case Operation::Release:
                 Destruct(* Launder(static_cast<Ptr<Callable>>(Target)));
                 break;
+            case Operation::Compare:
+                return ZyBase::IsEmpty<Callable> || Compare(static_cast<ConstPtr<Byte>>(Target), static_cast<ConstPtr<Byte>>(Source), sizeof(Callable));
             }
             return true;
         }
@@ -491,9 +499,9 @@ inline namespace ZyBase
         /// \brief Manages a callable too large for the buffer, held on the heap by the address in the buffer.
         ///
         /// \param Action The operation to perform.
-        /// \param Target The buffer to copy or move into, or whose callable is released.
-        /// \param Source The buffer to copy or move from.
-        /// \return `false` when asked to copy a callable that cannot be copied, `true` otherwise.
+        /// \param Target The buffer to copy or move into, or whose callable is released or compared.
+        /// \param Source The buffer to copy or move from, or to compare against.
+        /// \return `false` when asked to copy a callable that cannot be copied or the compared callables differ, `true` otherwise.
         template<typename Callable>
         ZY_INLINE static Bool ManageHeap(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
@@ -516,6 +524,8 @@ inline namespace ZyBase
             case Operation::Release:
                 delete * static_cast<Ptr<Ptr<Callable>>>(Target);
                 break;
+            case Operation::Compare:
+                return (* static_cast<ConstPtr<Ptr<Callable>>>(Target) == * static_cast<ConstPtr<Ptr<Callable>>>(Source));
             }
             return true;
         }

@@ -217,7 +217,7 @@ inline namespace ZyBase
         template<typename Type>
         ZY_INLINE static Blob Borrow(ConstPtr<Type> Data, UInt Count)
         {
-            return Blob(const_cast<Ptr<Byte>>(Data), Count * sizeof(Type), [](Ptr<Byte>)
+            return Blob(reinterpret_cast<Ptr<Byte>>(const_cast<Ptr<Type>>(Data)), Count * sizeof(Type), [](Ptr<Byte>)
             {
             });
         }

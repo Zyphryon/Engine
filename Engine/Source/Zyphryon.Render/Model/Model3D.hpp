@@ -102,7 +102,7 @@ namespace ZyRender
         /// \brief Uploads the model's exclusively-owned mesh and materials to the GPU.
         ///
         /// \param Service The graphic service used to create the resources.
-        /// \return `true` always.
+        /// \return `true` if every upload succeeded, `false` otherwise.
         Bool Upload(Ref<ZyGraphic::Service> Service);
 
         /// \brief Unloads the model's exclusively-owned mesh and materials from the GPU.

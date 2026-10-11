@@ -219,9 +219,9 @@ namespace ZyGraphic
             // TextureFormat::RGB10A2UIntNorm
             { .BitsPerPixel = 32,  .BlockSize = 1, .Components = 4, .IsNormalized = 1, .IsPacked = 1 },
             // TextureFormat::R11G11B10Float
-            { .BitsPerPixel = 32,  .BlockSize = 1, .Components = 3, .IsPacked = 1 },
+            { .BitsPerPixel = 32,  .BlockSize = 1, .Components = 3, .IsFloat = 1, .IsPacked = 1 },
             // TextureFormat::RGB9E5Float
-            { .BitsPerPixel = 32,  .BlockSize = 1, .Components = 3, .IsPacked = 1 },
+            { .BitsPerPixel = 32,  .BlockSize = 1, .Components = 3, .IsFloat = 1, .IsPacked = 1 },
             // TextureFormat::D16UIntNorm
             { .BitsPerPixel = 16,  .BlockSize = 1, .Components = 1, .IsDepth = 1, .IsNormalized = 1 },
             // TextureFormat::D32Float

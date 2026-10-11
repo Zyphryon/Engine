@@ -33,7 +33,8 @@ Ptr<void> operator new(std::size_t Size, std::align_val_t Alignment)
 #if defined(ZY_COMPILER_MSVC)
     const Ptr<void> Pointer = _aligned_malloc(Size, static_cast<std::size_t>(Alignment));
 #else
-    const Ptr<void> Pointer = std::aligned_alloc(Size, static_cast<std::size_t>(Alignment));
+    const std::size_t Boundary = static_cast<std::size_t>(Alignment);
+    const Ptr<void>   Pointer  = std::aligned_alloc(Boundary, AlignPowTwo(Size, Boundary));
 #endif
 
     TracyAllocS(Pointer, Size, ZY_PROFILE_CALLSTACK_DEPTH);
@@ -58,7 +59,8 @@ Ptr<void> operator new[](std::size_t Size, std::align_val_t Alignment)
 #if defined(ZY_COMPILER_MSVC)
     const Ptr<void> Pointer = _aligned_malloc(Size, static_cast<std::size_t>(Alignment));
 #else
-    const Ptr<void> Pointer = std::aligned_alloc(Size, static_cast<std::size_t>(Alignment));
+    const std::size_t Boundary = static_cast<std::size_t>(Alignment);
+    const Ptr<void>   Pointer  = std::aligned_alloc(Boundary, AlignPowTwo(Size, Boundary));
 #endif
 
     TracyAllocS(Pointer, Size, ZY_PROFILE_CALLSTACK_DEPTH);

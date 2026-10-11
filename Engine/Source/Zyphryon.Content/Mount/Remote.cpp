@@ -78,7 +78,7 @@ namespace ZyContent
     {
 #if defined(ZY_PLATFORM_WEB)
 
-        mQueue.Append(new Request(Str(Path), Move(Callback), this, 0));
+        mQueue.Append(new Request(Str(Path), Move(Callback), Retainer<Remote>(this), 0));
 
         Pump();
 
@@ -186,15 +186,15 @@ namespace ZyContent
 
     void Remote::Close(Ptr<Request> Handle, Filesystem::Result Result, AnyRef<Blob> Data)
     {
-        Ref<Remote> Owner = * Handle->Owner;
+        const Retainer<Remote> Owner = Move(Handle->Owner);
 
         Handle->Callback(Result, Move(Data));
 
         delete Handle;
 
         // Whatever was held back for want of room goes out now that there is some.
-        --Owner.mActive;
+        --Owner->mActive;
 
-        Owner.Pump();
+        Owner->Pump();
     }
 }

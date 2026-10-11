@@ -835,10 +835,12 @@ inline namespace ZyBase
     /// \note Recognizes `0`, `1`, `true` and `false` in any case.
     ///
     /// \param Content The text to parse from.
-    /// \param Cursor  The current position, advanced past the consumed characters if matched.
+    /// \param Cursor  The current position, advanced past the consumed characters if matched, or left alone otherwise.
     /// \return The extracted boolean value, or `false` if no match is found.
     constexpr Bool StrExtractBool(Text Content, Ref<UInt> Cursor)
     {
+        const UInt Start = Cursor;
+
         switch (StrExtractChar(Content, Cursor))
         {
         case '0':
@@ -862,7 +864,7 @@ inline namespace ZyBase
         default:
             break;
         }
-        --Cursor;
+        Cursor = Start;
         return false;
     }
 

@@ -68,16 +68,16 @@ namespace ZyContent
         struct Request final
         {
             /// The path being asked for, kept because a refused request is sent again.
-            Str         Path;
+            Str              Path;
 
             /// The callback that receives whatever comes back.
-            OnRead      Callback;
+            OnRead           Callback;
 
-            /// The mount that sent it, which every answer is handed back through.
-            Ptr<Remote> Owner;
+            /// The mount that sent it, kept alive so an answer arriving after it was removed still has it.
+            Retainer<Remote> Owner;
 
             /// The number of times this has been sent.
-            UInt32      Attempt;
+            UInt32           Attempt;
         };
 
         /// \brief Sends whatever is waiting its turn, for as long as there is room to.

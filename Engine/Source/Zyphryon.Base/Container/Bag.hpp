@@ -35,7 +35,7 @@ inline namespace ZyBase
         ZY_INLINE Ptr<Key> GetData()
         {
             const Ptr<typename Table<Key, Empty>::Pair> Entries = mTable.GetData();
-            return AddressOf(Entries[0].First);
+            return Entries ? AddressOf(Entries->First) : nullptr;
         }
 
         /// \brief Gets a read-only pointer to the dense array of keys.
@@ -44,7 +44,7 @@ inline namespace ZyBase
         ZY_INLINE ConstPtr<Key> GetData() const
         {
             const ConstPtr<typename Table<Key, Empty>::Pair> Entries = mTable.GetData();
-            return AddressOf(Entries[0].First);
+            return Entries ? AddressOf(Entries->First) : nullptr;
         }
 
         /// \brief Gets the number of keys currently stored in the bag.
@@ -103,17 +103,6 @@ inline namespace ZyBase
         ZY_INLINE Bool Erase(AnyRef<KeyType> Needle)
         {
             return mTable.Erase(Needle);
-        }
-
-        /// \brief Extracts a key from the bag, removing it and returning it through the output parameter.
-        ///
-        /// \param Needle The key to extract from the bag.
-        /// \param Output Receives the extracted key when it is found.
-        /// \return `true` if the key was found and extracted, `false` otherwise.
-        template<typename KeyType = Key>
-        ZY_INLINE Bool Extract(AnyRef<KeyType> Needle, Ref<Key> Output)
-        {
-            return mTable.Extract(Needle, Output);
         }
 
         /// \brief Checks whether the bag contains the specified key.

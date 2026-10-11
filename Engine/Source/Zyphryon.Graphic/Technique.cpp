@@ -181,7 +181,7 @@ namespace ZyGraphic
         {
             if (ConstRetainer<Shader> Shader = Base.Shaders[Index])
             {
-                Program.Modules[Index] = Blob::Borrow(Shader->GetSource());
+                Program.Modules[Index] = Blob::Copy(Shader->GetSource());
             }
         }
     }

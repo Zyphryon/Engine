@@ -49,6 +49,7 @@ namespace ZyContent
         /// \return A Retainer to the asset, or `nullptr` if not found and not created.
         template<typename Source>
         ZY_INLINE Retainer<Type> GetOrCreate(AnyRef<Source> Key, Bool CreateIfNeeded)
+            requires IsAnyOf<StripAll<Source>, Uri>
         {
             Guard Lock(mMutex);
 
@@ -93,7 +94,7 @@ namespace ZyContent
 
             mRegistry.EraseIf([&](Digest, ConstRetainer<Type> Asset)
             {
-                if (Force || (Asset->IsUnique() && Asset->HasFinished()))
+                if (Asset->HasFinished() && (Force || Asset->IsUnique()))
                 {
                     Dispatcher(* Asset);
                     return true;

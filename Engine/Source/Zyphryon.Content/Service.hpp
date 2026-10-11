@@ -165,7 +165,7 @@ namespace ZyContent
             }
         }
 
-        /// \brief Evicts unreferenced resources from the cache of the specified resource type.
+        /// \brief Evicts unreferenced resources from the cache of the specified resource type, never one still loading.
         ///
         /// \tparam Type  The resource type whose cache to prune.
         /// \param  Force `true` to remove every finished asset regardless of tracking state, `false` to remove only the unreferenced ones.

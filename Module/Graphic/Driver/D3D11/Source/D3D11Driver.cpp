@@ -54,9 +54,15 @@ namespace ZyGraphic
             constexpr UINT Flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
 
             TCHAR Message[1024];
-            ::FormatMessage(Flags, nullptr, Result, 0, Message, sizeof(Message), nullptr);
 
-            LOG_E("Graphics: {0}", Str::ConvertFromUTF16(StrConvert(Message)));
+            if (::FormatMessage(Flags, nullptr, Result, 0, Message, _countof(Message), nullptr) == 0)
+            {
+                LOG_E("Graphics: Failed with HRESULT {0}", static_cast<UInt32>(Result));
+            }
+            else
+            {
+                LOG_E("Graphics: {0}", Str::ConvertFromUTF16(StrConvert(Message)));
+            }
             return false;
         }
         return true;
@@ -738,9 +744,7 @@ namespace ZyGraphic
                 Oldest.Indices.Stride != Newest.Indices.Stride)
             {
                 ConstRef<D3D11Buffer> Buffer = mBuffers[Newest.Indices.Buffer];
-                const DXGI_FORMAT     Format =
-                    Newest.Indices.Stride == 1 ? DXGI_FORMAT_R8_UINT  :
-                    Newest.Indices.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+                const DXGI_FORMAT     Format = Newest.Indices.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
                 mDeviceImmediate->IASetIndexBuffer(Buffer.Get(), Format, Newest.Indices.Offset);
             }
 
@@ -910,7 +914,12 @@ namespace ZyGraphic
                         Ref<Resolution> Resolution = AdapterInfo.Resolutions.Append();
                         Resolution.Width     = Description.Width;
                         Resolution.Height    = Description.Height;
-                        Resolution.Frequency = Description.RefreshRate.Numerator / Description.RefreshRate.Denominator;
+                        Resolution.Frequency = 0;
+
+                        if (Description.RefreshRate.Denominator)
+                        {
+                            Resolution.Frequency = Description.RefreshRate.Numerator / Description.RefreshRate.Denominator;
+                        }
                     }
                 }
             }

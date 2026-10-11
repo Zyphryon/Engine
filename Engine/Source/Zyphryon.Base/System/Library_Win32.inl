@@ -22,14 +22,34 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static Bool IsSeparator(Char Character)
+    {
+        return Character == '/' || Character == '\\';
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static Bool IsAbsolute(Text Path)
+    {
+        const Bool Drive = Path.GetSize() >= 3 && Path[1] == ':'       && IsSeparator(Path[2]);
+        const Bool Share = Path.GetSize() >= 2 && IsSeparator(Path[0]) && IsSeparator(Path[1]);
+        return Drive || Share;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Bool Library::Open(Text Path)
     {
         Close();
 
         Sequence<Wide, Filesystem::kMaxPathLength> InPath = Unicode::Widen<Filesystem::kMaxPathLength>(Path);
 
-        // Search the library's own folder first, so dependencies beside it are found.
-        mHandle = LoadLibraryExW(InPath.GetData(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+        // Only an absolute path may search the library's own folder first, where dependencies beside it are found.
+        const DWORD Search = IsAbsolute(Path) ? LOAD_WITH_ALTERED_SEARCH_PATH : 0;
+
+        mHandle = LoadLibraryExW(InPath.GetData(), nullptr, Search);
 
         return IsOpen();
     }

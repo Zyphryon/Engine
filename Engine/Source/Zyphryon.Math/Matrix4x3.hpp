@@ -293,12 +293,12 @@ inline namespace ZyMath
 
         /// \brief Gets the rotation component of the transformation matrix as a quaternion.
         ///
-        /// \note Expects an unscaled basis.
+        /// \note The basis is normalized first, so scale never reaches the rotation.
         ///
         /// \return A \ref Quaternion representing the rotation encoded in the basis.
         ZY_INLINE Quaternion GetRotation() const
         {
-            return Quaternion::FromDirection(GetBasisZ(), GetBasisY());
+            return Quaternion::FromDirection(Vector3::Normalize(GetBasisZ()), Vector3::Normalize(GetBasisY()));
         }
 
         /// \brief Multiplies this matrix by another matrix.

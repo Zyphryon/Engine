@@ -138,7 +138,7 @@ inline namespace ZyBase
 
         /// \brief Converts a text to a null-terminated sequence of UTF-16 code units.
         ///
-        /// \note A fixed-capacity result fits at most `Capacity - 1` code units.
+        /// \note A broken byte becomes U+FFFD, and a fixed-capacity result fits at most `Capacity - 1` code units.
         ///
         /// \param Content The text to convert.
         /// \return A sequence of UTF-16 code units, or an empty sequence when \p Content does not fit.
@@ -154,8 +154,16 @@ inline namespace ZyBase
 
             for (UInt Cursor = 0; Cursor < Content.GetSize();)
             {
+                const Bool Null      = Content[Cursor] == '\0';
                 UInt32     Codepoint = Decode(Content, Cursor);
-                const UInt Units     = (Codepoint <= 0xFFFF) ? 1 : 2;
+
+                // A broken byte or a codepoint past Unicode becomes U+FFFD, not a null that cuts the text short.
+                if ((Codepoint == 0 && !Null) || Codepoint > 0x10FFFF)
+                {
+                    Codepoint = 0xFFFD;
+                }
+
+                const UInt Units = (Codepoint <= 0xFFFF) ? 1 : 2;
 
                 if constexpr (Capacity > 0)
                 {
@@ -197,16 +205,9 @@ inline namespace ZyBase
 
             while (Cursor < Content.GetSize() && Added < Room)
             {
-                const UInt Length = GetSize(Content[Cursor]);
-
-                // A broken sequence is skipped a byte at a time, so the rest of the text still arrives.
-                if (Length == 0 || Cursor + Length > Content.GetSize())
-                {
-                    ++Cursor;
-                    continue;
-                }
-
-                const UInt32 Codepoint = Peek(Content, Cursor);
+                // A broken sequence decodes as a null over one byte, so it is dropped and the rest still arrives.
+                const UInt   Start     = Cursor;
+                const UInt32 Codepoint = Decode(Content, Cursor);
                 const Bool   Control   = Codepoint < 0x20 || (Codepoint >= 0x7F && Codepoint <= 0x9F);
 
                 // Control characters are never text; a line break is kept where lines are, and a space elsewhere.
@@ -217,10 +218,9 @@ inline namespace ZyBase
                 }
                 else if (!Control)
                 {
-                    Output.Append(Content.Slice(Cursor, Length));
+                    Output.Append(Content.Slice(Start, Cursor - Start));
                     ++Added;
                 }
-                Cursor += Length;
             }
             return Added;
         }

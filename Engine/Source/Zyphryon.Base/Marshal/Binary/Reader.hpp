@@ -203,11 +203,18 @@ inline namespace ZyBase
         template<typename Header, typename Type>
         ZY_INLINE ConstSpan<Type> ReadBlock()
         {
-            const Header         Count = Read<Header>();
-            const UInt           Size  = static_cast<UInt>(Count) * sizeof(Type);
-            const ConstPtr<Type> Data  = Read<ConstPtr<Type>>(Size);
+            const Header Count = Read<Header>();
 
-            return Data ? ConstSpan(Data, static_cast<UInt>(Count)) : ConstSpan<Type>();
+            if (static_cast<Unsigned<Header>>(Count) > GetAvailable() / sizeof(Type))
+            {
+                Skip(GetAvailable());
+                return ConstSpan<Type>();
+            }
+
+            const ConstPtr<Type> Data = reinterpret_cast<ConstPtr<Type>>(mData + mOffset);
+
+            mOffset += static_cast<UInt32>(static_cast<UInt>(Count) * sizeof(Type));
+            return ConstSpan(Data, static_cast<UInt>(Count));
         }
 
         /// \brief Reads a block that was written with `Writer::WriteBlockCompressed`.

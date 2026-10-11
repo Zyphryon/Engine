@@ -202,6 +202,9 @@ inline namespace ZyBase
             1000000000000000ull,    10000000000000000ull,   100000000000000000ull,
             1000000000000000000ull, 10000000000000000000ull
         };
+
+        ZY_ASSERT(static_cast<UInt64>(Exponent) < 20, "Exponent out of range [0,19]");
+
         return kPow10Table[Exponent];
     }
 

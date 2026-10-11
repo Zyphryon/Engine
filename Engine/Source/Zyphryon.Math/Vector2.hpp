@@ -296,7 +296,7 @@ inline namespace ZyMath
             const Type Length = GetLength() * Other.GetLength();
             ZY_ASSERT(!::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
-            return Angle::FromCosine(Dot(* this, Other) / Length);
+            return Angle::FromCosine(::Clamp(Dot(* this, Other) / Length, Type(-1), Type(1)));
         }
 
         /// \brief Adds another vector to this vector.

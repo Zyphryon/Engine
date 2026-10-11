@@ -85,11 +85,11 @@ inline namespace ZyBase
 
         Result Status = Result::Success;
 
-        Enumerate(Source, [&](ConstRef<Record> Entry)
+        const Result Listed = Enumerate(Source, [&](ConstRef<Record> Entry)
         {
             return CopyEntry(Source, Destination, Entry, Status);
         });
-        return Status;
+        return (Listed != Result::Success) ? Listed : Status;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

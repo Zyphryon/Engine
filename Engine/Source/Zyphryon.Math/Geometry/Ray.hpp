@@ -351,7 +351,7 @@ inline namespace ZyMath
         {
             return Array(
                 ZyReflection::Field::Property<&Ray::mOrigin>("Origin"),
-                ZyReflection::Field::Property<&Ray::mDirection>("Direction"));
+                ZyReflection::Field::Property<&Ray::GetDirection, &Ray::SetDirection>("Direction"));
         }
 
     private:

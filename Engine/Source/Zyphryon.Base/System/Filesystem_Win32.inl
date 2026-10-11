@@ -70,7 +70,7 @@ inline namespace ZyBase
 
         Path Root = Path::ConvertFromUTF16(ConstSpan(Buffer, Size));
 
-        if (const SInt Slash = StrFindLast(Root, '\\'))
+        if (const SInt Slash = StrFindLast(Root, '\\'); Slash != -1)
         {
             Root.RemoveLast(Root.GetSize() - Slash - 1);
         }
@@ -115,6 +115,12 @@ inline namespace ZyBase
     Filesystem::Result Filesystem::Enumerate(Text Path, AnyRef<OnEnumerate> Callback)
     {
         Sequence<Wide, kMaxPathLength + 3> InPath = Unicode::Widen<kMaxPathLength + 3>(Path);
+
+        // A path that widens to nothing would search the drive root, and a longer one leaves no room for the pattern.
+        if (InPath.IsEmpty() || InPath.GetSize() > kMaxPathLength)
+        {
+            return Result::Invalid;
+        }
         InPath.Append(L'/');
         InPath.Append(L'*');
         InPath.Append(L'\0');
@@ -130,13 +136,13 @@ inline namespace ZyBase
                 if (!(Name[0] == L'.' && (Name.GetSize() == 1 || (Name[1] == L'.' && Name.GetSize() == 2))))
                 {
                     const DWORD Attributes = Entry.dwFileAttributes;
+                    const DWORD Tag        = (Attributes & FILE_ATTRIBUTE_REPARSE_POINT) ? Entry.dwReserved0 : 0;
 
                     Record Data;
                     Data.Name = Path::ConvertFromUTF16(Name);
-                    Data.Type = (Attributes & FILE_ATTRIBUTE_DIRECTORY)     ? Type::Directory
-                              : (Attributes & FILE_ATTRIBUTE_ARCHIVE)       ? Type::File
-                              : (Attributes & FILE_ATTRIBUTE_REPARSE_POINT) ? Type::Link
-                              : Type::Unknown;
+                    Data.Type = IsReparseTagNameSurrogate(Tag)          ? Type::Link
+                              : (Attributes & FILE_ATTRIBUTE_DIRECTORY) ? Type::Directory
+                              : Type::File;
                     Data.Size = (static_cast<UInt64>(Entry.nFileSizeHigh) << 32) | Entry.nFileSizeLow;
                     Data.Time = (static_cast<UInt64>(Entry.ftLastWriteTime.dwHighDateTime) << 32) | Entry.ftLastWriteTime.dwLowDateTime;
 
@@ -290,7 +296,7 @@ inline namespace ZyBase
 
         const HANDLE Native    = reinterpret_cast<HANDLE>(Handle.Value);
         Ptr<Byte>    Buffer    = Destination.GetData();
-        DWORD        Remaining = static_cast<DWORD>(Destination.GetSize());
+        UInt         Remaining = Destination.GetSize();
         DWORD        Error     = ERROR_SUCCESS;
 
         while (Remaining > 0)
@@ -299,9 +305,10 @@ inline namespace ZyBase
             Position.Offset     = static_cast<DWORD>(Offset & 0xFFFFFFFF);
             Position.OffsetHigh = static_cast<DWORD>(Offset >> 32);
 
-            DWORD Consumed = 0;
+            const DWORD Chunk    = static_cast<DWORD>(Min<UInt>(Remaining, MAXDWORD));
+            DWORD       Consumed = 0;
 
-            if (ReadFile(Native, Buffer, Remaining, AddressOf(Consumed), AddressOf(Position)))
+            if (ReadFile(Native, Buffer, Chunk, AddressOf(Consumed), AddressOf(Position)))
             {
                 if (Consumed == 0)
                 {
@@ -333,7 +340,7 @@ inline namespace ZyBase
 
         const HANDLE   Native    = reinterpret_cast<HANDLE>(Handle.Value);
         ConstPtr<Byte> Buffer    = Source.GetData();
-        DWORD          Remaining = static_cast<DWORD>(Source.GetSize());
+        UInt           Remaining = Source.GetSize();
         DWORD          Error     = ERROR_SUCCESS;
 
         while (Remaining > 0)
@@ -342,9 +349,10 @@ inline namespace ZyBase
             Position.Offset     = static_cast<DWORD>(Offset & 0xFFFFFFFF);
             Position.OffsetHigh = static_cast<DWORD>(Offset >> 32);
 
-            DWORD Written = 0;
+            const DWORD Chunk   = static_cast<DWORD>(Min<UInt>(Remaining, MAXDWORD));
+            DWORD       Written = 0;
 
-            if (WriteFile(Native, Buffer, Remaining, AddressOf(Written), AddressOf(Position)))
+            if (WriteFile(Native, Buffer, Chunk, AddressOf(Written), AddressOf(Position)))
             {
                 if (Written == 0)
                 {

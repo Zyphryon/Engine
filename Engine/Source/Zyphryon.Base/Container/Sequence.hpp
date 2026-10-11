@@ -1031,7 +1031,7 @@ inline namespace ZyBase
 
             if (Index < mSize)
             {
-                mStorage.Relocate(mStorage, mSize - 1, mSize, 1);
+                mStorage.Spill(mSize - 1, mSize, 1);
                 mStorage.Slide(Index, Index + 1, mSize - 1 - Index);
                 mStorage.Destruct(Index);
             }
@@ -1063,7 +1063,7 @@ inline namespace ZyBase
 
             if (Reallocations > 0)
             {
-                mStorage.Relocate(mStorage, mSize - Reallocations, mSize - Reallocations + Size, Reallocations);
+                mStorage.Spill(mSize - Reallocations, mSize - Reallocations + Size, Reallocations);
             }
 
             if (Slides > 0)
@@ -1071,7 +1071,7 @@ inline namespace ZyBase
                 mStorage.Slide(Index, Index + Size, Slides);
             }
 
-            mStorage.Destruct(Index, Slides);
+            mStorage.Destruct(Index, Reallocations);
 
             for (UInt Offset = 0; Offset < Size; ++Offset)
             {
@@ -1391,7 +1391,17 @@ inline namespace ZyBase
             }
             else
             {
-                ::Fill(mStorage.GetAddress(mSize), Size, Element);
+                if constexpr (IsTriviallyCopyable<Type>)
+                {
+                    ::Fill(mStorage.GetAddress(mSize), Size, Element);
+                }
+                else
+                {
+                    for (UInt Index = 0; Index < Size; ++Index)
+                    {
+                        mStorage.Construct(mSize + Index, Element);
+                    }
+                }
             }
             mSize += Size;
         }

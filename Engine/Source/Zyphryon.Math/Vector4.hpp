@@ -202,7 +202,7 @@ inline namespace ZyMath
             const Real32 Length = GetLength() * Other.GetLength();
             ZY_ASSERT(!::IsAlmostZero(Length), "Cannot compute angle with zero-length vector");
 
-            return Angle::FromCosine(Dot(* this, Other) / Length);
+            return Angle::FromCosine(::Clamp(Dot(* this, Other) / Length, -1.0f, 1.0f));
         }
 
         /// \brief Reduces the vector by summing all components.

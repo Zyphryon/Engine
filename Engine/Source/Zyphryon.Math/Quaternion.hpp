@@ -342,11 +342,7 @@ inline namespace ZyMath
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            Angle Rotation;
-            const Vector3 Axis = GetAxis(Rotation);
-
-            static constexpr ZyFormat::Pattern<5> kPattern("(Axis: {0} Angle: {1})");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, Axis, Rotation);
+            mData.OnFormat(Buffer);
         }
 
     public:

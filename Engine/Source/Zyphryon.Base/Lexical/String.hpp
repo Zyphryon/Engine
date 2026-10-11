@@ -253,7 +253,7 @@ inline namespace ZyBase
 
         /// \brief Appends an integral number to the end of the string.
         ///
-        /// \param Number    The number to append, which must not be negative.
+        /// \param Number    The number to append, which must not be negative, as the caller writes any sign.
         /// \param Digits    The number of digits to append.
         /// \param Base      The numerical base to use.
         /// \param Uppercase `true` to use uppercase letters for bases greater than 10, `false` for lowercase.
@@ -261,6 +261,11 @@ inline namespace ZyBase
         ZY_INLINE constexpr void AppendInteger(Type Number, UInt Digits, UInt Base, Bool Uppercase)
             requires (IsIntegral<Type> && !IsAnyOf<Type, Bool>)
         {
+            if constexpr (IsSigned<Type>)
+            {
+                ZY_ASSERT(Number >= 0, "An integer is appended as its magnitude, with any sign written before it");
+            }
+
             const UInt Offset = mBuffer.GetSize();
             mBuffer.Advance(Digits);
             Seal();
@@ -288,11 +293,13 @@ inline namespace ZyBase
         /// \brief Appends a real number with a fixed number of decimals.
         ///
         /// \param Number    The number to append.
-        /// \param Precision The number of decimal places to append.
+        /// \param Precision The number of decimal places to append, at most nineteen.
         template<typename Type>
         ZY_INLINE constexpr void AppendReal(Type Number, UInt Precision)
             requires IsReal<Type>
         {
+            ZY_ASSERT(Precision < 20, "A real is appended with at most nineteen decimals");
+
             if (IsNaN(Number))
             {
                 Append("NaN");
@@ -308,6 +315,13 @@ inline namespace ZyBase
             // The magnitude is written and the sign before it, which a value rounding to nought leaves out.
             const Bool Negative  = Number < 0;
             const Type Magnitude = Negative ? -Number : Number;
+
+            // Past what an integer holds once scaled, the decimals are noise, so the significant digits are written.
+            if (Magnitude * Pow10(Precision) + 0.5 >= 0x1p64)
+            {
+                AppendReal(Number);
+                return;
+            }
 
             if (Precision > 0)
             {
@@ -387,11 +401,16 @@ inline namespace ZyBase
 
         /// \brief Removes the last \p Count characters from the string.
         ///
-        /// \param Count The number of characters to remove, from one to the size.
+        /// \param Count The number of characters to remove, at most the size, where zero removes nothing.
         ZY_INLINE constexpr void RemoveLast(UInt Count)
         {
-            mBuffer.Remove(mBuffer.GetSize() - Count, Count);
-            Seal();
+            ZY_ASSERT(Count <= GetSize(), "Cannot remove more characters than the string holds");
+
+            if (Count > 0)
+            {
+                mBuffer.Remove(mBuffer.GetSize() - Count, Count);
+                Seal();
+            }
         }
 
         /// \brief Shrinks the string to the given size, keeping the characters at its front.

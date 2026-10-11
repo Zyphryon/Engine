@@ -108,7 +108,7 @@ inline namespace ZyBase
         template<auto Method, typename Object, typename... Arguments>
         ZY_INLINE void Record(Ptr<Object> Target, AnyRef<Arguments>... Parameters)
         {
-            Record([Target, ...Parameters = Move(Parameters)]() mutable
+            Record([Target, ...Parameters = Forward<Arguments>(Parameters)]() mutable
             {
                 (Target->*Method)(Parameters...);
             });

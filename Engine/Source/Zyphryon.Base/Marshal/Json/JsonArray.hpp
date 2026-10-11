@@ -53,10 +53,10 @@ inline namespace ZyBase
 
         /// \brief Checks whether the array is empty.
         ///
-        /// \return `true` if the array is empty, `false` otherwise.
+        /// \return `true` if the array is empty or wraps no node, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
         {
-            return mNode->GetArray().IsEmpty();
+            return GetSize() == 0;
         }
 
         /// \brief Checks whether the array is null or empty.
@@ -69,10 +69,10 @@ inline namespace ZyBase
 
         /// \brief Gets the number of elements in the array.
         ///
-        /// \return The number of elements.
+        /// \return The number of elements, or `0` if the array wraps no node.
         ZY_INLINE UInt GetSize() const
         {
-            return mNode->GetArray().GetSize();
+            return mNode ? mNode->GetArray().GetSize() : 0;
         }
 
         /// \brief Appends a boolean value to the array.
@@ -213,7 +213,7 @@ inline namespace ZyBase
         /// \brief Gets the element at the given index.
         ///
         /// \param Index The zero-based index of the element.
-        /// \return The element, or \c nullptr when the index is out of range.
+        /// \return The element, or \c nullptr when the index is out of range or the array wraps no node.
         ZY_INLINE Ptr<JsonValue> Find(UInt Index) const
         {
             return Index < GetSize() ? AddressOf(mNode->GetArray()[Index]) : nullptr;

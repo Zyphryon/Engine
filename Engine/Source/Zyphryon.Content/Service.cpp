@@ -196,7 +196,7 @@ namespace ZyContent
 
     void Service::Subscribe(ConstRef<Uri> Key, AnyRef<Callback> Function)
     {
-        mSubscriptions.FindOrInsert(Digest(Hash(Key.GetPath()))).Append(Move(Function));
+        mSubscriptions.FindOrInsert(Digest(Hash(Key))).Append(Move(Function));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -204,7 +204,7 @@ namespace ZyContent
 
     void Service::Unsubscribe(ConstRef<Uri> Key)
     {
-        mSubscriptions.Erase(Digest(Hash(Key.GetPath())));
+        mSubscriptions.Erase(Digest(Hash(Key)));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -322,7 +322,7 @@ namespace ZyContent
         }
 
         // Subscriptions fire once, so they are taken out before they run.
-        if (Sequence<Callback> Listeners; mSubscriptions.Extract(Digest(Hash(Asset.GetKey().GetPath())), Listeners))
+        if (Sequence<Callback> Listeners; mSubscriptions.Extract(Digest(Hash(Asset.GetKey())), Listeners))
         {
             for (Ref<Callback> Listener : Listeners)
             {

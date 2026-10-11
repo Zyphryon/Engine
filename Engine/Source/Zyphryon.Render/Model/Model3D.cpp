@@ -32,19 +32,21 @@ namespace ZyRender
 
     Bool Model3D::Upload(Ref<ZyGraphic::Service> Service)
     {
+        Bool Result = true;
+
         if (mMesh && mMesh->GetPolicy() == Policy::Exclusive)
         {
-            mMesh->Upload(Service);
+            Result = mMesh->Upload(Service);
         }
 
         for (ConstRetainer<ZyGraphic::Material> Material : mMaterials)
         {
             if (Material && Material->GetPolicy() == Policy::Exclusive)
             {
-                Material->Upload(Service);
+                Result = Material->Upload(Service) && Result;
             }
         }
-        return true;
+        return Result;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

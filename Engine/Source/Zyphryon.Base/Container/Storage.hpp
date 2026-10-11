@@ -197,6 +197,36 @@ inline namespace ZyBase
             }
         }
 
+        /// \brief Move-constructs a range of elements into uninitialized slots, leaving the sources alive.
+        ///
+        /// \param Offset The zero-based index of the first source element.
+        /// \param Target The zero-based index of the first uninitialized destination slot.
+        /// \param Size   The number of elements to move.
+        ZY_INLINE constexpr void Spill(UInt Offset, UInt Target, UInt Size)
+        {
+            if constexpr (IsTriviallyCopyable<Type>)
+            {
+                if consteval
+                {
+                    for (UInt Index = 0; Index < Size; ++Index)
+                    {
+                        mBlock.mData[Target + Index] = mBlock.mData[Offset + Index];
+                    }
+                }
+                else
+                {
+                    ::Copy(GetAddress(Target), Size, GetAddress(Offset));
+                }
+            }
+            else
+            {
+                for (UInt Index = 0; Index < Size; ++Index)
+                {
+                    ::Construct<Type>(GetAddress(Target + Index), ::Move(mBlock.mData[Offset + Index]));
+                }
+            }
+        }
+
         /// \brief Copies a range of elements from a source pointer into this storage at the specified offset.
         ///
         /// \param Offset The zero-based index of the first destination slot.

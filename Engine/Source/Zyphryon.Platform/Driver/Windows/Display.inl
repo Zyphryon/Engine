@@ -134,9 +134,11 @@ namespace ZyPlatform
                 }
             }
 
-            if (Path.targetInfo.refreshRate.Denominator != 0)
+            if (ConstRef<DISPLAYCONFIG_RATIONAL> Rate = Path.targetInfo.refreshRate; Rate.Denominator != 0)
             {
-                Entry.SetFrequency(Path.targetInfo.refreshRate.Numerator / Path.targetInfo.refreshRate.Denominator);
+                const UInt64 Total = static_cast<UInt64>(Rate.Numerator) + Rate.Denominator / 2;
+
+                Entry.SetFrequency(static_cast<UInt16>(Total / Rate.Denominator));
             }
         }
     }

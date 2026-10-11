@@ -555,14 +555,14 @@ namespace ZyPlatform
                 UINT Size = sizeof(RAWINPUT);
 
                 RAWINPUT Data;
-                ::GetRawInputData(
+                const UINT Read = ::GetRawInputData(
                     reinterpret_cast<HRAWINPUT>(Arg1),
                     RID_INPUT,
                     AddressOf(Data),
                     AddressOf(Size),
                     sizeof(RAWINPUTHEADER));
 
-                if (Data.header.dwType == RIM_TYPEMOUSE && Window->IsCursorLocked())
+                if (Read != static_cast<UINT>(-1) && Data.header.dwType == RIM_TYPEMOUSE && Window->IsCursorLocked())
                 {
                     const Real32 DeltaX = static_cast<Real32>(Data.data.mouse.lLastX);
                     const Real32 DeltaY = static_cast<Real32>(Data.data.mouse.lLastY);

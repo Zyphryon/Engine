@@ -432,8 +432,19 @@ inline namespace ZyBase
         /// \param Capacity The number of slots to allocate (must be a power of two).
         ZY_INLINE void Allocate(UInt Capacity)
         {
-            const UInt      Offset = Align<UInt>(2u * Capacity * sizeof(UInt32), alignof(Pair));
-            const Ptr<Byte> Memory = ZyBase::Allocate(Offset + Capacity * sizeof(Pair));
+            const UInt Offset = Align<UInt>(2u * Capacity * sizeof(UInt32), alignof(Pair));
+            const UInt Size   = Offset + Capacity * sizeof(Pair);
+
+            Ptr<Byte> Memory;
+
+            if constexpr (alignof(Pair) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+            {
+                Memory = ZyBase::Allocate(Size, alignof(Pair));
+            }
+            else
+            {
+                Memory = ZyBase::Allocate(Size);
+            }
 
             mControl   = reinterpret_cast<Ptr<UInt32>>(Memory);
             mIndices   = reinterpret_cast<Ptr<UInt32>>(Memory + Capacity * sizeof(UInt32));
@@ -449,7 +460,7 @@ inline namespace ZyBase
         {
             if (mControl)
             {
-                ZyBase::Free(mControl);
+                Release(mControl);
             }
 
             mControl   = nullptr;
@@ -458,6 +469,21 @@ inline namespace ZyBase
             mSize      = 0u;
             mMask      = 0u;
             mThreshold = 0u;
+        }
+
+        /// \brief Releases a block \ref Allocate handed out, on the boundary it was allocated on.
+        ///
+        /// \param Memory The block to release, which opens with the control words.
+        ZY_INLINE static void Release(Ptr<UInt32> Memory)
+        {
+            if constexpr (alignof(Pair) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+            {
+                ZyBase::Free(Memory, alignof(Pair));
+            }
+            else
+            {
+                ZyBase::Free(Memory);
+            }
         }
 
         /// \brief Computes the initial dist-and-fingerprint word for a given hash.
@@ -681,7 +707,7 @@ inline namespace ZyBase
                 }
 
                 mSize = OldSize;
-                ZyBase::Free(OldControl);
+                Release(OldControl);
             }
         }
 

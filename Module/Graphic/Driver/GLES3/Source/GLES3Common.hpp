@@ -214,7 +214,11 @@ namespace ZyGraphic
     {
         static constexpr Array kMapping = {
             static_cast<GLenum>(GL_CLAMP_TO_EDGE),              // TextureAddress::Clamp
+#if defined(ZY_PLATFORM_WEB)
+            static_cast<GLenum>(GL_CLAMP_TO_EDGE),              // TextureAddress::Border
+#else
             static_cast<GLenum>(kGLClampToBorder),              // TextureAddress::Border
+#endif
             static_cast<GLenum>(GL_REPEAT),                     // TextureAddress::Repeat
             static_cast<GLenum>(GL_MIRRORED_REPEAT),            // TextureAddress::Mirror
         };

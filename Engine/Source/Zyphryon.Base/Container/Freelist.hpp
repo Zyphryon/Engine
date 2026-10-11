@@ -311,7 +311,10 @@ inline namespace ZyBase
         {
             if constexpr (EpochBits > 0)
             {
-                return Key(Index, ++mEpochs[Index - 1]);
+                constexpr Epoch kMask = static_cast<Epoch>((1ull << EpochBits) - 1u);
+
+                mEpochs[Index - 1] = static_cast<Epoch>((mEpochs[Index - 1] + 1u) & kMask);
+                return Key(Index, mEpochs[Index - 1]);
             }
             else
             {

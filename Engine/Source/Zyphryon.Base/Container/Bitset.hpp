@@ -241,11 +241,12 @@ inline namespace ZyBase
         ZY_INLINE constexpr UInt FindLastSet(UInt Offset) const
         {
             const UInt StartWord = Offset / kWordBits;
+            const Word StartMask = kWordFull >> (kWordBits - 1u - Offset % kWordBits);
 
             for (UInt Index = StartWord + 1; Index-- > 0;)
             {
                 const Word Valid = (Index == kWordCount - 1) ? kLastMask : kWordFull;
-                const Word Mask  = (Index == StartWord) ? ((Word(1) << ((Offset % kWordBits) + 1)) - 1u) : kWordFull;
+                const Word Mask  = (Index == StartWord) ? StartMask : kWordFull;
 
                 if (const Word Masked = mData[Index] & Valid & Mask)
                 {

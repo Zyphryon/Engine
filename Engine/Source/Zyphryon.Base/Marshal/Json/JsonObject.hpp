@@ -61,18 +61,18 @@ inline namespace ZyBase
 
         /// \brief Checks whether the object is empty.
         ///
-        /// \return `true` if the object is empty, `false` otherwise.
+        /// \return `true` if the object is empty or wraps no node, `false` otherwise.
         ZY_INLINE Bool IsEmpty() const
         {
-            return mNode->GetObject().IsEmpty();
+            return GetSize() == 0;
         }
 
         /// \brief Gets the number of key-value pairs in the object.
         ///
-        /// \return The number of key-value pairs.
+        /// \return The number of key-value pairs, or `0` if the object wraps no node.
         ZY_INLINE UInt GetSize() const
         {
-            return mNode->GetObject().GetSize();
+            return mNode ? mNode->GetObject().GetSize() : 0;
         }
 
         /// \brief Gets the underlying JSON value node.
@@ -98,7 +98,7 @@ inline namespace ZyBase
         /// \return `true` if the key is present, `false` otherwise.
         ZY_INLINE Bool Contains(Text Key) const
         {
-            return mNode->GetObject().Contains(Key);
+            return Find(Key) != nullptr;
         }
 
         /// \brief Sets a boolean value for the specified key.
@@ -230,7 +230,10 @@ inline namespace ZyBase
         template<typename Function>
         ZY_INLINE void ForEach(AnyRef<Function> Callback) const
         {
-            mNode->GetObject().ForEach(Forward<Function>(Callback));
+            if (mNode)
+            {
+                mNode->GetObject().ForEach(Forward<Function>(Callback));
+            }
         }
 
         /// \brief Gets a string representation of this object.
@@ -254,10 +257,10 @@ inline namespace ZyBase
         /// \brief Gets the value stored under the given key.
         ///
         /// \param Key The key to look up.
-        /// \return The value, or \c nullptr when the key is not found.
+        /// \return The value, or \c nullptr when the key is not found or the object wraps no node.
         ZY_INLINE Ptr<JsonValue> Find(Text Key) const
         {
-            return mNode->GetObject().Find(Key);
+            return mNode ? mNode->GetObject().Find(Key) : nullptr;
         }
 
     private:

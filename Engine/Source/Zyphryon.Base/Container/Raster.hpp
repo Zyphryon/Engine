@@ -418,9 +418,9 @@ inline namespace ZyBase
             SInt32                                    MaximumX,
             SInt32                                    MaximumY)
         {
-            constexpr UInt32 kFarthest = static_cast<UInt32>(kMaximum<Distance>);
+            constexpr Distance kFarthest = kMaximum<Distance>;
 
-            UInt32 Nearest = kFarthest;
+            Distance Nearest = kFarthest;
 
             const SInt32 Behind[4][2] = {
                 { X + Toward, Y     },
@@ -436,10 +436,10 @@ inline namespace ZyBase
 
                 if (NearX >= MinimumX && NearX <= MaximumX && NearY >= MinimumY && NearY <= MaximumY)
                 {
-                    Nearest = Min(Nearest, Result[GetIndex(NearX, NearY)] + 1u);
+                    Nearest = Min(Nearest, Result[GetIndex(NearX, NearY)]);
                 }
             }
-            return static_cast<Distance>(Min(Nearest, kFarthest));
+            return static_cast<Distance>(Min(Nearest, static_cast<Distance>(kFarthest - 1)) + 1);
         }
 
     private:
