@@ -42,7 +42,8 @@ namespace ZyGraphic
 
     Object Technique::Obtain(Ref<Service> Service, Key Key) const
     {
-        if (Key == 0)
+        // A variant compiled before the technique is created would read shaders still waiting on their includes.
+        if (Key == 0 || mHandle == 0)
         {
             return mHandle;
         }

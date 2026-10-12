@@ -61,7 +61,7 @@ vec4 ZyEmitScreen(int VertexID)
 {
     vec2 Corner = vec2(float((VertexID << 1) & 2), float(VertexID & 2));
 
-    return vec4(Corner * 2.0 - 1.0, Corner.x, Corner.y);
+    return vec4(Corner * 2.0 - 1.0, Corner.x, 1.0 - Corner.y);
 }
 
 /// The edges of the -1..1 box, drawn as a 24-vertex line list.

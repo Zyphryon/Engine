@@ -37,7 +37,7 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
     float Found = 0.0;
     float Count = 0.0;
 
-#ifdef GL_ARB_texture_gather
+#if ZY_TIER >= 3
 
     const float Taps = float(ZY_SHADOW_GATHER * 4);
 

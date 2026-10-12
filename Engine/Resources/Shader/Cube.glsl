@@ -122,11 +122,13 @@ bool ZyCubeLocate(
     float Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
     vec3  View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     vec2  Mid   = ZyCubeTile(Tile, Per);
+    vec2  Clip  = View.xy * Scale / (View.z * Per) + Mid;
+    vec2  Heart = vec2(Mid.x * 0.5 + 0.5, 0.5 - Mid.y * 0.5);
 
-    Uv       = (View.xy * Scale / (View.z * Per) + Mid) * 0.5 + 0.5;
-    Least    = Mid * 0.5 + 0.5 - (0.5 / Per - Texel);
-    Most     = Mid * 0.5 + 0.5 + (0.5 / Per - Texel);
-    Depth    = (Far / (Far - Near) - Far * Near / (Far - Near) / max(View.z - ZY_CUBE_BIAS, Near)) * 0.5 + 0.5;
+    Uv       = vec2(Clip.x * 0.5 + 0.5, 0.5 - Clip.y * 0.5);
+    Least    = Heart - (0.5 / Per - Texel);
+    Most     = Heart + (0.5 / Per - Texel);
+    Depth    = Far / (Far - Near) - Far * Near / (Far - Near) / max(View.z - ZY_CUBE_BIAS, Near);
     Distance = View.z;
     return true;
 }
@@ -175,7 +177,7 @@ float ZyCubeShadow(
     float Found = 0.0;
     float Count = 0.0;
 
-#ifdef GL_ARB_texture_gather
+#if ZY_TIER >= 3
 
     const float Taps = float(ZY_CUBE_GATHER * 4);
 
@@ -185,7 +187,7 @@ float ZyCubeShadow(
         vec4 Stored  = textureGather(Depths, At);
         vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
 
-        Found += dot(B / (Stored * 2.0 - 1.0 - A), Blocked);
+        Found += dot(B / (Stored - A), Blocked);
         Count += dot(Blocked, vec4(1.0));
     }
 
@@ -200,7 +202,7 @@ float ZyCubeShadow(
 
         if (Stored < Depth)
         {
-            Found += B / (Stored * 2.0 - 1.0 - A);
+            Found += B / (Stored - A);
             Count += 1.0;
         }
     }

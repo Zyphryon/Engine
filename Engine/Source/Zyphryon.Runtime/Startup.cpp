@@ -49,6 +49,7 @@ namespace ZyRuntime
 
         if (const JsonObject Section = Root.GetObject("Graphic"); Section.IsValid())
         {
+            SetGraphicsDriver(Section.GetString("driver", GetGraphicsDriver()));
             SetGraphicsAdapter(Section.GetString("adapter", GetGraphicsAdapter()));
             SetGraphicsTearless(Section.GetBool("tearless", IsGraphicsTearless()));
         }
@@ -72,6 +73,7 @@ namespace ZyRuntime
         Window.SetBool("fullscreen", IsWindowFullscreen());
 
         JsonObject Graphic = Root.SetObject("Graphic");
+        Graphic.SetString("driver", GetGraphicsDriver());
         Graphic.SetString("adapter", GetGraphicsAdapter());
         Graphic.SetBool("tearless", IsGraphicsTearless());
 

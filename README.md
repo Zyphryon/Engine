@@ -34,7 +34,6 @@ you enable the module that needs it.
 | Library | Pulled in by | Used for |
 |---------|--------------|----------|
 | [libopus](https://opus-codec.org/) | always (core) | Opus decoding for the `.snd` container |
-| [glad](https://github.com/Dav1dde/glad) | `ZY_GRAPHIC_DRIVER_GLES3` *(ON on Unix)* | GL entry-point loading |
 | [Tracy](https://github.com/wolfpld/tracy) | `ZY_PROFILE_BACKEND_TRACY` *(OFF)* | Frame profiling |
 
 ---
@@ -43,11 +42,13 @@ you enable the module that needs it.
 
 ### Prerequisites
 - **CMake** 3.20+
-- **C++23** compliant compiler (MSVC 2019+, GCC 11+, Clang 13+)
+- **C++23** compliant compiler (MSVC 2019+, GCC 11+, Clang 19+)
 - **Platform SDKs**
     - Windows: Windows SDK 10.0+
     - Linux: `libasound2-dev`, `libx11-dev`, `libxrandr-dev` *(all required)*
     - Web: Emscripten SDK
+- **Target platforms**
+    - Windows: Windows 10 version 1607 or later
 
 ---
 

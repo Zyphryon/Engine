@@ -16,29 +16,22 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyGraphic
+namespace ZyGraphic::D3D11
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    D3D11Compiler::D3D11Compiler()
-        : mModule   { nullptr },
-          mFunction { nullptr }
+    Compiler::Compiler()
+        : mModule  { nullptr },
+          mCompile { nullptr },
+          mReflect { nullptr }
     {
-        for (const LPCWSTR Library : kLibraries)
-        {
-            if (mModule = ::LoadLibraryW(Library); mModule)
-            {
-                mFunction = reinterpret_cast<pD3DCompile>(::GetProcAddress(mModule, "D3DCompile"));
-                break;
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    D3D11Compiler::~D3D11Compiler()
+    Compiler::~Compiler()
     {
         if (mModule)
         {
@@ -49,13 +42,28 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ptr<ID3DBlob> D3D11Compiler::Compile(ConstRef<Blob> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros)
+    Bool Compiler::Initialize()
     {
-        if (mFunction == nullptr)
+        if (mModule = LoadSystemLibrary(L"D3DCompiler_47.dll"); mModule)
         {
-            LOG_E("Graphics: Failed to compile shader: no D3DCompiler library is available");
-            return nullptr;
+            mCompile = reinterpret_cast<pD3DCompile>(::GetProcAddress(mModule, "D3DCompile"));
+            mReflect = reinterpret_cast<decltype(& D3DReflect)>(::GetProcAddress(mModule, "D3DReflect"));
         }
+
+        if (mCompile == nullptr || mReflect == nullptr)
+        {
+            LOG_E("Graphics: Failed to load D3DCompiler_47.dll");
+            return false;
+        }
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ComPtr<ID3DBlob> Compiler::Compile(ConstRef<Blob> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros) const
+    {
+        ZY_ASSERT(mCompile, "The compiler was used before it was initialized");
 
         const LPCSTR Profile = kProfiles[ZyEnum::Cast(Tier)][ZyEnum::Cast(Stage)];
 
@@ -65,10 +73,10 @@ namespace ZyGraphic
             return nullptr;
         }
 
-        Ptr<ID3DBlob> Error    = nullptr;
-        Ptr<ID3DBlob> Bytecode = nullptr;
+        ComPtr<ID3DBlob> Error;
+        ComPtr<ID3DBlob> Bytecode;
 
-        const HRESULT Result   = mFunction(
+        const HRESULT Result = mCompile(
             Code.GetData(),
             Code.GetSize(),
             nullptr,
@@ -78,8 +86,8 @@ namespace ZyGraphic
             Profile,
             D3DCOMPILE_OPTIMIZATION_LEVEL3,
             0,
-            AddressOf(Bytecode),
-            AddressOf(Error));
+            Bytecode.GetAddressOf(),
+            Error.GetAddressOf());
 
         if (FAILED(Result))
         {
@@ -92,12 +100,24 @@ namespace ZyGraphic
             }
 
             LOG_E("Graphics: Failed to compile {0} shader: {1}", ZyEnum::GetName(Stage), Text(Data, Length));
-        }
-
-        if (Error)
-        {
-            Error->Release();
+            return nullptr;
         }
         return Bytecode;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ComPtr<ID3D11ShaderReflection> Compiler::Reflect(Ptr<ID3DBlob> Bytecode) const
+    {
+        ZY_ASSERT(mReflect, "The compiler was used before it was initialized");
+
+        ComPtr<ID3D11ShaderReflection> Reflection;
+
+        if (!Check(mReflect(Bytecode->GetBufferPointer(), Bytecode->GetBufferSize(), IID_PPV_ARGS(Reflection.GetAddressOf()))))
+        {
+            return nullptr;
+        }
+        return Reflection;
     }
 }

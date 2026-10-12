@@ -30,4 +30,4 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC "ZyEngine")
 ## Registration
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "D3D11Module.hpp" CLASS "ZyGraphic::D3D11Module")
+ZyRegisterModule(TARGET ${PROJECT_NAME} HEADER "D3D11Module.hpp" CLASS "ZyGraphic::D3D11::Module")

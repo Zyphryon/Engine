@@ -12,9 +12,7 @@
 /// Turns a perspective depth-buffer value into distance from the eye.
 float ZyLinearizeDepth(float Depth, float Near, float Far)
 {
-    float Clip = Depth * 2.0 - 1.0;
-
-    return (2.0 * Near * Far) / (Far + Near - Clip * (Far - Near));
+    return (Near * Far) / (Far - Depth * (Far - Near));
 }
 
 /// Distance from the eye, from 0 at the near plane to 1 at the far plane.
@@ -32,13 +30,13 @@ float ZyDepthSpan(mat4 Inverse)
 /// Turns a depth-buffer value into clip-space depth.
 float ZyClipDepth(float Depth)
 {
-    return Depth * 2.0 - 1.0;
+    return Depth;
 }
 
 /// Rebuilds a position from a texture coordinate and depth, through an inverse matrix.
 vec3 ZyPositionFromDepth(vec2 Uv, float Depth, mat4 Inverse)
 {
-    vec4 Clip     = vec4(Uv * 2.0 - 1.0, ZyClipDepth(Depth), 1.0);
+    vec4 Clip     = vec4(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0, ZyClipDepth(Depth), 1.0);
     vec4 Position = Inverse * Clip;
 
     return Position.xyz / Position.w;

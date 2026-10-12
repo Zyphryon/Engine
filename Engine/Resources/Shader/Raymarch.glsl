@@ -120,7 +120,7 @@ vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Full
     vec2  Blend  = At - Corner;
     ivec2 Last   = Half - 1;
 
-#ifdef GL_ARB_texture_gather
+#if ZY_TIER >= 3
     vec4 Gaps = abs(textureGather(Reaches, (Corner + 1.0) / vec2(Half)).wzxy - Reach);
 #endif
 
@@ -134,7 +134,7 @@ vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Full
         ivec2 Offset = ivec2(Index & 1, Index >> 1);
         ivec2 Tap    = clamp(ivec2(Corner) + Offset, ivec2(0), Last);
         vec4  Light  = texelFetch(Medium, Tap, 0);
-#ifdef GL_ARB_texture_gather
+#if ZY_TIER >= 3
         float Gap    = Gaps[Index];
 #else
         float Gap    = abs(texelFetch(Reaches, Tap, 0).r - Reach);

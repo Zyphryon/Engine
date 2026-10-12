@@ -18,10 +18,10 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyGraphic
+namespace ZyGraphic::D3D11
 {
-    /// \brief Represents the Direct3D 11 module.
-    class D3D11Module final : public ZyEngine::Module
+    /// \brief Represents the module that registers the Direct3D 11 driver with the graphic service.
+    class Module final : public ZyEngine::Module
     {
     public:
 

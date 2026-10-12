@@ -61,8 +61,8 @@ namespace ZyGraphic
         /// \param ID       The handle the service allocated for the buffer.
         /// \param Storage  The CPU access pattern of the buffer.
         /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
-        /// \param Capacity The capacity of the buffer in bytes.
-        /// \param Data     The optional initial data to populate the buffer with.
+        /// \param Capacity The capacity of the buffer in bytes, a multiple of the uniform block alignment for a uniform buffer.
+        /// \param Data     The optional initial data, either empty or exactly \p Capacity bytes long.
         virtual void CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
         {
 
@@ -99,8 +99,9 @@ namespace ZyGraphic
 
         /// \brief Unmaps a previously mapped buffer resource, releasing CPU access.
         ///
-        /// \param ID The identifier of the buffer resource to unmap.
-        virtual void UnmapBuffer(Object ID)
+        /// \param ID   The identifier of the buffer resource to unmap.
+        /// \param Size The number of bytes written from the start of the mapped region.
+        virtual void UnmapBuffer(Object ID, UInt32 Size)
         {
 
         }

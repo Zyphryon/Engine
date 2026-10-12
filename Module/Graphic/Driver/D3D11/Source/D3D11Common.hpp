@@ -13,21 +13,21 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Zyphryon.Graphic/Types.hpp"
-#include <d3d11.h>
+#include <d3d11_1.h>
 #include <wrl/client.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyGraphic
+namespace ZyGraphic::D3D11
 {
     /// \brief Represents a smart pointer for COM objects.
     template<typename Type>
     using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
     /// \brief Converts \ref BlendFactor into the matching Direct3D 11 enumeration.
-    constexpr auto D3D11Convert(BlendFactor Value)
+    constexpr auto Convert(BlendFactor Value)
     {
         static constexpr Array kMapping = {
             D3D11_BLEND_ZERO,                       // BlendFactor::Zero
@@ -40,16 +40,12 @@ namespace ZyGraphic
             D3D11_BLEND_INV_DEST_COLOR,             // BlendFactor::OneMinusDstColor
             D3D11_BLEND_DEST_ALPHA,                 // BlendFactor::DstAlpha
             D3D11_BLEND_INV_DEST_ALPHA,             // BlendFactor::OneMinusDstAlpha
-            D3D11_BLEND_SRC1_COLOR,                 // BlendFactor::Src1Color
-            D3D11_BLEND_INV_SRC1_COLOR,             // BlendFactor::OneMinusSrc1Color
-            D3D11_BLEND_SRC1_ALPHA,                 // BlendFactor::Src1Alpha
-            D3D11_BLEND_INV_SRC1_ALPHA,             // BlendFactor::OneMinusSrc1Alpha
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
 
     /// \brief Converts \ref BlendFunction into the matching Direct3D 11 enumeration.
-    constexpr auto D3D11Convert(BlendFunction Value)
+    constexpr auto Convert(BlendFunction Value)
     {
         static constexpr Array kMapping = {
             D3D11_BLEND_OP_ADD,                     // BlendFunction::Add
@@ -62,7 +58,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref Cull into the matching Direct3D 11 face enumeration.
-    constexpr auto D3D11Convert(Cull Value)
+    constexpr auto Convert(Cull Value)
     {
         static constexpr Array kMapping = {
             D3D11_CULL_NONE,                // Cull::None
@@ -73,7 +69,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref Fill into the matching Direct3D 11 fill-mode enumeration.
-    constexpr auto D3D11Convert(Fill Value)
+    constexpr auto Convert(Fill Value)
     {
         static constexpr Array kMapping = {
             D3D11_FILL_SOLID,               // Fill::Solid
@@ -83,7 +79,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref Primitive into the matching Direct3D 11 topology enumeration.
-    constexpr auto D3D11Convert(Primitive Value)
+    constexpr auto Convert(Primitive Value)
     {
         static constexpr Array kMapping = {
             D3D11_PRIMITIVE_TOPOLOGY_POINTLIST,        // Primitive::PointList
@@ -96,7 +92,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref Storage into the matching Direct3D 11 usage enumeration.
-    constexpr auto D3D11Convert(Storage Value)
+    constexpr auto Convert(Storage Value)
     {
         static constexpr Array kMapping = {
             D3D11_USAGE_IMMUTABLE,           // Storage::Immutable
@@ -107,7 +103,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref TestAction into the matching Direct3D 11 stencil operation enumeration.
-    constexpr auto D3D11Convert(TestAction Value)
+    constexpr auto Convert(TestAction Value)
     {
         static constexpr Array kMapping = {
             D3D11_STENCIL_OP_KEEP,                  // TestAction::Keep
@@ -123,7 +119,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref TestCondition into the matching Direct3D 11 comparison enumeration.
-    constexpr auto D3D11Convert(TestCondition Value)
+    constexpr auto Convert(TestCondition Value)
     {
         static constexpr Array kMapping = {
             D3D11_COMPARISON_ALWAYS,                // TestCondition::None
@@ -140,7 +136,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref TextureAddress into the matching Direct3D 11 address enumeration.
-    constexpr auto D3D11Convert(TextureAddress Value)
+    constexpr auto Convert(TextureAddress Value)
     {
         static constexpr Array kMapping = {
             D3D11_TEXTURE_ADDRESS_CLAMP,            // TextureAddress::Clamp
@@ -152,7 +148,7 @@ namespace ZyGraphic
     }
 
     /// \brief Resolves the border color (RGBA) associated with a \ref TextureBorder.
-    constexpr auto D3D11Convert(TextureBorder Value)
+    constexpr auto Convert(TextureBorder Value)
     {
         static constexpr FLOAT kMapping[][4] = {
             { 0.0f, 0.0f, 0.0f, 1.0f },     // OpaqueBlack
@@ -163,7 +159,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref TextureFilter into the matching Direct3D 11 filter enumeration.
-    constexpr auto D3D11Convert(TextureFilter Value)
+    constexpr auto Convert(TextureFilter Value)
     {
         static constexpr Array kMapping = {
             D3D11_FILTER_MIN_MAG_MIP_POINT,          // TextureFilter::Point
@@ -180,8 +176,26 @@ namespace ZyGraphic
         return kMapping[ZyEnum::Cast(Value)];
     }
 
+    /// \brief Converts \ref TextureFilter into the maximum anisotropy it samples with.
+    constexpr UINT ConvertAnisotropy(TextureFilter Value)
+    {
+        switch (Value)
+        {
+        case TextureFilter::Anisotropic2x:
+            return 2;
+        case TextureFilter::Anisotropic4x:
+            return 4;
+        case TextureFilter::Anisotropic8x:
+            return 8;
+        case TextureFilter::Anisotropic16x:
+            return 16;
+        default:
+            return 1;
+        }
+    }
+
     /// \brief Converts \ref TextureFormat into the matching Direct3D 11 (DXGI) format enumeration.
-    constexpr auto D3D11Convert(TextureFormat Value)
+    constexpr auto Convert(TextureFormat Value)
     {
         static constexpr Array kMapping = {
             DXGI_FORMAT_UNKNOWN,                // TextureFormat::Unspecified
@@ -262,7 +276,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref Usage into the matching Direct3D 11 bind flags.
-    constexpr auto D3D11Convert(Usage Value)
+    constexpr auto Convert(Usage Value)
     {
         UINT Flags = 0;
 
@@ -290,7 +304,7 @@ namespace ZyGraphic
     }
 
     /// \brief Converts \ref VertexFormat into the matching Direct3D 11 (DXGI) format enumeration.
-    constexpr auto D3D11Convert(VertexFormat Value)
+    constexpr auto Convert(VertexFormat Value)
     {
         static constexpr Array kMapping = {
             DXGI_FORMAT_R16G16_FLOAT,           // VertexFormat::Float16x2
@@ -324,4 +338,52 @@ namespace ZyGraphic
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
+
+    /// \brief Converts a depth \ref TextureFormat into the format its depth-stencil view reads it as.
+    constexpr auto ConvertDepth(TextureFormat Value)
+    {
+        switch (Value)
+        {
+        case TextureFormat::D16UIntNorm:
+            return DXGI_FORMAT_D16_UNORM;
+        case TextureFormat::D32Float:
+            return DXGI_FORMAT_D32_FLOAT;
+        case TextureFormat::D24S8UIntNorm:
+            return DXGI_FORMAT_D24_UNORM_S8_UINT;
+        case TextureFormat::D32S8UIntNorm:
+            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+        default:
+            return DXGI_FORMAT_UNKNOWN;
+        }
+    }
+
+    /// \brief Converts \ref TextureFormat into the format its shader resource and render target views read it as.
+    constexpr auto ConvertView(TextureFormat Value)
+    {
+        switch (Value)
+        {
+        case TextureFormat::D16UIntNorm:
+            return DXGI_FORMAT_R16_UNORM;
+        case TextureFormat::D32Float:
+            return DXGI_FORMAT_R32_FLOAT;
+        case TextureFormat::D24S8UIntNorm:
+            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        case TextureFormat::D32S8UIntNorm:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        default:
+            return Convert(Value);
+        }
+    }
+
+    /// \brief Checks the result of a Direct3D call, logging the system's message for a failure.
+    ///
+    /// \param Result The result the call returned.
+    /// \return `true` if the call succeeded, `false` otherwise.
+    Bool Check(HRESULT Result);
+
+    /// \brief Loads a library from the system folder alone, so no copy beside the executable is picked up instead.
+    ///
+    /// \param Name The file name of the library.
+    /// \return The library's handle, or `nullptr` when it is not installed.
+    HMODULE LoadSystemLibrary(ConstPtr<Wide> Name);
 }

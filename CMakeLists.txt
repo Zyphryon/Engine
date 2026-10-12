@@ -64,17 +64,17 @@ ADD_SUBDIRECTORY(Engine)
 ## Modules
 ## -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-OPTION(ZY_GRAPHIC_DRIVER_D3D11 "Graphic: Enable D3D11 as graphic backend" ${WIN32})
-OPTION(ZY_GRAPHIC_DRIVER_GLES3 "Graphic: Enable GLES3 as graphic backend" ${UNIX})
+OPTION(ZY_GRAPHIC_DRIVER_D3D11  "Graphic: Build the D3D11 driver (Windows only)"            ${WIN32})
+OPTION(ZY_GRAPHIC_DRIVER_OPENGL "Graphic: Build the OpenGL driver (desktop GL and WebGL 2)" ON)
 
-IF    (ZY_GRAPHIC_DRIVER_D3D11 AND NOT ZY_MODE_HEADLESS)
+IF    (ZY_GRAPHIC_DRIVER_D3D11 AND WIN32 AND NOT ZY_MODE_HEADLESS)
 
     ADD_SUBDIRECTORY(Module/Graphic/Driver/D3D11)
 
 ENDIF ()
 
-IF    (ZY_GRAPHIC_DRIVER_GLES3 AND NOT ZY_MODE_HEADLESS)
+IF    (ZY_GRAPHIC_DRIVER_OPENGL AND NOT ZY_MODE_HEADLESS)
 
-    ADD_SUBDIRECTORY(Module/Graphic/Driver/GLES3)
+    ADD_SUBDIRECTORY(Module/Graphic/Driver/OGL)
 
 ENDIF ()

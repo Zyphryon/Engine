@@ -128,6 +128,8 @@ namespace ZyGraphic
 
     Object Service::CreateBuffer(Storage Storage, Usage Usage, UInt32 Capacity, AnyRef<Blob> Data)
     {
+        ZY_ASSERT(Data.GetSize() == 0 || Data.GetSize() == Capacity, "Initial data must fill the buffer's capacity");
+
         const Object ID = mBuffers.Allocate();
 
         if (ID)
@@ -414,7 +416,7 @@ namespace ZyGraphic
 #if !defined(ZY_PLATFORM_WEB)
         if (Arena.Mapping)
         {
-            mDriver->UnmapBuffer(Arena.Buffer);
+            mDriver->UnmapBuffer(Arena.Buffer, Arena.Cursor);
 
             Arena.Mapping = nullptr;
         }
@@ -436,7 +438,7 @@ namespace ZyGraphic
 #else
                 const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize());
                 Blit(Address, Data.GetSize(), Data.GetData());
-                mDriver->UnmapBuffer(Arena.Buffer);
+                mDriver->UnmapBuffer(Arena.Buffer, Data.GetSize());
 #endif
             }
 

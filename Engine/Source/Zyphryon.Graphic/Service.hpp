@@ -39,7 +39,7 @@ namespace ZyGraphic
         /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
 
-        /// \brief Tears down the service by stopping the GPU worker thread and flushing all pending commands.
+        /// \brief Tears down the service, destroying the driver on the GPU worker thread before stopping it.
         void OnTeardown() override;
 
         /// \brief Initializes the service with the named driver and display parameters.
@@ -168,10 +168,12 @@ namespace ZyGraphic
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
         ///
+        /// \note A uniform buffer's capacity is a multiple of the uniform block alignment, as its blocks are bound in those units.
+        ///
         /// \param Storage  The CPU access pattern of the buffer.
         /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
         /// \param Capacity The capacity of the buffer in bytes.
-        /// \param Data     The optional initial data to populate the buffer with.
+        /// \param Data     The optional initial data, either empty or exactly \p Capacity bytes long.
         /// \return The identifier of the created buffer resource, or zero if creation failed.
         Object CreateBuffer(Storage Storage, Usage Usage, UInt32 Capacity, AnyRef<Blob> Data);
 

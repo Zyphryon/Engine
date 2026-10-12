@@ -77,10 +77,6 @@ namespace ZyGraphic
         OneMinusDstColor,  ///< Use 1.0 minus the destination color.
         DstAlpha,          ///< Use the destination alpha.
         OneMinusDstAlpha,  ///< Use 1.0 minus the destination alpha.
-        Src1Color,         ///< Use the second source color.
-        OneMinusSrc1Color, ///< Use 1.0 minus the second source color.
-        Src1Alpha,         ///< Use the second source alpha.
-        OneMinusSrc1Alpha, ///< Use 1.0 minus the second source alpha.
     };
 
     /// \brief Specifies the blending function used to combine source and destination.

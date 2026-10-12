@@ -26,13 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install glad generator dependencies
-        run: pip install "Jinja2>=2.7,<4.0"
-
       - name: Cache CMake dependencies
         uses: actions/cache@v4
         with:
@@ -46,7 +39,6 @@ jobs:
           cmake -S . -B build
           -G "Visual Studio 17 2022"
           -A ${{ matrix.architecture }}
-          -DPython_EXECUTABLE="${{ env.pythonLocation }}\python.exe"
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }} --parallel
@@ -62,13 +54,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install glad generator dependencies
-        run: pip install "Jinja2>=2.7,<4.0"
 
       - name: Install platform dependencies
         run: |
@@ -101,7 +86,6 @@ jobs:
           cmake -S . -B build
           -G Ninja
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DPython_EXECUTABLE="${{ env.pythonLocation }}/bin/python"
 
       - name: Build
         run: cmake --build build --parallel

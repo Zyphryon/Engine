@@ -44,7 +44,7 @@ namespace ZyPlatform
         if (EM_ASM_INT(return (window.matchMedia('(dynamic-range: high)').matches) ? 1 : 0) != 0)
         {
             Entry.SetAttribute(Monitor::Attribute::HDR);
-        }// Remote desktops and virtual machines
+        }
         Entry.SetAttribute(Monitor::Attribute::Primary);
     }
 }
