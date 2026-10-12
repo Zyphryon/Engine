@@ -245,7 +245,7 @@ namespace ZyScene
             Actor.Write(Component(Identifier), Output);
         }
 
-        for (UInt32 Child = mDirectory[Index].First; Child; Child = mDirectory[Child].Next)
+        for (UInt32 Child = mDirectory.GetFirst(Index); Child; Child = mDirectory.GetNext(Child))
         {
             Emit(Output, Child, Local, Indices, Names, Count);
         }
@@ -334,7 +334,7 @@ namespace ZyScene
 
         if (!Target.IsValid() && Identity != kWorld)
         {
-            if (Identity.IsValid() && mDirectory[Identity.GetIndex()].Holder)
+            if (Identity.IsValid() && mDirectory.IsHeld(Identity.GetIndex()))
             {
                 LOG_W("Scene: Archetype slot {0} was taken, and goes to the one the save names", Identity.GetIndex());
                 DestroyTree(Identity.GetIndex());
@@ -381,7 +381,7 @@ namespace ZyScene
         }
 
         // Saves never carry the part marker, so an archetype read beneath another is marked from where it lands.
-        if (const UInt32 Above = mDirectory[Index].Parent;
+        if (const UInt32 Above = mDirectory.GetParent(Index);
             Directory::IsArchetype(Index) && Above && mDirectory[Above].Holder->IsArchetype() && !Shape->Has(mPart))
         {
             Shape = FindOrCreateAddition(* Shape, mPart);
@@ -415,9 +415,9 @@ namespace ZyScene
     {
         UInt32 Root = mDirectory[Index].Holder->GetBase();
 
-        while (Root && mDirectory[Root].Parent)
+        while (Root && mDirectory.GetParent(Root))
         {
-            Root = mDirectory[Root].Parent;
+            Root = mDirectory.GetParent(Root);
         }
         return Root;
     }

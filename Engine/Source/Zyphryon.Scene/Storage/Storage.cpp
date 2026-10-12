@@ -53,7 +53,7 @@ namespace ZyScene
         const UInt32 Index = Actor.GetIndex();
 
         // A save may name an archetype by its slot alone.
-        if (Actor.GetGeneration() == 0 && Directory::IsArchetype(Index) && mDirectory[Index].Holder)
+        if (Actor.GetGeneration() == 0 && Directory::IsArchetype(Index) && mDirectory.IsHeld(Index))
         {
             return Entity(this, mDirectory.GetHandle(Index));
         }
@@ -140,11 +140,11 @@ namespace ZyScene
 
             if (Next > 0)
             {
-                mDirectory.Link(Copy.GetIndex(), Made[Pending.Find(mDirectory[Original].Parent)]);
+                mDirectory.Link(Copy.GetIndex(), Made[Pending.Find(mDirectory.GetParent(Original))]);
             }
             Made.Append(Copy.GetIndex());
 
-            for (UInt32 Child = mDirectory[Original].First; Child; Child = mDirectory[Child].Next)
+            for (UInt32 Child = mDirectory.GetFirst(Original); Child; Child = mDirectory.GetNext(Child))
             {
                 if (mDirectory[Child].Holder->IsArchetype())
                 {
@@ -549,22 +549,22 @@ namespace ZyScene
                 Add(Current, mAsleep);
             }
 
-            if (mDirectory[Cursor].First)
+            if (mDirectory.GetFirst(Cursor))
             {
-                Cursor = mDirectory[Cursor].First;
+                Cursor = mDirectory.GetFirst(Cursor);
                 continue;
             }
 
-            while (Cursor != Root && !mDirectory[Cursor].Next)
+            while (Cursor != Root && !mDirectory.GetNext(Cursor))
             {
-                Cursor = mDirectory[Cursor].Parent;
+                Cursor = mDirectory.GetParent(Cursor);
             }
 
             if (Cursor == Root)
             {
                 break;
             }
-            Cursor = mDirectory[Cursor].Next;
+            Cursor = mDirectory.GetNext(Cursor);
         }
         Leave();
     }
@@ -578,14 +578,14 @@ namespace ZyScene
 
         const UInt32 Index    = Actor.GetIndex();
         const UInt32 Above    = mDirectory.IsAlive(Parent) ? Parent.GetIndex() : 0;
-        const UInt32 Previous = mDirectory[Index].Parent;
+        const UInt32 Previous = mDirectory.GetParent(Index);
 
         if (Above == 0 && Previous == 0)
         {
             return;
         }
 
-        for (UInt32 Cursor = Above; Cursor; Cursor = mDirectory[Cursor].Parent)
+        for (UInt32 Cursor = Above; Cursor; Cursor = mDirectory.GetParent(Cursor))
         {
             ZY_ASSERT(Cursor != Index, "An entity cannot be attached beneath itself");
         }
@@ -655,7 +655,7 @@ namespace ZyScene
     {
         const UInt32 Identifier = IdentifierOf<Named>();
 
-        for (UInt32 Child = mDirectory[Parent].First; Child; Child = mDirectory[Child].Next)
+        for (UInt32 Child = mDirectory.GetFirst(Parent); Child; Child = mDirectory.GetNext(Child))
         {
             ConstRef<Chunk> Holder = * mDirectory[Child].Holder;
 
@@ -742,7 +742,7 @@ namespace ZyScene
             }
         }
 
-        for (UInt32 Part = Parts ? mDirectory[Source].First : 0; Part; Part = mDirectory[Part].Next)
+        for (UInt32 Part = Parts ? mDirectory.GetFirst(Source) : 0; Part; Part = mDirectory.GetNext(Part))
         {
             if (mDirectory[Part].Holder->IsArchetype())
             {
@@ -761,7 +761,7 @@ namespace ZyScene
 
     void Storage::DestroyTree(UInt32 Root)
     {
-        const UInt32 Ancestor = mDirectory[Root].Parent;
+        const UInt32 Ancestor = mDirectory.GetParent(Root);
 
         if (IsPart(Root, Ancestor))
         {
@@ -771,12 +771,12 @@ namespace ZyScene
         // Children first, sinking to a leaf, burying it and climbing back, with no stack.
         for (UInt32 Cursor = Root;;)
         {
-            while (mDirectory[Cursor].First)
+            while (mDirectory.GetFirst(Cursor))
             {
-                Cursor = mDirectory[Cursor].First;
+                Cursor = mDirectory.GetFirst(Cursor);
             }
 
-            const UInt32 Parent = mDirectory[Cursor].Parent;
+            const UInt32 Parent = mDirectory.GetParent(Cursor);
             const Bool   Last   = Cursor == Root;
 
             if (Parent)
@@ -1061,7 +1061,7 @@ namespace ZyScene
 
     void Storage::SetParent(UInt32 Index, UInt32 Parent)
     {
-        if (mDirectory[Index].Parent)
+        if (mDirectory.GetParent(Index))
         {
             ClearParent(Index);
         }
@@ -1088,7 +1088,7 @@ namespace ZyScene
 
     void Storage::ClearParent(UInt32 Index)
     {
-        const UInt32 Parent = mDirectory[Index].Parent;
+        const UInt32 Parent = mDirectory.GetParent(Index);
         const Bool   Part   = IsPart(Index, Parent);
 
         if (Part)
@@ -1113,7 +1113,7 @@ namespace ZyScene
         {
             Sequence<UInt32> Copies;
 
-            for (UInt32 Child = mDirectory[Heir.GetIndex()].First; Child; Child = mDirectory[Child].Next)
+            for (UInt32 Child = mDirectory.GetFirst(Heir.GetIndex()); Child; Child = mDirectory.GetNext(Child))
             {
                 if (mDirectory[Child].Holder->GetBase() == Part)
                 {

@@ -426,21 +426,19 @@ namespace ZyGraphic
         {
             if (Data.GetSize() > Arena.Capacity)
             {
-                Arena.Capacity = Data.GetSize();
+                Arena.Capacity = CeilBit(static_cast<UInt32>(Data.GetSize()));
 
                 mDriver->DeleteBuffer(Arena.Buffer);
-                mDriver->CreateBuffer(Arena.Buffer, Storage::Dynamic, Usage, Arena.Capacity, Data);
+                mDriver->CreateBuffer(Arena.Buffer, Storage::Dynamic, Usage, Arena.Capacity, ConstSpan<Byte>());
             }
-            else
-            {
+
 #if defined(ZY_PLATFORM_WEB)
-                mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
+            mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
 #else
-                const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize());
-                Blit(Address, Data.GetSize(), Data.GetData());
-                mDriver->UnmapBuffer(Arena.Buffer, Data.GetSize());
+            const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize());
+            Blit(Address, Data.GetSize(), Data.GetData());
+            mDriver->UnmapBuffer(Arena.Buffer, Data.GetSize());
 #endif
-            }
 
             // The writer keeps its storage, so the next frame that spills reuses it.
             Data.Clear();
@@ -479,9 +477,9 @@ namespace ZyGraphic
 
     void Service::CreateInFlightFrame(Ref<InFlightFrame> Frame)
     {
-        CreateInFlightArena(Frame.Vertices, Usage::Vertex,  8 * 1024 * 1024);
-        CreateInFlightArena(Frame.Indices,  Usage::Index,   2 * 1024 * 1024);
-        CreateInFlightArena(Frame.Uniforms, Usage::Uniform, 2 * 1024 * 1024);
+        CreateInFlightArena(Frame.Vertices, Usage::Vertex,  1024 * 1024);
+        CreateInFlightArena(Frame.Indices,  Usage::Index,   1024 * 1024);
+        CreateInFlightArena(Frame.Uniforms, Usage::Uniform, 1024 * 1024);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

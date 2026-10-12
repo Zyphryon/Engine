@@ -94,14 +94,14 @@ namespace ZyScene
             for (UInt32 Row = 0; Row < Target.GetSize(); ++Row)
             {
                 const Handle Actor  = Target.GetHandle(Row);
-                const UInt32 Parent = Owner.mDirectory[Actor.GetIndex()].Parent;
+                const UInt32 Parent = Owner.mDirectory.GetParent(Actor.GetIndex());
 
                 if (Parent != Above)
                 {
                     Above = Parent;
                     Depth = 0;
 
-                    for (UInt32 Next = Parent; Next; Next = Owner.mDirectory[Next].Parent)
+                    for (UInt32 Next = Parent; Next; Next = Owner.mDirectory.GetParent(Next))
                     {
                         ++Depth;
                     }

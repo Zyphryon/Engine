@@ -565,8 +565,7 @@ namespace ZyScene
         /// \return The parent, or one that names nothing for a root or an entity that is not alive.
         ZY_INLINE Entity GetParent() const
         {
-            const ConstPtr<Directory::Slot> Entry = GetSlot();
-            return Wrap(Entry ? Entry->Parent : 0);
+            return Wrap(GetSlot() ? mStorage->mDirectory.GetParent(GetIndex()) : 0);
         }
 
         /// \brief Checks whether anything is attached beneath the entity, without visiting it.
@@ -574,8 +573,7 @@ namespace ZyScene
         /// \return `true` if the entity has at least one child, `false` otherwise.
         ZY_INLINE Bool IsParent() const
         {
-            const ConstPtr<Directory::Slot> Entry = GetSlot();
-            return Entry && Entry->First != 0;
+            return GetSlot() && mStorage->mDirectory.GetFirst(GetIndex()) != 0;
         }
 
         /// \brief Hands every child of the entity to a callback, in the order they were attached.
@@ -584,12 +582,10 @@ namespace ZyScene
         template<typename Callable>
         ZY_INLINE void Children(AnyRef<Callable> Callback) const
         {
-            const ConstPtr<Directory::Slot> Entry = GetSlot();
-
-            for (UInt32 Cursor = Entry ? Entry->First : 0; Cursor;)
+            for (UInt32 Cursor = GetSlot() ? mStorage->mDirectory.GetFirst(GetIndex()) : 0; Cursor;)
             {
                 // Read ahead, so the callback can detach or destroy the child.
-                const UInt32 Next = mStorage->mDirectory[Cursor].Next;
+                const UInt32 Next = mStorage->mDirectory.GetNext(Cursor);
                 Callback(Wrap(Cursor));
                 Cursor = Next;
             }
@@ -624,7 +620,7 @@ namespace ZyScene
         template<typename Type>
         ZY_INLINE Entity Find(Bool Inclusive = false) const
         {
-            UInt32 Found = IsAlive() ? (Inclusive ? GetIndex() : mStorage->mDirectory[GetIndex()].Parent) : 0;
+            UInt32 Found = IsAlive() ? (Inclusive ? GetIndex() : mStorage->mDirectory.GetParent(GetIndex())) : 0;
 
             if (Found && mStorage->mDirectory.FindAncestor(Found, IdentifierOf<Type>()))
             {
@@ -647,7 +643,7 @@ namespace ZyScene
 
             ConstRef<Directory> Slots = mStorage->mDirectory;
 
-            for (UInt32 Cursor = Inclusive ? GetIndex() : Slots[GetIndex()].Parent; Cursor; Cursor = Slots[Cursor].Parent)
+            for (UInt32 Cursor = Inclusive ? GetIndex() : Slots.GetParent(GetIndex()); Cursor; Cursor = Slots.GetParent(Cursor))
             {
                 if (Cursor == Ancestor.GetIndex())
                 {
@@ -716,7 +712,7 @@ namespace ZyScene
         /// \return `true` if the entity answers to the name now, `false` when a sibling already does and nothing changed.
         ZY_INLINE Bool SetName(Text Name) const
         {
-            if (!IsFree(mStorage->mDirectory[GetIndex()].Parent, Name))
+            if (!IsFree(mStorage->mDirectory.GetParent(GetIndex()), Name))
             {
                 return false;
             }

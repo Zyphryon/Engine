@@ -400,7 +400,7 @@ namespace ZyScene
 
                     if constexpr ((Parts::kPointer || ...))
                     {
-                        const UInt32 Parent = Owner.mDirectory[Actor.GetIndex()].Parent;
+                        const UInt32 Parent = Owner.mDirectory.GetParent(Actor.GetIndex());
 
                         if (Parent != Above)
                         {
@@ -445,7 +445,7 @@ namespace ZyScene
                 {
                     if constexpr (Mode == Stride::Chunk && (Parts::kPointer || ...))
                     {
-                        const UInt32 Parent = Owner.mDirectory[Handles[Row].GetIndex()].Parent;
+                        const UInt32 Parent = Owner.mDirectory.GetParent(Handles[Row].GetIndex());
 
                         if (Parent != Above)
                         {
@@ -510,7 +510,7 @@ namespace ZyScene
 
                     if (State.Modes[Position] == Selection::Mode::Ancestor)
                     {
-                        return FindAncestor(Owner, Entry.Parent, Identifier);
+                        return FindAncestor(Owner, Owner.mDirectory.GetParent(Actor.GetIndex()), Identifier);
                     }
 
                     const ConstPtr<Byte> Found = Owner.mDirectory.FindValue(* Entry.Holder, Entry.Row, Identifier);

@@ -25,7 +25,7 @@ namespace ZyScene
         : mFree  { 0 },
           mLinks { 0 }
     {
-        mSlots.Advance(kMinRangeEntities);
+        mFixed.Slots.Advance(2);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -38,23 +38,26 @@ namespace ZyScene
         if (Archetype)
         {
             Index = static_cast<UInt32>(kMinRangeArchetypes + mArchetypes.Allocate().GetSlot());
+            mFixed.Slots.Expand(Index + 1);
         }
         else if (mFree)
         {
             Index = mFree;
-            mFree = mSlots[Index].Row;
+            mFree = (* this)[Index].Row;
         }
         else
         {
             // Half again, not double, so a few entities past a power of two do not double every slot.
-            if (mSlots.GetSize() == mSlots.GetCapacity())
+            Ref<Sequence<Slot>> Slots = mEntities.Slots;
+
+            if (Slots.GetSize() == Slots.GetCapacity())
             {
-                mSlots.Reserve(mSlots.GetSize() + mSlots.GetSize() / 2);
+                Slots.Reserve(Max<UInt>(16, Slots.GetSize() + Slots.GetSize() / 2));
             }
-            Index = static_cast<UInt32>(mSlots.GetSize());
-            mSlots.Append();
+            Index = kMinRangeEntities + static_cast<UInt32>(Slots.GetSize());
+            Slots.Append();
         }
-        return Handle(Index, mSlots[Index].Generation);
+        return Handle(Index, (* this)[Index].Generation);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -64,10 +67,14 @@ namespace ZyScene
     {
         const UInt32 Index = Actor.GetIndex();
 
-        ZY_ASSERT(IsArchetype(Index) && !mSlots[Index].Holder, "Only a free archetype slot is taken back");
+        ZY_ASSERT(IsArchetype(Index), "Only an archetype slot is taken back");
+
+        mFixed.Slots.Expand(Index + 1);
+
+        ZY_ASSERT(!mFixed.Slots[Index].Holder, "Only a free archetype slot is taken back");
 
         mArchetypes.Acquire(static_cast<UInt16>(Index - kMinRangeArchetypes));
-        mSlots[Index].Generation = Actor.GetGeneration();
+        mFixed.Slots[Index].Generation = Actor.GetGeneration();
         return Actor;
     }
 
@@ -76,7 +83,7 @@ namespace ZyScene
 
     void Directory::Release(UInt32 Index)
     {
-        Ref<Slot> Entry = mSlots[Index];
+        Ref<Slot> Entry = (* this)[Index];
         Entry.Holder = nullptr;
         ++Entry.Generation;
 
@@ -96,9 +103,13 @@ namespace ZyScene
 
     void Directory::Link(UInt32 Index, UInt32 Parent)
     {
-        Ref<Slot> Entry = mSlots[Index];
-        Ref<Slot> Above = mSlots[Parent];
         ++mLinks;
+
+        Tie(Index);
+        Tie(Parent);
+
+        Ref<Family> Entry = Tie(Index);
+        Ref<Family> Above = Tie(Parent);
 
         Entry.Parent = Parent;
         Entry.Next   = 0;
@@ -111,10 +122,12 @@ namespace ZyScene
         }
         else
         {
-            const UInt32 Last = mSlots[Above.First].Prev;
-            mSlots[Last].Next        = Index;
-            Entry.Prev               = Last;
-            mSlots[Above.First].Prev = Index;
+            Ref<Family> Head = Tie(Above.First);
+            const UInt32 Last = Head.Prev;
+
+            Tie(Last).Next = Index;
+            Entry.Prev     = Last;
+            Head.Prev      = Index;
         }
     }
 
@@ -123,9 +136,10 @@ namespace ZyScene
 
     void Directory::Unlink(UInt32 Index)
     {
-        Ref<Slot> Entry = mSlots[Index];
-        Ref<Slot> Above = mSlots[Entry.Parent];
         ++mLinks;
+
+        Ref<Family> Entry = Tie(Index);
+        Ref<Family> Above = Tie(Entry.Parent);
 
         if (Above.First == Index)
         {
@@ -133,17 +147,29 @@ namespace ZyScene
 
             if (Entry.Next)
             {
-                mSlots[Entry.Next].Prev = Entry.Prev;
+                Tie(Entry.Next).Prev = Entry.Prev;
             }
         }
         else
         {
-            mSlots[Entry.Prev].Next = Entry.Next;
-            mSlots[Entry.Next ? Entry.Next : Above.First].Prev = Entry.Prev;
+            Tie(Entry.Prev).Next = Entry.Next;
+            Tie(Entry.Next ? Entry.Next : Above.First).Prev = Entry.Prev;
         }
 
         Entry.Parent = 0;
         Entry.Next   = 0;
         Entry.Prev   = 0;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ref<Directory::Family> Directory::Tie(UInt32 Index)
+    {
+        Ref<Sequence<Family>> Families = Pick(Index).Families;
+        const UInt32 Local = Locate(Index);
+
+        Families.Expand(Local + 1);
+        return Families[Local];
     }
 }
