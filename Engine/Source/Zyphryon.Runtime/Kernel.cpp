@@ -257,6 +257,7 @@ namespace ZyRuntime
     Bool Kernel::Tick()
     {
         const Real64 Delta = mTimer.Step();
+        mMeter.Record(Delta);
 
         OnTick(Delta);
 

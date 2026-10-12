@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Meter.hpp"
 #include "Startup.hpp"
 #include "Zyphryon.Engine/Module.hpp"
 #include "Zyphryon.Platform/Timer.hpp"
@@ -59,6 +60,14 @@ namespace ZyRuntime
         ZY_INLINE ConstRef<Environment> GetEnvironment() const
         {
             return mEnvironment;
+        }
+
+        /// \brief Gets the meter the frame loop is measured by.
+        ///
+        /// \return The pace of the frames run so far.
+        ZY_INLINE ConstRef<Meter> GetMeter() const
+        {
+            return mMeter;
         }
 
         /// \brief Kernels are not copied, since each one owns the modules it was handed.
@@ -152,6 +161,7 @@ namespace ZyRuntime
 
         Bool              mAlive;
         ZyPlatform::Timer mTimer;
+        Meter             mMeter;
         Environment       mEnvironment;
         Startup           mStartup;
         ZyEngine::Modules mModules;
