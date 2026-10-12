@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Field.hpp"
+#include "Zyphryon.Base/Marshal/Json/JsonValue.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -127,6 +128,13 @@ namespace ZyReflection
             }
             return nullptr;
         }
+
+        /// \brief Writes the fields a JSON object gives into an instance, over the values it already holds.
+        ///
+        /// \param Fields   The JSON object to read; a field it leaves out keeps its value, and a key no field has is passed over.
+        /// \param Instance The instance to write into, laid out as this schema describes.
+        /// \return `true` if every field the object gives was written, `false` if one had the wrong kind or an unknown option.
+        ZY_API Bool Decode(ConstRef<JsonValue> Fields, Ptr<void> Instance) const;
 
     public:
 
