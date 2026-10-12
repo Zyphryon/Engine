@@ -163,7 +163,7 @@ namespace ZyAudio
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        static void WASAPIThread(std::stop_token Token, Ptr<Driver::Backend> Backend)
+        static void WASAPIThread(ConstRef<Thread::Token> Token, Ptr<Driver::Backend> Backend)
         {
             ZY_PROFILE_THREAD("Audio Thread");
 
@@ -176,7 +176,7 @@ namespace ZyAudio
             DWORD        Index = 0;
             const HANDLE Task  = ::AvSetMmThreadCharacteristicsW(L"Pro Audio", AddressOf(Index));
 
-            while (!Token.stop_requested())
+            while (!Token.Stopped())
             {
                 if (::WaitForSingleObject(Backend->Event, 2000) != WAIT_OBJECT_0)
                 {
@@ -327,7 +327,10 @@ namespace ZyAudio
         // Fill the whole buffer once so playback does not open on an underrun.
         Backend::WASAPIFill(* mBackend, mBackend->Frames);
 
-        mBackend->Worker = Thread(Backend::WASAPIThread, mBackend.Grab());
+        mBackend->Worker = Thread([Owner = mBackend.Grab()](ConstRef<Thread::Token> Token)
+        {
+            Backend::WASAPIThread(Token, Owner);
+        });
 
         if (FAILED(mBackend->Client->Start()))
         {
@@ -344,11 +347,11 @@ namespace ZyAudio
 
     void Driver::Close()
     {
-        if (mBackend->Worker.joinable())
+        if (mBackend->Worker.Joinable())
         {
-            mBackend->Worker.request_stop();
+            mBackend->Worker.Stop();
             ::SetEvent(mBackend->Event);
-            mBackend->Worker.join();
+            mBackend->Worker.Join();
         }
 
         if (mBackend->Client)

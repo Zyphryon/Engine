@@ -34,7 +34,7 @@ namespace ZyGraphic
           mConsumer { kMaxFrames - 1 }
     {
 #if !defined(ZY_PLATFORM_WEB)
-        mWorker = Thread([this](std::stop_token Token)
+        mWorker = Thread([this](ConstRef<Thread::Token> Token)
         {
             OnWorkerThread(Token);
         });
@@ -59,9 +59,9 @@ namespace ZyGraphic
         ZY_PROFILE_SCOPE("Graphic::Teardown");
 
 #if !defined(ZY_PLATFORM_WEB)
-        mWorker.request_stop();
+        mWorker.Stop();
         Flush();
-        mWorker.join();
+        mWorker.Join();
 #endif
     }
 
@@ -367,11 +367,11 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnWorkerThread(ConstRef<std::stop_token> Token)
+    void Service::OnWorkerThread(ConstRef<Thread::Token> Token)
     {
         ZY_PROFILE_THREAD("GPU Thread");
 
-        while (!Token.stop_requested())
+        while (!Token.Stopped())
         {
             // Put the thread to sleep until the flag indicates there is more work to process.
             mSignal.wait(false, std::memory_order_acquire);

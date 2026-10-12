@@ -161,7 +161,7 @@ namespace ZyJob
         ///
         /// \param Target The lane the worker draws work from.
         /// \param Token  The stop token used to signal thread termination.
-        void OnWorkerThread(Lane Target, ConstRef<std::stop_token> Token);
+        void OnWorkerThread(Lane Target, ConstRef<Thread::Token> Token);
 
     private:
 

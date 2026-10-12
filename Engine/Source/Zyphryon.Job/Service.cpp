@@ -27,13 +27,11 @@ namespace ZyJob
 
     Service::Service(Ref<Host> Host)
         : Subsystem { Host },
-          mMain     { GetThreadID() }
+          mMain     { Thread::GetID() }
     {
 #if defined(ZY_HAS_THREADS)
-        const UInt Cores = Max(1u, std::thread::hardware_concurrency());
-
-        // Leave one core for the main thread, which joins the compute lane through helping waits.
-        GetExecutor(Lane::Compute).Start(Max(1u, Cores - 1), [this](std::stop_token Token)
+        // One worker per core, the main thread's own left out, since a shared core slows small jobs more than it helps.
+        GetExecutor(Lane::Compute).Start(Max(1u, Thread::GetCores() - 1), [this](ConstRef<Thread::Token> Token)
         {
             ZY_PROFILE_THREAD("Job::Compute");
 
@@ -41,7 +39,7 @@ namespace ZyJob
         });
 
         // Sized for latency rather than throughput, since these threads spend their time parked in the kernel.
-        GetExecutor(Lane::IO).Start(Clamp(Cores / 4, 2u, 4u), [this](std::stop_token Token)
+        GetExecutor(Lane::IO).Start(Clamp(Thread::GetProcessors() / 4, 2u, 4u), [this](ConstRef<Thread::Token> Token)
         {
             ZY_PROFILE_THREAD("Job::IO");
 
@@ -164,7 +162,7 @@ namespace ZyJob
 
                 GetExecutor(Actual).Push(Value);
             }
-            else if (Actual == Lane::Main && GetThreadID() != mMain)
+            else if (Actual == Lane::Main && Thread::GetID() != mMain)
             {
                 mOverflow.Append(Forward<Task>(Work));
             }
@@ -210,15 +208,15 @@ namespace ZyJob
             // Rather than idle, run queued compute work, since without workers nothing else runs it.
             if (const Slot Stolen = GetExecutor(Reconcile(Lane::Compute)).Pop(); Stolen != 0)
             {
-                Lock.unlock();
+                Lock.Release();
 
                 Execute(Stolen);
 
-                Lock.lock();
+                Lock.Acquire();
             }
             else
             {
-                mGate.wait(Lock);
+                mGate.Wait(Lock);
             }
         }
     }
@@ -256,17 +254,17 @@ namespace ZyJob
         }
 
         // Waiters key off any completion, since a helping wait has to re-check its own job after each one.
-        mGate.notify_all();
+        mGate.Broadcast();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::OnWorkerThread(Lane Target, ConstRef<std::stop_token> Token)
+    void Service::OnWorkerThread(Lane Target, ConstRef<Thread::Token> Token)
     {
         Ref<Executor> Source = GetExecutor(Target);
 
-        while (!Token.stop_requested())
+        while (!Token.Stopped())
         {
             Slot Value;
 
@@ -275,10 +273,10 @@ namespace ZyJob
 
                 Source.Await(Lock, [&]
                 {
-                    return !Source.IsEmpty() || Token.stop_requested();
+                    return !Source.IsEmpty() || Token.Stopped();
                 });
 
-                if (Token.stop_requested())
+                if (Token.Stopped())
                 {
                     return;
                 }

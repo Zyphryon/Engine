@@ -11,3 +11,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Mutex.hpp"
+
+#if   defined(ZY_PLATFORM_WINDOWS)
+#include "Mutex_Win32.inl"
+#elif defined(ZY_PLATFORM_POSIX)
+#include "Mutex_Posix.inl"
+#endif

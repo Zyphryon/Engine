@@ -11,3 +11,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Gate.hpp"
+
+#if   defined(ZY_PLATFORM_WINDOWS)
+#include "Gate_Win32.inl"
+#elif defined(ZY_PLATFORM_POSIX)
+#include "Gate_Posix.inl"
+#endif

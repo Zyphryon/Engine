@@ -130,7 +130,7 @@ namespace ZyScene
     private:
 
         /// The seconds of work left above which spreading pays for waking the workers.
-        static constexpr Real64 kSpreadSeconds   = 20e-6;
+        static constexpr Real64 kSpreadSeconds   = 12e-6;
 
         /// The seconds of work each share aims at, short enough to even out and long enough to be worth taking.
         static constexpr Real64 kShareSeconds    = 4e-6;
@@ -779,7 +779,7 @@ namespace ZyScene
 
             SpreadWork<Callable> Work(Owner, State, Callback, Begin, End, Shares, Sorted);
 
-            const UInt32 Helpers = Min(Min(Threads - 2, Work.Shares - 1), kMaxHelpers);
+            const UInt32 Helpers = Min(Min(Threads - 1, Work.Shares - 1), kMaxHelpers);
 
             Array<ZyJob::Handle, kMaxHelpers> Tasks;
 

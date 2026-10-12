@@ -103,7 +103,7 @@ namespace ZyJob
         /// \brief Wakes one worker after a job was queued.
         ZY_INLINE void Signal()
         {
-            mGate.notify_one();
+            mGate.Signal();
         }
 
         /// \brief Blocks the calling worker until the executor has work or it is asked to stop.
@@ -113,7 +113,7 @@ namespace ZyJob
         template<typename Predicate>
         ZY_INLINE void Await(Ref<Lock> Barrier, AnyRef<Predicate> Condition)
         {
-            mGate.wait(Barrier, Forward<Predicate>(Condition));
+            mGate.Wait(Barrier, Forward<Predicate>(Condition));
         }
 
         /// \brief Gets how many workers back this executor.

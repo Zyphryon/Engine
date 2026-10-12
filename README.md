@@ -10,10 +10,9 @@
 - **From-scratch subsystems** — The entire stack is first-party, foundation to renderer.
 - **Minimal standard library surface** — The STL appears only inside `Zyphryon.Base`,
   and only where the language leaves no alternative:
-  - *compiler and language support* — `<type_traits>`, `<concepts>`, `<bit>`, `<new>`,
-    `<cstdint>`, `<limits>`
+  - *compiler and language support* — `<type_traits>`, `<concepts>`, `<bit>`, `<new>`, `<cstdint>`, `<limits>`
   - *math* — `<cmath>`
-  - *concurrency* — `<atomic>`, `<thread>`, `<mutex>`, `<condition_variable>`
+  - *concurrency* — `<atomic>`
 - **Minimal dependencies** — The runtime carries one third-party library,
   [libopus](https://opus-codec.org/) for audio decoding. Anything else lives in the
   tools, never ships with the engine.

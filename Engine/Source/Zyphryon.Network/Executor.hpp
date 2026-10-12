@@ -166,7 +166,7 @@ namespace ZyNetwork
         /// \brief Runs passes on the network thread until it is asked to stop.
         ///
         /// \param Token The token the thread is asked to stop through.
-        void OnWorkerThread(ConstRef<std::stop_token> Token);
+        void OnWorkerThread(ConstRef<Thread::Token> Token);
 
         /// \brief Writes down one thing for the endpoints to do on their next pass.
         ///

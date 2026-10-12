@@ -208,11 +208,11 @@ namespace ZyAudio
             return false;
         }
 
-        mBackend->Worker = Thread([this](std::stop_token Token)
+        mBackend->Worker = Thread([this](ConstRef<Thread::Token> Token)
         {
             ZY_PROFILE_THREAD("Audio Thread");
 
-            while (!Token.stop_requested())
+            while (!Token.Stopped())
             {
                 if (!Backend::ALSAFill(* mBackend, kMixerPeriod))
                 {
@@ -232,10 +232,10 @@ namespace ZyAudio
 
     void Driver::Close()
     {
-        if (mBackend->Worker.joinable())
+        if (mBackend->Worker.Joinable())
         {
-            mBackend->Worker.request_stop();
-            mBackend->Worker.join();
+            mBackend->Worker.Stop();
+            mBackend->Worker.Join();
         }
 
         if (mBackend->Device)

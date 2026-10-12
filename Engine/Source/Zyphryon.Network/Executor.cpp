@@ -38,7 +38,7 @@ namespace ZyNetwork
         if (mWatcher.Start())
         {
 #if !defined(ZY_PLATFORM_WEB)
-            mWorker = Thread([this](std::stop_token Token)
+            mWorker = Thread([this](ConstRef<Thread::Token> Token)
             {
                 OnWorkerThread(Token);
             });
@@ -53,11 +53,11 @@ namespace ZyNetwork
 
     void Executor::Stop()
     {
-        if (mWorker.joinable())
+        if (mWorker.Joinable())
         {
-            mWorker.request_stop();
+            mWorker.Stop();
             mWatcher.Rouse();
-            mWorker.join();
+            mWorker.Join();
         }
 
         mChannels.ForEach([this](ConstRetainer<Channel> Entry)
@@ -189,11 +189,11 @@ namespace ZyNetwork
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Executor::OnWorkerThread(ConstRef<std::stop_token> Token)
+    void Executor::OnWorkerThread(ConstRef<Thread::Token> Token)
     {
         ZY_PROFILE_THREAD("Network Thread");
 
-        while (!Token.stop_requested())
+        while (!Token.Stopped())
         {
             Run();
         }

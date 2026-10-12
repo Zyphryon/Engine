@@ -25,14 +25,14 @@ namespace ZyJob
     {
         for (Ref<Thread> Worker : mThreads)
         {
-            Worker.request_stop();
+            Worker.Stop();
         }
 
-        mGate.notify_all();
+        mGate.Broadcast();
 
         for (Ref<Thread> Worker : mThreads)
         {
-            Worker.join();
+            Worker.Join();
         }
         mThreads.Clear();
     }

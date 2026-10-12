@@ -427,7 +427,7 @@ namespace ZyGraphic
         /// \brief Runs the background GPU worker thread, consuming frames until a stop is requested.
         ///
         /// \param Token The stop token used to request termination of the GPU worker thread.
-        void OnWorkerThread(ConstRef<std::stop_token> Token);
+        void OnWorkerThread(ConstRef<Thread::Token> Token);
 
         /// \brief Gets a reference to the consumer journal currently being processed by the GPU thread.
         ///
