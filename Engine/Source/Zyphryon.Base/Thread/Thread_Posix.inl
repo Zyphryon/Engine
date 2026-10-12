@@ -38,19 +38,15 @@ inline namespace ZyBase
 
     void Thread::Start()
     {
-        const SInt32 Result = pthread_create(AddressOf(mHandle), nullptr, Launch, mState.Grab());
+        constexpr auto kEntry = [](Ptr<void> Argument) -> Ptr<void>
+        {
+            static_cast<Ptr<State>>(Argument)->Run();
+            return nullptr;
+        };
+
+        const SInt32 Result = pthread_create(AddressOf(mHandle), nullptr, kEntry, mState.Grab());
 
         ZY_ASSERT(Result == 0, "The system refused to start a thread");
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Ptr<void> Thread::Launch(Ptr<void> Argument)
-    {
-        const Ptr<State> Context = static_cast<Ptr<State>>(Argument);
-        Context->Body(Context->Signal);
-        return nullptr;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

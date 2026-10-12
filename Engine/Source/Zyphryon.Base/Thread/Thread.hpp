@@ -161,20 +161,16 @@ inline namespace ZyBase
                 : Body   { Move(Callback) }
             {
             }
+
+            /// \brief Runs the work on the calling thread, handing it the token.
+            ZY_INLINE void Run()
+            {
+                Body(Signal);
+            }
         };
 
         /// \brief Starts the system thread on the state, which is ready.
         void Start();
-
-        /// \brief Runs a thread's work, as the entry point the system calls.
-        ///
-        /// \param Argument The state of the thread.
-        /// \return Nothing the engine reads.
-#if   defined(ZY_PLATFORM_WINDOWS)
-        static UInt32 Launch(Ptr<void> Argument);
-#else
-        static Ptr<void> Launch(Ptr<void> Argument);
-#endif
 
     private:
 

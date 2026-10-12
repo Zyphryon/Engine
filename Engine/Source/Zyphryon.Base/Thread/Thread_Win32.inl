@@ -11,7 +11,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <windows.h>
-#include <process.h>
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -39,20 +38,15 @@ inline namespace ZyBase
 
     void Thread::Start()
     {
-        // The C runtime's own entry, unlike CreateThread, sets up what the runtime keeps per thread.
-        mHandle = reinterpret_cast<Handle>(_beginthreadex(nullptr, 0, Launch, mState.Grab(), 0, nullptr));
+        constexpr auto kEntry = [](LPVOID Argument) -> DWORD
+        {
+            static_cast<Ptr<State>>(Argument)->Run();
+            return 0;
+        };
+
+        mHandle = CreateThread(nullptr, 0, kEntry, mState.Grab(), 0, nullptr);
 
         ZY_ASSERT(mHandle, "The system refused to start a thread");
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    UInt32 Thread::Launch(Ptr<void> Argument)
-    {
-        const Ptr<State> Context = static_cast<Ptr<State>>(Argument);
-        Context->Body(Context->Signal);
-        return 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
