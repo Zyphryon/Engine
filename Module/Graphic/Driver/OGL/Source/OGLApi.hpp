@@ -82,6 +82,9 @@ using GLdouble = double;
 #ifndef GL_DYNAMIC_STORAGE_BIT
 #define GL_DYNAMIC_STORAGE_BIT           0x0100
 #endif
+#ifndef GL_CLIENT_STORAGE_BIT
+#define GL_CLIENT_STORAGE_BIT            0x0200
+#endif
 #ifndef GL_COMPLETION_STATUS_KHR
 #define GL_COMPLETION_STATUS_KHR         0x91B1
 #endif

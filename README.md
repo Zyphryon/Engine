@@ -4,9 +4,6 @@
 **Zyphryon** is a high-performance, cross-platform **game engine** written from scratch in C++23. Every
 subsystem is first-party, from the containers to the renderer, and every one is measured.
 
-A million entities iterate in **0.84 ms** and fit in **61 MB**. A hundred thousand sprites draw in **1.09 ms**.
-A frame-sized parallel system spreads over eight cores at **7x** the speed of one.
-
 ---
 
 ## ⚡ Performance

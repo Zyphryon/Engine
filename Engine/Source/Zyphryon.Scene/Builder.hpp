@@ -87,14 +87,11 @@ namespace ZyScene
             }
 
             // Whether the walk spreads never changes, so it is settled here rather than on every run.
-            if constexpr (!Blueprint::kBatched)
+            if (mMode == Schedule::Adaptive)
             {
-                if (mMode == Schedule::Adaptive)
-                {
-                    return Install(Chore<Function, true> { Enlist(), Forward<Callable>(Callback) });
-                }
+                return Install(Chore<Function, true>(Enlist(), Forward<Callable>(Callback)));
             }
-            return Install(Chore<Function, false> { Enlist(), Forward<Callable>(Callback) });
+            return Install(Chore<Function, false>(Enlist(), Forward<Callable>(Callback)));
         }
 
         /// \brief Makes a system that reads a pull list.

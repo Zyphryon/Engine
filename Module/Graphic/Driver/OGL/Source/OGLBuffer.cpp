@@ -52,6 +52,7 @@ namespace ZyGraphic::OGL
         glGenBuffers(1, AddressOf(mHandle));
         glBindBuffer(Target, mHandle);
 
+#if !defined(ZY_PLATFORM_WEB)
         // A dynamic buffer is written through a second one mapped once, then copied, so draws never read host memory.
         if (Storage == Storage::Dynamic && Device.Has(Feature::BufferStorage))
         {
@@ -65,6 +66,7 @@ namespace ZyGraphic::OGL
             mMemory = static_cast<Ptr<Byte>>(glMapBufferRange(GL_COPY_READ_BUFFER, 0, Capacity, Access));
         }
         else
+#endif
         {
             glBufferData(Target, Capacity, nullptr, Convert(Storage));
         }
