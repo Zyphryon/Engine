@@ -46,7 +46,6 @@
       "description": "Lights up the ZY_PROFILE macros against a Tracy client.",
       "cacheVariables": { "ZY_PROFILE_BACKEND_TRACY": "ON" }
     },
-
     {
       "name": "web",
       "inherits": "release",

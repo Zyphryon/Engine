@@ -23,7 +23,8 @@ namespace ZyContent
 
     Service::Service(Ref<Host> Host)
         : Subsystem { Host },
-          Locator   { Host }
+          Locator   { Host },
+          mBacklog  { 0 }
     {
     }
 
@@ -34,6 +35,11 @@ namespace ZyContent
     {
         ZY_PROFILE_SCOPE("Content::Tick");
 
+        if (mBacklog.load(std::memory_order_relaxed) == 0)
+        {
+            return;
+        }
+
         {
             const Guard Lock(mParserMutex);
 
@@ -42,6 +48,8 @@ namespace ZyContent
                 return Scope.Poll();
             });
         }
+
+        mBacklog.fetch_sub(static_cast<UInt32>(mParserReady.GetSize()), std::memory_order_relaxed);
 
         for (ConstRef<Scope> Scope : mParserReady)
         {
@@ -167,6 +175,8 @@ namespace ZyContent
 
     void Service::Read(ConstRef<Uri> Key, ZyJob::Lane Lane, AnyRef<Mount::OnRead> Callback)
     {
+        mBacklog.fetch_add(1, std::memory_order_relaxed);
+
         Read(Key, [this, Lane, Callback = Move(Callback)](Filesystem::Result Result, Blob Data) mutable
         {
             Deliver(Lane, Result, Move(Data), Move(Callback));
@@ -217,9 +227,11 @@ namespace ZyContent
         AnyRef<Mount::OnRead> Callback)
     {
         GetService<ZyJob::Service>().Dispatch(Lane,
-            [Result, Data = Move(Data), Callback = Move(Callback)] mutable
+            [this, Result, Data = Move(Data), Callback = Move(Callback)] mutable
         {
             Callback(Result, Move(Data));
+
+            mBacklog.fetch_sub(1, std::memory_order_release);
         });
     }
 
@@ -235,6 +247,8 @@ namespace ZyContent
 
         if (Asset->Transition(Resource::Status::Idle, Resource::Status::Queued))
         {
+            mBacklog.fetch_add(1, std::memory_order_relaxed);
+
             Read(Asset->GetKey(), [this, Asset](Filesystem::Result Result, Blob Data)
             {
                 OnAssetParse(Result, Asset, Move(Data));

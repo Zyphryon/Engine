@@ -211,6 +211,14 @@ namespace ZyContent
         /// \param Key The URI to unsubscribe from.
         void Unsubscribe(ConstRef<Uri> Key);
 
+        /// \brief Gets the number of asset loads and lane-delivered reads currently in flight.
+        ///
+        /// \return The number of assets queued but not yet finalized, plus the reads whose callback has yet to run.
+        ZY_INLINE UInt32 GetBacklog() const
+        {
+            return mBacklog.load(std::memory_order_acquire);
+        }
+
     private:
 
         /// \brief Runs an operation on a mount, inline when the mount is asynchronous and on the IO lane otherwise.
@@ -274,6 +282,7 @@ namespace ZyContent
         Table<Digest, Retainer<Loader>>   mLoaders;
         Table<Digest, Retainer<Mount>>    mMounts;
         Table<Digest, Sequence<Callback>> mSubscriptions;
+        Atomic<UInt32>                    mBacklog;
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
