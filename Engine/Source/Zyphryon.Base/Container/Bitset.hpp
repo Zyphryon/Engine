@@ -162,6 +162,28 @@ inline namespace ZyBase
             }
         }
 
+        /// \brief Gets one of the words the bits are stored in.
+        ///
+        /// \param Index The zero-based word index, below the number of words \p Size bits take.
+        /// \return The word, whose bit `N` is the bitset's bit `Index * bits-per-word + N`.
+        ZY_INLINE constexpr Word GetWord(UInt Index) const
+        {
+            ZY_ASSERT(Index < kWordCount, "Word index is out of range");
+
+            return mData[Index];
+        }
+
+        /// \brief Replaces one of the words the bits are stored in.
+        ///
+        /// \param Index The zero-based word index, below the number of words \p Size bits take.
+        /// \param Value The word to store, whose bits past \p Size in the last word are dropped.
+        ZY_INLINE constexpr void SetWord(UInt Index, Word Value)
+        {
+            ZY_ASSERT(Index < kWordCount, "Word index is out of range");
+
+            mData[Index] = (Index == kWordCount - 1 ? Value & kLastMask : Value);
+        }
+
         /// \brief Gets the index of the lowest set bit.
         ///
         /// \return The zero-based index of the first set bit, or \p Size if no bit is set.
