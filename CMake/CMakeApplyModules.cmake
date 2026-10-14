@@ -41,6 +41,7 @@ FUNCTION(ZyApplyModules TARGET)
     FILE(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
     SET(SOURCE "${HEADERS}")
+    SET(SOURCE "#include <Zyphryon.Base/Base.hpp>\n${HEADERS}")
     STRING(APPEND SOURCE "#include \"${TARGET}.Modules.hpp\"\n\n")
     STRING(APPEND SOURCE "ZyEngine::Modules ZyRuntime::ZyRegisterModules()\n{\n")
     STRING(APPEND SOURCE "    ZyEngine::Modules Modules;\n\n")
