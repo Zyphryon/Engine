@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Image.hpp"
+#include "Schema.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -128,6 +129,32 @@ namespace ZyGraphic
         ZY_INLINE ConstPtr<Parameter> GetParameter(UInt64 Key) const
         {
             return mParameters.Find(Key);
+        }
+
+        /// \brief Reads a uniform value, or the schema's default where the material leaves it out.
+        ///
+        /// \param Key      The pre-hashed uniform name.
+        /// \param Defaults The schema of the technique the material is drawn with, whose defaults stand in.
+        /// \return The value, or a default-constructed one when neither sets it as that type.
+        template<typename Type>
+        ZY_INLINE Type Read(UInt64 Key, ConstRef<Schema> Defaults) const
+        {
+            ConstPtr<Parameter> Value = GetParameter(Key);
+
+            if (!Value)
+            {
+                for (ConstRef<Schema::Uniform> Field : Defaults.GetUniforms(Frequency::Material).Uniforms)
+                {
+                    if (Field.Hash == Key)
+                    {
+                        Value = AddressOf(Field.Value);
+                        break;
+                    }
+                }
+            }
+
+            const ConstPtr<Type> Found = (Value ? Value->TryGet<Type>() : nullptr);
+            return Found ? * Found : Type();
         }
 
         /// \brief Uploads the material to the GPU, creating the material resource.
