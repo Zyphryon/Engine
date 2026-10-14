@@ -353,7 +353,10 @@ inline namespace ZyBase
         {
             ZY_ASSERT(Index < mSize, "Sequence index is out of bounds");
 
-            Length = Min(Length, mSize - Index);
+            if (Length = Min(Length, mSize - Index); Length == 0)
+            {
+                return;
+            }
 
             if constexpr (IsTriviallyCopyable<Type>)
             {
