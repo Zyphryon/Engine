@@ -40,6 +40,7 @@ namespace ZyAI
             Compare,  ///< Succeeds when the entry `Name` passes `Check` against `Value`, and fails otherwise.
             Set,      ///< Sets the blackboard entry `Name` to `Value`, and succeeds.
             Clear,    ///< Removes the blackboard entry `Name`, and succeeds whether or not it existed.
+            Wait,     ///< Runs until `Value` seconds have gone by since it started, and succeeds then.
         };
 
         /// \brief Specifies the tests a compare node applies to a blackboard entry.
@@ -69,7 +70,7 @@ namespace ZyAI
             /// The count a parallel or repeat reads.
             UInt16 Count     = 0;
 
-            /// The seconds, probability or operand a cooldown, timeout, chance, compare or set reads.
+            /// The seconds, probability or operand a cooldown, timeout, wait, chance, compare or set reads.
             Real64 Value     = 0.0;
 
             /// The slot of a leaf's arguments in the argument list, counted from `1`, or `0` when it has none.

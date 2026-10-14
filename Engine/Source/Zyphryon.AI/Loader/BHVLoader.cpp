@@ -68,6 +68,12 @@ namespace ZyAI
         // A leaf or a blackboard node has no children, a decorator has exactly one, and a composite has at least one.
         switch (Node.Type)
         {
+        case Behaviour::Kind::Wait:
+            if (Children != 0)
+            {
+                return false;
+            }
+            break;
         case Behaviour::Kind::Leaf:
         case Behaviour::Kind::Compare:
         case Behaviour::Kind::Set:

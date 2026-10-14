@@ -233,6 +233,16 @@ namespace ZyAI
             }
             break;
         }
+        case Behaviour::Kind::Wait:
+        {
+            if (Fresh)
+            {
+                mMemory[Index].Mark = mClock;
+            }
+
+            Result = (mClock - mMemory[Index].Mark >= Current.Value) ? Status::Success : Status::Running;
+            break;
+        }
         case Behaviour::Kind::Timeout:
         {
             if (Fresh)
