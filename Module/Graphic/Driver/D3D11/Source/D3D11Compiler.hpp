@@ -44,7 +44,7 @@ namespace ZyGraphic::D3D11
         /// \param Stage  The shader stage (vertex, pixel, etc.) for which to compile the code.
         /// \param Macros The macros to define during compilation, ended by a null entry.
         /// \return The compiled bytecode, or empty when compilation fails.
-        ComPtr<ID3DBlob> Compile(ConstRef<Blob> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros) const;
+        ComPtr<ID3DBlob> Compile(ConstSpan<Byte> Code, Tier Tier, ShaderStage Stage, ConstPtr<D3D_SHADER_MACRO> Macros) const;
 
         /// \brief Reflects compiled bytecode, so the resources its stage reads can be listed.
         ///

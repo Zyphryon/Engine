@@ -199,48 +199,35 @@ namespace ZyGraphic::D3D11
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Pipeline::Create(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
+    Pipeline::~Pipeline()
     {
-        const Ptr<ID3D11Device1> Handle = Device.GetHandle();
-        const Tier               Tier   = Device.GetDescription().Tier;
+        Await();
+    }
 
-        Sequence<D3D_SHADER_MACRO, 64> Macros;
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        for (ConstRef<Macro> Macro : Program.Macros)
+    void Pipeline::Create(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
+    {
+        Delete();
+
+        mBuild = Unique<Build>::Create();
+        mBuild->Compiler  = AddressOf(Compiler);
+        mBuild->Tier      = Device.GetDescription().Tier;
+        mBuild->Macros    = Program.Macros;
+        mBuild->Signature = Signature;
+        mBuild->States    = States;
+
+        for (UInt32 Stage = 0; Stage < ZyEnum::Count<ShaderStage>(); ++Stage)
         {
-            Macros.Append(Macro.Name.GetData(), Macro.Value.GetData());
-        }
-        Macros.Append("VERTEX_SHADER", nullptr);
-        Macros.Append(nullptr, nullptr);
-
-        const ComPtr<ID3DBlob> VertexCode = Compiler.Compile(Program.Modules[0], Tier, ShaderStage::Vertex, Macros.GetData());
-
-        if (!VertexCode)
-        {
-            return false;
-        }
-
-        Macros[Macros.GetSize() - 2].Name = "FRAGMENT_SHADER";
-
-        const ComPtr<ID3DBlob> PixelCode = Compiler.Compile(Program.Modules[1], Tier, ShaderStage::Fragment, Macros.GetData());
-
-        if (!PixelCode)
-        {
-            return false;
+            mBuild->Sources[Stage].Append(Program.Modules[Stage]);
         }
 
-        const Bool Created =
-               CreateVertex(Handle, VertexCode.Get(), mVertex)
-            && CreatePixel(Handle, PixelCode.Get(), mFragment)
-            && CreateUsage(Compiler, VertexCode.Get(), mUsages[ZyEnum::Cast(ShaderStage::Vertex)])
-            && CreateUsage(Compiler, PixelCode.Get(), mUsages[ZyEnum::Cast(ShaderStage::Fragment)])
-            && CreateBlend(Handle, States, mBlend)
-            && CreateDepth(Handle, States, mDepth)
-            && CreateRaster(Handle, States, mRaster)
-            && CreateLayout(Handle, Signature, VertexCode.Get(), mLayout);
-
-        mTopology = Convert(States.Topology);
-        return Created;
+        // Only the compile leaves the graphics thread, since the device that creates the shaders is single-threaded.
+        if (!::TrySubmitThreadpoolCallback(& OnCompile, mBuild.Grab(), nullptr))
+        {
+            OnCompile(nullptr, mBuild.Grab());
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -248,6 +235,112 @@ namespace ZyGraphic::D3D11
 
     void Pipeline::Delete()
     {
-        * this = Pipeline();
+        Await();
+
+        mBuild    = nullptr;
+        mVertex   = nullptr;
+        mFragment = nullptr;
+        mBlend    = nullptr;
+        mDepth    = nullptr;
+        mRaster   = nullptr;
+        mLayout   = nullptr;
+        mTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+        mUsages   = { };
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Pipeline::Resolve(ConstRef<Device> Device, ConstRef<Compiler> Compiler)
+    {
+        if (mBuild && mBuild->Done.load(std::memory_order_acquire))
+        {
+            const Unique<Build> Finished = Move(mBuild);
+
+            if (!Assemble(Device, Compiler, * Finished))
+            {
+                LOG_E("Graphics: Failed to create a pipeline, its draws are skipped");
+
+                Delete();
+            }
+        }
+        return mVertex != nullptr;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void CALLBACK Pipeline::OnCompile(PTP_CALLBACK_INSTANCE Instance, PVOID Context)
+    {
+        ZY_PROFILE_SCOPE("Graphics::Compile");
+
+        const Ptr<Build> Source = static_cast<Ptr<Build>>(Context);
+
+        Sequence<D3D_SHADER_MACRO, 64> Macros;
+
+        for (ConstRef<Macro> Macro : Source->Macros)
+        {
+            Macros.Append(Macro.Name.GetData(), Macro.Value.GetData());
+        }
+        Macros.Append("VERTEX_SHADER", nullptr);
+        Macros.Append(nullptr, nullptr);
+
+        Source->Vertex = Source->Compiler->Compile(Source->Sources[0], Source->Tier, ShaderStage::Vertex, Macros.GetData());
+
+        // A vertex stage that failed leaves nothing worth compiling the fragment stage for.
+        if (Source->Vertex)
+        {
+            Macros[Macros.GetSize() - 2].Name = "FRAGMENT_SHADER";
+            Source->Fragment = Source->Compiler->Compile(Source->Sources[1], Source->Tier, ShaderStage::Fragment, Macros.GetData());
+        }
+        Source->Done.store(true, std::memory_order_release);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Pipeline::Assemble(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Build> Source)
+    {
+        const Ptr<ID3D11Device1> Handle = Device.GetHandle();
+        const Ptr<ID3DBlob>      VSCode = Source.Vertex.Get();
+        const Ptr<ID3DBlob>      PSCode = Source.Fragment.Get();
+
+        if (!VSCode || !PSCode)
+        {
+            return false;
+        }
+
+        if (!CreateVertex(Handle, VSCode, mVertex) || !CreatePixel(Handle, PSCode, mFragment))
+        {
+            return false;
+        }
+
+        if (!CreateUsage(Compiler, VSCode, mUsages[ZyEnum::Cast(ShaderStage::Vertex)]))
+        {
+            return false;
+        }
+
+        if (!CreateUsage(Compiler, PSCode, mUsages[ZyEnum::Cast(ShaderStage::Fragment)]))
+        {
+            return false;
+        }
+
+        mTopology = Convert(Source.States.Topology);
+
+        return CreateBlend(Handle, Source.States, mBlend)
+            && CreateDepth(Handle, Source.States, mDepth)
+            && CreateRaster(Handle, Source.States, mRaster)
+            && CreateLayout(Handle, Source.Signature, VSCode, mLayout);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Pipeline::Await() const
+    {
+        while (mBuild && !mBuild->Done.load(std::memory_order_acquire))
+        {
+            ::SwitchToThread();
+        }
     }
 }

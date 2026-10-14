@@ -143,13 +143,7 @@ namespace ZyGraphic::D3D11
 
     void Driver::CreatePipeline(Object ID, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
     {
-        if (!mPipelines[ID].Create(mDevice, mCompiler, Program, Signature, States))
-        {
-            LOG_E("Graphics: Failed to create pipeline {0}, its draws are skipped", ID);
-
-            // Left empty, so a draw through it is skipped instead of running without shaders.
-            mPipelines[ID].Delete();
-        }
+        mPipelines[ID].Create(mDevice, mCompiler, Program, Signature, States);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -220,8 +214,8 @@ namespace ZyGraphic::D3D11
 
         for (ConstRef<Command> Draw : Commands)
         {
-            // A pipeline that failed to build has no shaders to draw with.
-            if (!mPipelines[Draw.Pipeline].IsReady())
+            // A pipeline still compiling, or that failed to build, has no shaders to draw with.
+            if (!mPipelines[Draw.Pipeline].Resolve(mDevice, mCompiler))
             {
                 continue;
             }

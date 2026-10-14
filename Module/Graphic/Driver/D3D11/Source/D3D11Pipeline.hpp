@@ -44,26 +44,27 @@ namespace ZyGraphic::D3D11
         /// \brief Constructs an empty pipeline that holds no shaders until \ref Create.
         Pipeline();
 
-        /// \brief Builds the shaders and states of the pipeline, stopping at the first that fails.
+        /// \brief Waits for a compile still running, since it reads what the pipeline handed it.
+        ~Pipeline();
+
+        /// \brief Starts building the pipeline, its stages compiling on the system's thread pool meanwhile.
         ///
-        /// \param Device    The device the shaders and states are created on, whose tier picks the shader model.
+        /// \param Device    The device whose tier picks the shader model.
         /// \param Compiler  The compiler the program's modules are compiled with.
         /// \param Program   The shader program to compile.
         /// \param Signature The vertex attributes the program's input stage consumes.
         /// \param States    The fixed-function states to create.
-        /// \return `true` if every shader and state was created, `false` otherwise.
-        Bool Create(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States);
+        void Create(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States);
 
-        /// \brief Releases the shaders and states and returns to the empty state.
+        /// \brief Waits for a compile still running, then releases the shaders and states.
         void Delete();
 
-        /// \brief Checks whether the pipeline was built, so a draw through it has shaders to run.
+        /// \brief Checks whether a draw through the pipeline has shaders to run, creating them once its compile is done.
         ///
-        /// \return `true` if the pipeline holds its shaders, `false` otherwise.
-        ZY_INLINE Bool IsReady() const
-        {
-            return mVertex != nullptr;
-        }
+        /// \param Device   The device the shaders and states are created on.
+        /// \param Compiler The compiler the stages' registers are reflected with.
+        /// \return `true` if the pipeline holds its shaders, `false` while it compiles or once it failed.
+        Bool Resolve(ConstRef<Device> Device, ConstRef<Compiler> Compiler);
 
         /// \brief Gets the vertex shader.
         ///
@@ -132,9 +133,60 @@ namespace ZyGraphic::D3D11
 
     private:
 
+        /// \brief Holds what a compile reads and writes, owned apart from the pipeline while the pool runs it.
+        struct Build final
+        {
+            /// The compiler the stages are compiled with.
+            ConstPtr<Compiler>                                  Compiler = nullptr;
+
+            /// The feature tier, which picks the shader model.
+            ZyGraphic::Tier                                     Tier     = ZyGraphic::Tier::Level3;
+
+            /// The source of each stage, copied so the compile owns what it reads.
+            Array<Sequence<Byte>, ZyEnum::Count<ShaderStage>()> Sources;
+
+            /// The macros the program defines.
+            Sequence<Macro>                                     Macros;
+
+            /// The vertex attributes the program's input stage consumes.
+            ZyGraphic::Signature                                Signature;
+
+            /// The fixed-function states to create.
+            ZyGraphic::States                                   States;
+
+            /// The vertex stage's bytecode, or `nullptr` when it failed.
+            ComPtr<ID3DBlob>                                    Vertex;
+
+            /// The fragment stage's bytecode, or `nullptr` when it failed.
+            ComPtr<ID3DBlob>                                    Fragment;
+
+            /// `true` once the compile finished, whether it succeeded or not.
+            Atomic<Bool>                                        Done     = false;
+        };
+
+        /// \brief Compiles a build's stages on a thread of the system's pool.
+        ///
+        /// \param Instance The callback instance the pool runs it in.
+        /// \param Context  The build to compile.
+        static void CALLBACK OnCompile(PTP_CALLBACK_INSTANCE Instance, PVOID Context);
+
+        /// \brief Creates the shaders and states from a finished build, stopping at the first that fails.
+        ///
+        /// \param Device   The device the shaders and states are created on.
+        /// \param Compiler The compiler the stages' registers are reflected with.
+        /// \param Source   The finished build.
+        /// \return `true` if every shader and state was created, `false` otherwise.
+        Bool Assemble(ConstRef<Device> Device, ConstRef<Compiler> Compiler, ConstRef<Build> Source);
+
+        /// \brief Waits until the pool is done with the build, which a compile cannot be called off from.
+        void Await() const;
+
+    private:
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        Unique<Build>                              mBuild;
         ComPtr<ID3D11VertexShader>                 mVertex;
         ComPtr<ID3D11PixelShader>                  mFragment;
         ComPtr<ID3D11BlendState>                   mBlend;
