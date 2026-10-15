@@ -160,7 +160,7 @@ namespace ZyAudio
 
         /// \brief Ranks a voice from its category and the gain it reaches the listener at.
         ///
-        /// \note A category floor outranks any gain, so a footstep never takes the slot music or dialogue holds.
+        /// \note A category floor outranks any gain, so music is never pushed out and a footstep never takes dialogue.
         ///
         /// \param Category The submix category the voice is routed through.
         /// \param Gain     The post-attenuation linear gain (range [0, 1]).
@@ -168,7 +168,7 @@ namespace ZyAudio
         ZY_INLINE static constexpr Real32 Rank(Category Category, Real32 Gain)
         {
             // Category floors in declaration order, each above zero so an unmixed slot stays distinguishable at zero.
-            constexpr Array kFloor(3.0f, 2.0f, 4.0f, 1.0f, 5.0f);
+            constexpr Array kFloor(6.0f, 2.0f, 4.0f, 1.0f, 5.0f);
             return kFloor[ZyEnum::Cast(Category)] + Min(Gain, 1.0f);
         }
 
