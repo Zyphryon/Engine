@@ -1,0 +1,45 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Scene" },
+      { "Name": "Level", "Fallback": [0, 0, 0, 0] }
+    ],
+    "Samplers": [
+      { "Name": "Scene", "Filter": "Linear" },
+      { "Name": "Level", "Filter": "Linear" }
+    ]
+  },
+  "Features": [
+    { "Name": "Sift", "Program": { "Defines": ["BLOOM_SIFT"] } },
+    { "Name": "Up",   "Program": { "Defines": ["BLOOM_UP"]   } }
+  ],
+  "Preload": [
+    ["Sift"],
+    ["Up"]
+  ],
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Bloom.hlsl", "Stage": "Vertex"   },
+        { "Path": "Bloom.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Bloom.glsl", "Stage": "Vertex"   },
+        { "Path": "Bloom.glsl", "Stage": "Fragment" }
+      ]
+    }
+  }
+}

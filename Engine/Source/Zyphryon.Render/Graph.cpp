@@ -118,24 +118,15 @@ namespace ZyRender
             UInt16 Width;
             UInt16 Height;
 
-            switch (Description.Sizing)
+            if (Description.Sizing == Target::Scale::Fixed)
             {
-            case Target::Scale::Full:
-                Width  = mWidth;
-                Height = mHeight;
-                break;
-            case Target::Scale::Half:
-                Width  = mWidth  / 2;
-                Height = mHeight / 2;
-                break;
-            case Target::Scale::Quarter:
-                Width  = mWidth  / 4;
-                Height = mHeight / 4;
-                break;
-            default:
                 Width  = Description.Width;
                 Height = Description.Height;
-                break;
+            }
+            else
+            {
+                Width  = mWidth  >> ZyEnum::Cast(Description.Sizing);
+                Height = mHeight >> ZyEnum::Cast(Description.Sizing);
             }
 
             Width  = Max(1, Width);

@@ -1,0 +1,62 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Scene" },
+      { "Name": "Bloom", "Fallback": [0, 0, 0, 0] }
+    ],
+    "Samplers": [
+      { "Name": "Scene", "Filter": "Linear" },
+      { "Name": "Bloom", "Filter": "Linear"          }
+    ]
+  },
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Final.hlsl", "Stage": "Vertex"   },
+        { "Path": "Final.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Final.glsl", "Stage": "Vertex"   },
+        { "Path": "Final.glsl", "Stage": "Fragment" }
+      ]
+    }
+  },
+  "Features": [
+    {
+      "Name": "ACES",
+      "Program": {
+        "Defines": ["ENABLE_TONEMAP_ACES"]
+      }
+    },
+    {
+      "Name": "Gamma",
+      "Program": {
+        "Defines": ["ENABLE_ENCODED_OUTPUT"]
+      }
+    },
+    {
+      "Name": "FXAA",
+      "Program": {
+        "Defines": ["ENABLE_ANTIALIAS_FXAA"]
+      }
+    }
+  ],
+  "Preload": [
+    ["ACES"],
+    ["ACES", "FXAA"],
+    ["FXAA"],
+  ]
+}

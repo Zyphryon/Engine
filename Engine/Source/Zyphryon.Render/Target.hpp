@@ -26,10 +26,12 @@ namespace ZyRender
         /// \brief Describes how a target's dimensions track the frame's output size.
         enum class Scale : UInt8
         {
-            Full,    ///< Full output resolution.
-            Half,    ///< Half the output resolution in each axis.
-            Quarter, ///< Quarter the output resolution in each axis.
-            Fixed,   ///< Explicit, independent of the output size.
+            Full,      ///< Full output resolution.
+            Half,      ///< Half the output resolution in each axis.
+            Quarter,   ///< Quarter the output resolution in each axis.
+            Eighth,    ///< An eighth of the output resolution in each axis.
+            Sixteenth, ///< A sixteenth of the output resolution in each axis.
+            Fixed,     ///< Explicit, independent of the output size.
         };
 
         /// The pixel format of the target texture.
