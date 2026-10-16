@@ -32,7 +32,6 @@ namespace ZyScene::Protocol
           mWorld      { mScene.GetWorld().GetID() },
           mNext       { 1 },
           mTick       { 0 },
-          mSpread     { kSpread },
           mPacking    { true },
           mPublishing { false }
     {
@@ -670,17 +669,10 @@ namespace ZyScene::Protocol
         // Channels no longer change, and each worker writes only its own sessions' frames.
         const UInt32 Count = static_cast<UInt32>(mOrder.GetSize());
 
-        if (Count >= mSpread)
+        mJobs.Parallel(ZyJob::Lane::Compute, Count, [this, &Time, Heartbeat](UInt32 Begin, UInt32 End)
         {
-            mJobs.Parallel(ZyJob::Lane::Compute, Count, [this, &Time, Heartbeat](UInt32 Begin, UInt32 End)
-            {
-                AssembleRange(Begin, End, Time, Heartbeat);
-            });
-        }
-        else
-        {
-            AssembleRange(0, Count, Time, Heartbeat);
-        }
+            AssembleRange(Begin, End, Time, Heartbeat);
+        });
 
         mPublishing = true;
 

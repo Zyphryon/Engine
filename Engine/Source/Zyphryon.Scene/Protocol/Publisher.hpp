@@ -93,14 +93,6 @@ namespace ZyScene::Protocol
             mSink = Move(Output);
         }
 
-        /// \brief Sets the number of peers from which frames are assembled on the compute workers.
-        ///
-        /// \param Sessions The number of sessions, below which assembly stays on the calling thread.
-        ZY_INLINE void SetSpread(UInt32 Sessions)
-        {
-            mSpread = Sessions;
-        }
-
         /// \brief Sets whether frames go out packed with LZ4 when that shrinks them.
         ///
         /// \param Packing `true` to pack them, which is the default, `false` to send every frame as it was built.
@@ -110,9 +102,6 @@ namespace ZyScene::Protocol
         }
 
     private:
-
-        /// The number of sessions from which assembly spreads by default, where it first won every release run.
-        static constexpr UInt32 kSpread = 320;
 
         /// \brief Represents what the publisher remembers about a replica between two publishes.
         struct Tracker final
@@ -509,7 +498,6 @@ namespace ZyScene::Protocol
         /// \param Time      The world's clock.
         /// \param Heartbeat `true` to send a frame even when it carries nothing.
         void AssembleRange(UInt32 Begin, UInt32 End, ConstRef<Clock> Time, Bool Heartbeat);
-
         /// \brief Hands a peer's frames to the sink.
         ///
         /// \param Peer The session.
@@ -648,7 +636,6 @@ namespace ZyScene::Protocol
         UInt64                         mWorld;
         UInt64                         mNext;
         UInt64                         mTick;
-        UInt32                         mSpread;
         Bool                           mPacking;
         Bool                           mPublishing;
     };
