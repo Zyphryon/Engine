@@ -31,7 +31,7 @@ namespace ZyRender
 
     void Font::Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, AnyRef<Atlases> Atlases)
     {
-        SetFootprint(Glyphs.GetSize() * sizeof(Glyph) + Kerning.GetSize() * sizeof(UInt64));
+        SetFootprint(Glyphs.GetSize() * sizeof(Glyph) + Kerning.GetSize() * sizeof(Font::Kerning::Pair));
 
         mMetrics = Move(Metrics);
         mGlyphs  = Move(Glyphs);

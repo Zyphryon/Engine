@@ -84,7 +84,7 @@ namespace ZyRender
         using Glyphs  = Table<UInt32, Glyph>;
 
         /// \brief The kerning adjustments, keyed by codepoint pair.
-        using Kerning = Table<UInt64, Real32>;
+        using Kerning = Table<UInt64, Real64>;
 
         /// \brief The materials, one per atlas page, indexed by \c Glyph::Page.
         using Atlases = Sequence<Retainer<ZyGraphic::Material>>;
@@ -142,7 +142,7 @@ namespace ZyRender
         /// \return The horizontal kerning offset in font units, or zero if no kerning pair exists.
         ZY_INLINE Real32 GetKerning(UInt32 First, UInt32 Second) const
         {
-            return mKerning.FindOrDefault(static_cast<UInt64>(First) << 32 | Second);
+            return static_cast<Real32>(mKerning.FindOrDefault(static_cast<UInt64>(First) << 32 | Second));
         }
 
         /// \brief Gets the material that renders one of this font's atlas pages.
