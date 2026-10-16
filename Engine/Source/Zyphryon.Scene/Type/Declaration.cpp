@@ -24,7 +24,7 @@ namespace ZyScene
 
     void Enrollment::Finish(ConstSpan<UInt32> Identifiers)
     {
-        if (!mPresentation.Label.IsEmpty())
+        if (!mPresentation.Group.IsEmpty())
         {
             for (const UInt32 Identifier : Identifiers)
             {

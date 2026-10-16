@@ -62,20 +62,12 @@ namespace ZyReflection
         {
         }
 
-        /// \brief Gets the name the field is shown and looked up under.
+        /// \brief Gets the name the field is looked up under, which a tool also keys the text it shows by.
         ///
         /// \return The name of the field.
         ZY_INLINE constexpr Text GetName() const
         {
             return mName;
-        }
-
-        /// \brief Gets the sentence shown beside the field.
-        ///
-        /// \return The hint of the field, empty when it has none.
-        ZY_INLINE constexpr Text GetHint() const
-        {
-            return mHint;
         }
 
         /// \brief Gets the kind the field carries.
@@ -255,18 +247,6 @@ namespace ZyReflection
 
             Field Result = * this;
             Result.mExtra.Limit.Step = Step;
-            return Result;
-        }
-
-        /// \brief Sets the sentence shown beside the field.
-        ///
-        /// \param Hint The sentence to show, taken as an array so only a lasting one can be given.
-        /// \return A copy of the field, hinted.
-        template<UInt Count>
-        ZY_INLINE constexpr Field Hinted(const Char (& Hint)[Count]) const
-        {
-            Field Result = * this;
-            Result.mHint = Text(Hint, Count - 1);
             return Result;
         }
 
@@ -725,7 +705,6 @@ namespace ZyReflection
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Text   mName;
-        Text   mHint;
         Reader mReader;
         Writer mWriter;
         Extra  mExtra;

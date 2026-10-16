@@ -137,33 +137,22 @@ namespace ZyScene
             return Move(* this);
         }
 
-        /// \brief Gives the components how a tool shows them and where it may put them.
+        /// \brief Gives the components where a tool lists and may put them, which shows them by their name.
         ///
-        /// \param Label  The name a tool shows for them.
-        /// \param Group  The heading they are listed under, or empty for none.
-        /// \param Icon   The codepoint of the glyph shown beside their label, or zero for none.
+        /// \param Group  The heading they are listed under, which a tool keys its text by, never empty.
+        /// \param Icon   The codepoint of the glyph shown beside them, or zero for none.
         /// \param Policy The places a tool may put them.
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Describe(
-            Text      Label,
-            Text      Group  = Text(),
+            Text      Group,
             UInt32    Icon   = 0,
             Authoring Policy = Authoring::Anywhere) &&
         {
-            mPresentation.Label  = Label;
+            ZY_ASSERT(!Group.IsEmpty(), "A described component is listed under a group");
+
             mPresentation.Group  = Group;
             mPresentation.Icon   = Icon;
             mPresentation.Policy = Policy;
-            return Move(* this);
-        }
-
-        /// \brief Gives the described components the text saying what they are for.
-        ///
-        /// \param Tooltip The text a tool shows on request.
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Hinted(Text Tooltip) &&
-        {
-            mPresentation.Tooltip = Tooltip;
             return Move(* this);
         }
 

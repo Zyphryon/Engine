@@ -134,7 +134,7 @@ namespace ZyScene
         ZY_INLINE ConstPtr<Description> GetDescription() const
         {
             ConstRef<Metatype> Info = GetInfo();
-            return Info.Presentation.Label.IsEmpty() ? nullptr : AddressOf(Info.Presentation);
+            return Info.Presentation.Group.IsEmpty() ? nullptr : AddressOf(Info.Presentation);
         }
 
         /// \brief Gets the fields a tool reads and writes of the type.

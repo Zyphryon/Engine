@@ -28,16 +28,10 @@ namespace ZyScene
     /// \brief Represents how a component presents itself to a tool, which nothing in the simulation reads.
     struct Description final
     {
-        /// The name a tool shows for the component, empty when the component was never described.
-        Text      Label;
-
-        /// The heading the component is listed under, empty for none.
+        /// The heading the component is listed under, which a tool keys its text by, empty when never described.
         Text      Group;
 
-        /// The text saying what the component is for, shown on request.
-        Text      Tooltip;
-
-        /// The codepoint of the glyph a tool shows beside the label, or zero for none.
+        /// The codepoint of the glyph a tool shows beside the component, or zero for none.
         UInt32    Icon    = 0;
 
         /// The places a tool may put the component.
