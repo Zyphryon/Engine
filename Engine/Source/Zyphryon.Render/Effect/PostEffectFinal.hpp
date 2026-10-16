@@ -24,6 +24,8 @@ namespace ZyRender
     /// \brief Represents the last pass of a post effect chain, which develops the image into what the display shows.
     class ZY_API PostEffectFinal final : public Pass
     {
+        friend class PostEffect;
+
     public:
 
         /// \brief Enumerates the curves the image is compressed into the display range with.
@@ -155,22 +157,6 @@ namespace ZyRender
             return mAntialias;
         }
 
-        /// \brief Sets the share of the bloom's halo laid back over the image.
-        ///
-        /// \param Halo The share to lay back, or zero to lay none.
-        ZY_INLINE void SetHalo(Real32 Halo)
-        {
-            mHalo = Halo;
-        }
-
-        /// \brief Sets the frame the grain is stirred by.
-        ///
-        /// \param Frame The frame, which a new value reseeds the grain with.
-        ZY_INLINE void SetFrame(UInt32 Frame)
-        {
-            mFrame = Frame;
-        }
-
         /// \copydoc Pass::Run
         void Run(Ref<Encoder> Encoder, ConstRef<Graph> Graph) override;
 
@@ -200,6 +186,22 @@ namespace ZyRender
             /// A texel of the source across and up, then the aberration in pixels.
             Vector4 Lens;
         };
+
+        /// \brief Sets the share of the bloom's halo laid back over the image.
+        ///
+        /// \param Halo The share to lay back, or zero to lay none.
+        ZY_INLINE void SetHalo(Real32 Halo)
+        {
+            mHalo = Halo;
+        }
+
+        /// \brief Sets the frame the grain is stirred by.
+        ///
+        /// \param Frame The frame, which a new value reseeds the grain with.
+        ZY_INLINE void SetFrame(UInt32 Frame)
+        {
+            mFrame = Frame;
+        }
 
     private:
 
