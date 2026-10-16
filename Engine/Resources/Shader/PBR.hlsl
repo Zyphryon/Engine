@@ -32,23 +32,38 @@ float3 ZySpecular(float3 Albedo, float Metalness, float Reflectance)
     return lerp(float3(Reflectance, Reflectance, Reflectance), Albedo, Metalness);
 }
 
+/// GGX normal distribution, from the lobe's width already squared.
+float ZyDistributionSquare(float NoH, float Square)
+{
+    const float Lean = NoH * NoH * (Square - 1.0) + 1.0;
+
+    return Square / (ZY_PI * Lean * Lean);
+}
+
 /// GGX normal distribution.
 float ZyDistribution(float NoH, float Alpha)
 {
-    const float Square = Alpha * Alpha;
-    const float Lean   = NoH * NoH * (Square - 1.0) + 1.0;
+    return ZyDistributionSquare(NoH, Alpha * Alpha);
+}
 
-    return Square / (ZY_PI * Lean * Lean);
+/// One side's term of the height-correlated Smith visibility, by its cosine to the normal.
+float ZySmith(float Cosine, float Alpha)
+{
+    const float Square = Alpha * Alpha;
+
+    return sqrt(Cosine * Cosine * (1.0 - Square) + Square);
+}
+
+/// Height-correlated Smith visibility, with the view's term already worked out.
+float ZyVisibility(float NoV, float NoL, float Alpha, float Facing)
+{
+    return 0.5 / max(NoL * Facing + NoV * ZySmith(NoL, Alpha), ZY_EPSILON);
 }
 
 /// Height-correlated Smith visibility.
 float ZyVisibility(float NoV, float NoL, float Alpha)
 {
-    const float Square = Alpha * Alpha;
-    const float View   = NoL * sqrt(NoV * NoV * (1.0 - Square) + Square);
-    const float Light  = NoV * sqrt(NoL * NoL * (1.0 - Square) + Square);
-
-    return 0.5 / max(View + Light, ZY_EPSILON);
+    return ZyVisibility(NoV, NoL, Alpha, ZySmith(NoV, Alpha));
 }
 
 /// Schlick Fresnel.
@@ -94,6 +109,9 @@ struct ZyLobe
     /// The floored roughness, squared.
     float  Alpha;
 
+    /// The view's term of the height-correlated visibility, the same for every light.
+    float  Facing;
+
     /// The reflectance under light from every side.
     float3 Environment;
 
@@ -110,6 +128,7 @@ ZyLobe ZyPrepareLobe(float3 Normal, float3 Sight, float3 Diffuse, float3 Specula
     ZyLobe Result;
     Result.NoV         = max(dot(Normal, Sight), ZY_EPSILON);
     Result.Alpha       = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
+    Result.Facing      = ZySmith(Result.NoV, Result.Alpha);
     Result.Environment = ZyEnvironment(Specular, Roughness, Result.NoV);
 
     // Light the specular reflects is light the diffuse never gets.
@@ -129,10 +148,11 @@ float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 
     const float  VoH     = saturate(dot(Sight, Halfway));
 
     // A sized light widens the lobe; the two spreads add in quadrature to keep energy.
-    const float  Widened = sqrt(Lobe.Alpha * Lobe.Alpha + ZySquare(Spread * 0.5));
+    const float  Widened = Lobe.Alpha * Lobe.Alpha + ZySquare(Spread * 0.5);
+    const float  Visible = ZyVisibility(Lobe.NoV, NoL, Lobe.Alpha, Lobe.Facing);
 
     const float3 Fresnel = ZyFresnel(Specular, VoH);
-    const float3 Single  = Fresnel * (ZyDistribution(NoH, Widened) * ZyVisibility(Lobe.NoV, NoL, Lobe.Alpha));
+    const float3 Single  = Fresnel * (ZyDistributionSquare(NoH, Widened) * Visible);
 
     return (Lobe.Scatter + Single * Lobe.Gain) * NoL;
 }
@@ -149,6 +169,26 @@ float3 ZyBrdf(float3 Normal, float3 Sight, float3 Incident, float3 Diffuse, floa
 float ZyOcclusion(float NoV, float Occlusion, float Roughness)
 {
     return saturate(pow(NoV + Occlusion, exp2(-16.0 * Roughness - 1.0)) - 1.0 + Occlusion);
+}
+
+/// The unit way from one point to another, writing their distance and one over it; straight up where they meet.
+float3 ZyIncident(float3 From, float3 To, out float Distance, out float Inverse)
+{
+    const float3 Relative = To - From;
+    const float  Square   = dot(Relative, Relative);
+
+    Inverse  = rsqrt(max(Square, ZY_EPSILON * ZY_EPSILON));
+    Distance = Square * Inverse;
+
+    return (Distance > ZY_EPSILON) ? Relative * Inverse : float3(0.0, 1.0, 0.0);
+}
+
+/// The arc tangent of a source's half width over its distance, matched to its third order at a root's cost.
+float ZySourceSpread(float Source, float Inverse)
+{
+    const float Half = Source * 0.5 * Inverse;
+
+    return Half * rsqrt(1.0 + Half * Half * (2.0 / 3.0));
 }
 
 /// Light falloff, full inside the core, inverse square past it and zero at the radius.

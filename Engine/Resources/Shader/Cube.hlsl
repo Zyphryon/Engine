@@ -10,6 +10,7 @@
 #define ZY_CUBE_INCLUDED
 
 #include "Embedded://Shader/Noise.hlsl"
+#include "Embedded://Shader/Shadow.hlsl"
 
 /// How far a receiver is pushed along its normal before the lookup, in face texels.
 #define ZY_CUBE_LIFT   1.5
@@ -28,9 +29,6 @@
 
 /// Taps the filter reads.
 #define ZY_CUBE_TAPS   12
-
-/// Taps the small fixed filter reads.
-#define ZY_CUBE_SPREAD 4
 
 /// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(float3 Reach)
@@ -51,17 +49,17 @@ int ZyCubeFace(float3 Reach)
 /// Turns a direction from the light into a face's right, up and depth.
 float3 ZyCubeView(float3 Reach, int Face)
 {
-    const float3 kRight[6] =
+    static const float3 kRight[6] =
     {
         float3( 0.0, 0.0, -1.0), float3(0.0, 0.0, 1.0), float3(1.0, 0.0, 0.0),
         float3( 1.0, 0.0,  0.0), float3(1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0)
     };
-    const float3 kUp[6] =
+    static const float3 kUp[6] =
     {
         float3(0.0, 1.0, 0.0), float3(0.0, 1.0, 0.0), float3(0.0, 0.0, -1.0),
         float3(0.0, 0.0, 1.0), float3(0.0, 1.0, 0.0), float3(0.0, 1.0,  0.0)
     };
-    const float3 kAhead[6] =
+    static const float3 kAhead[6] =
     {
         float3(1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(0.0, 1.0, 0.0),
         float3(0.0, -1.0, 0.0), float3(0.0, 0.0, 1.0), float3(0.0, 0.0, -1.0)
@@ -97,16 +95,20 @@ float4 ZyCubeClip(float3 Seen)
     return Seen.z - float4(Seen.x, -Seen.x, Seen.y, -Seen.y);
 }
 
-/// Finds a point's atlas coordinate, depth and tile bounds; false if its face has no tile.
-bool ZyCubeLocate(
-    float4 Atlas, float3 World, float3 Normal, float4 Light, float4 Faces0, float2 Faces1,
+/// Picks one face's tile from six kept as tile plus one in 7-bit fields, +X -X +Y in x and -Y +Z -Z in y; -1 for none.
+float ZyCubePick(float2 Tiles, int Face)
+{
+    const uint Packed = uint(Face < 3 ? Tiles.x : Tiles.y);
+    const uint Shift  = uint(Face < 3 ? Face : Face - 3) * 7u;
+
+    return float((Packed >> Shift) & 127u) - 1.0;
+}
+
+/// Finds a point's atlas coordinate, depth and tile bounds on a face given its tile; false if the face has none.
+bool ZyCubeLocateFace(
+    float4 Atlas, float3 Reach, float3 Normal, float Far, int Face, float Tile,
     out float2 Uv, out float Depth, out float2 Least, out float2 Most, out float Distance)
 {
-    const float3 Reach    = World - Light.xyz;
-    const int    Face     = ZyCubeFace(Reach);
-    const float  Tiles[6] = { Faces0.x, Faces0.y, Faces0.z, Faces0.w, Faces1.x, Faces1.y };
-    const float  Tile     = Tiles[Face];
-
     Uv       = float2(0.0, 0.0);
     Depth    = 0.0;
     Least    = float2(0.0, 0.0);
@@ -122,7 +124,6 @@ bool ZyCubeLocate(
     const float Scale = Atlas.y;
     const float Near  = Atlas.z;
     const float Texel = 1.0 / (Per * Atlas.w);
-    const float Far   = Light.w;
 
     const float3 Size  = abs(Reach);
     const float  Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
@@ -139,25 +140,31 @@ bool ZyCubeLocate(
     return true;
 }
 
-/// Small fixed filter about a point, kept inside its tile.
-float ZyCubeSpread(
-    Texture2D Map, SamplerComparisonState Compare, float2 Uv, float Depth, float2 Least, float2 Most,
-    float Radius, float2 Spin)
+/// Finds a point's atlas coordinate, depth and tile bounds from tiles packed as ZyCubePick reads them.
+bool ZyCubeLocate(
+    float4 Atlas, float3 World, float3 Normal, float4 Light, float2 Tiles,
+    out float2 Uv, out float Depth, out float2 Least, out float2 Most, out float Distance)
 {
-    float Lit = 0.0;
+    const float3 Reach = World - Light.xyz;
+    const int    Face  = ZyCubeFace(Reach);
+    const float  Tile  = ZyCubePick(Tiles, Face);
 
-    [unroll]
-    for (int Tap = 0; Tap < ZY_CUBE_SPREAD; ++Tap)
-    {
-        Lit += Map.SampleCmpLevelZero(Compare, clamp(Uv + ZySpiral(Tap, ZY_CUBE_SPREAD, Spin) * Radius, Least, Most), Depth);
-    }
-    return Lit / float(ZY_CUBE_SPREAD);
+    return ZyCubeLocateFace(Atlas, Reach, Normal, Light.w, Face, Tile, Uv, Depth, Least, Most, Distance);
+}
+
+/// Small fixed filter about a point, the tent of ZyShadowSpread kept inside its tile.
+float ZyCubeSpread(
+    Texture2D Map, SamplerComparisonState Compare, float2 Uv, float Depth, float2 Least, float2 Most, float Texel)
+{
+    const float Half = Texel * 0.5;
+
+    return ZyShadowSpread(Map, Compare, clamp(Uv, Least + Half, Most - Half), Depth, Texel);
 }
 
 /// Soft lamp shadow from the cube atlas, wider with source size and distance past the blocker.
 float ZyCubeShadow(
     Texture2D Depths, SamplerState Point, Texture2D Map, SamplerComparisonState Compare, float4 Atlas,
-    float3 World, float3 Normal, float4 Light, float Source, float4 Faces0, float2 Faces1, float2 Spin)
+    float3 World, float3 Normal, float4 Light, float Source, float2 Tiles, float2 Spin)
 {
     float2 Uv;
     float  Depth;
@@ -165,7 +172,7 @@ float ZyCubeShadow(
     float2 Most;
     float  Distance;
 
-    if (!ZyCubeLocate(Atlas, World, Normal, Light, Faces0, Faces1, Uv, Depth, Least, Most, Distance))
+    if (!ZyCubeLocate(Atlas, World, Normal, Light, Tiles, Uv, Depth, Least, Most, Distance))
     {
         return 1.0;
     }
@@ -236,7 +243,7 @@ float ZyCubeShadow(
     [branch]
     if (Penumbra <= Texel * 2.0)
     {
-        return ZyCubeSpread(Map, Compare, Uv, Depth, Least, Most, Penumbra, Spin);
+        return ZyCubeSpread(Map, Compare, Uv, Depth, Least, Most, Texel);
     }
 
     float Lit = 0.0;

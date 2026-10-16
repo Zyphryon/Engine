@@ -79,7 +79,7 @@ bool ZyRaymarchCylinder(vec3 Start, vec3 Sight, vec2 Middle, vec2 Radii, float R
     return Spread > 0.0 && Leave > Enter;
 }
 
-/// Billow noise from a stack of lattice slices, eased across a slice and between slices.
+/// Billow noise from a stack of lattice slices, eased across a slice and between slices; G holds the next slice's R.
 float ZyRaymarchLattice(sampler2DArray Lattice, vec2 Plane, float Height, float Texel, float Slices)
 {
     vec2  Cell   = floor(Plane);
@@ -88,18 +88,21 @@ float ZyRaymarchLattice(sampler2DArray Lattice, vec2 Plane, float Height, float 
     float Layer  = floor(Height);
     float Rise   = Height - Layer;
     float Lower  = Layer - Slices * floor(Layer / Slices);
-    float Upper  = (Lower + 1.0 < Slices) ? Lower + 1.0 : 0.0;
+    vec2  Pair   = textureLod(Lattice, vec3(Uv, Lower), 0.0).rg;
 
-    return mix(
-        textureLod(Lattice, vec3(Uv, Lower), 0.0).r,
-        textureLod(Lattice, vec3(Uv, Upper), 0.0).r,
-        Rise * Rise * (3.0 - 2.0 * Rise));
+    return mix(Pair.x, Pair.y, Rise * Rise * (3.0 - 2.0 * Rise));
+}
+
+/// The size of the half-size target an output of the given size is measured into.
+vec2 ZyRaymarchHalf(vec2 Full)
+{
+    return max(floor(Full * 0.5), vec2(1.0));
 }
 
 /// The first full-size texel of the 2x2 block a half-size texel covers.
 ivec2 ZyRaymarchBlock(vec2 Pixel, vec2 Full)
 {
-    return ivec2(Pixel * (Full / max(floor(Full * 0.5), 1.0)) - 0.5);
+    return ivec2(Pixel * (Full / ZyRaymarchHalf(Full)) - 0.5);
 }
 
 /// The depth a half-size texel keeps, farthest on a checkerboard and nearest elsewhere.
@@ -111,17 +114,25 @@ float ZyRaymarchMeasure(vec2 Pixel, vec4 Reaches)
                : min(min(Reaches.x, Reaches.y), min(Reaches.z, Reaches.w));
 }
 
-/// Depth-aware upsample of a half-size medium onto a full-size pixel.
-vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Full, float Reach, float Reject)
+/// Whether the four texels of a half-size medium a full-size pixel settles from are empty; Medium filters bilinearly.
+bool ZyRaymarchVacant(sampler2D Medium, vec2 Pixel, vec2 Half, vec2 Full)
 {
-    ivec2 Half   = textureSize(Medium, 0);
-    vec2  At     = Pixel * (vec2(Half) / Full) - 0.5;
+    vec2 Corner = floor(Pixel * (Half / Full) - 0.5);
+
+    // At the middle of the four a bilinear tap weighs each a quarter, so it reads empty only where all four are.
+    return textureLod(Medium, (Corner + 1.0) / Half, 0.0).a <= 0.0;
+}
+
+/// Depth-aware upsample of a half-size medium onto a full-size pixel.
+vec4 ZyRaymarchSettle(sampler2D Medium, sampler2D Reaches, vec2 Pixel, vec2 Half, vec2 Full, float Reach, float Reject)
+{
+    vec2  At     = Pixel * (Half / Full) - 0.5;
     vec2  Corner = floor(At);
     vec2  Blend  = At - Corner;
-    ivec2 Last   = Half - 1;
+    ivec2 Last   = ivec2(Half) - 1;
 
 #if ZY_TIER >= 3
-    vec4 Gaps = abs(textureGather(Reaches, (Corner + 1.0) / vec2(Half)).wzxy - Reach);
+    vec4 Gaps = abs(textureGather(Reaches, (Corner + 1.0) / Half).wzxy - Reach);
 #endif
 
     vec4  Sum     = vec4(0.0);

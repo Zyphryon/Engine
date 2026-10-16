@@ -79,9 +79,9 @@ bool ZyRaymarchCylinder(float3 Start, float3 Sight, float2 Middle, float2 Radii,
     return Spread > 0.0 && Leave > Enter;
 }
 
-/// Billow noise from a stack of lattice slices, eased across a slice and between slices.
+/// Billow noise from a stack of lattice slices, eased across a slice and between slices; G holds the next slice's R.
 float ZyRaymarchLattice(
-    Texture2DArray<float> Lattice, SamplerState Wrap, float2 Plane, float Height, float Texel, float Slices)
+    Texture2DArray<float2> Lattice, SamplerState Wrap, float2 Plane, float Height, float Texel, float Slices)
 {
     const float2 Cell   = floor(Plane);
     const float2 Offset = Plane - Cell;
@@ -89,18 +89,21 @@ float ZyRaymarchLattice(
     const float  Layer  = floor(Height);
     const float  Rise   = Height - Layer;
     const float  Lower  = Layer - Slices * floor(Layer / Slices);
-    const float  Upper  = (Lower + 1.0 < Slices) ? Lower + 1.0 : 0.0;
+    const float2 Pair   = Lattice.SampleLevel(Wrap, float3(Uv, Lower), 0.0);
 
-    return lerp(
-        Lattice.SampleLevel(Wrap, float3(Uv, Lower), 0.0),
-        Lattice.SampleLevel(Wrap, float3(Uv, Upper), 0.0),
-        Rise * Rise * (3.0 - 2.0 * Rise));
+    return lerp(Pair.x, Pair.y, Rise * Rise * (3.0 - 2.0 * Rise));
+}
+
+/// The size of the half-size target an output of the given size is measured into.
+float2 ZyRaymarchHalf(float2 Full)
+{
+    return max(floor(Full * 0.5), 1.0);
 }
 
 /// The first full-size texel of the 2x2 block a half-size texel covers.
 int2 ZyRaymarchBlock(float2 Pixel, float2 Full)
 {
-    return int2(Pixel * (Full / max(floor(Full * 0.5), 1.0)) - 0.5);
+    return int2(Pixel * (Full / ZyRaymarchHalf(Full)) - 0.5);
 }
 
 /// The depth a half-size texel keeps, farthest on a checkerboard and nearest elsewhere.
@@ -112,21 +115,27 @@ float ZyRaymarchMeasure(float2 Pixel, float4 Reaches)
                : min(min(Reaches.x, Reaches.y), min(Reaches.z, Reaches.w));
 }
 
+/// Whether the four texels of a half-size medium a full-size pixel settles from are empty; Linear is bilinear.
+bool ZyRaymarchVacant(Texture2D Medium, SamplerState Linear, float2 Pixel, float2 Half, float2 Full)
+{
+    const float2 Corner = floor(Pixel * (Half / Full) - 0.5);
+
+    // At the middle of the four a bilinear tap weighs each a quarter, so it reads empty only where all four are.
+    return Medium.SampleLevel(Linear, (Corner + 1.0) / Half, 0.0).a <= 0.0;
+}
+
 /// Depth-aware upsample of a half-size medium onto a full-size pixel; Clamp is a clamping sampler for Reaches.
 float4 ZyRaymarchSettle(
-    Texture2D Medium, Texture2D<float> Reaches, SamplerState Clamp, float2 Pixel, float2 Full, float Reach, float Reject)
+    Texture2D Medium, Texture2D<float> Reaches, SamplerState Clamp,
+    float2 Pixel, float2 Half, float2 Full, float Reach, float Reject)
 {
-    uint Across;
-    uint Down;
-    Medium.GetDimensions(Across, Down);
-
-    const float2 At     = Pixel * (float2(Across, Down) / Full) - 0.5;
+    const float2 At     = Pixel * (Half / Full) - 0.5;
     const float2 Corner = floor(At);
     const float2 Blend  = At - Corner;
-    const int2   Last   = int2(Across, Down) - 1;
+    const int2   Last   = int2(Half) - 1;
 
 #if ZY_TIER >= 3
-    const float4 Gaps = abs(Reaches.GatherRed(Clamp, (Corner + 1.0) / float2(Across, Down)).wzxy - Reach);
+    const float4 Gaps = abs(Reaches.GatherRed(Clamp, (Corner + 1.0) / Half).wzxy - Reach);
 #endif
 
     float4 Sum     = 0.0;

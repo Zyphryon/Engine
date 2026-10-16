@@ -22,8 +22,32 @@
 #define ZY_SHADOW_TAPS   16
 #endif
 
-/// Taps the filter reads when the penumbra is only a couple of texels wide.
-#define ZY_SHADOW_NARROW 4
+/// Finds where a point in a light's clip space falls on its map, and its depth there; false off the map.
+bool ZyShadowLocate(vec3 Clip, out vec2 Uv, out float Depth)
+{
+    Uv    = vec2(Clip.x * 0.5 + 0.5, 0.5 - Clip.y * 0.5);
+    Depth = Clip.z;
+
+    return !(any(lessThan(Uv, vec2(0.0))) || any(greaterThan(Uv, vec2(1.0))) || Clip.z >= 1.0);
+}
+
+/// Finds where a point falls on the map an orthographic light's matrix carries it to; false off the map.
+bool ZyShadowLocate(mat4 Light, vec3 World, out vec2 Uv, out float Depth)
+{
+    return ZyShadowLocate((Light * vec4(World, 1.0)).xyz, Uv, Depth);
+}
+
+/// Small fixed filter about a point, four filtered comparisons half a texel off it each way that read as a 3x3 tent.
+float ZyShadowSpread(sampler2DShadow Map, vec2 Uv, float Depth, float Texel)
+{
+    float Half = Texel * 0.5;
+
+    float Lit = textureLod(Map, vec3(Uv + vec2(-Half, -Half), Depth), 0.0)
+              + textureLod(Map, vec3(Uv + vec2( Half, -Half), Depth), 0.0)
+              + textureLod(Map, vec3(Uv + vec2(-Half,  Half), Depth), 0.0)
+              + textureLod(Map, vec3(Uv + vec2( Half,  Half), Depth), 0.0);
+    return Lit * 0.25;
+}
 
 /// Soft shadow from a depth map, sharp at contact and softer the further the blocker.
 float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, float Texel, float Spread, vec2 Turn)
@@ -80,17 +104,13 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
 
     float Penumbra = clamp((Depth - Found / Count) * Spread, Least, Most);
 
-    float Lit = 0.0;
-
-    // A narrow penumbra needs only a few taps.
+    // A narrow penumbra needs only the few taps of the fixed filter.
     if (Penumbra <= Least * 2.0)
     {
-        for (int Tap = 0; Tap < ZY_SHADOW_NARROW; ++Tap)
-        {
-            Lit += textureLod(Map, vec3(Uv + ZySpiral(Tap, float(ZY_SHADOW_NARROW), Turn) * Penumbra, Depth), 0.0);
-        }
-        return Lit / float(ZY_SHADOW_NARROW);
+        return ZyShadowSpread(Map, Uv, Depth, Texel);
     }
+
+    float Lit = 0.0;
 
     for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
     {

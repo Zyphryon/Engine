@@ -10,6 +10,7 @@
 #define ZY_CUBE_INCLUDED
 
 #include "Embedded://Shader/Noise.glsl"
+#include "Embedded://Shader/Shadow.glsl"
 
 /// How far a receiver is pushed along its normal before the lookup, in face texels.
 #define ZY_CUBE_LIFT   1.5
@@ -28,9 +29,6 @@
 
 /// Taps the filter reads.
 #define ZY_CUBE_TAPS   12
-
-/// Taps the small fixed filter reads.
-#define ZY_CUBE_SPREAD 4
 
 /// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(vec3 Reach)
@@ -91,16 +89,20 @@ vec4 ZyCubeClip(vec3 Seen)
     return Seen.z - vec4(Seen.x, -Seen.x, Seen.y, -Seen.y);
 }
 
-/// Finds a point's atlas coordinate, depth and tile bounds; false if its face has no tile.
-bool ZyCubeLocate(
-    vec4 Atlas, vec3 World, vec3 Normal, vec4 Light, vec4 Faces0, vec2 Faces1,
+/// Picks one face's tile from six kept as tile plus one in 7-bit fields, +X -X +Y in x and -Y +Z -Z in y; -1 for none.
+float ZyCubePick(vec2 Tiles, int Face)
+{
+    uint Packed = uint(Face < 3 ? Tiles.x : Tiles.y);
+    uint Shift  = uint(Face < 3 ? Face : Face - 3) * 7u;
+
+    return float((Packed >> Shift) & 127u) - 1.0;
+}
+
+/// Finds a point's atlas coordinate, depth and tile bounds on a face given its tile; false if the face has none.
+bool ZyCubeLocateFace(
+    vec4 Atlas, vec3 Reach, vec3 Normal, float Far, int Face, float Tile,
     out vec2 Uv, out float Depth, out vec2 Least, out vec2 Most, out float Distance)
 {
-    vec3  Reach    = World - Light.xyz;
-    int   Face     = ZyCubeFace(Reach);
-    float Tiles[6] = float[6](Faces0.x, Faces0.y, Faces0.z, Faces0.w, Faces1.x, Faces1.y);
-    float Tile     = Tiles[Face];
-
     Uv       = vec2(0.0);
     Depth    = 0.0;
     Least    = vec2(0.0);
@@ -116,7 +118,6 @@ bool ZyCubeLocate(
     float Scale = Atlas.y;
     float Near  = Atlas.z;
     float Texel = 1.0 / (Per * Atlas.w);
-    float Far   = Light.w;
 
     vec3  Size  = abs(Reach);
     float Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
@@ -133,24 +134,30 @@ bool ZyCubeLocate(
     return true;
 }
 
-/// Small fixed filter about a point, kept inside its tile.
-float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 Most, float Radius, vec2 Spin)
+/// Finds a point's atlas coordinate, depth and tile bounds from tiles packed as ZyCubePick reads them.
+bool ZyCubeLocate(
+    vec4 Atlas, vec3 World, vec3 Normal, vec4 Light, vec2 Tiles,
+    out vec2 Uv, out float Depth, out vec2 Least, out vec2 Most, out float Distance)
 {
-    float Lit = 0.0;
+    vec3  Reach = World - Light.xyz;
+    int   Face  = ZyCubeFace(Reach);
+    float Tile  = ZyCubePick(Tiles, Face);
 
-    for (int Tap = 0; Tap < ZY_CUBE_SPREAD; ++Tap)
-    {
-        vec2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_SPREAD), Spin) * Radius, Least, Most);
+    return ZyCubeLocateFace(Atlas, Reach, Normal, Light.w, Face, Tile, Uv, Depth, Least, Most, Distance);
+}
 
-        Lit += textureLod(Map, vec3(At, Depth), 0.0);
-    }
-    return Lit / float(ZY_CUBE_SPREAD);
+/// Small fixed filter about a point, the tent of ZyShadowSpread kept inside its tile.
+float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 Most, float Texel)
+{
+    float Half = Texel * 0.5;
+
+    return ZyShadowSpread(Map, clamp(Uv, Least + Half, Most - Half), Depth, Texel);
 }
 
 /// Soft lamp shadow from the cube atlas, wider with source size and distance past the blocker.
 float ZyCubeShadow(
     sampler2D Depths, sampler2DShadow Map, vec4 Atlas,
-    vec3 World, vec3 Normal, vec4 Light, float Source, vec4 Faces0, vec2 Faces1, vec2 Spin)
+    vec3 World, vec3 Normal, vec4 Light, float Source, vec2 Tiles, vec2 Spin)
 {
     vec2  Uv;
     float Depth;
@@ -158,7 +165,7 @@ float ZyCubeShadow(
     vec2  Most;
     float Distance;
 
-    if (!ZyCubeLocate(Atlas, World, Normal, Light, Faces0, Faces1, Uv, Depth, Least, Most, Distance))
+    if (!ZyCubeLocate(Atlas, World, Normal, Light, Tiles, Uv, Depth, Least, Most, Distance))
     {
         return 1.0;
     }
@@ -226,7 +233,7 @@ float ZyCubeShadow(
     // A narrow penumbra needs only the few taps of the fixed filter.
     if (Penumbra <= Texel * 2.0)
     {
-        return ZyCubeSpread(Map, Uv, Depth, Least, Most, Penumbra, Spin);
+        return ZyCubeSpread(Map, Uv, Depth, Least, Most, Texel);
     }
 
     float Lit = 0.0;
