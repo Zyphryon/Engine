@@ -502,6 +502,25 @@ namespace ZyScene
             return;
         }
 
+        // Held already, with nothing waiting on the entity, it is read in place where the commit would move it.
+        const UInt32 Index  = Actor.GetIndex();
+        Ref<Chunk>   Source = * mDirectory[Index].Holder;
+        const SInt16 Column = Source.Find(Identifier);
+
+        if (Column >= 0 && !(mDeferral.IsWalking() && mDeferral.IsMarked(Index)))
+        {
+            const Ptr<Byte> Place = Source.At(Column, mDirectory[Index].Row);
+            Chunk::Destruct(Info, Place, 1);
+            Chunk::Construct(Info, Place, 1);
+
+            if (Info.Load)
+            {
+                Info.Load(Input, Place);
+            }
+            Record(Identifier, Pull::Changed, Index, nullptr);
+            return;
+        }
+
         // Built apart and moved in by the commit, which holds it when a walk runs.
         const Ptr<Byte> Fresh = Allocate<Byte>(Info.GetSize(), Info.GetAlignment());
         Chunk::Construct(Info, Fresh, 1);
