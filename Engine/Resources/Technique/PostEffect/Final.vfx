@@ -57,6 +57,6 @@
   "Preload": [
     ["ACES"],
     ["ACES", "FXAA"],
-    ["FXAA"],
+    ["FXAA"]
   ]
 }
