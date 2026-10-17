@@ -19,8 +19,14 @@
 
 /// Taps the filter reads.
 #ifndef ZY_SHADOW_TAPS
-#define ZY_SHADOW_TAPS   16
+#define ZY_SHADOW_TAPS   8
 #endif
+
+/// Widest the blocker search reaches, in texels of the map.
+#define ZY_SHADOW_REACH  8.0
+
+/// Widest the penumbra spreads, in texels of the map.
+#define ZY_SHADOW_WIDEST 16.0
 
 /// Finds where a point in a light's clip space falls on its map, and its depth there; false off the map.
 bool ZyShadowLocate(float3 Clip, out float2 Uv, out float Depth)
@@ -62,10 +68,10 @@ float ZyShadow(
     float2                 Turn)
 {
     const float Least = Texel;
-    const float Most  = Texel * 48.0;
+    const float Most  = Texel * ZY_SHADOW_WIDEST;
 
     // Search as wide as the penumbra a blocker at the map's near end would cast.
-    const float Search = clamp(Spread * Depth, Least * 2.0, Most);
+    const float Search = clamp(Spread * Depth, Least * 2.0, Texel * ZY_SHADOW_REACH);
 
     float Found = 0.0;
     float Count = 0.0;
