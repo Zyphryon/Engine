@@ -97,25 +97,6 @@ namespace ZyScene::Protocol
         /// \param Scene The world, which must know them before it stores or loads a replica.
         static void OnDeclare(Ref<World> Scene);
 
-        /// \brief Draws the identity of an entity both sides load from disk.
-        ///
-        /// \param Draw The function that draws a random 64-bit number, called until one names something.
-        /// \return The replica, persistent.
-        template<typename Callable>
-        ZY_INLINE static Replica Persistent(AnyRef<Callable> Draw)
-        {
-            UInt64 Identifier;
-
-            // The top bit is the protocol's own, and zero names nothing.
-            do
-            {
-                Identifier = static_cast<UInt64>(Draw()) & ~kPersistent;
-            }
-            while (Identifier == 0);
-
-            return Replica(kPersistent | Identifier);
-        }
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

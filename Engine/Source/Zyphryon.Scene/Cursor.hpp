@@ -23,7 +23,7 @@ namespace ZyScene
 {
     /// \brief Represents a reader of a pull list with a position of its own, which must not outlive its world.
     ///
-    /// \tparam List The list, as \ref Pulled names it, or \ref Added, \ref Changed and \ref Removed for one change.
+    /// \tparam List The list, as \ref Pulled names it, or \ref Added and \ref Removed for one change.
     template<typename List>
     class Cursor final
     {
@@ -33,10 +33,9 @@ namespace ZyScene
 
         /// \brief Constructs a cursor that reads nothing.
         ZY_INLINE Cursor()
-            : mOwner      { nullptr },
-              mArchetypes { false },
-              mState      { nullptr },
-              mHandles    { }
+            : mOwner   { nullptr },
+              mState   { nullptr },
+              mHandles { }
         {
         }
 
@@ -52,10 +51,9 @@ namespace ZyScene
         ///
         /// \param Other The cursor to take over, which reads nothing afterwards.
         ZY_INLINE Cursor(AnyRef<Cursor> Other)
-            : mOwner      { Exchange(Other.mOwner, nullptr) },
-              mArchetypes { Other.mArchetypes },
-              mState      { Exchange(Other.mState, nullptr) },
-              mHandles    { Exchange(Other.mHandles, Array<UInt32, List::kSize>()) }
+            : mOwner   { Exchange(Other.mOwner, nullptr) },
+              mState   { Exchange(Other.mState, nullptr) },
+              mHandles { Exchange(Other.mHandles, Array<UInt32, List::kSize>()) }
         {
         }
 
@@ -118,10 +116,9 @@ namespace ZyScene
         /// \param Owner The world whose lists the cursor reads.
         /// \param State The selection, whose terms are declared.
         ZY_INLINE Cursor(Ref<Storage> Owner, AnyRef<Unique<Selection>> State)
-            : mOwner      { AddressOf(Owner) },
-              mArchetypes { WantsArchetypes(Owner, * State) },
-              mState      { Adopt(Owner, Move(State)) },
-              mHandles    { Subscribe(Owner) }
+            : mOwner   { AddressOf(Owner) },
+              mState   { Adopt(Owner, Move(State)) },
+              mHandles { Subscribe(Owner) }
         {
         }
 
@@ -154,16 +151,6 @@ namespace ZyScene
             return State;
         }
 
-        /// \brief Checks whether a reader of removals asked for archetypes.
-        ///
-        /// \param Owner The world naming the archetype marker.
-        /// \param State The selection the reader was described with.
-        /// \return `true` if it reads archetypes alone, `false` if it reads everything else.
-        ZY_INLINE static Bool WantsArchetypes(Ref<Storage> Owner, ConstRef<Selection> State)
-        {
-            return List::kKind == Pull::Removed && State.Required.Contains(Owner.mPrefab);
-        }
-
         /// \brief Keeps the selection of a list, whose entries are matched against it.
         ///
         /// \param Owner The world that keeps the selection current.
@@ -173,8 +160,6 @@ namespace ZyScene
         {
             if constexpr (List::kKind == Pull::Removed)
             {
-                // Sleepers were always seen, and the archetype marker alone is settled by the handle.
-                State->Required.Erase(Owner.mPrefab);
                 State->Excluded.Erase(Owner.mPrefab);
                 State->Excluded.Erase(Owner.mAsleep);
 
@@ -211,8 +196,7 @@ namespace ZyScene
             {
                 const Handle Actor = Lists.GetActor(Feed, Next);
 
-                // Archetypes go only to a reader that asked for them, and then nothing else does.
-                if (Directory::IsArchetype(Actor.GetIndex()) != mArchetypes)
+                if (Directory::IsArchetype(Actor.GetIndex()))
                 {
                     continue;
                 }
@@ -271,15 +255,30 @@ namespace ZyScene
             // What the callback changes waits like in any walk.
             mOwner->Enter();
 
+            ConstRef<Directory> Slots = mOwner->mDirectory;
+
             for (UInt Index = 0; Index < List::kSize; ++Index)
             {
+                // Read by position, since the callback may record more entries into the same list as it goes.
+                UInt64                     First  = 0;
+                ConstRef<Sequence<Handle>> Actors = Lists.GetActors(mHandles[Index], First);
+
                 for (UInt64 Next = Lists.GetPosition(mHandles[Index]); Next < Ends[Index]; ++Next)
                 {
-                    const Handle Actor = Lists.GetActor(mHandles[Index], Next);
+                    const Handle Actor = Actors[Next - First];
 
-                    if (Matches(Actor))
+                    // A gone entity, or one whose chunk no longer answers the terms, is passed over.
+                    const ConstPtr<Directory::Slot> Entry = Slots.FindSlot(Actor);
+
+                    if (Entry == nullptr)
                     {
-                        Blueprint::template Apply<Walk::Kernel>::RunEntry(* mOwner, * mState, Actor, Callback);
+                        continue;
+                    }
+
+                    if (const UInt32 Place = mState->GetPosition(* Entry->Holder))
+                    {
+                        Blueprint::template Apply<Walk::Kernel>::RunEntry(
+                            * mOwner, * mState, Actor, * Entry->Holder, Entry->Row, Place - 1, Callback);
                     }
                 }
                 Lists.SetPosition(mHandles[Index], Ends[Index]);
@@ -288,23 +287,12 @@ namespace ZyScene
             mOwner->Leave();
         }
 
-        /// \brief Checks whether an entity is still alive and still matches the terms the reader asked for.
-        ///
-        /// \param Actor The entity an entry names.
-        /// \return `true` if it is alive and its chunk matches the terms, `false` otherwise.
-        ZY_INLINE Bool Matches(Handle Actor) const
-        {
-            ConstRef<Directory> Slots = mOwner->mDirectory;
-            return Slots.IsAlive(Actor) && mState->GetPosition(* Slots[Actor.GetIndex()].Holder) != 0;
-        }
-
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ptr<Storage>               mOwner;
-        Bool                       mArchetypes;
         Ptr<Selection>             mState;
         Array<UInt32, List::kSize> mHandles;
     };

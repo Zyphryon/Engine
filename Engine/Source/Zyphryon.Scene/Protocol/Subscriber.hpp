@@ -35,7 +35,7 @@ namespace ZyScene::Protocol
 
         /// \brief Applies a frame from the publisher.
         ///
-        /// \param Message The payload, exactly as the publisher's sink handed it.
+        /// \param Message The payload, exactly as the publisher sent it.
         /// \return `true` if the message was the protocol's, `false` if it belongs to the game.
         Bool Receive(ConstSpan<Byte> Message);
 
@@ -47,30 +47,6 @@ namespace ZyScene::Protocol
         {
             Callback();
             Refresh();
-        }
-
-        /// \brief Checks whether the greeting arrived and matched this build.
-        ///
-        /// \return `true` if the two sides agree, `false` before the greeting or when they do not.
-        ZY_INLINE Bool IsAccepted() const
-        {
-            return mAccepted;
-        }
-
-        /// \brief Checks whether the publisher's traffic was refused, by a mismatched greeting or a malformed frame.
-        ///
-        /// \return `true` if nothing more is applied until a new session greets this side, `false` otherwise.
-        ZY_INLINE Bool IsRejected() const
-        {
-            return mRejected;
-        }
-
-        /// \brief Gets the key the publisher knows this side by.
-        ///
-        /// \return The key, or zero before the greeting.
-        ZY_INLINE UInt64 GetIdentity() const
-        {
-            return mIdentity;
         }
 
         /// \brief Finds the entity a replica identifier stands for, letting go of one no longer standing.
@@ -115,11 +91,24 @@ namespace ZyScene::Protocol
             /// The key of the section the message came in, which a leave of that key drops it with.
             UInt64 Key;
 
+            /// The identifier of the replica the message is about, the one updated or the child arriving.
+            UInt64 Identifier;
+
             /// The message: an update of the replica, or the arrival of a child beneath it.
             Opcode Code;
 
             /// The bytes of the message after its opcode, or of the update's set.
             Blob   Data;
+        };
+
+        /// \brief Represents a replica this side now holds, whose waiting messages are still to apply.
+        struct Waiter final
+        {
+            /// The identifier the replica travels under.
+            UInt64 Identifier;
+
+            /// The entity.
+            Entity Actor;
         };
 
         /// \brief Takes in the persistent replicas loaded since the last call.
@@ -131,7 +120,21 @@ namespace ZyScene::Protocol
         /// \param Record The identity it travels under.
         void Take(Entity Actor, ConstRef<Replica> Record);
 
-        /// \brief Applies the messages that waited for a replica this side now holds.
+        /// \brief Holds a message for a replica this side does not hold yet, refusing the publisher past \ref kMaxHeld.
+        ///
+        /// \param Under      The identifier of the replica it waits for.
+        /// \param Identifier The identifier of the replica it is about.
+        /// \param Code       The message.
+        /// \param Bytes      The bytes of the message after its opcode, or of the update's set.
+        void Hold(UInt64 Under, UInt64 Identifier, Opcode Code, ConstSpan<Byte> Bytes);
+
+        /// \brief Checks whether an arrival of a replica waits, so the updates after it wait too.
+        ///
+        /// \param Identifier The identifier of the replica.
+        /// \return `true` if its arrival is held, `false` otherwise.
+        Bool IsHeld(UInt64 Identifier) const;
+
+        /// \brief Applies the messages that waited for a replica this side now holds, from one list instead of nesting.
         ///
         /// \param Identifier The identifier the replica travels under.
         /// \param Actor      The entity.
@@ -143,12 +146,35 @@ namespace ZyScene::Protocol
         /// \param Item  The message.
         void Replay(Entity Actor, ConstRef<Pending> Item);
 
-        /// \brief Drops the waiting sets of one replica that came under a key.
+        /// \brief Drops the held messages one test picks, counting their bytes off.
         ///
-        /// \param Key  The key left.
-        /// \param Sets The waiting sets, emptied of that key's.
-        /// \return `true` if none is left, `false` otherwise.
-        static Bool Discard(UInt64 Key, Ref<Sequence<Pending>> Sets);
+        /// \param Picks The test, given the identifier waited for and the message.
+        template<typename Callable>
+        void Drop(AnyRef<Callable> Picks)
+        {
+            mPending.EraseIf([this, &Picks](UInt64 Under, Ref<Sequence<Pending>> Items)
+            {
+                Items.RemoveSomeIf([this, &Picks, Under](ConstRef<Pending> Item)
+                {
+                    if (!Picks(Under, Item))
+                    {
+                        return false;
+                    }
+                    mHeld -= GetCost(Item.Data.GetSize());
+                    return true;
+                });
+                return Items.IsEmpty();
+            });
+        }
+
+        /// \brief Gets what a held message counts against \ref kMaxHeld.
+        ///
+        /// \param Size The bytes of the message.
+        /// \return The bytes, with room for the record kept of it.
+        ZY_INLINE static UInt GetCost(UInt Size)
+        {
+            return Size + sizeof(Pending);
+        }
 
         /// \brief Unpacks a frame packed with LZ4 and applies it, refusing the publisher when it does not unpack whole.
         ///
@@ -185,7 +211,7 @@ namespace ZyScene::Protocol
         /// \param Input The frame, after the opcode.
         void OnUpdate(Ref<Reader> Input);
 
-        /// \brief Re-keys a replica that moved to a key this side sees, or destroys it.
+        /// \brief Destroys a replica that moved to a key this side does not see.
         ///
         /// \param Input The frame, after the opcode.
         void OnMove(Ref<Reader> Input);
@@ -274,6 +300,8 @@ namespace ZyScene::Protocol
         Table<UInt64, Entity>            mReplicas;
         Bag<UInt64>                      mKeys;
         Table<UInt64, Sequence<Pending>> mPending;
+        UInt                             mHeld;
+        Sequence<Waiter>                 mReleases;
         Cursor<Set<Replica>>             mLanded;
         ZyScene::Query                   mRoots;
         Sequence<Entity>                 mDoomed;

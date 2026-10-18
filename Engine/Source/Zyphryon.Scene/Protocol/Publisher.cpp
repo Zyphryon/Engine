@@ -32,18 +32,10 @@ namespace ZyScene::Protocol
           mWorld      { mScene.GetWorld().GetID() },
           mNext       { 1 },
           mTick       { 0 },
-          mPacking    { true },
+          mHeartbeat  { false },
           mPublishing { false }
     {
         mScene.Register<Replica>();
-
-        if (mNetwork)
-        {
-            mSink = Sink([this](UInt64 Peer, ConstSpan<Byte> Frame)
-            {
-                Transmit(Peer, Frame);
-            });
-        }
 
         // The global channel always stands, since every greeting reads its catch-up.
         Acquire(kGlobal);
@@ -62,15 +54,6 @@ namespace ZyScene::Protocol
 
         mSessions.Assign(Peer, Unique<Session>::Create(Peer, Link));
         return Peer;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Publisher::Admit(UInt64 Peer)
-    {
-        Expel(Peer);
-        mSessions.Assign(Peer, Unique<Session>::Create(Peer, ZyNetwork::Connection()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -97,17 +80,34 @@ namespace ZyScene::Protocol
             return;
         }
 
-        Target->Watch(Keys, mAdded, mRemoved);
+        // What the peer stops seeing is gathered first, since the bag cannot be walked while it is emptied.
+        const UInt First = Target->Departed.GetSize();
 
-        for (const UInt64 Key : mAdded)
+        for (const UInt64 Seen : Target->Keys)
         {
-            ++Acquire(Key).Subscribers;
+            if (!Keys.Contains(Seen))
+            {
+                Target->Departed.Append(Seen);
+            }
         }
 
-        for (const UInt64 Key : mRemoved)
+        for (UInt Index = First; Index < Target->Departed.GetSize(); ++Index)
         {
-            ZY_ASSERT(Acquire(Key).Subscribers > 0, "A channel lost a subscriber it never had");
-            --Acquire(Key).Subscribers;
+            const UInt64 Gone = Target->Departed[Index];
+            Target->Keys.Erase(Gone);
+
+            ZY_ASSERT(Acquire(Gone).Subscribers > 0, "A channel lost a subscriber it never had");
+            --Acquire(Gone).Subscribers;
+        }
+
+        // Every peer reads the global and private keys anyway, so neither is subscribed to.
+        for (const UInt64 Asked : Keys)
+        {
+            if (Asked != kGlobal && Asked != kPrivate && Target->Keys.Insert(Asked))
+            {
+                Target->Fresh.Append(Asked);
+                ++Acquire(Asked).Subscribers;
+            }
         }
     }
 
@@ -232,8 +232,8 @@ namespace ZyScene::Protocol
         mTouched.Clear();
         Lists.Changes(mTouched);
 
-        // What a load wrote is the baseline, and a component sent only on arrival never travels as a change.
-        if (Restoring || Table.GetOnceMask().Test(Index))
+        // What a load wrote is the baseline.
+        if (Restoring)
         {
             return;
         }
@@ -359,8 +359,15 @@ namespace ZyScene::Protocol
 
     void Publisher::Retire(Entity Actor, Ref<Tracker> Tracking)
     {
+        ZY_ASSERT(
+            !Actor.IsAlive() || Tracking.Parent != 0 || Tracking.Key == 0,
+            "A published root cannot lose its locus alive");
+
         // A child that died with its parent goes on the peer with it, so it needs no word of its own.
-        const Bool Orphaned = Tracking.Parent != 0 && !Find(Tracking.Parent).IsAlive();
+        const Bool Orphaned   = Tracking.Parent != 0 && !Find(Tracking.Parent).IsAlive();
+
+        // Peers load a persistent replica from disk, so they keep their copy.
+        const Bool Persistent = (Tracking.Identifier & kPersistent) != 0;
 
         if (Tracking.Key != 0)
         {
@@ -371,26 +378,11 @@ namespace ZyScene::Protocol
                 Target.Members.Erase(Actor.GetID());
             }
 
-            // Peers load a persistent replica from disk, so they keep their copy.
-            if (Tracking.Identifier & kPersistent)
-            {
-                LOG_W("Scene: Persistent replica {0} stopped travelling, and peers keep it", Tracking.Identifier);
-            }
-            else if (!Orphaned)
+            if (!Persistent && !Orphaned)
             {
                 Target.Stream.Open(Opcode::Forget).WriteUInt(Tracking.Identifier);
             }
         }
-
-        // A root leaving the wire alive takes its published subtree off with it, on the peers' side.
-        if (Actor.IsAlive() && Tracking.Parent == 0)
-        {
-            Descend(Actor, [this](Entity Child)
-            {
-                Abandon(Child);
-            });
-        }
-
         mReplicas.Erase(Tracking.Identifier);
         Untrack(Actor);
     }
@@ -462,27 +454,24 @@ namespace ZyScene::Protocol
             Relocate(Actor, * Tracking, Key);
             return;
         }
-        else if (Tracking->Parent != Parent)
+        else if (Tracking->Parent != Parent || Tracking->Reenter)
         {
-            // Reattached under the same key: arriving again is an upsert that reattaches it.
+            // Reattached under the same key or owned anew: arriving again is an upsert that sets it whole.
             Ref<Channel> Target = Acquire(Key);
 
-            if (Tracking->Parent == 0)
+            if (Tracking->Parent != Parent)
             {
-                Target.Members.Erase(Actor.GetID());
+                if (Tracking->Parent == 0)
+                {
+                    Target.Members.Erase(Actor.GetID());
+                }
+                if (Parent == 0)
+                {
+                    Target.Members.Insert(Actor.GetID());
+                }
+                Tracking->Parent = Parent;
             }
-            if (Parent == 0)
-            {
-                Target.Members.Insert(Actor.GetID());
-            }
-            Tracking->Parent = Parent;
-
             Reveal(Target.Stream, Actor, * Tracking);
-            return;
-        }
-        else if (Tracking->Reenter)
-        {
-            Reveal(Acquire(Key).Stream, Actor, * Tracking);
             return;
         }
         Broadcast(Actor, * Tracking);
@@ -579,30 +568,6 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Retell(Ref<Block> Output, Entity Child)
-    {
-        if (Track(Child))
-        {
-            WriteArrival(Output, Child);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Publisher::Abandon(Entity Child)
-    {
-        // Kept unpublished, so the child arrives again with its root when the root gets a key back.
-        if (const Ptr<Tracker> Tracking = Track(Child))
-        {
-            Tracking->Key    = 0;
-            Tracking->Parent = 0;
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Publisher::Broadcast(Entity Actor, Ref<Tracker> Tracking)
     {
         ConstRef<Manifest> Table = Manifest::Get();
@@ -618,9 +583,12 @@ namespace ZyScene::Protocol
             Tracking.Diverged |= Wanted | Dropped;
         }
 
-        if (((Wanted | Dropped) & Shared).Any())
+        // Nobody reads the stream of a key no peer sees, and a peer that comes to see it reads its catch-up instead.
+        Ref<Channel> Target = Acquire(Tracking.Key);
+
+        if (Target.Subscribers > 0 && ((Wanted | Dropped) & Shared).Any())
         {
-            WriteUpdate(Acquire(Tracking.Key).Stream, Tracking.Identifier, Actor, Wanted & Shared, Dropped & Shared);
+            WriteUpdate(Target.Stream, Tracking.Identifier, Actor, Wanted & Shared, Dropped & Shared);
         }
 
         if (((Wanted | Dropped) & Owned).Any())
@@ -652,7 +620,7 @@ namespace ZyScene::Protocol
 
     void Publisher::Deliver(ConstRef<Clock> Time)
     {
-        const Bool Heartbeat = Time.IsEvery(kHeartbeat);
+        mHeartbeat = Time.IsEvery(kHeartbeat);
 
         mOrder.Clear();
         mSessions.ForEach([this](UInt64, Ref<Unique<Session>> Holder)
@@ -669,9 +637,9 @@ namespace ZyScene::Protocol
         // Channels no longer change, and each worker writes only its own sessions' frames.
         const UInt32 Count = static_cast<UInt32>(mOrder.GetSize());
 
-        mJobs.Parallel(ZyJob::Lane::Compute, Count, [this, &Time, Heartbeat](UInt32 Begin, UInt32 End)
+        mJobs.Parallel(ZyJob::Lane::Compute, Count, [this, &Time](UInt32 Begin, UInt32 End)
         {
-            AssembleRange(Begin, End, Time, Heartbeat);
+            AssembleRange(Begin, End, Time);
         });
 
         mPublishing = true;
@@ -706,7 +674,7 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Assemble(Ref<Session> Peer, ConstRef<Clock> Time, Bool Heartbeat)
+    void Publisher::Assemble(Ref<Session> Peer, ConstRef<Clock> Time)
     {
         Peer.Open(Time);
 
@@ -750,23 +718,25 @@ namespace ZyScene::Protocol
         {
             Peer.WriteSection(kPrivate, Peer.Private);
         }
-        Peer.Close(Heartbeat);
+
+        // The last frame goes when it carries anything, or when a heartbeat is due.
+        if (Peer.Carries || mHeartbeat)
+        {
+            Peer.Ends.Append(Peer.Frame.GetSize());
+        }
 
         // Packed here, so the cost is spread over the workers with the rest of the peer's frames.
-        if (mPacking)
-        {
-            Peer.Pack();
-        }
+        Peer.Pack();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::AssembleRange(UInt32 Begin, UInt32 End, ConstRef<Clock> Time, Bool Heartbeat)
+    void Publisher::AssembleRange(UInt32 Begin, UInt32 End, ConstRef<Clock> Time)
     {
         for (UInt32 Index = Begin; Index < End; ++Index)
         {
-            Assemble(* mOrder[Index], Time, Heartbeat);
+            Assemble(* mOrder[Index], Time);
         }
     }
 
@@ -775,21 +745,17 @@ namespace ZyScene::Protocol
 
     void Publisher::Hand(Ref<Session> Peer)
     {
-        // Without a network or a sink set, frames have nowhere to go.
-        if (mSink.IsEmpty())
+        // Without a network, frames have nowhere to go.
+        if (mNetwork)
         {
-            Peer.Reset();
-            return;
-        }
-
-        ConstRef<Writer>           Bytes = mPacking ? Peer.Packed : Peer.Frame;
-        ConstRef<Sequence<UInt32>> Ends  = mPacking ? Peer.Seals : Peer.Ends;
-        UInt32                     Start = 0;
-
-        for (const UInt32 End : Ends)
-        {
-            mSink(Peer.Key, ConstSpan(Bytes.GetData() + Start, End - Start));
-            Start = End;
+            for (ConstRef<Session::Parcel> Item : Peer.Parcels)
+            {
+                ConstRef<Writer> Bytes = Item.Shrunk ? Peer.Packed : Peer.Frame;
+                mNetwork->Send(
+                    Peer.Link,
+                    ZyNetwork::Delivery::Reliable,
+                    ConstSpan(Bytes.GetData() + Item.Start, Item.End - Item.Start));
+            }
         }
         Peer.Reset();
     }
@@ -818,7 +784,10 @@ namespace ZyScene::Protocol
 
                 Descend(Actor, [this, &Target](Entity Child)
                 {
-                    Retell(Target.Catchup, Child);
+                    if (Track(Child))
+                    {
+                        WriteArrival(Target.Catchup, Child);
+                    }
                 });
             }
         }
@@ -972,18 +941,7 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Transmit(UInt64 Peer, ConstSpan<Byte> Frame)
-    {
-        if (const Ptr<Session> Target = Reach(Peer); Target && Target->Link.IsValid())
-        {
-            mNetwork->Send(Target->Link, ZyNetwork::Delivery::Reliable, Frame);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    UInt64 Publisher::GetParentOf(Entity Actor) const
+    UInt64 Publisher::GetParentOf(Entity Actor)
     {
         if (IsRoot(Actor))
         {
@@ -992,7 +950,7 @@ namespace ZyScene::Protocol
 
         for (Entity Above = Actor.GetParent(); Above.IsAlive(); Above = Above.GetParent())
         {
-            if (const ConstPtr<Tracker> Tracking = Track(Above))
+            if (const Ptr<Tracker> Tracking = Track(Above))
             {
                 return Tracking->Identifier;
             }
@@ -1003,10 +961,10 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Publisher::IsPublished(UInt64 Identifier, UInt64 Key) const
+    Bool Publisher::IsPublished(UInt64 Identifier, UInt64 Key)
     {
-        const Entity            Actor    = Find(Identifier);
-        const ConstPtr<Tracker> Tracking = Actor.IsAlive() ? Track(Actor) : nullptr;
+        const Entity       Actor    = Find(Identifier);
+        const Ptr<Tracker> Tracking = Actor.IsAlive() ? Track(Actor) : nullptr;
         return Tracking && Tracking->Key == Key;
     }
 
@@ -1051,39 +1009,6 @@ namespace ZyScene::Protocol
         : Key  { Peer },
           Link { Connection }
     {
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Publisher::Session::Watch(ConstSpan<UInt64> Wanted, Ref<Sequence<UInt64>> Added, Ref<Sequence<UInt64>> Removed)
-    {
-        Added.Clear();
-        Removed.Clear();
-
-        // What the peer stops seeing is gathered first, since the bag cannot be walked while it is emptied.
-        for (const UInt64 Seen : Keys)
-        {
-            if (!Wanted.Contains(Seen))
-            {
-                Removed.Append(Seen);
-            }
-        }
-
-        for (const UInt64 Gone : Removed)
-        {
-            Keys.Erase(Gone);
-            Departed.Append(Gone);
-        }
-
-        for (const UInt64 Asked : Wanted)
-        {
-            if (Asked != kGlobal && Asked != kPrivate && Keys.Insert(Asked))
-            {
-                Added.Append(Asked);
-                Fresh.Append(Asked);
-            }
-        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1139,27 +1064,16 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Session::Close(Bool Heartbeat)
-    {
-        if (Carries || Heartbeat)
-        {
-            Ends.Append(Frame.GetSize());
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Publisher::Session::Pack()
     {
         Packed.Clear();
-        Seals.Clear();
+        Parcels.Clear();
 
         UInt32 Start = 0;
 
         for (const UInt32 End : Ends)
         {
-            Seal(ConstSpan(Frame.GetData() + Start, End - Start));
+            Seal(Start, End);
             Start = End;
         }
     }
@@ -1167,30 +1081,30 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Session::Seal(ConstSpan<Byte> Raw)
+    void Publisher::Session::Seal(UInt32 Start, UInt32 End)
     {
-        const UInt32 Size  = static_cast<UInt32>(Raw.GetSize());
+        const UInt32 Size  = End - Start;
         const UInt32 Bound = LZ4Bound(Size);
 
-        if (Room.GetSize() < Bound)
-        {
-            Room.Resize(Bound);
-        }
+        // Encoded where it would go, behind the room its opening takes, so nothing is copied after.
+        Packed.Ensure(kPacked + Bound);
 
-        // The opcode and the unpacked size cost five bytes, so a frame that would not shrink by more goes as it is.
-        const UInt32 Shrunk = LZ4Encode(Raw, Room.GetData(), Bound);
+        const UInt32 First  = Packed.GetSize();
+        const UInt32 Shrunk = LZ4Encode(
+            ConstSpan(Frame.GetData() + Start, Size), Packed.GetData() + First + kPacked, Bound);
 
-        if (Shrunk + sizeof(UInt8) + sizeof(UInt32) < Size)
+        // The opening costs five bytes, so a frame that would not shrink by more goes as it was built.
+        if (Shrunk + kPacked < Size)
         {
             Packed.Write<UInt8>(static_cast<UInt8>(Opcode::Packed));
             Packed.Write<UInt32>(Size);
-            Packed.Write<Byte>(Room.GetData(), Shrunk);
+            Packed.Advance(Shrunk);
+            Parcels.Append(true, First, Packed.GetSize());
         }
         else
         {
-            Packed.Write<Byte>(Raw.GetData(), Size);
+            Parcels.Append(false, Start, End);
         }
-        Seals.Append(Packed.GetSize());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1204,7 +1118,7 @@ namespace ZyScene::Protocol
         Frame.Clear();
         Ends.Clear();
         Packed.Clear();
-        Seals.Clear();
+        Parcels.Clear();
         Carries = false;
     }
 

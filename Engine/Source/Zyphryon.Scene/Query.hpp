@@ -81,26 +81,9 @@ namespace ZyScene
             Walk::Run(* mOwner, Prepare<StripAll<Callable>>(), Callback);
         }
 
-        /// \brief Hands every matching entity to a callback, spread over the compute workers when the work is worth it.
-        ///
-        /// \param Callback The callable, thread-safe and changing only its own entity.
-        template<typename Callable>
-        ZY_INLINE void Spread(AnyRef<Callable> Callback) const
-        {
-            Walk::Spread(* mOwner, Prepare<StripAll<Callable>>(), Callback);
-        }
-
-        /// \brief Checks whether the last walk that could spread did.
-        ///
-        /// \return `true` if it was spread over the workers, `false` if it stayed on one thread.
-        ZY_INLINE Bool IsSpreading() const
-        {
-            return mState && mState->Spread;
-        }
-
     private:
 
-        /// \brief Gets the selection, declared for a callback's fields when it was declared for others.
+        /// \brief Gets the selection, declared for the callback's fields on the first run.
         ///
         /// \return The selection, ready to walk with the callback.
         template<typename Callable>
@@ -108,12 +91,14 @@ namespace ZyScene
         {
             ZY_ASSERT(mState, "The query matches nothing");
 
-            if (mState->Declared != Plan<Callable>::GetKey())
+            if (!mState->Declared)
             {
                 Plan<Callable>::Declare(* mState);
 
                 mOwner->mLayout.Populate(* mState, mOwner->mDirectory);
             }
+
+            ZY_ASSERT(mState->Declared == Plan<Callable>::GetKey(), "A query keeps the fields of its first run");
             return * mState;
         }
 

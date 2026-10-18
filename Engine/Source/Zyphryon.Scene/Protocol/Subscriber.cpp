@@ -24,6 +24,7 @@ namespace ZyScene::Protocol
 
     Subscriber::Subscriber(Ref<ZyEngine::Subsystem::Host> Host)
         : mScene    { * Host.GetService<Service>() },
+          mHeld     { 0 },
           mLanded   { mScene },
           mIdentity { 0 },
           mSection  { kGlobal },
@@ -69,8 +70,23 @@ namespace ZyScene::Protocol
             return true;
         }
 
+        if (Input.GetAvailable() < sizeof(Real64) + sizeof(Real32))
+        {
+            LOG_E("Scene: A frame arrived cut short of its clock, so the publisher is refused");
+            mRejected = true;
+            return true;
+        }
+
         const Real64 Time       = Input.Read<Real64>();
         const Real32 Multiplier = Input.Read<Real32>();
+
+        // A clock that is not a number, or runs backwards, would break every timer that follows it.
+        if (IsNaN(Time) || IsInf(Time) || IsNaN(Multiplier) || IsInf(Multiplier) || Multiplier < 0.0f)
+        {
+            LOG_E("Scene: A frame names a clock no publisher keeps, so the publisher is refused");
+            mRejected = true;
+            return true;
+        }
 
         // Nothing more is applied once refused, until a greeting starts a new session.
         if (mRejected)
@@ -125,7 +141,13 @@ namespace ZyScene::Protocol
             return;
         }
 
-        // Unpacked, it is a frame like any other, and a packed one inside it is refused as outside a frame.
+        // Unpacked, it is a frame like any other; a packed one inside it would unpack over the bytes it is read from.
+        if (mUnpacked[0] != static_cast<Byte>(Opcode::Frame))
+        {
+            LOG_E("Scene: A packed frame did not unpack to a frame, so the publisher is refused");
+            mRejected = true;
+            return;
+        }
         Receive(ConstSpan(mUnpacked.GetData(), Size));
     }
 
@@ -163,6 +185,7 @@ namespace ZyScene::Protocol
             return Find(Identifier);
         });
     }
+
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -228,6 +251,7 @@ namespace ZyScene::Protocol
         });
         mKeys.Clear();
         mPending.Clear();
+        mHeld = 0;
 
         mAccepted = true;
         mIdentity = Identity;
@@ -243,9 +267,9 @@ namespace ZyScene::Protocol
         mKeys.Erase(Key);
         Clear(Key);
 
-        mPending.EraseIf([Key](UInt64, Ref<Sequence<Pending>> Sets)
+        Drop([Key](UInt64, ConstRef<Pending> Item)
         {
-            return Discard(Key, Sets);
+            return Item.Key == Key;
         });
     }
 
@@ -281,6 +305,16 @@ namespace ZyScene::Protocol
             return;
         }
 
+        // An arrival names a key it stands under, never the world's nor the private one, which nothing ever leaves.
+        if (Message.Identifier == 0 || mSection == kGlobal || mSection == kPrivate)
+        {
+            LOG_E("Scene: A replica arrived outside the section of a key, so the publisher is refused");
+            mRejected = true;
+            return;
+        }
+
+        const ConstSpan Bytes(Input.GetData() + Start, Input.GetOffset() - Start);
+
         // A parent this side does not hold is one loaded from a cell not loaded yet, so the child waits for it.
         if (Parent != 0)
         {
@@ -288,8 +322,7 @@ namespace ZyScene::Protocol
 
             if (!Message.Parent.IsAlive())
             {
-                const ConstSpan Bytes(Input.GetData() + Start, Input.GetOffset() - Start);
-                mPending.FindOrInsert(Parent).Append(mSection, Opcode::Enter, Blob::Copy(Bytes));
+                Hold(Parent, Message.Identifier, Opcode::Enter, Bytes);
                 return;
             }
         }
@@ -299,8 +332,30 @@ namespace ZyScene::Protocol
 
         if (Message.Fresh)
         {
+            // A persistent replica comes from disk, never from an arrival, which would make a copy of it.
+            if (Message.Identifier & kPersistent)
+            {
+                LOG_E("Scene: Persistent replica {0} arrived, so the publisher is refused", Message.Identifier);
+                mRejected = true;
+                return;
+            }
+
             Actor = mScene.CreateEntity();
             mReplicas.Assign(Message.Identifier, Actor);
+        }
+        else
+        {
+            // A replica attached beneath itself would make the hierarchy a loop no walk up it ever leaves.
+            for (Entity Above = Message.Parent; Above.IsAlive(); Above = Above.GetParent())
+            {
+                if (Above.GetID() == Actor.GetID())
+                {
+                    LOG_E("Scene: Replica {0} was attached beneath itself, so the publisher is refused",
+                        Message.Identifier);
+                    mRejected = true;
+                    return;
+                }
+            }
         }
 
         // Everything the arrival names lands in one move.
@@ -334,10 +389,10 @@ namespace ZyScene::Protocol
         {
             Apply(Actor, Set, GetIgnored(GetOwner(Actor)));
         }
-        else if (Identifier & kPersistent)
+        else if ((Identifier & kPersistent) || IsHeld(Identifier))
         {
-            // Held under the section it came in, until the cell loads or that key is left.
-            mPending.FindOrInsert(Identifier).Append(mSection, Opcode::Update, Blob::Copy(Set));
+            // Held under the section it came in, until the cell or the arrival lands or that key is left.
+            Hold(Identifier, Identifier, Opcode::Update, Set);
         }
     }
 
@@ -348,23 +403,19 @@ namespace ZyScene::Protocol
     {
         const UInt64 Identifier = Input.ReadUInt<UInt64>();
         const UInt64 Key        = Input.ReadUInt<UInt64>();
-        const Entity Actor      = Find(Identifier);
 
-        if (!Actor.IsAlive())
+        // Peers load a persistent replica from the key it was placed under, so it never moves.
+        if (Identifier & kPersistent)
         {
+            LOG_E("Scene: Persistent replica {0} was moved, so the publisher is refused", Identifier);
+            mRejected = true;
             return;
         }
 
-        if (!mKeys.Contains(Key))
+        // Moved to a key this side sees, it arrives there too, which reattaches it.
+        if (const Entity Actor = Find(Identifier); Actor.IsAlive() && !mKeys.Contains(Key))
         {
             Destroy(Actor);
-            return;
-        }
-
-        // A child keeps key zero and follows its root.
-        if (Actor.Get<const Locus>()->GetKey() != 0)
-        {
-            Actor.Set(Locus(Key));
         }
     }
 
@@ -374,7 +425,20 @@ namespace ZyScene::Protocol
     void Subscriber::OnForget(Ref<Reader> Input)
     {
         const UInt64 Identifier = Input.ReadUInt<UInt64>();
-        mPending.Erase(Identifier);
+
+        // Peers load a persistent replica from disk and keep it, so it is never forgotten.
+        if (Identifier & kPersistent)
+        {
+            LOG_E("Scene: Persistent replica {0} was forgotten, so the publisher is refused", Identifier);
+            mRejected = true;
+            return;
+        }
+
+        // What waited for it goes, and so does its own arrival, held under a parent not loaded yet.
+        Drop([Identifier](UInt64 Under, ConstRef<Pending> Item)
+        {
+            return Under == Identifier || Item.Identifier == Identifier;
+        });
 
         if (const Entity Actor = Find(Identifier); Actor.IsAlive())
         {
@@ -417,11 +481,45 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Subscriber::Hold(UInt64 Under, UInt64 Identifier, Opcode Code, ConstSpan<Byte> Bytes)
+    {
+        mHeld += GetCost(Bytes.GetSize());
+
+        if (mHeld > kMaxHeld)
+        {
+            LOG_E("Scene: More is held for replicas not loaded than any world needs, so the publisher is refused");
+            mRejected = true;
+            return;
+        }
+        mPending.FindOrInsert(Under).Append(mSection, Identifier, Code, Blob::Copy(Bytes));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Subscriber::IsHeld(UInt64 Identifier) const
+    {
+        Bool Found = false;
+
+        mPending.ForEach([Identifier, &Found](UInt64, ConstRef<Sequence<Pending>> Items)
+        {
+            for (ConstRef<Pending> Item : Items)
+            {
+                Found = Found || (Item.Code == Opcode::Enter && Item.Identifier == Identifier);
+            }
+        });
+        return Found;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Subscriber::Release(UInt64 Identifier, Entity Actor)
     {
-        Sequence<Pending> Items;
+        // A replayed arrival releases its own children, which join the list instead of nesting another call.
+        mReleases.Append(Identifier, Actor);
 
-        if (!mPending.Extract(Identifier, Items))
+        if (mReleases.GetSize() > 1)
         {
             return;
         }
@@ -429,10 +527,27 @@ namespace ZyScene::Protocol
         // A replayed arrival reads the section it came in, so the current one is put back after.
         const UInt64 Section = mSection;
 
-        for (ConstRef<Pending> Item : Items)
+        for (UInt Index = 0; Index < mReleases.GetSize() && !mRejected; ++Index)
         {
-            Replay(Actor, Item);
+            const Waiter      Next = mReleases[Index];
+            Sequence<Pending> Items;
+
+            if (!mPending.Extract(Next.Identifier, Items))
+            {
+                continue;
+            }
+
+            for (ConstRef<Pending> Item : Items)
+            {
+                mHeld -= GetCost(Item.Data.GetSize());
+
+                if (Next.Actor.IsAlive() && !mRejected)
+                {
+                    Replay(Next.Actor, Item);
+                }
+            }
         }
+        mReleases.Clear();
         mSection = Section;
     }
 
@@ -453,18 +568,6 @@ namespace ZyScene::Protocol
 
         Reader Input(Bytes);
         OnEnter(Input);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Subscriber::Discard(UInt64 Key, Ref<Sequence<Pending>> Sets)
-    {
-        Sets.RemoveSomeIf([Key](ConstRef<Pending> Item)
-        {
-            return Item.Key == Key;
-        });
-        return Sets.IsEmpty();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

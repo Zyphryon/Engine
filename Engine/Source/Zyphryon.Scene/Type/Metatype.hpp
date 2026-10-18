@@ -170,7 +170,7 @@ namespace ZyScene
         /// \brief Gets the description columns of an unresolved type are built from, a run of bytes kept as saved.
         ///
         /// \return The description, whose save writes the bytes verbatim and whose load takes all it is handed.
-        static ConstRef<Metatype> Unitialized();
+        static ConstRef<Metatype> Uninitialized();
 
         /// \brief Gets the fully qualified name of a type as the compiler spells it, which needs no definition of it.
         ///

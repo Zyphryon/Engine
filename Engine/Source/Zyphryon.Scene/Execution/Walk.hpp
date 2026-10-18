@@ -52,21 +52,15 @@ namespace ZyScene
 
             Owner.Enter();
 
-            if (State.Ordered)
+            for (UInt32 Match = First; Match < State.Chunks.GetSize(); ++Match)
             {
-                RunOrdered(Owner, State, Callback);
-            }
-            else
-            {
-                for (UInt32 Match = First; Match < State.Chunks.GetSize(); ++Match)
+                if (const UInt32 Rows = State.Chunks[Match]->GetSize())
                 {
-                    if (const UInt32 Rows = State.Chunks[Match]->GetSize())
-                    {
-                        RunChunk(Owner, State, Match, 0, Rows, Callback);
-                    }
+                    RunChunk(Owner, State, Match, 0, Rows, Callback);
                 }
             }
 
+            Record(Owner, State);
             Owner.Leave();
         }
 
@@ -79,8 +73,6 @@ namespace ZyScene
         static void Spread(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
         {
             ZY_ASSERT(!Owner.mDeferral.IsSpreading(), "A spread walk cannot start inside another");
-
-            State.Spread = false;
 
             if (!HasGlobals(Owner, State))
             {
@@ -110,20 +102,8 @@ namespace ZyScene
             }
 
             Owner.Enter();
-
-            // The first walk runs here to time a row, which later walks decide by and spread walks only lower.
-            if (State.Cost * Total > kSpreadSeconds)
-            {
-                State.Pace   = Distribute(Owner, State, 0, Total, Callback);
-                State.Cost   = Min(State.Cost, State.Pace);
-                State.Spread = true;
-            }
-            else
-            {
-                const Real64 Row = Measure(Owner, State, 0, Total, Callback);
-                State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
-            }
-
+            RunCosted(Owner, State, 0, Total, Callback);
+            Record(Owner, State);
             Owner.Leave();
         }
 
@@ -199,24 +179,30 @@ namespace ZyScene
                 }
             };
 
-            /// \brief Gets where a field reads for an entity below a parent, climbing when it reads an ancestor's.
+            /// \brief Climbs the ancestor fields again for an entity below another parent than the last one.
             ///
-            /// \param Owner   The storage the query belongs to.
-            /// \param State   The query, naming the component of each field.
-            /// \param Where   The places each field of the chunk is read from.
-            /// \param Parent  The slot of the parent.
-            /// \param Field   The position of the field.
-            /// \param Current The place the field reads from now, kept when it does not climb.
-            /// \return The first byte of the value, or `nullptr` when the field climbs and no ancestor carries it.
-            ZY_INLINE static Ptr<Byte> Climb(
-                Ref<Storage>        Owner,
-                ConstRef<Selection> State,
-                ConstRef<Places>    Where,
-                UInt32              Parent,
-                UInt                Field,
-                Ptr<Byte>           Current)
+            /// \param Owner The storage the query belongs to.
+            /// \param State The query, naming the component of each field.
+            /// \param Where The places each field of the chunk is read from.
+            /// \param Actor The entity about to be handed over.
+            /// \param Above The parent the fields last climbed from, set to the entity's own.
+            /// \param Bases The place each field reads from, replaced for the ones that climb.
+            template<typename... Pointers>
+            ZY_INLINE static void Climb(
+                Ref<Storage>         Owner,
+                ConstRef<Selection>  State,
+                ConstRef<Places>     Where,
+                Handle               Actor,
+                Ref<UInt32>          Above,
+                Ref<Pointers>...     Bases)
             {
-                return Where.Climbs[Field] ? FindAncestor(Owner, Parent, State.Fields[Field]) : Current;
+                const UInt32 Parent = Owner.mDirectory.GetParent(Actor.GetIndex());
+
+                if (Parent != Above)
+                {
+                    Above = Parent;
+                    ((Bases = Where.Climbs[Index] ? FindAncestor(Owner, Parent, State.Fields[Index]) : Bases), ...);
+                }
             }
 
             /// \brief Gets how many instances a field steps per row, as the way a page is walked says.
@@ -400,14 +386,7 @@ namespace ZyScene
 
                     if constexpr ((Parts::kPointer || ...))
                     {
-                        const UInt32 Parent = Owner.mDirectory.GetParent(Actor.GetIndex());
-
-                        if (Parent != Above)
-                        {
-                            Above = Parent;
-
-                            ((Where.Fixed[Index] = Climb(Owner, State, Where, Parent, Index, Where.Fixed[Index])), ...);
-                        }
+                        Climb(Owner, State, Where, Actor, Above, Where.Fixed[Index]...);
                     }
 
                     const Ptr<Byte> Base  = Target->GetPage(Row);
@@ -445,13 +424,7 @@ namespace ZyScene
                 {
                     if constexpr (Mode == Stride::Chunk && (Parts::kPointer || ...))
                     {
-                        const UInt32 Parent = Owner.mDirectory.GetParent(Handles[Row].GetIndex());
-
-                        if (Parent != Above)
-                        {
-                            Above = Parent;
-                            ((Bases = Climb(Owner, State, Where, Parent, Index, Bases)), ...);
-                        }
+                        Climb(Owner, State, Where, Handles[Row], Above, Bases...);
                     }
 
                     ZY_INLINE_CALL Call(
@@ -467,16 +440,22 @@ namespace ZyScene
             /// \param Owner    The storage the entity lives in.
             /// \param State    The selection the reader filters by, whose fields are declared.
             /// \param Actor    The entity, alive and matching.
+            /// \param Holder   The chunk the entity sits in.
+            /// \param Row      The row the entity sits at in its chunk.
+            /// \param Match    The position of the chunk among the selection's matches.
             /// \param Callback The callable, handed the entity's fields.
             template<typename Callable>
             ZY_INLINE static void RunEntry(
                 Ref<Storage>        Owner,
                 ConstRef<Selection> State,
                 Handle              Actor,
+                ConstRef<Chunk>     Holder,
+                UInt32              Row,
+                UInt32              Match,
                 Ref<Callable>       Callback)
             {
                 // One extra slot, so a callback taking no field still makes a valid array.
-                const Ptr<Byte> Found[kCount + 1] = { Locate<Parts>(Owner, State, Actor, Index)... };
+                const Ptr<Byte> Found[kCount + 1] = { Locate<Parts>(Owner, State, Holder, Row, Match, Index)... };
 
                 if (((!Parts::kPointer && !Parts::kTag && !Found[Index]) || ...))
                 {
@@ -485,18 +464,22 @@ namespace ZyScene
                 Call(Owner, Callback, Actor, Fetch<Parts>(Found[Index], 0, 0)...);
             }
 
-            /// \brief Finds where one field of an entity is, held, lent, an ancestor's or the world's.
+            /// \brief Finds where one field of an entity is, held, lent or the world's.
             ///
             /// \param Owner    The storage the entity lives in.
             /// \param State    The selection, whose fields are declared.
-            /// \param Actor    The entity whose field to find, alive.
+            /// \param Holder   The chunk the entity sits in.
+            /// \param Row      The row the entity sits at in its chunk.
+            /// \param Match    The position of the chunk among the selection's matches.
             /// \param Position The place of the field in the callback.
             /// \return The first byte of the value, or `nullptr` when there is none or the field is a tag.
             template<typename Field>
             ZY_INLINE static Ptr<Byte> Locate(
                 Ref<Storage>        Owner,
                 ConstRef<Selection> State,
-                Handle              Actor,
+                ConstRef<Chunk>     Holder,
+                UInt32              Row,
+                UInt32              Match,
                 UInt                Position)
             {
                 if constexpr (Field::kTag)
@@ -505,16 +488,18 @@ namespace ZyScene
                 }
                 else
                 {
-                    const UInt32              Identifier = State.Fields[Position];
-                    ConstRef<Directory::Slot> Entry      = Owner.mDirectory[Actor.GetIndex()];
-
-                    if (State.Modes[Position] == Selection::Mode::Ancestor)
+                    // Where the field sits was settled when the chunk matched, as the walks read it.
+                    switch (const UInt16 Source = State.GetSource(Match, Position))
                     {
-                        return FindAncestor(Owner, Owner.mDirectory.GetParent(Actor.GetIndex()), Identifier);
+                    case Selection::kLent:
+                        return FindLent(Owner, Holder.GetBase(), State.Fields[Position]);
+                    case Selection::kGlobal:
+                        return GetSingleton(Owner, State.Fields[Position]);
+                    case Selection::kMissing:
+                        return nullptr;
+                    default:
+                        return const_cast<Ptr<Byte>>(Holder.At(Source, Row));
                     }
-
-                    const ConstPtr<Byte> Found = Owner.mDirectory.FindValue(* Entry.Holder, Entry.Row, Identifier);
-                    return Found ? const_cast<Ptr<Byte>>(Found) : GetSingleton(Owner, Identifier);
                 }
             }
         };
@@ -627,6 +612,18 @@ namespace ZyScene
                 }
             }
             return true;
+        }
+
+        /// \brief Records what a walk declared it writes, before its waiting changes move any row.
+        ///
+        /// \param Owner The storage the query belongs to.
+        /// \param State The query just walked.
+        ZY_INLINE static void Record(Ref<Storage> Owner, ConstRef<Selection> State)
+        {
+            if (!State.Writes.IsEmpty())
+            {
+                Owner.RecordWrites(State);
+            }
         }
 
         /// \brief Gets where the world entity keeps a component.
@@ -822,22 +819,33 @@ namespace ZyScene
         /// \return The number of shares, never zero.
         static UInt32 GetShares(ConstRef<Selection> State, UInt32 Rows, UInt32 Threads);
 
-        /// \brief Hands every match to a callback parents first, sorting the rows by how deep they stand.
+        /// \brief Hands a stretch of rows to a callback, spread when the cost of a row says it pays, and times it.
         ///
         /// \param Owner    The storage the query belongs to.
-        /// \param State    The query whose matches are walked.
-        /// \param Callback The callable, handed one row at a time.
+        /// \param State    The query, whose offsets are laid out when the rows are not sorted.
+        /// \param Begin    The first row of the stretch.
+        /// \param End      The row past the last one, which is past the first.
+        /// \param Callback The callable, thread-safe and changing only its own entity.
+        /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         template<typename Callable>
-        static void RunOrdered(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
+        static void RunCosted(
+            Ref<Storage>     Owner,
+            Ref<Selection>   State,
+            UInt32           Begin,
+            UInt32           End,
+            Ref<Callable>    Callback,
+            ConstPtr<UInt64> Sorted = nullptr)
         {
-            ZY_ASSERT(!Plan<Callable>::kBatched, "A cascade hands one row at a time, parents before their children");
-
-            if constexpr (!Plan<Callable>::kBatched)
+            // The first walk runs here to time a row, which later walks decide by and spread walks only lower.
+            if (State.Cost * (End - Begin) > kSpreadSeconds)
             {
-                const UInt32    First = Sort(Owner, State);
-                const ConstSpan Rows(State.Gathered.GetData() + First, State.Gathered.GetSize() - First);
-
-                Plan<Callable>::template Apply<Kernel>::RunSorted(Owner, State, Rows, Callback);
+                State.Pace = Distribute(Owner, State, Begin, End, Callback, Sorted);
+                State.Cost = Min(State.Cost, State.Pace);
+            }
+            else
+            {
+                const Real64 Row = Measure(Owner, State, Begin, End, Callback, Sorted);
+                State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
             }
         }
 
@@ -869,25 +877,14 @@ namespace ZyScene
                 {
                     const UInt32 End = State.Offsets[Level];
 
-                    if (End == Begin)
+                    if (End != Begin)
                     {
-                        continue;
-                    }
-
-                    if (State.Cost * (End - Begin) > kSpreadSeconds)
-                    {
-                        State.Pace   = Distribute(Owner, State, Begin, End, Callback, Rows);
-                        State.Cost   = Min(State.Cost, State.Pace);
-                        State.Spread = true;
-                    }
-                    else
-                    {
-                        const Real64 Row = Measure(Owner, State, Begin, End, Callback, Rows);
-                        State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
+                        RunCosted(Owner, State, Begin, End, Callback, Rows);
                     }
                     Begin = End;
                 }
 
+                Record(Owner, State);
                 Owner.Leave();
             }
         }

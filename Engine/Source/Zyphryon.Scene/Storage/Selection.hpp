@@ -64,6 +64,9 @@ namespace ZyScene
         /// The components pointer fields read from the nearest ancestor carrying them.
         Sequence<UInt32>           Ancestors;
 
+        /// The components the walk writes, recorded as changed for every entity it visits that holds its own.
+        Sequence<UInt32>           Writes;
+
         /// The component each field hands out, in order.
         Sequence<UInt32>           Fields;
 
@@ -109,17 +112,13 @@ namespace ZyScene
         /// `true` when matches are visited parents first.
         Bool                       Ordered;
 
-        /// `true` when the last walk that could spread did.
-        Bool                       Spread;
-
         /// \brief Constructs a selection that asks for nothing and matches nothing.
         ZY_INLINE Selection()
             : Declared { nullptr },
               Cost     { 0 },
               Pace     { 0 },
               Links    { 0 },
-              Ordered  { false },
-              Spread   { false }
+              Ordered  { false }
         {
         }
 

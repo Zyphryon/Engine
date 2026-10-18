@@ -106,16 +106,8 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Ledger::Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source)
+    void Ledger::RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source)
     {
-        Ref<List> Target = * mLists[GetListIndex(Identifier, Kind)];
-        Target.Actors.Append(Actor);
-
-        if (Kind != Pull::Removed)
-        {
-            return;
-        }
-
         // Kept for every removal, since a reader with terms can only match what the entity was as it left.
         Target.Sources.Append(Source);
 

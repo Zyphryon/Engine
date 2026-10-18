@@ -118,8 +118,15 @@ namespace ZyScene
                 return;
             }
 
-            const Ptr<Byte> Payload = mDeferral.Allocate(sizeof(Deferral::Task), alignof(Deferral::Task));
-            ::Construct(reinterpret_cast<Ptr<Deferral::Task>>(Payload), Forward<Callable>(Callback));
+            using Function = StripAll<Callable>;
+
+            // The task's own call stands first and the task right after it, so no capture is too large for the room.
+            constexpr UInt kOffset    = Align(sizeof(Deferral::Task), alignof(Function));
+            constexpr UInt kAlignment = Max(alignof(Deferral::Task), alignof(Function));
+
+            const Ptr<Byte> Payload = mDeferral.Allocate(kOffset + sizeof(Function), kAlignment);
+            ::Construct(reinterpret_cast<Ptr<Deferral::Task>>(Payload), & Deferral::Run<Function, kOffset>);
+            ::Construct(reinterpret_cast<Ptr<Function>>(Payload + kOffset), Forward<Callable>(Callback));
             Queue(Deferral::Operation::Invoke, Handle(), 0, Handle(), Payload, false);
         }
 
@@ -184,25 +191,38 @@ namespace ZyScene
         {
             if (mLedger.IsWatched(Identifier, Kind))
             {
-                // A spread walk only writes in place, and its record waits with its other changes.
-                if (mDeferral.IsSpreading())
-                {
-                    Hold(Identifier, Index);
-                }
-                else
-                {
-                    mLedger.Record(
-                        Identifier,
-                        Kind,
-                        mDirectory.GetHandle(Index),
-                        Value,
-                        mDirectory[Index].Holder->GetIndex());
+                Record(Identifier, Kind, mDirectory.GetHandle(Index), Value);
+            }
+        }
 
-                    if (Directory::IsArchetype(Index))
-                    {
-                        RecordHeirs(Identifier, Kind, Index, Value);
-                    }
-                }
+        /// \brief Records a change like the one taking a slot, for a caller that holds the entity's handle already.
+        ///
+        /// \param Identifier The identifier of the component that changed.
+        /// \param Kind       The change, exactly one.
+        /// \param Actor      The entity, which must be alive.
+        /// \param Value      The value leaving on a removal, or `nullptr`.
+        ZY_INLINE void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value)
+        {
+            if (!mLedger.IsWatched(Identifier, Kind))
+            {
+                return;
+            }
+
+            // A spread walk only writes in place, and its record waits with its other changes.
+            if (mDeferral.IsSpreading())
+            {
+                Queue(Deferral::Operation::Notify, Actor, Identifier, Handle(), nullptr, false);
+                return;
+            }
+
+            // Only a removal keeps the chunk the entity left.
+            const UInt32 Index  = Actor.GetIndex();
+            const UInt32 Source = (Kind == Pull::Removed ? mDirectory[Index].Holder->GetIndex() : 0);
+            mLedger.Record(Identifier, Kind, Actor, Value, Source);
+
+            if (Directory::IsArchetype(Index))
+            {
+                RecordHeirs(Identifier, Kind, Index, Value);
             }
         }
 
@@ -210,13 +230,7 @@ namespace ZyScene
         ///
         /// \param Index  The slot of the entity.
         /// \param Before The chunk it sat in before, or `nullptr` for an entity just made.
-        ZY_INLINE void RecordGain(UInt32 Index, ConstPtr<Chunk> Before)
-        {
-            if (mLedger.IsActive())
-            {
-                AppendGain(Index, Before);
-            }
-        }
+        void RecordGain(UInt32 Index, ConstPtr<Chunk> Before);
 
         /// \brief Records that a component written in place changed.
         ///
@@ -224,11 +238,10 @@ namespace ZyScene
         /// \param Identifier The identifier of the component written.
         void MarkChanged(Handle Actor, UInt32 Identifier);
 
-        /// \brief Holds the record of a write in place a spread walk made, which is made once the walk ends.
+        /// \brief Records the components a walk declared it writes as changed for every entity it visited.
         ///
-        /// \param Identifier The identifier of the component written.
-        /// \param Index      The slot of the entity.
-        void Hold(UInt32 Identifier, UInt32 Index);
+        /// \param State The selection walked, whose chunks have not moved since the walk.
+        void RecordWrites(ConstRef<Selection> State);
 
         /// \brief Places an entity whose slot sits in no chunk at the end of one.
         ///
@@ -326,6 +339,13 @@ namespace ZyScene
             }
         }
 
+        /// \brief Moves an entity along the edge adding a component, building what came along but not the component.
+        ///
+        /// \param Index      The slot of the entity, which must not hold the component.
+        /// \param Identifier The identifier of the component to add.
+        /// \return The unbuilt place of the component's value, or `nullptr` for a tag.
+        Ptr<Byte> Extend(UInt32 Index, UInt32 Identifier);
+
         /// \brief Destroys an entity and everything beneath it, or holds that until the running walk ends.
         ///
         /// \param Actor The entity, which must be alive and not the world.
@@ -350,7 +370,7 @@ namespace ZyScene
         /// \param Fresh      The value, moved out of here whatever happens.
         void Commit(Handle Actor, UInt32 Identifier, Ptr<Byte> Fresh);
 
-        /// \brief Gives an entity its own copy of a component its archetype lends, recording it, or holds that mid-walk.
+        /// \brief Gives an entity its own copy of a component its archetype lends, recording it, outside a walk.
         ///
         /// \param Actor      The entity, which must be alive.
         /// \param Identifier The component, left alone when the entity holds it or nothing lends it.
@@ -397,6 +417,14 @@ namespace ZyScene
         /// \param Parts       `true` to make the archetype's parts beneath it.
         void Propagate(UInt32 Source, Bool AsArchetype, Handle Target, Bool Parts);
 
+        /// \brief Fills the columns an entity gained by a move, copying them from an archetype or building them.
+        ///
+        /// \param Index     The slot of the entity, which sits in its new chunk.
+        /// \param Held      The chunk it came from, whose components it keeps, or `nullptr`.
+        /// \param Archetype The slot of the archetype the values are copied from.
+        /// \param Flags     The flags a component must carry on the archetype to be copied, zero for any.
+        void Fill(UInt32 Index, ConstPtr<Chunk> Held, UInt32 Archetype, UInt8 Flags);
+
         /// \brief Destroys an entity and everything beneath it right away, children first.
         ///
         /// \param Root The slot of the entity.
@@ -429,12 +457,6 @@ namespace ZyScene
         /// \param Identifier The identifier of the component to give.
         /// \param Fresh      The value, moved into place, or `nullptr` to build a default.
         void InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh);
-
-        /// \brief Records every watched component an entity sees that it did not see before, once a reader exists.
-        ///
-        /// \param Index  The slot of the entity.
-        /// \param Before The chunk it sat in before, or `nullptr` for an entity just made.
-        void AppendGain(UInt32 Index, ConstPtr<Chunk> Before);
 
         /// \brief Records a change of what an archetype lends for every heir reading it, heirs of heirs included.
         ///
@@ -501,12 +523,50 @@ namespace ZyScene
         /// \return The chunk, which the source remembers from now on.
         Ptr<Chunk> CreateRemoval(Ref<Chunk> Source, UInt32 Identifier);
 
-        /// \brief Gets every component an entity sees, held or lent, that a reader watches for a change.
+        /// \brief Hands a callback every watched component an entity in a chunk sees through its archetype alone.
         ///
-        /// \param Index The slot of the entity.
-        /// \param Kind  The change readers watch for.
-        /// \return The identifiers, held ones first.
-        Sequence<UInt32> GetWatched(UInt32 Index, Pull Kind) const;
+        /// \param Holder   The chunk the entity sits in.
+        /// \param Kinds    The changes, any one of which a reader must watch for.
+        /// \param Callback The callable, taking the identifier and the value lent, \ref Directory::kPresent for a tag.
+        template<typename Callable>
+        ZY_INLINE void VisitLent(ConstRef<Chunk> Holder, Pull Kinds, AnyRef<Callable> Callback) const
+        {
+            const UInt32 First = Holder.GetBase();
+
+            for (UInt32 Base = First; Base; Base = mDirectory[Base].Holder->GetBase())
+            {
+                for (const UInt32 Identifier : mDirectory[Base].Holder->GetSignature())
+                {
+                    if (Holder.Has(Identifier) || !IsWatched(Identifier, Kinds) || !IsNearest(First, Base, Identifier))
+                    {
+                        continue;
+                    }
+
+                    if (const ConstPtr<Byte> Lent = mDirectory.FindLent(First, Identifier))
+                    {
+                        Callback(Identifier, Lent);
+                    }
+                }
+            }
+        }
+
+        /// \brief Checks whether an archetype is the nearest one up a chain holding a component.
+        ///
+        /// \param First      The slot the chain starts at.
+        /// \param Base       The slot of the archetype, which stands on the chain.
+        /// \param Identifier The identifier of the component.
+        /// \return `true` if no archetype before it on the chain holds the component, `false` otherwise.
+        ZY_INLINE Bool IsNearest(UInt32 First, UInt32 Base, UInt32 Identifier) const
+        {
+            for (UInt32 Above = First; Above != Base; Above = mDirectory[Above].Holder->GetBase())
+            {
+                if (mDirectory[Above].Holder->Has(Identifier))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
     protected:
 

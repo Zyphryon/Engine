@@ -294,19 +294,33 @@ namespace ZyScene
         /// \return This description.
         template<typename Type>
         ZY_INLINE AnyRef<Builder> Up() &&
+            requires IsAnyOf<Kind, System>
         {
             mState->Ancestors.Append(IdentifierOf<StripAll<Type>>());
             return Move(* this);
         }
 
-        /// \brief Reads a component like \ref Up, visiting every ancestor before what stands beneath it.
+        /// \brief Reads a component like \ref Up, visiting every ancestor before what stands beneath it, spread.
         ///
         /// \return This description.
         template<typename Type>
         ZY_INLINE AnyRef<Builder> Cascade() &&
+            requires IsAnyOf<Kind, System>
         {
             mState->Ancestors.Append(IdentifierOf<StripAll<Type>>());
             mState->Ordered = true;
+            mMode           = Schedule::Adaptive;
+            return Move(* this);
+        }
+
+        /// \brief Declares the components the walk writes, each recorded as changed for every entity it visits.
+        ///
+        /// \return This description.
+        template<typename... Types>
+        ZY_INLINE AnyRef<Builder> Writes() &&
+            requires IsAnyOf<Kind, System, Query>
+        {
+            (mState->Writes.Append(IdentifierOf<StripAll<Types>>()), ...);
             return Move(* this);
         }
 
@@ -338,6 +352,8 @@ namespace ZyScene
         ZY_INLINE Builder<Cursor<List>> Reads() &&
             requires IsAnyOf<Kind, System>
         {
+            ZY_ASSERT(mState->Ancestors.IsEmpty(), "A system reading a list reads no ancestor");
+
             return Builder<Cursor<List>>(Move(static_cast<Ref<Draft>>(* this)));
         }
 
@@ -384,16 +400,7 @@ namespace ZyScene
         {
             if constexpr (!IsPointer<Type>)
             {
-                const UInt32 Identifier = IdentifierOf<StripAll<Type>>();
-
-                if constexpr (IsImmutable<Type> || IsEmpty<Type>)
-                {
-                    mState->Required.Append(Identifier);
-                }
-                else
-                {
-                    mState->Owned.Append(Identifier);
-                }
+                AddTerm(Field<Type, false>::kOwned ? mState->Owned : mState->Required, IdentifierOf<StripAll<Type>>());
             }
         }
     };

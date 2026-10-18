@@ -80,11 +80,7 @@ namespace ZyScene
         for (UInt32 Share = 0; Share < mShares; ++Share)
         {
             Ref<Sequence<Command>> Held = mLanes[Share].Commands;
-
-            for (ConstRef<Command> Change : Held)
-            {
-                mMain.Commands.Append(Change);
-            }
+            mMain.Commands.Append(Held);
             Held.Clear();
         }
 

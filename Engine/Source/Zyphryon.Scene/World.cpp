@@ -132,19 +132,18 @@ namespace ZyScene
             }
         }
 
-        // The names go ahead of the records, though only writing the records gathers them.
-        Writer Header;
-        Header.Write<UInt32>(static_cast<UInt32>(Names.GetSize()));
-
-        for (const Text Name : Names)
-        {
-            Header.WriteText(Name);
-        }
-
         Output.Write<UInt32>(kMagic);
         Output.Write<UInt16>(kVersion);
         Output.Write<UInt32>(kTypes);
-        Output.WriteBlock<UInt32, Byte>(Header);
+        Output.WriteBlock<UInt32>([&Names](Ref<Writer> Block)
+        {
+            Block.Write<UInt32>(static_cast<UInt32>(Names.GetSize()));
+
+            for (const Text Name : Names)
+            {
+                Block.WriteText(Name);
+            }
+        });
         Output.Write<UInt32>(kEntities);
         Output.Write<UInt32>(static_cast<UInt32>(sizeof(UInt32) + Body.GetSize()));
         Output.Write<UInt32>(Count);

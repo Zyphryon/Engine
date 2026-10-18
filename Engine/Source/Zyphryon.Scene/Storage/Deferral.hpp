@@ -29,17 +29,14 @@ namespace ZyScene
         /// \brief Specifies what a waiting change does.
         enum class Operation : UInt8
         {
-            Instantiate, ///< Makes a waiting entity from an archetype.
-            Add,         ///< Gives a default component.
-            Set,         ///< Gives or overwrites a component with the value carried.
-            Remove,      ///< Takes a component off.
-            Destroy,     ///< Destroys an entity and everything beneath it.
-            Attach,      ///< Makes an entity the last child of another, or takes it from its parent.
-            Rebase,      ///< Makes an entity read from another archetype.
-            Purge,       ///< Takes a component off every entity.
-            Override,    ///< Gives an entity its own copy of a component its archetype lends it.
-            Notify,      ///< Records that a component written in place changed, for readers of its changes.
-            Invoke,      ///< Calls the task carried, then destroys it.
+            Add,     ///< Gives a default component.
+            Set,     ///< Gives or overwrites a component with the value carried.
+            Remove,  ///< Takes a component off.
+            Destroy, ///< Destroys an entity and everything beneath it.
+            Attach,  ///< Makes an entity the last child of another, or takes it from its parent.
+            Rebase,  ///< Makes an entity read from another archetype.
+            Notify,  ///< Records that a component written in place changed, for readers of its changes.
+            Invoke,  ///< Calls the task carried, then destroys it.
         };
 
         /// \brief Represents one waiting change.
@@ -61,8 +58,19 @@ namespace ZyScene
             Ptr<Byte> Payload;
         };
 
-        /// \brief Defines the task an \ref Operation::Invoke change carries.
-        using Task = Delegate<void()>;
+        /// \brief Defines the call an \ref Operation::Invoke change opens with, which runs the task behind it.
+        using Task = void (*)(Ptr<Byte> Payload);
+
+        /// \brief Runs a task kept in the room behind its call, then destroys it.
+        ///
+        /// \param Payload The payload, the call first and the task at \p Offset.
+        template<typename Function, UInt Offset>
+        static void Run(Ptr<Byte> Payload)
+        {
+            Ref<Function> Work = * reinterpret_cast<Ptr<Function>>(Payload + Offset);
+            Work();
+            Destruct(Work);
+        }
 
     public:
 

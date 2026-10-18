@@ -121,6 +121,15 @@ inline namespace ZyBase
             }
         }
 
+        /// \brief Counts as written the bytes put in place past the end, within the room \ref Ensure made.
+        ///
+        /// \param Length The number of bytes put in place past the end.
+        ZY_INLINE void Advance(UInt32 Length)
+        {
+            ZY_ASSERT(mSize + Length <= mCapacity, "Bytes were put past the room ensured");
+            mSize += Length;
+        }
+
         /// \brief Destroys all written bytes without releasing the underlying storage.
         ZY_INLINE void Clear()
         {

@@ -42,11 +42,6 @@ namespace ZyScene::Protocol
         /// \return The key the peer is known by, as \ref ZyNetwork::Connection::GetValue derives it.
         UInt64 Admit(ZyNetwork::Connection Link);
 
-        /// \brief Takes on a peer reached through the sink alone, starting over if the key was already admitted.
-        ///
-        /// \param Peer The key the peer is known by.
-        void Admit(UInt64 Peer);
-
         /// \brief Drops a peer and every key it saw.
         ///
         /// \param Peer The key of the peer.
@@ -84,22 +79,6 @@ namespace ZyScene::Protocol
         /// \param Value The link, which caches what it finds.
         /// \return The entity, or one naming nothing.
         Entity Resolve(Ref<Link> Value) const;
-
-        /// \brief Sets where frames go, replacing the network.
-        ///
-        /// \param Output The sink.
-        ZY_INLINE void SetSink(AnyRef<Sink> Output)
-        {
-            mSink = Move(Output);
-        }
-
-        /// \brief Sets whether frames go out packed with LZ4 when that shrinks them.
-        ///
-        /// \param Packing `true` to pack them, which is the default, `false` to send every frame as it was built.
-        ZY_INLINE void SetPacking(Bool Packing)
-        {
-            mPacking = Packing;
-        }
 
     private:
 
@@ -175,10 +154,26 @@ namespace ZyScene::Protocol
             /// The bytes a frame header takes: the opcode, the clock and its multiplier.
             static constexpr UInt32 kHeader = sizeof(UInt8) + sizeof(Real64) + sizeof(Real32);
 
+            /// The bytes a packed frame opens with, its opcode and the size it unpacks to.
+            static constexpr UInt32 kPacked = sizeof(UInt8) + sizeof(UInt32);
+
+            /// \brief Represents one frame as it goes out, packed or as it was built.
+            struct Parcel final
+            {
+                /// `true` when the frame went into \ref Packed, `false` when it goes from \ref Frame as built.
+                Bool   Shrunk;
+
+                /// The first byte of the frame, in the buffer it goes from.
+                UInt32 Start;
+
+                /// The byte past the frame, in the buffer it goes from.
+                UInt32 End;
+            };
+
             /// The key the peer is known by.
             UInt64                Key;
 
-            /// The connection the peer is reached through, invalid for a sink alone.
+            /// The connection the peer is reached through.
             ZyNetwork::Connection Link;
 
             /// The keys the peer sees.
@@ -199,14 +194,11 @@ namespace ZyScene::Protocol
             /// The end of each frame in \ref Frame.
             Sequence<UInt32>      Ends;
 
-            /// The frames packed, which go out in place of \ref Frame while packing.
+            /// The frames packing shrank, back to back.
             Writer                Packed;
 
-            /// The end of each frame in \ref Packed.
-            Sequence<UInt32>      Seals;
-
-            /// The room one frame is packed into.
-            Sequence<Byte>        Room;
+            /// The frames that go out, each from \ref Packed or from \ref Frame.
+            Sequence<Parcel>      Parcels;
 
             /// The publisher's clock, which every frame header carries.
             Real64                Time       = 0.0;
@@ -223,15 +215,8 @@ namespace ZyScene::Protocol
             /// \brief Constructs a session for a peer that sees nothing yet.
             ///
             /// \param Peer       The key the peer is known by.
-            /// \param Connection The connection the peer is reached through, or an invalid one for a sink alone.
+            /// \param Connection The connection the peer is reached through.
             Session(UInt64 Peer, ZyNetwork::Connection Connection);
-
-            /// \brief Replaces the keys the peer sees.
-            ///
-            /// \param Wanted  The keys it sees from here on, where the global and private ones are ignored.
-            /// \param Added   The list that receives the keys it did not see before.
-            /// \param Removed The list that receives the keys it no longer sees.
-            void Watch(ConstSpan<UInt64> Wanted, Ref<Sequence<UInt64>> Added, Ref<Sequence<UInt64>> Removed);
 
             /// \brief Starts the tick's frames.
             ///
@@ -254,18 +239,14 @@ namespace ZyScene::Protocol
             /// \param Messages The messages, cut where they mark.
             void WriteSection(UInt64 Section, ConstRef<Block> Messages);
 
-            /// \brief Ends the tick's frames, keeping the last when it carries anything or a heartbeat is due.
-            ///
-            /// \param Heartbeat `true` to keep the last frame even when it carries nothing.
-            void Close(Bool Heartbeat);
-
             /// \brief Packs every frame of the tick with LZ4, keeping as it was each one packing does not shrink.
             void Pack();
 
-            /// \brief Packs one frame into \ref Packed.
+            /// \brief Packs one frame straight into \ref Packed, or keeps it as built when it does not shrink.
             ///
-            /// \param Raw The frame as it was built.
-            void Seal(ConstSpan<Byte> Raw);
+            /// \param Start The first byte of the frame in \ref Frame.
+            /// \param End   The byte past the frame in \ref Frame.
+            void Seal(UInt32 Start, UInt32 End);
 
             /// \brief Drops the tick's frames and key changes once they were handed out.
             void Reset();
@@ -293,17 +274,9 @@ namespace ZyScene::Protocol
         ZY_INLINE Ptr<Tracker> Track(Entity Actor)
         {
             const UInt32 Slot = Actor.GetHandle().GetIndex();
-            return Slot < mTrackers.GetSize() && mTrackers[Slot].Actor == Actor.GetID() ? AddressOf(mTrackers[Slot]) : nullptr;
-        }
-
-        /// \brief Finds the tracker of a replica, by the entity's slot rather than a lookup.
-        ///
-        /// \param Actor The entity, alive or just destroyed.
-        /// \return The tracker, or null when the entity is not tracked.
-        ZY_INLINE ConstPtr<Tracker> Track(Entity Actor) const
-        {
-            const UInt32 Slot = Actor.GetHandle().GetIndex();
-            return Slot < mTrackers.GetSize() && mTrackers[Slot].Actor == Actor.GetID() ? AddressOf(mTrackers[Slot]) : nullptr;
+            return Slot < mTrackers.GetSize() && mTrackers[Slot].Actor == Actor.GetID()
+                ? AddressOf(mTrackers[Slot])
+                : nullptr;
         }
 
         /// \brief Gets the tracker of a replica, making a blank one when it has none.
@@ -454,17 +427,6 @@ namespace ZyScene::Protocol
         /// \param Key    The key the subtree stands under.
         void Embrace(Ref<Block> Output, Entity Child, UInt64 Key);
 
-        /// \brief Writes one child's arrival into a catch-up.
-        ///
-        /// \param Output The catch-up.
-        /// \param Child  The child.
-        void Retell(Ref<Block> Output, Entity Child);
-
-        /// \brief Marks unpublished one child of a root that left the wire alive, whose peers lose it with the root.
-        ///
-        /// \param Child The child.
-        void Abandon(Entity Child);
-
         /// \brief Writes what a replica changed or lost into its channel and its owner's private stream.
         ///
         /// \param Actor    The entity.
@@ -486,19 +448,18 @@ namespace ZyScene::Protocol
 
         /// \brief Builds a peer's frames from channels that no longer change this tick.
         ///
-        /// \param Peer      The session.
-        /// \param Time      The world's clock.
-        /// \param Heartbeat `true` to send a frame even when it carries nothing.
-        void Assemble(Ref<Session> Peer, ConstRef<Clock> Time, Bool Heartbeat);
+        /// \param Peer The session.
+        /// \param Time The world's clock.
+        void Assemble(Ref<Session> Peer, ConstRef<Clock> Time);
 
         /// \brief Builds the frames of a range of sessions, on whichever worker took the range.
         ///
-        /// \param Begin     The first session.
-        /// \param End       The session past the last.
-        /// \param Time      The world's clock.
-        /// \param Heartbeat `true` to send a frame even when it carries nothing.
-        void AssembleRange(UInt32 Begin, UInt32 End, ConstRef<Clock> Time, Bool Heartbeat);
-        /// \brief Hands a peer's frames to the sink.
+        /// \param Begin The first session.
+        /// \param End   The session past the last.
+        /// \param Time  The world's clock.
+        void AssembleRange(UInt32 Begin, UInt32 End, ConstRef<Clock> Time);
+
+        /// \brief Sends a peer's frames through the network.
         ///
         /// \param Peer The session.
         void Hand(Ref<Session> Peer);
@@ -571,24 +532,18 @@ namespace ZyScene::Protocol
         /// \return The session, or null when nobody owns it, or its owner was not admitted or does not see the key.
         Ptr<Session> Witness(Entity Actor, UInt64 Key);
 
-        /// \brief Sends a frame through the network, which is the sink unless another one is set.
-        ///
-        /// \param Peer  The key of the peer.
-        /// \param Frame The frame.
-        void Transmit(UInt64 Peer, ConstSpan<Byte> Frame);
-
         /// \brief Gets the identifier of the nearest replicated ancestor.
         ///
         /// \param Actor The entity.
         /// \return The identifier, or zero for a root.
-        UInt64 GetParentOf(Entity Actor) const;
+        UInt64 GetParentOf(Entity Actor);
 
         /// \brief Checks whether a replica with an identifier was published under a key.
         ///
         /// \param Identifier The identifier.
         /// \param Key        The key.
         /// \return `true` if it went out under that key, `false` otherwise.
-        Bool IsPublished(UInt64 Identifier, UInt64 Key) const;
+        Bool IsPublished(UInt64 Identifier, UInt64 Key);
 
         /// \brief Gets the key a replica stands under, its own or its root's.
         ///
@@ -616,15 +571,12 @@ namespace ZyScene::Protocol
         Ref<Service>                   mScene;
         Ref<ZyJob::Service>            mJobs;
         Retainer<ZyNetwork::Service>   mNetwork;
-        Sink                           mSink;
         Table<UInt64, Unique<Session>> mSessions;
         Sequence<Ptr<Session>>         mOrder;
         Table<UInt64, Unique<Channel>> mChannels;
         Sequence<Tracker>              mTrackers;
         Table<UInt64, Entity>          mReplicas;
         Sequence<Entity>               mQueue;
-        Sequence<UInt64>               mAdded;
-        Sequence<UInt64>               mRemoved;
         Sequence<Entity>               mTouched;
         Sequence<Manifest::Feed>       mFeeds;
         Cursor<Set<Locus>>             mPlaced;
@@ -636,7 +588,7 @@ namespace ZyScene::Protocol
         UInt64                         mWorld;
         UInt64                         mNext;
         UInt64                         mTick;
-        Bool                           mPacking;
+        Bool                           mHeartbeat;
         Bool                           mPublishing;
     };
 }

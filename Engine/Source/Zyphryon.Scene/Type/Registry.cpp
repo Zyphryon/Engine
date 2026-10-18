@@ -76,7 +76,7 @@ namespace ZyScene
         // Saved and kept off instances until code declares what it is, since nothing here knows how it is inherited.
         Metatype Info;
         Info.Name   = Intern(Name);
-        Info.Layout = Metatype::Unitialized().Layout;
+        Info.Layout = Metatype::Uninitialized().Layout;
         Info.Traits = Trait::Serializable | Trait::Local;
         mTypes.Append(Unique<Metatype>::Create(Info));
 
@@ -228,7 +228,7 @@ namespace ZyScene
     ConstRef<Metatype> Registry::GetColumn(UInt32 Identifier)
     {
         ConstRef<Metatype> Info = GetMetatype(Identifier);
-        return Info.Has(Trait::Loaded) || Info.IsTag() ? Info : Metatype::Unitialized();
+        return Info.Has(Trait::Loaded) || Info.IsTag() ? Info : Metatype::Uninitialized();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -74,8 +74,17 @@ namespace ZyScene
         /// \param Kind       The change, exactly one.
         /// \param Actor      The entity that changed.
         /// \param Value      The value leaving on a removal, copied when the component keeps it, or `nullptr`.
-        /// \param Source     The index of the chunk the entity sits in before the change.
-        void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source);
+        /// \param Source     The index of the chunk the entity sits in before the change, read only on a removal.
+        ZY_INLINE void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value, UInt32 Source)
+        {
+            Ref<List> Target = * mLists[GetListIndex(Identifier, Kind)];
+            Target.Actors.Append(Actor);
+
+            if (Kind == Pull::Removed)
+            {
+                RecordRemoval(Target, Identifier, Value, Source);
+            }
+        }
 
         /// \brief Gets the position of the first entry a reader has not read, counted from the list's first ever.
         ///
@@ -94,6 +103,30 @@ namespace ZyScene
         {
             ConstRef<List> Target = * mLists[mSubscriptions[Subscription - 1].List];
             return Target.First + Target.Actors.GetSize();
+        }
+
+        /// \brief Records the same change of many entities at once, as a walk declaring its writes does.
+        ///
+        /// \param Identifier The identifier of the component that changed.
+        /// \param Kind       The change, an addition or a write, never a removal.
+        /// \param Actors     The entities that changed.
+        ZY_INLINE void Record(UInt32 Identifier, Pull Kind, ConstSpan<Handle> Actors)
+        {
+            ZY_ASSERT(Kind != Pull::Removed, "A removal is recorded one entity at a time");
+
+            mLists[GetListIndex(Identifier, Kind)]->Actors.Append(Actors);
+        }
+
+        /// \brief Gets the entities of the list a reader watches, which an entry's position less the first indexes.
+        ///
+        /// \param Subscription The handle of the subscription.
+        /// \param First        Receives the position of the first entity held.
+        /// \return The entities, which move when an entry is recorded.
+        ZY_INLINE ConstRef<Sequence<Handle>> GetActors(UInt32 Subscription, Ref<UInt64> First) const
+        {
+            ConstRef<List> Target = * mLists[mSubscriptions[Subscription - 1].List];
+            First = Target.First;
+            return Target.Actors;
         }
 
         /// \brief Gets the entity an entry of the list a reader watches is about.
@@ -187,6 +220,14 @@ namespace ZyScene
             /// The position of the first entry it has not read.
             UInt64 Position;
         };
+
+        /// \brief Keeps what a removal holds beyond its entity, the chunk it left and the value when the type keeps it.
+        ///
+        /// \param Target     The removal list, whose entity is appended already.
+        /// \param Identifier The identifier of the component removed.
+        /// \param Value      The value leaving, copied when the component keeps it, or `nullptr`.
+        /// \param Source     The index of the chunk the entity sits in before the removal.
+        void RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source);
 
         /// \brief Gets the index a list of a component and change sits at.
         ///

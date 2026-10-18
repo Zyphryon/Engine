@@ -145,14 +145,6 @@ namespace ZyScene
         /// \param State The selection to destroy, as \ref AddSelection returned it.
         void RemoveSelection(ConstPtr<Selection> State);
 
-        /// \brief Gets the selections kept current.
-        ///
-        /// \return The selections, in the order they were added.
-        ZY_INLINE ConstSpan<Unique<Selection>> GetSelections() const
-        {
-            return mSelections;
-        }
-
         /// \brief Fills a selection with every chunk it matches, once what it asks for changed.
         ///
         /// \param State The selection to fill.

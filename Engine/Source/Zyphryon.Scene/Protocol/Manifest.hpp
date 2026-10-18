@@ -48,7 +48,7 @@ namespace ZyScene::Protocol
             /// The layout and lifecycle of the component, whose save and load write and read its payload.
             ConstPtr<Metatype> Info;
 
-            /// The peers that receive the component, and whether it travels only on arrival.
+            /// The peers that receive the component.
             Replication        Policy;
 
             /// The number of ticks between two reads of its changes, one reading on every tick.
@@ -65,7 +65,7 @@ namespace ZyScene::Protocol
 
         /// \brief Declares a component type replicated, giving it the next place unless it has one.
         ///
-        /// \param Policy The peers that receive the component, and whether it travels only on arrival.
+        /// \param Policy The peers that receive the component.
         /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
         template<typename Type>
         void Register(Replication Policy, UInt8 Rate);
@@ -112,14 +112,6 @@ namespace ZyScene::Protocol
             return mOthers;
         }
 
-        /// \brief Gets the components that travel only when an entity arrives.
-        ///
-        /// \return The mask of the `Once` components.
-        ZY_INLINE Mask GetOnceMask() const
-        {
-            return mOnce;
-        }
-
         /// \brief Checks whether a component's changes are read on a tick, which its rate and place spread.
         ///
         /// \param Index The place of the component in the table.
@@ -132,30 +124,29 @@ namespace ZyScene::Protocol
 
         /// \brief Gets the hash of the table, which both sides compare before anything else travels.
         ///
-        /// \return The hash of every entry's name, audience, flags and rate, in order.
+        /// \return The hash of every entry's name, size and audience, in order.
         UInt64 GetHash() const;
 
-        /// \brief Writes a set: the components an entity holds of a mask, then those asked for or dropped it lacks.
+        /// \brief Writes a set behind its length, what the entity lacks first and what its owner ignores last.
         ///
         /// \param Output  The writer to append the set to.
         /// \param Actor   The entity, the world entity for singletons.
         /// \param Wanted  The components to write, named gone when the entity does not hold them.
         /// \param Dropped The components the entity lost, named gone unless it holds them again.
-        /// \return The components the set names as present.
-        Mask Write(Ref<Writer> Output, Entity Actor, Mask Wanted, Mask Dropped) const;
+        void Write(Ref<Writer> Output, Entity Actor, Mask Wanted, Mask Dropped) const;
 
-        /// \brief Reads a set into an entity, adding or overwriting what is present and removing what is gone.
+        /// \brief Reads a set into an entity, removing what is gone and adding or overwriting what is present.
         ///
         /// \param Input   The reader, at the set, left after it.
-        /// \param Actor   The entity, the world entity for singletons.
-        /// \param Ignored The components read past whole, present or gone.
+        /// \param Actor   The entity, which must be alive, the world entity for singletons.
+        /// \param Ignored The components read past whole, present or gone, of the `Others` ones alone.
         /// \return `true` if the set was read whole, `false` if it was cut short or named an unknown component.
         Bool Read(Ref<Reader> Input, Entity Actor, Mask Ignored) const;
 
-        /// \brief Reads past a set without applying it, checking it is whole.
+        /// \brief Reads past a set without applying it, checking its length fits.
         ///
         /// \param Input The reader, at the set, left after it.
-        /// \return `true` if the set was whole, `false` if it was cut short or named an unknown component.
+        /// \return `true` if the set fits what is left, `false` if it was cut short.
         Bool Skip(Ref<Reader> Input) const;
 
     public:
@@ -204,13 +195,12 @@ namespace ZyScene::Protocol
             return Feed(Drain(Move(Changes)), Drain(Move(Removals)));
         }
 
-        /// \brief Writes one component an entity holds itself as an entry of a set, skipping one it lacks or inherits.
+        /// \brief Writes one component an entity holds itself as an entry of a set.
         ///
         /// \param Output The writer.
-        /// \param Actor  The entity.
+        /// \param Actor  The entity, which holds the component itself.
         /// \param Index  The place of the component in the table.
-        /// \param Held   The components written so far, which gains this one when it is written.
-        void WriteEntry(Ref<Writer> Output, Entity Actor, UInt8 Index, Ref<Mask> Held) const;
+        void WriteEntry(Ref<Writer> Output, Entity Actor, UInt8 Index) const;
 
         /// \brief Names one component gone in a set, unless the entity holds it again.
         ///
@@ -218,13 +208,6 @@ namespace ZyScene::Protocol
         /// \param Actor  The entity.
         /// \param Index  The place of the component in the table.
         void WriteAbsent(Ref<Writer> Output, Entity Actor, UInt8 Index) const;
-
-        /// \brief Checks that an entry's payload is whole and names a known component.
-        ///
-        /// \param Input The reader, after the entry's index.
-        /// \param Index The index the entry named.
-        /// \return `true` if the payload can be read, `false` otherwise.
-        Bool IsWhole(Ref<Reader> Input, UInt8 Index) const;
 
     private:
 
@@ -236,7 +219,6 @@ namespace ZyScene::Protocol
         Mask                         mShared;
         Mask                         mOwner;
         Mask                         mOthers;
-        Mask                         mOnce;
     };
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -281,16 +263,11 @@ namespace ZyScene::Protocol
         {
             mOthers.Set(Index);
         }
-
-        if (HasBit(Policy, Replication::Once))
-        {
-            mOnce.Set(Index);
-        }
     }
 
     /// \brief Declares a component replicated, in the same order on both sides since the order is the wire.
     ///
-    /// \param Policy The peers that receive the component, and whether it travels only on arrival.
+    /// \param Policy The peers that receive the component.
     /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
     template<typename Type>
     ZY_INLINE void Replicate(Replication Policy, UInt8 Rate = 1)

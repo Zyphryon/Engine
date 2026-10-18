@@ -23,7 +23,7 @@ namespace ZyScene::Protocol
     /// \brief The most component types that can replicate, one bit each in a mask.
     inline constexpr UInt8  kMaxComponents = 128;
 
-    /// \brief The byte that closes the present and the absent entries of a set, past every wire index.
+    /// \brief The byte that closes the absent entries of a set, past every wire index.
     inline constexpr UInt8  kEnd           = 0xFF;
 
     /// \brief The first opcode left to the game, every one below it being the protocol's.
@@ -34,6 +34,9 @@ namespace ZyScene::Protocol
 
     /// \brief The largest frame a packed one may unpack to, which is the largest the network carries.
     inline constexpr UInt32 kMaxUnpacked   = 1024 * 1024;
+
+    /// \brief The most bytes a subscriber holds for replicas it does not hold yet, past which the publisher is refused.
+    inline constexpr UInt32 kMaxHeld       = 4 * kMaxUnpacked;
 
     /// \brief The bit set on the identifier of a replica both sides load from disk.
     inline constexpr UInt64 kPersistent    = 1ull << 63;
@@ -47,14 +50,13 @@ namespace ZyScene::Protocol
     /// \brief The seconds of real time between two frames to a peer that has nothing new.
     inline constexpr Real64 kHeartbeat     = 1.0;
 
-    /// \brief Specifies who receives a replicated component and when.
+    /// \brief Specifies who receives a replicated component.
     enum class Replication : UInt8
     {
         None     = 0,      ///< Nothing, which no declaration should state.
         Everyone = 1 << 0, ///< Every peer that sees the entity.
         Owner    = 1 << 1, ///< Only the peer that owns the entity.
         Others   = 1 << 2, ///< Every peer that sees the entity, while its owner ignores it.
-        Once     = 1 << 3, ///< Only when the entity arrives, never as an update.
     };
     ZY_DEFINE_BITWISE_ENUM(Replication)
 
@@ -74,9 +76,6 @@ namespace ZyScene::Protocol
 
     /// \brief Names a set of replicated components, one bit per place in the manifest.
     using Mask      = Bitset<kMaxComponents, UInt64>;
-
-    /// \brief Names where frames go, one call per frame with the key of the peer it is for.
-    using Sink      = Delegate<void(UInt64, ConstSpan<Byte>)>;
 
     /// \brief Represents the tag of a replica this side owns, which is this side's to steer.
     using Possessed = Tag<"Possessed">;

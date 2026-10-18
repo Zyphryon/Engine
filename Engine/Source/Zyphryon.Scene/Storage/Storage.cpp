@@ -94,18 +94,10 @@ namespace ZyScene
     Entity Storage::Instantiate(Entity Archetype)
     {
         ZY_ASSERT(Archetype.IsArchetype(), "Only an archetype can be instantiated");
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
 
-        if (mDeferral.IsWalking())
-        {
-            const Entity Actor = CreateEntity();
-            Queue(Deferral::Operation::Instantiate, Actor.GetHandle(), 0, Archetype.GetHandle(), nullptr);
-            return Actor;
-        }
-
-        const Handle Actor = mDirectory.Allocate(false);
-        Propagate(Archetype.GetHandle().GetIndex(), false, Actor, true);
-        return Entity(this, Actor);
+        const Entity Actor = CreateEntity();
+        SetArchetype(Actor.GetHandle(), Archetype.GetHandle());
+        return Actor;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -128,15 +120,7 @@ namespace ZyScene
             Ref<Chunk>   Shape    = * mDirectory[Original].Holder;
 
             Place(Copy.GetIndex(), Shape);
-
-            // Read after the append, which may have moved the rows of a growing first page.
-            const UInt32 From = mDirectory[Original].Row;
-            const UInt32 To   = mDirectory[Copy.GetIndex()].Row;
-
-            for (UInt32 Index = 0; Index < Shape.GetColumns().GetSize(); ++Index)
-            {
-                Chunk::Copy(* Shape.GetColumns()[Index].Info, Shape.At(Index, To), Shape.At(Index, From), 1);
-            }
+            Fill(Copy.GetIndex(), nullptr, Original, 0);
 
             if (Next > 0)
             {
@@ -175,11 +159,7 @@ namespace ZyScene
 
     void Storage::Purge(Component Type)
     {
-        if (mDeferral.IsWalking())
-        {
-            Queue(Deferral::Operation::Purge, kWorld, Type.GetID(), Handle(), nullptr);
-            return;
-        }
+        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be purged while a query walks");
 
         // By position, since taking a component off may make chunks.
         for (UInt32 Index = 0; Index < mLayout.GetChunks().GetSize(); ++Index)
@@ -212,9 +192,31 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Hold(UInt32 Identifier, UInt32 Index)
+    void Storage::RecordWrites(ConstRef<Selection> State)
     {
-        Queue(Deferral::Operation::Notify, mDirectory.GetHandle(Index), Identifier, Handle(), nullptr, false);
+        for (const UInt32 Identifier : State.Writes)
+        {
+            if (!IsWatched(Identifier, Pull::Changed))
+            {
+                continue;
+            }
+
+            for (const Ptr<Chunk> Target : State.Chunks)
+            {
+                // An entity reading its archetype's value was not written, so only chunks holding their own are told.
+                if (Target->Find(Identifier) < 0)
+                {
+                    continue;
+                }
+
+                // Each page holds its rows' handles side by side, so a page is told in one append.
+                for (UInt32 Row = 0; Row < Target->GetSize(); Row += Target->GetRows())
+                {
+                    const UInt32 Count = Min(Target->GetRows(), Target->GetSize() - Row);
+                    mLedger.Record(Identifier, Pull::Changed, ConstSpan<Handle>(Target->GetHandles(Row), Count));
+                }
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -451,13 +453,7 @@ namespace ZyScene
     void Storage::Override(Handle Actor, UInt32 Identifier)
     {
         ZY_ASSERT(mDirectory.IsAlive(Actor), "The entity is not alive");
-
-        // Held until the walk ends, where it looks again at what the archetype lends by then.
-        if (mDeferral.IsWalking())
-        {
-            Queue(Deferral::Operation::Override, Actor, Identifier, Handle(), nullptr);
-            return;
-        }
+        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be overridden while a query walks");
 
         const UInt32    Index  = Actor.GetIndex();
         ConstRef<Chunk> Source = * mDirectory[Index].Holder;
@@ -502,35 +498,39 @@ namespace ZyScene
             return;
         }
 
-        // Held already, with nothing waiting on the entity, it is read in place where the commit would move it.
         const UInt32 Index  = Actor.GetIndex();
         Ref<Chunk>   Source = * mDirectory[Index].Holder;
         const SInt16 Column = Source.Find(Identifier);
 
-        if (Column >= 0 && !(mDeferral.IsWalking() && mDeferral.IsMarked(Index)))
+        if (mDeferral.IsWalking() && (Column < 0 || mDeferral.IsMarked(Index)))
         {
-            const Ptr<Byte> Place = Source.At(Column, mDirectory[Index].Row);
-            Chunk::Destruct(Info, Place, 1);
-            Chunk::Construct(Info, Place, 1);
+            const Ptr<Byte> Payload = mDeferral.Allocate(Info.GetSize(), Info.GetAlignment());
+            Chunk::Construct(Info, Payload, 1);
 
             if (Info.Load)
             {
-                Info.Load(Input, Place);
+                Info.Load(Input, Payload);
             }
-            Record(Identifier, Pull::Changed, Index, nullptr);
+            Queue(Deferral::Operation::Set, Actor, Identifier, Handle(), Payload);
             return;
         }
 
-        // Built apart and moved in by the commit, which holds it when a walk runs.
-        const Ptr<Byte> Fresh = Allocate<Byte>(Info.GetSize(), Info.GetAlignment());
-        Chunk::Construct(Info, Fresh, 1);
+        if (Column < 0)
+        {
+            InsertRecorded(Index, Identifier, nullptr);
+        }
+        else
+        {
+            Chunk::Destruct(Info, Source.At(Column, mDirectory[Index].Row), 1);
+            Chunk::Construct(Info, Source.At(Column, mDirectory[Index].Row), 1);
+            Record(Identifier, Pull::Changed, Index, nullptr);
+        }
 
         if (Info.Load)
         {
-            Info.Load(Input, Fresh);
+            Ref<Chunk> Target = * mDirectory[Index].Holder;
+            Info.Load(Input, Target.At(Target.Find(Identifier), mDirectory[Index].Row));
         }
-        Commit(Actor, Identifier, Fresh);
-        Free(Fresh, Info.GetAlignment());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -538,16 +538,21 @@ namespace ZyScene
 
     void Storage::SetAwake(Handle Actor, Bool Awake, Bool Recursive)
     {
-        if (!Recursive)
+        const auto Toggle = [this, Awake](Handle Target)
         {
             if (Awake)
             {
-                Remove(Actor, mAsleep);
+                Remove(Target, mAsleep);
             }
             else
             {
-                Add(Actor, mAsleep);
+                Add(Target, mAsleep);
             }
+        };
+
+        if (!Recursive)
+        {
+            Toggle(Actor);
             return;
         }
 
@@ -557,16 +562,7 @@ namespace ZyScene
 
         for (UInt32 Cursor = Root;;)
         {
-            const Handle Current = mDirectory.GetHandle(Cursor);
-
-            if (Awake)
-            {
-                Remove(Current, mAsleep);
-            }
-            else
-            {
-                Add(Current, mAsleep);
-            }
+            Toggle(mDirectory.GetHandle(Cursor));
 
             if (mDirectory.GetFirst(Cursor))
             {
@@ -737,29 +733,7 @@ namespace ZyScene
         }
 
         PlaceOrTransfer(Index, * Destination);
-
-        // What it held stays, the rest is copied from the archetype or built.
-        const UInt32 Row  = mDirectory[Index].Row;
-        const UInt32 From = mDirectory[Source].Row;
-
-        for (UInt32 Column = 0; Column < Destination->GetColumns().GetSize(); ++Column)
-        {
-            ConstRef<Chunk::Column> Made = Destination->GetColumns()[Column];
-
-            if (Held && Held->Has(Made.Identifier))
-            {
-                continue;
-            }
-
-            if (const SInt16 Origin = Shape->Find(Made.Identifier); Origin >= 0)
-            {
-                Chunk::Copy(* Made.Info, Destination->At(Column, Row), Shape->At(Origin, From), 1);
-            }
-            else
-            {
-                Chunk::Construct(* Made.Info, Destination->At(Column, Row), 1);
-            }
-        }
+        Fill(Index, Held, Source, 0);
 
         for (UInt32 Part = Parts ? mDirectory.GetFirst(Source) : 0; Part; Part = mDirectory.GetNext(Part))
         {
@@ -771,8 +745,40 @@ namespace ZyScene
             }
         }
 
-        // Recorded once its parts are beneath it, children first.
         RecordGain(Index, Held);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Fill(UInt32 Index, ConstPtr<Chunk> Held, UInt32 Archetype, UInt8 Flags)
+    {
+        Ref<Chunk>      Target = * mDirectory[Index].Holder;
+        ConstRef<Chunk> Shape  = * mDirectory[Archetype].Holder;
+        const UInt32    Row    = mDirectory[Index].Row;
+        const UInt32    From   = mDirectory[Archetype].Row;
+
+        // What it held stays, the rest is copied from the archetype or built.
+        for (UInt32 Column = 0; Column < Target.GetColumns().GetSize(); ++Column)
+        {
+            ConstRef<Chunk::Column> Made = Target.GetColumns()[Column];
+
+            if (Held && Held->Has(Made.Identifier))
+            {
+                continue;
+            }
+
+            const SInt16 Origin = Shape.Find(Made.Identifier);
+
+            if (Origin >= 0 && (Shape.GetFlags(Made.Identifier) & Flags) == Flags)
+            {
+                Chunk::Copy(* Made.Info, Target.At(Column, Row), Shape.At(Origin, From), 1);
+            }
+            else
+            {
+                Chunk::Construct(* Made.Info, Target.At(Column, Row), 1);
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -905,12 +911,6 @@ namespace ZyScene
 
         switch (Change.Kind)
         {
-        case Deferral::Operation::Instantiate:
-            if (Alive && mDirectory.IsAlive(Change.Other))
-            {
-                Propagate(Change.Other.GetIndex(), false, Change.Actor, true);
-            }
-            break;
         case Deferral::Operation::Add:
             if (Alive)
             {
@@ -951,15 +951,6 @@ namespace ZyScene
                 SetArchetype(Change.Actor, Change.Other);
             }
             break;
-        case Deferral::Operation::Purge:
-            Purge(Component(Change.Identifier));
-            break;
-        case Deferral::Operation::Override:
-            if (Alive)
-            {
-                Override(Change.Actor, Change.Identifier);
-            }
-            break;
         case Deferral::Operation::Notify:
             if (Alive)
             {
@@ -968,9 +959,7 @@ namespace ZyScene
             break;
         case Deferral::Operation::Invoke:
         {
-            Ref<Deferral::Task> Work = * reinterpret_cast<Ptr<Deferral::Task>>(Change.Payload);
-            Work();
-            Destruct(Work);
+            (* reinterpret_cast<Ptr<Deferral::Task>>(Change.Payload))(Change.Payload);
             break;
         }
         }
@@ -979,17 +968,32 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh)
+    Ptr<Byte> Storage::Extend(UInt32 Index, UInt32 Identifier)
     {
         Ref<Chunk>       Source = * mDirectory[Index].Holder;
-        const Bool       Seen   = mDirectory.FindLent(Source.GetBase(), Identifier) != nullptr;
         const Ptr<Chunk> Target = FindOrCreateAddition(Source, Identifier);
         Transfer(Index, * Target);
 
-        if (const SInt16 Column = Target->Find(Identifier); Column >= 0)
+        if (Target->GetSignature().GetSize() != Source.GetSignature().GetSize() + 1)
         {
-            ConstRef<Metatype> Info  = * Target->GetColumns()[Column].Info;
-            const Ptr<Byte>    Place = Target->At(Column, mDirectory[Index].Row);
+            BuildDefaults(Index, Source, Identifier, true);
+        }
+
+        const SInt16 Column = Target->Find(Identifier);
+        return Column >= 0 ? Target->At(Column, mDirectory[Index].Row) : nullptr;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh)
+    {
+        const UInt32 Base = mDirectory[Index].Holder->GetBase();
+        const Bool   Seen = mDirectory.FindLent(Base, Identifier) != nullptr;
+
+        if (const Ptr<Byte> Place = Extend(Index, Identifier))
+        {
+            ConstRef<Metatype> Info = Registry::Get().GetColumn(Identifier);
 
             if (Fresh)
             {
@@ -1000,27 +1004,41 @@ namespace ZyScene
                 Chunk::Construct(Info, Place, 1);
             }
         }
-
-        // Most edges bring nothing along.
-        if (Target->GetSignature().GetSize() != Source.GetSignature().GetSize() + 1)
-        {
-            BuildDefaults(Index, Source, Identifier, true);
-        }
         Record(Identifier, Seen ? Pull::Changed : Pull::Added, Index, nullptr);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::AppendGain(UInt32 Index, ConstPtr<Chunk> Before)
+    void Storage::RecordGain(UInt32 Index, ConstPtr<Chunk> Before)
     {
-        for (const UInt32 Identifier : GetWatched(Index, Pull::Added))
+        if (!mLedger.IsActive())
+        {
+            return;
+        }
+
+        ConstRef<Chunk> Holder = * mDirectory[Index].Holder;
+
+        const auto Gain = [this, Index, Before](UInt32 Identifier)
         {
             if (!Before || !mDirectory.Sees(* Before, Identifier))
             {
                 Record(Identifier, Pull::Added, Index, nullptr);
             }
+        };
+
+        for (const UInt32 Identifier : Holder.GetSignature())
+        {
+            if (IsWatched(Identifier, Pull::Added))
+            {
+                Gain(Identifier);
+            }
         }
+
+        VisitLent(Holder, Pull::Added, [&Gain](UInt32 Identifier, ConstPtr<Byte>)
+        {
+            Gain(Identifier);
+        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1052,15 +1070,24 @@ namespace ZyScene
     {
         if (mLedger.IsActive())
         {
-            ConstRef<Directory::Slot> Entry = mDirectory[Index];
+            ConstRef<Directory::Slot> Entry  = mDirectory[Index];
+            ConstRef<Chunk>           Holder = * Entry.Holder;
+            const Handle              Actor  = mDirectory.GetHandle(Index);
 
             // Straight into the lists, since the heirs of a dying archetype keep what it lent them.
-            for (const UInt32 Identifier : GetWatched(Index, Pull::Removed))
+            for (const UInt32 Identifier : Holder.GetSignature())
             {
-                const ConstPtr<Byte> Value = mDirectory.FindValue(* Entry.Holder, Entry.Row, Identifier);
-
-                mLedger.Record(Identifier, Pull::Removed, mDirectory.GetHandle(Index), Value, Entry.Holder->GetIndex());
+                if (IsWatched(Identifier, Pull::Removed))
+                {
+                    const ConstPtr<Byte> Value = mDirectory.FindValue(Holder, Entry.Row, Identifier);
+                    mLedger.Record(Identifier, Pull::Removed, Actor, Value, Holder.GetIndex());
+                }
             }
+
+            VisitLent(Holder, Pull::Removed, [this, Actor, &Holder](UInt32 Identifier, ConstPtr<Byte> Value)
+            {
+                mLedger.Record(Identifier, Pull::Removed, Actor, Value, Holder.GetIndex());
+            });
         }
 
         if (Directory::IsArchetype(Index))
@@ -1160,14 +1187,12 @@ namespace ZyScene
         {
             // The heirs take as their own what they read from here.
             Sequence<UInt32> Signature(Source->GetSignature());
-            Sequence<UInt32> Taken;
 
             for (const UInt32 Identifier : Origin.GetSignature())
             {
                 if ((Origin.GetFlags(Identifier) & Chunk::kLends) && !Source->Has(Identifier))
                 {
                     Signature.Append(Identifier);
-                    Taken.Append(Identifier);
                 }
             }
             Signature.Sort();
@@ -1178,19 +1203,7 @@ namespace ZyScene
             {
                 const UInt32 Heir = Source->GetHandle(Source->GetSize() - 1).GetIndex();
                 Transfer(Heir, * Target);
-                BuildDefaults(Heir, * Source, 0, false);
-
-                for (const UInt32 Identifier : Taken)
-                {
-                    if (const SInt16 Column = Target->Find(Identifier); Column >= 0)
-                    {
-                        const Ptr<Byte> Place = Target->At(Column, mDirectory[Heir].Row);
-                        const Ptr<Byte> At    = Origin.At(Origin.Find(Identifier), mDirectory[Archetype].Row);
-
-                        Chunk::Destruct(* Target->GetColumns()[Column].Info, Place, 1);
-                        Chunk::Copy(* Target->GetColumns()[Column].Info, Place, At, 1);
-                    }
-                }
+                Fill(Heir, Source, Archetype, Chunk::kLends);
             }
             mLayout.Destroy(Source);
         }
@@ -1251,36 +1264,5 @@ namespace ZyScene
             Target->SetAddition(Identifier, AddressOf(Source));
         }
         return Target;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Sequence<UInt32> Storage::GetWatched(UInt32 Index, Pull Kind) const
-    {
-        Sequence<UInt32> Seen;
-        ConstRef<Chunk>  Holder = * mDirectory[Index].Holder;
-
-        for (const UInt32 Identifier : Holder.GetSignature())
-        {
-            if (IsWatched(Identifier, Kind))
-            {
-                Seen.Append(Identifier);
-            }
-        }
-
-        for (UInt32 Base = Holder.GetBase(); Base; Base = mDirectory[Base].Holder->GetBase())
-        {
-            for (const UInt32 Identifier : mDirectory[Base].Holder->GetSignature())
-            {
-                if (IsWatched(Identifier, Kind)
-                    && !Seen.Contains(Identifier)
-                    && mDirectory.FindLent(Holder.GetBase(), Identifier))
-                {
-                    Seen.Append(Identifier);
-                }
-            }
-        }
-        return Seen;
     }
 }

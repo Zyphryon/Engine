@@ -216,7 +216,7 @@ namespace ZyScene
             Before       += Target.Size;
 
             // A typed read steps by its type's size, so the bytes kept for an unresolved type offer it no run.
-            mRunOf[Target.Identifier] = Target.Info == AddressOf(Metatype::Unitialized()) ? 0 : Target.Offset;
+            mRunOf[Target.Identifier] = Target.Info == AddressOf(Metatype::Uninitialized()) ? 0 : Target.Offset;
 
             if (Old)
             {

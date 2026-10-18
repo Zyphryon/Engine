@@ -134,12 +134,11 @@ namespace ZyScene
                 ConstRef<Directory::Slot> Entry      = mStorage->mDirectory[GetIndex()];
                 const Ptr<Type>           Held       = Entry.Holder->Fetch<Type>(Identifier, Entry.Row);
 
-                // In place, even mid-walk, unless a reader watches changes or a change of this entity waits already.
-                if (Held
-                    && !mStorage->IsWatched(Identifier, Pull::Changed)
-                    && !mStorage->mDeferral.IsMarked(GetIndex()))
+                // In place, even mid-walk, unless a change of this entity waits already; a reader is told after.
+                if (Held && !mStorage->mDeferral.IsMarked(GetIndex()))
                 {
                     * Held = Forward<Value>(Data);
+                    mStorage->Record(Identifier, Pull::Changed, GetHandle(), nullptr);
                 }
                 else
                 {
@@ -155,21 +154,7 @@ namespace ZyScene
         template<typename Type>
         ZY_INLINE Entity Add() const
         {
-            const UInt32 Identifier = IdentifierOf<Type>();
-
-            if (mStorage->mDeferral.IsWalking() || mStorage->IsWatched(Identifier, Pull::Added))
-            {
-                mStorage->Add(GetHandle(), Identifier);
-            }
-            else
-            {
-                ConstRef<Chunk> Holder = GetChunk();
-
-                if (!Holder.Has(Identifier) && !mStorage->mDirectory.FindLent(Holder.GetBase(), Identifier))
-                {
-                    mStorage->Insert<StripAll<Type>>(GetIndex(), Identifier, StripAll<Type>());
-                }
-            }
+            mStorage->Add(GetHandle(), IdentifierOf<Type>());
             return (* this);
         }
 
@@ -216,21 +201,7 @@ namespace ZyScene
         template<typename Type>
         ZY_INLINE Entity Remove() const
         {
-            const UInt32 Identifier = IdentifierOf<Type>();
-
-            if (mStorage->mDeferral.IsWalking() || mStorage->IsWatched(Identifier, Pull::Changed | Pull::Removed))
-            {
-                mStorage->Remove(GetHandle(), Identifier);
-            }
-            else
-            {
-                Ref<Chunk> Holder = GetChunk();
-
-                if (Holder.Has(Identifier))
-                {
-                    mStorage->Transfer(GetIndex(), * mStorage->FindOrCreateRemoval(Holder, Identifier));
-                }
-            }
+            mStorage->Remove(GetHandle(), IdentifierOf<Type>());
             return (* this);
         }
 
@@ -274,9 +245,7 @@ namespace ZyScene
         ZY_INLINE Bool Has(Component Type) const
         {
             const ConstPtr<Directory::Slot> Entry = GetSlot();
-
-            return Entry && (Entry->Holder->Has(Type.GetID())
-                || mStorage->mDirectory.FindLent(Entry->Holder->GetBase(), Type.GetID()));
+            return Entry && mStorage->mDirectory.Sees(* Entry->Holder, Type.GetID());
         }
 
         /// \brief Checks whether the entity holds a component itself rather than inheriting it.
@@ -416,14 +385,17 @@ namespace ZyScene
                 return (* this);
             }
 
-            if (const Ptr<Type> Held = Get<Type>())
+            // Behind a change of this entity that waits, the one held is stale and the waiting one would overwrite it.
+            const Ptr<Type> Held = Get<Type>();
+
+            if (Held && !(mStorage->mDeferral.IsWalking() && mStorage->mDeferral.IsMarked(GetIndex())))
             {
                 Callback(* Held);
                 return Notify<Type>();
             }
 
-            const ConstPtr<Type> Lent  = Get<const Type>();
-            Type                 Value = Lent ? * Lent : Type();
+            const ConstPtr<Type> Seen  = Held ? Held : Get<const Type>();
+            Type                 Value = Seen ? * Seen : Type();
 
             Callback(Value);
             return Set(Move(Value));
@@ -467,16 +439,6 @@ namespace ZyScene
             return (* this);
         }
 
-        /// \brief Writes the bytes of a component the entity holds itself, as saves carry it, behind their length.
-        ///
-        /// \param Output The writer to append the length and bytes to.
-        /// \return `true` when written, `false` when the entity does not hold it or saves never carry it.
-        template<typename Type>
-        ZY_INLINE Bool Write(Ref<Writer> Output) const
-        {
-            return Write(Component(IdentifierOf<Type>()), Output);
-        }
-
         /// \brief Writes the bytes of a component named at runtime the entity holds itself, behind their length.
         ///
         /// \param Type   The component to write.
@@ -515,16 +477,6 @@ namespace ZyScene
             return true;
         }
 
-        /// \brief Reads what \ref Write wrote over the component, adding it when the entity lacks it.
-        ///
-        /// \param Input The reader, at the length.
-        /// \return This entity.
-        template<typename Type>
-        ZY_INLINE Entity Read(Ref<Reader> Input) const
-        {
-            return Read(Component(IdentifierOf<Type>()), Input);
-        }
-
         /// \brief Reads what \ref Write wrote over a component named at runtime, adding it when the entity lacks it.
         ///
         /// \param Type  The component the bytes belong to.
@@ -533,7 +485,17 @@ namespace ZyScene
         ZY_INLINE Entity Read(Component Type, Ref<Reader> Input) const
         {
             Reader Block(Input.ReadBlock<UInt32, Byte>());
-            mStorage->Read(GetHandle(), Type.GetID(), Block);
+            return Receive(Type, Block);
+        }
+
+        /// \brief Reads a component named at runtime from bytes carrying no length, adding it when absent.
+        ///
+        /// \param Type  The component the bytes belong to.
+        /// \param Input The reader, at the component's bytes, which it is left past.
+        /// \return This entity.
+        ZY_INLINE Entity Receive(Component Type, Ref<Reader> Input) const
+        {
+            mStorage->Read(GetHandle(), Type.GetID(), Input);
             return (* this);
         }
 
@@ -803,15 +765,6 @@ namespace ZyScene
         ZY_INLINE constexpr UInt32 GetIndex() const
         {
             return static_cast<UInt32>(mID);
-        }
-
-        /// \brief Gets the chunk the entity sits in.
-        ///
-        /// \return The chunk its row lives in.
-        ZY_INLINE Ref<Chunk> GetChunk() const
-        {
-            ZY_ASSERT(IsAlive(), "The entity is not alive");
-            return * mStorage->mDirectory[GetIndex()].Holder;
         }
 
         /// \brief Gets the directory slot of the entity, without which every read answers nothing.

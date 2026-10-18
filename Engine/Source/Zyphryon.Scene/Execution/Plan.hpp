@@ -40,7 +40,22 @@ namespace ZyScene
 
         /// `true` when the callback writes it, so it lives in the entity's own column.
         static constexpr Bool kWritten = !IsImmutable<Type>;
+
+        /// `true` when a match must hold it in its own column, a written component with data to write.
+        static constexpr Bool kOwned   = kWritten && !kTag;
     };
+
+    /// \brief Adds a component to a list of terms unless it is there already.
+    ///
+    /// \param Terms      The required or owned terms to add to.
+    /// \param Identifier The identifier of the component to add.
+    ZY_INLINE void AddTerm(Ref<Sequence<UInt32>> Terms, UInt32 Identifier)
+    {
+        if (!Terms.Contains(Identifier))
+        {
+            Terms.Append(Identifier);
+        }
+    }
 
     /// \brief Represents a parameter reduced to the field it stands for.
     ///
@@ -127,8 +142,6 @@ namespace ZyScene
         {
             using Mode = Selection::Mode;
 
-            // A written field lives in the entity's own column, unless it is a tag with nothing to write.
-            constexpr Bool kOwned  = Field::kWritten && !Field::kTag;
             constexpr Mode kAccess = Field::kWritten ? Mode::Write : Mode::Read;
 
             const UInt32 Identifier = IdentifierOf<StripAll<typename Field::Value>>();
@@ -154,27 +167,8 @@ namespace ZyScene
             }
             else
             {
-                if constexpr (kOwned)
-                {
-                    AddTerm(State.Owned, Identifier);
-                }
-                else
-                {
-                    AddTerm(State.Required, Identifier);
-                }
-                State.Modes.Append(kOwned ? Mode::Write : Mode::Read);
-            }
-        }
-
-        /// \brief Adds a component to a list of terms unless it is there already.
-        ///
-        /// \param Terms      The required or owned terms to add to.
-        /// \param Identifier The identifier of the component to add.
-        ZY_INLINE static void AddTerm(Ref<Sequence<UInt32>> Terms, UInt32 Identifier)
-        {
-            if (!Terms.Contains(Identifier))
-            {
-                Terms.Append(Identifier);
+                AddTerm(Field::kOwned ? State.Owned : State.Required, Identifier);
+                State.Modes.Append(Field::kOwned ? Mode::Write : Mode::Read);
             }
         }
     };
@@ -209,24 +203,6 @@ namespace ZyScene
     /// \tparam Callable The callback, a function object.
     template<typename Callable>
     struct Plan : Plan<decltype(& StripAll<Callable>::operator())>
-    {
-    };
-
-    /// \brief Represents the fields a free function asks a walk for.
-    template<typename Return, typename... Arguments>
-    struct Plan<Return (Arguments...)> : Parameters<Arguments...>
-    {
-    };
-
-    /// \brief Represents the fields a pointer to a free function asks a walk for.
-    template<typename Return, typename... Arguments>
-    struct Plan<Return (*)(Arguments...)> : Parameters<Arguments...>
-    {
-    };
-
-    /// \brief Represents the fields a mutable function object asks a walk for.
-    template<typename Class, typename Return, typename... Arguments>
-    struct Plan<Return (Class::*)(Arguments...)> : Parameters<Arguments...>
     {
     };
 
