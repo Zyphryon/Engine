@@ -47,7 +47,46 @@ namespace ZyScene
         /// \brief Worlds are not copied, since every entity points back into its own.
         World(ConstRef<World> Other) = delete;
 
-        /// \brief Creates an entity holding a set of components, placed straight where it belongs.
+        /// \brief Creates an instance of an archetype under a parent, holding a set of its own components, in one move.
+        ///
+        /// \param Archetype The archetype it reads from, or one that names nothing for a plain entity.
+        /// \param Parent    The entity it hangs from, or one that names nothing for a root.
+        /// \param Values    The components it holds itself, over the archetype's, moved into place.
+        /// \return The entity, which waits outside every query until the running walk ends when there is one.
+        template<typename... Types>
+        Entity Spawn(Entity Archetype, Entity Parent, AnyRef<Types>... Values)
+        {
+            if (mDeferral.IsWalking())
+            {
+                const Entity Actor = CreateEntity();
+
+                if (Archetype.IsAlive())
+                {
+                    Actor.SetArchetype(Archetype);
+                }
+                Actor.Attach(Parent);
+                (Actor.Set(Forward<Types>(Values)), ...);
+                return Actor;
+            }
+
+            // From the archetype's heir chunk along the add edges, which also bring along what the components imply.
+            const UInt32 Base   = Archetype.IsAlive() ? Archetype.GetHandle().GetIndex() : 0;
+            const UInt32 Above  = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
+            Ptr<Chunk>   Target = Base ? FindHeir(nullptr, Base, false) : mLayout.GetRoot();
+            ((Target = Extend(* Target, IdentifierOf<StripAll<Types>>())), ...);
+
+            const Handle Actor = mDirectory.Allocate(false);
+            Place(Actor.GetIndex(), * Target);
+
+            const UInt32 Row = mDirectory[Actor.GetIndex()].Row;
+            (Chunk::Emplace<StripAll<Types>>(* Target, Row, Forward<Types>(Values)), ...);
+
+            const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()..., 0 };
+            Settle(Actor.GetIndex(), Base, Above, ConstSpan<UInt32>(Given, sizeof...(Types)));
+            return Entity(this, Actor);
+        }
+
+        /// \brief Creates a plain root entity holding a set of components, in one move.
         ///
         /// \param Values The components, moved into place.
         /// \return The entity, which waits outside every query until the running walk ends when there is one.
@@ -73,18 +112,13 @@ namespace ZyScene
 
             if (Target->GetSignature().GetSize() != sizeof...(Types))
             {
-                const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()... };
-
-                for (UInt32 Column = 0; Column < Target->GetColumns().GetSize(); ++Column)
-                {
-                    if (!ZyBase::Find(Given, sizeof...(Types), Target->GetColumns()[Column].Identifier))
-                    {
-                        Chunk::Construct(* Target->GetColumns()[Column].Info, Target->At(Column, Row), 1);
-                    }
-                }
+                const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()..., 0 };
+                Settle(Actor.GetIndex(), 0, 0, ConstSpan<UInt32>(Given, sizeof...(Types)));
             }
-
-            RecordGain(Actor.GetIndex(), nullptr);
+            else
+            {
+                RecordGain(Actor.GetIndex(), nullptr);
+            }
             return Entity(this, Actor);
         }
 

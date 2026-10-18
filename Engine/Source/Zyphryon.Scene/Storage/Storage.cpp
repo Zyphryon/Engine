@@ -91,18 +91,6 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Entity Storage::Instantiate(Entity Archetype)
-    {
-        ZY_ASSERT(Archetype.IsArchetype(), "Only an archetype can be instantiated");
-
-        const Entity Actor = CreateEntity();
-        SetArchetype(Actor.GetHandle(), Archetype.GetHandle());
-        return Actor;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Entity Storage::CloneArchetype(Entity Source, Entity Parent)
     {
         ZY_ASSERT(Source.IsArchetype(), "Only an archetype can be cloned");
@@ -693,49 +681,69 @@ namespace ZyScene
     void Storage::Propagate(UInt32 Source, Bool AsArchetype, Handle Target, Bool Parts)
     {
         const UInt32     Index = Target.GetIndex();
-        const Ptr<Chunk> Shape = mDirectory[Source].Holder;
         const Ptr<Chunk> Held  = mDirectory[Index].Holder;
+
+        PlaceOrTransfer(Index, * FindHeir(Held, Source, AsArchetype));
+        Fill(Index, Held, Source, 0);
+
+        if (Parts)
+        {
+            CopyParts(Source, AsArchetype, Index);
+        }
+        RecordGain(Index, Held);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Ptr<Chunk> Storage::FindHeir(ConstPtr<Chunk> Held, UInt32 Source, Bool AsArchetype)
+    {
+        const Ptr<Chunk> Shape = mDirectory[Source].Holder;
         const Bool       Bare  = !Held || Held->GetSignature().IsEmpty();
 
         // A bare copy lands where the last one did while the archetype has not moved since.
-        Ptr<Chunk> Destination = Bare ? mLayout.GetCopy(Source, Shape, AsArchetype) : nullptr;
-
-        if (!Destination)
+        if (const Ptr<Chunk> Known = Bare ? mLayout.GetCopy(Source, Shape, AsArchetype) : nullptr)
         {
-            // What it holds already, plus what the archetype copies, plus what that brings along.
-            Sequence<UInt32> Signature;
+            return Known;
+        }
 
-            if (Held)
+        // What it holds already, plus what the archetype copies, plus what that brings along.
+        Sequence<UInt32> Signature;
+
+        if (Held)
+        {
+            Signature.Append(Held->GetSignature());
+        }
+
+        for (const UInt32 Identifier : Shape->GetSignature())
+        {
+            if ((Shape->GetFlags(Identifier) & Chunk::kCopies) && (!Held || !Held->Has(Identifier)))
             {
-                Signature.Append(Held->GetSignature());
-            }
-
-            for (const UInt32 Identifier : Shape->GetSignature())
-            {
-                if ((Shape->GetFlags(Identifier) & Chunk::kCopies) && (!Held || !Held->Has(Identifier)))
-                {
-                    Signature.Append(Identifier);
-                }
-            }
-
-            if (AsArchetype && (!Held || !Held->Has(mPrefab)))
-            {
-                Signature.Append(mPrefab);
-            }
-            Signature.Sort();
-
-            Destination = FindOrCreate(Signature, Source)->GetClosure();
-
-            if (Bare)
-            {
-                mLayout.SetCopy(Source, Shape, AsArchetype, Destination);
+                Signature.Append(Identifier);
             }
         }
 
-        PlaceOrTransfer(Index, * Destination);
-        Fill(Index, Held, Source, 0);
+        if (AsArchetype && (!Held || !Held->Has(mPrefab)))
+        {
+            Signature.Append(mPrefab);
+        }
+        Signature.Sort();
 
-        for (UInt32 Part = Parts ? mDirectory.GetFirst(Source) : 0; Part; Part = mDirectory.GetNext(Part))
+        const Ptr<Chunk> Destination = FindOrCreate(Signature, Source)->GetClosure();
+
+        if (Bare)
+        {
+            mLayout.SetCopy(Source, Shape, AsArchetype, Destination);
+        }
+        return Destination;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::CopyParts(UInt32 Source, Bool AsArchetype, UInt32 Index)
+    {
+        for (UInt32 Part = mDirectory.GetFirst(Source); Part; Part = mDirectory.GetNext(Part))
         {
             if (mDirectory[Part].Holder->IsArchetype())
             {
@@ -744,8 +752,51 @@ namespace ZyScene
                 Propagate(Part, AsArchetype, Child, true);
             }
         }
+    }
 
-        RecordGain(Index, Held);
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given)
+    {
+        Ref<Chunk>       Target = * mDirectory[Index].Holder;
+        const UInt32     Row    = mDirectory[Index].Row;
+        const Ptr<Chunk> Shape  = Archetype ? mDirectory[Archetype].Holder : nullptr;
+
+        // What it was not given is copied from the archetype or built.
+        const UInt32 Columns = Shape || Target.GetSignature().GetSize() != Given.GetSize() ? Target.GetColumns().GetSize() : 0;
+
+        for (UInt32 Column = 0; Column < Columns; ++Column)
+        {
+            ConstRef<Chunk::Column> Made = Target.GetColumns()[Column];
+
+            if (ZyBase::Find(Given.GetData(), Given.GetSize(), Made.Identifier))
+            {
+                continue;
+            }
+
+            const SInt16 Origin = Shape ? Shape->Find(Made.Identifier) : -1;
+
+            if (Origin >= 0)
+            {
+                Chunk::Copy(* Made.Info, Target.At(Column, Row), Shape->At(Origin, mDirectory[Archetype].Row), 1);
+            }
+            else
+            {
+                Chunk::Construct(* Made.Info, Target.At(Column, Row), 1);
+            }
+        }
+
+        if (Archetype)
+        {
+            CopyParts(Archetype, false, Index);
+        }
+        RecordGain(Index, nullptr);
+
+        if (Parent)
+        {
+            SetParent(Index, Parent);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

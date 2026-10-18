@@ -70,12 +70,6 @@ namespace ZyScene
         /// \return The archetype, placed at once even during a walk.
         Entity CreateArchetype();
 
-        /// \brief Creates an entity from an archetype, with every part beneath it.
-        ///
-        /// \param Archetype The archetype, which must be alive.
-        /// \return The instance, which carries nothing until the running walk ends when there is one.
-        Entity Instantiate(Entity Archetype);
-
         /// \brief Copies an archetype, everything it holds and every part beneath it, into a new one.
         ///
         /// \param Source The archetype, which must be alive.
@@ -287,6 +281,16 @@ namespace ZyScene
             return Known ? Known : CreateAddition(Source, Identifier);
         }
 
+        /// \brief Gets the chunk an entity lands in once it holds a component, its own when it holds one already.
+        ///
+        /// \param Source     The chunk an entity sits in.
+        /// \param Identifier The identifier of the component.
+        /// \return The chunk, made from the same archetype.
+        ZY_INLINE Ptr<Chunk> Extend(Ref<Chunk> Source, UInt32 Identifier)
+        {
+            return Source.Has(Identifier) ? AddressOf(Source) : FindOrCreateAddition(Source, Identifier);
+        }
+
         /// \brief Gets the chunk reached by removing a component.
         ///
         /// \param Source     The chunk an entity sits in.
@@ -416,6 +420,29 @@ namespace ZyScene
         /// \param Target      The entity to fill, sitting in no chunk, in the pending one or anywhere else.
         /// \param Parts       `true` to make the archetype's parts beneath it.
         void Propagate(UInt32 Source, Bool AsArchetype, Handle Target, Bool Parts);
+
+        /// \brief Gets the chunk an heir of an archetype lands in, remembering it for bare heirs.
+        ///
+        /// \param Held        The chunk the heir sits in now, whose components it keeps, or `nullptr`.
+        /// \param Source      The slot of the archetype.
+        /// \param AsArchetype `true` for an heir that is an archetype too, `false` for an instance.
+        /// \return The chunk, never `nullptr`.
+        Ptr<Chunk> FindHeir(ConstPtr<Chunk> Held, UInt32 Source, Bool AsArchetype);
+
+        /// \brief Makes a copy of every part of an archetype beneath an entity.
+        ///
+        /// \param Source      The slot of the archetype.
+        /// \param AsArchetype `true` to make the copies archetypes too, `false` for instances.
+        /// \param Index       The slot of the entity the copies hang from.
+        void CopyParts(UInt32 Source, Bool AsArchetype, UInt32 Index);
+
+        /// \brief Finishes a spawned entity, building what it was not given, copying the parts and attaching it.
+        ///
+        /// \param Index     The slot of the entity, which sits in its final chunk.
+        /// \param Archetype The slot of the archetype it is made from, or zero.
+        /// \param Parent    The slot of the entity it hangs from, or zero.
+        /// \param Given     The identifiers of the components the caller built in place.
+        void Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given);
 
         /// \brief Fills the columns an entity gained by a move, copying them from an archetype or building them.
         ///
