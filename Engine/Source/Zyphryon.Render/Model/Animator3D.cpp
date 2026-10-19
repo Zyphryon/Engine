@@ -101,13 +101,13 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator3D::Update(Real64 Time, Ref<Scratch> Scratch)
+    Skeleton3D::Pose Animator3D::Sample(Real64 Time, Ref<Scratch> Scratch)
     {
         mClock = Time;
 
         if (!mModel)
         {
-            return;
+            return Skeleton3D::Pose();
         }
 
         ConstRetainer<Skeleton3D> Rig = mModel->GetSkeleton();
@@ -115,7 +115,7 @@ namespace ZyRender
         // Model and rig both load in the background; there is no pose to build until the bones arrive.
         if (!Rig || Rig->IsEmpty())
         {
-            return;
+            return Skeleton3D::Pose();
         }
 
         const UInt Bones = Rig->GetBones().GetSize();
@@ -140,8 +140,7 @@ namespace ZyRender
         // A clip still loading, or none at all, leaves the model in its rest pose.
         if (!Ready || !Active.Clip)
         {
-            Rig->Skin(mPalette);
-            return;
+            return Skeleton3D::Pose();
         }
 
         const Real32 Weight = mFade > 0.0
@@ -178,9 +177,39 @@ namespace ZyRender
             Skeleton3D::Blend(Pose, Fading, 1.0f - Weight);
         }
 
-        // Folded in place, since skinning reads only each slot's own transform.
-        Rig->Compose(Pose, mPalette);
-        Rig->Skin(mPalette, mPalette);
+        return Pose;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Animator3D::Compose(ConstRef<Skeleton3D::Pose> Pose)
+    {
+        if (mPalette.IsEmpty())
+        {
+            return;
+        }
+
+        ConstRetainer<Skeleton3D> Rig = mModel->GetSkeleton();
+
+        if (Pose.GetSize() == 0)
+        {
+            Rig->Skin(mPalette);
+        }
+        else
+        {
+            // Folded in place, since skinning reads only each slot's own transform.
+            Rig->Compose(Pose, mPalette);
+            Rig->Skin(mPalette, mPalette);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Animator3D::Update(Real64 Time, Ref<Scratch> Scratch)
+    {
+        Compose(Sample(Time, Scratch));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

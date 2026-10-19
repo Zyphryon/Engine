@@ -89,6 +89,18 @@ namespace ZyRender
             return mSources[mActive].Cursor;
         }
 
+        /// \brief Advances the clip and samples the local pose it puts the rig in, leaving the palette as it was.
+        ///
+        /// \param Time    The current simulation time, in seconds, on the same clock every call is given.
+        /// \param Scratch The working room to pose in, which holds the returned pose until it is acquired again.
+        /// \return The local transform of every bone, or an empty pose while the model rests or is still loading.
+        Skeleton3D::Pose Sample(Real64 Time, Ref<Scratch> Scratch);
+
+        /// \brief Folds a local pose into the palette the vertex shader deforms by.
+        ///
+        /// \param Pose The local transform of every bone as \ref Sample returned it, adjusted or not.
+        void Compose(ConstRef<Skeleton3D::Pose> Pose);
+
         /// \brief Advances the clip and rebuilds the palette it puts the rig in.
         ///
         /// \param Time    The current simulation time, in seconds, on the same clock every call is given.
