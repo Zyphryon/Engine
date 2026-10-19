@@ -87,6 +87,20 @@ namespace ZyScene
             return GetInfo().Has(Trait::Singleton);
         }
 
+        /// \brief Gets the side of a session that keeps the type.
+        ///
+        /// \return The side, `Side::Both` unless the type was declared for one alone.
+        ZY_INLINE Side GetSide() const
+        {
+            ConstRef<Metatype> Info = GetInfo();
+
+            if (Info.Has(Trait::Server))
+            {
+                return Side::Server;
+            }
+            return Info.Has(Trait::Client) ? Side::Client : Side::Both;
+        }
+
         /// \brief Gets how a tool shows the type.
         ///
         /// \return The description, or `nullptr` while nothing described the type.

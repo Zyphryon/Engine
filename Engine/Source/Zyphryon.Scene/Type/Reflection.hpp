@@ -25,6 +25,14 @@ namespace ZyScene
     };
     ZY_DEFINE_BITWISE_ENUM(Authoring)
 
+    /// \brief Specifies a side of a session, which the scene records for a component and never acts on.
+    enum class Side : UInt8
+    {
+        Both,   ///< Belongs to every side, as when one process plays the whole session.
+        Server, ///< Belongs to the side that decides for the world.
+        Client, ///< Belongs to the side that shows the world to its player.
+    };
+
     /// \brief Represents how a component presents itself to a tool, which nothing in the simulation reads.
     struct Description final
     {

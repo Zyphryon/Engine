@@ -123,6 +123,28 @@ namespace ZyScene
             return Apply(Trait::Keeps);
         }
 
+        /// \brief Keeps the component only on the server side of a session.
+        ///
+        /// \return This declaration.
+        ZY_INLINE AnyRef<Declaration> Server() &&
+        {
+            ZY_ASSERT(!Registry::Get().GetMetatype(mIdentifier).Has(Trait::Client),
+                "A component is kept by one side or by both");
+
+            return Apply(Trait::Server);
+        }
+
+        /// \brief Keeps the component only on the client side of a session.
+        ///
+        /// \return This declaration.
+        ZY_INLINE AnyRef<Declaration> Client() &&
+        {
+            ZY_ASSERT(!Registry::Get().GetMetatype(mIdentifier).Has(Trait::Server),
+                "A component is kept by one side or by both");
+
+            return Apply(Trait::Client);
+        }
+
         /// \brief Brings other components along wherever this one is added, which may be only declared here.
         ///
         /// \return This declaration.

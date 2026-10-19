@@ -168,6 +168,22 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Sequence<Entity> World::Migrate(Ref<World> Target, ConstSpan<Entity> Roots, ConstSpan<Component> Exclude)
+    {
+        ZY_ASSERT(AddressOf(Target) != this, "A world migrates into another world, never into itself");
+
+        Writer Saved;
+        Save(Saved, Roots);
+
+        Writer Kept;
+        Strip(ConstSpan<Byte>(Saved.GetData(), Saved.GetSize()), Kept, Exclude);
+
+        return Target.Load(ConstSpan<Byte>(Kept.GetData(), Kept.GetSize()));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void World::Registered(UInt32 Identifier)
     {
         if (mImporting && !mModules[mImporting - 1].Types.Contains(Identifier))
@@ -429,5 +445,117 @@ namespace ZyScene
             Root = mDirectory.GetParent(Root);
         }
         return Root;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool World::Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude)
+    {
+        Reader Stream(Input);
+
+        if (Stream.GetAvailable() < sizeof(UInt32) + sizeof(UInt16)
+            || Stream.Read<UInt32>() != kMagic
+            || Stream.Read<UInt16>() != kVersion)
+        {
+            return false;
+        }
+
+        Sequence<UInt32> Slots;
+        Sequence<Text>   Kept;
+        Writer           Body(4096);
+        Writer           Values;
+        UInt32           Count = 0;
+
+        while (Stream.GetAvailable() >= 2 * sizeof(UInt32))
+        {
+            const UInt32 Kind   = Stream.Read<UInt32>();
+            const UInt32 Length = Stream.Read<UInt32>();
+
+            if (Length > Stream.GetAvailable())
+            {
+                return false;
+            }
+            Reader Scope = Stream.Split(Length);
+
+            // Each name is tested once, and one kept takes the next index of the copy, held one past it.
+            for (UInt32 Left = Kind == kTypes ? Scope.Read<UInt32>() : 0; Left > 0; --Left)
+            {
+                if (Scope.GetAvailable() == 0)
+                {
+                    return false;
+                }
+                const Text Name = Scope.ReadText();
+
+                if (!Exclude.Contains(Component::Find(Name)))
+                {
+                    Kept.Append(Name);
+                    Slots.Append(static_cast<UInt32>(Kept.GetSize()));
+                }
+                else
+                {
+                    Slots.Append(0);
+                }
+            }
+
+            const UInt32 Records = Kind == kEntities ? Scope.Read<UInt32>() : 0;
+
+            for (UInt32 Record = 0; Record < Records; ++Record)
+            {
+                if (Scope.GetAvailable() < 2 * sizeof(UInt32) + 2 * sizeof(UInt64))
+                {
+                    return false;
+                }
+
+                // The parent, the identifier and the base are copied as they stand, since no entity is left out.
+                Body.Write<UInt32>(Scope.Read<UInt32>());
+                Body.Write<UInt64>(Scope.Read<UInt64>());
+                Body.Write<UInt64>(Scope.Read<UInt64>());
+
+                Values.Clear();
+                UInt32 Saved = 0;
+
+                for (UInt32 Held = Scope.Read<UInt32>(); Held > 0; --Held)
+                {
+                    const UInt32 Type = Scope.Read<UInt32>();
+                    const UInt32 Size = Scope.Peek<UInt32>();
+
+                    if (Type >= Slots.GetSize() || Scope.GetAvailable() < sizeof(UInt32) + static_cast<UInt>(Size))
+                    {
+                        return false;
+                    }
+
+                    const ConstSpan<Byte> Value = Scope.ReadBlock<UInt32, Byte>();
+
+                    if (Slots[Type] != 0)
+                    {
+                        Values.Write<UInt32>(Slots[Type] - 1);
+                        Values.WriteBlock<UInt32>(Value);
+                        ++Saved;
+                    }
+                }
+                Body.Write<UInt32>(Saved);
+                Body.Write(Values.GetData(), Values.GetSize());
+            }
+            Count += Records;
+        }
+
+        Output.Write<UInt32>(kMagic);
+        Output.Write<UInt16>(kVersion);
+        Output.Write<UInt32>(kTypes);
+        Output.WriteBlock<UInt32>([&](Ref<Writer> Block)
+        {
+            Block.Write<UInt32>(static_cast<UInt32>(Kept.GetSize()));
+
+            for (const Text Name : Kept)
+            {
+                Block.WriteText(Name);
+            }
+        });
+        Output.Write<UInt32>(kEntities);
+        Output.Write<UInt32>(static_cast<UInt32>(sizeof(UInt32) + Body.GetSize()));
+        Output.Write<UInt32>(Count);
+        Output.Write(Body.GetData(), Body.GetSize());
+        return true;
     }
 }

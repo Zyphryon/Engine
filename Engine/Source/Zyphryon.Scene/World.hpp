@@ -181,6 +181,14 @@ namespace ZyScene
         /// \return `true` if the save was read, `false` if the bytes were not a save this version reads.
         Bool Merge(ConstSpan<Byte> Input, Entity Root);
 
+        /// \brief Copies entities, each with everything beneath it, into another world as a save would carry them.
+        ///
+        /// \param Target  The world to copy into, never this one, holding the same archetypes under the same handles.
+        /// \param Roots   The entities whose trees are copied, the world entity among them for its singletons.
+        /// \param Exclude The components to leave out of the copy, none to keep them all.
+        /// \return The copies of the roots, in the order a save writes them.
+        Sequence<Entity> Migrate(Ref<World> Target, ConstSpan<Entity> Roots, ConstSpan<Component> Exclude);
+
     private:
 
         /// The characters every scene save opens with.
@@ -290,6 +298,16 @@ namespace ZyScene
         /// \param Index The slot of the archetype.
         /// \return The slot of the root, or zero when it reads from none.
         UInt32 GetOrigin(UInt32 Index) const;
+
+    public:
+
+        /// \brief Copies a save's bytes, leaving out every component excluded and naming only what it kept.
+        ///
+        /// \param Input   The bytes of a save as \ref Save writes them, read without any world.
+        /// \param Output  The writer the copy is appended to, left as it was when the bytes are refused.
+        /// \param Exclude The components to leave out, a name this build does not know being always kept.
+        /// \return `true` if the save was copied, `false` if the bytes were not a save this version reads whole.
+        static Bool Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude);
 
     private:
 

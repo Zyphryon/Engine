@@ -23,13 +23,15 @@ namespace ZyScene
     /// \brief Specifies the traits a component type carries, which may be several taken together.
     enum class Trait : UInt8
     {
-        None         = 0,       ///< No trait at all.
-        Serializable = 1 << 0,  ///< Saves carry the type, which must know how to write itself unless it is a tag.
-        Inheritable  = 1 << 1,  ///< Instances read the type from their archetype rather than holding a copy.
+        None         = 0,       ///< The type carries no trait at all.
+        Serializable = 1 << 0,  ///< The type travels in saves, and must know how to write itself unless it is a tag.
+        Inheritable  = 1 << 1,  ///< The type is read by instances from their archetype rather than copied onto each.
         Local        = 1 << 2,  ///< The type never reaches an instance made from an archetype.
-        Singleton    = 1 << 3,  ///< The world holds the one instance, which queries read from there.
-        Loaded       = 1 << 4,  ///< The code the lifecycle points into is loaded, which a discarded module's is not.
-        Keeps        = 1 << 5,  ///< A removal keeps the value that left, which readers of removals are handed.
+        Singleton    = 1 << 3,  ///< The type has its one instance held by the world, which queries read from there.
+        Loaded       = 1 << 4,  ///< The type has its lifecycle code loaded, which a discarded module's type has not.
+        Keeps        = 1 << 5,  ///< The type keeps the value a removal took away, which readers of removals are handed.
+        Server       = 1 << 6,  ///< The type belongs only to the side that decides for the world.
+        Client       = 1 << 7,  ///< The type belongs only to the side that shows the world to its player.
     };
     ZY_DEFINE_BITWISE_ENUM(Trait)
 
