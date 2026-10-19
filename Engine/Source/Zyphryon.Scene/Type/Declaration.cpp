@@ -22,15 +22,8 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Enrollment::Finish(ConstSpan<UInt32> Identifiers)
+    void Enrollment::Finish()
     {
-        if (!mPresentation.Group.IsEmpty())
-        {
-            for (const UInt32 Identifier : Identifiers)
-            {
-                Registry::Get().SetDescription(Identifier, mPresentation);
-            }
-        }
-        mWorld->Registered(Identifiers);
+        mWorld->Registered(mIdentifier);
     }
 }

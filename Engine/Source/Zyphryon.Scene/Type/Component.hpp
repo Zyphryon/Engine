@@ -20,13 +20,13 @@
 
 namespace ZyScene
 {
-    /// \brief Represents a component type named at runtime.
+    /// \brief Represents a component type named at runtime, as tools and commands name one.
     class Component final
     {
     public:
 
         /// \brief Constructs a component that names no type.
-        ZY_INLINE constexpr Component()
+        ZY_INLINE Component()
             : mIdentifier { 0 }
         {
         }
@@ -34,15 +34,15 @@ namespace ZyScene
         /// \brief Constructs a component from the identifier its type answers to.
         ///
         /// \param Identifier The identifier, or zero for none.
-        ZY_INLINE constexpr explicit Component(UInt32 Identifier)
+        ZY_INLINE explicit Component(UInt32 Identifier)
             : mIdentifier { Identifier }
         {
         }
 
-        /// \brief Checks whether the component names a type at all.
+        /// \brief Checks whether the component names a type.
         ///
-        /// \return `true` if the identifier is not zero, `false` otherwise.
-        ZY_INLINE constexpr Bool IsValid() const
+        /// \return `true` if it names one, `false` otherwise.
+        ZY_INLINE Bool IsValid() const
         {
             return mIdentifier != 0;
         }
@@ -50,18 +50,9 @@ namespace ZyScene
         /// \brief Gets the identifier the type answers to.
         ///
         /// \return The identifier, or zero for none.
-        ZY_INLINE constexpr UInt32 GetID() const
+        ZY_INLINE UInt32 GetID() const
         {
             return mIdentifier;
-        }
-
-        /// \brief Gets how the type is stored, saved and shown.
-        ///
-        /// \return The description, which stays where it is for the life of the process.
-        ZY_INLINE ConstRef<Metatype> GetInfo() const
-        {
-            ZY_ASSERT(IsValid(), "The component names no type");
-            return Registry::Get().GetMetatype(mIdentifier);
         }
 
         /// \brief Gets the name saves know the type by.
@@ -72,41 +63,9 @@ namespace ZyScene
             return GetInfo().Name;
         }
 
-        /// \brief Gets the size, in bytes, of one instance.
+        /// \brief Checks whether instances read the type from their archetype rather than holding a copy.
         ///
-        /// \return The size, which is zero for a tag.
-        ZY_INLINE UInt32 GetSize() const
-        {
-            return GetInfo().GetSize();
-        }
-
-        /// \brief Gets the alignment one instance needs.
-        ///
-        /// \return The alignment in bytes.
-        ZY_INLINE UInt32 GetAlignment() const
-        {
-            return GetInfo().GetAlignment();
-        }
-
-        /// \brief Checks whether the type carries no data.
-        ///
-        /// \return `true` for a tag, `false` otherwise.
-        ZY_INLINE Bool IsTag() const
-        {
-            return GetInfo().IsTag();
-        }
-
-        /// \brief Checks whether saves carry the type.
-        ///
-        /// \return `true` if the type carries \ref Trait::Serializable, `false` otherwise.
-        ZY_INLINE Bool IsSerializable() const
-        {
-            return GetInfo().Has(Trait::Serializable);
-        }
-
-        /// \brief Checks whether instances read the type from their archetype.
-        ///
-        /// \return `true` if the type carries \ref Trait::Inheritable, `false` otherwise.
+        /// \return `true` if they read it, `false` if they copy it or it never reaches them.
         ZY_INLINE Bool IsInheritable() const
         {
             return GetInfo().Has(Trait::Inheritable);
@@ -120,7 +79,7 @@ namespace ZyScene
             return GetInfo().Has(Trait::Local);
         }
 
-        /// \brief Checks whether the world holds the one instance of the type.
+        /// \brief Checks whether the world entity holds the one instance of the type.
         ///
         /// \return `true` for a singleton, `false` otherwise.
         ZY_INLINE Bool IsSingleton() const
@@ -146,19 +105,11 @@ namespace ZyScene
             return Info.Layout.IsEmpty() ? nullptr : AddressOf(Info.Layout);
         }
 
-        /// \brief Gets a hash value for the component based on its identifier.
-        ///
-        /// \return The identifier, used as its hash.
-        ZY_INLINE UInt64 Hash(UInt64) const
-        {
-            return mIdentifier;
-        }
-
         /// \brief Checks whether two components name the same type.
         ///
         /// \param Other The component to compare against.
         /// \return `true` if both name the same type, `false` otherwise.
-        ZY_INLINE constexpr Bool operator==(ConstRef<Component> Other) const = default;
+        ZY_INLINE Bool operator==(ConstRef<Component> Other) const = default;
 
     public:
 
@@ -171,10 +122,10 @@ namespace ZyScene
             return Component(IdentifierOf<Type>());
         }
 
-        /// \brief Gets the component registered under a name.
+        /// \brief Finds the component registered under a name.
         ///
-        /// \param Name The name saves know the type by, or its fully qualified one.
-        /// \return The component, or one naming no type when nothing registered under the name.
+        /// \param Name The name saves know the type by, or its compiler name.
+        /// \return The component, or one naming no type when nothing answers to the name.
         ZY_INLINE static Component Find(Text Name)
         {
             return Component(Registry::Get().Find(Name));
@@ -190,6 +141,17 @@ namespace ZyScene
             {
                 Callback(Component(Identifier));
             }
+        }
+
+    private:
+
+        /// \brief Gets how the type is stored, saved and shown.
+        ///
+        /// \return The description, which never moves for the life of the process.
+        ZY_INLINE ConstRef<Metatype> GetInfo() const
+        {
+            ZY_ASSERT(IsValid(), "The component names no type");
+            return Registry::Get().GetMetatype(mIdentifier);
         }
 
     private:

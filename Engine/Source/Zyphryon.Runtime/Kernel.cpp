@@ -14,6 +14,7 @@
 #include "Zyphryon.Content/Service.hpp"
 #include "Zyphryon.Job/Service.hpp"
 #include "Zyphryon.Network/Service.hpp"
+#include "Zyphryon.Replication/Service.hpp"
 #include "Zyphryon.Scene/Service.hpp"
 
 #if !defined(ZY_MODE_HEADLESS)
@@ -178,6 +179,9 @@ namespace ZyRuntime
 
         LOG_I("Kernel: Creating scene service");
         Register<ZyScene::Service>();
+
+        LOG_I("Kernel: Creating replication service");
+        Register<ZyReplication::Service>();
 
 #if !defined(ZY_MODE_HEADLESS)
 

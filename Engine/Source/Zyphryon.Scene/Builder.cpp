@@ -23,18 +23,17 @@ namespace ZyScene
 
     Query Draft::Enlist()
     {
-        return Query(mWorld, mWorld->mLayout.AddSelection(Take(), mWorld->mDirectory));
+        return Query(mWorld, mWorld->mLayout.AddSelection(Move(mState), mWorld->mDirectory));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    System Draft::Install(AnyRef<Delegate<void()>> Runner)
+    void Draft::Install(AnyRef<Delegate<void()>> Runner)
     {
         ZY_ASSERT(!mWorld->mDeferral.IsSpreading(), "A system cannot be made while a walk is spread");
 
-        const UInt32 Handle = mWorld->mScheduler.CreateSystem(mName, mPhase, mRate, Move(Runner), mWorld->mImporting);
-        return System(mWorld, Handle);
+        mWorld->mScheduler.CreateSystem(mName, mPhase, mRate, Move(Runner), mWorld->mImporting);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

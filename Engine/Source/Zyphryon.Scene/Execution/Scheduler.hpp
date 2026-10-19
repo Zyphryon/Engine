@@ -14,12 +14,12 @@
 
 namespace ZyScene
 {
-    /// \brief Represents the phases a world runs each progress and the systems in each, by handles never reused.
+    /// \brief Represents the phases a world runs each progress, in the order they were made, and the systems in each.
     class ZY_API Scheduler final
     {
     public:
 
-        /// \brief Represents what a phase runs for one system, a walk over its query, a task or a pull list reader.
+        /// \brief Represents what a phase runs for one system, a walk over its query, a task or a reader of changes.
         using Runner = Delegate<void()>;
 
     public:
@@ -33,47 +33,28 @@ namespace ZyScene
         /// \brief Schedulers are not assigned, since a running system points into its own.
         Ref<Scheduler> operator=(ConstRef<Scheduler> Other) = delete;
 
-        /// \brief Creates a phase, which runs its systems in the order they were created when its turn comes.
+        /// \brief Creates a phase, which runs after every phase made before it.
         ///
-        /// \param Name    The name of the phase, which profiles and logs show.
-        /// \param After   The phase it runs right after, or zero to run after every phase made so far.
-        /// \param Package The module that declares it, or zero.
-        /// \return The handle of the phase, never zero.
-        UInt32 CreatePhase(Text Name, UInt32 After, UInt32 Package);
+        /// \param Name    The name profiles show.
+        /// \param Package The module that makes it, or zero.
+        /// \return The phase, never zero.
+        UInt32 CreatePhase(Text Name, UInt32 Package);
 
-        /// \brief Adds a system or task to the end of a phase.
+        /// \brief Adds a system to the end of a phase.
         ///
-        /// \param Name    The name profiles and logs show.
-        /// \param Phase   The handle of the phase to run it in.
-        /// \param Rate    The progresses between two runs, one to run on every one.
+        /// \param Name    The name profiles show.
+        /// \param Phase   The phase to run it in.
+        /// \param Rate    The progresses from one run to the next, one to run on every one.
         /// \param Run     The callable the phase runs.
-        /// \param Package The module that declares it, or zero.
-        /// \return The handle of the system, never zero.
-        UInt32 CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
+        /// \param Package The module that makes it, or zero.
+        void CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
 
-        /// \brief Takes a system out of its phase, so it runs no more.
+        /// \brief Takes out every phase and system a module made.
         ///
-        /// \param Handle The handle of the system, or one already taken out.
-        void DestroySystem(UInt32 Handle);
-
-        /// \brief Holds a system off or lets it run again, keeping its place in its phase.
-        ///
-        /// \param Handle  The handle of the system, or one already taken out.
-        /// \param Enabled `true` to run it again, `false` to hold it off.
-        void SetEnabled(UInt32 Handle, Bool Enabled);
-
-        /// \brief Checks whether a system is run when its phase comes.
-        ///
-        /// \param Handle The handle of the system.
-        /// \return `true` while it is run, `false` while it is held off or taken out.
-        Bool IsEnabled(UInt32 Handle) const;
-
-        /// \brief Takes out every system and phase a module declared.
-        ///
-        /// \param Package The handle of the module, as the world imported it.
+        /// \param Package The module, as the world imported it.
         void Discard(UInt32 Package);
 
-        /// \brief Runs every phase once, in order, and every system in each, in the order they were created.
+        /// \brief Runs every phase once, in order, and every system in each, in the order they were made.
         void Progress();
 
         /// \brief Destroys the systems taken out, once no phase runs, letting go of what each walked.
@@ -84,98 +65,51 @@ namespace ZyScene
 
     private:
 
-        /// \brief Represents one system, with what it runs, its phase and the module that declared it.
+        /// \brief Represents one system.
         struct Routine final
         {
-            /// The name profiles and logs show.
+            /// The name profiles show.
             Str    Name;
 
             /// The callable the phase runs.
             Runner Run;
 
-            /// The progresses between two runs.
+            /// The progresses from one run to the next.
             UInt16 Rate;
 
             /// The progresses since the last run.
             UInt16 Count;
 
-            /// The phase it runs in.
-            UInt32 Phase;
-
-            /// The module that declared it, or zero.
+            /// The module that made it, or zero.
             UInt32 Package;
 
-            /// `true` until it is taken out.
+            /// `true` until its module is discarded.
             Bool   Alive;
-
-            /// `true` while it is run, `false` while it is held off.
-            Bool   Enabled;
-
-            /// \brief Constructs a system.
-            ///
-            /// \param Name    The name profiles and logs show.
-            /// \param Run     The callable the phase runs.
-            /// \param Rate    The progresses between two runs.
-            /// \param Phase   The phase it runs in.
-            /// \param Package The module that declared it, or zero.
-            ZY_INLINE Routine(Text Name, AnyRef<Runner> Run, UInt16 Rate, UInt32 Phase, UInt32 Package)
-                : Name    { Name },
-                  Run     { Move(Run) },
-                  Rate    { Rate },
-                  Count   { 0 },
-                  Phase   { Phase },
-                  Package { Package },
-                  Alive   { true },
-                  Enabled { true }
-            {
-            }
         };
 
-        /// \brief Represents one phase, with its name and the systems it runs.
+        /// \brief Represents one phase.
         struct Stage final
         {
-            /// The name profiles and logs show.
-            Str              Name;
+            /// The name profiles show.
+            Str                       Name;
 
-            /// The systems it runs, by handle, in the order they were created.
-            Sequence<UInt32> Systems;
+            /// The systems it runs, in the order they were made.
+            Sequence<Unique<Routine>> Systems;
 
-            /// The module that declared it, or zero.
-            UInt32           Package;
+            /// The module that made it, or zero.
+            UInt32                    Package;
 
-            /// \brief Constructs a phase that runs nothing yet.
-            ///
-            /// \param Name    The name profiles and logs show.
-            /// \param Package The module that declared it, or zero.
-            ZY_INLINE Stage(Text Name, UInt32 Package)
-                : Name    { Name },
-                  Package { Package }
-            {
-            }
+            /// `true` until its module is discarded.
+            Bool                      Alive;
         };
-
-        /// \brief Finds a system by its handle.
-        ///
-        /// \param Handle The handle of the system.
-        /// \return The system, or `nullptr` when no system answers to the handle or it was purged.
-        ZY_INLINE Ptr<Routine> Find(UInt32 Handle) const
-        {
-            if (Handle == 0 || Handle > mSystems.GetSize() || !mSystems[Handle - 1])
-            {
-                return nullptr;
-            }
-            return AddressOf(* mSystems[Handle - 1]);
-        }
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Sequence<Unique<Stage>>   mPhases;
-        Sequence<UInt32>          mOrder;
-        Sequence<Unique<Routine>> mSystems;
-        Sequence<UInt32>          mDismissed;
-        Bool                      mRunning;
+        Sequence<Unique<Stage>> mPhases;
+        Bool                    mRunning;
+        Bool                    mDismissed;
     };
 }

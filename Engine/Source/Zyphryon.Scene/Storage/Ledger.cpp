@@ -36,7 +36,7 @@ namespace ZyScene
         {
             if (mLists[Index])
             {
-                RemoveFront(Index, mLists[Index]->Actors.GetSize());
+                Drop(Index, mLists[Index]->Actors.GetSize());
             }
         }
     }
@@ -106,30 +106,6 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Ledger::RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source)
-    {
-        // Kept for every removal, since a reader with terms can only match what the entity was as it left.
-        Target.Sources.Append(Source);
-
-        if (!Value)
-        {
-            return;
-        }
-
-        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
-
-        if (Info.Has(Trait::Keeps) && !Info.IsTag())
-        {
-            // Entries recorded since the last value kept none, so they are padded before this one is added.
-            Target.Values.Expand(Target.Actors.GetSize() - 1);
-            Target.Values.Append(Allocate<Byte>(Info.GetSize(), Info.GetAlignment()));
-            Chunk::Copy(Info, Target.Values.GetBack(), Value, 1);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Ledger::SetPosition(UInt32 Subscription, UInt64 Position)
     {
         mSubscriptions[Subscription - 1].Position = Position;
@@ -163,6 +139,30 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Ledger::RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source)
+    {
+        // Kept for every removal, since a reader with terms can only match what the entity was as it left.
+        Target.Sources.Append(Source);
+
+        if (!Value)
+        {
+            return;
+        }
+
+        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
+
+        if (Info.Has(Trait::Keeps) && !Info.IsTag())
+        {
+            // Entries recorded since the last value kept none, so they are padded before this one is added.
+            Target.Values.Expand(Target.Actors.GetSize() - 1);
+            Target.Values.Append(Allocate<Byte>(Info.GetSize(), Info.GetAlignment()));
+            Chunk::Copy(Info, Target.Values.GetBack(), Value, 1);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Ledger::Trim(UInt32 Index)
     {
         ConstRef<List> Target = * mLists[Index];
@@ -181,23 +181,23 @@ namespace ZyScene
         // Erasing from the front moves what is left, so it waits until that is at most as much as what goes.
         if (Passed > 0 && Passed * 2 >= Target.Actors.GetSize())
         {
-            RemoveFront(Index, Passed);
+            Drop(Index, Passed);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Ledger::RemoveFront(UInt32 Index, UInt Count)
+    void Ledger::Drop(UInt32 Index, UInt Count)
     {
         Ref<List> Target = * mLists[Index];
 
-        DropFront(Target.Actors, Count);
+        Shift(Target.Actors, Count);
         Target.First += Count;
 
         if (!Target.Sources.IsEmpty())
         {
-            DropFront(Target.Sources, Count);
+            Shift(Target.Sources, Count);
         }
 
         // Only a list keeping values holds any, and never for more entries than it has.
@@ -213,7 +213,7 @@ namespace ZyScene
                     Free(Value, Info.GetAlignment());
                 }
             }
-            DropFront(Target.Values, Kept);
+            Shift(Target.Values, Kept);
         }
     }
 }

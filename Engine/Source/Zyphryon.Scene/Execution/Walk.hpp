@@ -56,7 +56,7 @@ namespace ZyScene
             {
                 if (const UInt32 Rows = State.Chunks[Match]->GetSize())
                 {
-                    RunChunk(Owner, State, Match, 0, Rows, Callback);
+                    Scan(Owner, State, Match, 0, Rows, Callback);
                 }
             }
 
@@ -81,7 +81,7 @@ namespace ZyScene
 
             if (State.Ordered)
             {
-                SpreadOrdered(Owner, State, Callback);
+                Cascade(Owner, State, Callback);
                 return;
             }
 
@@ -102,7 +102,7 @@ namespace ZyScene
             }
 
             Owner.Enter();
-            RunCosted(Owner, State, 0, Total, Callback);
+            Dispatch(Owner, State, 0, Total, Callback);
             Record(Owner, State);
             Owner.Leave();
         }
@@ -211,7 +211,7 @@ namespace ZyScene
             /// \param Position The position of the field.
             /// \return One for a field that steps, zero for one read from one place.
             template<Stride Mode, typename Field>
-            ZY_INLINE static UInt StepOf(ConstRef<Places> Where, UInt Position)
+            ZY_INLINE static UInt Step(ConstRef<Places> Where, UInt Position)
             {
                 if constexpr (Mode == Stride::Chunk)
                 {
@@ -221,21 +221,6 @@ namespace ZyScene
                 {
                     return Mode == Stride::Dense || Field::kWritten;
                 }
-            }
-
-            /// \brief Gets a field's rows of a page as a span, or its one instance when every row reads the same.
-            ///
-            /// \param Base  The first instance in the page, or the one place every row reads it from.
-            /// \param Step  The instances it steps per row, one or zero.
-            /// \param First The first row of the page.
-            /// \param Last  The row past the last one.
-            /// \return The span, one instance long when the field does not step.
-            template<typename Field>
-            ZY_INLINE static Span<typename Field::Value> SpanOf(Ptr<Byte> Base, UInt Step, UInt First, UInt Last)
-            {
-                using Value = typename Field::Value;
-
-                return Span<Value>(reinterpret_cast<Ptr<Value>>(Base) + Step * First, Step ? Last - First : 1);
             }
 
             /// \brief Works out where each field of one matched chunk is read from.
@@ -299,9 +284,9 @@ namespace ZyScene
             /// \param Match    The position of the chunk among the matches.
             /// \param Begin    The first row of the stretch.
             /// \param End      The row past the last one.
-            /// \param Callback The callable, handed each row, or each page as spans.
+            /// \param Callback The callable, handed each row.
             template<typename Callable>
-            static void RunPages(
+            static void Scan(
                 Ref<Storage>        Owner,
                 ConstRef<Selection> State,
                 UInt32              Match,
@@ -329,23 +314,17 @@ namespace ZyScene
                         Bases[Field] = Where.Start(Base, Field);
                     }
 
-                    if constexpr (Plan<Callable>::kBatched)
+                    if (Where.Dense)
                     {
-                        static_assert(!(Parts::kTag || ...), "A tag has no span to hand over");
-
-                        Callback(SpanOf<Parts>(Bases[Index], Where.Steps[Index], First, Last)...);
-                    }
-                    else if (Where.Dense)
-                    {
-                        RunRows<Stride::Dense>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
+                        Loop<Stride::Dense>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
                     }
                     else if (Where.Invariant)
                     {
-                        RunRows<Stride::Written>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
+                        Loop<Stride::Written>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
                     }
                     else
                     {
-                        RunRows<Stride::Chunk>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
+                        Loop<Stride::Chunk>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
                     }
                     Row += Last - First;
                 }
@@ -358,7 +337,7 @@ namespace ZyScene
             /// \param Rows     The rows, each the match in the high half and the row in the low one.
             /// \param Callback The callable, which is handed one row at a time.
             template<typename Callable>
-            static void RunSorted(
+            static void Follow(
                 Ref<Storage>        Owner,
                 ConstRef<Selection> State,
                 ConstSpan<UInt64>   Rows,
@@ -407,7 +386,7 @@ namespace ZyScene
             /// \param Last     The row past the last one.
             /// \param Bases    The start of each field in the page, or the one place every row reads it from.
             template<Stride Mode, typename Callable>
-            ZY_INLINE static void RunRows(
+            ZY_INLINE static void Loop(
                 Ref<Storage>        Owner,
                 Ref<Callable>       Callback,
                 ConstRef<Selection> State,
@@ -418,7 +397,7 @@ namespace ZyScene
                 Address<Parts>...   Bases)
             {
                 // The parent the ancestor fields last climbed from, which siblings share.
-                UInt32 Above = ~0u;
+                constexpr UInt32 Above = ~0u;
 
                 for (UInt Row = First; Row < Last; ++Row)
                 {
@@ -431,7 +410,7 @@ namespace ZyScene
                         Owner,
                         Callback,
                         Handles[Row],
-                        Fetch<Parts>(Bases, StepOf<Mode, Parts>(Where, Index), Row)...);
+                        Fetch<Parts>(Bases, Step<Mode, Parts>(Where, Index), Row)...);
                 }
             }
 
@@ -445,7 +424,7 @@ namespace ZyScene
             /// \param Match    The position of the chunk among the selection's matches.
             /// \param Callback The callable, handed the entity's fields.
             template<typename Callable>
-            ZY_INLINE static void RunEntry(
+            ZY_INLINE static void Deliver(
                 Ref<Storage>        Owner,
                 ConstRef<Selection> State,
                 Handle              Actor,
@@ -498,7 +477,7 @@ namespace ZyScene
                     case Selection::kMissing:
                         return nullptr;
                     default:
-                        return const_cast<Ptr<Byte>>(Holder.At(Source, Row));
+                        return Holder.At(Source, Row);
                     }
                 }
             }
@@ -506,15 +485,15 @@ namespace ZyScene
 
         /// \brief Represents the rows of a spread walk still to hand out, drained by the caller and the workers.
         template<typename Callable>
-        struct SpreadWork final
+        struct Pool final
         {
             /// The storage the query belongs to.
             Ptr<Storage>     Owner;
 
-            /// The query.
+            /// The query whose matches are walked.
             Ptr<Selection>   State;
 
-            /// The callable.
+            /// The callback each share is walked with.
             Ptr<Callable>    Callback;
 
             /// The next share to hand out.
@@ -544,7 +523,7 @@ namespace ZyScene
             /// \param End      The row past the last one.
             /// \param Shares   The number of shares to aim at, never zero.
             /// \param Sorted   The rows of an ordered walk, or `nullptr` for the matches laid end to end.
-            ZY_INLINE SpreadWork(
+            ZY_INLINE Pool(
                 Ref<Storage>     Owner,
                 Ref<Selection>   State,
                 Ref<Callable>    Callback,
@@ -592,7 +571,7 @@ namespace ZyScene
 
                 while (Take(Begin, Until))
                 {
-                    RunStretch(* Owner, * State, Sorted, Begin, Until, * Callback);
+                    Visit(* Owner, * State, Sorted, Begin, Until, * Callback);
                 }
             }
         };
@@ -614,15 +593,15 @@ namespace ZyScene
             return true;
         }
 
-        /// \brief Records what a walk declared it writes, before its waiting changes move any row.
+        /// \brief Marks the pages a walk handed fields out writable in, before its waiting changes move any row.
         ///
         /// \param Owner The storage the query belongs to.
         /// \param State The query just walked.
         ZY_INLINE static void Record(Ref<Storage> Owner, ConstRef<Selection> State)
         {
-            if (!State.Writes.IsEmpty())
+            if (!State.Writes.IsEmpty() && Owner.mLedger.IsActive())
             {
-                Owner.RecordWrites(State);
+                Owner.Mark(State);
             }
         }
 
@@ -664,34 +643,6 @@ namespace ZyScene
         /// \return The seconds since an arbitrary start.
         static Real64 GetTime();
 
-        /// \brief Hands the rows of a stretch of the matches laid end to end to a callback.
-        ///
-        /// \param Owner    The storage the query belongs to.
-        /// \param State    The query, whose offsets are laid out.
-        /// \param Begin    The first row of the stretch.
-        /// \param End      The row past the last one.
-        /// \param Callback The callable, handed each row, or each page as spans.
-        template<typename Callable>
-        static void RunRange(
-            Ref<Storage>        Owner,
-            ConstRef<Selection> State,
-            UInt32              Begin,
-            UInt32              End,
-            Ref<Callable>       Callback)
-        {
-            for (UInt32 Match = FindMatch(State, Begin); Begin < End; ++Match)
-            {
-                const UInt32 Start = State.Offsets[Match];
-                const UInt32 Stop  = Min(End, State.Offsets[Match + 1]);
-
-                if (Stop > Begin)
-                {
-                    RunChunk(Owner, State, Match, Begin - Start, Stop - Start, Callback);
-                }
-                Begin = Stop;
-            }
-        }
-
         /// \brief Hands a stretch of rows to a callback, out of the sorted rows of an ordered walk or the matches.
         ///
         /// \param Owner    The storage the query belongs to.
@@ -699,9 +650,9 @@ namespace ZyScene
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
-        /// \param Callback The callable, handed each row, or each page as spans.
+        /// \param Callback The callable, handed each row.
         template<typename Callable>
-        ZY_INLINE static void RunStretch(
+        ZY_INLINE static void Visit(
             Ref<Storage>        Owner,
             ConstRef<Selection> State,
             ConstPtr<UInt64>    Sorted,
@@ -709,17 +660,26 @@ namespace ZyScene
             UInt32              End,
             Ref<Callable>       Callback)
         {
-            if constexpr (!Plan<Callable>::kBatched)
+            if (Sorted)
             {
-                if (Sorted)
-                {
-                    const ConstSpan Rows(Sorted + Begin, End - Begin);
+                const ConstSpan Rows(Sorted + Begin, End - Begin);
 
-                    Plan<Callable>::template Apply<Kernel>::RunSorted(Owner, State, Rows, Callback);
-                    return;
-                }
+                Plan<Callable>::template Apply<Kernel>::Follow(Owner, State, Rows, Callback);
+                return;
             }
-            RunRange(Owner, State, Begin, End, Callback);
+
+            // The matches laid end to end, each walked from where the stretch enters it to where it leaves.
+            for (UInt32 Match = FindMatch(State, Begin); Begin < End; ++Match)
+            {
+                const UInt32 Start = State.Offsets[Match];
+                const UInt32 Stop  = Min(End, State.Offsets[Match + 1]);
+
+                if (Stop > Begin)
+                {
+                    Scan(Owner, State, Match, Begin - Start, Stop - Start, Callback);
+                }
+                Begin = Stop;
+            }
         }
 
         /// \brief Finds the match a row of the matches laid end to end falls in.
@@ -735,7 +695,7 @@ namespace ZyScene
         /// \param State    The query, whose offsets are laid out when the rows are not sorted.
         /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one, which is past the first.
-        /// \param Callback The callable, handed each row, or each page as spans.
+        /// \param Callback The callable, handed each row.
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         /// \return The seconds one row took.
         template<typename Callable>
@@ -748,7 +708,7 @@ namespace ZyScene
             ConstPtr<UInt64>    Sorted = nullptr)
         {
             const Real64 Start = GetTime();
-            RunStretch(Owner, State, Sorted, Begin, End, Callback);
+            Visit(Owner, State, Sorted, Begin, End, Callback);
             return Max(GetTime() - Start, 1e-9) / (End - Begin);
         }
 
@@ -774,7 +734,7 @@ namespace ZyScene
             const UInt32        Threads = Jobs.GetConcurrency(ZyJob::Lane::Compute) + 1;
             const UInt32        Shares  = GetShares(State, End - Begin, Threads);
 
-            SpreadWork<Callable> Work(Owner, State, Callback, Begin, End, Shares, Sorted);
+            Pool<Callable> Work(Owner, State, Callback, Begin, End, Shares, Sorted);
 
             const UInt32 Helpers = Min(Min(Threads - 1, Work.Shares - 1), kMaxHelpers);
 
@@ -828,7 +788,7 @@ namespace ZyScene
         /// \param Callback The callable, thread-safe and changing only its own entity.
         /// \param Sorted   The rows of an ordered walk, sorted parents first, or `nullptr` for the matches.
         template<typename Callable>
-        static void RunCosted(
+        static void Dispatch(
             Ref<Storage>     Owner,
             Ref<Selection>   State,
             UInt32           Begin,
@@ -855,38 +815,33 @@ namespace ZyScene
         /// \param State    The query, which is ordered.
         /// \param Callback The callable, reading only what the depths above it wrote and writing only in place.
         template<typename Callable>
-        static void SpreadOrdered(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
+        static void Cascade(Ref<Storage> Owner, Ref<Selection> State, Ref<Callable> Callback)
         {
-            ZY_ASSERT(!Plan<Callable>::kBatched, "A cascade hands one row at a time, parents before their children");
-
-            if constexpr (!Plan<Callable>::kBatched)
+            // A walk with no row to visit holds nothing, which is what most idle systems cost.
+            if (State.Count() == 0)
             {
-                // A walk with no row to visit holds nothing, which is what most idle systems cost.
-                if (State.Count() == 0)
-                {
-                    return;
-                }
-
-                Owner.Enter();
-
-                const UInt32           First = Sort(Owner, State);
-                const ConstPtr<UInt64> Rows  = State.Gathered.GetData() + First;
-
-                // A depth reads only what the depths above it wrote, so each one is a walk of its own, timed alike.
-                for (UInt32 Level = 0, Begin = 0; Level < State.Offsets.GetSize(); ++Level)
-                {
-                    const UInt32 End = State.Offsets[Level];
-
-                    if (End != Begin)
-                    {
-                        RunCosted(Owner, State, Begin, End, Callback, Rows);
-                    }
-                    Begin = End;
-                }
-
-                Record(Owner, State);
-                Owner.Leave();
+                return;
             }
+
+            Owner.Enter();
+
+            const UInt32           First = Sort(Owner, State);
+            const ConstPtr<UInt64> Rows  = State.Gathered.GetData() + First;
+
+            // A depth reads only what the depths above it wrote, so each one is a walk of its own, timed alike.
+            for (UInt32 Level = 0, Begin = 0; Level < State.Offsets.GetSize(); ++Level)
+            {
+                const UInt32 End = State.Offsets[Level];
+
+                if (End != Begin)
+                {
+                    Dispatch(Owner, State, Begin, End, Callback, Rows);
+                }
+                Begin = End;
+            }
+
+            Record(Owner, State);
+            Owner.Leave();
         }
 
         /// \brief Gathers the rows of every match and sorts them parents first, behind the rows as gathered.
@@ -903,16 +858,6 @@ namespace ZyScene
         /// \return `true` if every row holds the entity it held and no link changed since, `false` otherwise.
         static Bool IsSorted(Ref<Storage> Owner, ConstRef<Selection> State);
 
-        /// \brief Gets the key an ordered walk gathers a row under.
-        ///
-        /// \param Match The position of the chunk among the matches.
-        /// \param Row   The row in that chunk.
-        /// \return The key, the match in the high half and the row in the low one.
-        ZY_INLINE static constexpr UInt64 Pack(UInt32 Match, UInt32 Row)
-        {
-            return static_cast<UInt64>(Match) << 32 | Row;
-        }
-
         /// \brief Hands the rows of a stretch of one matched chunk to a callback, through the loops for its fields.
         ///
         /// \param Owner    The storage the query belongs to.
@@ -920,9 +865,9 @@ namespace ZyScene
         /// \param Match    The position of the chunk among the matches.
         /// \param Begin    The first row of the stretch.
         /// \param End      The row past the last one.
-        /// \param Callback The callable, handed each row, or each page as spans.
+        /// \param Callback The callable, handed each row.
         template<typename Callable>
-        ZY_INLINE static void RunChunk(
+        ZY_INLINE static void Scan(
             Ref<Storage>        Owner,
             ConstRef<Selection> State,
             UInt32              Match,
@@ -930,7 +875,7 @@ namespace ZyScene
             UInt32              End,
             Ref<Callable>       Callback)
         {
-            Plan<Callable>::template Apply<Kernel>::RunPages(Owner, State, Match, Begin, End, Callback);
+            Plan<Callable>::template Apply<Kernel>::Scan(Owner, State, Match, Begin, End, Callback);
         }
 
         /// \brief Gets what a field hands the callback for one row.

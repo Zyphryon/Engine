@@ -75,7 +75,7 @@ namespace ZyScene
         /// \brief Constructs a directory holding the world's slot, which grows its other slots as they are handed out.
         Directory();
 
-        /// \brief Gets how many slot numbers exist, handed out or not, the fixed ones below the first entity's included.
+        /// \brief Gets how many slot numbers exist, handed out or not, the fixed ones included.
         ///
         /// \return One past the highest slot number an entity holds.
         ZY_INLINE UInt32 GetSize() const
@@ -95,7 +95,7 @@ namespace ZyScene
 
         /// \brief Checks whether an entity sits in a slot, which may lie past every slot handed out.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, which may lie past every slot handed out.
         /// \return `true` if the slot exists and holds an entity, `false` otherwise.
         ZY_INLINE Bool IsHeld(UInt32 Index) const
         {
@@ -103,19 +103,9 @@ namespace ZyScene
             return Entry && Entry->Holder;
         }
 
-        /// \brief Gets the slot of the living entity a handle this directory handed out names.
-        ///
-        /// \param Actor The handle, whose slot is in range since slots are never taken away.
-        /// \return The slot, or `nullptr` once the entity is gone, or the slot was never given out.
-        ZY_INLINE ConstPtr<Slot> FindSlot(Handle Actor) const
-        {
-            ConstRef<Slot> Entry = (* this)[Actor.GetIndex()];
-            return Entry.Holder && Entry.Generation == Actor.GetGeneration() ? AddressOf(Entry) : nullptr;
-        }
-
         /// \brief Gets the parent of a slot.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, linked or never linked.
         /// \return The slot of the parent, or zero for a root.
         ZY_INLINE UInt32 GetParent(UInt32 Index) const
         {
@@ -125,7 +115,7 @@ namespace ZyScene
 
         /// \brief Gets the first child of a slot.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, linked or never linked.
         /// \return The slot of the first child, or zero when it has none.
         ZY_INLINE UInt32 GetFirst(UInt32 Index) const
         {
@@ -135,7 +125,7 @@ namespace ZyScene
 
         /// \brief Gets the next sibling of a slot.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, linked or never linked.
         /// \return The slot of the next sibling, or zero for the last one.
         ZY_INLINE UInt32 GetNext(UInt32 Index) const
         {
@@ -143,25 +133,9 @@ namespace ZyScene
             return Entry ? Entry->Next : 0;
         }
 
-        /// \brief Hands the handle of every living archetype to a callback, in slot order.
-        ///
-        /// \param Callback The callable, taking each handle, which may destroy archetypes still ahead of it.
-        template<typename Callable>
-        ZY_INLINE void ForEachArchetype(AnyRef<Callable> Callback) const
-        {
-            mArchetypes.ForEach([this, &Callback](UInt32 Slot)
-            {
-                // Looked at on each turn, since destroying one takes the archetypes beneath it along.
-                if (const UInt32 Index = kMinRangeArchetypes + Slot; mFixed.Slots[Index].Holder)
-                {
-                    Callback(GetHandle(Index));
-                }
-            });
-        }
-
         /// \brief Gets the handle naming the entity alive in a slot.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, below \ref GetSize.
         /// \return The handle, with the slot's current generation.
         ZY_INLINE Handle GetHandle(UInt32 Index) const
         {
@@ -202,6 +176,16 @@ namespace ZyScene
         ZY_INLINE UInt32 GetLinks() const
         {
             return mLinks;
+        }
+
+        /// \brief Gets the slot of the living entity a handle this directory handed out names.
+        ///
+        /// \param Actor The handle, whose slot is in range since slots are never taken away.
+        /// \return The slot, or `nullptr` once the entity is gone, or the slot was never given out.
+        ZY_INLINE ConstPtr<Slot> FindSlot(Handle Actor) const
+        {
+            ConstRef<Slot> Entry = (* this)[Actor.GetIndex()];
+            return Entry.Holder && Entry.Generation == Actor.GetGeneration() ? AddressOf(Entry) : nullptr;
         }
 
         /// \brief Gets what an archetype lends of a component, the nearest one up the chain holding it deciding.
@@ -305,7 +289,7 @@ namespace ZyScene
 
         /// \brief Gets the range a slot number falls in.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, fixed or an entity's.
         /// \return The entities' range from the first entity's slot on, the fixed one below it.
         ZY_INLINE Ref<Range> Pick(UInt32 Index)
         {
@@ -314,7 +298,7 @@ namespace ZyScene
 
         /// \brief Gets the range a slot number falls in, to read.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, fixed or an entity's.
         /// \return The entities' range from the first entity's slot on, the fixed one below it.
         ZY_INLINE ConstRef<Range> Pick(UInt32 Index) const
         {
@@ -323,7 +307,7 @@ namespace ZyScene
 
         /// \brief Gets where a slot number sits within its range.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, fixed or an entity's.
         /// \return The position, counted from the first slot of the range.
         ZY_INLINE static constexpr UInt32 Locate(UInt32 Index)
         {
@@ -343,7 +327,7 @@ namespace ZyScene
 
         /// \brief Gets where a slot sits in the hierarchy, when it ever sat anywhere.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, linked or never linked.
         /// \return The family, or `nullptr` when the slot was never linked.
         ZY_INLINE ConstPtr<Family> FindFamily(UInt32 Index) const
         {
@@ -354,7 +338,7 @@ namespace ZyScene
 
         /// \brief Gets where a slot sits in the hierarchy, growing the families to reach it, which moves them.
         ///
-        /// \param Index The slot number.
+        /// \param Index The slot number, grown into when it was never linked.
         /// \return The family, zero for a slot that was never linked.
         Ref<Family> Tie(UInt32 Index);
 

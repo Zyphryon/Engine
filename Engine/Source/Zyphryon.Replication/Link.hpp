@@ -19,7 +19,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
     /// \brief Represents a reference to another replica, held inside a replicated component.
     class Link final
@@ -35,7 +35,7 @@ namespace ZyScene::Protocol
         /// \brief Constructs a link to an entity of this world.
         ///
         /// \param Target The entity, which names its replica identity once it has one.
-        ZY_INLINE explicit Link(Entity Target)
+        ZY_INLINE explicit Link(ZyScene::Entity Target)
             : mCache      { Target },
               mIdentifier { 0 }
         {
@@ -67,7 +67,7 @@ namespace ZyScene::Protocol
         /// \param Find The function finding the entity a replica identifier stands for.
         /// \return The entity, or one naming nothing while the target is not held.
         template<typename Callable>
-        ZY_INLINE Entity Resolve(AnyRef<Callable> Find)
+        ZY_INLINE ZyScene::Entity Resolve(AnyRef<Callable> Find)
         {
             // Never reused, an identifier names the same replica again when it comes back as another entity.
             if (!mCache.IsAlive() && mIdentifier != 0)
@@ -79,7 +79,7 @@ namespace ZyScene::Protocol
             {
                 return mCache;
             }
-            return Entity();
+            return ZyScene::Entity();
         }
 
         /// \brief Reads or writes the identifier the link names.
@@ -102,7 +102,7 @@ namespace ZyScene::Protocol
             else
             {
                 Archive.Serialize(mIdentifier);
-                mCache = Entity();
+                mCache = ZyScene::Entity();
             }
         }
 
@@ -111,7 +111,7 @@ namespace ZyScene::Protocol
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Entity mCache;
-        UInt64 mIdentifier;
+        ZyScene::Entity mCache;
+        UInt64          mIdentifier;
     };
 }

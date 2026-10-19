@@ -25,81 +25,67 @@ namespace ZyScene
     {
     public:
 
-        /// \brief Registers a component type, or finds it under the compiler's name or an unresolved one it declares.
+        /// \brief Registers a type, or finds the one already registered under its compiler name or a save's name.
         ///
-        /// \param Info The layout and lifecycle of the type, which an unresolved type takes in place.
-        /// \param Name The name it is declared under, or empty for none.
+        /// \param Info The layout and lifecycle of the type, which a type a save named first takes in place.
+        /// \param Name The name it is declared under, or empty for its compiler name.
         /// \return The identifier the type answers to, never zero.
         UInt32 Register(ConstRef<Metatype> Info, Text Name);
 
-        /// \brief Finds the component type a save names, declaring it unresolved when this build does not know it.
+        /// \brief Finds the type a save names, registering it as bytes when no loaded code declares it.
         ///
         /// \param Name The name the save gives it.
         /// \return The identifier, never zero.
         UInt32 Acquire(Text Name);
 
-        /// \brief Declares a component type, resolving it when unresolved and naming it for saves.
+        /// \brief Declares a type under the name saves know it by, taking its layout and lifecycle over.
         ///
         /// \param Identifier The identifier the type answers to.
         /// \param Info       The layout and lifecycle of the type.
-        /// \param Name       The name, which no resolved type may carry already, or empty to keep the one it has.
+        /// \param Name       The name, which no other declared type may carry.
         void Declare(UInt32 Identifier, ConstRef<Metatype> Info, Text Name);
 
-        /// \brief Makes a component type bring another along whenever an entity is given it.
+        /// \brief Changes what a declared type is, before an entity first holds it.
         ///
         /// \param Identifier The identifier the type answers to.
-        /// \param Implied    The identifier of the component brought along.
-        void Imply(UInt32 Identifier, UInt32 Implied);
+        /// \param Change     The callable, taking the type to change.
+        template<typename Callable>
+        ZY_INLINE void Amend(UInt32 Identifier, AnyRef<Callable> Change)
+        {
+            const Guard Lock(mLock);
+            Change(Lookup(Identifier));
+        }
 
-        /// \brief Marks the lifecycle of a component type as pointing into code about to go away.
+        /// \brief Marks the lifecycle of a type as pointing into code about to be unloaded.
         ///
         /// \param Identifier The identifier the type answers to.
         void Retire(UInt32 Identifier);
 
-        /// \brief Gives a component type a trait or takes it away, before the type is first stored.
+        /// \brief Finds the type that answers to a name.
         ///
-        /// \param Identifier The identifier the type answers to.
-        /// \param Which      The trait, or several taken together.
-        /// \param Enabled    `true` to give it, `false` to take it away.
-        void SetTrait(UInt32 Identifier, Trait Which, Bool Enabled);
-
-        /// \brief Sets how a tool shows a component type.
-        ///
-        /// \param Identifier   The identifier the type answers to.
-        /// \param Presentation The description, whose text must outlive the type's module.
-        void SetDescription(UInt32 Identifier, ConstRef<Description> Presentation);
-
-        /// \brief Sets the fields a tool reads and writes of a component type, keeping its width and alignment.
-        ///
-        /// \param Identifier The identifier the type answers to.
-        /// \param Layout     The fields, which must outlive the type's module.
-        void SetSchema(UInt32 Identifier, ConstRef<ZyReflection::Schema> Layout);
-
-        /// \brief Finds the component type that answers to a name.
-        ///
-        /// \param Name The name saves know the type by, or the one the compiler gives it.
+        /// \param Name The name saves know the type by, or its compiler name.
         /// \return The identifier, or zero when no type answers to the name.
         UInt32 Find(Text Name);
 
-        /// \brief Finds an unresolved type left apart under the name a type answers to, since the type was known first.
+        /// \brief Finds the type a save named before the code declaring the same name was loaded.
         ///
-        /// \param Identifier The identifier the type answers to.
-        /// \return The identifier of the unresolved type, or zero when there is none.
+        /// \param Identifier The identifier the declared type answers to.
+        /// \return The identifier of the type kept as bytes under its name, or zero when there is none.
         UInt32 FindUnresolved(UInt32 Identifier);
 
-        /// \brief Gets a registered component type.
+        /// \brief Gets a registered type.
         ///
         /// \param Identifier The identifier the type answers to.
         /// \return The type, which never moves for the life of the process.
         ConstRef<Metatype> GetMetatype(UInt32 Identifier);
 
-        /// \brief Gets the description columns of a component type are built from.
+        /// \brief Gets the description a type's columns are built from.
         ///
         /// \param Identifier The identifier the type answers to.
-        /// \return The type itself, or the opaque bytes while it is unresolved and not a tag.
+        /// \return The type itself, or the bytes it saved to while no loaded code declares it and it is no tag.
         ConstRef<Metatype> GetColumn(UInt32 Identifier);
 
-        /// \brief Gets how many component types are registered, which is also the highest identifier handed out.
+        /// \brief Gets how many types are registered, which is also the highest identifier handed out.
         ///
         /// \return The number of types.
         UInt32 GetCount();
@@ -113,21 +99,21 @@ namespace ZyScene
 
     private:
 
-        /// \brief Gets a registered component type the caller may change, with the lock already held.
+        /// \brief Gets a registered type the caller may change, with the lock already held.
         ///
         /// \param Identifier The identifier the type answers to.
         /// \return The type, which never moves.
         Ref<Metatype> Lookup(UInt32 Identifier);
 
-        /// \brief Finds the component type that answers to a name, with the lock already held.
+        /// \brief Finds the type that answers to a name, with the lock already held.
         ///
-        /// \param Name The name saves know the type by, or the one the compiler gives it.
+        /// \param Name The name saves know the type by, or its compiler name.
         /// \return The identifier, or zero when no type answers to the name.
         UInt32 Search(Text Name);
 
-        /// \brief Makes an unresolved type the one the code now declares, keeping only its name.
+        /// \brief Makes a type kept as bytes the one the code now declares, keeping only its name.
         ///
-        /// \param Known The unresolved type, overwritten in place.
+        /// \param Known The type kept as bytes, overwritten in place.
         /// \param Info  The layout and lifecycle of the type.
         static void Revive(Ref<Metatype> Known, ConstRef<Metatype> Info);
 
@@ -149,16 +135,16 @@ namespace ZyScene
         Table<UInt64, UInt32>      mNamed;
     };
 
-    /// \brief Gets the identifier a component type answers to, registering it the first time it is asked about.
+    /// \brief Gets the identifier a type answers to, registering it the first time it is asked about.
     ///
-    /// \param Name The name it is declared under, which only the first call takes, or empty for none.
+    /// \param Name The name it is declared under, which only the first call takes, or empty for its compiler name.
     /// \return The identifier, the same for every library in the process.
     template<typename Type>
     ZY_INLINE UInt32 IdentifierOf(Text Name = Text())
     {
         if constexpr (IsAnyOf<Type, StripAll<Type>>)
         {
-            // Starts at zero without a guard, so the common read is one load; a race only enrolls the same type twice.
+            // No guard, so the common read is one load, and a race at worst registers the same type twice.
             static Atomic<UInt32> Identifier(0);
 
             UInt32 Value = Identifier.load(std::memory_order_relaxed);

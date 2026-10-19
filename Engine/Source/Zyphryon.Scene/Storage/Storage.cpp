@@ -24,14 +24,8 @@ namespace ZyScene
 
     Storage::Storage(Ref<ZyEngine::Subsystem::Host> Host)
         : Locator { Host },
-          mPrefab { IdentifierOf<Prefab>() },
-          mAsleep { IdentifierOf<Asleep>() },
-          mPart   { IdentifierOf<Part>() }
+          mTick   { 1 }
     {
-        Registry::Get().SetTrait(mPrefab, Trait::Local,       true);
-        Registry::Get().SetTrait(mAsleep, Trait::Local,       true);
-        Registry::Get().SetTrait(mPart,   Trait::Inheritable, true);
-
         Place(kWorld.GetIndex(), * mLayout.GetRoot());
     }
 
@@ -65,26 +59,19 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Entity Storage::CreateEntity()
-    {
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
-
-        // Made during a walk, it waits where no query sees it until the walk ends.
-        const Handle Actor = mDirectory.Allocate(false);
-        Place(Actor.GetIndex(), mDeferral.IsWalking() ? * mLayout.GetPending() : * mLayout.GetRoot());
-        return Entity(this, Actor);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Entity Storage::CreateArchetype()
+    Entity Storage::CreateArchetype(Entity Base, Entity Parent)
     {
         ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread; Postpone the making");
+        ZY_ASSERT(!Base.IsAlive() || Base.IsArchetype(), "An archetype reads only from another archetype");
 
-        // Placed at once even mid-walk, since walks skip archetypes unless they ask for them.
+        // Placed at once even mid-walk, since walks pass archetypes over unless they ask for them.
+        const UInt32 From  = Base.IsAlive() ? Handle(Base.GetID()).GetIndex() : 0;
+        const UInt32 Above = Parent.IsAlive() ? Handle(Parent.GetID()).GetIndex() : 0;
         const Handle Actor = mDirectory.Allocate(true);
-        Place(Actor.GetIndex(), * FindOrCreate(ConstSpan(mPrefab), 0));
+        const UInt32 Marker = IdentifierOf<Prefab>();
+
+        Place(Actor.GetIndex(), From ? * FindHeir(From, true) : * Obtain(ConstSpan(Marker), 0));
+        Settle(Actor.GetIndex(), From, Above, ConstSpan<UInt32>());
         return Entity(this, Actor);
     }
 
@@ -96,19 +83,18 @@ namespace ZyScene
         ZY_ASSERT(Source.IsArchetype(), "Only an archetype can be cloned");
         ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype cannot be made while a walk is spread; Postpone the making");
 
-        // The copy sits in the source's own chunk, every column copied, its parts copied beneath it.
+        // Each copy sits in its source's own chunk with every value copied, parents before what stands beneath.
         Sequence<UInt32> Pending;
         Sequence<UInt32> Made;
-        Pending.Append(Source.GetHandle().GetIndex());
+        Pending.Append(Handle(Source.GetID()).GetIndex());
 
         for (UInt32 Next = 0; Next < Pending.GetSize(); ++Next)
         {
             const UInt32 Original = Pending[Next];
             const Handle Copy     = mDirectory.Allocate(true);
-            Ref<Chunk>   Shape    = * mDirectory[Original].Holder;
 
-            Place(Copy.GetIndex(), Shape);
-            Fill(Copy.GetIndex(), nullptr, Original, 0);
+            Place(Copy.GetIndex(), * mDirectory[Original].Holder);
+            Fill(Copy.GetIndex(), Original, ConstSpan<UInt32>());
 
             if (Next > 0)
             {
@@ -118,7 +104,7 @@ namespace ZyScene
 
             for (UInt32 Child = mDirectory.GetFirst(Original); Child; Child = mDirectory.GetNext(Child))
             {
-                if (mDirectory[Child].Holder->IsArchetype())
+                if (Directory::IsArchetype(Child))
                 {
                     Pending.Append(Child);
                 }
@@ -127,36 +113,41 @@ namespace ZyScene
 
         for (UInt32 Index = static_cast<UInt32>(Made.GetSize()); Index > 0; --Index)
         {
-            RecordGain(Made[Index - 1], nullptr);
+            Gain(Made[Index - 1], nullptr);
         }
 
         // The copies beneath are parts like their sources, while the copy itself is one only where it is put.
+        const Handle Root = mDirectory.GetHandle(Made[0]);
+
         if (Parent.IsAlive())
         {
-            SetParent(Made[0], Parent.GetHandle().GetIndex());
+            SetParent(Root.GetIndex(), Handle(Parent.GetID()).GetIndex());
         }
-        else
+        else if (mDirectory[Root.GetIndex()].Holder->Has(IdentifierOf<Part>()))
         {
-            Remove(mDirectory.GetHandle(Made[0]), mPart);
+            Remove(Root, IdentifierOf<Part>());
         }
-        return Entity(this, mDirectory.GetHandle(Made[0]));
+        return Entity(this, Root);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Purge(Component Type)
+    void Storage::RecordHeirs(UInt32 Identifier, Pull Kind, UInt32 Archetype, ConstPtr<Byte> Value)
     {
-        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be purged while a query walks");
+        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
 
-        // By position, since taking a component off may make chunks.
-        for (UInt32 Index = 0; Index < mLayout.GetChunks().GetSize(); ++Index)
+        if (!Info.Has(Trait::Inheritable) || Info.Has(Trait::Local))
         {
-            const Ptr<Chunk> Target = mLayout.GetChunk(Index);
+            return;
+        }
 
-            while (Target && Target->Has(Type.GetID()) && Target->GetSize() > 0)
+        // An heir holding its own value sees nothing of the archetype's, and neither do its own heirs.
+        for (const Ptr<Chunk> Target : mLayout.GetHeirs(Archetype))
+        {
+            for (UInt32 Row = 0; !Target->Has(Identifier) && Row < Target->GetSize(); ++Row)
             {
-                Remove(Target->GetHandle(Target->GetSize() - 1), Type.GetID());
+                Record(Identifier, Kind, Target->GetHandle(Row).GetIndex(), Value);
             }
         }
     }
@@ -164,7 +155,41 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::MarkChanged(Handle Actor, UInt32 Identifier)
+    void Storage::Gain(UInt32 Index, ConstPtr<Chunk> Before)
+    {
+        if (!mLedger.IsActive())
+        {
+            return;
+        }
+
+        ConstRef<Chunk> Holder = * mDirectory[Index].Holder;
+
+        const auto Note = [this, Index, Before](UInt32 Identifier)
+        {
+            if (!Before || !mDirectory.Sees(* Before, Identifier))
+            {
+                Record(Identifier, Pull::Added, Index, nullptr);
+            }
+        };
+
+        for (const UInt32 Identifier : Holder.GetSignature())
+        {
+            if (IsWatched(Identifier, Pull::Added))
+            {
+                Note(Identifier);
+            }
+        }
+
+        Lend(Holder, Pull::Added, [&Note](UInt32 Identifier, ConstPtr<Byte>)
+        {
+            Note(Identifier);
+        });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Notify(Handle Actor, UInt32 Identifier)
     {
         ZY_ASSERT(mDirectory.IsAlive(Actor), "The entity is not alive");
 
@@ -180,7 +205,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::RecordWrites(ConstRef<Selection> State)
+    void Storage::Mark(ConstRef<Selection> State)
     {
         for (const UInt32 Identifier : State.Writes)
         {
@@ -189,22 +214,28 @@ namespace ZyScene
                 continue;
             }
 
+            // An entity reading its archetype's value was not written, so only chunks holding their own are marked.
             for (const Ptr<Chunk> Target : State.Chunks)
             {
-                // An entity reading its archetype's value was not written, so only chunks holding their own are told.
-                if (Target->Find(Identifier) < 0)
+                if (const SInt16 Column = Target->Find(Identifier); Column >= 0)
                 {
-                    continue;
-                }
-
-                // Each page holds its rows' handles side by side, so a page is told in one append.
-                for (UInt32 Row = 0; Row < Target->GetSize(); Row += Target->GetRows())
-                {
-                    const UInt32 Count = Min(Target->GetRows(), Target->GetSize() - Row);
-                    mLedger.Record(Identifier, Pull::Changed, ConstSpan<Handle>(Target->GetHandles(Row), Count));
+                    Target->Mark(Column, mTick);
                 }
             }
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Handle Storage::Create()
+    {
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
+
+        // Made during a walk, it waits where no query sees it until the walk ends.
+        const Handle Actor = mDirectory.Allocate(false);
+        Place(Actor.GetIndex(), mDeferral.IsWalking() ? * mLayout.GetPending() : * mLayout.GetRoot());
+        return Actor;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -245,6 +276,11 @@ namespace ZyScene
             }
         }
 
+        if (mLedger.IsActive())
+        {
+            Carry(Source, From, AddressOf(Target), To);
+        }
+
         if (const Handle Moved = Source.Release(From); Moved.IsValid())
         {
             mDirectory[Moved.GetIndex()].Row = From;
@@ -263,14 +299,14 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ptr<Chunk> Storage::FindOrCreate(ConstSpan<UInt32> Signature, UInt32 Base)
+    Ptr<Chunk> Storage::Obtain(ConstSpan<UInt32> Signature, UInt32 Base)
     {
         if (const Ptr<Chunk> Known = mLayout.Find(Signature, Base))
         {
             return Known;
         }
 
-        const Ptr<Chunk> Made = mLayout.Create(Signature, Base, mPrefab, mDirectory);
+        const Ptr<Chunk> Made = mLayout.Create(Signature, Base, mDirectory);
 
         // What the set brings along, except what the archetype lends already.
         Sequence<UInt32> Closure(Signature);
@@ -289,7 +325,7 @@ namespace ZyScene
         if (Closure.GetSize() > Signature.GetSize())
         {
             Closure.Sort();
-            Made->SetClosure(FindOrCreate(Closure, Base)->GetClosure());
+            Made->SetClosure(Obtain(Closure, Base)->GetClosure());
         }
         return Made;
     }
@@ -297,33 +333,89 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::BuildDefaults(UInt32 Index, ConstRef<Chunk> Source, UInt32 Except, Bool Recording)
+    Ptr<Chunk> Storage::FindHeir(UInt32 Source, Bool AsArchetype)
     {
-        ConstRef<Chunk> Target = * mDirectory[Index].Holder;
-        const UInt32    Row    = mDirectory[Index].Row;
+        const Ptr<Chunk> Shape = mDirectory[Source].Holder;
 
-        for (UInt32 Column = 0; Column < Target.GetColumns().GetSize(); ++Column)
+        // Made where the last one landed while the archetype has not moved since.
+        if (const Ptr<Chunk> Known = mLayout.GetCopy(Source, Shape, AsArchetype))
         {
-            ConstRef<Chunk::Column> Gained = Target.GetColumns()[Column];
+            return Known;
+        }
 
-            if (Gained.Identifier != Except && !Source.Has(Gained.Identifier))
+        // What the archetype copies, plus the marker of an archetype, plus what that brings along.
+        Sequence<UInt32> Signature;
+
+        for (const UInt32 Identifier : Shape->GetSignature())
+        {
+            if (Shape->GetFlags(Identifier) & Chunk::kCopies)
             {
-                Chunk::Construct(* Gained.Info, Target.At(Column, Row), 1);
+                Signature.Append(Identifier);
             }
         }
 
-        if (!Recording || !mLedger.IsActive())
+        if (AsArchetype)
         {
-            return;
+            Signature.Append(IdentifierOf<Prefab>());
+        }
+        Signature.Sort();
+
+        const Ptr<Chunk> Destination = Obtain(Signature, Source)->GetClosure();
+        mLayout.SetCopy(Source, Shape, AsArchetype, Destination);
+        return Destination;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given)
+    {
+        // A plain entity given every component it holds has nothing left to build.
+        if (Archetype || mDirectory[Index].Holder->GetSignature().GetSize() != Given.GetSize())
+        {
+            Fill(Index, Archetype, Given);
         }
 
-        // Holding what it read from its archetype changes the value it sees rather than adding one.
-        for (const UInt32 Identifier : Target.GetSignature())
+        if (Archetype)
         {
-            if (Identifier != Except && !Source.Has(Identifier))
+            Copy(Archetype, Index);
+        }
+        Gain(Index, nullptr);
+
+        if (Parent)
+        {
+            SetParent(Index, Parent);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Fill(UInt32 Index, UInt32 Archetype, ConstSpan<UInt32> Given)
+    {
+        Ref<Chunk>       Target = * mDirectory[Index].Holder;
+        const UInt32     Row    = mDirectory[Index].Row;
+        const Ptr<Chunk> Shape  = Archetype ? mDirectory[Archetype].Holder : nullptr;
+
+        // What it was not given is copied from the archetype or built.
+        for (UInt32 Column = 0; Column < Target.GetColumns().GetSize(); ++Column)
+        {
+            ConstRef<Chunk::Column> Made = Target.GetColumns()[Column];
+
+            if (ZyBase::Find(Given.GetData(), Given.GetSize(), Made.Identifier))
             {
-                const Bool Lent = mDirectory.FindLent(Source.GetBase(), Identifier) != nullptr;
-                Record(Identifier, Lent ? Pull::Changed : Pull::Added, Index, nullptr);
+                continue;
+            }
+
+            const SInt16 Origin = Shape ? Shape->Find(Made.Identifier) : Chunk::kAbsent;
+
+            if (Origin >= 0)
+            {
+                Chunk::Copy(* Made.Info, Target.At(Column, Row), Shape->At(Origin, mDirectory[Archetype].Row), 1);
+            }
+            else
+            {
+                Chunk::Construct(* Made.Info, Target.At(Column, Row), 1);
             }
         }
     }
@@ -341,7 +433,7 @@ namespace ZyScene
             Queue(Deferral::Operation::Destroy, Actor, 0, Handle(), nullptr);
             return;
         }
-        DestroyTree(Actor.GetIndex());
+        Prune(Actor.GetIndex());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -357,11 +449,9 @@ namespace ZyScene
             return;
         }
 
-        ConstRef<Chunk> Source = * mDirectory[Actor.GetIndex()].Holder;
-
-        if (!mDirectory.Sees(Source, Identifier))
+        if (!mDirectory.Sees(* mDirectory[Actor.GetIndex()].Holder, Identifier))
         {
-            InsertRecorded(Actor.GetIndex(), Identifier, nullptr);
+            Give(Actor.GetIndex(), Identifier, nullptr);
         }
     }
 
@@ -399,7 +489,7 @@ namespace ZyScene
                 Record(Identifier, Pull::Removed, Index, Value);
             }
         }
-        Transfer(Index, * FindOrCreateRemoval(Source, Identifier));
+        Transfer(Index, * Narrow(Source, Identifier));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -431,46 +521,43 @@ namespace ZyScene
         }
         else
         {
-            InsertRecorded(Index, Identifier, Fresh);
+            Give(Index, Identifier, Fresh);
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Override(Handle Actor, UInt32 Identifier)
+    Ptr<Byte> Storage::Ensure(Handle Actor, UInt32 Identifier)
     {
         ZY_ASSERT(mDirectory.IsAlive(Actor), "The entity is not alive");
-        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be overridden while a query walks");
+        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be ensured while a query walks");
 
-        const UInt32    Index  = Actor.GetIndex();
-        ConstRef<Chunk> Source = * mDirectory[Index].Holder;
+        const UInt32       Index = Actor.GetIndex();
+        ConstRef<Metatype> Info  = Registry::Get().GetColumn(Identifier);
 
-        if (Source.Has(Identifier))
+        ZY_ASSERT(!Info.IsTag(), "A tag holds no value to ensure");
+
+        if (!mDirectory[Index].Holder->Has(Identifier))
         {
-            return;
+            const ConstPtr<Byte> Lent = mDirectory.FindLent(mDirectory[Index].Holder->GetBase(), Identifier);
+
+            if (Lent)
+            {
+                // Copied apart first, since the insertion moves the value in from a place of its own.
+                const Ptr<Byte> Fresh = Allocate<Byte>(Info.GetSize(), Info.GetAlignment());
+                Chunk::Copy(Info, Fresh, Lent, 1);
+                Give(Index, Identifier, Fresh);
+                Free(Fresh, Info.GetAlignment());
+            }
+            else
+            {
+                Give(Index, Identifier, nullptr);
+            }
         }
 
-        const ConstPtr<Byte> Lent = mDirectory.FindLent(Source.GetBase(), Identifier);
-
-        if (!Lent)
-        {
-            return;
-        }
-
-        ConstRef<Metatype> Info = Registry::Get().GetColumn(Identifier);
-
-        if (Info.IsTag())
-        {
-            InsertRecorded(Index, Identifier, nullptr);
-            return;
-        }
-
-        // Copied apart first, since the insertion moves the value in from a place of its own.
-        const Ptr<Byte> Fresh = Allocate<Byte>(Info.GetSize(), Info.GetAlignment());
-        Chunk::Copy(Info, Fresh, Lent, 1);
-        InsertRecorded(Index, Identifier, Fresh);
-        Free(Fresh, Info.GetAlignment());
+        ConstRef<Directory::Slot> Entry = mDirectory[Index];
+        return Entry.Holder->At(Entry.Holder->Find(Identifier), Entry.Row);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -505,7 +592,7 @@ namespace ZyScene
 
         if (Column < 0)
         {
-            InsertRecorded(Index, Identifier, nullptr);
+            Give(Index, Identifier, nullptr);
         }
         else
         {
@@ -519,57 +606,6 @@ namespace ZyScene
             Ref<Chunk> Target = * mDirectory[Index].Holder;
             Info.Load(Input, Target.At(Target.Find(Identifier), mDirectory[Index].Row));
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::SetAwake(Handle Actor, Bool Awake, Bool Recursive)
-    {
-        const auto Toggle = [this, Awake](Handle Target)
-        {
-            if (Awake)
-            {
-                Remove(Target, mAsleep);
-            }
-            else
-            {
-                Add(Target, mAsleep);
-            }
-        };
-
-        if (!Recursive)
-        {
-            Toggle(Actor);
-            return;
-        }
-
-        // Held until the end, so the subtree is walked parents first with no stack while nothing moves.
-        const UInt32 Root = Actor.GetIndex();
-        Enter();
-
-        for (UInt32 Cursor = Root;;)
-        {
-            Toggle(mDirectory.GetHandle(Cursor));
-
-            if (mDirectory.GetFirst(Cursor))
-            {
-                Cursor = mDirectory.GetFirst(Cursor);
-                continue;
-            }
-
-            while (Cursor != Root && !mDirectory.GetNext(Cursor))
-            {
-                Cursor = mDirectory.GetParent(Cursor);
-            }
-
-            if (Cursor == Root)
-            {
-                break;
-            }
-            Cursor = mDirectory.GetNext(Cursor);
-        }
-        Leave();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -593,10 +629,8 @@ namespace ZyScene
             ZY_ASSERT(Cursor != Index, "An entity cannot be attached beneath itself");
         }
 
-        // Moving a part touches every heir, so it waits, as does every move a spread walk asks for.
-        const Bool Part = IsPart(Index, Above) || IsPart(Index, Previous);
-
-        if (mDeferral.IsWalking() && (Part || mDeferral.IsSpreading()))
+        // The hierarchy is no chunk, so only a spread walk, whose workers read it, holds the move.
+        if (mDeferral.IsSpreading())
         {
             Queue(Deferral::Operation::Attach, Actor, 0, Above ? Parent : Handle(), nullptr);
         }
@@ -608,47 +642,6 @@ namespace ZyScene
         {
             ClearParent(Index);
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::SetArchetype(Handle Actor, Handle Archetype)
-    {
-        ZY_ASSERT(mDirectory.IsAlive(Actor), "The entity is not alive");
-        ZY_ASSERT(!mDirectory.IsAlive(Archetype) || mDirectory[Archetype.GetIndex()].Holder->IsArchetype(),
-            "Only an archetype can be read from");
-
-        if (mDeferral.IsWalking())
-        {
-            Queue(Deferral::Operation::Rebase, Actor, 0, Archetype, nullptr);
-            return;
-        }
-
-        const UInt32 Index = Actor.GetIndex();
-        const UInt32 Base  = mDirectory.IsAlive(Archetype) ? Archetype.GetIndex() : 0;
-
-        if (mDirectory[Index].Holder->GetBase() == Base)
-        {
-            return;
-        }
-
-        for (UInt32 Cursor = Base; Cursor; Cursor = mDirectory[Cursor].Holder->GetBase())
-        {
-            ZY_ASSERT(Cursor != Index, "An archetype cannot read from itself");
-        }
-
-        // It keeps all it holds and gains what the new archetype copies and its parts, archetypes under an archetype.
-        if (Base)
-        {
-            Propagate(Base, mDirectory[Index].Holder->IsArchetype(), Actor, true);
-            return;
-        }
-
-        Ref<Chunk> Source = * mDirectory[Index].Holder;
-        Transfer(Index, * FindOrCreate(Source.GetSignature(), 0)->GetClosure());
-        BuildDefaults(Index, Source, 0, false);
-        RecordGain(Index, AddressOf(Source));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -678,172 +671,25 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Propagate(UInt32 Source, Bool AsArchetype, Handle Target, Bool Parts)
+    Sequence<Handle> Storage::GetHeirs(UInt32 Archetype) const
     {
-        const UInt32     Index = Target.GetIndex();
-        const Ptr<Chunk> Held  = mDirectory[Index].Holder;
+        Sequence<Handle> Heirs;
 
-        PlaceOrTransfer(Index, * FindHeir(Held, Source, AsArchetype));
-        Fill(Index, Held, Source, 0);
-
-        if (Parts)
+        for (const Ptr<Chunk> Target : mLayout.GetHeirs(Archetype))
         {
-            CopyParts(Source, AsArchetype, Index);
+            for (UInt32 Row = 0; Row < Target->GetSize(); ++Row)
+            {
+                Heirs.Append(Target->GetHandle(Row));
+            }
         }
-        RecordGain(Index, Held);
+        return Heirs;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ptr<Chunk> Storage::FindHeir(ConstPtr<Chunk> Held, UInt32 Source, Bool AsArchetype)
+    void Storage::Prune(UInt32 Root)
     {
-        const Ptr<Chunk> Shape = mDirectory[Source].Holder;
-        const Bool       Bare  = !Held || Held->GetSignature().IsEmpty();
-
-        // A bare copy lands where the last one did while the archetype has not moved since.
-        if (const Ptr<Chunk> Known = Bare ? mLayout.GetCopy(Source, Shape, AsArchetype) : nullptr)
-        {
-            return Known;
-        }
-
-        // What it holds already, plus what the archetype copies, plus what that brings along.
-        Sequence<UInt32> Signature;
-
-        if (Held)
-        {
-            Signature.Append(Held->GetSignature());
-        }
-
-        for (const UInt32 Identifier : Shape->GetSignature())
-        {
-            if ((Shape->GetFlags(Identifier) & Chunk::kCopies) && (!Held || !Held->Has(Identifier)))
-            {
-                Signature.Append(Identifier);
-            }
-        }
-
-        if (AsArchetype && (!Held || !Held->Has(mPrefab)))
-        {
-            Signature.Append(mPrefab);
-        }
-        Signature.Sort();
-
-        const Ptr<Chunk> Destination = FindOrCreate(Signature, Source)->GetClosure();
-
-        if (Bare)
-        {
-            mLayout.SetCopy(Source, Shape, AsArchetype, Destination);
-        }
-        return Destination;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::CopyParts(UInt32 Source, Bool AsArchetype, UInt32 Index)
-    {
-        for (UInt32 Part = mDirectory.GetFirst(Source); Part; Part = mDirectory.GetNext(Part))
-        {
-            if (mDirectory[Part].Holder->IsArchetype())
-            {
-                const Handle Child = mDirectory.Allocate(AsArchetype);
-                mDirectory.Link(Child.GetIndex(), Index);
-                Propagate(Part, AsArchetype, Child, true);
-            }
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given)
-    {
-        Ref<Chunk>       Target = * mDirectory[Index].Holder;
-        const UInt32     Row    = mDirectory[Index].Row;
-        const Ptr<Chunk> Shape  = Archetype ? mDirectory[Archetype].Holder : nullptr;
-
-        // What it was not given is copied from the archetype or built.
-        const UInt32 Columns = Shape || Target.GetSignature().GetSize() != Given.GetSize() ? Target.GetColumns().GetSize() : 0;
-
-        for (UInt32 Column = 0; Column < Columns; ++Column)
-        {
-            ConstRef<Chunk::Column> Made = Target.GetColumns()[Column];
-
-            if (ZyBase::Find(Given.GetData(), Given.GetSize(), Made.Identifier))
-            {
-                continue;
-            }
-
-            const SInt16 Origin = Shape ? Shape->Find(Made.Identifier) : -1;
-
-            if (Origin >= 0)
-            {
-                Chunk::Copy(* Made.Info, Target.At(Column, Row), Shape->At(Origin, mDirectory[Archetype].Row), 1);
-            }
-            else
-            {
-                Chunk::Construct(* Made.Info, Target.At(Column, Row), 1);
-            }
-        }
-
-        if (Archetype)
-        {
-            CopyParts(Archetype, false, Index);
-        }
-        RecordGain(Index, nullptr);
-
-        if (Parent)
-        {
-            SetParent(Index, Parent);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::Fill(UInt32 Index, ConstPtr<Chunk> Held, UInt32 Archetype, UInt8 Flags)
-    {
-        Ref<Chunk>      Target = * mDirectory[Index].Holder;
-        ConstRef<Chunk> Shape  = * mDirectory[Archetype].Holder;
-        const UInt32    Row    = mDirectory[Index].Row;
-        const UInt32    From   = mDirectory[Archetype].Row;
-
-        // What it held stays, the rest is copied from the archetype or built.
-        for (UInt32 Column = 0; Column < Target.GetColumns().GetSize(); ++Column)
-        {
-            ConstRef<Chunk::Column> Made = Target.GetColumns()[Column];
-
-            if (Held && Held->Has(Made.Identifier))
-            {
-                continue;
-            }
-
-            const SInt16 Origin = Shape.Find(Made.Identifier);
-
-            if (Origin >= 0 && (Shape.GetFlags(Made.Identifier) & Flags) == Flags)
-            {
-                Chunk::Copy(* Made.Info, Target.At(Column, Row), Shape.At(Origin, From), 1);
-            }
-            else
-            {
-                Chunk::Construct(* Made.Info, Target.At(Column, Row), 1);
-            }
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::DestroyTree(UInt32 Root)
-    {
-        const UInt32 Ancestor = mDirectory.GetParent(Root);
-
-        if (IsPart(Root, Ancestor))
-        {
-            DestroyPartCopies(Root, Ancestor);
-        }
-
         // Children first, sinking to a leaf, burying it and climbing back, with no stack.
         for (UInt32 Cursor = Root;;)
         {
@@ -859,7 +705,7 @@ namespace ZyScene
             {
                 mDirectory.Unlink(Cursor);
             }
-            DestroyOne(Cursor);
+            Erase(Cursor);
 
             if (Last)
             {
@@ -878,7 +724,7 @@ namespace ZyScene
 
         const ConstPtr<Metatype> Stored = AddressOf(Registry::Get().GetColumn(Identifier));
 
-        // The values are the same data, so no pull list records them.
+        // The values are the same data, so no reader is told.
         for (ConstRef<Unique<Chunk>> Target : mLayout.GetChunks())
         {
             const SInt16 Column  = Target ? Target->Find(Identifier) : Chunk::kAbsent;
@@ -920,6 +766,59 @@ namespace ZyScene
 
                 Read(Actor, Identifier, Input);
                 Remove(Actor, Unresolved);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Purge(UInt32 Identifier)
+    {
+        ZY_ASSERT(!mDeferral.IsWalking(), "A component cannot be purged while a query walks");
+
+        // By position, since taking a component off may make chunks.
+        for (UInt32 Index = 0; Index < mLayout.GetChunks().GetSize(); ++Index)
+        {
+            const Ptr<Chunk> Target = mLayout.GetChunk(Index);
+
+            while (Target && Target->Has(Identifier) && Target->GetSize() > 0)
+            {
+                Remove(Target->GetHandle(Target->GetSize() - 1), Identifier);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Build(UInt32 Index, ConstRef<Chunk> Source, UInt32 Except, Bool Recording)
+    {
+        ConstRef<Chunk> Target = * mDirectory[Index].Holder;
+        const UInt32    Row    = mDirectory[Index].Row;
+
+        for (UInt32 Column = 0; Column < Target.GetColumns().GetSize(); ++Column)
+        {
+            ConstRef<Chunk::Column> Gained = Target.GetColumns()[Column];
+
+            if (Gained.Identifier != Except && !Source.Has(Gained.Identifier))
+            {
+                Chunk::Construct(* Gained.Info, Target.At(Column, Row), 1);
+            }
+        }
+
+        if (!Recording || !mLedger.IsActive())
+        {
+            return;
+        }
+
+        // Holding what it read from its archetype changes the value it sees rather than adding one.
+        for (const UInt32 Identifier : Target.GetSignature())
+        {
+            if (Identifier != Except && !Source.Has(Identifier))
+            {
+                const Bool Lent = mDirectory.FindLent(Source.GetBase(), Identifier) != nullptr;
+                Record(Identifier, Lent ? Pull::Changed : Pull::Added, Index, nullptr);
             }
         }
     }
@@ -996,38 +895,30 @@ namespace ZyScene
                 Attach(Change.Actor, Change.Other);
             }
             break;
-        case Deferral::Operation::Rebase:
-            if (Alive)
-            {
-                SetArchetype(Change.Actor, Change.Other);
-            }
-            break;
         case Deferral::Operation::Notify:
             if (Alive)
             {
-                MarkChanged(Change.Actor, Change.Identifier);
+                Notify(Change.Actor, Change.Identifier);
             }
             break;
         case Deferral::Operation::Invoke:
-        {
             (* reinterpret_cast<Ptr<Deferral::Task>>(Change.Payload))(Change.Payload);
             break;
-        }
         }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ptr<Byte> Storage::Extend(UInt32 Index, UInt32 Identifier)
+    Ptr<Byte> Storage::Grow(UInt32 Index, UInt32 Identifier)
     {
         Ref<Chunk>       Source = * mDirectory[Index].Holder;
-        const Ptr<Chunk> Target = FindOrCreateAddition(Source, Identifier);
+        const Ptr<Chunk> Target = Widen(Source, Identifier);
         Transfer(Index, * Target);
 
         if (Target->GetSignature().GetSize() != Source.GetSignature().GetSize() + 1)
         {
-            BuildDefaults(Index, Source, Identifier, true);
+            Build(Index, Source, Identifier, true);
         }
 
         const SInt16 Column = Target->Find(Identifier);
@@ -1037,12 +928,12 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh)
+    void Storage::Give(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh)
     {
         const UInt32 Base = mDirectory[Index].Holder->GetBase();
         const Bool   Seen = mDirectory.FindLent(Base, Identifier) != nullptr;
 
-        if (const Ptr<Byte> Place = Extend(Index, Identifier))
+        if (const Ptr<Byte> Place = Grow(Index, Identifier))
         {
             ConstRef<Metatype> Info = Registry::Get().GetColumn(Identifier);
 
@@ -1061,55 +952,19 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::RecordGain(UInt32 Index, ConstPtr<Chunk> Before)
+    void Storage::Copy(UInt32 Source, UInt32 Index)
     {
-        if (!mLedger.IsActive())
-        {
-            return;
-        }
+        // A part's copy is an archetype beneath an archetype, an instance beneath anything else.
+        const Bool AsArchetype = Directory::IsArchetype(Index);
 
-        ConstRef<Chunk> Holder = * mDirectory[Index].Holder;
-
-        const auto Gain = [this, Index, Before](UInt32 Identifier)
+        for (UInt32 Part = mDirectory.GetFirst(Source); Part; Part = mDirectory.GetNext(Part))
         {
-            if (!Before || !mDirectory.Sees(* Before, Identifier))
+            if (Directory::IsArchetype(Part))
             {
-                Record(Identifier, Pull::Added, Index, nullptr);
-            }
-        };
-
-        for (const UInt32 Identifier : Holder.GetSignature())
-        {
-            if (IsWatched(Identifier, Pull::Added))
-            {
-                Gain(Identifier);
-            }
-        }
-
-        VisitLent(Holder, Pull::Added, [&Gain](UInt32 Identifier, ConstPtr<Byte>)
-        {
-            Gain(Identifier);
-        });
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::RecordHeirs(UInt32 Identifier, Pull Kind, UInt32 Archetype, ConstPtr<Byte> Value)
-    {
-        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
-
-        if (!Info.Has(Trait::Inheritable) || Info.Has(Trait::Local))
-        {
-            return;
-        }
-
-        // An heir holding its own value sees nothing of the archetype's, and neither do its own heirs.
-        for (const Ptr<Chunk> Target : mLayout.GetHeirChunks(Archetype))
-        {
-            for (UInt32 Row = 0; !Target->Has(Identifier) && Row < Target->GetSize(); ++Row)
-            {
-                Record(Identifier, Kind, Target->GetHandle(Row).GetIndex(), Value);
+                const Handle Twin = mDirectory.Allocate(AsArchetype);
+                Place(Twin.GetIndex(), * FindHeir(Part, AsArchetype));
+                mDirectory.Link(Twin.GetIndex(), Index);
+                Settle(Twin.GetIndex(), Part, 0, ConstSpan<UInt32>());
             }
         }
     }
@@ -1117,15 +972,67 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::DestroyOne(UInt32 Index)
+    void Storage::Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstPtr<Chunk> Target, UInt32 Landing)
     {
+        const UInt32 Last   = Holder.GetSize() - 1;
+        const UInt32 Leaver = Holder.GetHandle(Row).GetIndex();
+        const UInt32 Filler = Holder.GetHandle(Last).GetIndex();
+        const Bool   Moving = Holder.GetPage(Row) != Holder.GetPage(Last);
+
+        for (UInt32 Column = 0; Column < Holder.GetColumns().GetSize(); ++Column)
+        {
+            const UInt32 Identifier = Holder.GetColumns()[Column].Identifier;
+
+            if (!IsWatched(Identifier, Pull::Changed))
+            {
+                continue;
+            }
+
+            // A value a walk wrote in place leaves the page that says so, unless the page it lands in says so too.
+            const SInt16 Into = Target ? Target->Find(Identifier) : Chunk::kAbsent;
+
+            if (Into >= 0 && Chunk::IsLater(Holder.GetMark(Column, Row), Target->GetMark(Into, Landing)))
+            {
+                Record(Identifier, Pull::Changed, Leaver, nullptr);
+            }
+
+            // So does the last row's, filling the hole in a page a walk wrote earlier.
+            if (Moving && Chunk::IsLater(Holder.GetMark(Column, Last), Holder.GetMark(Column, Row)))
+            {
+                Record(Identifier, Pull::Changed, Filler, nullptr);
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Storage::Erase(UInt32 Index)
+    {
+        // Nothing reads from an archetype that is gone, so whatever was made from it goes first.
+        if (Directory::IsArchetype(Index))
+        {
+            for (const Handle Heir : GetHeirs(Index))
+            {
+                if (mDirectory.IsAlive(Heir))
+                {
+                    Prune(Heir.GetIndex());
+                }
+            }
+
+            for (const Ptr<Chunk> Target : mLayout.ExtractHeirs(Index))
+            {
+                mLayout.Destroy(Target);
+            }
+        }
+
+        ConstRef<Directory::Slot> Entry  = mDirectory[Index];
+        ConstRef<Chunk>           Holder = * Entry.Holder;
+
         if (mLedger.IsActive())
         {
-            ConstRef<Directory::Slot> Entry  = mDirectory[Index];
-            ConstRef<Chunk>           Holder = * Entry.Holder;
-            const Handle              Actor  = mDirectory.GetHandle(Index);
+            const Handle Actor = mDirectory.GetHandle(Index);
 
-            // Straight into the lists, since the heirs of a dying archetype keep what it lent them.
             for (const UInt32 Identifier : Holder.GetSignature())
             {
                 if (IsWatched(Identifier, Pull::Removed))
@@ -1135,20 +1042,17 @@ namespace ZyScene
                 }
             }
 
-            VisitLent(Holder, Pull::Removed, [this, Actor, &Holder](UInt32 Identifier, ConstPtr<Byte> Value)
+            Lend(Holder, Pull::Removed, [this, Actor, &Holder](UInt32 Identifier, ConstPtr<Byte> Value)
             {
                 mLedger.Record(Identifier, Pull::Removed, Actor, Value, Holder.GetIndex());
             });
+
+            Carry(Holder, Entry.Row, nullptr, 0);
         }
 
-        if (Directory::IsArchetype(Index))
+        if (const Handle Moved = Entry.Holder->Erase(Entry.Row); Moved.IsValid())
         {
-            FlattenHeirs(Index);
-        }
-
-        if (const Handle Moved = mDirectory[Index].Holder->Erase(mDirectory[Index].Row); Moved.IsValid())
-        {
-            mDirectory[Moved.GetIndex()].Row = mDirectory[Index].Row;
+            mDirectory[Moved.GetIndex()].Row = Entry.Row;
         }
         mDirectory.Release(Index);
     }
@@ -1165,18 +1069,10 @@ namespace ZyScene
 
         mDirectory.Link(Index, Parent);
 
-        // A part attached to an archetype is marked one, and reaches every entity already made from it.
+        // An archetype under an archetype is a part, copied beneath every instance made from then on.
         if (IsPart(Index, Parent))
         {
-            Add(mDirectory.GetHandle(Index), mPart);
-
-            for (const Handle Heir : GetHeirs(Parent))
-            {
-                const Bool   Keep = mDirectory[Heir.GetIndex()].Holder->IsArchetype();
-                const Handle Copy = mDirectory.Allocate(Keep);
-                Propagate(Index, Keep, Copy, true);
-                SetParent(Copy.GetIndex(), Heir.GetIndex());
-            }
+            Add(mDirectory.GetHandle(Index), IdentifierOf<Part>());
         }
     }
 
@@ -1185,96 +1081,14 @@ namespace ZyScene
 
     void Storage::ClearParent(UInt32 Index)
     {
-        const UInt32 Parent = mDirectory.GetParent(Index);
-        const Bool   Part   = IsPart(Index, Parent);
-
-        if (Part)
-        {
-            DestroyPartCopies(Index, Parent);
-        }
+        const Bool Lifted = IsPart(Index, mDirectory.GetParent(Index));
 
         mDirectory.Unlink(Index);
 
-        if (Part)
+        if (Lifted)
         {
-            Remove(mDirectory.GetHandle(Index), mPart);
+            Remove(mDirectory.GetHandle(Index), IdentifierOf<Part>());
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::DestroyPartCopies(UInt32 Part, UInt32 Archetype)
-    {
-        for (const Handle Heir : GetHeirs(Archetype))
-        {
-            Sequence<UInt32> Copies;
-
-            for (UInt32 Child = mDirectory.GetFirst(Heir.GetIndex()); Child; Child = mDirectory.GetNext(Child))
-            {
-                if (mDirectory[Child].Holder->GetBase() == Part)
-                {
-                    Copies.Append(Child);
-                }
-            }
-
-            for (const UInt32 Copy : Copies)
-            {
-                DestroyTree(Copy);
-            }
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Storage::FlattenHeirs(UInt32 Archetype)
-    {
-        const Sequence<Ptr<Chunk>> Chunks = mLayout.ExtractHeirs(Archetype);
-        ConstRef<Chunk>            Origin = * mDirectory[Archetype].Holder;
-        const UInt32               Base   = Origin.GetBase();
-
-        for (const Ptr<Chunk> Source : Chunks)
-        {
-            // The heirs take as their own what they read from here.
-            Sequence<UInt32> Signature(Source->GetSignature());
-
-            for (const UInt32 Identifier : Origin.GetSignature())
-            {
-                if ((Origin.GetFlags(Identifier) & Chunk::kLends) && !Source->Has(Identifier))
-                {
-                    Signature.Append(Identifier);
-                }
-            }
-            Signature.Sort();
-
-            const Ptr<Chunk> Target = FindOrCreate(Signature, Base)->GetClosure();
-
-            while (Source->GetSize() > 0)
-            {
-                const UInt32 Heir = Source->GetHandle(Source->GetSize() - 1).GetIndex();
-                Transfer(Heir, * Target);
-                Fill(Heir, Source, Archetype, Chunk::kLends);
-            }
-            mLayout.Destroy(Source);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Sequence<Handle> Storage::GetHeirs(UInt32 Archetype) const
-    {
-        Sequence<Handle> Heirs;
-
-        for (const Ptr<Chunk> Target : mLayout.GetHeirChunks(Archetype))
-        {
-            for (UInt32 Row = 0; Row < Target->GetSize(); ++Row)
-            {
-                Heirs.Append(Target->GetHandle(Row));
-            }
-        }
-        return Heirs;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1288,7 +1102,7 @@ namespace ZyScene
         Signature.Append(Identifier);
         Signature.Sort();
 
-        const Ptr<Chunk> Target = FindOrCreate(Signature, Source.GetBase())->GetClosure();
+        const Ptr<Chunk> Target = Obtain(Signature, Source.GetBase())->GetClosure();
         Source.SetAddition(Identifier, Target);
 
         // The way back is the same edge only when nothing came along.
@@ -1307,7 +1121,7 @@ namespace ZyScene
         Sequence<UInt32> Signature(Source.GetSignature());
         Signature.Erase(Identifier);
 
-        const Ptr<Chunk> Target = FindOrCreate(Signature, Source.GetBase());
+        const Ptr<Chunk> Target = Obtain(Signature, Source.GetBase());
         Source.SetRemoval(Identifier, Target);
 
         if (Source.GetClosure() == AddressOf(Source))

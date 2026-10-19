@@ -43,6 +43,9 @@ namespace ZyScene
         /// The flag of a component saves carry.
         static constexpr UInt8  kSaves  = 4;
 
+        /// The tick of what was never written.
+        static constexpr UInt32 kNever  = 0;
+
         /// \brief Represents one component's run inside every page.
         struct Column final
         {
@@ -65,9 +68,8 @@ namespace ZyScene
         ///
         /// \param Index     The position of the chunk in its storage, which queries index their matches by.
         /// \param Base      The slot of the archetype every entity here was made from, or zero for none.
-        /// \param Archetype `true` when the entities here are archetypes.
-        /// \param Signature The components every entity here holds, sorted by identifier.
-        Chunk(UInt32 Index, UInt32 Base, Bool Archetype, ConstSpan<UInt32> Signature);
+        /// \param Signature The components every entity here holds, sorted, the archetype marker for archetypes.
+        Chunk(UInt32 Index, UInt32 Base, ConstSpan<UInt32> Signature);
 
         /// \brief Destroys every component still stored and gives the pages back.
         ~Chunk();
@@ -253,6 +255,51 @@ namespace ZyScene
             return Moved;
         }
 
+        /// \brief Marks every row of a column written at a tick, as a walk handing it out writable does.
+        ///
+        /// \param Index The column, as \ref Find returns it.
+        /// \param Tick  The tick of the walk, never \ref kNever.
+        ZY_INLINE void Mark(UInt32 Index, UInt32 Tick)
+        {
+            const UInt32 Columns = static_cast<UInt32>(mColumns.GetSize());
+
+            for (UInt32 Page = 0; Page < mPages.GetSize(); ++Page)
+            {
+                mMarks[Page * Columns + Index] = Tick;
+            }
+        }
+
+        /// \brief Gets the tick a walk last wrote every row of a column in the page a row sits in.
+        ///
+        /// \param Index The column, as \ref Find returns it.
+        /// \param Row   Any row of the page.
+        /// \return The tick, or \ref kNever when no walk wrote them.
+        ZY_INLINE UInt32 GetMark(UInt32 Index, UInt32 Row) const
+        {
+            return mMarks[(Row >> mShift) * static_cast<UInt32>(mColumns.GetSize()) + Index];
+        }
+
+        /// \brief Checks whether a tick comes later than another, counted across a wrap of the tick.
+        ///
+        /// \param Tick  The tick, or \ref kNever.
+        /// \param Other The tick to compare with, or \ref kNever.
+        /// \return `true` if the first was taken and comes later or the second was never taken, `false` otherwise.
+        ZY_INLINE static Bool IsLater(UInt32 Tick, UInt32 Other)
+        {
+            return Tick != kNever && (Other == kNever || static_cast<SInt32>(Tick - Other) > 0);
+        }
+
+        /// \brief Checks whether a tick falls after one and no later than another.
+        ///
+        /// \param Tick  The tick, or \ref kNever.
+        /// \param After The tick it must come after.
+        /// \param Until The tick it may not come after.
+        /// \return `true` if it falls inside, `false` otherwise.
+        ZY_INLINE static Bool IsBetween(UInt32 Tick, UInt32 After, UInt32 Until)
+        {
+            return Tick != kNever && static_cast<SInt32>(Tick - After) > 0 && static_cast<SInt32>(Tick - Until) <= 0;
+        }
+
         /// \brief Takes a row out, destroying what it still holds and filling it with the last row.
         ///
         /// \param Row The row to take out.
@@ -410,13 +457,6 @@ namespace ZyScene
         /// The alignment of every page, and the gap between runs, so runs of equal rows never share cache sets.
         static constexpr UInt32 kPageAlignment = 64;
 
-        /// \brief Checks whether a column sits before another, wider alignment first.
-        ///
-        /// \param Left  The first column.
-        /// \param Right The second column.
-        /// \return `true` if the first is aligned wider, `false` otherwise.
-        static Bool IsWider(ConstRef<Column> Left, ConstRef<Column> Right);
-
         /// \brief Adds room for more rows, doubling the first page until full and adding pages after that.
         void Grow();
 
@@ -454,5 +494,6 @@ namespace ZyScene
         Sequence<Ptr<Chunk>> mRemovals;
         Sequence<UInt32>     mSignature;
         Ptr<Chunk>           mClosure;
+        Sequence<UInt32>     mMarks;
     };
 }

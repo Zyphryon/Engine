@@ -49,26 +49,23 @@ namespace ZyScene
         /// \brief Storage is not copied, since every entity's slot points into its chunks.
         Storage(ConstRef<Storage> Other) = delete;
 
-        /// \brief Gets the entity standing for the world, whose components are the singletons.
+        /// \brief Gets the world entity, which holds every singleton.
         ///
-        /// \return The world entity, which is never destroyed.
+        /// \return The world entity, always alive.
         Entity GetWorld() const;
 
-        /// \brief Gets the entity a number names, as \ref Entity::GetID hands it out.
+        /// \brief Gets the entity a number names.
         ///
-        /// \param Identifier The number, where an archetype slot without a generation finds the archetype there.
-        /// \return The entity, which is not alive when the number names nothing living.
+        /// \param Identifier The number, as \ref Entity::GetID gives it, or an archetype's slot with no generation.
+        /// \return The entity, or one naming nothing when nothing lives under the number.
         Entity GetEntity(UInt64 Identifier);
 
-        /// \brief Creates an entity that carries nothing.
+        /// \brief Creates an archetype, an entity no walk sees that others are made from.
         ///
-        /// \return The entity, which waits outside every query until the running walk ends when there is one.
-        Entity CreateEntity();
-
-        /// \brief Creates an archetype, an entity that queries never match and that other entities are made from.
-        ///
+        /// \param Base   The archetype it reads from itself, or one naming nothing.
+        /// \param Parent The archetype it is a part of, copied beneath each later instance, or one naming nothing.
         /// \return The archetype, placed at once even during a walk.
-        Entity CreateArchetype();
+        Entity CreateArchetype(Entity Base, Entity Parent);
 
         /// \brief Copies an archetype, everything it holds and every part beneath it, into a new one.
         ///
@@ -77,21 +74,16 @@ namespace ZyScene
         /// \return The copy, made from what the source was made from.
         Entity CloneArchetype(Entity Source, Entity Parent);
 
-        /// \brief Takes a component off every entity holding it.
-        ///
-        /// \param Type The component to take off.
-        void Purge(Component Type);
-
-        /// \brief Takes a component off every entity holding it.
+        /// \brief Takes a tag off every entity carrying it, which no walk may be running to ask for.
         template<typename Type>
         ZY_INLINE void Purge()
         {
-            Purge(Component(IdentifierOf<Type>()));
+            Purge(IdentifierOf<Type>());
         }
 
-        /// \brief Runs a callable with every change that would move an entity between chunks held until it returns.
+        /// \brief Runs a callable with every structural change it asks for held until it returns.
         ///
-        /// \param Callback The callable to run, taking no argument.
+        /// \param Callback The callable, taking nothing.
         template<typename Callable>
         ZY_INLINE void Defer(AnyRef<Callable> Callback)
         {
@@ -100,9 +92,9 @@ namespace ZyScene
             Leave();
         }
 
-        /// \brief Runs a task once the running walk ends, in order with the changes it held, or at once outside a walk.
+        /// \brief Runs a task once the running walk ends, in order with the changes it held, or at once outside one.
         ///
-        /// \param Callback The task, moved into the held change, which may make entities where a spread walk cannot.
+        /// \param Callback The task, moved in, which may make entities where a spread walk cannot.
         template<typename Callable>
         ZY_INLINE void Postpone(AnyRef<Callable> Callback)
         {
@@ -175,7 +167,17 @@ namespace ZyScene
             return mLedger.IsWatched(Identifier, Kinds);
         }
 
-        /// \brief Records a change of what an entity sees, and of what its heirs see through it, when a reader watches it.
+        /// \brief Takes the tick writes mark pages with now and moves on to the next, which a reader takes as its end.
+        ///
+        /// \return The tick taken, never \ref Chunk::kNever.
+        ZY_INLINE UInt32 Tick()
+        {
+            const UInt32 Taken = mTick;
+            mTick = (Taken + 1 == Chunk::kNever ? Taken + 2 : Taken + 1);
+            return Taken;
+        }
+
+        /// \brief Records a change of what an entity sees, and what its heirs see through it, when a reader watches it.
         ///
         /// \param Identifier The identifier of the component that changed.
         /// \param Kind       The change, exactly one.
@@ -220,22 +222,35 @@ namespace ZyScene
             }
         }
 
+        /// \brief Records a change of what an archetype lends for every heir reading it.
+        ///
+        /// \param Identifier The identifier of the component that changed.
+        /// \param Kind       The change, exactly one.
+        /// \param Archetype  The slot of the archetype.
+        /// \param Value      The value leaving on a removal, or `nullptr`.
+        void RecordHeirs(UInt32 Identifier, Pull Kind, UInt32 Archetype, ConstPtr<Byte> Value);
+
         /// \brief Records every watched component an entity sees, held or lent, that it did not see before.
         ///
         /// \param Index  The slot of the entity.
         /// \param Before The chunk it sat in before, or `nullptr` for an entity just made.
-        void RecordGain(UInt32 Index, ConstPtr<Chunk> Before);
+        void Gain(UInt32 Index, ConstPtr<Chunk> Before);
 
         /// \brief Records that a component written in place changed.
         ///
         /// \param Actor      The entity, which must be alive.
         /// \param Identifier The identifier of the component written.
-        void MarkChanged(Handle Actor, UInt32 Identifier);
+        void Notify(Handle Actor, UInt32 Identifier);
 
-        /// \brief Records the components a walk declared it writes as changed for every entity it visited.
+        /// \brief Marks every page a walk handed a field out writable in, for readers of those components.
         ///
         /// \param State The selection walked, whose chunks have not moved since the walk.
-        void RecordWrites(ConstRef<Selection> State);
+        void Mark(ConstRef<Selection> State);
+
+        /// \brief Makes an entity holding nothing, which waits outside every walk until the running one ends.
+        ///
+        /// \return The handle of the entity.
+        Handle Create();
 
         /// \brief Places an entity whose slot sits in no chunk at the end of one.
         ///
@@ -246,22 +261,6 @@ namespace ZyScene
             Ref<Directory::Slot> Entry = mDirectory[Index];
             Entry.Holder = AddressOf(Target);
             Entry.Row    = Target.Append(Handle(Index, Entry.Generation));
-        }
-
-        /// \brief Places an entity in a chunk, moving it there when it sits in one already.
-        ///
-        /// \param Index  The slot of the entity.
-        /// \param Target The chunk to place it in.
-        ZY_INLINE void PlaceOrTransfer(UInt32 Index, Ref<Chunk> Target)
-        {
-            if (mDirectory[Index].Holder)
-            {
-                Transfer(Index, Target);
-            }
-            else
-            {
-                Place(Index, Target);
-            }
         }
 
         /// \brief Moves an entity to another chunk, destroying what it lacks there and leaving new columns unbuilt.
@@ -275,20 +274,10 @@ namespace ZyScene
         /// \param Source     The chunk an entity sits in.
         /// \param Identifier The identifier of the component added.
         /// \return The chunk, made from the same archetype.
-        ZY_INLINE Ptr<Chunk> FindOrCreateAddition(Ref<Chunk> Source, UInt32 Identifier)
+        ZY_INLINE Ptr<Chunk> Widen(Ref<Chunk> Source, UInt32 Identifier)
         {
             const Ptr<Chunk> Known = Source.GetAddition(Identifier);
             return Known ? Known : CreateAddition(Source, Identifier);
-        }
-
-        /// \brief Gets the chunk an entity lands in once it holds a component, its own when it holds one already.
-        ///
-        /// \param Source     The chunk an entity sits in.
-        /// \param Identifier The identifier of the component.
-        /// \return The chunk, made from the same archetype.
-        ZY_INLINE Ptr<Chunk> Extend(Ref<Chunk> Source, UInt32 Identifier)
-        {
-            return Source.Has(Identifier) ? AddressOf(Source) : FindOrCreateAddition(Source, Identifier);
         }
 
         /// \brief Gets the chunk reached by removing a component.
@@ -296,10 +285,20 @@ namespace ZyScene
         /// \param Source     The chunk an entity sits in.
         /// \param Identifier The component, which the chunk must hold.
         /// \return The chunk, made from the same archetype.
-        ZY_INLINE Ptr<Chunk> FindOrCreateRemoval(Ref<Chunk> Source, UInt32 Identifier)
+        ZY_INLINE Ptr<Chunk> Narrow(Ref<Chunk> Source, UInt32 Identifier)
         {
             const Ptr<Chunk> Known = Source.GetRemoval(Identifier);
             return Known ? Known : CreateRemoval(Source, Identifier);
+        }
+
+        /// \brief Gets the chunk an entity lands in once it holds a component, its own when it holds one already.
+        ///
+        /// \param Source     The chunk an entity sits in.
+        /// \param Identifier The identifier of the component, held already or added.
+        /// \return The chunk, made from the same archetype.
+        ZY_INLINE Ptr<Chunk> Extend(Ref<Chunk> Source, UInt32 Identifier)
+        {
+            return Source.Has(Identifier) ? AddressOf(Source) : Widen(Source, Identifier);
         }
 
         /// \brief Gets the chunk holding exactly a set of components for one archetype, making it the first time.
@@ -307,15 +306,29 @@ namespace ZyScene
         /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype its entities are made from, or zero.
         /// \return The chunk, never `nullptr`.
-        Ptr<Chunk> FindOrCreate(ConstSpan<UInt32> Signature, UInt32 Base);
+        Ptr<Chunk> Obtain(ConstSpan<UInt32> Signature, UInt32 Base);
 
-        /// \brief Builds the defaults an entity gained by a move, bar the caller's own, and records them when asked.
+        /// \brief Gets the chunk an entity made from an archetype lands in, remembered for the next one.
         ///
-        /// \param Index     The slot of the entity, which sits in its new chunk.
-        /// \param Source    The chunk it came from.
-        /// \param Except    The component the caller builds, or zero.
-        /// \param Recording `true` to record each component the entity came to hold, bar the caller's own.
-        void BuildDefaults(UInt32 Index, ConstRef<Chunk> Source, UInt32 Except, Bool Recording);
+        /// \param Source      The slot of the archetype.
+        /// \param AsArchetype `true` for an archetype made from it, `false` for an instance.
+        /// \return The chunk, never `nullptr`.
+        Ptr<Chunk> FindHeir(UInt32 Source, Bool AsArchetype);
+
+        /// \brief Finishes an entity placed in its final chunk, building what it was not given and copying the parts.
+        ///
+        /// \param Index     The slot of the entity, which sits in its final chunk.
+        /// \param Archetype The slot of the archetype it is made from, or zero.
+        /// \param Parent    The slot of the entity it hangs from, or zero.
+        /// \param Given     The identifiers of the components the caller built in place.
+        void Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given);
+
+        /// \brief Builds every column an entity placed in a new chunk was not given, copying the archetype's values.
+        ///
+        /// \param Index     The slot of the entity, whose columns are unbuilt.
+        /// \param Archetype The slot of the archetype the values are copied from, or zero to build them all.
+        /// \param Given     The identifiers of the components the caller built in place.
+        void Fill(UInt32 Index, UInt32 Archetype, ConstSpan<UInt32> Given);
 
         /// \brief Adds a component nobody watches by moving the entity and building the value in place.
         ///
@@ -325,8 +338,9 @@ namespace ZyScene
         template<typename Type, typename Value>
         ZY_INLINE void Insert(UInt32 Index, UInt32 Identifier, AnyRef<Value> Data)
         {
+            // Kept apart from the general move, since a first write of a component is hot and pays for a call.
             Ref<Chunk>       Source = * mDirectory[Index].Holder;
-            const Ptr<Chunk> Target = FindOrCreateAddition(Source, Identifier);
+            const Ptr<Chunk> Target = Widen(Source, Identifier);
             Transfer(Index, * Target);
 
             if constexpr (!IsEmpty<Type>)
@@ -339,16 +353,9 @@ namespace ZyScene
             // Most edges bring nothing along.
             if (Target->GetSignature().GetSize() != Source.GetSignature().GetSize() + 1)
             {
-                BuildDefaults(Index, Source, Identifier, true);
+                Build(Index, Source, Identifier, true);
             }
         }
-
-        /// \brief Moves an entity along the edge adding a component, building what came along but not the component.
-        ///
-        /// \param Index      The slot of the entity, which must not hold the component.
-        /// \param Identifier The identifier of the component to add.
-        /// \return The unbuilt place of the component's value, or `nullptr` for a tag.
-        Ptr<Byte> Extend(UInt32 Index, UInt32 Identifier);
 
         /// \brief Destroys an entity and everything beneath it, or holds that until the running walk ends.
         ///
@@ -367,18 +374,19 @@ namespace ZyScene
         /// \param Identifier The identifier of the component to take off.
         void Remove(Handle Actor, UInt32 Identifier);
 
-        /// \brief Gives an entity a component or overwrites the one it holds, recording it, or holds that during a walk.
+        /// \brief Gives an entity a component or overwrites its own, recording it, or holds that during a walk.
         ///
         /// \param Actor      The entity, which must be alive.
         /// \param Identifier The component, which must carry data.
         /// \param Fresh      The value, moved out of here whatever happens.
         void Commit(Handle Actor, UInt32 Identifier, Ptr<Byte> Fresh);
 
-        /// \brief Gives an entity its own copy of a component its archetype lends, recording it, outside a walk.
+        /// \brief Gives an entity its own value of a component, copying the inherited one or building a default.
         ///
-        /// \param Actor      The entity, which must be alive.
-        /// \param Identifier The component, left alone when the entity holds it or nothing lends it.
-        void Override(Handle Actor, UInt32 Identifier);
+        /// \param Actor      The entity, which must be alive, outside any walk.
+        /// \param Identifier The identifier of the component, never a tag.
+        /// \return The value the entity holds.
+        Ptr<Byte> Ensure(Handle Actor, UInt32 Identifier);
 
         /// \brief Reads a component over an entity from the bytes it was written as, adding it when absent.
         ///
@@ -387,24 +395,11 @@ namespace ZyScene
         /// \param Input      The bytes, which a value that cannot read itself leaves at its default.
         void Read(Handle Actor, UInt32 Identifier, Ref<Reader> Input);
 
-        /// \brief Wakes an entity or puts it to sleep.
-        ///
-        /// \param Actor     The entity, which must be alive.
-        /// \param Awake     `true` to wake it, `false` to put it to sleep.
-        /// \param Recursive `true` to do the same to everything beneath it, all at once when the call ends.
-        void SetAwake(Handle Actor, Bool Awake, Bool Recursive);
-
         /// \brief Makes an entity the last child of another, or takes it from its parent.
         ///
         /// \param Actor  The entity, which must be alive.
         /// \param Parent The new parent, which must not stand beneath it, or one naming nothing alive to detach.
         void Attach(Handle Actor, Handle Parent);
-
-        /// \brief Makes an entity read from another archetype, or from none, keeping what it holds.
-        ///
-        /// \param Actor     The entity, which must be alive.
-        /// \param Archetype The archetype, or a handle naming nothing.
-        void SetArchetype(Handle Actor, Handle Archetype);
 
         /// \brief Finds a child of an entity by its name.
         ///
@@ -413,60 +408,40 @@ namespace ZyScene
         /// \return The slot of the child, or zero.
         UInt32 FindChild(UInt32 Parent, Text Name) const;
 
-        /// \brief Makes an entity an heir of an archetype, keeping what it holds, with its parts when asked.
+        /// \brief Gets the entities made straight from an archetype.
         ///
-        /// \param Source      The slot of the archetype.
-        /// \param AsArchetype `true` to make an archetype too, `false` for an instance.
-        /// \param Target      The entity to fill, sitting in no chunk, in the pending one or anywhere else.
-        /// \param Parts       `true` to make the archetype's parts beneath it.
-        void Propagate(UInt32 Source, Bool AsArchetype, Handle Target, Bool Parts);
-
-        /// \brief Gets the chunk an heir of an archetype lands in, remembering it for bare heirs.
-        ///
-        /// \param Held        The chunk the heir sits in now, whose components it keeps, or `nullptr`.
-        /// \param Source      The slot of the archetype.
-        /// \param AsArchetype `true` for an heir that is an archetype too, `false` for an instance.
-        /// \return The chunk, never `nullptr`.
-        Ptr<Chunk> FindHeir(ConstPtr<Chunk> Held, UInt32 Source, Bool AsArchetype);
-
-        /// \brief Makes a copy of every part of an archetype beneath an entity.
-        ///
-        /// \param Source      The slot of the archetype.
-        /// \param AsArchetype `true` to make the copies archetypes too, `false` for instances.
-        /// \param Index       The slot of the entity the copies hang from.
-        void CopyParts(UInt32 Source, Bool AsArchetype, UInt32 Index);
-
-        /// \brief Finishes a spawned entity, building what it was not given, copying the parts and attaching it.
-        ///
-        /// \param Index     The slot of the entity, which sits in its final chunk.
-        /// \param Archetype The slot of the archetype it is made from, or zero.
-        /// \param Parent    The slot of the entity it hangs from, or zero.
-        /// \param Given     The identifiers of the components the caller built in place.
-        void Settle(UInt32 Index, UInt32 Archetype, UInt32 Parent, ConstSpan<UInt32> Given);
-
-        /// \brief Fills the columns an entity gained by a move, copying them from an archetype or building them.
-        ///
-        /// \param Index     The slot of the entity, which sits in its new chunk.
-        /// \param Held      The chunk it came from, whose components it keeps, or `nullptr`.
-        /// \param Archetype The slot of the archetype the values are copied from.
-        /// \param Flags     The flags a component must carry on the archetype to be copied, zero for any.
-        void Fill(UInt32 Index, ConstPtr<Chunk> Held, UInt32 Archetype, UInt8 Flags);
+        /// \param Archetype The slot of the archetype.
+        /// \return The entities, copied out so the caller may change them.
+        Sequence<Handle> GetHeirs(UInt32 Archetype) const;
 
         /// \brief Destroys an entity and everything beneath it right away, children first.
         ///
         /// \param Root The slot of the entity.
-        void DestroyTree(UInt32 Root);
+        void Prune(UInt32 Root);
 
         /// \brief Rebuilds every chunk keeping a component in a column its registration no longer describes.
         ///
-        /// \param Identifier The component, just resolved or about to be unresolved.
+        /// \param Identifier The component, just declared or about to lose its code.
         void Rebuild(UInt32 Identifier);
 
-        /// \brief Moves every value of an unresolved type onto the type that now answers to its name.
+        /// \brief Moves every value a save kept as bytes onto the type that now answers to its name.
         ///
-        /// \param Unresolved The unresolved type, whose values are the bytes they were saved as.
+        /// \param Unresolved The type kept as bytes.
         /// \param Identifier The type that reads them.
         void Resolve(UInt32 Unresolved, UInt32 Identifier);
+
+        /// \brief Takes a component off every entity holding it.
+        ///
+        /// \param Identifier The identifier of the component to take off.
+        void Purge(UInt32 Identifier);
+
+        /// \brief Builds the defaults an entity gained by a move, bar the caller's own, and records them when asked.
+        ///
+        /// \param Index     The slot of the entity, which sits in its new chunk.
+        /// \param Source    The chunk it came from.
+        /// \param Except    The component the caller builds, or zero.
+        /// \param Recording `true` to record each component the entity came to hold, bar the caller's own.
+        void Build(UInt32 Index, ConstRef<Chunk> Source, UInt32 Except, Bool Recording);
 
     private:
 
@@ -478,42 +453,49 @@ namespace ZyScene
         /// \param Change The change to apply.
         void Apply(ConstRef<Deferral::Command> Change);
 
+        /// \brief Moves an entity along the edge adding a component, building what came along but not the component.
+        ///
+        /// \param Index      The slot of the entity, which must not hold the component.
+        /// \param Identifier The identifier of the component to add.
+        /// \return The unbuilt place of the component's value, or `nullptr` for a tag.
+        Ptr<Byte> Grow(UInt32 Index, UInt32 Identifier);
+
         /// \brief Gives an entity a component it does not hold, recording it.
         ///
         /// \param Index      The slot of the entity.
         /// \param Identifier The identifier of the component to give.
         /// \param Fresh      The value, moved into place, or `nullptr` to build a default.
-        void InsertRecorded(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh);
+        void Give(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh);
 
-        /// \brief Records a change of what an archetype lends for every heir reading it, heirs of heirs included.
+        /// \brief Makes a copy of every part of an archetype beneath an entity.
         ///
-        /// \param Identifier The identifier of the component that changed.
-        /// \param Kind       The change, exactly one.
-        /// \param Archetype  The slot of the archetype.
-        /// \param Value      The value leaving on a removal, or `nullptr`.
-        void RecordHeirs(UInt32 Identifier, Pull Kind, UInt32 Archetype, ConstPtr<Byte> Value);
+        /// \param Source The slot of the archetype.
+        /// \param Index  The slot of the entity the copies hang from, which decides whether they are archetypes too.
+        void Copy(UInt32 Source, UInt32 Index);
 
-        /// \brief Destroys one entity whose children are gone, and gives its slot back.
+        /// \brief Lists what a walk marked written of the rows a row's leaving moves, before they leave their pages.
+        ///
+        /// \param Holder  The chunk.
+        /// \param Row     The row about to be taken out, which the last row fills.
+        /// \param Target  The chunk the row's entity moves to, or `nullptr` when it is destroyed.
+        /// \param Landing The row it takes there, ignored without a chunk to move to.
+        void Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstPtr<Chunk> Target, UInt32 Landing);
+
+        /// \brief Destroys one entity whose children are gone, its heirs first when it is an archetype.
         ///
         /// \param Index The slot of the entity.
-        void DestroyOne(UInt32 Index);
+        void Erase(UInt32 Index);
 
-        /// \brief Makes an entity the last child of another right away, copying a part under every heir.
+        /// \brief Makes an entity the last child of another right away, marking it a part under an archetype.
         ///
         /// \param Index  The slot of the entity.
         /// \param Parent The slot of the new parent.
         void SetParent(UInt32 Index, UInt32 Parent);
 
-        /// \brief Takes an entity from its parent right away, destroying its copies when it is a part.
+        /// \brief Takes an entity from its parent right away.
         ///
         /// \param Index The slot of the entity, which must have a parent.
         void ClearParent(UInt32 Index);
-
-        /// \brief Destroys the copies of a part beneath every heir of the archetype it leaves.
-        ///
-        /// \param Part      The slot of the part.
-        /// \param Archetype The slot of the archetype.
-        void DestroyPartCopies(UInt32 Part, UInt32 Archetype);
 
         /// \brief Checks whether an entity is a part, an archetype hanging under an archetype.
         ///
@@ -522,19 +504,8 @@ namespace ZyScene
         /// \return `true` if both it and its parent are archetypes, `false` otherwise.
         ZY_INLINE Bool IsPart(UInt32 Index, UInt32 Parent) const
         {
-            return Parent && mDirectory[Index].Holder->IsArchetype() && mDirectory[Parent].Holder->IsArchetype();
+            return Parent && Directory::IsArchetype(Index) && Directory::IsArchetype(Parent);
         }
-
-        /// \brief Gives the heirs of a dying archetype what it lent them, and makes them read from its own archetype.
-        ///
-        /// \param Archetype The slot of the archetype.
-        void FlattenHeirs(UInt32 Archetype);
-
-        /// \brief Gets the entities made straight from an archetype.
-        ///
-        /// \param Archetype The slot of the archetype.
-        /// \return The entities, copied out so the caller may change them.
-        Sequence<Handle> GetHeirs(UInt32 Archetype) const;
 
         /// \brief Gets the chunk made the first time a component is added to another chunk's set.
         ///
@@ -556,7 +527,7 @@ namespace ZyScene
         /// \param Kinds    The changes, any one of which a reader must watch for.
         /// \param Callback The callable, taking the identifier and the value lent, \ref Directory::kPresent for a tag.
         template<typename Callable>
-        ZY_INLINE void VisitLent(ConstRef<Chunk> Holder, Pull Kinds, AnyRef<Callable> Callback) const
+        ZY_INLINE void Lend(ConstRef<Chunk> Holder, Pull Kinds, AnyRef<Callable> Callback) const
         {
             const UInt32 First = Holder.GetBase();
 
@@ -581,7 +552,7 @@ namespace ZyScene
         ///
         /// \param First      The slot the chain starts at.
         /// \param Base       The slot of the archetype, which stands on the chain.
-        /// \param Identifier The identifier of the component.
+        /// \param Identifier The identifier of the component looked for up the chain.
         /// \return `true` if no archetype before it on the chain holds the component, `false` otherwise.
         ZY_INLINE Bool IsNearest(UInt32 First, UInt32 Base, UInt32 Identifier) const
         {
@@ -608,8 +579,6 @@ namespace ZyScene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        UInt32    mPrefab;
-        UInt32    mAsleep;
-        UInt32    mPart;
+        UInt32    mTick;
     };
 }

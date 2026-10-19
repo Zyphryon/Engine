@@ -19,15 +19,21 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
-    /// \brief Represents the table of every component type that travels, in the order both sides declared them.
+    /// \brief The most component types that can replicate, one bit each in a mask.
+    inline constexpr UInt8 kMaxComponents = 128;
+
+    /// \brief Names a set of replicated components, one bit per place in the manifest.
+    using Mask = Bitset<kMaxComponents, UInt64>;
+
+    /// \brief Represents the table of every component type that travels, ordered by name once a session opens.
     class Manifest final
     {
     public:
 
         /// \brief Names a reader of one pull list, appending the entities it gained since the last call.
-        using Drain = Delegate<void(Ref<Sequence<Entity>>)>;
+        using Drain = Delegate<void(Ref<Sequence<ZyScene::Entity>>)>;
 
         /// \brief Represents a world's readers of one component's pull lists.
         struct Feed final
@@ -43,19 +49,19 @@ namespace ZyScene::Protocol
         struct Entry final
         {
             /// The identifier of the component in the registry.
-            UInt32             Identifier;
+            UInt32                      Identifier;
 
             /// The layout and lifecycle of the component, whose save and load write and read its payload.
-            ConstPtr<Metatype> Info;
+            ConstPtr<ZyScene::Metatype> Info;
 
             /// The peers that receive the component.
-            Replication        Policy;
+            Audience                    Policy;
 
             /// The number of ticks between two reads of its changes, one reading on every tick.
-            UInt8              Rate;
+            UInt8                       Rate;
 
             /// The function making a world's readers of the component's pull lists.
-            Feed            (* Watch)(Ref<Storage> Scene);
+            Feed                        (* Watch)(Ref<ZyScene::Storage> Scene);
         };
 
     public:
@@ -63,12 +69,15 @@ namespace ZyScene::Protocol
         /// \brief Constructs an empty table.
         Manifest();
 
-        /// \brief Declares a component type replicated, giving it the next place unless it has one.
+        /// \brief Declares a component type replicated, once, before the table is sealed.
         ///
         /// \param Policy The peers that receive the component.
         /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
         template<typename Type>
-        void Register(Replication Policy, UInt8 Rate);
+        void Register(Audience Policy, UInt8 Rate);
+
+        /// \brief Orders the table by type name and builds its masks, so both sides agree whatever order they declared.
+        void Seal();
 
         /// \brief Gets the number of replicated component types.
         ///
@@ -80,8 +89,8 @@ namespace ZyScene::Protocol
 
         /// \brief Gets one replicated component type by its place in the table.
         ///
-        /// \param Index The place in the table.
-        /// \return The entry.
+        /// \param Index The place in the table, below \ref GetCount.
+        /// \return The entry, which holds while the table stands.
         ZY_INLINE ConstRef<Entry> GetEntry(UInt8 Index) const
         {
             ZY_ASSERT(Index < mCount, "Wire index names no replicated component");
@@ -133,7 +142,7 @@ namespace ZyScene::Protocol
         /// \param Actor   The entity, the world entity for singletons.
         /// \param Wanted  The components to write, named gone when the entity does not hold them.
         /// \param Dropped The components the entity lost, named gone unless it holds them again.
-        void Write(Ref<Writer> Output, Entity Actor, Mask Wanted, Mask Dropped) const;
+        void Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped) const;
 
         /// \brief Reads a set into an entity, removing what is gone and adding or overwriting what is present.
         ///
@@ -141,20 +150,13 @@ namespace ZyScene::Protocol
         /// \param Actor   The entity, which must be alive, the world entity for singletons.
         /// \param Ignored The components read past whole, present or gone, of the `Others` ones alone.
         /// \return `true` if the set was read whole, `false` if it was cut short or named an unknown component.
-        Bool Read(Ref<Reader> Input, Entity Actor, Mask Ignored) const;
+        Bool Read(Ref<Reader> Input, ZyScene::Entity Actor, Mask Ignored) const;
 
         /// \brief Reads past a set without applying it, checking its length fits.
         ///
         /// \param Input The reader, at the set, left after it.
         /// \return `true` if the set fits what is left, `false` if it was cut short.
         Bool Skip(Ref<Reader> Input) const;
-
-    public:
-
-        /// \brief Gets the table, which is one per process like the identifiers of the components themselves.
-        ///
-        /// \return The table.
-        static Ref<Manifest> Get();
 
     private:
 
@@ -163,51 +165,42 @@ namespace ZyScene::Protocol
         struct Probe final
         {
             /// The cursor over the list.
-            Cursor<List> Source;
+            ZyScene::Cursor<List> Source;
 
             /// \brief Appends every entity the list gained since the last call.
             ///
             /// \param Output The list that receives them.
-            ZY_INLINE void operator()(Ref<Sequence<Entity>> Output)
+            ZY_INLINE void operator()(Ref<Sequence<ZyScene::Entity>> Output)
             {
-                Source.Each([&](Entity Actor)
+                Source.Each([&](ZyScene::Entity Actor)
                 {
                     Output.Append(Actor);
                 });
             }
         };
 
+        /// The byte that closes the absent entries of a set, past every place in the table.
+        static constexpr UInt8 kEnd = 0xFF;
+
+    public:
+
         /// \brief Makes a world's readers of one component's pull lists.
         ///
-        /// \param Scene The world.
+        /// \param Scene The world whose changes are read.
         /// \return The readers, which see every change from now on.
         template<typename Type>
-        static Feed Watch(Ref<Storage> Scene)
+        static Feed Watch(Ref<ZyScene::Storage> Scene)
         {
-            Probe<Set<Type>>     Changes
+            Probe<ZyScene::Set<Type>>     Changes
             {
-                Cursor<Set<Type>>(Scene)
+                ZyScene::Cursor<ZyScene::Set<Type>>(Scene)
             };
-            Probe<Removed<Type>> Removals
+            Probe<ZyScene::Removed<Type>> Removals
             {
-                Cursor<Removed<Type>>(Scene)
+                ZyScene::Cursor<ZyScene::Removed<Type>>(Scene)
             };
             return Feed(Drain(Move(Changes)), Drain(Move(Removals)));
         }
-
-        /// \brief Writes one component an entity holds itself as an entry of a set.
-        ///
-        /// \param Output The writer.
-        /// \param Actor  The entity, which holds the component itself.
-        /// \param Index  The place of the component in the table.
-        void WriteEntry(Ref<Writer> Output, Entity Actor, UInt8 Index) const;
-
-        /// \brief Names one component gone in a set, unless the entity holds it again.
-        ///
-        /// \param Output The writer.
-        /// \param Actor  The entity.
-        /// \param Index  The place of the component in the table.
-        void WriteAbsent(Ref<Writer> Output, Entity Actor, UInt8 Index) const;
 
     private:
 
@@ -219,17 +212,20 @@ namespace ZyScene::Protocol
         Mask                         mShared;
         Mask                         mOwner;
         Mask                         mOthers;
+        Bool                         mSealed;
     };
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     template<typename Type>
-    void Manifest::Register(Replication Policy, UInt8 Rate)
+    void Manifest::Register(Audience Policy, UInt8 Rate)
     {
-        const UInt32 Identifier = IdentifierOf<Type>();
+        ZY_ASSERT(!mSealed, "A component cannot be replicated once a session opened");
 
-        // Registered again, as a second world does, it keeps the place it was given.
+        const UInt32 Identifier = ZyScene::IdentifierOf<Type>();
+
+        // Declared again, it keeps the entry it has.
         for (UInt8 Index = 0; Index < mCount; ++Index)
         {
             if (mEntries[Index].Identifier == Identifier)
@@ -238,40 +234,12 @@ namespace ZyScene::Protocol
             }
         }
 
-        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
+        ConstRef<ZyScene::Metatype> Info = ZyScene::Registry::Get().GetMetatype(Identifier);
 
         ZY_ASSERT(mCount < kMaxComponents, "Too many replicated components for one mask");
-        ZY_ASSERT(
-            CountBits(static_cast<UInt8>(Policy) & 0b111u) == 1,
-            "A replicated component needs exactly one audience");
         ZY_ASSERT(Rate > 0, "A replicated component needs a rate of at least one");
         ZY_ASSERT(Info.IsTag() || (Info.Save && Info.Load), "A replicated component must write and read itself");
 
-        const UInt8 Index = mCount++;
-        mEntries[Index] = Entry(Identifier, AddressOf(Info), Policy, Rate, & Watch<Type>);
-
-        if (HasBit(Policy, Replication::Owner))
-        {
-            mOwner.Set(Index);
-        }
-        else
-        {
-            mShared.Set(Index);
-        }
-
-        if (HasBit(Policy, Replication::Others))
-        {
-            mOthers.Set(Index);
-        }
-    }
-
-    /// \brief Declares a component replicated, in the same order on both sides since the order is the wire.
-    ///
-    /// \param Policy The peers that receive the component.
-    /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
-    template<typename Type>
-    ZY_INLINE void Replicate(Replication Policy, UInt8 Rate = 1)
-    {
-        Manifest::Get().Register<Type>(Policy, Rate);
+        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, & Watch<Type>);
     }
 }

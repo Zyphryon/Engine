@@ -59,10 +59,9 @@ namespace ZyScene
         ///
         /// \param Signature The components the chunk holds, sorted.
         /// \param Base      The slot of the archetype, or zero.
-        /// \param Marker    The component that makes archetypes.
         /// \param Slots     The directory, which knows what archetypes lend.
         /// \return The chunk made.
-        Ptr<Chunk> Create(ConstSpan<UInt32> Signature, UInt32 Base, UInt32 Marker, ConstRef<Directory> Slots);
+        Ptr<Chunk> Create(ConstSpan<UInt32> Signature, UInt32 Base, ConstRef<Directory> Slots);
 
         /// \brief Destroys an empty chunk whose archetype is gone, so the slot's next archetype makes its own.
         ///
@@ -102,7 +101,7 @@ namespace ZyScene
         ///
         /// \param Archetype The slot of the archetype.
         /// \return The chunks, which change as chunks are made.
-        ZY_INLINE ConstSpan<Ptr<Chunk>> GetHeirChunks(UInt32 Archetype) const
+        ZY_INLINE ConstSpan<Ptr<Chunk>> GetHeirs(UInt32 Archetype) const
         {
             const UInt32 Kin = Archetype - kMinRangeArchetypes - 1;
             return Kin < mLineages.GetSize() ? ConstSpan<Ptr<Chunk>>(mLineages[Kin].Heirs) : ConstSpan<Ptr<Chunk>>();

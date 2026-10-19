@@ -22,77 +22,28 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Scheduler::Scheduler()
-        : mRunning { false }
+        : mRunning   { false },
+          mDismissed { false }
     {
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 Scheduler::CreatePhase(Text Name, UInt32 After, UInt32 Package)
+    UInt32 Scheduler::CreatePhase(Text Name, UInt32 Package)
     {
-        mPhases.Append(Unique<Stage>::Create(Name, Package));
-
-        const UInt32 Handle   = static_cast<UInt32>(mPhases.GetSize());
-        UInt         Position = mOrder.GetSize();
-
-        if (After)
-        {
-            const SInt Found = mOrder.Find(After);
-
-            ZY_ASSERT(Found >= 0, "The phase to run after does not exist");
-            Position = static_cast<UInt>(Found) + 1;
-        }
-        mOrder.Insert(Position, Handle);
-        return Handle;
+        mPhases.Append(Unique<Stage>::Create(Str(Name), Sequence<Unique<Routine>>(), Package, true));
+        return static_cast<UInt32>(mPhases.GetSize());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 Scheduler::CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package)
+    void Scheduler::CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package)
     {
         ZY_ASSERT(Phase > 0 && Phase <= mPhases.GetSize(), "No phase answers to that handle");
 
-        mSystems.Append(Unique<Routine>::Create(Name, Move(Run), Rate, Phase, Package));
-
-        const UInt32 Handle = static_cast<UInt32>(mSystems.GetSize());
-        mPhases[Phase - 1]->Systems.Append(Handle);
-        return Handle;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Scheduler::DestroySystem(UInt32 Handle)
-    {
-        // Taking a system out again does nothing.
-        if (const Ptr<Routine> Target = Find(Handle); Target && Target->Alive)
-        {
-            // It may be the one running, so it is freed once the phases end.
-            Target->Alive = false;
-            mDismissed.Append(Handle);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Scheduler::SetEnabled(UInt32 Handle, Bool Enabled)
-    {
-        if (const Ptr<Routine> Target = Find(Handle))
-        {
-            Target->Enabled = Enabled;
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Scheduler::IsEnabled(UInt32 Handle) const
-    {
-        const Ptr<Routine> Target = Find(Handle);
-        return Target && Target->Alive && Target->Enabled;
+        mPhases[Phase - 1]->Systems.Append(Unique<Routine>::Create(Name, Move(Run), Rate, 0, Package, true));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -100,19 +51,20 @@ namespace ZyScene
 
     void Scheduler::Discard(UInt32 Package)
     {
-        for (UInt32 Index = 0; Index < mSystems.GetSize(); ++Index)
+        // A system may be the one running, so it is only marked here and freed once the phases end.
+        for (ConstRef<Unique<Stage>> Phase : mPhases)
         {
-            if (mSystems[Index] && mSystems[Index]->Package == Package)
+            Phase->Alive = Phase->Alive && Phase->Package != Package;
+
+            for (ConstRef<Unique<Routine>> System : Phase->Systems)
             {
-                DestroySystem(Index + 1);
+                if (System->Package == Package)
+                {
+                    System->Alive = false;
+                    mDismissed    = true;
+                }
             }
         }
-
-        // Phases keep their handles, so they only leave the order.
-        mOrder.RemoveSomeIf([this, Package](UInt32 Phase)
-        {
-            return mPhases[Phase - 1]->Package == Package;
-        });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -122,16 +74,14 @@ namespace ZyScene
     {
         mRunning = true;
 
-        for (UInt Order = 0; Order < mOrder.GetSize(); ++Order)
+        for (ConstRef<Unique<Stage>> Phase : mPhases)
         {
-            ConstRef<Stage> Phase = * mPhases[mOrder[Order] - 1];
-
-            // Indexed, and each system held by its own address, since one may add another and move the list.
-            for (UInt Index = 0; Index < Phase.Systems.GetSize(); ++Index)
+            // Indexed, since a system may add another and move the list, each one staying where it was made.
+            for (UInt Index = 0; Phase->Alive && Index < Phase->Systems.GetSize(); ++Index)
             {
-                Ref<Routine> Target = * mSystems[Phase.Systems[Index] - 1];
+                Ref<Routine> Target = * Phase->Systems[Index];
 
-                if (Target.Alive && Target.Enabled && (Target.Rate <= 1 || ++Target.Count >= Target.Rate))
+                if (Target.Alive && (Target.Rate <= 1 || ++Target.Count >= Target.Rate))
                 {
                     ZY_PROFILE_NAMED(Target.Name.GetData(), Target.Name.GetSize());
 
@@ -149,17 +99,19 @@ namespace ZyScene
 
     void Scheduler::Purge()
     {
-        if (mRunning)
+        if (mRunning || !mDismissed)
         {
             return;
         }
 
-        for (const UInt32 Handle : mDismissed)
+        for (ConstRef<Unique<Stage>> Phase : mPhases)
         {
-            mPhases[mSystems[Handle - 1]->Phase - 1]->Systems.Erase(Handle);
-            mSystems[Handle - 1] = nullptr;
+            Phase->Systems.RemoveIf([](ConstRef<Unique<Routine>> System)
+            {
+                return !System->Alive;
+            });
         }
-        mDismissed.Clear();
+        mDismissed = false;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -167,7 +119,10 @@ namespace ZyScene
 
     void Scheduler::Clear()
     {
-        mSystems.Clear();
-        mDismissed.Clear();
+        for (ConstRef<Unique<Stage>> Phase : mPhases)
+        {
+            Phase->Systems.Clear();
+        }
+        mDismissed = false;
     }
 }

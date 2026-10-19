@@ -29,57 +29,53 @@ namespace ZyScene
 
         /// \brief Constructs an enrollment in a world.
         ///
-        /// \param Owner The world the components are declared in.
-        ZY_INLINE explicit Enrollment(Ptr<World> Owner)
-            : mWorld { Owner }
+        /// \param Owner      The world the component is declared in.
+        /// \param Identifier The identifier the component answers to.
+        ZY_INLINE Enrollment(Ptr<World> Owner, UInt32 Identifier)
+            : mWorld      { Owner },
+              mIdentifier { Identifier }
         {
         }
 
-        /// \brief Tells the world the components are declared, reading back the values it kept as bytes for them.
-        ///
-        /// \param Identifiers The identifiers of the components declared.
-        void Finish(ConstSpan<UInt32> Identifiers);
+        /// \brief Tells the world the component is declared, which reads back the values a save kept as bytes for it.
+        void Finish();
 
     protected:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ptr<World>  mWorld;
-        Description mPresentation;
+        Ptr<World> mWorld;
+        UInt32     mIdentifier;
     };
 
-    /// \brief Represents components declared with chained calls, the world told once the declaring statement ends.
+    /// \brief Represents one component declared with chained calls, the world told once the declaring statement ends.
     ///
-    /// \tparam Types The components, which share everything stated about them.
-    template<typename... Types>
+    /// \tparam Type The component, named by its `kName` or the name the world was handed.
+    template<typename Type>
     class Declaration final : public Enrollment
     {
     public:
 
-        /// \brief Constructs the declaration of components, naming them after their type or under the given name.
+        /// \brief Constructs the declaration of a component.
         ///
-        /// \param Owner The world they are declared in.
-        /// \param Name  The name saves know the component by, or empty for the one its type carries.
+        /// \param Owner The world it is declared in.
+        /// \param Name  The name saves know it by, or empty for its `kName`.
         ZY_INLINE Declaration(Ptr<World> Owner, Text Name)
-            : Enrollment(Owner)
+            : Enrollment(Owner, Enroll(Name))
         {
-            ZY_ASSERT(Name.IsEmpty() || sizeof...(Types) == 1, "Only one component can be declared under a name");
-
-            (Enroll<Types>(Name), ...);
         }
 
-        /// \brief Tells the world the components are declared, reading back the values it kept as bytes for them.
+        /// \brief Tells the world the component is declared, which reads back the values a save kept as bytes for it.
         ZY_INLINE ~Declaration()
         {
-            const UInt32 Identifiers[] = { IdentifierOf<Types>()... };
-            Finish(ConstSpan<UInt32>(Identifiers));
+            Finish();
         }
 
         /// \brief Declarations are not copied, since each tells the world once.
         Declaration(ConstRef<Declaration> Other) = delete;
 
-        /// \brief Makes saves carry the components.
+        /// \brief Makes saves carry the component.
         ///
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Serializable() &&
@@ -87,7 +83,7 @@ namespace ZyScene
             return Apply(Trait::Serializable);
         }
 
-        /// \brief Makes instances read the components from their archetype rather than hold a copy.
+        /// \brief Makes instances read the component from their archetype rather than hold a copy.
         ///
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Inheritable() &&
@@ -95,7 +91,7 @@ namespace ZyScene
             return Apply(Trait::Inheritable);
         }
 
-        /// \brief Keeps the components off every instance made from an archetype.
+        /// \brief Keeps the component off every instance made from an archetype.
         ///
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Local() &&
@@ -103,23 +99,7 @@ namespace ZyScene
             return Apply(Trait::Local);
         }
 
-        /// \brief Makes the world hold the one instance of each component, which queries read from there.
-        ///
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Singleton() &&
-        {
-            return Apply(Trait::Singleton);
-        }
-
-        /// \brief Makes removals of the components keep the value that left, which readers of the removals are handed.
-        ///
-        /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Keeps() &&
-        {
-            return Apply(Trait::Keeps);
-        }
-
-        /// \brief Makes the components what a tool places on archetypes, saved and inherited.
+        /// \brief Makes the component what a tool places on archetypes, saved and read by instances.
         ///
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Authored() &&
@@ -127,89 +107,124 @@ namespace ZyScene
             return Apply(Trait::Serializable | Trait::Inheritable);
         }
 
-        /// \brief Brings other components along wherever these are added, which may be only declared here.
+        /// \brief Makes the world entity hold the one instance, which walks read as a field.
+        ///
+        /// \return This declaration.
+        ZY_INLINE AnyRef<Declaration> Singleton() &&
+        {
+            return Apply(Trait::Singleton);
+        }
+
+        /// \brief Makes removals of the component keep the value that left, which readers of the removals are handed.
+        ///
+        /// \return This declaration.
+        ZY_INLINE AnyRef<Declaration> Keeps() &&
+        {
+            return Apply(Trait::Keeps);
+        }
+
+        /// \brief Brings other components along wherever this one is added, which may be only declared here.
         ///
         /// \return This declaration.
         template<typename... Implied>
         ZY_INLINE AnyRef<Declaration> Implies() &&
         {
-            (Imply<Types, Implied...>(), ...);
+            (Imply(Reserve<Implied>()), ...);
             return Move(* this);
         }
 
-        /// \brief Gives the components where a tool lists and may put them, which shows them by their name.
+        /// \brief Gives the component where a tool lists it and may put it.
         ///
-        /// \param Group  The heading they are listed under, which a tool keys its text by, never empty.
-        /// \param Icon   The codepoint of the glyph shown beside them, or zero for none.
-        /// \param Policy The places a tool may put them.
+        /// \param Group  The heading it is listed under, which a tool keys its text by, never empty.
+        /// \param Icon   The codepoint of the glyph shown beside it, or zero for none.
+        /// \param Policy The places a tool may put it.
         /// \return This declaration.
-        ZY_INLINE AnyRef<Declaration> Describe(
-            Text      Group,
-            UInt32    Icon   = 0,
-            Authoring Policy = Authoring::Anywhere) &&
+        ZY_INLINE AnyRef<Declaration> Describe(Text Group, UInt32 Icon = 0, Authoring Policy = Authoring::Anywhere) &&
         {
             ZY_ASSERT(!Group.IsEmpty(), "A described component is listed under a group");
 
-            mPresentation.Group  = Group;
-            mPresentation.Icon   = Icon;
-            mPresentation.Policy = Policy;
+            Registry::Get().Amend(mIdentifier, [&](Ref<Metatype> Info)
+            {
+                Info.Presentation = Description(Group, Icon, Policy);
+            });
             return Move(* this);
         }
 
-        /// \brief Lays the components' fields out for tools, as each type describes them.
+        /// \brief Lays the component's fields out for tools, as the type describes them.
         ///
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Reflect() &&
         {
-            (Registry::Get().SetSchema(IdentifierOf<Types>(), ZyReflection::Schema::Of<Types>()), ...);
+            const ZyReflection::Schema Layout = ZyReflection::Schema::Of<Type>();
+
+            Registry::Get().Amend(mIdentifier, [&Layout](Ref<Metatype> Info)
+            {
+                Info.Layout = ZyReflection::Schema(
+                    Layout.GetFields(), Layout.GetName(), Info.GetSize(), Info.GetAlignment());
+            });
             return Move(* this);
         }
 
     private:
 
-        /// \brief Registers one component under the name it answers to.
+        /// \brief Registers the component under the name it answers to.
         ///
-        /// \param Name The name, or empty for the one its type carries.
-        template<typename Type>
-        ZY_INLINE static void Enroll(Text Name)
+        /// \param Name The name, or empty for its `kName`.
+        /// \return The identifier the component answers to.
+        ZY_INLINE static UInt32 Enroll(Text Name)
         {
             if constexpr (requires { { Type::kName } -> IsCastable<Text>; })
             {
                 Name = Name.IsEmpty() ? Text(Type::kName) : Name;
             }
-            Registry::Get().Declare(IdentifierOf<Type>(Name), Metatype::Of<Type>(), Name);
+
+            const UInt32 Identifier = IdentifierOf<Type>(Name);
+            Registry::Get().Declare(Identifier, Metatype::Of<Type>(), Name);
+            return Identifier;
         }
 
-        /// \brief Makes one component bring others along.
-        template<typename Type, typename... Implied>
-        ZY_INLINE static void Imply()
-        {
-            (Registry::Get().Imply(IdentifierOf<Type>(), Reserve<Implied>()), ...);
-        }
-
-        /// \brief Gets the identifier of a component, reserving it by the name the compiler gives it when only declared.
+        /// \brief Gets the identifier of a component, reserving it by its compiler name when it is only declared.
         ///
         /// \return The identifier, which a component only declared takes over once it is declared in turn.
-        template<typename Type>
+        template<typename Other>
         ZY_INLINE static UInt32 Reserve()
         {
-            if constexpr (requires { sizeof(Type); })
+            if constexpr (requires { sizeof(Other); })
             {
-                return IdentifierOf<Type>();
+                return IdentifierOf<Other>();
             }
             else
             {
-                return Registry::Get().Acquire(Metatype::Qualify<Type>());
+                return Registry::Get().Acquire(Metatype::Qualify<Other>());
             }
         }
 
-        /// \brief Gives every component a trait.
+        /// \brief Makes the component bring another along.
+        ///
+        /// \param Implied The identifier of the component brought along, never this one.
+        ZY_INLINE void Imply(UInt32 Implied)
+        {
+            ZY_ASSERT(Implied != mIdentifier, "A component cannot bring itself along");
+
+            Registry::Get().Amend(mIdentifier, [Implied](Ref<Metatype> Info)
+            {
+                if (!Info.Implies.Contains(Implied))
+                {
+                    Info.Implies.Append(Implied);
+                }
+            });
+        }
+
+        /// \brief Gives the component a trait.
         ///
         /// \param Which The trait, or several taken together.
         /// \return This declaration.
         ZY_INLINE AnyRef<Declaration> Apply(Trait Which)
         {
-            (Registry::Get().SetTrait(IdentifierOf<Types>(), Which, true), ...);
+            Registry::Get().Amend(mIdentifier, [Which](Ref<Metatype> Info)
+            {
+                Info.Set(Which, true);
+            });
             return Move(* this);
         }
     };

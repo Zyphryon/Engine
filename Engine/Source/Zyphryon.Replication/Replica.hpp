@@ -18,12 +18,7 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene
-{
-    class World;
-}
-
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
     /// \brief Represents the identity a replica travels under, given by the publisher or authored into a save.
     class Replica final
@@ -89,13 +84,6 @@ namespace ZyScene::Protocol
                 Archive.Serialize(mIdentifier);
             }
         }
-
-    public:
-
-        /// \brief Declares the protocol's components, which the publisher and subscriber do and a game may do first.
-        ///
-        /// \param Scene The world, which must know them before it stores or loads a replica.
-        static void OnDeclare(Ref<World> Scene);
 
     private:
 

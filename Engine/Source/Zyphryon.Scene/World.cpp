@@ -26,14 +26,11 @@ namespace ZyScene
           mImporting { 0 }
     {
         // The built-in components every world has.
-        Declare<Prefab>();
+        Declare<Prefab>().Local();
         Declare<Asleep>().Local();
         Declare<Transient>();
         Declare<Part>().Inheritable();
         Declare<Named>().Local().Serializable();
-
-        const UInt32 Update = CreatePhase("Update");
-        ZY_ASSERT(Update == kUpdate, "The update phase must be the first one made");
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -79,9 +76,9 @@ namespace ZyScene
             // A value that cannot be saved is lost with its code.
             if (!Info.IsTag() && !Info.Save)
             {
-                Purge(Component(Identifier));
+                Purge(Identifier);
             }
-            Registry::Get().SetTrait(Identifier, Trait::Loaded, false);
+            Registry::Get().Amend(Identifier, [](Ref<Metatype> Unloaded) { Unloaded.Set(Trait::Loaded, false); });
             Rebuild(Identifier);
 
             // Kept values run the module's code when they go, so they go while it is still there.
@@ -108,7 +105,7 @@ namespace ZyScene
         {
             if (Root.IsArchetype())
             {
-                Pending.Append(Root.GetHandle().GetIndex());
+                Pending.Append(Root.GetIndex());
             }
         }
 
@@ -128,7 +125,7 @@ namespace ZyScene
         {
             if (!Root.IsArchetype())
             {
-                Emit(Body, Root.GetHandle().GetIndex(), 0, Indices, Names, Count);
+                Emit(Body, Root.GetIndex(), 0, Indices, Names, Count);
             }
         }
 
@@ -153,9 +150,9 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Sequence<Entity> World::Load(ConstSpan<Byte> Input, Entity Parent)
+    Sequence<Entity> World::Load(ConstSpan<Byte> Input)
     {
-        return Decode(Input, Parent, Entity());
+        return Decode(Input, Entity());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -165,27 +162,24 @@ namespace ZyScene
     {
         ZY_ASSERT(Root.IsAlive(), "A save can only be read over an entity that is alive");
 
-        return !Decode(Input, Entity(), Root).IsEmpty();
+        return !Decode(Input, Root).IsEmpty();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void World::Registered(ConstSpan<UInt32> Identifiers)
+    void World::Registered(UInt32 Identifier)
     {
-        for (const UInt32 Identifier : Identifiers)
+        if (mImporting && !mModules[mImporting - 1].Types.Contains(Identifier))
         {
-            if (mImporting && !mModules[mImporting - 1].Types.Contains(Identifier))
-            {
-                mModules[mImporting - 1].Types.Append(Identifier);
-            }
-            Rebuild(Identifier);
+            mModules[mImporting - 1].Types.Append(Identifier);
+        }
+        Rebuild(Identifier);
 
-            // A save read before the type had its name left the values under a type of their own.
-            if (const UInt32 Unresolved = Registry::Get().FindUnresolved(Identifier))
-            {
-                Resolve(Unresolved, Identifier);
-            }
+        // A save read before the type had its name left the values under a type of their own.
+        if (const UInt32 Unresolved = Registry::Get().FindUnresolved(Identifier))
+        {
+            Resolve(Unresolved, Identifier);
         }
     }
 
@@ -241,7 +235,10 @@ namespace ZyScene
                 Names.Append(Registry::Get().GetMetatype(Identifier).Name);
             }
             Output.Write<UInt32>(Slot);
-            Actor.Write(Component(Identifier), Output);
+            Output.WriteBlock<UInt32>([Actor, Identifier](Ref<Writer> Block)
+            {
+                Actor.Write(Component(Identifier), Block);
+            });
         }
 
         for (UInt32 Child = mDirectory.GetFirst(Index); Child; Child = mDirectory.GetNext(Child))
@@ -253,7 +250,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Sequence<Entity> World::Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root)
+    Sequence<Entity> World::Decode(ConstSpan<Byte> Input, Entity Root)
     {
         ZY_ASSERT(!mDeferral.IsWalking(), "A save cannot be read while a query walks");
 
@@ -268,7 +265,6 @@ namespace ZyScene
             return Roots;
         }
 
-        const UInt32              Home   = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
         Handle                    Target = Root.IsAlive() ? Root.GetHandle() : Handle();
         Sequence<UInt32>          Types;
         Sequence<UInt32>          Made;
@@ -294,12 +290,12 @@ namespace ZyScene
 
                 if (Owner == 0)
                 {
-                    Made.Append(Make(Scope, Types, Home, Exchange(Target, Handle()), Identifiers, Payloads));
-                    Roots.Append(this, mDirectory.GetHandle(Made.GetBack()));
+                    Made.Append(Make(Scope, Types, 0, Exchange(Target, Handle()), Identifiers, Payloads));
+                    Roots.Append(Entity(this, mDirectory.GetHandle(Made.GetBack())));
                 }
                 else
                 {
-                    const UInt32 Above = Owner <= Made.GetSize() ? Made[Owner - 1] : Home;
+                    const UInt32 Above = Owner <= Made.GetSize() ? Made[Owner - 1] : 0;
                     Made.Append(Make(Scope, Types, Above, Handle(), Identifiers, Payloads));
                 }
             }
@@ -329,22 +325,17 @@ namespace ZyScene
             LOG_W("Scene: An entity reads from archetype {0}, which is not loaded", Base.GetValue());
         }
 
-        Handle Actor = Target.IsValid() ? Target : Identity;
+        const UInt32 From  = Known ? Base.GetIndex() : 0;
+        Handle       Actor = Target.IsValid() ? Target : Identity;
 
         if (!Target.IsValid() && Identity != kWorld)
         {
             if (Identity.IsValid() && mDirectory.IsHeld(Identity.GetIndex()))
             {
                 LOG_W("Scene: Archetype slot {0} was taken, and goes to the one the save names", Identity.GetIndex());
-                DestroyTree(Identity.GetIndex());
+                Prune(Identity.GetIndex());
             }
             Actor = Identity.IsValid() ? mDirectory.Acquire(Identity) : mDirectory.Allocate(false);
-
-            // Parts are records of their own, so the base hands over what it copies and nothing beneath it.
-            if (Known)
-            {
-                Propagate(Base.GetIndex(), Identity.IsValid(), Actor, false);
-            }
 
             if (Parent)
             {
@@ -356,10 +347,18 @@ namespace ZyScene
         const Ptr<Chunk> Held  = mDirectory[Index].Holder;
         Ptr<Chunk>       Shape = Held;
 
-        // A new entity starts from the root, and an archetype from the chunk every archetype shares.
+        // A new entity starts where its archetype's heirs land, an archetype with none where every archetype does.
         if (Shape == nullptr)
         {
-            Shape = Identity.IsValid() ? FindOrCreate(ConstSpan(mPrefab), 0) : mLayout.GetRoot();
+            if (From)
+            {
+                Shape = FindHeir(From, Identity.IsValid());
+            }
+            else
+            {
+                const UInt32 Marker = IdentifierOf<Prefab>();
+                Shape = Identity.IsValid() ? Obtain(ConstSpan(Marker), 0) : mLayout.GetRoot();
+            }
         }
 
         // Every component is gathered first, so the entity lands once, and a duplicate record keeps the first.
@@ -375,19 +374,30 @@ namespace ZyScene
             {
                 Identifiers.Append(Types[Type]);
                 Payloads.Append(Data);
-                Shape = Shape->Has(Types[Type]) ? Shape : FindOrCreateAddition(* Shape, Types[Type]);
+                Shape = Extend(* Shape, Types[Type]);
             }
         }
 
         // Saves never carry the part marker, so an archetype read beneath another is marked from where it lands.
-        if (const UInt32 Above = mDirectory.GetParent(Index);
-            Directory::IsArchetype(Index) && Above && mDirectory[Above].Holder->IsArchetype() && !Shape->Has(mPart))
+        const UInt32 Above  = mDirectory.GetParent(Index);
+        const UInt32 Marker = IdentifierOf<Part>();
+
+        if (Directory::IsArchetype(Index) && Above && mDirectory[Above].Holder->IsArchetype() && !Shape->Has(Marker))
         {
-            Shape = FindOrCreateAddition(* Shape, mPart);
+            Shape = Widen(* Shape, Marker);
         }
 
-        PlaceOrTransfer(Index, * Shape);
-        BuildDefaults(Index, Held ? * Held : * mLayout.GetRoot(), 0, false);
+        // Parts are records of their own, so a new entity takes its archetype's values and nothing beneath it.
+        if (Held)
+        {
+            Transfer(Index, * Shape);
+            Build(Index, * Held, 0, false);
+        }
+        else
+        {
+            Place(Index, * Shape);
+            Fill(Index, From, ConstSpan<UInt32>());
+        }
 
         // Each value is read over the default just built, or over what the entity held.
         const UInt32 Row = mDirectory[Index].Row;
@@ -403,7 +413,7 @@ namespace ZyScene
             }
         }
 
-        RecordGain(Index, Held);
+        Gain(Index, Held);
         return Index;
     }
 

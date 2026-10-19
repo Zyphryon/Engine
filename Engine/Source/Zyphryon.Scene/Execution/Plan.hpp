@@ -45,18 +45,6 @@ namespace ZyScene
         static constexpr Bool kOwned   = kWritten && !kTag;
     };
 
-    /// \brief Adds a component to a list of terms unless it is there already.
-    ///
-    /// \param Terms      The required or owned terms to add to.
-    /// \param Identifier The identifier of the component to add.
-    ZY_INLINE void AddTerm(Ref<Sequence<UInt32>> Terms, UInt32 Identifier)
-    {
-        if (!Terms.Contains(Identifier))
-        {
-            Terms.Append(Identifier);
-        }
-    }
-
     /// \brief Represents a parameter reduced to the field it stands for.
     ///
     /// \tparam Parameter The parameter, as the callback spells it.
@@ -72,22 +60,6 @@ namespace ZyScene
                         Field<Select<IsAnyOf<Parameter, Plain>,
                                         const Plain,
                                               Plain>, false>>;
-
-        /// `true` when the parameter is a span.
-        static constexpr Bool kSpan = false;
-    };
-
-    /// \brief Represents a span parameter reduced to the field of the element it spans.
-    ///
-    /// \tparam Element The component the span holds, `const` when only read.
-    template<typename Element>
-    struct FieldOf<Span<Element>> final
-    {
-        /// The field of the element.
-        using Type = Field<Element, false>;
-
-        /// `true` when the parameter is a span.
-        static constexpr Bool kSpan = true;
     };
 
     /// \brief Represents the fields a callback asks a walk for, in the order it takes them.
@@ -167,7 +139,7 @@ namespace ZyScene
             }
             else
             {
-                AddTerm(Field::kOwned ? State.Owned : State.Required, Identifier);
+                Selection::Insert(Field::kOwned ? State.Owned : State.Required, Identifier);
                 State.Modes.Append(Field::kOwned ? Mode::Write : Mode::Read);
             }
         }
@@ -180,10 +152,7 @@ namespace ZyScene
     struct Parameters : Fieldset<typename FieldOf<Arguments>::Type...>
     {
         /// `true` when the callback takes the entity ahead of its fields.
-        static constexpr Bool kEntity  = false;
-
-        /// `true` when the callback takes a span per field, and is handed a run of rows at a time.
-        static constexpr Bool kBatched = sizeof...(Arguments) > 0 && (FieldOf<Arguments>::kSpan && ...);
+        static constexpr Bool kEntity = false;
     };
 
     /// \brief Represents the parameters of a callback taking the entity ahead of its fields.

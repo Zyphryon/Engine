@@ -114,7 +114,9 @@ namespace ZyScene
                 ++Starts[Depth];
                 State.Depths.Append(Depth);
                 State.Snapshot.Append(Actor);
-                Rows.Append(Pack(Match, Row));
+
+                // The match in the high half and the row in the low one, as following the rows reads them.
+                Rows.Append(static_cast<UInt64>(Match) << 32 | Row);
             }
         }
 

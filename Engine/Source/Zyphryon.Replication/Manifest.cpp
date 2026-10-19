@@ -16,14 +16,58 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Manifest::Manifest()
-        : mCount { 0 }
+        : mCount  { 0 },
+          mSealed { false }
     {
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Manifest::Seal()
+    {
+        if (Exchange(mSealed, true))
+        {
+            return;
+        }
+
+        // By name, which both sides share, so the order they declared in never reaches the wire.
+        for (UInt8 Index = 1; Index < mCount; ++Index)
+        {
+            for (UInt8 Slot = Index; Slot > 0; --Slot)
+            {
+                if (StrCompare(mEntries[Slot].Info->Name, mEntries[Slot - 1].Info->Name) >= 0)
+                {
+                    break;
+                }
+                mEntries[Slot - 1] = Exchange(mEntries[Slot], mEntries[Slot - 1]);
+            }
+        }
+
+        for (UInt8 Index = 0; Index < mCount; ++Index)
+        {
+            const Audience Policy = mEntries[Index].Policy;
+
+            if (Policy == Audience::Owner)
+            {
+                mOwner.Set(Index);
+            }
+            else
+            {
+                mShared.Set(Index);
+            }
+
+            if (Policy == Audience::Others)
+            {
+                mOthers.Set(Index);
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -50,14 +94,14 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Manifest::Write(Ref<Writer> Output, Entity Actor, Mask Wanted, Mask Dropped) const
+    void Manifest::Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped) const
     {
         // Only the bits set are visited, so a set costs what it names, not what the table holds.
         Mask Held;
 
         Wanted.ForEach([this, Actor, &Held](UInt Index)
         {
-            if (Actor.Owns(Component(mEntries[Index].Identifier)))
+            if (Actor.Owns(ZyScene::Component(mEntries[Index].Identifier)))
             {
                 Held.Set(Index);
             }
@@ -71,25 +115,33 @@ namespace ZyScene::Protocol
         {
             Absent.ForEach([this, &Set, Actor](UInt Index)
             {
-                WriteAbsent(Set, Actor, static_cast<UInt8>(Index));
+                if (!Actor.Owns(ZyScene::Component(mEntries[Index].Identifier)))
+                {
+                    Set.Write<UInt8>(static_cast<UInt8>(Index));
+                }
             });
             Set.Write<UInt8>(kEnd);
 
-            (Held & ~mOthers).ForEach([this, &Set, Actor](UInt Index)
+            // The bytes the type saves itself as, with no size, since the other side reads them through the same type.
+            const auto Present = [this, &Set, Actor](UInt Index)
             {
-                WriteEntry(Set, Actor, static_cast<UInt8>(Index));
-            });
-            (Held & mOthers).ForEach([this, &Set, Actor](UInt Index)
-            {
-                WriteEntry(Set, Actor, static_cast<UInt8>(Index));
-            });
+                ConstRef<Entry> Item = mEntries[Index];
+                Set.Write<UInt8>(static_cast<UInt8>(Index));
+
+                if (!Item.Info->IsTag())
+                {
+                    Item.Info->Save(Set, Actor.Get(ZyScene::Component(Item.Identifier)));
+                }
+            };
+            (Held & ~mOthers).ForEach(Present);
+            (Held & mOthers).ForEach(Present);
         });
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Manifest::Read(Ref<Reader> Input, Entity Actor, Mask Ignored) const
+    Bool Manifest::Read(Ref<Reader> Input, ZyScene::Entity Actor, Mask Ignored) const
     {
         ZY_ASSERT((Ignored & ~mOthers).None(), "Only the components the owner ignores may be read past");
 
@@ -117,7 +169,7 @@ namespace ZyScene::Protocol
 
             if (!Ignored.Test(Index))
             {
-                Actor.Remove(Component(mEntries[Index].Identifier));
+                Actor.Remove(ZyScene::Component(mEntries[Index].Identifier));
             }
         }
 
@@ -135,7 +187,7 @@ namespace ZyScene::Protocol
             {
                 break;
             }
-            Actor.Receive(Component(mEntries[Index].Identifier), Set);
+            Actor.Read(ZyScene::Component(mEntries[Index].Identifier), Set);
         }
         return true;
     }
@@ -146,41 +198,5 @@ namespace ZyScene::Protocol
     Bool Manifest::Skip(Ref<Reader> Input) const
     {
         return !Input.ReadBlock<UInt32, Byte>().IsEmpty();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Ref<Manifest> Manifest::Get()
-    {
-        static Manifest Instance;
-        return Instance;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Manifest::WriteEntry(Ref<Writer> Output, Entity Actor, UInt8 Index) const
-    {
-        ConstRef<Entry> Item = mEntries[Index];
-
-        Output.Write<UInt8>(Index);
-
-        // The same bytes the type saves itself as, with no size, since the other side reads them through the same type.
-        if (!Item.Info->IsTag())
-        {
-            Item.Info->Save(Output, Actor.Get(Component(Item.Identifier)));
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Manifest::WriteAbsent(Ref<Writer> Output, Entity Actor, UInt8 Index) const
-    {
-        if (!Actor.Owns(Component(mEntries[Index].Identifier)))
-        {
-            Output.Write<UInt8>(Index);
-        }
     }
 }

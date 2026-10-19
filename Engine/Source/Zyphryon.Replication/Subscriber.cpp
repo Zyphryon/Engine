@@ -17,28 +17,27 @@
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Subscriber::Subscriber(Ref<ZyEngine::Subsystem::Host> Host)
-        : mScene    { * Host.GetService<Service>() },
+    Subscriber::Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table)
+        : mScene    { Scene },
+          mManifest { Table },
           mHeld     { 0 },
-          mLanded   { mScene },
+          mLanded   { Scene },
           mIdentity { 0 },
           mSection  { kGlobal },
           mAccepted { false },
           mRejected { false }
     {
-        mScene.Register<Replica>();
-
         mRoots = mScene.Query<const Locus, const Replica>();
 
         // A world loaded before this side followed it already holds persistent replicas.
-        const ZyScene::Query Loaded = mScene.Query<const Replica>().Also<Asleep>();
+        const ZyScene::Query Loaded = mScene.Query<const Replica>().Also<ZyScene::Asleep>();
 
-        Loaded.Run([this](Entity Actor, ConstRef<Replica> Record)
+        Loaded.Run([this](ZyScene::Entity Actor, ConstRef<Replica> Record)
         {
             Take(Actor, Record);
         });
@@ -47,34 +46,34 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Subscriber::Receive(ConstSpan<Byte> Message)
+    void Subscriber::Receive(ConstSpan<Byte> Message)
     {
         Reader Input(Message);
 
-        if (Input.GetAvailable() == 0 || Input.Peek<UInt8>() >= kMaxOpcode)
+        if (Input.GetAvailable() == 0)
         {
-            return false;
+            return;
         }
 
         if (Input.Peek<UInt8>() == static_cast<UInt8>(Opcode::Packed))
         {
             Unpack(Input);
-            return true;
+            return;
         }
 
         // Every frame opens with the publisher's clock.
         if (static_cast<Opcode>(Input.Read<UInt8>()) != Opcode::Frame)
         {
-            LOG_E("Scene: A protocol message arrived outside a frame");
+            LOG_E("Replication: A message arrived outside a frame, so the publisher is refused");
             mRejected = true;
-            return true;
+            return;
         }
 
         if (Input.GetAvailable() < sizeof(Real64) + sizeof(Real32))
         {
-            LOG_E("Scene: A frame arrived cut short of its clock, so the publisher is refused");
+            LOG_E("Replication: A frame arrived cut short of its clock, so the publisher is refused");
             mRejected = true;
-            return true;
+            return;
         }
 
         const Real64 Time       = Input.Read<Real64>();
@@ -83,9 +82,9 @@ namespace ZyScene::Protocol
         // A clock that is not a number, or runs backwards, would break every timer that follows it.
         if (IsNaN(Time) || IsInf(Time) || IsNaN(Multiplier) || IsInf(Multiplier) || Multiplier < 0.0f)
         {
-            LOG_E("Scene: A frame names a clock no publisher keeps, so the publisher is refused");
+            LOG_E("Replication: A frame names a clock no publisher keeps, so the publisher is refused");
             mRejected = true;
-            return true;
+            return;
         }
 
         // Nothing more is applied once refused, until a greeting starts a new session.
@@ -93,14 +92,14 @@ namespace ZyScene::Protocol
         {
             if (Input.GetAvailable() == 0 || Input.Peek<UInt8>() != static_cast<UInt8>(Opcode::Hello))
             {
-                return true;
+                return;
             }
             mRejected = false;
             mAccepted = false;
         }
 
         Refresh();
-        mScene.GetWorld().Get<Clock>()->Follow(Clock(Time, 0.0, Multiplier));
+        mScene.GetWorld().Get<ZyScene::Clock>()->Follow(ZyScene::Clock(Time, 0.0, Multiplier));
 
         mSection = kGlobal;
 
@@ -108,7 +107,150 @@ namespace ZyScene::Protocol
         {
             Dispatch(Input);
         }
-        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::Refresh()
+    {
+        mLanded.Each([this](ZyScene::Entity Actor, ConstRef<Replica> Record)
+        {
+            Take(Actor, Record);
+        });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ZyScene::Entity Subscriber::Find(UInt64 Identifier)
+    {
+        const Ptr<ZyScene::Entity> Held = mReplicas.Find(Identifier);
+
+        if (Held == nullptr)
+        {
+            return ZyScene::Entity();
+        }
+
+        // A replica the game destroyed, or one gone with its parent, is let go the first time it is looked for.
+        const ConstPtr<Replica> Record = Held->IsAlive() ? Held->Get<const Replica>() : nullptr;
+
+        if (Record && Record->GetIdentifier() == Identifier)
+        {
+            return * Held;
+        }
+
+        mReplicas.Erase(Identifier);
+        return ZyScene::Entity();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::Take(ZyScene::Entity Actor, ConstRef<Replica> Record)
+    {
+        // A runtime replica is taken in by its arrival.
+        if (!Record.IsPersistent())
+        {
+            return;
+        }
+        mReplicas.Assign(Record.GetIdentifier(), Actor);
+
+        // Whatever is loaded from disk belongs to the publisher, save what is kept to this side.
+        if (!Actor.Has<Client>())
+        {
+            Actor.Add<Remote>();
+        }
+
+        Release(Record.GetIdentifier());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::Hold(UInt64 Under, UInt64 Identifier, Opcode Code, ConstSpan<Byte> Bytes)
+    {
+        mHeld += GetCost(Bytes.GetSize());
+
+        if (mHeld > kMaxHeld)
+        {
+            LOG_E("Replication: More is held for replicas not loaded than a world needs, so the publisher is refused");
+            mRejected = true;
+            return;
+        }
+        mPending.FindOrInsert(Under).Append(mSection, Identifier, Code, Blob::Copy(Bytes));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Subscriber::IsHeld(UInt64 Identifier) const
+    {
+        Bool Found = false;
+
+        mPending.ForEach([Identifier, &Found](UInt64, ConstRef<Sequence<Pending>> Items)
+        {
+            for (ConstRef<Pending> Item : Items)
+            {
+                Found = Found || (Item.Code == Opcode::Enter && Item.Identifier == Identifier);
+            }
+        });
+        return Found;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::Release(UInt64 Identifier)
+    {
+        // A replayed arrival releases its own children, which join the list instead of nesting another call.
+        mReleases.Append(Identifier);
+
+        if (mReleases.GetSize() > 1)
+        {
+            return;
+        }
+
+        // A replayed arrival reads the section it came in, so the current one is put back after.
+        const UInt64 Section = mSection;
+
+        for (UInt Index = 0; Index < mReleases.GetSize() && !mRejected; ++Index)
+        {
+            Sequence<Pending> Items;
+
+            if (!mPending.Extract(mReleases[Index], Items))
+            {
+                continue;
+            }
+
+            const ZyScene::Entity Actor = Find(mReleases[Index]);
+
+            for (ConstRef<Pending> Item : Items)
+            {
+                mHeld -= GetCost(Item.Data.GetSize());
+
+                if (!Actor.IsAlive() || mRejected)
+                {
+                    continue;
+                }
+
+                const ConstSpan Bytes(Item.Data.GetData(), Item.Data.GetSize());
+
+                if (Item.Code == Opcode::Update)
+                {
+                    Apply(Actor, Bytes, GetIgnored(GetOwner(Actor)));
+                }
+                else
+                {
+                    mSection = Item.Key;
+
+                    Reader Input(Bytes);
+                    OnEnter(Input);
+                }
+            }
+        }
+        mReleases.Clear();
+        mSection = Section;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -122,7 +264,7 @@ namespace ZyScene::Protocol
 
         if (Size == 0 || Size > kMaxUnpacked)
         {
-            LOG_E("Scene: A packed frame names a size no frame has, so the publisher is refused");
+            LOG_E("Replication: A packed frame names a size no frame has, so the publisher is refused");
             mRejected = true;
             return;
         }
@@ -136,56 +278,20 @@ namespace ZyScene::Protocol
 
         if (LZ4Decode(Packed, mUnpacked.GetData(), Size) != Size)
         {
-            LOG_E("Scene: A packed frame did not unpack whole, so the publisher is refused");
+            LOG_E("Replication: A packed frame did not unpack whole, so the publisher is refused");
             mRejected = true;
             return;
         }
 
-        // Unpacked, it is a frame like any other; a packed one inside it would unpack over the bytes it is read from.
+        // Unpacked, it must be a plain frame, since a packed one inside would unpack over the bytes it is read from.
         if (mUnpacked[0] != static_cast<Byte>(Opcode::Frame))
         {
-            LOG_E("Scene: A packed frame did not unpack to a frame, so the publisher is refused");
+            LOG_E("Replication: A packed frame did not unpack to a frame, so the publisher is refused");
             mRejected = true;
             return;
         }
         Receive(ConstSpan(mUnpacked.GetData(), Size));
     }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Entity Subscriber::Find(UInt64 Identifier)
-    {
-        const Ptr<Entity> Held = mReplicas.Find(Identifier);
-
-        if (Held == nullptr)
-        {
-            return Entity();
-        }
-
-        // A replica the game destroyed, or one gone with its parent, is let go the first time it is looked for.
-        const ConstPtr<Replica> Record = Held->IsAlive() ? Held->Get<const Replica>() : nullptr;
-
-        if (Record && Record->GetIdentifier() == Identifier)
-        {
-            return * Held;
-        }
-
-        mReplicas.Erase(Identifier);
-        return Entity();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Entity Subscriber::Resolve(Ref<Link> Value)
-    {
-        return Value.Resolve([this](UInt64 Identifier)
-        {
-            return Find(Identifier);
-        });
-    }
-
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -212,7 +318,7 @@ namespace ZyScene::Protocol
 
         if (Code >= kHandlers.GetSize() || kHandlers[Code] == nullptr)
         {
-            LOG_E("Scene: A message this build does not know arrived, so the publisher is refused");
+            LOG_E("Replication: A message this build does not know arrived, so the publisher is refused");
             mRejected = true;
             return;
         }
@@ -220,7 +326,7 @@ namespace ZyScene::Protocol
         // Nothing but a greeting is read before one was accepted.
         if (!mAccepted && Code != static_cast<UInt8>(Opcode::Hello))
         {
-            LOG_E("Scene: A message arrived before the greeting, so the publisher is refused");
+            LOG_E("Replication: A message arrived before the greeting, so the publisher is refused");
             mRejected = true;
             return;
         }
@@ -235,9 +341,9 @@ namespace ZyScene::Protocol
         const UInt64 Hash     = Input.Read<UInt64>();
         const UInt64 Identity = Input.Read<UInt64>();
 
-        if (Hash != Manifest::Get().GetHash())
+        if (Hash != mManifest.GetHash())
         {
-            LOG_E("Scene: The publisher replicates a different set of components than this build");
+            LOG_E("Replication: The publisher replicates a different set of components than this build");
             mRejected = true;
             return;
         }
@@ -245,7 +351,7 @@ namespace ZyScene::Protocol
         // A greeting starts the session over, so whatever an earlier one left goes.
         Clear(kGlobal);
 
-        mReplicas.EraseIf([](UInt64 Identifier, Ref<Entity> Actor)
+        mReplicas.EraseIf([](UInt64 Identifier, Ref<ZyScene::Entity> Actor)
         {
             return (Identifier & kPersistent) == 0 || !Actor.IsAlive();
         });
@@ -291,14 +397,12 @@ namespace ZyScene::Protocol
 
     void Subscriber::OnEnter(Ref<Reader> Input)
     {
-        const UInt32 Start = Input.GetOffset();
-
-        Arrival Message;
-        Message.Identifier  = Input.ReadUInt<UInt64>();
-        const UInt64 Parent = Input.ReadUInt<UInt64>();
-        Message.Archetype   = Input.ReadUInt<UInt64>();
-        Message.Peer        = Input.ReadUInt<UInt64>();
-        Message.Set         = Extract(Input);
+        const UInt32          Start      = Input.GetOffset();
+        const UInt64          Identifier = Input.ReadUInt<UInt64>();
+        const UInt64          Parent     = Input.ReadUInt<UInt64>();
+        const UInt64          Archetype  = Input.ReadUInt<UInt64>();
+        const UInt64          Peer       = Input.ReadUInt<UInt64>();
+        const ConstSpan<Byte> Set        = Extract(Input);
 
         if (mRejected)
         {
@@ -306,66 +410,76 @@ namespace ZyScene::Protocol
         }
 
         // An arrival names a key it stands under, never the world's nor the private one, which nothing ever leaves.
-        if (Message.Identifier == 0 || mSection == kGlobal || mSection == kPrivate)
+        if (Identifier == 0 || mSection == kGlobal || mSection == kPrivate)
         {
-            LOG_E("Scene: A replica arrived outside the section of a key, so the publisher is refused");
+            LOG_E("Replication: A replica arrived outside the section of a key, so the publisher is refused");
             mRejected = true;
             return;
         }
 
-        const ConstSpan Bytes(Input.GetData() + Start, Input.GetOffset() - Start);
-
         // A parent this side does not hold is one loaded from a cell not loaded yet, so the child waits for it.
-        if (Parent != 0)
-        {
-            Message.Parent = Find(Parent);
+        const ZyScene::Entity Above = Parent != 0 ? Find(Parent) : ZyScene::Entity();
 
-            if (!Message.Parent.IsAlive())
-            {
-                Hold(Parent, Message.Identifier, Opcode::Enter, Bytes);
-                return;
-            }
+        if (Parent != 0 && !Above.IsAlive())
+        {
+            Hold(Parent, Identifier, Opcode::Enter, ConstSpan(Input.GetData() + Start, Input.GetOffset() - Start));
+            return;
         }
 
-        Entity Actor  = Find(Message.Identifier);
-        Message.Fresh = !Actor.IsAlive();
+        ZyScene::Entity Actor = Find(Identifier);
 
-        if (Message.Fresh)
+        if (!Actor.IsAlive())
         {
             // A persistent replica comes from disk, never from an arrival, which would make a copy of it.
-            if (Message.Identifier & kPersistent)
+            if (Identifier & kPersistent)
             {
-                LOG_E("Scene: Persistent replica {0} arrived, so the publisher is refused", Message.Identifier);
+                LOG_E("Replication: Persistent replica {0} arrived, so the publisher is refused", Identifier);
                 mRejected = true;
                 return;
             }
 
-            Actor = mScene.CreateEntity();
-            mReplicas.Assign(Message.Identifier, Actor);
+            const ZyScene::Entity Base = Archetype ? mScene.GetEntity(Archetype) : ZyScene::Entity();
+
+            if (Archetype && !Base.IsArchetype())
+            {
+                LOG_W("Replication: Replica {0} names an archetype {1} this world does not hold",
+                    Identifier, Archetype);
+            }
+
+            // Made from its archetype under its parent in one move, as the publisher's was.
+            Actor = mScene.Spawn(Base.IsArchetype() ? Base : ZyScene::Entity(), Above, Replica(Identifier));
+            mReplicas.Assign(Identifier, Actor);
         }
         else
         {
             // A replica attached beneath itself would make the hierarchy a loop no walk up it ever leaves.
-            for (Entity Above = Message.Parent; Above.IsAlive(); Above = Above.GetParent())
+            for (ZyScene::Entity Up = Above; Up.IsAlive(); Up = Up.GetParent())
             {
-                if (Above.GetID() == Actor.GetID())
+                if (Up.GetID() == Actor.GetID())
                 {
-                    LOG_E("Scene: Replica {0} was attached beneath itself, so the publisher is refused",
-                        Message.Identifier);
+                    LOG_E("Replication: Replica {0} was attached beneath itself, so the publisher is refused",
+                        Identifier);
                     mRejected = true;
                     return;
                 }
             }
         }
 
-        // Everything the arrival names lands in one move.
-        mScene.Defer([this, Actor, &Message]
+        // Everything the arrival names lands in one move, a child under no key of its own, a root under the section.
+        mScene.Defer([&]
         {
-            Settle(Actor, Message);
+            if (Actor.GetParent().GetID() != Above.GetID())
+            {
+                Actor.Attach(Above);
+            }
+            Actor.Set(Above.IsAlive() ? Locus() : Locus(mSection));
+
+            Claim(Actor, Peer);
+            Apply(Actor, Set, GetIgnored(Peer));
         });
 
         // Children that came before it arrive now.
-        Release(Message.Identifier, Actor);
+        Release(Identifier);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -385,7 +499,7 @@ namespace ZyScene::Protocol
         {
             Apply(mScene.GetWorld(), Set, Mask());
         }
-        else if (const Entity Actor = Find(Identifier); Actor.IsAlive())
+        else if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive())
         {
             Apply(Actor, Set, GetIgnored(GetOwner(Actor)));
         }
@@ -407,13 +521,13 @@ namespace ZyScene::Protocol
         // Peers load a persistent replica from the key it was placed under, so it never moves.
         if (Identifier & kPersistent)
         {
-            LOG_E("Scene: Persistent replica {0} was moved, so the publisher is refused", Identifier);
+            LOG_E("Replication: Persistent replica {0} was moved, so the publisher is refused", Identifier);
             mRejected = true;
             return;
         }
 
         // Moved to a key this side sees, it arrives there too, which reattaches it.
-        if (const Entity Actor = Find(Identifier); Actor.IsAlive() && !mKeys.Contains(Key))
+        if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive() && !mKeys.Contains(Key))
         {
             Destroy(Actor);
         }
@@ -429,7 +543,7 @@ namespace ZyScene::Protocol
         // Peers load a persistent replica from disk and keep it, so it is never forgotten.
         if (Identifier & kPersistent)
         {
-            LOG_E("Scene: Persistent replica {0} was forgotten, so the publisher is refused", Identifier);
+            LOG_E("Replication: Persistent replica {0} was forgotten, so the publisher is refused", Identifier);
             mRejected = true;
             return;
         }
@@ -440,7 +554,7 @@ namespace ZyScene::Protocol
             return Under == Identifier || Item.Identifier == Identifier;
         });
 
-        if (const Entity Actor = Find(Identifier); Actor.IsAlive())
+        if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive())
         {
             Destroy(Actor);
         }
@@ -449,173 +563,7 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Subscriber::Refresh()
-    {
-        mLanded.Each([this](Entity Actor, ConstRef<Replica> Record)
-        {
-            Take(Actor, Record);
-        });
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Take(Entity Actor, ConstRef<Replica> Record)
-    {
-        // A runtime replica is taken in by its arrival.
-        if (!Record.IsPersistent())
-        {
-            return;
-        }
-        mReplicas.Assign(Record.GetIdentifier(), Actor);
-
-        // Whatever is loaded from disk belongs to the publisher, save what is kept to this side.
-        if (!Actor.Has<Client>())
-        {
-            Actor.Add<Remote>();
-        }
-
-        Release(Record.GetIdentifier(), Actor);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Hold(UInt64 Under, UInt64 Identifier, Opcode Code, ConstSpan<Byte> Bytes)
-    {
-        mHeld += GetCost(Bytes.GetSize());
-
-        if (mHeld > kMaxHeld)
-        {
-            LOG_E("Scene: More is held for replicas not loaded than any world needs, so the publisher is refused");
-            mRejected = true;
-            return;
-        }
-        mPending.FindOrInsert(Under).Append(mSection, Identifier, Code, Blob::Copy(Bytes));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Subscriber::IsHeld(UInt64 Identifier) const
-    {
-        Bool Found = false;
-
-        mPending.ForEach([Identifier, &Found](UInt64, ConstRef<Sequence<Pending>> Items)
-        {
-            for (ConstRef<Pending> Item : Items)
-            {
-                Found = Found || (Item.Code == Opcode::Enter && Item.Identifier == Identifier);
-            }
-        });
-        return Found;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Release(UInt64 Identifier, Entity Actor)
-    {
-        // A replayed arrival releases its own children, which join the list instead of nesting another call.
-        mReleases.Append(Identifier, Actor);
-
-        if (mReleases.GetSize() > 1)
-        {
-            return;
-        }
-
-        // A replayed arrival reads the section it came in, so the current one is put back after.
-        const UInt64 Section = mSection;
-
-        for (UInt Index = 0; Index < mReleases.GetSize() && !mRejected; ++Index)
-        {
-            const Waiter      Next = mReleases[Index];
-            Sequence<Pending> Items;
-
-            if (!mPending.Extract(Next.Identifier, Items))
-            {
-                continue;
-            }
-
-            for (ConstRef<Pending> Item : Items)
-            {
-                mHeld -= GetCost(Item.Data.GetSize());
-
-                if (Next.Actor.IsAlive() && !mRejected)
-                {
-                    Replay(Next.Actor, Item);
-                }
-            }
-        }
-        mReleases.Clear();
-        mSection = Section;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Replay(Entity Actor, ConstRef<Pending> Item)
-    {
-        const ConstSpan Bytes(Item.Data.GetData(), Item.Data.GetSize());
-
-        if (Item.Code == Opcode::Update)
-        {
-            Apply(Actor, Bytes, GetIgnored(GetOwner(Actor)));
-            return;
-        }
-
-        mSection = Item.Key;
-
-        Reader Input(Bytes);
-        OnEnter(Input);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Settle(Entity Actor, ConstRef<Arrival> Message)
-    {
-        if (Message.Fresh)
-        {
-            const Entity Base = Message.Archetype ? mScene.GetEntity(Message.Archetype) : Entity();
-
-            if (Base.IsAlive() && Base.IsArchetype())
-            {
-                Actor.SetArchetype(Base);
-            }
-            else if (Message.Archetype)
-            {
-                LOG_W("Scene: Replica {0} names an archetype {1} this world does not hold",
-                    Message.Identifier, Message.Archetype);
-            }
-            Actor.Set(Replica(Message.Identifier));
-        }
-
-        // A child stands under key zero beneath its parent; a root under the section it came in.
-        if (Message.Parent.IsAlive())
-        {
-            if (Actor.GetParent().GetID() != Message.Parent.GetID())
-            {
-                Actor.Attach(Message.Parent);
-            }
-            Actor.Set(Locus());
-        }
-        else
-        {
-            if (Actor.GetParent().IsAlive())
-            {
-                Actor.Attach(Entity());
-            }
-            Actor.Set(Locus(mSection));
-        }
-        Claim(Actor, Message.Peer);
-        Apply(Actor, Message.Set, GetIgnored(Message.Peer));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Claim(Entity Actor, UInt64 Peer)
+    void Subscriber::Claim(ZyScene::Entity Actor, UInt64 Peer)
     {
         if (Peer != 0)
         {
@@ -634,13 +582,11 @@ namespace ZyScene::Protocol
         Actor.Remove<Possessed>().Add<Remote>();
 
         // What only an owner receives is not this side's to keep once another peer owns it.
-        ConstRef<Manifest> Table = Manifest::Get();
-
-        for (UInt8 Index = 0; Index < Table.GetCount(); ++Index)
+        for (UInt8 Index = 0; Index < mManifest.GetCount(); ++Index)
         {
-            if (Table.GetOwnerMask().Test(Index))
+            if (mManifest.GetOwnerMask().Test(Index))
             {
-                Actor.Remove(Component(Table.GetEntry(Index).Identifier));
+                Actor.Remove(ZyScene::Component(mManifest.GetEntry(Index).Identifier));
             }
         }
     }
@@ -650,15 +596,35 @@ namespace ZyScene::Protocol
 
     void Subscriber::Clear(UInt64 Key)
     {
-        mDoomed.Clear();
+        Sequence<ZyScene::Entity> Doomed;
 
-        mRoots.Run([this, Key](Entity Actor, ConstRef<Locus> Place, ConstRef<Replica> Record)
+        mRoots.Run([&Doomed, Key](ZyScene::Entity Actor, ConstRef<Locus> Place, ConstRef<Replica> Record)
         {
-            Collect(Actor, Place, Record, Key);
+            // A child goes with its parent, save beneath a persistent parent, which stays from disk without it.
+            const ConstPtr<Replica> Above = Actor.GetParent().Get<const Replica>();
+
+            if (Record.IsPersistent() || (Place.GetKey() == 0 && !(Above && Above->IsPersistent())))
+            {
+                return;
+            }
+
+            // The key it stands under is its own, or its nearest ancestor's beneath a persistent parent.
+            UInt64 Current = 0;
+
+            for (ZyScene::Entity Up = Actor; Up.IsAlive() && Current == 0; Up = Up.GetParent())
+            {
+                const ConstPtr<Locus> Held = Up.Get<const Locus>();
+                Current = Held ? Held->GetKey() : 0;
+            }
+
+            if (Current != 0 && (Key == kGlobal || Current == Key))
+            {
+                Doomed.Append(Actor);
+            }
         });
 
         // A child gathered with its parent may have gone with it already.
-        for (const Entity Actor : mDoomed)
+        for (const ZyScene::Entity Actor : Doomed)
         {
             if (Actor.IsAlive())
             {
@@ -670,28 +636,7 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Subscriber::Collect(Entity Actor, ConstRef<Locus> Place, ConstRef<Replica> Record, UInt64 Key)
-    {
-        if (Record.IsPersistent())
-        {
-            return;
-        }
-
-        // A child goes with its parent, save beneath a persistent parent, which stays from disk without it.
-        const ConstPtr<Replica> Above   = Actor.GetParent().Get<const Replica>();
-        const Bool              Alone   = Place.GetKey() != 0 || (Above && Above->IsPersistent());
-        const UInt64            Current = GetKey(Actor);
-
-        if (Alone && Current != 0 && (Key == kGlobal || Current == Key))
-        {
-            mDoomed.Append(Actor);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::Destroy(Entity Actor)
+    void Subscriber::Destroy(ZyScene::Entity Actor)
     {
         if (const ConstPtr<Replica> Record = Actor.Get<const Replica>())
         {
@@ -707,9 +652,9 @@ namespace ZyScene::Protocol
     {
         const UInt32 Start = Input.GetOffset();
 
-        if (!Manifest::Get().Skip(Input))
+        if (!mManifest.Skip(Input))
         {
-            LOG_E("Scene: A set this build cannot read arrived, so the publisher is refused");
+            LOG_E("Replication: A set this build cannot read arrived, so the publisher is refused");
             mRejected = true;
             return ConstSpan<Byte>();
         }
@@ -719,13 +664,13 @@ namespace ZyScene::Protocol
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Subscriber::Apply(Entity Actor, ConstSpan<Byte> Set, Mask Ignored)
+    void Subscriber::Apply(ZyScene::Entity Actor, ConstSpan<Byte> Set, Mask Ignored)
     {
         Reader Input(Set);
 
-        if (!Manifest::Get().Read(Input, Actor, Ignored))
+        if (!mManifest.Read(Input, Actor, Ignored))
         {
-            LOG_E("Scene: A set this build cannot read arrived, so the publisher is refused");
+            LOG_E("Replication: A set this build cannot read arrived, so the publisher is refused");
             mRejected = true;
         }
     }
@@ -735,30 +680,15 @@ namespace ZyScene::Protocol
 
     Mask Subscriber::GetIgnored(UInt64 Peer) const
     {
-        return IsMine(Peer) ? Manifest::Get().GetOthersMask() : Mask();
+        return IsMine(Peer) ? mManifest.GetOthersMask() : Mask();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt64 Subscriber::GetOwner(Entity Actor)
+    UInt64 Subscriber::GetOwner(ZyScene::Entity Actor)
     {
         const ConstPtr<Owner> Holder = Actor.Get<const Owner>();
         return Holder ? Holder->GetPeer() : 0;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    UInt64 Subscriber::GetKey(Entity Actor)
-    {
-        for (Entity Above = Actor; Above.IsAlive(); Above = Above.GetParent())
-        {
-            if (const ConstPtr<Locus> Place = Above.Get<const Locus>(); Place && Place->GetKey() != 0)
-            {
-                return Place->GetKey();
-            }
-        }
-        return 0;
     }
 }

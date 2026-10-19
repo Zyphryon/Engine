@@ -22,9 +22,9 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Layout::Layout()
-        : mPending { Unique<Chunk>::Create(~0u, 0, false, ConstSpan<UInt32>()) }
+        : mPending { Unique<Chunk>::Create(~0u, 0, ConstSpan<UInt32>()) }
     {
-        mChunks.Append(Unique<Chunk>::Create(0, 0, false, ConstSpan<UInt32>()));
+        mChunks.Append(Unique<Chunk>::Create(0, 0, ConstSpan<UInt32>()));
 
         mSignature.Assign(GetKey(ConstSpan<UInt32>(), 0), GetRoot());
     }
@@ -57,11 +57,10 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Ptr<Chunk> Layout::Create(ConstSpan<UInt32> Signature, UInt32 Base, UInt32 Marker, ConstRef<Directory> Slots)
+    Ptr<Chunk> Layout::Create(ConstSpan<UInt32> Signature, UInt32 Base, ConstRef<Directory> Slots)
     {
-        const UInt32     Index     = static_cast<UInt32>(mChunks.GetSize());
-        const Bool       Archetype = Signature.Contains(Marker);
-        const Ptr<Chunk> Made      = mChunks.Append(Unique<Chunk>::Create(Index, Base, Archetype, Signature)).Grab();
+        const UInt32     Index = static_cast<UInt32>(mChunks.GetSize());
+        const Ptr<Chunk> Made  = mChunks.Append(Unique<Chunk>::Create(Index, Base, Signature)).Grab();
 
         UInt64 Key = GetKey(Signature, Base);
 
@@ -104,7 +103,7 @@ namespace ZyScene
 
     void Layout::UpdateHeirs(UInt32 Archetype, ConstRef<Directory> Slots)
     {
-        if (GetHeirChunks(Archetype).IsEmpty())
+        if (GetHeirs(Archetype).IsEmpty())
         {
             return;
         }
@@ -115,7 +114,7 @@ namespace ZyScene
 
         for (UInt32 Next = 0; Next < Pending.GetSize(); ++Next)
         {
-            for (const Ptr<Chunk> Target : GetHeirChunks(Pending[Next]))
+            for (const Ptr<Chunk> Target : GetHeirs(Pending[Next]))
             {
                 Update(Target, Slots);
 

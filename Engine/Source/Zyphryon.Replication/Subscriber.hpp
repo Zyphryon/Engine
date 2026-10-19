@@ -12,78 +12,44 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Link.hpp"
 #include "Locus.hpp"
 #include "Manifest.hpp"
+#include "Replica.hpp"
+#include "Wire.hpp"
 #include "Zyphryon.Scene/Service.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-namespace ZyScene::Protocol
+namespace ZyReplication
 {
     /// \brief Represents the side that follows a world it does not own, applying what the publisher says of it.
     class Subscriber final
     {
     public:
 
-        /// \brief Constructs a subscriber, declaring the protocol's components in the host's world.
+        /// \brief Constructs a subscriber over a world, taking in the persistent replicas it already holds.
         ///
-        /// \param Host The host the scene is found in, outliving the subscriber.
-        explicit Subscriber(Ref<ZyEngine::Subsystem::Host> Host);
+        /// \param Scene The world it follows, outliving the subscriber.
+        /// \param Table The sealed table of what travels, outliving the subscriber.
+        Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table);
 
         /// \brief Applies a frame from the publisher.
         ///
         /// \param Message The payload, exactly as the publisher sent it.
-        /// \return `true` if the message was the protocol's, `false` if it belongs to the game.
-        Bool Receive(ConstSpan<Byte> Message);
+        void Receive(ConstSpan<Byte> Message);
 
-        /// \brief Runs a load from disk, taking in the persistent replicas it made at once.
-        ///
-        /// \param Callback The function that loads.
-        template<typename Callable>
-        ZY_INLINE void Restore(AnyRef<Callable> Callback)
-        {
-            Callback();
-            Refresh();
-        }
+        /// \brief Takes in the persistent replicas loaded since the last call, applying what waited for them.
+        void Refresh();
 
         /// \brief Finds the entity a replica identifier stands for, letting go of one no longer standing.
         ///
-        /// \param Identifier The identifier.
+        /// \param Identifier The identifier the replica travels under.
         /// \return The entity, or one naming nothing when no living entity carries the identifier.
-        Entity Find(UInt64 Identifier);
-
-        /// \brief Finds the entity a link names.
-        ///
-        /// \param Value The link, which caches what it finds.
-        /// \return The entity, or one naming nothing while its target is not held.
-        Entity Resolve(Ref<Link> Value);
+        ZyScene::Entity Find(UInt64 Identifier);
 
     private:
-
-        /// \brief Represents what an arrival says of a replica.
-        struct Arrival final
-        {
-            /// The identifier the replica travels under.
-            UInt64          Identifier = 0;
-
-            /// The entity it is attached to, or one naming nothing for a root.
-            Entity          Parent;
-
-            /// The slot of the archetype it is made from, or zero.
-            UInt64          Archetype  = 0;
-
-            /// The key of the peer that owns it, or zero for nobody.
-            UInt64          Peer       = 0;
-
-            /// The bytes of its set.
-            ConstSpan<Byte> Set;
-
-            /// `true` when this side did not hold it before.
-            Bool            Fresh      = false;
-        };
 
         /// \brief Represents a message held for a replica this side does not hold yet, its cell not loaded.
         struct Pending final
@@ -94,57 +60,43 @@ namespace ZyScene::Protocol
             /// The identifier of the replica the message is about, the one updated or the child arriving.
             UInt64 Identifier;
 
-            /// The message: an update of the replica, or the arrival of a child beneath it.
+            /// The message, an update of the replica or the arrival of a child beneath it.
             Opcode Code;
 
             /// The bytes of the message after its opcode, or of the update's set.
             Blob   Data;
         };
 
-        /// \brief Represents a replica this side now holds, whose waiting messages are still to apply.
-        struct Waiter final
-        {
-            /// The identifier the replica travels under.
-            UInt64 Identifier;
+        /// The largest frame a packed one may unpack to, which is the largest the network carries.
+        static constexpr UInt32 kMaxUnpacked = 1024 * 1024;
 
-            /// The entity.
-            Entity Actor;
-        };
-
-        /// \brief Takes in the persistent replicas loaded since the last call.
-        void Refresh();
+        /// The most bytes held for replicas this side does not hold yet, past which the publisher is refused.
+        static constexpr UInt32 kMaxHeld     = 4 * kMaxUnpacked;
 
         /// \brief Takes in one persistent replica, applying the messages that waited for it.
         ///
-        /// \param Actor  The entity.
-        /// \param Record The identity it travels under.
-        void Take(Entity Actor, ConstRef<Replica> Record);
+        /// \param Actor  The entity loaded from disk.
+        /// \param Record The identity it travels under, runtime ones skipped.
+        void Take(ZyScene::Entity Actor, ConstRef<Replica> Record);
 
         /// \brief Holds a message for a replica this side does not hold yet, refusing the publisher past \ref kMaxHeld.
         ///
         /// \param Under      The identifier of the replica it waits for.
         /// \param Identifier The identifier of the replica it is about.
-        /// \param Code       The message.
+        /// \param Code       The message, an update or an arrival.
         /// \param Bytes      The bytes of the message after its opcode, or of the update's set.
         void Hold(UInt64 Under, UInt64 Identifier, Opcode Code, ConstSpan<Byte> Bytes);
 
         /// \brief Checks whether an arrival of a replica waits, so the updates after it wait too.
         ///
-        /// \param Identifier The identifier of the replica.
+        /// \param Identifier The identifier the replica travels under.
         /// \return `true` if its arrival is held, `false` otherwise.
         Bool IsHeld(UInt64 Identifier) const;
 
         /// \brief Applies the messages that waited for a replica this side now holds, from one list instead of nesting.
         ///
-        /// \param Identifier The identifier the replica travels under.
-        /// \param Actor      The entity.
-        void Release(UInt64 Identifier, Entity Actor);
-
-        /// \brief Applies one message that waited for a replica.
-        ///
-        /// \param Actor The entity it waited for.
-        /// \param Item  The message.
-        void Replay(Entity Actor, ConstRef<Pending> Item);
+        /// \param Identifier The identifier the replica travels under, already found by \ref Find.
+        void Release(UInt64 Identifier);
 
         /// \brief Drops the held messages one test picks, counting their bytes off.
         ///
@@ -165,15 +117,6 @@ namespace ZyScene::Protocol
                 });
                 return Items.IsEmpty();
             });
-        }
-
-        /// \brief Gets what a held message counts against \ref kMaxHeld.
-        ///
-        /// \param Size The bytes of the message.
-        /// \return The bytes, with room for the record kept of it.
-        ZY_INLINE static UInt GetCost(UInt Size)
-        {
-            return Size + sizeof(Pending);
         }
 
         /// \brief Unpacks a frame packed with LZ4 and applies it, refusing the publisher when it does not unpack whole.
@@ -201,7 +144,7 @@ namespace ZyScene::Protocol
         /// \param Input The frame, after the opcode.
         void OnSection(Ref<Reader> Input);
 
-        /// \brief Creates a replica, or overwrites the one already held.
+        /// \brief Creates a replica, or overwrites the one already held, landing all it names in one move.
         ///
         /// \param Input The frame, after the opcode.
         void OnEnter(Ref<Reader> Input);
@@ -221,35 +164,21 @@ namespace ZyScene::Protocol
         /// \param Input The frame, after the opcode.
         void OnForget(Ref<Reader> Input);
 
-        /// \brief Lands everything an arrival names on its entity, inside one deferral.
-        ///
-        /// \param Actor   The entity.
-        /// \param Message The arrival.
-        void Settle(Entity Actor, ConstRef<Arrival> Message);
-
         /// \brief Sets who owns a replica, tagging it this side's or another's.
         ///
-        /// \param Actor The entity.
+        /// \param Actor The entity whose owner is set.
         /// \param Peer  The key of the owner, or zero for nobody.
-        void Claim(Entity Actor, UInt64 Peer);
+        void Claim(ZyScene::Entity Actor, UInt64 Peer);
 
         /// \brief Destroys every runtime root under a key, or every runtime root for \ref kGlobal.
         ///
-        /// \param Key The key.
+        /// \param Key The interest key left, or \ref kGlobal for all of them.
         void Clear(UInt64 Key);
-
-        /// \brief Gathers a runtime replica for \ref Clear when it stands under the key and would not go with a parent.
-        ///
-        /// \param Actor  The entity.
-        /// \param Place  The key it stands under, zero for a child.
-        /// \param Record The identity it travels under.
-        /// \param Key    The key cleared, or \ref kGlobal for every key.
-        void Collect(Entity Actor, ConstRef<Locus> Place, ConstRef<Replica> Record, UInt64 Key);
 
         /// \brief Destroys a replica, letting go of its identifier.
         ///
-        /// \param Actor The entity.
-        void Destroy(Entity Actor);
+        /// \param Actor The entity destroyed, which must be alive.
+        void Destroy(ZyScene::Entity Actor);
 
         /// \brief Reads past a set, refusing the publisher when it is not whole.
         ///
@@ -259,56 +188,59 @@ namespace ZyScene::Protocol
 
         /// \brief Applies a set to an entity.
         ///
-        /// \param Actor   The entity, the world entity for singletons.
+        /// \param Actor   The entity written, the world entity for singletons.
         /// \param Set     The bytes of the set.
-        /// \param Ignored The components read past.
-        void Apply(Entity Actor, ConstSpan<Byte> Set, Mask Ignored);
+        /// \param Ignored The components read past, which this side keeps as it decided them.
+        void Apply(ZyScene::Entity Actor, ConstSpan<Byte> Set, Mask Ignored);
 
         /// \brief Gets the components a replica ignores, which are the others' view of what this side owns.
         ///
-        /// \param Peer The key of the owner.
+        /// \param Peer The key of the owner, or zero for nobody.
         /// \return The mask of the `Others` components when this side owns it, none otherwise.
         Mask GetIgnored(UInt64 Peer) const;
 
         /// \brief Checks whether a peer key is this side's.
         ///
-        /// \param Peer The key.
+        /// \param Peer The key of a peer, or zero for nobody.
         /// \return `true` if it names this side, `false` otherwise.
         ZY_INLINE Bool IsMine(UInt64 Peer) const
         {
             return Peer != 0 && Peer == mIdentity;
         }
 
+        /// \brief Gets what a held message counts against \ref kMaxHeld.
+        ///
+        /// \param Size The bytes of the message.
+        /// \return The bytes, with room for the record kept of it.
+        ZY_INLINE static UInt GetCost(UInt Size)
+        {
+            return Size + sizeof(Pending);
+        }
+
         /// \brief Gets the peer that owns a replica.
         ///
-        /// \param Actor The entity.
+        /// \param Actor The entity checked.
         /// \return The key of the peer, or zero for nobody.
-        static UInt64 GetOwner(Entity Actor);
-
-        /// \brief Gets the key a replica stands under, its own or its root's.
-        ///
-        /// \param Actor The entity.
-        /// \return The key, or zero when nothing above it names one.
-        static UInt64 GetKey(Entity Actor);
+        static UInt64 GetOwner(ZyScene::Entity Actor);
 
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Service>                     mScene;
-        Table<UInt64, Entity>            mReplicas;
-        Bag<UInt64>                      mKeys;
-        Table<UInt64, Sequence<Pending>> mPending;
-        UInt                             mHeld;
-        Sequence<Waiter>                 mReleases;
-        Cursor<Set<Replica>>             mLanded;
-        ZyScene::Query                   mRoots;
-        Sequence<Entity>                 mDoomed;
-        Sequence<Byte>                   mUnpacked;
-        UInt64                           mIdentity;
-        UInt64                           mSection;
-        Bool                             mAccepted;
-        Bool                             mRejected;
+        Ref<ZyScene::Service>                  mScene;
+        ConstRef<Manifest>                     mManifest;
+        Table<UInt64, ZyScene::Entity>         mReplicas;
+        Bag<UInt64>                            mKeys;
+        Table<UInt64, Sequence<Pending>>       mPending;
+        UInt                                   mHeld;
+        Sequence<UInt64>                       mReleases;
+        ZyScene::Cursor<ZyScene::Set<Replica>> mLanded;
+        ZyScene::Query                         mRoots;
+        Sequence<Byte>                         mUnpacked;
+        UInt64                                 mIdentity;
+        UInt64                                 mSection;
+        Bool                                   mAccepted;
+        Bool                                   mRejected;
     };
 }

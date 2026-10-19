@@ -22,21 +22,15 @@
 
 namespace ZyScene
 {
-    /// \brief Represents a world, its entities, and the queries, systems, pull lists, modules and saves over them.
+    /// \brief Represents a world, its entities, and the queries, systems, modules and saves over them.
     class ZY_API World : public Storage
     {
         friend class Draft;
         friend class Enrollment;
-        friend class System;
 
     public:
 
-        /// The phase every world makes first, which systems run in unless they ask for another.
-        static constexpr UInt32 kUpdate = 1;
-
-    public:
-
-        /// \brief Constructs a world holding only the world entity, the built-in components and the update phase.
+        /// \brief Constructs a world holding only the world entity and the built-in components.
         ///
         /// \param Host The host holding the job service spread walks run on.
         explicit World(Ref<ZyEngine::Subsystem::Host> Host);
@@ -47,91 +41,50 @@ namespace ZyScene
         /// \brief Worlds are not copied, since every entity points back into its own.
         World(ConstRef<World> Other) = delete;
 
-        /// \brief Creates an instance of an archetype under a parent, holding a set of its own components, in one move.
-        ///
-        /// \param Archetype The archetype it reads from, or one that names nothing for a plain entity.
-        /// \param Parent    The entity it hangs from, or one that names nothing for a root.
-        /// \param Values    The components it holds itself, over the archetype's, moved into place.
-        /// \return The entity, which waits outside every query until the running walk ends when there is one.
-        template<typename... Types>
-        Entity Spawn(Entity Archetype, Entity Parent, AnyRef<Types>... Values)
-        {
-            if (mDeferral.IsWalking())
-            {
-                const Entity Actor = CreateEntity();
-
-                if (Archetype.IsAlive())
-                {
-                    Actor.SetArchetype(Archetype);
-                }
-                Actor.Attach(Parent);
-                (Actor.Set(Forward<Types>(Values)), ...);
-                return Actor;
-            }
-
-            // From the archetype's heir chunk along the add edges, which also bring along what the components imply.
-            const UInt32 Base   = Archetype.IsAlive() ? Archetype.GetHandle().GetIndex() : 0;
-            const UInt32 Above  = Parent.IsAlive() ? Parent.GetHandle().GetIndex() : 0;
-            Ptr<Chunk>   Target = Base ? FindHeir(nullptr, Base, false) : mLayout.GetRoot();
-            ((Target = Extend(* Target, IdentifierOf<StripAll<Types>>())), ...);
-
-            const Handle Actor = mDirectory.Allocate(false);
-            Place(Actor.GetIndex(), * Target);
-
-            const UInt32 Row = mDirectory[Actor.GetIndex()].Row;
-            (Chunk::Emplace<StripAll<Types>>(* Target, Row, Forward<Types>(Values)), ...);
-
-            const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()..., 0 };
-            Settle(Actor.GetIndex(), Base, Above, ConstSpan<UInt32>(Given, sizeof...(Types)));
-            return Entity(this, Actor);
-        }
-
         /// \brief Creates a plain root entity holding a set of components, in one move.
         ///
         /// \param Values The components, moved into place.
         /// \return The entity, which waits outside every query until the running walk ends when there is one.
         template<typename... Types>
-        Entity Spawn(AnyRef<Types>... Values)
+        ZY_INLINE Entity Spawn(AnyRef<Types>... Values)
         {
-            if (mDeferral.IsWalking())
-            {
-                const Entity Actor = CreateEntity();
-                (Actor.Set(Forward<Types>(Values)), ...);
-                return Actor;
-            }
-
-            // Along the add edges from the root, which also bring along what the components imply.
-            Ptr<Chunk> Target = mLayout.GetRoot();
-            ((Target = FindOrCreateAddition(* Target, IdentifierOf<StripAll<Types>>())), ...);
-
-            const Handle Actor = mDirectory.Allocate(false);
-            Place(Actor.GetIndex(), * Target);
-
-            const UInt32 Row = mDirectory[Actor.GetIndex()].Row;
-            (Chunk::Emplace<StripAll<Types>>(* Target, Row, Forward<Types>(Values)), ...);
-
-            if (Target->GetSignature().GetSize() != sizeof...(Types))
-            {
-                const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()..., 0 };
-                Settle(Actor.GetIndex(), 0, 0, ConstSpan<UInt32>(Given, sizeof...(Types)));
-            }
-            else
-            {
-                RecordGain(Actor.GetIndex(), nullptr);
-            }
-            return Entity(this, Actor);
+            return Spawn(Entity(), Entity(), Forward<Types>(Values)...);
         }
 
-        /// \brief Hands every archetype to a callback, in slot order.
+        /// \brief Creates an entity from an archetype under a parent, holding its own components over the archetype's.
         ///
-        /// \param Callback The callable, taking each archetype.
-        template<typename Callable>
-        void QueryArchetypes(AnyRef<Callable> Callback)
+        /// \param Archetype The archetype it reads from, or one that names nothing for a plain entity.
+        /// \param Parent    The entity it hangs from, or one that names nothing for a root.
+        /// \param Values    The components it holds itself, moved into place.
+        /// \return The entity, which waits outside every query until the running walk ends when there is one.
+        template<typename... Types>
+        Entity Spawn(Entity Archetype, Entity Parent, AnyRef<Types>... Values)
         {
-            mDirectory.ForEachArchetype([this, &Callback](Handle Archetype)
+            ZY_ASSERT(!Archetype.IsAlive() || Archetype.IsArchetype(), "An entity is made only from an archetype");
+
+            const Handle From  = Archetype.IsAlive() ? Archetype.GetHandle() : Handle();
+            const Handle Above = Parent.IsAlive() ? Parent.GetHandle() : Handle();
+
+            if (!mDeferral.IsWalking())
             {
-                Callback(Entity(this, Archetype));
+                const Handle Actor = mDirectory.Allocate(false);
+                Land(Actor, From.GetIndex(), Above.GetIndex(), Forward<Types>(Values)...);
+                return Entity(this, Actor);
+            }
+
+            // The slot is taken now, and the entity lands in order with the changes the walk held.
+            const Handle Actor = Create();
+
+            Postpone([this, Actor, From, Above, ...Values = Forward<Types>(Values)]() mutable
+            {
+                if (mDirectory.IsAlive(Actor))
+                {
+                    const UInt32 Base = mDirectory.IsAlive(From) ? From.GetIndex() : 0;
+                    const UInt32 Home = mDirectory.IsAlive(Above) ? Above.GetIndex() : 0;
+                    Land(Actor, Base, Home, Move(Values)...);
+                }
             });
+            return Entity(this, Actor);
         }
 
         /// \brief Starts a query over the entities holding some components, the writable ones as their own.
@@ -147,42 +100,32 @@ namespace ZyScene
 
         /// \brief Starts a system, which a phase runs each progress over what its callback asks for or a list it reads.
         ///
-        /// \param Name  The name profiles and logs show.
-        /// \param Phase The phase it runs in.
+        /// \param Name  The name profiles show.
+        /// \param Phase The phase it runs in, in the order systems were made.
         /// \return The description, which becomes the system once it is handed its callback.
-        ZY_INLINE Builder<ZyScene::System> System(Text Name, UInt32 Phase = kUpdate)
+        ZY_INLINE Builder<ZyScene::System> System(Text Name, UInt32 Phase)
         {
             return Builder<ZyScene::System>(this, Name, Phase);
         }
 
-        /// \brief Creates a phase, which runs every system in it, in the order they were created, when its turn comes.
+        /// \brief Creates a phase, which runs after every phase made before it.
         ///
-        /// \param Name  The name of the phase, which profiles and logs show.
-        /// \param After The phase it runs right after, or zero to run after every phase made so far.
-        /// \return The handle of the phase, never zero.
-        ZY_INLINE UInt32 CreatePhase(Text Name, UInt32 After = 0)
+        /// \param Name The name profiles show.
+        /// \return The phase, never zero.
+        ZY_INLINE UInt32 Phase(Text Name)
         {
-            return mScheduler.CreatePhase(Name, After, mImporting);
+            return mScheduler.CreatePhase(Name, mImporting);
         }
 
-        /// \brief Runs every phase once, in order, and every system in each, in the order they were created.
+        /// \brief Runs every phase once, in order, and every system in each, in the order they were made.
         void Progress();
 
-        /// \brief Declares components, each named after its type.
+        /// \brief Declares a component under the name saves know it by.
         ///
-        /// \return The declaration, which takes their traits by chained calls and tells the world when it ends.
-        template<typename... Types>
-        ZY_INLINE Declaration<Types...> Declare()
-        {
-            return Declaration<Types...>(this, Text());
-        }
-
-        /// \brief Declares one component under a name of its own.
-        ///
-        /// \param Name The name saves know it by.
+        /// \param Name The name, or empty for the type's `kName` or the one the compiler gives it.
         /// \return The declaration, which takes its traits by chained calls and tells the world when it ends.
         template<typename Type>
-        ZY_INLINE Declaration<Type> Declare(Text Name)
+        ZY_INLINE Declaration<Type> Declare(Text Name = Text())
         {
             return Declaration<Type>(this, Name);
         }
@@ -227,10 +170,9 @@ namespace ZyScene
 
         /// \brief Reads a save, making each entity from the archetype it names, the world entity read over itself.
         ///
-        /// \param Input  The bytes of the save.
-        /// \param Parent The entity to attach every root to, or one that names nothing.
+        /// \param Input The bytes of the save.
         /// \return The entities made at the root of the save.
-        Sequence<Entity> Load(ConstSpan<Byte> Input, Entity Parent = Entity());
+        Sequence<Entity> Load(ConstSpan<Byte> Input);
 
         /// \brief Reads a save over an existing entity, which takes the first root's values and what stands beneath it.
         ///
@@ -266,10 +208,42 @@ namespace ZyScene
             Bool             Alive;
         };
 
-        /// \brief Records components a declaration is done with, reading back the values kept as bytes for them.
+        /// \brief Places an entity where its archetype and components lead, building its values and parts there.
         ///
-        /// \param Identifiers The components the declaration is done with.
-        void Registered(ConstSpan<UInt32> Identifiers);
+        /// \param Actor     The entity, sitting in no chunk or in the root.
+        /// \param Archetype The slot of the archetype it reads from, or zero.
+        /// \param Parent    The slot of the entity it hangs from, or zero.
+        /// \param Values    The components it holds itself, moved into place.
+        template<typename... Types>
+        ZY_INLINE void Land(Handle Actor, UInt32 Archetype, UInt32 Parent, AnyRef<Types>... Values)
+        {
+            // From the archetype's heir chunk along the add edges, which also bring along what the components imply.
+            Ptr<Chunk> Target = Archetype ? FindHeir(Archetype, false) : mLayout.GetRoot();
+            ((Target = Extend(* Target, IdentifierOf<StripAll<Types>>())), ...);
+
+            // Made during a walk, it waits in the root, otherwise it sits nowhere yet.
+            const UInt32 Index = Actor.GetIndex();
+
+            if (mDirectory[Index].Holder)
+            {
+                Transfer(Index, * Target);
+            }
+            else
+            {
+                Place(Index, * Target);
+            }
+
+            const UInt32 Row = mDirectory[Index].Row;
+            (Chunk::Emplace<StripAll<Types>>(* Target, Row, Forward<Types>(Values)), ...);
+
+            const UInt32 Given[] = { IdentifierOf<StripAll<Types>>()..., 0 };
+            Settle(Index, Archetype, Parent, ConstSpan<UInt32>(Given, sizeof...(Types)));
+        }
+
+        /// \brief Records a component a declaration is done with, reading back the values kept as bytes for it.
+        ///
+        /// \param Identifier The component the declaration is done with.
+        void Registered(UInt32 Identifier);
 
         /// \brief Writes one entity's record, then everything beneath it, naming each component it saves once.
         ///
@@ -289,11 +263,10 @@ namespace ZyScene
 
         /// \brief Reads a save, making every entity but the first root, which is read over one given when it is alive.
         ///
-        /// \param Input  The bytes of the save.
-        /// \param Parent The entity to attach every root made to, or one that names nothing.
-        /// \param Root   The entity to read the first root over, or one that names nothing.
+        /// \param Input The bytes of the save.
+        /// \param Root  The entity to read the first root over, or one that names nothing.
         /// \return The entities at the root of the save.
-        Sequence<Entity> Decode(ConstSpan<Byte> Input, Entity Parent, Entity Root);
+        Sequence<Entity> Decode(ConstSpan<Byte> Input, Entity Root);
 
         /// \brief Makes one entity from its record.
         ///

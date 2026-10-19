@@ -21,9 +21,9 @@
 
 namespace ZyScene
 {
-    /// \brief Represents a reader of a pull list with a position of its own, which must not outlive its world.
+    /// \brief Represents a reader of a component's changes with a position of its own, which never outlives its world.
     ///
-    /// \tparam List The list, as \ref Pulled names it, or \ref Added and \ref Removed for one change.
+    /// \tparam List The changes it reads, \ref Added, \ref Set or \ref Removed of a component.
     template<typename List>
     class Cursor final
     {
@@ -35,15 +35,16 @@ namespace ZyScene
         ZY_INLINE Cursor()
             : mOwner   { nullptr },
               mState   { nullptr },
-              mHandles { }
+              mHandles { },
+              mLast    { Chunk::kNever }
         {
         }
 
         /// \brief Constructs a cursor of a world, seeing every change from now on, archetypes and sleepers left out.
         ///
-        /// \param Owner The world whose lists the cursor reads.
+        /// \param Owner The world whose changes the cursor reads.
         ZY_INLINE explicit Cursor(Ref<Storage> Owner)
-            : Cursor(Owner, WithoutHidden(Owner))
+            : Cursor(Owner, Unique<Selection>::Create())
         {
         }
 
@@ -53,7 +54,8 @@ namespace ZyScene
         ZY_INLINE Cursor(AnyRef<Cursor> Other)
             : mOwner   { Exchange(Other.mOwner, nullptr) },
               mState   { Exchange(Other.mState, nullptr) },
-              mHandles { Exchange(Other.mHandles, Array<UInt32, List::kSize>()) }
+              mHandles { Exchange(Other.mHandles, Array<UInt32, List::kSize>()) },
+              mLast    { Other.mLast }
         {
         }
 
@@ -90,7 +92,7 @@ namespace ZyScene
 
         /// \brief Hands every entry recorded since the last call to a callback.
         ///
-        /// \param Callback The callable, taking `(Entity)` or `(Entity, ConstRef<T>)` for removals, else fields like a query.
+        /// \param Callback The callable, taking a query's fields, or for removals the entity and maybe its old value.
         template<typename Callable>
         void Each(AnyRef<Callable> Callback)
         {
@@ -113,12 +115,13 @@ namespace ZyScene
 
         /// \brief Constructs a cursor filtering entries by a selection it owns from here on.
         ///
-        /// \param Owner The world whose lists the cursor reads.
+        /// \param Owner The world whose changes the cursor reads.
         /// \param State The selection, whose terms are declared.
         ZY_INLINE Cursor(Ref<Storage> Owner, AnyRef<Unique<Selection>> State)
             : mOwner   { AddressOf(Owner) },
               mState   { Adopt(Owner, Move(State)) },
-              mHandles { Subscribe(Owner) }
+              mHandles { Subscribe(Owner) },
+              mLast    { Owner.Tick() }
         {
         }
 
@@ -128,27 +131,17 @@ namespace ZyScene
         /// \return The handle of each subscription.
         ZY_INLINE static Array<UInt32, List::kSize> Subscribe(Ref<Storage> Owner)
         {
+            Ref<Ledger> Lists = Owner.mLedger;
+
             if constexpr (List::kSize == 2)
             {
-                const UInt32 Added = Owner.mLedger.Subscribe(IdentifierOf<Type>(), Pull::Added);
-                return Array<UInt32, List::kSize>(Added, Owner.mLedger.Subscribe(IdentifierOf<Type>(), Pull::Changed));
+                const UInt32 Added = Lists.Subscribe(IdentifierOf<Type>(), Pull::Added);
+                return Array<UInt32, List::kSize>(Added, Lists.Subscribe(IdentifierOf<Type>(), Pull::Changed));
             }
             else
             {
-                return Array<UInt32, List::kSize>(Owner.mLedger.Subscribe(IdentifierOf<Type>(), List::kKind));
+                return Array<UInt32, List::kSize>(Lists.Subscribe(IdentifierOf<Type>(), List::kKind));
             }
-        }
-
-        /// \brief Makes a selection that leaves archetypes and sleepers out.
-        ///
-        /// \param Owner The world naming the archetype and sleeper markers.
-        /// \return The selection, with no other terms.
-        ZY_INLINE static Unique<Selection> WithoutHidden(Ref<Storage> Owner)
-        {
-            Unique<Selection> State = Unique<Selection>::Create();
-            State->Excluded.Append(Owner.mPrefab);
-            State->Excluded.Append(Owner.mAsleep);
-            return State;
         }
 
         /// \brief Keeps the selection of a list, whose entries are matched against it.
@@ -160,8 +153,9 @@ namespace ZyScene
         {
             if constexpr (List::kKind == Pull::Removed)
             {
-                State->Excluded.Erase(Owner.mPrefab);
-                State->Excluded.Erase(Owner.mAsleep);
+                // An archetype or a sleeper that goes is a removal like any other.
+                State->Excluded.Erase(IdentifierOf<Prefab>());
+                State->Excluded.Erase(IdentifierOf<Asleep>());
 
                 if (State->Required.IsEmpty() && State->Excluded.IsEmpty() && State->Alternatives.IsEmpty())
                 {
@@ -215,6 +209,7 @@ namespace ZyScene
                 if constexpr (kValue)
                 {
                     const ConstPtr<Byte> Bytes = Lists.GetValue(Feed, Next);
+
                     Callback(Entity(mOwner, Actor), * reinterpret_cast<ConstPtr<Type>>(Bytes));
                 }
                 else
@@ -235,8 +230,6 @@ namespace ZyScene
         {
             using Blueprint = Plan<StripAll<Callable>>;
 
-            static_assert(!Blueprint::kBatched, "A cursor is handed one entry at a time");
-
             if (mState->Declared != Blueprint::GetKey())
             {
                 Blueprint::Declare(* mState);
@@ -251,6 +244,9 @@ namespace ZyScene
             {
                 Ends[Index] = Lists.GetEnd(mHandles[Index]);
             }
+
+            // Writes from here on mark pages with a later tick than every mark this read takes.
+            const UInt32 Until = mOwner->Tick();
 
             // What the callback changes waits like in any walk.
             mOwner->Enter();
@@ -277,14 +273,50 @@ namespace ZyScene
 
                     if (const UInt32 Place = mState->GetPosition(* Entry->Holder))
                     {
-                        Blueprint::template Apply<Walk::Kernel>::RunEntry(
+                        Blueprint::template Apply<Walk::Kernel>::Deliver(
                             * mOwner, * mState, Actor, * Entry->Holder, Entry->Row, Place - 1, Callback);
                     }
                 }
                 Lists.SetPosition(mHandles[Index], Ends[Index]);
             }
 
+            if constexpr ((List::kKind & Pull::Changed) != Pull())
+            {
+                ReadMarks(Callback, Until);
+            }
+            mLast = Until;
+
             mOwner->Leave();
+        }
+
+        /// \brief Hands every row of every page a walk wrote whole since the last read to a callback, like a query.
+        ///
+        /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
+        /// \param Until    The tick of this read, past which writes wait for the next one.
+        template<typename Callable>
+        void ReadMarks(Ref<Callable> Callback, UInt32 Until)
+        {
+            const UInt32 Identifier = IdentifierOf<Type>();
+
+            for (UInt32 Match = 0; Match < mState->Chunks.GetSize(); ++Match)
+            {
+                Ref<Chunk>   Target = * mState->Chunks[Match];
+                const SInt16 Column = Target.Find(Identifier);
+
+                if (Column < 0)
+                {
+                    continue;
+                }
+
+                for (UInt32 First = 0; First < Target.GetSize(); First += Target.GetRows())
+                {
+                    if (Chunk::IsBetween(Target.GetMark(Column, First), mLast, Until))
+                    {
+                        const UInt32 Last = Min(First + Target.GetRows(), Target.GetSize());
+                        Walk::Scan(* mOwner, * mState, Match, First, Last, Callback);
+                    }
+                }
+            }
         }
 
     private:
@@ -295,5 +327,6 @@ namespace ZyScene
         Ptr<Storage>               mOwner;
         Ptr<Selection>             mState;
         Array<UInt32, List::kSize> mHandles;
+        UInt32                     mLast;
     };
 }

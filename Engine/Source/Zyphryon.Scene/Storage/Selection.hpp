@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Chunk.hpp"
+#include "Zyphryon.Scene/Types.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -64,7 +65,7 @@ namespace ZyScene
         /// The components pointer fields read from the nearest ancestor carrying them.
         Sequence<UInt32>           Ancestors;
 
-        /// The components the walk writes, recorded as changed for every entity it visits that holds its own.
+        /// The components the walk declares it writes, marked written for every entity visited that holds its own.
         Sequence<UInt32>           Writes;
 
         /// The component each field hands out, in order.
@@ -112,7 +113,7 @@ namespace ZyScene
         /// `true` when matches are visited parents first.
         Bool                       Ordered;
 
-        /// \brief Constructs a selection that asks for nothing and matches nothing.
+        /// \brief Constructs a selection that asks for nothing, leaving archetypes and sleepers out until asked.
         ZY_INLINE Selection()
             : Declared { nullptr },
               Cost     { 0 },
@@ -120,6 +121,8 @@ namespace ZyScene
               Links    { 0 },
               Ordered  { false }
         {
+            Excluded.Append(IdentifierOf<Prefab>());
+            Excluded.Append(IdentifierOf<Asleep>());
         }
 
         /// \brief Selections are not copied, since a query points at its own.
@@ -164,7 +167,19 @@ namespace ZyScene
 
         /// \brief Gets how many entities the matched chunks hold.
         ///
-        /// \return The number of entities.
+        /// \return The number of entities, zero when nothing matches.
         UInt Count() const;
+
+        /// \brief Adds a component to a list of terms unless it is there already.
+        ///
+        /// \param Terms      The required, owned or written terms to add to.
+        /// \param Identifier The identifier of the component to add.
+        ZY_INLINE static void Insert(Ref<Sequence<UInt32>> Terms, UInt32 Identifier)
+        {
+            if (!Terms.Contains(Identifier))
+            {
+                Terms.Append(Identifier);
+            }
+        }
     };
 }

@@ -20,7 +20,7 @@
 
 namespace ZyScene
 {
-    /// \brief Represents a cached query, the entities carrying some components, kept current until it is let go.
+    /// \brief Represents a query walked on demand, which keeps what it matches current until it is let go.
     class ZY_API Query final
     {
         friend class Draft;
@@ -55,14 +55,6 @@ namespace ZyScene
 
         /// \brief Queries are not assigned, since each owns what it matches.
         Ref<Query> operator=(ConstRef<Query> Other) = delete;
-
-        /// \brief Checks whether the query was made by a world.
-        ///
-        /// \return `true` if it matches entities of a world, `false` if it matches nothing.
-        ZY_INLINE Bool IsValid() const
-        {
-            return mState != nullptr;
-        }
 
         /// \brief Gets the number of entities the query matches right now.
         ///

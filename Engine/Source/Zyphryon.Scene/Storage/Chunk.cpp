@@ -22,7 +22,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Chunk::Chunk(UInt32 Index, UInt32 Base, Bool Archetype, ConstSpan<UInt32> Signature)
+    Chunk::Chunk(UInt32 Index, UInt32 Base, ConstSpan<UInt32> Signature)
         : mSize      { 0 },
           mCapacity  { 0 },
           mShift     { 0 },
@@ -30,7 +30,7 @@ namespace ZyScene
           mStride    { sizeof(Handle) },
           mIndex     { Index },
           mBase      { Base },
-          mArchetype { Archetype },
+          mArchetype { Signature.Contains(IdentifierOf<Prefab>()) },
           mSignature { Signature },
           mClosure   { this }
     {
@@ -48,8 +48,8 @@ namespace ZyScene
 
             ZY_ASSERT(Stored.GetAlignment() <= kPageAlignment, "A component is aligned wider than a page");
 
-            // A local component and the archetype marker stay on the archetype, anything else is lent or copied.
-            if (!Info.Has(Trait::Local) && Identifier != IdentifierOf<Prefab>())
+            // A local component stays on the archetype, anything else is lent or copied.
+            if (!Info.Has(Trait::Local))
             {
                 mFlags[Identifier] = Info.Has(Trait::Inheritable) ? kLends : kCopies;
             }
@@ -70,7 +70,10 @@ namespace ZyScene
         }
 
         // Runs sit widest alignment first after the handles, so each one starts aligned whatever the rows of a page.
-        mColumns.Sort(IsWider);
+        mColumns.Sort([](ConstRef<Column> Left, ConstRef<Column> Right)
+        {
+            return Left.Info->GetAlignment() > Right.Info->GetAlignment();
+        });
 
         for (UInt32 Column = 0; Column < mColumns.GetSize(); ++Column)
         {
@@ -108,7 +111,7 @@ namespace ZyScene
     void Chunk::Rebuild()
     {
         // A chunk laid out afresh from the registry takes every row, each column whose description changed converted.
-        Chunk  Fresh(mIndex, mBase, mArchetype, mSignature);
+        Chunk  Fresh(mIndex, mBase, mSignature);
         Writer Bytes;
 
         for (UInt32 Row = 0; Row < mSize; ++Row)
@@ -155,6 +158,7 @@ namespace ZyScene
         Swap(mRunOf,    Fresh.mRunOf);
         Swap(mFlags,    Fresh.mFlags);
         Swap(mPages,    Fresh.mPages);
+        Swap(mMarks,    Fresh.mMarks);
 
         // Its rows were moved out already, so it only gives the old pages back.
         Fresh.mSize = 0;
@@ -181,19 +185,12 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Chunk::IsWider(ConstRef<Column> Left, ConstRef<Column> Right)
-    {
-        return Left.Info->GetAlignment() > Right.Info->GetAlignment();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Chunk::Grow()
     {
         if (mCapacity >= GetRows())
         {
             mPages.Append(Allocate<Byte>(mStride * GetRows() + kPageAlignment * mColumns.GetSize(), kPageAlignment));
+            mMarks.Expand(mMarks.GetSize() + mColumns.GetSize());
             mCapacity += GetRows();
             return;
         }
@@ -233,6 +230,7 @@ namespace ZyScene
         else
         {
             mPages.Append(Page);
+            mMarks.Expand(mColumns.GetSize());
         }
         mCapacity = Rows;
     }

@@ -34,7 +34,6 @@ namespace ZyScene
             Remove,  ///< Takes a component off.
             Destroy, ///< Destroys an entity and everything beneath it.
             Attach,  ///< Makes an entity the last child of another, or takes it from its parent.
-            Rebase,  ///< Makes an entity read from another archetype.
             Notify,  ///< Records that a component written in place changed, for readers of its changes.
             Invoke,  ///< Calls the task carried, then destroys it.
         };
@@ -111,7 +110,7 @@ namespace ZyScene
         /// \param Slots  The entity slots that exist, which is every one a change may mark while the walk runs.
         void Spread(UInt32 Shares, UInt32 Slots);
 
-        /// \brief Makes the changes the calling thread holds from now on belong to one share of the running spread walk.
+        /// \brief Makes the changes the calling thread holds from now on belong to one share of the spread walk.
         ///
         /// \param Share The share, in the order the walk cuts them.
         void Bind(UInt32 Share);
@@ -150,7 +149,7 @@ namespace ZyScene
             return Index < mMarks.GetSize() && mMarks[Index];
         }
 
-        /// \brief Takes room for a value a waiting change carries, from the calling thread's share while a walk is spread.
+        /// \brief Takes room for the value a held change carries, from the calling thread's share during a spread walk.
         ///
         /// \param Size      The bytes the value takes.
         /// \param Alignment The alignment it needs, at most 64.
@@ -186,17 +185,10 @@ namespace ZyScene
             Sequence<Ptr<Byte>> Oversized;
 
             /// The page being filled.
-            UInt32              Page;
+            UInt32              Page = 0;
 
             /// The bytes of that page already taken.
-            UInt32              Used;
-
-            /// \brief Constructs room holding no page yet.
-            ZY_INLINE Room()
-                : Page { 0 },
-                  Used { 0 }
-            {
-            }
+            UInt32              Used = 0;
 
             /// \brief Takes room for a value.
             ///

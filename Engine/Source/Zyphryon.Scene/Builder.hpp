@@ -14,7 +14,6 @@
 
 #include "Cursor.hpp"
 #include "Query.hpp"
-#include "System.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -23,6 +22,11 @@
 namespace ZyScene
 {
     class World;
+
+    /// \brief Represents the system kind of a \ref Builder, which a phase runs every progress.
+    struct System final
+    {
+    };
 
     /// \brief Represents what every description holds, whatever it makes, and the making of it in its world.
     class ZY_API Draft
@@ -33,16 +37,15 @@ namespace ZyScene
         ///
         /// \param Owner The world it is made in.
         /// \param State The terms asked for so far.
-        /// \param Name  The name profiles and logs show.
-        /// \param Phase The phase a system runs in.
+        /// \param Name  The name profiles show.
+        /// \param Phase The phase a system runs in, zero for a query.
         ZY_INLINE Draft(Ptr<World> Owner, AnyRef<Unique<Selection>> State, Text Name, UInt32 Phase)
-            : mWorld { Owner },
-              mState { Move(State) },
-              mName  { Name },
-              mPhase { Phase },
-              mRate  { 1 },
-              mMode  { Schedule::Serial },
-              mShown { false, false }
+            : mWorld  { Owner },
+              mState  { Move(State) },
+              mName   { Name },
+              mPhase  { Phase },
+              mRate   { 1 },
+              mSpread { false }
         {
         }
 
@@ -57,9 +60,8 @@ namespace ZyScene
         /// \brief Makes a system that walks what its callback asks for, or only calls it when it asks for nothing.
         ///
         /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
-        /// \return The handle of the new system.
         template<typename Callable>
-        System Appoint(AnyRef<Callable> Callback)
+        void Appoint(AnyRef<Callable> Callback)
         {
             using Function  = StripAll<Callable>;
             using Blueprint = Plan<Function>;
@@ -69,7 +71,8 @@ namespace ZyScene
             {
                 if (mState->Required.IsEmpty() && mState->Alternatives.IsEmpty())
                 {
-                    return Install(Forward<Callable>(Callback));
+                    Install(Forward<Callable>(Callback));
+                    return;
                 }
             }
 
@@ -78,7 +81,8 @@ namespace ZyScene
             // A callback reading only singletons, asked for nothing else, matches the world alone that holds them.
             if constexpr (!Blueprint::kEntity)
             {
-                const Bool Unasked = mState->Owned.IsEmpty() && mState->Required.IsEmpty() && mState->Alternatives.IsEmpty();
+                const Bool Unasked
+                    = mState->Owned.IsEmpty() && mState->Required.IsEmpty() && mState->Alternatives.IsEmpty();
 
                 if (Unasked && !mState->Globals.IsEmpty() && mState->Globals.GetSize() == mState->Fields.GetSize())
                 {
@@ -87,21 +91,24 @@ namespace ZyScene
             }
 
             // Whether the walk spreads never changes, so it is settled here rather than on every run.
-            if (mMode == Schedule::Adaptive)
+            if (mSpread)
             {
-                return Install(Chore<Function, true>(Enlist(), Forward<Callable>(Callback)));
+                Install(Chore<Function, true>(Enlist(), Forward<Callable>(Callback)));
             }
-            return Install(Chore<Function, false>(Enlist(), Forward<Callable>(Callback)));
+            else
+            {
+                Install(Chore<Function, false>(Enlist(), Forward<Callable>(Callback)));
+            }
         }
 
         /// \brief Makes a system that reads a pull list.
         ///
-        /// \param Callback The callable, taking fields like a query, or the entity and maybe its old value for removals.
-        /// \return The system, whose cursor goes with it.
+        /// \param Callback The callable, taking a query's fields, or for removals the entity and maybe its old value.
         template<typename Reader, typename Callable>
-        System Subscribe(AnyRef<Callable> Callback)
+        void Subscribe(AnyRef<Callable> Callback)
         {
-            return Install(Tap<Reader, StripAll<Callable>> { Reader(GetStorage(), Take()), Forward<Callable>(Callback) });
+            Reader Source(GetStorage(), Move(mState));
+            Install(Tap<Reader, StripAll<Callable>> { Move(Source), Forward<Callable>(Callback) });
         }
 
         /// \brief Makes the query this description asks for.
@@ -112,50 +119,12 @@ namespace ZyScene
         /// \brief Hands a runner to the scheduler as the system this description names.
         ///
         /// \param Runner The runner, called when the system's turn comes.
-        /// \return The handle of the new system.
-        System Install(AnyRef<Delegate<void()>> Runner);
+        void Install(AnyRef<Delegate<void()>> Runner);
 
         /// \brief Gets the storage of the world the description is made in.
         ///
         /// \return The world itself, as its storage.
         Ref<Storage> GetStorage() const;
-
-        /// \brief Hands the terms over, archetypes and sleepers left out unless the description asked for them.
-        ///
-        /// \return The terms asked for so far.
-        ZY_INLINE Unique<Selection> Take()
-        {
-            if (!mShown.Prefab)
-            {
-                Hide(IdentifierOf<Prefab>());
-            }
-            if (!mShown.Asleep)
-            {
-                Hide(IdentifierOf<Asleep>());
-            }
-            return Move(mState);
-        }
-
-        /// \brief Leaves out whatever carries a marker, unless the description asked for it.
-        ///
-        /// \param Marker The identifier of the tag to leave out.
-        ZY_INLINE void Hide(UInt32 Marker)
-        {
-            if (!mState->Required.Contains(Marker))
-            {
-                mState->Excluded.Append(Marker);
-            }
-        }
-
-        /// \brief Represents the markers a description lets in, which it would leave out otherwise.
-        struct Shown final
-        {
-            /// `true` to match archetypes alongside everything else.
-            Bool Prefab;
-
-            /// `true` to match sleepers alongside everything else.
-            Bool Asleep;
-        };
 
     private:
 
@@ -166,7 +135,7 @@ namespace ZyScene
             /// The query it walks, let go of with it.
             Query    Scope;
 
-            /// The callable.
+            /// The callback the system was handed.
             Callable Callback;
 
             /// \brief Walks what the system matches when its turn comes, spread over the workers when it may.
@@ -183,17 +152,17 @@ namespace ZyScene
             }
         };
 
-        /// \brief Represents what a phase runs for a system reading a pull list.
+        /// \brief Represents what a phase runs for a system reading changes.
         template<typename Reader, typename Callable>
         struct Tap final
         {
             /// The cursor it reads with, filtering entries by the terms the system asked for.
             Reader   Source;
 
-            /// The callable.
+            /// The callback the system was handed.
             Callable Callback;
 
-            /// \brief Reads what the list gained since the last run, when its turn comes.
+            /// \brief Reads what changed since the last run, when its turn comes.
             ZY_INLINE void operator()()
             {
                 Source.Each(Callback);
@@ -210,13 +179,12 @@ namespace ZyScene
         Str               mName;
         UInt32            mPhase;
         UInt16            mRate;
-        Schedule          mMode;
-        Shown             mShown;
+        Bool              mSpread;
     };
 
     /// \brief Represents a query or system described with chained calls and made from its callback.
     ///
-    /// \tparam Kind The thing it makes, a \ref Query, a \ref System, or a \ref Cursor a system reads a list with.
+    /// \tparam Kind The thing it makes, a \ref Query, a \ref System, or a \ref Cursor a system reads changes with.
     template<typename Kind>
     class Builder final : public Draft
     {
@@ -224,16 +192,6 @@ namespace ZyScene
         friend class World;
 
     public:
-
-        /// \brief Constructs a description asking only for what the callback will, archetypes and sleepers left out.
-        ///
-        /// \param Owner The world it is made in.
-        /// \param Name  The name profiles and logs show.
-        /// \param Phase The phase a system runs in.
-        ZY_INLINE Builder(Ptr<World> Owner, Text Name, UInt32 Phase)
-            : Draft(Owner, Unique<Selection>::Create(), Name, Phase)
-        {
-        }
 
         /// \brief Takes over another description.
         ///
@@ -250,19 +208,7 @@ namespace ZyScene
         ZY_INLINE AnyRef<Builder> With() &&
         {
             (mState->Required.Append(IdentifierOf<Types>()), ...);
-            return Move(* this);
-        }
-
-        /// \brief Lets archetypes or sleepers in alongside everything else, rather than only them as \ref With does.
-        ///
-        /// \return This description.
-        template<typename... Types>
-        ZY_INLINE AnyRef<Builder> Also() &&
-        {
-            static_assert(((IsAnyOf<Types, Prefab, Asleep>) && ...), "Also lets in archetypes or sleepers only");
-
-            mShown.Prefab |= (IsAnyOf<Types, Prefab> || ...);
-            mShown.Asleep |= (IsAnyOf<Types, Asleep> || ...);
+            (mState->Excluded.Erase(IdentifierOf<Types>()), ...);
             return Move(* this);
         }
 
@@ -289,6 +235,18 @@ namespace ZyScene
             return Move(* this);
         }
 
+        /// \brief Lets archetypes or sleepers in alongside everything else, where \ref With lets in only them.
+        ///
+        /// \return This description.
+        template<typename... Types>
+        ZY_INLINE AnyRef<Builder> Also() &&
+        {
+            static_assert(((IsAnyOf<Types, Prefab, Asleep>) && ...), "Also lets in archetypes or sleepers only");
+
+            (mState->Excluded.Erase(IdentifierOf<Types>()), ...);
+            return Move(* this);
+        }
+
         /// \brief Reads a component the callback takes as a pointer from the nearest ancestor carrying it.
         ///
         /// \return This description.
@@ -300,7 +258,7 @@ namespace ZyScene
             return Move(* this);
         }
 
-        /// \brief Reads a component like \ref Up, visiting every ancestor before what stands beneath it, spread.
+        /// \brief Reads a component like \ref Up, every ancestor visited before what stands beneath it, spread.
         ///
         /// \return This description.
         template<typename Type>
@@ -309,24 +267,24 @@ namespace ZyScene
         {
             mState->Ancestors.Append(IdentifierOf<StripAll<Type>>());
             mState->Ordered = true;
-            mMode           = Schedule::Adaptive;
+            mSpread         = true;
             return Move(* this);
         }
 
-        /// \brief Declares the components the walk writes, each recorded as changed for every entity it visits.
+        /// \brief Declares the components the walk writes, each marked written for every entity it visits.
         ///
         /// \return This description.
         template<typename... Types>
         ZY_INLINE AnyRef<Builder> Writes() &&
             requires IsAnyOf<Kind, System, Query>
         {
-            (mState->Writes.Append(IdentifierOf<StripAll<Types>>()), ...);
+            (Selection::Insert(mState->Writes, IdentifierOf<StripAll<Types>>()), ...);
             return Move(* this);
         }
 
         /// \brief Runs a system once every few progresses.
         ///
-        /// \param Ticks The progresses between two runs, one to run on every one.
+        /// \param Ticks The progresses from one run to the next, one to run on every one.
         /// \return This description.
         ZY_INLINE AnyRef<Builder> Rate(UInt16 Ticks) &&
             requires (!IsAnyOf<Kind, Query>)
@@ -335,43 +293,42 @@ namespace ZyScene
             return Move(* this);
         }
 
-        /// \brief Lets a system spread its walks over the compute workers when that pays.
+        /// \brief Lets a system spread its walks over the workers when that pays.
         ///
         /// \return This description.
         ZY_INLINE AnyRef<Builder> Spread() &&
             requires IsAnyOf<Kind, System>
         {
-            mMode = Schedule::Adaptive;
+            mSpread = true;
             return Move(* this);
         }
 
-        /// \brief Makes a system read a pull list rather than walk a query, once per entry since its last run.
+        /// \brief Makes a system read changes of a component rather than walk every match.
         ///
-        /// \return The description, which leaves sleepers out like a query unless it asks for them.
+        /// \return The description, which leaves archetypes and sleepers out unless it asks for them.
         template<typename List>
         ZY_INLINE Builder<Cursor<List>> Reads() &&
             requires IsAnyOf<Kind, System>
         {
-            ZY_ASSERT(mState->Ancestors.IsEmpty(), "A system reading a list reads no ancestor");
+            ZY_ASSERT(mState->Ancestors.IsEmpty(), "A system reading changes reads no ancestor");
 
             return Builder<Cursor<List>>(Move(static_cast<Ref<Draft>>(* this)));
         }
 
-        /// \brief Makes the system, handing it the callback whose parameters give its fields.
+        /// \brief Makes the system, handing it the callback whose parameters are its fields.
         ///
-        /// \param Callback The callable, taking the entity first when it asks for it, then its fields.
-        /// \return The handle of the new system.
+        /// \param Callback The callable, taking the entity first when it asks for it, then its fields, or nothing.
         template<typename Callable>
-        ZY_INLINE System Each(AnyRef<Callable> Callback) &&
+        ZY_INLINE void Each(AnyRef<Callable> Callback) &&
             requires (!IsAnyOf<Kind, Query>)
         {
             if constexpr (IsAnyOf<Kind, System>)
             {
-                return Appoint(Forward<Callable>(Callback));
+                Appoint(Forward<Callable>(Callback));
             }
             else
             {
-                return Subscribe<Kind>(Forward<Callable>(Callback));
+                Subscribe<Kind>(Forward<Callable>(Callback));
             }
         }
 
@@ -385,6 +342,16 @@ namespace ZyScene
         }
 
     private:
+
+        /// \brief Constructs a description asking only for what the callback will, archetypes and sleepers left out.
+        ///
+        /// \param Owner The world it is made in.
+        /// \param Name  The name profiles show, empty for a query.
+        /// \param Phase The phase a system runs in, zero for a query.
+        ZY_INLINE Builder(Ptr<World> Owner, Text Name, UInt32 Phase)
+            : Draft(Owner, Unique<Selection>::Create(), Name, Phase)
+        {
+        }
 
         /// \brief Constructs a description taking over everything another one asked for, whatever it made.
         ///
@@ -400,7 +367,8 @@ namespace ZyScene
         {
             if constexpr (!IsPointer<Type>)
             {
-                AddTerm(Field<Type, false>::kOwned ? mState->Owned : mState->Required, IdentifierOf<StripAll<Type>>());
+                Ref<Sequence<UInt32>> Terms = Field<Type, false>::kOwned ? mState->Owned : mState->Required;
+                Selection::Insert(Terms, IdentifierOf<StripAll<Type>>());
             }
         }
     };
