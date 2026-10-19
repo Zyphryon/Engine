@@ -18,8 +18,10 @@
 #include <time.h>
 #elif defined(ZY_PLATFORM_MACOS)
 #include <mach/mach_time.h>
+#include <time.h>
 #elif defined(ZY_PLATFORM_WEB)
 #include <emscripten/emscripten.h>
+#include <time.h>
 #endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -77,6 +79,30 @@ namespace ZyPlatform
 #elif defined(ZY_PLATFORM_WEB)
 
         return emscripten_get_now() / 1000.0;
+
+#endif
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Timer::Wait(Real64 Seconds)
+    {
+        ZY_ASSERT(Seconds >= 0.0, "A wait lasts zero seconds or more");
+
+#if defined(ZY_PLATFORM_WINDOWS)
+
+        ::Sleep(static_cast<DWORD>(Seconds * 1000.0));
+
+#else
+
+        const SInt64 Duration = static_cast<SInt64>(Seconds * 1'000'000'000.0);
+
+        const timespec Span {
+            .tv_sec  = Duration / 1'000'000'000,
+            .tv_nsec = static_cast<long>(Duration % 1'000'000'000)
+        };
+        nanosleep(AddressOf(Span), nullptr);
 
 #endif
     }
