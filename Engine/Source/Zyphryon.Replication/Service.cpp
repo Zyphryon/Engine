@@ -98,7 +98,7 @@ namespace ZyReplication
     {
         if (mLink.IsValid())
         {
-            if (const ConstRetainer<ZyNetwork::Service> Network = GetHost().GetService<ZyNetwork::Service>())
+            if (ConstRetainer<ZyNetwork::Service> Network = GetHost().GetService<ZyNetwork::Service>())
             {
                 Network->Close(mLink);
             }
@@ -197,7 +197,7 @@ namespace ZyReplication
         ConstRetainer<Listener>      Listener,
         Bool                         Serving)
     {
-        const ConstRetainer<ZyNetwork::Service> Network = GetHost().GetService<ZyNetwork::Service>();
+        ConstRetainer<ZyNetwork::Service> Network = GetHost().GetService<ZyNetwork::Service>();
 
         if (!Network || mPublisher || mSubscriber)
         {
