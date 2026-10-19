@@ -22,15 +22,7 @@ namespace ZyRuntime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Startup::Startup()
-        : mWindowTitle           { "Undefined" },
-          mWindowWidth           { 1024 },
-          mWindowHeight          { 768 },
-          mWindowFullscreen      { false },
-          mWindowBorderless      { false },
-          mAudioPauseOnFocusLost { false },
-          mGraphicsTearless      { true  },
-          mGraphicsColorFormat   { ZyGraphic::TextureFormat::Unspecified },
-          mGraphicsDepthFormat   { ZyGraphic::TextureFormat::Unspecified }
+        : mHeadless { false }
     {
     }
 
@@ -41,23 +33,23 @@ namespace ZyRuntime
     {
         if (const JsonObject Section = Root.GetObject("Window"); Section.IsValid())
         {
-            SetWindowMonitor(Section.GetString("monitor", GetWindowMonitor()));
-            SetWindowWidth(Section.GetNumber<UInt32>("width", GetWindowWidth()));
-            SetWindowHeight(Section.GetNumber<UInt32>("height", GetWindowHeight()));
-            SetWindowFullscreen(Section.GetBool("fullscreen", IsWindowFullscreen()));
+            mWindow.Monitor    = Section.GetString("monitor", mWindow.Monitor);
+            mWindow.Width      = Section.GetNumber<UInt32>("width", mWindow.Width);
+            mWindow.Height     = Section.GetNumber<UInt32>("height", mWindow.Height);
+            mWindow.Fullscreen = Section.GetBool("fullscreen", mWindow.Fullscreen);
         }
 
         if (const JsonObject Section = Root.GetObject("Graphic"); Section.IsValid())
         {
-            SetGraphicsDriver(Section.GetString("driver", GetGraphicsDriver()));
-            SetGraphicsAdapter(Section.GetString("adapter", GetGraphicsAdapter()));
-            SetGraphicsTearless(Section.GetBool("tearless", IsGraphicsTearless()));
+            mGraphic.Driver   = Section.GetString("driver", mGraphic.Driver);
+            mGraphic.Adapter  = Section.GetString("adapter", mGraphic.Adapter);
+            mGraphic.Tearless = Section.GetBool("tearless", mGraphic.Tearless);
         }
 
         if (const JsonObject Section = Root.GetObject("Audio"); Section.IsValid())
         {
-            SetAudioAdapter(Section.GetString("adapter", GetAudioAdapter()));
-            SetAudioPauseOnFocusLost(Section.GetBool("pause", IsAudioPauseOnFocusLost()));
+            mAudio.Adapter = Section.GetString("adapter", mAudio.Adapter);
+            mAudio.Pause   = Section.GetBool("pause", mAudio.Pause);
         }
     }
 
@@ -67,18 +59,18 @@ namespace ZyRuntime
     void Startup::Save(JsonObject Root) const
     {
         JsonObject Window = Root.SetObject("Window");
-        Window.SetString("monitor", GetWindowMonitor());
-        Window.SetNumber("width", GetWindowWidth());
-        Window.SetNumber("height", GetWindowHeight());
-        Window.SetBool("fullscreen", IsWindowFullscreen());
+        Window.SetString("monitor", mWindow.Monitor);
+        Window.SetNumber("width", mWindow.Width);
+        Window.SetNumber("height", mWindow.Height);
+        Window.SetBool("fullscreen", mWindow.Fullscreen);
 
         JsonObject Graphic = Root.SetObject("Graphic");
-        Graphic.SetString("driver", GetGraphicsDriver());
-        Graphic.SetString("adapter", GetGraphicsAdapter());
-        Graphic.SetBool("tearless", IsGraphicsTearless());
+        Graphic.SetString("driver", mGraphic.Driver);
+        Graphic.SetString("adapter", mGraphic.Adapter);
+        Graphic.SetBool("tearless", mGraphic.Tearless);
 
         JsonObject Audio = Root.SetObject("Audio");
-        Audio.SetString("adapter", GetAudioAdapter());
-        Audio.SetBool("pause", IsAudioPauseOnFocusLost());
+        Audio.SetString("adapter", mAudio.Adapter);
+        Audio.SetBool("pause", mAudio.Pause);
     }
 }

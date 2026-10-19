@@ -55,26 +55,30 @@ namespace ZyRuntime
             ConstRef<ZyPlatform::Window>  Window  = Platform->GetWindow();
             ConstRef<ZyPlatform::Display> Display = Platform->GetDisplay();
 
-            Real32 Scale = 1.0f;
+            Startup::Window Settings = mStartup.GetWindow();
+            Real32          Scale    = 1.0f;
 
             if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window.GetX(), Window.GetY()))
             {
-                mStartup.SetWindowMonitor(Monitor->GetName());
+                Settings.Monitor = Monitor->GetName();
                 Scale = Monitor->GetScale();
             }
             else if (!Display.GetMonitors().IsEmpty())
             {
-                Scale = Display.GetMonitor(mStartup.GetWindowMonitor()).GetScale();
+                Scale = Display.GetMonitor(Settings.Monitor).GetScale();
             }
 
-            mStartup.SetWindowWidth(static_cast<UInt32>(Round(Window.GetWidth() / Scale)));
-            mStartup.SetWindowHeight(static_cast<UInt32>(Round(Window.GetHeight() / Scale)));
-            mStartup.SetWindowFullscreen(Window.IsFullscreen());
+            Settings.Width      = static_cast<UInt32>(Round(Window.GetWidth() / Scale));
+            Settings.Height     = static_cast<UInt32>(Round(Window.GetHeight() / Scale));
+            Settings.Fullscreen = Window.IsFullscreen();
+            mStartup.SetWindow(Settings);
         }
 
         if (ConstRetainer<ZyGraphic::Service> Graphic = GetService<ZyGraphic::Service>())
         {
-            mStartup.SetGraphicsTearless(Graphic->IsTearless());
+            Startup::Graphic Settings = mStartup.GetGraphic();
+            Settings.Tearless = Graphic->IsTearless();
+            mStartup.SetGraphic(Settings);
         }
 
 #endif
@@ -141,25 +145,35 @@ namespace ZyRuntime
     {
 #if !defined(ZY_MODE_HEADLESS)
 
-        LOG_I("Kernel: Creating platform service");
-        ConstRetainer<ZyPlatform::Service> Platform = Register<ZyPlatform::Service>();
-        if (!Platform->Initialize(
-            mStartup.GetWindowMonitor(),
-            mStartup.GetWindowTitle(),
-            mStartup.GetWindowWidth(),
-            mStartup.GetWindowHeight(),
-            mStartup.IsWindowBorderless(),
-            mStartup.IsWindowFullscreen()))
-        {
-            LOG_E("Kernel: Failed to initialize platform service");
-            return false;
-        }
+        // A headless start, as a server makes, opens no window and so brings up nothing that draws, plays or listens.
+        const Bool Shown = !mStartup.IsHeadless();
 
-        LOG_I("Kernel: Creating input service");
-        ConstRetainer<ZyInput::Service> Input = Register<ZyInput::Service>();
-        Input->OnWindowExit.AddMethod<& Kernel::OnWindowExit>(this);
-        Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
-        Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
+        Retainer<ZyPlatform::Service> Platform;
+        Retainer<ZyGraphic::Service>  Graphic;
+        Retainer<ZyAudio::Service>    Audio;
+
+        if (Shown)
+        {
+            LOG_I("Kernel: Creating platform service");
+            Platform = Register<ZyPlatform::Service>();
+            if (!Platform->Initialize(
+                mStartup.GetWindow().Monitor,
+                mStartup.GetWindow().Title,
+                mStartup.GetWindow().Width,
+                mStartup.GetWindow().Height,
+                mStartup.GetWindow().Borderless,
+                mStartup.GetWindow().Fullscreen))
+            {
+                LOG_E("Kernel: Failed to initialize platform service");
+                return false;
+            }
+
+            LOG_I("Kernel: Creating input service");
+            ConstRetainer<ZyInput::Service> Input = Register<ZyInput::Service>();
+            Input->OnWindowExit.AddMethod<& Kernel::OnWindowExit>(this);
+            Input->OnWindowFocus.AddMethod<& Kernel::OnWindowFocus>(this);
+            Input->OnWindowResize.AddMethod<& Kernel::OnWindowResize>(this);
+        }
 
 #endif
 
@@ -185,14 +199,17 @@ namespace ZyRuntime
 
 #if !defined(ZY_MODE_HEADLESS)
 
-        LOG_I("Kernel: Creating graphic service");
-        ConstRetainer<ZyGraphic::Service> Graphic = Register<ZyGraphic::Service>();
+        if (Shown)
+        {
+            LOG_I("Kernel: Creating graphic service");
+            Graphic = Register<ZyGraphic::Service>();
 
-        LOG_I("Kernel: Creating audio service");
-        ConstRetainer<ZyAudio::Service> Audio = Register<ZyAudio::Service>();
+            LOG_I("Kernel: Creating audio service");
+            Audio = Register<ZyAudio::Service>();
 
-        LOG_I("Kernel: Creating render service");
-        Register<ZyRender::Service>();
+            LOG_I("Kernel: Creating render service");
+            Register<ZyRender::Service>();
+        }
 
 #endif
 
@@ -208,37 +225,41 @@ namespace ZyRuntime
 
 #if !defined(ZY_MODE_HEADLESS)
 
-        Ref<ZyPlatform::Window> Window = Platform->GetWindow();
-
-        LOG_I("Kernel: Initializing graphic service");
-        ZyGraphic::Configuration Config;
-        Config.Tearless    = mStartup.IsGraphicsTearless();
-        Config.Width       = Window.GetWidth();
-        Config.Height      = Window.GetHeight();
-        Config.ColorFormat = mStartup.GetGraphicsColorFormat();
-        Config.DepthFormat = mStartup.GetGraphicsDepthFormat();
-
-        if (Config.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
+        if (Shown)
         {
-            const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
+            Ref<ZyPlatform::Window> Window = Platform->GetWindow();
 
-            Config.ColorFormat = (Monitor && Monitor->IsHDR())
-                ? ZyGraphic::TextureFormat::RGBA16Float
-                : ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB;
-        }
+            LOG_I("Kernel: Initializing graphic service");
+            ZyGraphic::Configuration Config;
+            Config.Tearless    = mStartup.GetGraphic().Tearless;
+            Config.Width       = Window.GetWidth();
+            Config.Height      = Window.GetHeight();
+            Config.ColorFormat = mStartup.GetGraphic().ColorFormat;
+            Config.DepthFormat = mStartup.GetGraphic().DepthFormat;
 
-        if (!Graphic->Initialize(mStartup.GetGraphicsDriver(), Window.GetHandle(), Config))
-        {
-            LOG_E("Kernel: Failed to initialize graphic service");
-            return false;
-        }
+            if (Config.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
+            {
+                const ConstPtr<ZyPlatform::Monitor> Monitor =
+                    Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
 
-        LOG_I("Kernel: Initializing audio service");
+                Config.ColorFormat = (Monitor && Monitor->IsHDR())
+                    ? ZyGraphic::TextureFormat::RGBA16Float
+                    : ZyGraphic::TextureFormat::RGBA8UIntNorm_sRGB;
+            }
 
-        // Plenty of machines have no output device, and a game without sound still plays.
-        if (!Audio->Initialize(mStartup.GetAudioAdapter()))
-        {
-            LOG_W("Kernel: Failed to initialize audio service, continuing without sound");
+            if (!Graphic->Initialize(mStartup.GetGraphic().Driver, Window.GetHandle(), Config))
+            {
+                LOG_E("Kernel: Failed to initialize graphic service");
+                return false;
+            }
+
+            LOG_I("Kernel: Initializing audio service");
+
+            // Plenty of machines have no output device, and a game without sound still plays.
+            if (!Audio->Initialize(mStartup.GetAudio().Adapter))
+            {
+                LOG_W("Kernel: Failed to initialize audio service, continuing without sound");
+            }
         }
 
 #endif
@@ -248,7 +269,10 @@ namespace ZyRuntime
 #if !defined(ZY_MODE_HEADLESS)
 
         // Show the window only once the application has started.
-        Window.SetVisible(mAlive);
+        if (Shown)
+        {
+            Platform->GetWindow().SetVisible(mAlive);
+        }
 
 #endif
 
@@ -352,7 +376,7 @@ namespace ZyRuntime
     {
         ConstRetainer<ZyAudio::Service> Audio = GetService<ZyAudio::Service>();
 
-        if (Audio && mStartup.IsAudioPauseOnFocusLost())
+        if (Audio && mStartup.GetAudio().Pause)
         {
             if (Focused)
             {

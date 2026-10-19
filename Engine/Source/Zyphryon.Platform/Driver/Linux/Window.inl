@@ -10,15 +10,10 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <X11/Xlib.h>
-#include <X11/XKBlib.h>
+#include "X11.hpp"
 #include <X11/Xatom.h>
 #include <X11/keysym.h>
 #include <poll.h>
-
-#ifdef Bool
-#undef Bool
-#endif
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -927,6 +922,11 @@ namespace ZyPlatform
     Bool Window::Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
     {
         mBackend = Unique<Backend>::Create();
+
+        if (!X11::Open())
+        {
+            return false;
+        }
 
         mBackend->Connection = ::XOpenDisplay(nullptr);
 

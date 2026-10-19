@@ -10,12 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>
-
-#ifdef Bool
-#undef Bool
-#endif
+#include "X11.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -64,6 +59,11 @@ namespace ZyPlatform
     void Display::Poll()
     {
         mMonitors.Clear();
+
+        if (!X11::Open())
+        {
+            return;
+        }
 
         const Ptr<::Display> Connection = ::XOpenDisplay(nullptr);
 

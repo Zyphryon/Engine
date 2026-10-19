@@ -10,7 +10,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include <alsa/asoundlib.h>
+#include "ALSA.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -152,6 +152,11 @@ namespace ZyAudio
 
     Bool Driver::Open(Text Device, AnyRef<Callback> Render)
     {
+        if (!ALSA::Open())
+        {
+            return false;
+        }
+
         mBackend->Callback = Move(Render);
         mBackend->Name     = (Device.IsEmpty() ? Str("default") : Str(Device));
 
@@ -257,7 +262,7 @@ namespace ZyAudio
 
         Ptr<Ptr<void>> Hints = nullptr;
 
-        if (::snd_device_name_hint(-1, "pcm", AddressOf(Hints)) < 0)
+        if (!ALSA::Open() || ::snd_device_name_hint(-1, "pcm", AddressOf(Hints)) < 0)
         {
             return;
         }

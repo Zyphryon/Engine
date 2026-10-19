@@ -25,6 +25,59 @@ namespace ZyRuntime
     {
     public:
 
+        /// \brief Describes the window the engine opens.
+        struct Window final
+        {
+            /// The name of the monitor to open the window on, or empty for the primary one.
+            Str    Monitor;
+
+            /// The title, as UTF-8 text.
+            Str    Title      = "Undefined";
+
+            /// The width in pixels, before the monitor's scale is applied.
+            UInt32 Width      = 1024;
+
+            /// The height in pixels, before the monitor's scale is applied.
+            UInt32 Height     = 768;
+
+            /// `true` to cover the whole monitor, `false` to open a window.
+            Bool   Fullscreen = false;
+
+            /// `true` to open the window without a frame, `false` to open it framed.
+            Bool   Borderless = false;
+        };
+
+        /// \brief Describes the device the engine plays sound through.
+        struct Audio final
+        {
+            /// The name of the output device, or empty for the system's default.
+            Str  Adapter;
+
+            /// `true` to pause the sound while the window is out of focus, `false` to keep it playing.
+            Bool Pause = false;
+        };
+
+        /// \brief Describes the device the engine draws with.
+        struct Graphic final
+        {
+            /// The name of the driver to draw with, or empty for the preferred one.
+            Str16                    Driver;
+
+            /// The name of the adapter to draw on, or empty for the default one.
+            Str                      Adapter;
+
+            /// `true` when presentation waits for the vertical blank, `false` to present as soon as a frame is ready.
+            Bool                     Tearless    = true;
+
+            /// The color format of the swapchain, or `Unspecified` to pick one from the monitor.
+            ZyGraphic::TextureFormat ColorFormat = ZyGraphic::TextureFormat::Unspecified;
+
+            /// The format of the depth buffer, or `Unspecified` for none.
+            ZyGraphic::TextureFormat DepthFormat = ZyGraphic::TextureFormat::Unspecified;
+        };
+
+    public:
+
         /// \brief Constructs a new set of engine configuration parameters with default values.
         Startup();
 
@@ -38,212 +91,68 @@ namespace ZyRuntime
         /// \param Root The object to write the parameters under.
         void Save(JsonObject Root) const;
 
-        /// \brief Sets the target monitor for the window.
+        /// \brief Sets whether the engine starts with no window, input, graphics, audio or rendering.
         ///
-        /// \param Name The name of the monitor to open the window on, or empty for the primary one.
-        ZY_INLINE void SetWindowMonitor(Text Name)
+        /// \param Headless `true` to start without them, as a server does, `false` to start with them.
+        ZY_INLINE void SetHeadless(Bool Headless)
         {
-            mWindowMonitor = Name;
+            mHeadless = Headless;
         }
 
-        /// \brief Gets the target monitor for the window.
+        /// \brief Checks whether the engine starts with no window, input, graphics, audio or rendering.
         ///
-        /// \return The name of the monitor the window opens on, or empty for the primary one.
-        ZY_INLINE Text GetWindowMonitor() const
+        /// \return `true` if it starts without them, `false` otherwise.
+        ZY_INLINE Bool IsHeadless() const
         {
-            return mWindowMonitor;
+            return mHeadless;
         }
 
-        /// \brief Sets the window title string.
+        /// \brief Sets the window the engine opens.
         ///
-        /// \param Title The window title as UTF-8 text.
-        ZY_INLINE void SetWindowTitle(Text Title)
+        /// \param Window The window to open.
+        ZY_INLINE void SetWindow(ConstRef<Window> Window)
         {
-            mWindowTitle = Title;
+            mWindow = Window;
         }
 
-        /// \brief Gets the current window title.
+        /// \brief Gets the window the engine opens.
         ///
-        /// \return The window title as UTF-8 text.
-        ZY_INLINE Text GetWindowTitle() const
+        /// \return The window to open.
+        ZY_INLINE ConstRef<Window> GetWindow() const
         {
-            return mWindowTitle;
+            return mWindow;
         }
 
-        /// \brief Sets the width of the window in pixels.
+        /// \brief Sets the device the engine plays sound through.
         ///
-        /// \param Width The new window width in pixels.
-        ZY_INLINE void SetWindowWidth(UInt32 Width)
+        /// \param Audio The device to play through.
+        ZY_INLINE void SetAudio(ConstRef<Audio> Audio)
         {
-            mWindowWidth = Width;
+            mAudio = Audio;
         }
 
-        /// \brief Gets the window width.
+        /// \brief Gets the device the engine plays sound through.
         ///
-        /// \return The width of the window in pixels.
-        ZY_INLINE UInt32 GetWindowWidth() const
+        /// \return The device to play through.
+        ZY_INLINE ConstRef<Audio> GetAudio() const
         {
-            return mWindowWidth;
+            return mAudio;
         }
 
-        /// \brief Sets the height of the window in pixels.
+        /// \brief Sets the device the engine draws with.
         ///
-        /// \param Height The new window height in pixels.
-        ZY_INLINE void SetWindowHeight(UInt32 Height)
+        /// \param Graphic The device to draw with.
+        ZY_INLINE void SetGraphic(ConstRef<Graphic> Graphic)
         {
-            mWindowHeight = Height;
+            mGraphic = Graphic;
         }
 
-        /// \brief Gets the window height.
+        /// \brief Gets the device the engine draws with.
         ///
-        /// \return The height of the window in pixels.
-        ZY_INLINE UInt32 GetWindowHeight() const
+        /// \return The device to draw with.
+        ZY_INLINE ConstRef<Graphic> GetGraphic() const
         {
-            return mWindowHeight;
-        }
-
-        /// \brief Enables or disables fullscreen mode.
-        ///
-        /// \param Fullscreen `true` to enable fullscreen, `false` to disable.
-        ZY_INLINE void SetWindowFullscreen(Bool Fullscreen)
-        {
-            mWindowFullscreen = Fullscreen;
-        }
-
-        /// \brief Checks whether fullscreen mode is enabled.
-        ///
-        /// \return `true` if fullscreen is enabled, `false` otherwise.
-        ZY_INLINE Bool IsWindowFullscreen() const
-        {
-            return mWindowFullscreen;
-        }
-
-        /// \brief Enables or disables borderless window mode.
-        ///
-        /// \param Borderless `true` to enable borderless mode, `false` to disable.
-        ZY_INLINE void SetWindowBorderless(Bool Borderless)
-        {
-            mWindowBorderless = Borderless;
-        }
-
-        /// \brief Checks whether borderless window mode is enabled.
-        ///
-        /// \return `true` if borderless mode is enabled, `false` otherwise.
-        ZY_INLINE Bool IsWindowBorderless() const
-        {
-            return mWindowBorderless;
-        }
-
-        /// \brief Sets the preferred audio output device.
-        ///
-        /// \param Adapter The identifier or name of the audio adapter.
-        ZY_INLINE void SetAudioAdapter(Text Adapter)
-        {
-            mAudioAdapter = Adapter;
-        }
-
-        /// \brief Gets the selected audio adapter.
-        ///
-        /// \return The identifier or name of the audio adapter.
-        ZY_INLINE Text GetAudioAdapter() const
-        {
-            return mAudioAdapter;
-        }
-
-        /// \brief Enables or disables pausing audio when the window loses focus.
-        ///
-        /// \param Activate `true` to pause audio on focus lost, `false` to ignore.
-        ZY_INLINE void SetAudioPauseOnFocusLost(Bool Activate)
-        {
-            mAudioPauseOnFocusLost = Activate;
-        }
-
-        /// \brief Checks whether audio is paused when the window loses focus.
-        ///
-        /// \return `true` if audio pauses on focus lost, `false` otherwise.
-        ZY_INLINE Bool IsAudioPauseOnFocusLost() const
-        {
-            return mAudioPauseOnFocusLost;
-        }
-
-        /// \brief Sets the name of the graphics API driver.
-        ///
-        /// \param Driver The name of the graphics driver backend to use.
-        ZY_INLINE void SetGraphicsDriver(Text Driver)
-        {
-            mGraphicsDriver = Driver;
-        }
-
-        /// \brief Gets the name of the graphics driver requested at startup.
-        ///
-        /// \return The name of the graphics driver backend.
-        ZY_INLINE Text GetGraphicsDriver() const
-        {
-            return mGraphicsDriver;
-        }
-
-        /// \brief Sets the graphics adapter to be used.
-        ///
-        /// \param Adapter The identifier of the graphics adapter.
-        ZY_INLINE void SetGraphicsAdapter(Text Adapter)
-        {
-            mGraphicsAdapter = Adapter;
-        }
-
-        /// \brief Gets the selected graphics adapter.
-        ///
-        /// \return The identifier of the graphics adapter.
-        ZY_INLINE Text GetGraphicsAdapter() const
-        {
-            return mGraphicsAdapter;
-        }
-
-        /// \brief Sets whether presentation waits for the vertical blank.
-        ///
-        /// \param Tearless `true` to wait, `false` to present as soon as a frame is ready.
-        ZY_INLINE void SetGraphicsTearless(Bool Tearless)
-        {
-            mGraphicsTearless = Tearless;
-        }
-
-        /// \brief Checks whether presentation waits for the vertical blank.
-        ///
-        /// \return `true` when presentation waits, otherwise `false`.
-        ZY_INLINE Bool IsGraphicsTearless() const
-        {
-            return mGraphicsTearless;
-        }
-
-        /// \brief Sets the graphics color format.
-        ///
-        /// \param Format The color format of the swapchain, or `Unspecified` to pick one from the monitor.
-        ZY_INLINE void SetGraphicsColorFormat(ZyGraphic::TextureFormat Format)
-        {
-            mGraphicsColorFormat = Format;
-        }
-
-        /// \brief Gets the current graphics color format.
-        ///
-        /// \return The color format of the swapchain, `Unspecified` when picked from the monitor.
-        ZY_INLINE ZyGraphic::TextureFormat GetGraphicsColorFormat() const
-        {
-            return mGraphicsColorFormat;
-        }
-
-        /// \brief Sets the graphics depth format.
-        ///
-        /// \param Format The format of the depth buffer, or `Unspecified` for none.
-        ZY_INLINE void SetGraphicsDepthFormat(ZyGraphic::TextureFormat Format)
-        {
-            mGraphicsDepthFormat = Format;
-        }
-
-        /// \brief Gets the current graphics depth format.
-        ///
-        /// \return The format of the depth buffer, `Unspecified` when there is none.
-        ZY_INLINE ZyGraphic::TextureFormat GetGraphicsDepthFormat() const
-        {
-            return mGraphicsDepthFormat;
+            return mGraphic;
         }
 
     private:
@@ -251,18 +160,9 @@ namespace ZyRuntime
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Str                      mWindowMonitor;
-        Str                      mWindowTitle;
-        UInt32                   mWindowWidth;
-        UInt32                   mWindowHeight;
-        Bool                     mWindowFullscreen;
-        Bool                     mWindowBorderless;
-        Str                      mAudioAdapter;
-        Bool                     mAudioPauseOnFocusLost;
-        Str16                    mGraphicsDriver;
-        Str                      mGraphicsAdapter;
-        Bool                     mGraphicsTearless;
-        ZyGraphic::TextureFormat mGraphicsColorFormat;
-        ZyGraphic::TextureFormat mGraphicsDepthFormat;
+        Bool    mHeadless;
+        Window  mWindow;
+        Audio   mAudio;
+        Graphic mGraphic;
     };
 }
