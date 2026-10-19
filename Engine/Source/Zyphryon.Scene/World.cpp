@@ -176,7 +176,7 @@ namespace ZyScene
         Save(Saved, Roots);
 
         Writer Kept;
-        Strip(ConstSpan<Byte>(Saved.GetData(), Saved.GetSize()), Kept, Exclude);
+        Strip(ConstSpan<Byte>(Saved.GetData(), Saved.GetSize()), Kept, Exclude, Filter());
 
         return Target.Load(ConstSpan<Byte>(Kept.GetData(), Kept.GetSize()));
     }
@@ -450,7 +450,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool World::Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude)
+    Bool World::Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude, ConstRef<Filter> Filter)
     {
         Reader Stream(Input);
 
@@ -529,8 +529,20 @@ namespace ZyScene
 
                     if (Slots[Type] != 0)
                     {
-                        Values.Write<UInt32>(Slots[Type] - 1);
-                        Values.WriteBlock<UInt32>(Value);
+                        const UInt32 Slot = Slots[Type] - 1;
+                        Values.Write<UInt32>(Slot);
+
+                        if (!Filter.IsEmpty())
+                        {
+                            Values.WriteBlock<UInt32>([&](Ref<Writer> Block)
+                            {
+                                Filter(Component::Find(Kept[Slot]), Value, Block);
+                            });
+                        }
+                        else
+                        {
+                            Values.WriteBlock<UInt32>(Value);
+                        }
                         ++Saved;
                     }
                 }

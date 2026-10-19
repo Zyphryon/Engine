@@ -30,6 +30,11 @@ namespace ZyScene
 
     public:
 
+        /// \brief The shape of what writes a kept component's value into a stripped copy, given its bytes as saved.
+        using Filter = Delegate<void(Component Type, ConstSpan<Byte> Value, Ref<Writer> Output)>;
+
+    public:
+
         /// \brief Constructs a world holding only the world entity and the built-in components.
         ///
         /// \param Host The host holding the job service spread walks run on.
@@ -115,6 +120,15 @@ namespace ZyScene
         ZY_INLINE UInt32 Phase(Text Name)
         {
             return mScheduler.CreatePhase(Name, mImporting);
+        }
+
+        /// \brief Sets whether a phase runs, which every phase does from the moment it is made.
+        ///
+        /// \param Phase  The phase, as \ref Phase returned it.
+        /// \param Active `true` to run its systems each progress, `false` to skip every one of them.
+        ZY_INLINE void SetActive(UInt32 Phase, Bool Active)
+        {
+            mScheduler.SetActive(Phase, Active);
         }
 
         /// \brief Runs every phase once, in order, and every system in each, in the order they were made.
@@ -306,8 +320,9 @@ namespace ZyScene
         /// \param Input   The bytes of a save as \ref Save writes them, read without any world.
         /// \param Output  The writer the copy is appended to, left as it was when the bytes are refused.
         /// \param Exclude The components to leave out, a name this build does not know being always kept.
+        /// \param Filter  The writer of each kept value, or an empty one to copy each as the save holds it.
         /// \return `true` if the save was copied, `false` if the bytes were not a save this version reads whole.
-        static Bool Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude);
+        static Bool Strip(ConstSpan<Byte> Input, Ref<Writer> Output, ConstSpan<Component> Exclude, ConstRef<Filter> Filter);
 
     private:
 

@@ -49,6 +49,12 @@ namespace ZyScene
         /// \param Package The module that makes it, or zero.
         void CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
 
+        /// \brief Sets whether a phase runs, which every phase does from the moment it is made.
+        ///
+        /// \param Phase  The phase, as \ref CreatePhase returned it.
+        /// \param Active `true` to run its systems each progress, `false` to skip every one of them.
+        void SetActive(UInt32 Phase, Bool Active);
+
         /// \brief Takes out every phase and system a module made.
         ///
         /// \param Package The module, as the world imported it.
@@ -84,7 +90,7 @@ namespace ZyScene
             UInt32 Package;
 
             /// `true` until its module is discarded.
-            Bool   Alive;
+            Bool   Alive = true;
         };
 
         /// \brief Represents one phase.
@@ -100,7 +106,10 @@ namespace ZyScene
             UInt32                    Package;
 
             /// `true` until its module is discarded.
-            Bool                      Alive;
+            Bool                      Alive  = true;
+
+            /// `true` while its systems run each progress, `false` while they are skipped.
+            Bool                      Active = true;
         };
 
     private:

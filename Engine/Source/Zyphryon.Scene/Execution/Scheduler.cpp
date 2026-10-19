@@ -32,7 +32,7 @@ namespace ZyScene
 
     UInt32 Scheduler::CreatePhase(Text Name, UInt32 Package)
     {
-        mPhases.Append(Unique<Stage>::Create(Str(Name), Sequence<Unique<Routine>>(), Package, true));
+        mPhases.Append(Unique<Stage>::Create(Str(Name), Sequence<Unique<Routine>>(), Package));
         return static_cast<UInt32>(mPhases.GetSize());
     }
 
@@ -43,7 +43,17 @@ namespace ZyScene
     {
         ZY_ASSERT(Phase > 0 && Phase <= mPhases.GetSize(), "No phase answers to that handle");
 
-        mPhases[Phase - 1]->Systems.Append(Unique<Routine>::Create(Name, Move(Run), Rate, 0, Package, true));
+        mPhases[Phase - 1]->Systems.Append(Unique<Routine>::Create(Name, Move(Run), Rate, 0, Package));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Scheduler::SetActive(UInt32 Phase, Bool Active)
+    {
+        ZY_ASSERT(Phase > 0 && Phase <= mPhases.GetSize(), "No phase answers to that handle");
+
+        mPhases[Phase - 1]->Active = Active;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -77,7 +87,7 @@ namespace ZyScene
         for (ConstRef<Unique<Stage>> Phase : mPhases)
         {
             // Indexed, since a system may add another and move the list, each one staying where it was made.
-            for (UInt Index = 0; Phase->Alive && Index < Phase->Systems.GetSize(); ++Index)
+            for (UInt Index = 0; Phase->Alive && Phase->Active && Index < Phase->Systems.GetSize(); ++Index)
             {
                 Ref<Routine> Target = * Phase->Systems[Index];
 
