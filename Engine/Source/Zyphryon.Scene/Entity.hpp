@@ -228,6 +228,16 @@ namespace ZyScene
             }
         }
 
+        /// \brief Gets a copy of a component the entity carries, held or inherited, or a default one.
+        ///
+        /// \return The component, or a default one when the entity does not carry it or is not alive.
+        template<typename Type>
+        ZY_INLINE StripAll<Type> GetOrDefault() const
+        {
+            const ConstPtr<StripAll<Type>> Found = Get<const StripAll<Type>>();
+            return Found ? * Found : StripAll<Type>();
+        }
+
         /// \brief Gets a component named at runtime the entity carries, held or inherited.
         ///
         /// \param Type The component to look up.

@@ -397,7 +397,7 @@ namespace ZyScene
                 Address<Parts>...   Bases)
             {
                 // The parent the ancestor fields last climbed from, which siblings share.
-                constexpr UInt32 Above = ~0u;
+                UInt32 Above = ~0u;
 
                 for (UInt Row = First; Row < Last; ++Row)
                 {
