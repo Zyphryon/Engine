@@ -33,7 +33,7 @@ namespace ZyReflection
         Text,        ///< A run of characters, borrowed from the instance it was read out of.
         Structure,   ///< A value with a schema of its own, reached in place by its address.
         Foreign,     ///< A value only its own module names, carried as its bytes under the tag of that module.
-        List,        ///< A run of elements of one kind, reached in place by the address of the first.
+        List,        ///< A run of elements of one kind, fixed or growing, reached in place by its address.
         Opaque,      ///< A value nothing can carry, reached in place by its address under the tag it was given.
     };
 

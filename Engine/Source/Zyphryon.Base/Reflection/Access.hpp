@@ -108,10 +108,22 @@ namespace ZyReflection
     /// \brief Describes what a run of elements holds, laid down once per type of run and never moved.
     struct Listing final
     {
+        /// \brief Signature of the handler that counts the elements a run holds now.
+        using Counter = UInt (*)(ConstPtr<void> Run);
+
+        /// \brief Signature of the handler that finds where the first element of a run lies.
+        using Finder  = Ptr<void> (*)(Ptr<void> Run);
+
+        /// \brief Signature of the handler that makes an element at a position and hands back its address.
+        using Maker   = Ptr<void> (*)(Ptr<void> Run, UInt Index);
+
+        /// \brief Signature of the handler that takes the element at a position out of a run.
+        using Taker   = void (*)(Ptr<void> Run, UInt Index);
+
         /// The fields of one element, empty unless the elements are described.
         ConstSpan<Field> Fields;
 
-        /// The number of elements the run holds.
+        /// The most elements the run holds, its length when fixed and zero when it grows without bound.
         UInt32           Count;
 
         /// The distance in bytes from one element to the next.
@@ -119,6 +131,18 @@ namespace ZyReflection
 
         /// The kind one element carries.
         Kind             Content;
+
+        /// The handler counting the elements the run holds now.
+        Counter          Size;
+
+        /// The handler finding the first element, from which the rest lie a stride apart.
+        Finder           Data;
+
+        /// The handler making an element at a position, or `nullptr` when the run never grows.
+        Maker            Insert;
+
+        /// The handler taking the element at a position out, or `nullptr` when the run never shrinks.
+        Taker            Remove;
     };
 
     namespace Detail
@@ -212,24 +236,101 @@ namespace ZyReflection
         template<typename Type>
         struct Sequenced;
 
+        /// \brief Holds what every run of a fixed length shares, whose first element lies where the run does.
+        template<UInt Count>
+        struct Fixed
+        {
+            /// The number of elements.
+            static constexpr UInt kCount = Count;
+
+            /// The handler making an element, which is none since the run never grows.
+            static constexpr Listing::Maker Insert = nullptr;
+
+            /// The handler taking an element out, which is none since the run never shrinks.
+            static constexpr Listing::Taker Remove = nullptr;
+
+            /// \brief Counts the elements of the run, which never change.
+            ///
+            /// \return The length of the run.
+            ZY_INLINE static UInt Size(ConstPtr<void>)
+            {
+                return Count;
+            }
+
+            /// \brief Finds the first element of the run.
+            ///
+            /// \param Run The address of the run.
+            /// \return The address of the run itself.
+            ZY_INLINE static Ptr<void> Data(Ptr<void> Run)
+            {
+                return Run;
+            }
+        };
+
         /// \brief Describes a plain array.
         template<typename Type, UInt Count>
-        struct Sequenced<Type[Count]> final
+        struct Sequenced<Type[Count]> final : Fixed<Count>
         {
             /// The type of one element.
             using Element = Type;
-
-            /// The number of elements.
-            static constexpr UInt kCount = Count;
         };
 
         /// \brief Describes the fixed container, which is a plain array wearing a name.
         template<typename Type, UInt Count>
-        struct Sequenced<Array<Type, Count>> final
+        struct Sequenced<Array<Type, Count>> final : Fixed<Count>
         {
             using Element = Type;
+        };
 
-            static constexpr UInt kCount = Count;
+        /// \brief Describes the growing container, whose elements lie wherever it keeps them.
+        template<typename Type, UInt Capacity>
+        struct Sequenced<Sequence<Type, Capacity>> final
+        {
+            /// The type of one element.
+            using Element = Type;
+
+            /// The most elements the container holds, or zero when it grows without bound.
+            static constexpr UInt kCount = Capacity;
+
+            /// \brief Counts the elements the container holds now.
+            ///
+            /// \param Run The address of the container.
+            /// \return The number of elements.
+            ZY_INLINE static UInt Size(ConstPtr<void> Run)
+            {
+                return static_cast<ConstPtr<Sequence<Type, Capacity>>>(Run)->GetSize();
+            }
+
+            /// \brief Finds the first element the container keeps.
+            ///
+            /// \param Run The address of the container.
+            /// \return The address of the first element.
+            ZY_INLINE static Ptr<void> Data(Ptr<void> Run)
+            {
+                return static_cast<Ptr<Sequence<Type, Capacity>>>(Run)->GetData();
+            }
+
+            /// \brief Makes an element at a position, built as its type builds by default.
+            ///
+            /// \param Run   The address of the container, which has room for one more.
+            /// \param Index The position the element takes, up to the number of elements.
+            /// \return The address of the new element.
+            ZY_INLINE static Ptr<void> Insert(Ptr<void> Run, UInt Index)
+            {
+                const Ptr<Sequence<Type, Capacity>> Container = static_cast<Ptr<Sequence<Type, Capacity>>>(Run);
+
+                Container->Insert(Index);
+                return Container->GetData() + Index;
+            }
+
+            /// \brief Takes the element at a position out of the container.
+            ///
+            /// \param Run   The address of the container.
+            /// \param Index The position of the element, below the number of elements.
+            ZY_INLINE static void Remove(Ptr<void> Run, UInt Index)
+            {
+                static_cast<Ptr<Sequence<Type, Capacity>>>(Run)->Remove(Index);
+            }
         };
 
         /// \brief Concept satisfied when a type is a run of elements of one type.
@@ -438,28 +539,28 @@ namespace ZyReflection
 
         /// \brief Builds what a run of elements holds, out of the type of the run.
         ///
-        /// \return The count, stride, kind and fields of the run's elements.
+        /// \return The capacity, stride, kind, fields and handlers of the run's elements.
         template<IsSequenced Type>
         constexpr Listing BuildListing()
         {
-            using Element = typename Sequenced<Type>::Element;
+            using Run     = Sequenced<Type>;
+            using Element = typename Run::Element;
 
             constexpr Kind Tag = Classify<Element>::kValue;
 
             static_assert(Tag != Kind::None, "The elements have no kind");
             static_assert(Tag != Kind::List, "A run of runs is not a layout, so it stays a custom field");
 
-            const UInt32 Count  = static_cast<UInt32>(Sequenced<Type>::kCount);
+            const UInt32 Count  = static_cast<UInt32>(Run::kCount);
             const UInt32 Stride = static_cast<UInt32>(sizeof(Element));
+
+            ConstSpan<Field> Fields;
 
             if constexpr (Tag == Kind::Structure)
             {
-                return Listing(ConstSpan<Field>(Describe<Element>::kFields), Count, Stride, Tag);
+                Fields = ConstSpan<Field>(Describe<Element>::kFields);
             }
-            else
-            {
-                return Listing(ConstSpan<Field>(), Count, Stride, Tag);
-            }
+            return Listing(Fields, Count, Stride, Tag, Run::Size, Run::Data, Run::Insert, Run::Remove);
         }
 
         /// \brief What a run of elements of the given type holds, laid down once and never moved.

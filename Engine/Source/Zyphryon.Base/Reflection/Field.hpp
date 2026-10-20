@@ -134,6 +134,17 @@ namespace ZyReflection
             return mKind == Kind::List ? mExtra.Elements : nullptr;
         }
 
+        /// \brief Gets how many elements a run holds now.
+        ///
+        /// \param Instance The raw pointer to the instance the field belongs to.
+        /// \return The number of elements, or zero when the field holds no run.
+        ZY_INLINE UInt GetCount(Ptr<void> Instance) const
+        {
+            const ConstPtr<Listing> Elements = GetListing();
+
+            return Elements ? Elements->Size(Read(Instance).GetAddress()) : 0;
+        }
+
         /// \brief Gets the address of one element of a run.
         ///
         /// \param Instance The raw pointer to the instance the field belongs to.
@@ -143,11 +154,66 @@ namespace ZyReflection
         {
             const ConstPtr<Listing> Elements = GetListing();
 
-            if (!Elements || Index >= Elements->Count)
+            if (!Elements)
             {
                 return nullptr;
             }
-            return static_cast<Ptr<Byte>>(Read(Instance).GetAddress()) + Index * Elements->Stride;
+
+            const Ptr<void> Run = Read(Instance).GetAddress();
+
+            if (Index >= Elements->Size(Run))
+            {
+                return nullptr;
+            }
+            return static_cast<Ptr<Byte>>(Elements->Data(Run)) + Index * Elements->Stride;
+        }
+
+        /// \brief Makes an element of a growing run at a position, built as its type builds by default.
+        ///
+        /// \param Instance The raw pointer to the instance the field belongs to.
+        /// \param Index    The position the element takes, from zero up to the number of elements.
+        /// \return The address of the new element, or `nullptr` when the run never grows, is full or is frozen.
+        ZY_INLINE Ptr<void> Insert(Ptr<void> Instance, UInt Index) const
+        {
+            const ConstPtr<Listing> Elements = GetListing();
+
+            if (!Elements || !Elements->Insert || HasTrait(Trait::Frozen))
+            {
+                return nullptr;
+            }
+
+            const Ptr<void> Run  = Read(Instance).GetAddress();
+            const UInt      Size = Elements->Size(Run);
+
+            if (Index > Size || (Elements->Count > 0 && Size >= Elements->Count))
+            {
+                return nullptr;
+            }
+            return Elements->Insert(Run, Index);
+        }
+
+        /// \brief Takes the element at a position out of a growing run.
+        ///
+        /// \param Instance The raw pointer to the instance the field belongs to.
+        /// \param Index    The position of the element.
+        /// \return `true` when the element was taken out, `false` when the run never shrinks, is frozen or is shorter.
+        ZY_INLINE Bool Remove(Ptr<void> Instance, UInt Index) const
+        {
+            const ConstPtr<Listing> Elements = GetListing();
+
+            if (!Elements || !Elements->Remove || HasTrait(Trait::Frozen))
+            {
+                return false;
+            }
+
+            const Ptr<void> Run = Read(Instance).GetAddress();
+
+            if (Index >= Elements->Size(Run))
+            {
+                return false;
+            }
+            Elements->Remove(Run, Index);
+            return true;
         }
 
         /// \brief Checks whether the field is reached through the specified type.
@@ -378,7 +444,7 @@ namespace ZyReflection
             return Compose<Getter, Setter, Tag, Flat, Trait::Tagged | Trait::Format>(Text(Name, Count - 1), Slot);
         }
 
-        /// \brief Describes a run of elements of one kind, which is walked by position rather than by name.
+        /// \brief Describes a run of elements of one kind, fixed or growing, which is walked by position, not by name.
         ///
         /// \tparam Getter The data member, or the getter, the run is reached through.
         /// \param  Name   The name the run is shown under, taken as an array so only a lasting one can be given.
@@ -388,7 +454,7 @@ namespace ZyReflection
         {
             using Content = typename Detail::Bare<typename Detail::Accessor<decltype(Getter)>::Result>::Result;
 
-            static_assert(Detail::IsSequenced<Content>, "A list field needs a run of elements, such as an array");
+            static_assert(Detail::IsSequenced<Content>, "A list field needs a run of elements, an array or a sequence");
 
             Detail::Borrow<Getter, Kind::List>();
 
