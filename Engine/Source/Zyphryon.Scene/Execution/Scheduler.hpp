@@ -33,27 +33,27 @@ namespace ZyScene
         /// \brief Schedulers are not assigned, since a running system points into its own.
         Ref<Scheduler> operator=(ConstRef<Scheduler> Other) = delete;
 
-        /// \brief Creates a phase, which runs after every phase made before it.
+        /// \brief Appends a phase, which runs after every phase made before it.
         ///
         /// \param Name    The name profiles show.
         /// \param Package The module that makes it, or zero.
         /// \return The phase, never zero.
-        UInt32 CreatePhase(Text Name, UInt32 Package);
+        UInt32 Append(Text Name, UInt32 Package);
 
-        /// \brief Adds a system to the end of a phase.
+        /// \brief Installs a system at the end of a phase.
         ///
         /// \param Name    The name profiles show.
         /// \param Phase   The phase to run it in.
         /// \param Rate    The progresses from one run to the next, one to run on every one.
         /// \param Run     The callable the phase runs.
         /// \param Package The module that makes it, or zero.
-        void CreateSystem(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
+        void Install(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
 
-        /// \brief Sets whether a phase runs, which every phase does from the moment it is made.
+        /// \brief Switches whether a phase runs, which every phase does from the moment it is made.
         ///
-        /// \param Phase  The phase, as \ref CreatePhase returned it.
+        /// \param Phase  The phase, as \ref Append returned it.
         /// \param Active `true` to run its systems each progress, `false` to skip every one of them.
-        void SetActive(UInt32 Phase, Bool Active);
+        void Switch(UInt32 Phase, Bool Active);
 
         /// \brief Takes out every phase and system a module made.
         ///
@@ -81,16 +81,16 @@ namespace ZyScene
             Runner Run;
 
             /// The progresses from one run to the next.
-            UInt16 Rate;
+            UInt16 Rate    = 0;
 
             /// The progresses since the last run.
-            UInt16 Count;
+            UInt16 Count   = 0;
 
             /// The module that made it, or zero.
-            UInt32 Package;
+            UInt32 Package = 0;
 
             /// `true` until its module is discarded.
-            Bool   Alive = true;
+            Bool   Alive   = true;
         };
 
         /// \brief Represents one phase.
@@ -103,13 +103,13 @@ namespace ZyScene
             Sequence<Unique<Routine>> Systems;
 
             /// The module that made it, or zero.
-            UInt32                    Package;
+            UInt32                    Package = 0;
 
             /// `true` until its module is discarded.
-            Bool                      Alive  = true;
+            Bool                      Alive   = true;
 
             /// `true` while its systems run each progress, `false` while they are skipped.
-            Bool                      Active = true;
+            Bool                      Active  = true;
         };
 
     private:
@@ -117,8 +117,8 @@ namespace ZyScene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Sequence<Unique<Stage>> mPhases;
-        Bool                    mRunning;
-        Bool                    mDismissed;
+        Sequence<Stage> mPhases;
+        Bool            mRunning;
+        Bool            mDismissed;
     };
 }

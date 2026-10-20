@@ -251,6 +251,8 @@ namespace ZyScene
             // What the callback changes waits like in any walk.
             mOwner->Enter();
 
+            using Reader = typename Blueprint::template Apply<Walk::Kernel>;
+
             ConstRef<Directory> Slots = mOwner->mDirectory;
 
             for (UInt Index = 0; Index < List::kSize; ++Index)
@@ -258,6 +260,11 @@ namespace ZyScene
                 // Read by position, since the callback may record more entries into the same list as it goes.
                 UInt64                     First  = 0;
                 ConstRef<Sequence<Handle>> Actors = Lists.GetActors(mHandles[Index], First);
+
+                // Entries come in runs from one chunk, which is worked out once for the whole run.
+                typename Reader::Places Where;
+                ConstPtr<Chunk>         Last     = nullptr;
+                Bool                    Complete = false;
 
                 for (UInt64 Next = Lists.GetPosition(mHandles[Index]); Next < Ends[Index]; ++Next)
                 {
@@ -271,10 +278,22 @@ namespace ZyScene
                         continue;
                     }
 
-                    if (const UInt32 Place = mState->GetPosition(* Entry->Holder))
+                    if (Entry->Holder != Last)
                     {
-                        Blueprint::template Apply<Walk::Kernel>::Deliver(
-                            * mOwner, * mState, Actor, * Entry->Holder, Entry->Row, Place - 1, Callback);
+                        Last = Entry->Holder;
+
+                        const UInt32 Place = mState->GetPosition(* Last);
+
+                        if (Place)
+                        {
+                            Reader::Prepare(* mOwner, * mState, Place - 1, Where);
+                        }
+                        Complete = Place && Reader::IsComplete(Where);
+                    }
+
+                    if (Complete)
+                    {
+                        Reader::Hand(* mOwner, Where, * Last, Actor, Entry->Row, Callback);
                     }
                 }
                 Lists.SetPosition(mHandles[Index], Ends[Index]);

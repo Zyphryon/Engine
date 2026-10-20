@@ -33,7 +33,7 @@ namespace ZyScene
     {
         ZY_ASSERT(!mWorld->mDeferral.IsSpreading(), "A system cannot be made while a walk is spread");
 
-        mWorld->mScheduler.CreateSystem(mName, mPhase, mRate, Move(Runner), mWorld->mImporting);
+        mWorld->mScheduler.Install(mName, mPhase, mRate, Move(Runner), mWorld->mImporting);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

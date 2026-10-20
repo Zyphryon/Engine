@@ -119,16 +119,16 @@ namespace ZyScene
         /// \return The phase, never zero.
         ZY_INLINE UInt32 Phase(Text Name)
         {
-            return mScheduler.CreatePhase(Name, mImporting);
+            return mScheduler.Append(Name, mImporting);
         }
 
-        /// \brief Sets whether a phase runs, which every phase does from the moment it is made.
+        /// \brief Switches whether a phase runs, which every phase does from the moment it is made.
         ///
         /// \param Phase  The phase, as \ref Phase returned it.
         /// \param Active `true` to run its systems each progress, `false` to skip every one of them.
-        ZY_INLINE void SetActive(UInt32 Phase, Bool Active)
+        ZY_INLINE void Switch(UInt32 Phase, Bool Active)
         {
-            mScheduler.SetActive(Phase, Active);
+            mScheduler.Switch(Phase, Active);
         }
 
         /// \brief Runs every phase once, in order, and every system in each, in the order they were made.

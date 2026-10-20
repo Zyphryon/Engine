@@ -414,72 +414,36 @@ namespace ZyScene
                 }
             }
 
-            /// \brief Calls back for one entity when it carries every field the callback needs, as a reader does.
+            /// \brief Checks whether a prepared chunk carries every field a callback needs, as a reader requires.
             ///
-            /// \param Owner    The storage the entity lives in.
-            /// \param State    The selection the reader filters by, whose fields are declared.
-            /// \param Actor    The entity, alive and matching.
-            /// \param Holder   The chunk the entity sits in.
-            /// \param Row      The row the entity sits at in its chunk.
-            /// \param Match    The position of the chunk among the selection's matches.
-            /// \param Callback The callable, handed the entity's fields.
-            template<typename Callable>
-            ZY_INLINE static void Deliver(
-                Ref<Storage>        Owner,
-                ConstRef<Selection> State,
-                Handle              Actor,
-                ConstRef<Chunk>     Holder,
-                UInt32              Row,
-                UInt32              Match,
-                Ref<Callable>       Callback)
+            /// \param Where The places each field of the chunk is read from.
+            /// \return `true` if every field it must be handed has a place, `false` otherwise.
+            ZY_INLINE static Bool IsComplete(ConstRef<Places> Where)
             {
-                // One extra slot, so a callback taking no field still makes a valid array.
-                const Ptr<Byte> Found[kCount + 1] = { Locate<Parts>(Owner, State, Holder, Row, Match, Index)... };
-
-                if (((!Parts::kPointer && !Parts::kTag && !Found[Index]) || ...))
-                {
-                    return;
-                }
-                Call(Owner, Callback, Actor, Fetch<Parts>(Found[Index], 0, 0)...);
+                return ((Parts::kPointer || Parts::kTag || Where.Steps[Index] || Where.Fixed[Index]) && ...);
             }
 
-            /// \brief Finds where one field of an entity is, held, lent or the world's.
+            /// \brief Calls back for one row of a prepared chunk, as a reader does for each entry of a run.
             ///
             /// \param Owner    The storage the entity lives in.
-            /// \param State    The selection, whose fields are declared.
+            /// \param Where    The places each field of the chunk is read from.
             /// \param Holder   The chunk the entity sits in.
+            /// \param Actor    The entity, alive and matching.
             /// \param Row      The row the entity sits at in its chunk.
-            /// \param Match    The position of the chunk among the selection's matches.
-            /// \param Position The place of the field in the callback.
-            /// \return The first byte of the value, or `nullptr` when there is none or the field is a tag.
-            template<typename Field>
-            ZY_INLINE static Ptr<Byte> Locate(
-                Ref<Storage>        Owner,
-                ConstRef<Selection> State,
-                ConstRef<Chunk>     Holder,
-                UInt32              Row,
-                UInt32              Match,
-                UInt                Position)
+            /// \param Callback The callable, handed the entity's fields.
+            template<typename Callable>
+            ZY_INLINE static void Hand(
+                Ref<Storage>     Owner,
+                ConstRef<Places> Where,
+                ConstRef<Chunk>  Holder,
+                Handle           Actor,
+                UInt32           Row,
+                Ref<Callable>    Callback)
             {
-                if constexpr (Field::kTag)
-                {
-                    return nullptr;
-                }
-                else
-                {
-                    // Where the field sits was settled when the chunk matched, as the walks read it.
-                    switch (const UInt16 Source = State.GetSource(Match, Position))
-                    {
-                    case Selection::kLent:
-                        return FindLent(Owner, Holder.GetBase(), State.Fields[Position]);
-                    case Selection::kGlobal:
-                        return GetSingleton(Owner, State.Fields[Position]);
-                    case Selection::kMissing:
-                        return nullptr;
-                    default:
-                        return Holder.At(Source, Row);
-                    }
-                }
+                const Ptr<Byte> Base  = Holder.GetPage(Row);
+                const UInt      Place = Holder.GetPlace(Row);
+
+                Call(Owner, Callback, Actor, Fetch<Parts>(Where.Start(Base, Index), Where.Steps[Index], Place)...);
             }
         };
 
