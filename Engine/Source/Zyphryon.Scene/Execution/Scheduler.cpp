@@ -118,7 +118,7 @@ namespace ZyScene
 
         for (Ref<Stage> Phase : mPhases)
         {
-            Phase.Systems.RemoveIf([](ConstRef<Unique<Routine>> System)
+            Phase.Systems.RemoveSomeIf([](ConstRef<Unique<Routine>> System)
             {
                 return !System->Alive;
             });
