@@ -52,6 +52,7 @@ namespace ZyScene
         /// \return The entity, which waits outside every query until the running walk ends when there is one.
         template<typename... Types>
         ZY_INLINE Entity Spawn(AnyRef<Types>... Values)
+            requires (!IsAnyOf<Entity, StripAll<Types>...>)
         {
             return Spawn(Entity(), Entity(), Forward<Types>(Values)...);
         }
