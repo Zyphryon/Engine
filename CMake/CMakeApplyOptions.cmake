@@ -106,9 +106,6 @@ FUNCTION(ZyApplyOptions TARGET)
                 /RTC1
                 /sdl
             >
-            $<$<CONFIG:Debug,RelWithDebInfo>:
-                /Zi
-            >
             /GR-
             /Zc:inline
             /arch:SSE4.2
@@ -117,13 +114,15 @@ FUNCTION(ZyApplyOptions TARGET)
         TARGET_LINK_OPTIONS(${TARGET} PRIVATE
             $<$<CONFIG:Release>:
                 /LTCG
-            >
-            $<$<CONFIG:Release,RelWithDebInfo>:
                 /OPT:REF
                 /OPT:ICF
             >
             $<$<CONFIG:Debug,RelWithDebInfo>: /DEBUG>
         )
+
+        # Symbols go into each object rather than one shared database, so parallel compiles never queue on its writer.
+        SET_TARGET_PROPERTIES(${TARGET} PROPERTIES
+            MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 
     ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
