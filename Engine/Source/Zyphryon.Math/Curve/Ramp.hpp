@@ -41,6 +41,16 @@ inline namespace ZyMath
                 Archive.Serialize(Time);
                 Archive.Serialize(Value);
             }
+
+            /// \brief Provides the reflected members of this type.
+            ///
+            /// \return The fields of the type, in the order they are shown.
+            ZY_INLINE static constexpr auto OnDescribe()
+            {
+                return Array(
+                    ZyReflection::Field::Property<&Stop::Time>("Time"),
+                    ZyReflection::Field::Property<&Stop::Value>("Value"));
+            }
         };
 
         /// \brief Represents the stops the run passes through, in the order it passes through them.
@@ -188,6 +198,16 @@ inline namespace ZyMath
             {
                 return First + (Second - First) * Amount;
             }
+        }
+
+    public:
+
+        /// \brief Provides the reflected members of this type.
+        ///
+        /// \return The fields of the type, in the order they are shown.
+        ZY_INLINE static constexpr auto OnDescribe()
+        {
+            return Array(ZyReflection::Field::List<&Ramp::mStops>("Stops"));
         }
 
     private:
