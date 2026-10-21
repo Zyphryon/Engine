@@ -59,6 +59,25 @@ namespace ZyReplication
             mManifest.Register<Type>(To, Rate);
         }
 
+        /// \brief Makes a component travel by its identifier, declared alike on both sides before a session opens.
+        ///
+        /// \param Identifier The identifier of the component in the registry.
+        /// \param To         The peers that receive the component.
+        /// \param Rate       The ticks between two reads of its changes, one to read them on every tick.
+        /// \param Watch      The function making a world's readers of the component's pull lists.
+        ZY_INLINE void Replicate(UInt32 Identifier, Audience To, UInt8 Rate, Manifest::Watcher Watch)
+        {
+            mManifest.Register(Identifier, To, Rate, Watch);
+        }
+
+        /// \brief Stops a component travelling, before a session opens, which one declared since may take again.
+        ///
+        /// \param Identifier The identifier of the component in the registry.
+        ZY_INLINE void Forget(UInt32 Identifier)
+        {
+            mManifest.Forget(Identifier);
+        }
+
         /// \brief Serves the scene to every peer that reaches an address.
         ///
         /// \param Address   The address to accept peers on.

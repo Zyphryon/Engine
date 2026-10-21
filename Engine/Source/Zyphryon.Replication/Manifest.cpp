@@ -30,6 +30,50 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Manifest::Register(UInt32 Identifier, Audience Policy, UInt8 Rate, Watcher Watch)
+    {
+        ZY_ASSERT(!mSealed, "A component cannot be replicated once a session opened");
+
+        for (UInt8 Index = 0; Index < mCount; ++Index)
+        {
+            if (mEntries[Index].Identifier == Identifier)
+            {
+                return;
+            }
+        }
+
+        ConstRef<ZyScene::Metatype> Info = ZyScene::Registry::Get().GetMetatype(Identifier);
+
+        ZY_ASSERT(mCount < kMaxComponents, "Too many replicated components for one mask");
+        ZY_ASSERT(Rate > 0, "A replicated component needs a rate of at least one");
+        ZY_ASSERT(Info.IsTag() || (Info.Save && Info.Load), "A replicated component must write and read itself");
+
+        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, Watch);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Manifest::Forget(UInt32 Identifier)
+    {
+        if (mSealed)
+        {
+            return;
+        }
+
+        for (UInt8 Index = 0; Index < mCount; ++Index)
+        {
+            if (mEntries[Index].Identifier == Identifier)
+            {
+                mEntries[Index] = mEntries[--mCount];
+                return;
+            }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Manifest::Seal()
     {
         if (Exchange(mSealed, true))

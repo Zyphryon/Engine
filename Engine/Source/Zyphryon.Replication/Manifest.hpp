@@ -45,6 +45,9 @@ namespace ZyReplication
             Drain Removals;
         };
 
+        /// \brief Names the function that makes a world's readers of one component's pull lists.
+        using Watcher = Feed (*)(Ref<ZyScene::Storage> Scene);
+
         /// \brief Represents one replicated component type, with everything the wire needs resolved once.
         struct Entry final
         {
@@ -61,7 +64,7 @@ namespace ZyReplication
             UInt8                       Rate;
 
             /// The function making a world's readers of the component's pull lists.
-            Feed                        (* Watch)(Ref<ZyScene::Storage> Scene);
+            Watcher                     Watch;
         };
 
     public:
@@ -74,7 +77,23 @@ namespace ZyReplication
         /// \param Policy The peers that receive the component.
         /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
         template<typename Type>
-        void Register(Audience Policy, UInt8 Rate);
+        ZY_INLINE void Register(Audience Policy, UInt8 Rate)
+        {
+            Register(ZyScene::IdentifierOf<Type>(), Policy, Rate, & Watch<Type>);
+        }
+
+        /// \brief Declares a component type replicated by its identifier, once, before the table is sealed.
+        ///
+        /// \param Identifier The identifier of the component in the registry.
+        /// \param Policy     The peers that receive the component.
+        /// \param Rate       The number of ticks between two reads of its changes, one reading on every tick.
+        /// \param Watch      The function making a world's readers of the component's pull lists.
+        void Register(UInt32 Identifier, Audience Policy, UInt8 Rate, Watcher Watch);
+
+        /// \brief Takes a component type back out of the table, which a sealed table never does.
+        ///
+        /// \param Identifier The identifier of the component in the registry.
+        void Forget(UInt32 Identifier);
 
         /// \brief Orders the table by type name and builds its masks, so both sides agree whatever order they declared.
         void Seal();
@@ -214,32 +233,4 @@ namespace ZyReplication
         Mask                         mOthers;
         Bool                         mSealed;
     };
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    template<typename Type>
-    void Manifest::Register(Audience Policy, UInt8 Rate)
-    {
-        ZY_ASSERT(!mSealed, "A component cannot be replicated once a session opened");
-
-        const UInt32 Identifier = ZyScene::IdentifierOf<Type>();
-
-        // Declared again, it keeps the entry it has.
-        for (UInt8 Index = 0; Index < mCount; ++Index)
-        {
-            if (mEntries[Index].Identifier == Identifier)
-            {
-                return;
-            }
-        }
-
-        ConstRef<ZyScene::Metatype> Info = ZyScene::Registry::Get().GetMetatype(Identifier);
-
-        ZY_ASSERT(mCount < kMaxComponents, "Too many replicated components for one mask");
-        ZY_ASSERT(Rate > 0, "A replicated component needs a rate of at least one");
-        ZY_ASSERT(Info.IsTag() || (Info.Save && Info.Load), "A replicated component must write and read itself");
-
-        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, & Watch<Type>);
-    }
 }
