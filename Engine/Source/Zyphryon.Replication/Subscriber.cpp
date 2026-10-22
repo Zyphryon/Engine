@@ -320,11 +320,12 @@ namespace ZyReplication
             & Subscriber::OnEnter,
             & Subscriber::OnUpdate,
             & Subscriber::OnMove,
-            & Subscriber::OnForget
+            & Subscriber::OnForget,
+            & Subscriber::OnMessage
         };
 
         // A new opcode without a handler added here fails to build instead of being refused silently.
-        static_assert(kHandlers.GetSize() == static_cast<UInt8>(Opcode::Forget) + 1);
+        static_assert(kHandlers.GetSize() == static_cast<UInt8>(Opcode::Message) + 1);
 
         const UInt8 Code = Input.Read<UInt8>();
 
@@ -577,6 +578,27 @@ namespace ZyReplication
         {
             Destroy(Actor);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Subscriber::OnMessage(Ref<Reader> Input)
+    {
+        const UInt32 Size = Input.ReadUInt<UInt32>();
+
+        // A message is meant for this side alone, and never runs past the frame it came in.
+        if (mSection != kPrivate || Size > Input.GetAvailable())
+        {
+            LOG_E("Replication: A message arrived out of place or cut short, so the publisher is refused");
+            mRejected = true;
+            return;
+        }
+
+        const ConstSpan<Byte> Message(Input.GetData() + Input.GetOffset(), Size);
+        Input.Skip(Size);
+
+        mListener->OnMessage(0, Message);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

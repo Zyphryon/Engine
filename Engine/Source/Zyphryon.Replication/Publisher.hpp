@@ -65,6 +65,12 @@ namespace ZyReplication
         /// \brief Sends every peer what changed since the last publish, once the world has moved for the tick.
         void Publish();
 
+        /// \brief Hands a peer the game's message with its next frame, after what changed in the world before it.
+        ///
+        /// \param Peer    The key the peer is known by, nobody receiving it when the peer was not admitted.
+        /// \param Message The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
+        void Post(UInt64 Peer, ConstSpan<Byte> Message);
+
         /// \brief Reads every pull list, marking in the trackers what changed.
         ///
         /// \param Restoring `true` right after a load, whose values mark nothing, `false` otherwise.

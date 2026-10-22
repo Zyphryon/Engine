@@ -42,9 +42,9 @@ namespace ZyReplication
         {
         }
 
-        /// \brief Called for each message a peer sends the side serving the session.
+        /// \brief Called for each message a peer sends the side serving the session, or the serving side sends this one.
         ///
-        /// \param Peer    The key the peer is known by, as \ref OnJoin named it.
+        /// \param Peer    The key the peer is known by, as \ref OnJoin named it, or zero for the serving side.
         /// \param Message The payload, exactly as the peer wrote it.
         virtual void OnMessage(UInt64 Peer, ConstSpan<Byte> Message)
         {

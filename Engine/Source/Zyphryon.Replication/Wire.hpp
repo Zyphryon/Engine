@@ -37,6 +37,7 @@ namespace ZyReplication
         Update,  ///< Gives a peer what changed on an entity and what was removed.
         Move,    ///< Tells a peer an entity now stands under another key.
         Forget,  ///< Tells a peer an entity was destroyed.
+        Message, ///< Hands a peer the game's message, its size first, in its private section.
         Packed,  ///< Opens a frame packed with LZ4, its unpacked size first, which never appears inside a frame.
     };
 }

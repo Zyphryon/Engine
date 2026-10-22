@@ -175,6 +175,26 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Publisher::Post(UInt64 Peer, ConstSpan<Byte> Message)
+    {
+        if (Message.GetSize() > kMaxChunk)
+        {
+            LOG_E("Replication: A message of {0} bytes is larger than a frame takes", Message.GetSize());
+            return;
+        }
+
+        // It rides in the peer's private section, which only that peer reads.
+        if (const Ptr<Session> Target = FindSession(Peer))
+        {
+            Ref<Writer> Output = Open(Target->Private, Opcode::Message);
+            Output.WriteUInt(static_cast<UInt32>(Message.GetSize()));
+            Output.Write(Message.GetData(), static_cast<UInt32>(Message.GetSize()));
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Publisher::Read(Bool Restoring, Bool Whole)
     {
         // Departures first, so a replica given its locus again within the tick keeps its identity.

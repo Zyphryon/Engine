@@ -166,6 +166,11 @@ namespace ZyReplication
         /// \param Input The frame, after the opcode.
         void OnForget(Ref<Reader> Input);
 
+        /// \brief Hands the listener the game's message the publisher sent this side alone.
+        ///
+        /// \param Input The frame, after the opcode.
+        void OnMessage(Ref<Reader> Input);
+
         /// \brief Sets who owns a replica, tagging it this side's or another's.
         ///
         /// \param Actor The entity whose owner is set.

@@ -125,6 +125,12 @@ namespace ZyReplication
         /// \param Message The payload, which the serving side's listener receives as it was written.
         void Send(ConstSpan<Byte> Message);
 
+        /// \brief Sends a message to one peer with its next frame, behind the world it sees, while this side serves.
+        ///
+        /// \param Peer    The key the peer is known by, whose listener receives it from peer zero.
+        /// \param Message The payload, up to 32 KiB, which the peer's listener receives as it was written.
+        void Send(UInt64 Peer, ConstSpan<Byte> Message);
+
         /// \brief Runs a load both sides read from disk, so its replicas land as the baseline.
         ///
         /// \param Load The callable that loads the world from disk, run once.
