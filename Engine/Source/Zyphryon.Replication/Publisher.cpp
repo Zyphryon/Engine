@@ -385,15 +385,7 @@ namespace ZyReplication
             // Peers load a persistent replica from the key it was placed under, so it never moves.
             ZY_ASSERT(!Persistent, "A persistent replica changed key");
 
-            Ref<Channel> Old    = GetChannel(Tracking->Key);
-            Ref<Writer>  Output = Open(Old.Stream, Opcode::Move);
-            Output.WriteUInt(Tracking->Identifier);
-            Output.WriteUInt(Key);
-
-            if (Tracking->Parent == 0)
-            {
-                Old.Members.Erase(Actor.GetID());
-            }
+            Depart(Actor, * Tracking, Key);
             Arrive(Actor, * Tracking, Key, Parent);
             return;
         }
@@ -441,7 +433,7 @@ namespace ZyReplication
             Reveal(Target.Stream, Actor, Tracking);
         }
 
-        Descend(Actor, [this, &Target, Key](ZyScene::Entity Child)
+        Descend(Actor, [this, Key](ZyScene::Entity Child)
         {
             const Ptr<Tracker> Below = Track(Child);
 
@@ -449,19 +441,43 @@ namespace ZyReplication
             {
                 return;
             }
-            Below->Key    = Key;
-            Below->Parent = GetParentOf(Child);
 
             // A persistent child is loaded by the peer, so it only goes back in line for its divergence.
             if (Below->Identifier & kPersistent)
             {
+                Below->Key    = Key;
+                Below->Parent = GetParentOf(Child);
                 Enqueue(Child, * Below);
+                return;
             }
-            else
+
+            // A child published under another key before this one arrived leaves it first, or its peers keep it.
+            if (Below->Key != 0 && Below->Key != Key)
             {
-                Reveal(Target.Stream, Child, * Below);
+                Depart(Child, * Below, Key);
             }
+            Below->Key    = Key;
+            Below->Parent = GetParentOf(Child);
+
+            // Looked up again, since a departure may have made room in the channels for the key it left.
+            Reveal(GetChannel(Key).Stream, Child, * Below);
         });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Publisher::Depart(ZyScene::Entity Actor, ConstRef<Tracker> Tracking, UInt64 Key)
+    {
+        Ref<Channel> Old    = GetChannel(Tracking.Key);
+        Ref<Writer>  Output = Open(Old.Stream, Opcode::Move);
+        Output.WriteUInt(Tracking.Identifier);
+        Output.WriteUInt(Key);
+
+        if (Tracking.Parent == 0)
+        {
+            Old.Members.Erase(Actor.GetID());
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

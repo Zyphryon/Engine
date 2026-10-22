@@ -49,5 +49,12 @@ namespace ZyReplication
         virtual void OnMessage(UInt64 Peer, ConstSpan<Byte> Message)
         {
         }
+
+        /// \brief Called on the following side when what it plays arrives under a persistent replica not loaded.
+        ///
+        /// \param Identifier The identifier of the persistent replica it waits for, which lands it once loaded.
+        virtual void OnAwait(UInt64 Identifier)
+        {
+        }
     };
 }

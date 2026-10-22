@@ -239,6 +239,13 @@ namespace ZyReplication
         /// \param Parent   The identifier of the replica it is attached to, zero for a root.
         void Arrive(ZyScene::Entity Actor, Ref<Tracker> Tracking, UInt64 Key, UInt64 Parent);
 
+        /// \brief Takes a replica out of the key it stood under, telling that key's peers where it went.
+        ///
+        /// \param Actor    The entity leaving, dropped from the old key's members when it is a root.
+        /// \param Tracking The tracker of the entity, still holding the key it leaves.
+        /// \param Key      The interest key it moves under, which peers that also watch it keep the replica in.
+        void Depart(ZyScene::Entity Actor, ConstRef<Tracker> Tracking, UInt64 Key);
+
         /// \brief Writes a replica whole into a stream, with its owner's part to its owner.
         ///
         /// \param Output   The stream of the key it stands under.

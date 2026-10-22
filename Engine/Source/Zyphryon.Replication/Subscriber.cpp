@@ -22,9 +22,10 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Subscriber::Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table)
+    Subscriber::Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table, ConstRetainer<Listener> Listener)
         : mScene    { Scene },
           mManifest { Table },
+          mListener { Listener },
           mHeld     { 0 },
           mLanded   { Scene },
           mIdentity { 0 },
@@ -114,10 +115,21 @@ namespace ZyReplication
 
     void Subscriber::Refresh()
     {
-        mLanded.Each([this](ZyScene::Entity Actor, ConstRef<Replica> Record)
+        // Gathered first, since what waited for them is spawned as they are taken in, and a walk holds that back.
+        Sequence<ZyScene::Entity> Landed;
+
+        mLanded.Each([&Landed](ZyScene::Entity Actor, ConstRef<Replica>)
         {
-            Take(Actor, Record);
+            Landed.Append(Actor);
         });
+
+        for (const ZyScene::Entity Actor : Landed)
+        {
+            if (const ConstPtr<Replica> Record = Actor.Get<const Replica>())
+            {
+                Take(Actor, * Record);
+            }
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -423,6 +435,12 @@ namespace ZyReplication
         if (Parent != 0 && !Above.IsAlive())
         {
             Hold(Parent, Identifier, Opcode::Enter, ConstSpan(Input.GetData() + Start, Input.GetOffset() - Start));
+
+            // What this side plays would wait on a cell loaded around it, so the game is asked to load that one.
+            if (IsMine(Peer) && (Parent & kPersistent))
+            {
+                mListener->OnAwait(Parent);
+            }
             return;
         }
 
@@ -526,8 +544,9 @@ namespace ZyReplication
             return;
         }
 
-        // Moved to a key this side sees, it arrives there too, which reattaches it.
-        if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive() && !mKeys.Contains(Key))
+        // Moved to a key this side sees, it arrives there too, which reattaches it, as does what this side plays.
+        const ZyScene::Entity Actor = Find(Identifier);
+        if (Actor.IsAlive() && !mKeys.Contains(Key) && !Actor.Has<Possessed>())
         {
             Destroy(Actor);
         }
@@ -604,6 +623,12 @@ namespace ZyReplication
             const ConstPtr<Replica> Above = Actor.GetParent().Get<const Replica>();
 
             if (Record.IsPersistent() || (Place.GetKey() == 0 && !(Above && Above->IsPersistent())))
+            {
+                return;
+            }
+
+            // What this side plays outlives the keys around it, since it arrives under the next key it stands under.
+            if (Key != kGlobal && Actor.Has<Possessed>())
             {
                 return;
             }

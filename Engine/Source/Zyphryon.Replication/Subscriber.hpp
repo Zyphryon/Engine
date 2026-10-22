@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Listener.hpp"
 #include "Locus.hpp"
 #include "Manifest.hpp"
 #include "Replica.hpp"
@@ -31,9 +32,10 @@ namespace ZyReplication
 
         /// \brief Constructs a subscriber over a world, taking in the persistent replicas it already holds.
         ///
-        /// \param Scene The world it follows, outliving the subscriber.
-        /// \param Table The sealed table of what travels, outliving the subscriber.
-        Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table);
+        /// \param Scene    The world it follows, outliving the subscriber.
+        /// \param Table    The sealed table of what travels, outliving the subscriber.
+        /// \param Listener The listener told when what this side plays waits for a replica it has not loaded.
+        Subscriber(Ref<ZyScene::Service> Scene, ConstRef<Manifest> Table, ConstRetainer<Listener> Listener);
 
         /// \brief Applies a frame from the publisher.
         ///
@@ -230,6 +232,7 @@ namespace ZyReplication
 
         Ref<ZyScene::Service>                  mScene;
         ConstRef<Manifest>                     mManifest;
+        Retainer<Listener>                     mListener;
         Table<UInt64, ZyScene::Entity>         mReplicas;
         Bag<UInt64>                            mKeys;
         Table<UInt64, Sequence<Pending>>       mPending;

@@ -209,6 +209,10 @@ namespace ZyReplication
 
         Ref<ZyScene::Service> Scene = * GetHost().GetService<ZyScene::Service>();
 
+        // A game that hears nothing still gets a listener, so nothing asks whether it has one.
+        const Retainer<ZyReplication::Listener> Hearing
+            = Listener ? Listener : Retainer<ZyReplication::Listener>::Create();
+
         if (Serving)
         {
             Ref<ZyJob::Service> Jobs = * GetHost().GetService<ZyJob::Service>();
@@ -216,11 +220,10 @@ namespace ZyReplication
         }
         else
         {
-            mSubscriber = Unique<Subscriber>::Create(Scene, mManifest);
+            mSubscriber = Unique<Subscriber>::Create(Scene, mManifest, Hearing);
         }
 
-        // A game that hears nothing still gets a listener, so the gate never asks whether it has one.
-        mGate = Retainer<Gate>::Create(* this, Listener ? Listener : Retainer<ZyReplication::Listener>::Create());
+        mGate = Retainer<Gate>::Create(* this, Hearing);
         mLink = Serving ? Network->Listen(Address, Transport, mGate) : Network->Connect(Address, Transport, mGate);
 
         if (!mLink.IsValid())
