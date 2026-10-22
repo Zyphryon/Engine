@@ -57,6 +57,14 @@ inline namespace ZyMath
             return mRadians * (180.0f / kPI<Real32>);
         }
 
+        /// \brief Gets the angle in turns.
+        ///
+        /// \return The angle in turns, where one turn is 2π.
+        ZY_INLINE constexpr Real32 GetTurns() const
+        {
+            return mRadians / kTwoPI<Real32>;
+        }
+
         /// \brief Adds two angles together.
         ///
         /// \param Other The angle to add.
