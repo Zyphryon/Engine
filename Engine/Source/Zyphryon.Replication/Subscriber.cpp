@@ -250,7 +250,7 @@ namespace ZyReplication
 
                 if (Item.Code == Opcode::Update)
                 {
-                    Apply(Actor, Bytes, GetIgnored(GetOwner(Actor)));
+                    Apply(Actor, Bytes, Actor.Has<Possessed>() ? mManifest.GetOthersMask() : Mask());
                 }
                 else
                 {
@@ -319,7 +319,6 @@ namespace ZyReplication
             & Subscriber::OnSection,
             & Subscriber::OnEnter,
             & Subscriber::OnUpdate,
-            & Subscriber::OnMove,
             & Subscriber::OnForget,
             & Subscriber::OnMessage
         };
@@ -494,7 +493,7 @@ namespace ZyReplication
             Actor.Set(Above.IsAlive() ? Locus() : Locus(mSection));
 
             Claim(Actor, Peer);
-            Apply(Actor, Set, GetIgnored(Peer));
+            Apply(Actor, Set, IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
         });
 
         // Children that came before it arrive now.
@@ -520,7 +519,7 @@ namespace ZyReplication
         }
         else if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive())
         {
-            Apply(Actor, Set, GetIgnored(GetOwner(Actor)));
+            Apply(Actor, Set, Actor.Has<Possessed>() ? mManifest.GetOthersMask() : Mask());
         }
         else if ((Identifier & kPersistent) || IsHeld(Identifier))
         {
@@ -532,39 +531,24 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Subscriber::OnMove(Ref<Reader> Input)
+    void Subscriber::OnForget(Ref<Reader> Input)
     {
         const UInt64 Identifier = Input.ReadUInt<UInt64>();
         const UInt64 Key        = Input.ReadUInt<UInt64>();
 
-        // Peers load a persistent replica from the key it was placed under, so it never moves.
+        // Peers load a persistent replica from disk and keep it under the key it was placed under.
         if (Identifier & kPersistent)
         {
-            LOG_E("Replication: Persistent replica {0} was moved, so the publisher is refused", Identifier);
+            LOG_E("Replication: Persistent replica {0} was forgotten, so the publisher is refused", Identifier);
             mRejected = true;
             return;
         }
 
         // Moved to a key this side sees, it arrives there too, which reattaches it, as does what this side plays.
         const ZyScene::Entity Actor = Find(Identifier);
-        if (Actor.IsAlive() && !mKeys.Contains(Key) && !Actor.Has<Possessed>())
+
+        if (Key != 0 && (mKeys.Contains(Key) || (Actor.IsAlive() && Actor.Has<Possessed>())))
         {
-            Destroy(Actor);
-        }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Subscriber::OnForget(Ref<Reader> Input)
-    {
-        const UInt64 Identifier = Input.ReadUInt<UInt64>();
-
-        // Peers load a persistent replica from disk and keep it, so it is never forgotten.
-        if (Identifier & kPersistent)
-        {
-            LOG_E("Replication: Persistent replica {0} was forgotten, so the publisher is refused", Identifier);
-            mRejected = true;
             return;
         }
 
@@ -574,7 +558,7 @@ namespace ZyReplication
             return Under == Identifier || Item.Identifier == Identifier;
         });
 
-        if (const ZyScene::Entity Actor = Find(Identifier); Actor.IsAlive())
+        if (Actor.IsAlive())
         {
             Destroy(Actor);
         }
@@ -585,12 +569,13 @@ namespace ZyReplication
 
     void Subscriber::OnMessage(Ref<Reader> Input)
     {
-        const UInt32 Size = Input.ReadUInt<UInt32>();
+        const UInt64 Skipped = Input.ReadUInt<UInt64>();
+        const UInt32 Size    = Input.ReadUInt<UInt32>();
 
-        // A message is meant for this side alone, and never runs past the frame it came in.
-        if (mSection != kPrivate || Size > Input.GetAvailable())
+        // A message never runs past the frame it came in.
+        if (Size > Input.GetAvailable())
         {
-            LOG_E("Replication: A message arrived out of place or cut short, so the publisher is refused");
+            LOG_E("Replication: A message arrived cut short, so the publisher is refused");
             mRejected = true;
             return;
         }
@@ -598,7 +583,11 @@ namespace ZyReplication
         const ConstSpan<Byte> Message(Input.GetData() + Input.GetOffset(), Size);
         Input.Skip(Size);
 
-        mListener->OnMessage(0, Message);
+        // What everyone but an entity's owner hears passes over the side that owns it.
+        if (!IsMine(Skipped))
+        {
+            mListener->OnMessage(0, Message);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -720,22 +709,5 @@ namespace ZyReplication
             LOG_E("Replication: A set this build cannot read arrived, so the publisher is refused");
             mRejected = true;
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Mask Subscriber::GetIgnored(UInt64 Peer) const
-    {
-        return IsMine(Peer) ? mManifest.GetOthersMask() : Mask();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    UInt64 Subscriber::GetOwner(ZyScene::Entity Actor)
-    {
-        const ConstPtr<Owner> Holder = Actor.Get<const Owner>();
-        return Holder ? Holder->GetPeer() : 0;
     }
 }

@@ -131,6 +131,13 @@ namespace ZyReplication
         /// \param Message The payload, up to 32 KiB, which the peer's listener receives as it was written.
         void Send(UInt64 Peer, ConstSpan<Byte> Message);
 
+        /// \brief Sends a message to the peers that see an entity, with their next frame, while this side serves.
+        ///
+        /// \param Actor   The entity it is about, the world entity to reach every peer.
+        /// \param To      The peers that receive it, as they would receive a component of the entity.
+        /// \param Message The payload, up to 32 KiB, which each listener receives from peer zero as it was written.
+        void Send(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message);
+
         /// \brief Runs a load both sides read from disk, so its replicas land as the baseline.
         ///
         /// \param Load The callable that loads the world from disk, run once.

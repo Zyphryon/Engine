@@ -28,7 +28,7 @@ namespace ZyReplication
     {
         Everyone, ///< Every peer that sees the entity.
         Owner,    ///< Only the peer that owns the entity.
-        Others,   ///< Every peer that sees the entity, while its owner ignores it.
+        Others,   ///< Every peer that sees the entity, while its owner receives it but ignores it.
     };
 
     /// \brief Represents the tag of a replica this side owns, which is this side's to steer.

@@ -24,7 +24,7 @@ namespace ZyReplication
     inline constexpr UInt64 kGlobal  = 0;
 
     /// \brief The section key of a peer's private channel, which carries what only an owner receives.
-    inline constexpr UInt64 kPrivate = ~0ull;
+    inline constexpr UInt64 kPrivate = kMaximum<UInt64>;
 
     /// \brief Specifies the messages the protocol writes, each opening with its opcode.
     enum class Opcode : UInt8
@@ -35,9 +35,8 @@ namespace ZyReplication
         Section, ///< Opens the messages of one channel.
         Enter,   ///< Gives a peer an entity whole, creating or overwriting it.
         Update,  ///< Gives a peer what changed on an entity and what was removed.
-        Move,    ///< Tells a peer an entity now stands under another key.
-        Forget,  ///< Tells a peer an entity was destroyed.
-        Message, ///< Hands a peer the game's message, its size first, in its private section.
+        Forget,  ///< Tells a peer an entity left its key, then the key it moved under or zero once destroyed.
+        Message, ///< Hands peers the game's message, the peer that passes over it and its size first.
         Packed,  ///< Opens a frame packed with LZ4, its unpacked size first, which never appears inside a frame.
     };
 }

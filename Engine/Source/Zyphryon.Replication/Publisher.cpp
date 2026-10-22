@@ -177,19 +177,36 @@ namespace ZyReplication
 
     void Publisher::Post(UInt64 Peer, ConstSpan<Byte> Message)
     {
-        if (Message.GetSize() > kMaxChunk)
-        {
-            LOG_E("Replication: A message of {0} bytes is larger than a frame takes", Message.GetSize());
-            return;
-        }
-
         // It rides in the peer's private section, which only that peer reads.
         if (const Ptr<Session> Target = FindSession(Peer))
         {
-            Ref<Writer> Output = Open(Target->Private, Opcode::Message);
-            Output.WriteUInt(static_cast<UInt32>(Message.GetSize()));
-            Output.Write(Message.GetData(), static_cast<UInt32>(Message.GetSize()));
+            WriteMessage(Target->Private, 0, Message);
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Publisher::Post(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message)
+    {
+        const Bool         World    = (Actor == mScene.GetWorld());
+        const Ptr<Tracker> Tracking = Track(Actor);
+
+        // A replica published under no key yet is seen by nobody, while the world is seen by every peer.
+        if (Tracking == nullptr || (!World && Tracking->Key == kGlobal))
+        {
+            return;
+        }
+
+        if (To == Audience::Owner)
+        {
+            Post(GetOwner(Actor), Message);
+            return;
+        }
+
+        // It rides in the channel the entity stands under, which every peer that sees it reads.
+        const UInt64 Skipped = (To == Audience::Others ? GetOwner(Actor) : 0);
+        WriteMessage(GetChannel(World ? kGlobal : Tracking->Key).Stream, Skipped, Message);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -340,7 +357,9 @@ namespace ZyReplication
 
             if (!Persistent && !Orphaned)
             {
-                Open(Target.Stream, Opcode::Forget).WriteUInt(Tracking.Identifier);
+                Ref<Writer> Output = Open(Target.Stream, Opcode::Forget);
+                Output.WriteUInt(Tracking.Identifier);
+                Output.WriteUInt(0);
             }
         }
         mReplicas.Erase(Tracking.Identifier);
@@ -490,7 +509,7 @@ namespace ZyReplication
     void Publisher::Depart(ZyScene::Entity Actor, ConstRef<Tracker> Tracking, UInt64 Key)
     {
         Ref<Channel> Old    = GetChannel(Tracking.Key);
-        Ref<Writer>  Output = Open(Old.Stream, Opcode::Move);
+        Ref<Writer>  Output = Open(Old.Stream, Opcode::Forget);
         Output.WriteUInt(Tracking.Identifier);
         Output.WriteUInt(Key);
 
@@ -927,6 +946,23 @@ namespace ZyReplication
             Start = Cut;
         }
         Piece(Start, Messages.Bytes.GetSize());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Publisher::WriteMessage(Ref<Block> Output, UInt64 Skipped, ConstSpan<Byte> Message)
+    {
+        if (Message.GetSize() > kMaxChunk)
+        {
+            LOG_E("Replication: A message of {0} bytes is larger than a frame takes", Message.GetSize());
+            return;
+        }
+
+        Ref<Writer> Bytes = Open(Output, Opcode::Message);
+        Bytes.WriteUInt(Skipped);
+        Bytes.WriteUInt(static_cast<UInt32>(Message.GetSize()));
+        Bytes.Write(Message.GetData(), static_cast<UInt32>(Message.GetSize()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

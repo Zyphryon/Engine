@@ -71,6 +71,13 @@ namespace ZyReplication
         /// \param Message The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
         void Post(UInt64 Peer, ConstSpan<Byte> Message);
 
+        /// \brief Hands the game's message to the peers that see an entity, with their next frame after what changed.
+        ///
+        /// \param Actor   The entity it is about, the world for every peer, and none hears of one never published.
+        /// \param To      The peers that receive it, as they would receive a component of the entity.
+        /// \param Message The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
+        void Post(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message);
+
         /// \brief Reads every pull list, marking in the trackers what changed.
         ///
         /// \param Restoring `true` right after a load, whose values mark nothing, `false` otherwise.
@@ -379,6 +386,13 @@ namespace ZyReplication
         /// \param Key      The interest key of the section.
         /// \param Messages The messages, cut where they mark.
         static void WriteSection(Ref<Session> Peer, UInt64 Key, ConstRef<Block> Messages);
+
+        /// \brief Writes the game's message, which one peer may be told to pass over.
+        ///
+        /// \param Output  The stream the message goes into.
+        /// \param Skipped The key of the peer that passes over it, or zero for none.
+        /// \param Message The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
+        static void WriteMessage(Ref<Block> Output, UInt64 Skipped, ConstSpan<Byte> Message);
 
         /// \brief Gets the key a replica stands under, its own or its root's.
         ///

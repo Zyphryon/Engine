@@ -156,17 +156,12 @@ namespace ZyReplication
         /// \param Input The frame, after the opcode.
         void OnUpdate(Ref<Reader> Input);
 
-        /// \brief Destroys a replica that moved to a key this side does not see.
-        ///
-        /// \param Input The frame, after the opcode.
-        void OnMove(Ref<Reader> Input);
-
-        /// \brief Destroys a replica.
+        /// \brief Destroys a replica that was destroyed or moved to a key this side does not see.
         ///
         /// \param Input The frame, after the opcode.
         void OnForget(Ref<Reader> Input);
 
-        /// \brief Hands the listener the game's message the publisher sent this side alone.
+        /// \brief Hands the listener the game's message, unless it is one this side's own entity passes over.
         ///
         /// \param Input The frame, after the opcode.
         void OnMessage(Ref<Reader> Input);
@@ -200,12 +195,6 @@ namespace ZyReplication
         /// \param Ignored The components read past, which this side keeps as it decided them.
         void Apply(ZyScene::Entity Actor, ConstSpan<Byte> Set, Mask Ignored);
 
-        /// \brief Gets the components a replica ignores, which are the others' view of what this side owns.
-        ///
-        /// \param Peer The key of the owner, or zero for nobody.
-        /// \return The mask of the `Others` components when this side owns it, none otherwise.
-        Mask GetIgnored(UInt64 Peer) const;
-
         /// \brief Checks whether a peer key is this side's.
         ///
         /// \param Peer The key of a peer, or zero for nobody.
@@ -223,12 +212,6 @@ namespace ZyReplication
         {
             return Size + sizeof(Pending);
         }
-
-        /// \brief Gets the peer that owns a replica.
-        ///
-        /// \param Actor The entity checked.
-        /// \return The key of the peer, or zero for nobody.
-        static UInt64 GetOwner(ZyScene::Entity Actor);
 
     private:
 
