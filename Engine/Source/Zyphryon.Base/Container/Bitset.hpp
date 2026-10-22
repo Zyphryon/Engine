@@ -68,6 +68,24 @@ inline namespace ZyBase
             mData[Index / kWordBits] |= (Word(1) << (Index % kWordBits));
         }
 
+        /// \brief Sets a run of bits, a whole word at a time where the run covers one.
+        ///
+        /// \param Index  The zero-based index of the first bit to set.
+        /// \param Length The number of bits to set, which must not run past the bitset's size.
+        ZY_INLINE constexpr void Set(UInt Index, UInt Length)
+        {
+            ZY_ASSERT(Index + Length <= Size, "Bit range is out of range");
+
+            for (UInt Bit = Index, End = Index + Length; Bit < End;)
+            {
+                const UInt Offset = Bit % kWordBits;
+                const UInt Taken  = (End - Bit < kWordBits - Offset ? End - Bit : kWordBits - Offset);
+
+                mData[Bit / kWordBits] |= (Taken == kWordBits ? kWordFull : ((Word(1) << Taken) - 1u)) << Offset;
+                Bit += Taken;
+            }
+        }
+
         /// \brief Clears the bit at the given index.
         ///
         /// \param Index The zero-based bit index to clear.
