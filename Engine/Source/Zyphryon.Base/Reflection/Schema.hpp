@@ -13,6 +13,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Field.hpp"
+#include "Zyphryon.Base/Marshal/Binary/Reader.hpp"
+#include "Zyphryon.Base/Marshal/Binary/Writer.hpp"
 #include "Zyphryon.Base/Marshal/Json/JsonValue.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -135,6 +137,20 @@ namespace ZyReflection
         /// \param Instance The instance to write into, laid out as this schema describes.
         /// \return `true` if every field the object gives was written, `false` if one had the wrong kind or an unknown option.
         ZY_API Bool Decode(ConstRef<JsonValue> Fields, Ptr<void> Instance) const;
+
+        /// \brief Writes the fields of an instance as they travel, each by its kind and a nested one in place.
+        ///
+        /// \param Instance The instance to read, laid out as this schema describes.
+        /// \param Output   Receives the fields, in the order the schema lays them out.
+        /// \return `true` if every field was written, `false` when one is of a kind that cannot travel.
+        ZY_API Bool Write(Ptr<void> Instance, Ref<Writer> Output) const;
+
+        /// \brief Reads the fields \ref Write wrote into an instance, refusing any past what its field declares.
+        ///
+        /// \param Input    The bytes to read, which may come from a peer that cannot be trusted.
+        /// \param Instance The instance to write into, laid out as this schema describes.
+        /// \return `true` if every field was read, `false` when one falls past its bounds or options, or cannot travel.
+        ZY_API Bool Read(Ref<Reader> Input, Ptr<void> Instance) const;
 
     public:
 

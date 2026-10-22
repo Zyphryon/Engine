@@ -838,8 +838,12 @@ inline namespace ZyBase
                 if constexpr (Capacity == 0)
                 {
                     mBuffer.Reserve(Content.GetSize() + 1);
+                    mBuffer.Append(Content);
                 }
-                mBuffer.Append(Content);
+                else
+                {
+                    mBuffer.Append(Content.Slice(0, Min(Content.GetSize(), Capacity)));
+                }
             }
             Seal();
         }
