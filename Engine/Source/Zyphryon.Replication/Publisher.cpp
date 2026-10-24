@@ -188,7 +188,7 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::Post(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message)
+    void Publisher::Post(ZyScene::Entity Actor, Audience Audience, ConstSpan<Byte> Message)
     {
         const Bool         World    = (Actor == mScene.GetWorld());
         const Ptr<Tracker> Tracking = Track(Actor);
@@ -199,14 +199,14 @@ namespace ZyReplication
             return;
         }
 
-        if (To == Audience::Owner)
+        if (Audience == Audience::Owner)
         {
             Post(GetOwner(Actor), Message);
             return;
         }
 
         // It rides in the channel the entity stands under, which every peer that sees it reads.
-        const UInt64 Skipped = (To == Audience::Others ? GetOwner(Actor) : 0);
+        const UInt64 Skipped = (Audience == Audience::Others ? GetOwner(Actor) : 0);
         WriteMessage(GetChannel(World ? kGlobal : Tracking->Key).Stream, Skipped, Message);
     }
 

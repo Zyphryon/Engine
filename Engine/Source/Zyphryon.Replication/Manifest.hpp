@@ -94,21 +94,21 @@ namespace ZyReplication
 
         /// \brief Declares a component type replicated, once, before the table is sealed.
         ///
-        /// \param Policy The peers that receive the component.
-        /// \param Rate   The number of ticks between two reads of its changes, one reading on every tick.
+        /// \param Audience The peers that receive the component.
+        /// \param Rate     The ticks between two reads of its changes, one to read them on every tick.
         template<typename Type>
-        ZY_INLINE void Register(Audience Policy, UInt8 Rate)
+        ZY_INLINE void Register(Audience Audience, UInt8 Rate)
         {
-            Register(ZyScene::IdentifierOf<Type>(), Policy, Rate, Bind<Type>());
+            Register(ZyScene::IdentifierOf<Type>(), Audience, Rate, Bind<Type>());
         }
 
         /// \brief Declares a component type replicated by its identifier, once, before the table is sealed.
         ///
         /// \param Identifier The identifier of the component in the registry.
-        /// \param Policy     The peers that receive the component.
-        /// \param Rate       The number of ticks between two reads of its changes, one reading on every tick.
+        /// \param Audience   The peers that receive the component.
+        /// \param Rate       The ticks between two reads of its changes, one to read them on every tick.
         /// \param Adapter    The functions the component travels through, from \ref Bind.
-        void Register(UInt32 Identifier, Audience Policy, UInt8 Rate, ConstRef<Adapter> Adapter);
+        void Register(UInt32 Identifier, Audience Audience, UInt8 Rate, ConstRef<Adapter> Adapter);
 
         /// \brief Takes a component type back out of the table, which a sealed table never does.
         ///
@@ -188,7 +188,7 @@ namespace ZyReplication
         ///
         /// \param Input   The reader, at the set, left after it.
         /// \param Actor   The entity, which must be alive, the world entity for singletons.
-        /// \param Ignored The components read past whole, present or gone, of the `Others` ones alone.
+        /// \param Ignored The components read past whole, which this side keeps as it decided them, `Others` ones only.
         /// \return `true` if the set was read whole, `false` if it was cut short or named an unknown component.
         Bool Read(Ref<Reader> Input, ZyScene::Entity Actor, Mask Ignored) const;
 

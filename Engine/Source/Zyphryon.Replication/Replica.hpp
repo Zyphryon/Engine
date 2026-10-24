@@ -68,9 +68,9 @@ namespace ZyReplication
             return mIdentifier != 0;
         }
 
-        /// \brief Reads or writes the identifier of a persistent replica, and nothing of a runtime one.
+        /// \brief Writes or reads the identifier of a persistent replica, and nothing of a runtime one.
         ///
-        /// \param Archive The archive to read from or write to.
+        /// \param Archive The archive to write to or read from.
         template<typename Serializer>
         ZY_INLINE void Serialize(Serializer Archive)
         {

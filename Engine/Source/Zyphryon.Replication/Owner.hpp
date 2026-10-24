@@ -32,7 +32,7 @@ namespace ZyReplication
 
         /// \brief Constructs an owner naming a peer.
         ///
-        /// \param Peer The key of the peer, as the publisher admitted it.
+        /// \param Peer The key the peer is known by, as the publisher admitted it.
         ZY_INLINE explicit Owner(UInt64 Peer)
             : mPeer { Peer }
         {

@@ -179,11 +179,11 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Send(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message)
+    void Service::Send(ZyScene::Entity Actor, Audience Audience, ConstSpan<Byte> Message)
     {
         if (mPublisher)
         {
-            mPublisher->Post(Actor, To, Message);
+            mPublisher->Post(Actor, Audience, Message);
         }
     }
 

@@ -82,9 +82,9 @@ namespace ZyReplication
             return ZyScene::Entity();
         }
 
-        /// \brief Reads or writes the identifier the link names.
+        /// \brief Writes or reads the identifier the link names.
         ///
-        /// \param Archive The archive to read from or write to.
+        /// \param Archive The archive to write to or read from.
         template<typename Serializer>
         ZY_INLINE void Serialize(Serializer Archive)
         {

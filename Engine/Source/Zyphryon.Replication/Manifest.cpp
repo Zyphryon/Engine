@@ -30,7 +30,7 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Manifest::Register(UInt32 Identifier, Audience Policy, UInt8 Rate, ConstRef<Adapter> Adapter)
+    void Manifest::Register(UInt32 Identifier, Audience Audience, UInt8 Rate, ConstRef<Adapter> Adapter)
     {
         ZY_ASSERT(!mSealed, "A component cannot be replicated once a session opened");
 
@@ -48,7 +48,7 @@ namespace ZyReplication
         ZY_ASSERT(Rate > 0, "A replicated component needs a rate of at least one");
         ZY_ASSERT(Info.IsTag() || (Info.Save && Info.Load), "A replicated component must write and read itself");
 
-        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, Adapter);
+        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Audience, Rate, Adapter);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

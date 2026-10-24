@@ -30,14 +30,14 @@ namespace ZyReplication
 
         /// \brief Called when a peer joins the session this side serves, or when this side reaches the serving one.
         ///
-        /// \param Peer The key of the peer, or zero on the following side for the serving one.
+        /// \param Peer The key the peer is known by, or zero on the following side for the serving one.
         virtual void OnJoin(UInt64 Peer)
         {
         }
 
         /// \brief Called when a peer leaves the session this side serves, or when the serving side goes away.
         ///
-        /// \param Peer The key of the peer, or zero on the following side for the serving one.
+        /// \param Peer The key the peer is known by, or zero on the following side for the serving one.
         virtual void OnLeave(UInt64 Peer)
         {
         }

@@ -51,23 +51,23 @@ namespace ZyReplication
 
         /// \brief Makes a component travel, declared alike on both sides before a session opens.
         ///
-        /// \param To   The peers that receive the component.
-        /// \param Rate The ticks between two reads of its changes, one to read them on every tick.
+        /// \param Audience The peers that receive the component.
+        /// \param Rate     The ticks between two reads of its changes, one to read them on every tick.
         template<typename Type>
-        ZY_INLINE void Replicate(Audience To, UInt8 Rate = 1)
+        ZY_INLINE void Replicate(Audience Audience, UInt8 Rate = 1)
         {
-            mManifest.Register<Type>(To, Rate);
+            mManifest.Register<Type>(Audience, Rate);
         }
 
         /// \brief Makes a component travel by its identifier, declared alike on both sides before a session opens.
         ///
         /// \param Identifier The identifier of the component in the registry.
-        /// \param To         The peers that receive the component.
+        /// \param Audience   The peers that receive the component.
         /// \param Rate       The ticks between two reads of its changes, one to read them on every tick.
         /// \param Adapter    The functions the component travels through, from \ref Manifest::Bind.
-        ZY_INLINE void Replicate(UInt32 Identifier, Audience To, UInt8 Rate, ConstRef<Manifest::Adapter> Adapter)
+        ZY_INLINE void Replicate(UInt32 Identifier, Audience Audience, UInt8 Rate, ConstRef<Manifest::Adapter> Adapter)
         {
-            mManifest.Register(Identifier, To, Rate, Adapter);
+            mManifest.Register(Identifier, Audience, Rate, Adapter);
         }
 
         /// \brief Stops a component travelling, before a session opens, which one declared since may take again.
@@ -133,10 +133,10 @@ namespace ZyReplication
 
         /// \brief Sends a message to the peers that see an entity, with their next frame, while this side serves.
         ///
-        /// \param Actor   The entity it is about, the world entity to reach every peer.
-        /// \param To      The peers that receive it, as they would receive a component of the entity.
-        /// \param Message The payload, up to 32 KiB, which each listener receives from peer zero as it was written.
-        void Send(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message);
+        /// \param Actor    The entity it is about, the world entity to reach every peer.
+        /// \param Audience The peers that receive the message, as they would a component of the entity.
+        /// \param Message  The payload, up to 32 KiB, which each listener receives from peer zero as it was written.
+        void Send(ZyScene::Entity Actor, Audience Audience, ConstSpan<Byte> Message);
 
         /// \brief Runs a load both sides read from disk, so its replicas land as the baseline.
         ///

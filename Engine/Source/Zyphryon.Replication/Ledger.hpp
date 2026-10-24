@@ -103,17 +103,17 @@ namespace ZyReplication
             return GetSize() - 1;
         }
 
-        /// \brief Removes a slot, moving the last one into its place and marking it.
+        /// \brief Removes a slot, moving every later one down a place and marking each.
         ///
         /// \param Index The place of the slot, below \ref GetSize.
         ZY_INLINE void Remove(UInt32 Index)
         {
-            mSlots.RemoveFast(Index);
+            mSlots.Remove(Index);
             mShrunk = true;
 
-            if (Index < GetSize())
+            for (UInt32 Moved = Index; Moved < GetSize(); ++Moved)
             {
-                Mark(Index);
+                Mark(Moved);
             }
         }
 
@@ -178,7 +178,7 @@ namespace ZyReplication
         /// \brief Writes the count, then every slot, or the marked slots behind their places.
         ///
         /// \param Archive The archive to write to.
-        /// \param Delta   `true` for the marked slots, whose marks it forgets, `false` for every slot.
+        /// \param Delta   `true` for the marked slots, which writing forgets, `false` for every slot.
         template<typename Serializer>
         ZY_INLINE void Write(Serializer Archive, Bool Delta)
         {
@@ -219,7 +219,7 @@ namespace ZyReplication
         /// \brief Reads what \ref Write wrote, every slot or a delta over the slots held, dropping what a lie names.
         ///
         /// \param Archive The archive to read from.
-        /// \param Delta   `true` for a delta, `false` for every slot.
+        /// \param Delta   `true` for the marked slots, `false` for every slot.
         template<typename Serializer>
         ZY_INLINE void Read(Serializer Archive, Bool Delta)
         {

@@ -73,10 +73,10 @@ namespace ZyReplication
 
         /// \brief Hands the game's message to the peers that see an entity, with their next frame after what changed.
         ///
-        /// \param Actor   The entity it is about, the world for every peer, and none hears of one never published.
-        /// \param To      The peers that receive it, as they would receive a component of the entity.
-        /// \param Message The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
-        void Post(ZyScene::Entity Actor, Audience To, ConstSpan<Byte> Message);
+        /// \param Actor    The entity it is about, the world for every peer, and none hears of one never published.
+        /// \param Audience The peers that receive the message, as they would a component of the entity.
+        /// \param Message  The payload, up to \ref kMaxChunk bytes, a longer one dropped and logged.
+        void Post(ZyScene::Entity Actor, Audience Audience, ConstSpan<Byte> Message);
 
         /// \brief Reads every pull list, marking in the trackers what changed.
         ///
@@ -324,10 +324,10 @@ namespace ZyReplication
         /// \brief Writes an update of some components.
         ///
         /// \param Output     The stream the update goes into.
-        /// \param Identifier The identifier of the replica, or zero for the world.
+        /// \param Identifier The identifier the replica travels under, or zero for the world.
         /// \param Actor      The entity written, the world entity for singletons.
-        /// \param Wanted     The components to write, named gone when not held.
-        /// \param Dropped    The components lost, named gone unless held again.
+        /// \param Wanted     The components to write, named gone when the entity does not hold them.
+        /// \param Dropped    The components the entity lost, named gone unless it holds them again.
         /// \param Delta      The components the peers hold, written as what they changed since their last delta.
         void WriteUpdate(
             Ref<Block>      Output,
@@ -351,7 +351,7 @@ namespace ZyReplication
 
         /// \brief Finds the session of a peer.
         ///
-        /// \param Peer The key the peer is known by, zero for nobody.
+        /// \param Peer The key the peer is known by, or zero for nobody.
         /// \return The session, or null when the peer was not admitted.
         Ptr<Session> FindSession(UInt64 Peer);
 

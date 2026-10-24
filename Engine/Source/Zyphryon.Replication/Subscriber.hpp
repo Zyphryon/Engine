@@ -169,7 +169,7 @@ namespace ZyReplication
         /// \brief Sets who owns a replica, tagging it this side's or another's.
         ///
         /// \param Actor The entity whose owner is set.
-        /// \param Peer  The key of the owner, or zero for nobody.
+        /// \param Peer  The key the owner is known by, or zero for nobody.
         void Claim(ZyScene::Entity Actor, UInt64 Peer);
 
         /// \brief Destroys every runtime root under a key, or every runtime root for \ref kGlobal.
@@ -192,12 +192,12 @@ namespace ZyReplication
         ///
         /// \param Actor   The entity written, the world entity for singletons.
         /// \param Set     The bytes of the set.
-        /// \param Ignored The components read past, which this side keeps as it decided them.
+        /// \param Ignored The components read past whole, which this side keeps as it decided them.
         void Apply(ZyScene::Entity Actor, ConstSpan<Byte> Set, Mask Ignored);
 
         /// \brief Checks whether a peer key is this side's.
         ///
-        /// \param Peer The key of a peer, or zero for nobody.
+        /// \param Peer The key a peer is known by, or zero for nobody.
         /// \return `true` if it names this side, `false` otherwise.
         ZY_INLINE Bool IsMine(UInt64 Peer) const
         {
