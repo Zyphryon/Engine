@@ -328,7 +328,14 @@ namespace ZyReplication
         /// \param Actor      The entity written, the world entity for singletons.
         /// \param Wanted     The components to write, named gone when not held.
         /// \param Dropped    The components lost, named gone unless held again.
-        void WriteUpdate(Ref<Block> Output, UInt64 Identifier, ZyScene::Entity Actor, Mask Wanted, Mask Dropped);
+        /// \param Delta      The components the peers hold, written as what they changed since their last delta.
+        void WriteUpdate(
+            Ref<Block>      Output,
+            UInt64          Identifier,
+            ZyScene::Entity Actor,
+            Mask            Wanted,
+            Mask            Dropped,
+            Mask            Delta);
 
         /// \brief Gets the channel of a key, creating it when needed.
         ///

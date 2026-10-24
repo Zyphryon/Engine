@@ -30,7 +30,7 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Manifest::Register(UInt32 Identifier, Audience Policy, UInt8 Rate, Watcher Watch)
+    void Manifest::Register(UInt32 Identifier, Audience Policy, UInt8 Rate, ConstRef<Adapter> Adapter)
     {
         ZY_ASSERT(!mSealed, "A component cannot be replicated once a session opened");
 
@@ -48,7 +48,7 @@ namespace ZyReplication
         ZY_ASSERT(Rate > 0, "A replicated component needs a rate of at least one");
         ZY_ASSERT(Info.IsTag() || (Info.Save && Info.Load), "A replicated component must write and read itself");
 
-        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, Watch);
+        mEntries[mCount++] = Entry(Identifier, AddressOf(Info), Policy, Rate, Adapter);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -138,7 +138,7 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Manifest::Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped) const
+    void Manifest::Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped, Mask Delta) const
     {
         // Only the bits set are visited, so a set costs what it names, not what the table holds.
         Mask Held;
@@ -164,12 +164,20 @@ namespace ZyReplication
                     Set.Write<UInt8>(static_cast<UInt8>(Index));
                 }
             });
-            Set.Write<UInt8>(kEnd);
+            Set.Write<UInt8>(kDelimiter);
 
             // The bytes the type saves itself as, with no size, since the other side reads them through the same type.
-            const auto Present = [this, &Set, Actor](UInt Index)
+            const auto Present = [this, &Set, Actor, Delta](UInt Index)
             {
                 ConstRef<Entry> Item = mEntries[Index];
+
+                // A delta is laid over the value the peer holds, which carries only what changed since the last one.
+                if (Delta.Test(Index) && Item.Adapter.Emit)
+                {
+                    Set.Write<UInt8>(static_cast<UInt8>(Index) | kDelta);
+                    Item.Adapter.Emit(Set, Actor.Get(ZyScene::Component(Item.Identifier)));
+                    return;
+                }
                 Set.Write<UInt8>(static_cast<UInt8>(Index));
 
                 if (!Item.Info->IsTag())
@@ -201,7 +209,7 @@ namespace ZyReplication
 
             const UInt8 Index = Set.Read<UInt8>();
 
-            if (Index == kEnd)
+            if (Index == kDelimiter)
             {
                 break;
             }
@@ -220,7 +228,8 @@ namespace ZyReplication
         // What is left is the entries, the ignored ones last, which the rest of the set is stepped over with.
         while (Set.GetAvailable() > 0)
         {
-            const UInt8 Index = Set.Read<UInt8>();
+            const UInt8 Place = Set.Read<UInt8>();
+            const UInt8 Index = Place & ~kDelta;
 
             if (Index >= mCount)
             {
@@ -231,7 +240,23 @@ namespace ZyReplication
             {
                 break;
             }
-            Actor.Read(ZyScene::Component(mEntries[Index].Identifier), Set);
+
+            ConstRef<Entry>          Item = mEntries[Index];
+            const ZyScene::Component Type(Item.Identifier);
+
+            if ((Place & kDelta) == 0)
+            {
+                Actor.Read(Type, Set);
+                continue;
+            }
+
+            // A delta lays over the value held, so one for a tag or for a component the entity lacks is a lie.
+            if (Item.Adapter.Apply == nullptr || !Actor.Has(Type))
+            {
+                return false;
+            }
+            Item.Adapter.Apply(Set, Actor.Ensure(Type));
+            Actor.Notify(Type);
         }
         return true;
     }

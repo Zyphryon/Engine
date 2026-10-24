@@ -38,7 +38,7 @@ namespace ZyReplication
         // The table is sealed, so every component's readers are made once.
         for (UInt8 Index = 0; Index < Table.GetCount(); ++Index)
         {
-            mFeeds.Append(Table.GetEntry(Index).Watch(Scene));
+            mFeeds.Append(Table.GetEntry(Index).Adapter.Watch(Scene));
         }
 
         // The global channel always stands, since every greeting reads its catch-up.
@@ -153,9 +153,10 @@ namespace ZyReplication
         const Mask            Wanted  = Exchange(Marks.Dirty, Mask()) & Shared;
         const Mask            Dropped = Exchange(Marks.Dropped, Mask()) & Shared;
 
+        // The world never arrives, so a singleton set mid-session travels whole like every other.
         if ((Wanted | Dropped).Any())
         {
-            WriteUpdate(GetChannel(kGlobal).Stream, 0, World, Wanted, Dropped);
+            WriteUpdate(GetChannel(kGlobal).Stream, 0, World, Wanted, Dropped, Mask());
         }
 
         Deliver(* World.Get<const ZyScene::Clock>());
@@ -532,7 +533,7 @@ namespace ZyReplication
         {
             if (const Ptr<Session> Owner = FindOwner(Actor, Tracking.Key))
             {
-                WriteUpdate(Owner->Private, Tracking.Identifier, Actor, Owned, Mask());
+                WriteUpdate(Owner->Private, Tracking.Identifier, Actor, Owned, Mask(), Mask());
             }
         }
 
@@ -558,19 +559,22 @@ namespace ZyReplication
             Tracking.Diverged |= Wanted | Dropped;
         }
 
+        // Peers hold what the replica arrived or loaded with, which is set at spawn, save what was lost and set again.
+        const Mask Delta = Wanted & ~Dropped;
+
         // Nobody reads the stream of a key no peer sees, and a peer that comes to see it reads its catch-up instead.
         Ref<Channel> Target = GetChannel(Tracking.Key);
 
         if (Target.Subscribers > 0 && ((Wanted | Dropped) & Shared).Any())
         {
-            WriteUpdate(Target.Stream, Tracking.Identifier, Actor, Wanted & Shared, Dropped & Shared);
+            WriteUpdate(Target.Stream, Tracking.Identifier, Actor, Wanted & Shared, Dropped & Shared, Delta);
         }
 
         if (((Wanted | Dropped) & Owned).Any())
         {
             if (const Ptr<Session> Owner = FindOwner(Actor, Tracking.Key))
             {
-                WriteUpdate(Owner->Private, Tracking.Identifier, Actor, Wanted & Owned, Dropped & Owned);
+                WriteUpdate(Owner->Private, Tracking.Identifier, Actor, Wanted & Owned, Dropped & Owned, Delta);
             }
         }
     }
@@ -706,7 +710,7 @@ namespace ZyReplication
 
         if (Key == kGlobal)
         {
-            WriteUpdate(Target.Catchup, 0, mScene.GetWorld(), mManifest.GetSharedMask(), Mask());
+            WriteUpdate(Target.Catchup, 0, mScene.GetWorld(), mManifest.GetSharedMask(), Mask(), Mask());
         }
 
         const auto Arrival = [this, &Target](ZyScene::Entity Actor)
@@ -725,7 +729,7 @@ namespace ZyReplication
             }
             else if (const Mask Wanted = Tracking->Diverged & mManifest.GetSharedMask(); Wanted.Any())
             {
-                WriteUpdate(Target.Catchup, Tracking->Identifier, Actor, Wanted, Mask());
+                WriteUpdate(Target.Catchup, Tracking->Identifier, Actor, Wanted, Mask(), Mask());
             }
         };
 
@@ -757,7 +761,7 @@ namespace ZyReplication
 
             if (Tracking && GetOwner(Actor) == Peer.Link.GetValue())
             {
-                WriteUpdate(Peer.Private, Tracking->Identifier, Actor, Owned, Mask());
+                WriteUpdate(Peer.Private, Tracking->Identifier, Actor, Owned, Mask(), Mask());
             }
         };
 
@@ -783,18 +787,24 @@ namespace ZyReplication
         Bytes.WriteUInt(static_cast<UInt32>(Actor.GetArchetype().GetID()));
         Bytes.WriteUInt(GetOwner(Actor));
 
-        mManifest.Write(Bytes, Actor, mManifest.GetSharedMask(), Mask());
+        mManifest.Write(Bytes, Actor, mManifest.GetSharedMask(), Mask(), Mask());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Publisher::WriteUpdate(Ref<Block> Output, UInt64 Identifier, ZyScene::Entity Actor, Mask Wanted, Mask Dropped)
+    void Publisher::WriteUpdate(
+        Ref<Block>      Output,
+        UInt64          Identifier,
+        ZyScene::Entity Actor,
+        Mask            Wanted,
+        Mask            Dropped,
+        Mask            Delta)
     {
         Ref<Writer> Bytes = Open(Output, Opcode::Update);
         Bytes.WriteUInt(Identifier);
 
-        mManifest.Write(Bytes, Actor, Wanted, Dropped);
+        mManifest.Write(Bytes, Actor, Wanted, Dropped, Delta);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

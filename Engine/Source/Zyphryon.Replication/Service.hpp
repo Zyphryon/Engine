@@ -64,10 +64,10 @@ namespace ZyReplication
         /// \param Identifier The identifier of the component in the registry.
         /// \param To         The peers that receive the component.
         /// \param Rate       The ticks between two reads of its changes, one to read them on every tick.
-        /// \param Watch      The function making a world's readers of the component's pull lists.
-        ZY_INLINE void Replicate(UInt32 Identifier, Audience To, UInt8 Rate, Manifest::Watcher Watch)
+        /// \param Adapter    The functions the component travels through, from \ref Manifest::Bind.
+        ZY_INLINE void Replicate(UInt32 Identifier, Audience To, UInt8 Rate, ConstRef<Manifest::Adapter> Adapter)
         {
-            mManifest.Register(Identifier, To, Rate, Watch);
+            mManifest.Register(Identifier, To, Rate, Adapter);
         }
 
         /// \brief Stops a component travelling, before a session opens, which one declared since may take again.

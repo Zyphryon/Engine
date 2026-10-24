@@ -27,6 +27,13 @@ namespace ZyReplication
     /// \brief Names a set of replicated components, one bit per place in the manifest.
     using Mask = Bitset<kMaxComponents, UInt64>;
 
+    /// \brief Concept that is satisfied when \p Type serializes either whole or as what changed since its last delta.
+    template<typename Type>
+    concept IsIncremental = requires(Ref<Type> Object, Ref<Archive<Writer>> Output)
+    {
+        Object.Serialize(Output, true);
+    };
+
     /// \brief Represents the table of every component type that travels, ordered by name once a session opens.
     class Manifest final
     {
@@ -48,6 +55,19 @@ namespace ZyReplication
         /// \brief Names the function that makes a world's readers of one component's pull lists.
         using Watcher = Feed (*)(Ref<ZyScene::Storage> Scene);
 
+        /// \brief Represents the functions one component type travels through, made where the type is known.
+        struct Adapter final
+        {
+            /// The function making a world's readers of the component's pull lists.
+            Watcher Watch;
+
+            /// The function writing what the component changed since its last delta, or `nullptr` to travel whole.
+            void (* Emit)(Ref<Writer> Output, Ptr<void> Source);
+
+            /// The function reading what the component changed over the value held, or `nullptr` to travel whole.
+            void (* Apply)(Ref<Reader> Input, Ptr<void> Target);
+        };
+
         /// \brief Represents one replicated component type, with everything the wire needs resolved once.
         struct Entry final
         {
@@ -63,8 +83,8 @@ namespace ZyReplication
             /// The number of ticks between two reads of its changes, one reading on every tick.
             UInt8                       Rate;
 
-            /// The function making a world's readers of the component's pull lists.
-            Watcher                     Watch;
+            /// The functions the component travels through.
+            Manifest::Adapter           Adapter;
         };
 
     public:
@@ -79,7 +99,7 @@ namespace ZyReplication
         template<typename Type>
         ZY_INLINE void Register(Audience Policy, UInt8 Rate)
         {
-            Register(ZyScene::IdentifierOf<Type>(), Policy, Rate, & Watch<Type>);
+            Register(ZyScene::IdentifierOf<Type>(), Policy, Rate, Bind<Type>());
         }
 
         /// \brief Declares a component type replicated by its identifier, once, before the table is sealed.
@@ -87,8 +107,8 @@ namespace ZyReplication
         /// \param Identifier The identifier of the component in the registry.
         /// \param Policy     The peers that receive the component.
         /// \param Rate       The number of ticks between two reads of its changes, one reading on every tick.
-        /// \param Watch      The function making a world's readers of the component's pull lists.
-        void Register(UInt32 Identifier, Audience Policy, UInt8 Rate, Watcher Watch);
+        /// \param Adapter    The functions the component travels through, from \ref Bind.
+        void Register(UInt32 Identifier, Audience Policy, UInt8 Rate, ConstRef<Adapter> Adapter);
 
         /// \brief Takes a component type back out of the table, which a sealed table never does.
         ///
@@ -161,7 +181,8 @@ namespace ZyReplication
         /// \param Actor   The entity, the world entity for singletons.
         /// \param Wanted  The components to write, named gone when the entity does not hold them.
         /// \param Dropped The components the entity lost, named gone unless it holds them again.
-        void Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped) const;
+        /// \param Delta   The components the peers hold, written as what they changed since their last delta.
+        void Write(Ref<Writer> Output, ZyScene::Entity Actor, Mask Wanted, Mask Dropped, Mask Delta) const;
 
         /// \brief Reads a set into an entity, removing what is gone and adding or overwriting what is present.
         ///
@@ -178,6 +199,12 @@ namespace ZyReplication
         Bool Skip(Ref<Reader> Input) const;
 
     private:
+
+        /// The byte that closes the absent entries of a set, past every place in the table.
+        static constexpr UInt8 kDelimiter = 0xFF;
+
+        /// The bit set on a present entry's place when what follows is its delta, past every place in the table.
+        static constexpr UInt8 kDelta     = 0x80;
 
         /// \brief Represents a reader of one pull list, kept inside a \ref Drain.
         template<typename List>
@@ -198,10 +225,43 @@ namespace ZyReplication
             }
         };
 
-        /// The byte that closes the absent entries of a set, past every place in the table.
-        static constexpr UInt8 kEnd = 0xFF;
+        /// \brief Writes what a component changed since its last delta.
+        ///
+        /// \param Output The writer to append to.
+        /// \param Source The component, whose delta write forgets what it carried.
+        template<typename Type>
+        static void Emit(Ref<Writer> Output, Ptr<void> Source)
+        {
+            static_cast<Ptr<Type>>(Source)->Serialize(Archive(Output), true);
+        }
+
+        /// \brief Reads what a component changed over the value held.
+        ///
+        /// \param Input  The reader, at the delta, left after it.
+        /// \param Target The component to read over.
+        template<typename Type>
+        static void Apply(Ref<Reader> Input, Ptr<void> Target)
+        {
+            static_cast<Ptr<Type>>(Target)->Serialize(Archive(Input), true);
+        }
 
     public:
+
+        /// \brief Makes the functions a component type travels through, for \ref Register.
+        ///
+        /// \return The functions, each taking the component as \p Type, with deltas only when it serializes them.
+        template<typename Type>
+        static Adapter Bind()
+        {
+            if constexpr (IsIncremental<Type>)
+            {
+                return Adapter(AddressOf(Watch<Type>), AddressOf(Emit<Type>), AddressOf(Apply<Type>));
+            }
+            else
+            {
+                return Adapter(AddressOf(Watch<Type>), nullptr, nullptr);
+            }
+        }
 
         /// \brief Makes a world's readers of one component's pull lists.
         ///
