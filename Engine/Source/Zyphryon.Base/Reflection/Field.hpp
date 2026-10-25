@@ -419,13 +419,13 @@ namespace ZyReflection
             return Compose<Getter, Setter, Kind::Opaque>(Text(Name, Count - 1), Slot);
         }
 
-        /// \brief Describes a value naming something held elsewhere, which a tool picks for itself.
+        /// \brief Describes a value naming something held elsewhere, by its name or its identifier, which a tool picks.
         ///
-        /// \tparam Getter The data member, or the getter, the name is read through.
-        /// \tparam Setter The setter the name is written through, left out for a data member or a read-only value.
+        /// \tparam Getter The data member, or the getter, the name or identifier is read through.
+        /// \tparam Setter The setter it is written through, left out for a data member or a read-only value.
         /// \param  Name   The name the value is shown under, taken as an array so only a lasting one can be given.
         /// \param  Filter The values the tool offers to pick from, taken the same way and for the same reason.
-        /// \return A field describing that name.
+        /// \return A field describing that name or identifier.
         template<auto Getter, auto Setter = nullptr, UInt Count, UInt Length>
         ZY_INLINE static constexpr Field Asset(const Char (& Name)[Count], const Char (& Filter)[Length])
         {
@@ -434,7 +434,8 @@ namespace ZyReflection
             constexpr Bool Flat = IsFlat<typename Access::Value>;
             constexpr Kind Tag  = OnTag<typename Access::Value>();
 
-            static_assert(Tag == Kind::Text, "A name a tool picks reads and writes as a value");
+            static_assert(Tag == Kind::Text || Tag == Kind::Integer,
+                "A value a tool picks reads and writes as a name or a number");
 
             Detail::Borrow<Getter, Flat ? Kind::Structure : Tag>();
 

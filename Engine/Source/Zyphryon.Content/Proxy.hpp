@@ -38,12 +38,11 @@ namespace ZyContent
         {
         }
 
-        /// \brief Constructs a proxy from an existing resource.
+        /// \brief Constructs a proxy from an existing resource, whose key it reads rather than copies.
         ///
         /// \param Resource The resource to create a proxy for.
         ZY_INLINE explicit Proxy(ConstRetainer<Type> Resource)
-            : mKey      { Resource->GetKey() },
-              mResource { Resource }
+            : mResource { Resource }
         {
         }
 
@@ -61,7 +60,7 @@ namespace ZyContent
         /// \return The path the resource is loaded from.
         ZY_INLINE ConstRef<Uri> GetKey() const
         {
-            return mKey;
+            return (mKey.IsValid() || !mResource ? mKey : mResource->GetKey());
         }
 
         /// \brief Gets the resource managed by the proxy.
@@ -89,6 +88,11 @@ namespace ZyContent
         template<typename Serializer>
         ZY_INLINE void Serialize(Serializer Archive)
         {
+            if (!mKey.IsValid() && mResource)
+            {
+                mKey = mResource->GetKey();
+            }
+            
             Archive.Serialize(mKey);
         }
 

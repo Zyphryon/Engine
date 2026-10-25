@@ -85,7 +85,7 @@ namespace ZyRender
     void Animator2D::Step(Real64 Time, ConstRef<Animation2D> Frames, Ref<Visited> Visited)
     {
         // A cursor just started or moved has entered the frame it stands on.
-        if (mPlayback.IsFresh())
+        if (mPlayback.IsFresh() && !Visited.IsFull())
         {
             Visited.Append(mKeyframe);
         }
@@ -123,7 +123,7 @@ namespace ZyRender
             // A loop wraps onto the far edge, while a mirror turns on the edge it reached.
             const UInt8 Entry = IsAscending(Pass, Rising) ? 0 : Last;
 
-            if (Entry != Exit)
+            if (Entry != Exit && !Visited.IsFull())
             {
                 Visited.Append(Entry);
             }

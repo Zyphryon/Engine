@@ -29,8 +29,8 @@ namespace ZyRender
         /// \brief The value a slot takes while the clip asked for has not been started on the sheet.
         static constexpr UInt16 kUnresolved = kMaximum<UInt16>;
 
-        /// \brief The frames entered during one advance, in the order they were entered.
-        using Visited = Spool<UInt8>;
+        /// \brief The frames entered during one advance, in the order they were entered, up to 32 held inline.
+        using Visited = Spool<UInt8, 32>;
 
     public:
 
@@ -246,6 +246,10 @@ namespace ZyRender
 
             for (SInt32 Keyframe = From + Step; Ascending ? Keyframe <= Into : Keyframe >= Into; Keyframe += Step)
             {
+                if (Visited.IsFull())
+                {
+                    return;
+                }
                 Visited.Append(static_cast<UInt8>(Keyframe));
             }
         }
