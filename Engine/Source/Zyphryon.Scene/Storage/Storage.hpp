@@ -116,6 +116,30 @@ namespace ZyScene
             Queue(Deferral::Operation::Invoke, Handle(), 0, Handle(), Payload, false);
         }
 
+        /// \brief Runs a task over a copy of values once the running walk ends, or over the values at once outside one.
+        ///
+        /// \param Values   The values to hand the task, copied into the walk's room until it runs.
+        /// \param Callback The task, moved in, taking the values as a span.
+        template<typename Type, typename Callable>
+            requires IsTriviallyCopyable<Type>
+        ZY_INLINE void Postpone(ConstSpan<Type> Values, AnyRef<Callable> Callback)
+        {
+            if (!mDeferral.IsWalking())
+            {
+                Callback(Values);
+                return;
+            }
+
+            const Ptr<Type> Held = reinterpret_cast<Ptr<Type>>(
+                mDeferral.Allocate(sizeof(Type) * Values.GetSize(), alignof(Type)));
+            ZyBase::Copy(Held, Values.GetSize(), Values.GetData());
+
+            Postpone([Work = Forward<Callable>(Callback), Kept = ConstSpan<Type>(Held, Values.GetSize())]() mutable
+            {
+                Work(Kept);
+            });
+        }
+
     protected:
 
         /// \brief Constructs storage holding nothing but the world entity, as part of a world.
