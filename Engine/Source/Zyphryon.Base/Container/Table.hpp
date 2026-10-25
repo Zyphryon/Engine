@@ -302,6 +302,25 @@ inline namespace ZyBase
             return DoFind(Needle);
         }
 
+        /// \brief Searches for the place of the pair holding the given key in the dense array.
+        ///
+        /// \param Needle The key to search for in the table.
+        /// \return The index of the pair, which holds until a pair is erased, or `~0u` if the key is absent.
+        template<typename KeyType>
+        ZY_INLINE UInt32 Locate(AnyRef<KeyType> Needle) const
+        {
+            if (mSize == 0u)
+            {
+                return kInvalid;
+            }
+
+            UInt32 Metadata;
+            UInt32 Slot;
+
+            const UInt32 Match = Probe(Needle, Metadata, Slot);
+            return Match != kInvalid ? mIndices[Match] : kInvalid;
+        }
+
         /// \brief Searches for a value associated with the given key, returning the value directly.
         ///
         /// \param Needle The key to search for in the table.
