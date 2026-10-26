@@ -113,11 +113,16 @@ namespace ZyAI
         }
         case Behaviour::Kind::Sequence:
         case Behaviour::Kind::Selector:
+        case Behaviour::Kind::Priority:
         {
             const Bool   Ordered = (Current.Type == Behaviour::Kind::Sequence);
+            const Bool   Watched = (Current.Type == Behaviour::Kind::Priority);
             const Status Ending  = Ordered ? Status::Failure : Status::Success;
 
-            if (Fresh)
+            // A priority asks its children again from the first every tick, remembering which one it left running.
+            const UInt32 Running = Fresh ? 0 : mMemory[Index].Cursor;
+
+            if (Fresh || Watched)
             {
                 mMemory[Index].Cursor = static_cast<UInt16>(First);
             }
@@ -127,6 +132,12 @@ namespace ZyAI
             for (UInt32 Child = mMemory[Index].Cursor; Child < Last; Child += Nodes[Child].Span)
             {
                 const Status Got = Visit(Nodes, Child, Host);
+
+                // An earlier child taking over stops the later one left running, halting its leaves.
+                if (Watched && Got != Status::Failure && Running != 0 && Running != Child)
+                {
+                    Stop(Nodes, Running, Host);
+                }
 
                 if (Got == Status::Running)
                 {

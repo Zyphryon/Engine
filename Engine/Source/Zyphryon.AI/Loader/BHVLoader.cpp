@@ -85,6 +85,7 @@ namespace ZyAI
             break;
         case Behaviour::Kind::Sequence:
         case Behaviour::Kind::Selector:
+        case Behaviour::Kind::Priority:
         case Behaviour::Kind::Parallel:
             if (Children == 0)
             {

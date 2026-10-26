@@ -30,6 +30,7 @@ namespace ZyAI
         {
             Sequence, ///< Runs its children in order, and fails on the first child that fails.
             Selector, ///< Runs its children in order, and succeeds on the first child that succeeds.
+            Priority, ///< Reruns its children from the first each tick, and stops a running one an earlier overtakes.
             Parallel, ///< Runs every child each tick, and succeeds once `Count` children succeed, or all at `0`.
             Invert,   ///< Runs its child and swaps success with failure.
             Repeat,   ///< Runs its child again after each success, `Count` times, or forever at `0`.
