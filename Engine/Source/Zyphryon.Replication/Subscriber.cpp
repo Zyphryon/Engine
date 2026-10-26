@@ -486,20 +486,21 @@ namespace ZyReplication
         // Everything the arrival names lands in one move, a child under no key of its own, a root under the section.
         mScene.Defer([&]
         {
-            if (Actor.GetParent().GetID() != Above.GetID())
+            const Bool Fresh = !Actor.Has<Possessed>();
+            const Bool Moved = Actor.GetParent().GetID() != Above.GetID();
+
+            if (Moved)
             {
                 Actor.Attach(Above);
             }
             Actor.Set(Above.IsAlive() ? Locus() : Locus(mSection));
 
-            // What this side already plays only changes key, so its own state is kept over the publisher's older one.
-            const Bool Fresh = !Actor.Has<Possessed>();
-
             Claim(Actor, Peer);
 
-            if (Fresh)
+            // What this side already plays keeps its own state, unless it moved under a parent that state isn't in.
+            if (Fresh || Moved)
             {
-                Apply(Actor, Set, IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
+                Apply(Actor, Set, Fresh && IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
             }
         });
 
