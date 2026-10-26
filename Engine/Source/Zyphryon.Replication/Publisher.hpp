@@ -46,15 +46,26 @@ namespace ZyReplication
 
         /// \brief Takes on a peer reached through the network.
         ///
-        /// \param Link The connection the peer is reached through, whose value becomes its key.
+        /// \param Link   The connection the peer is reached through, whose value becomes its key.
+        /// \param Origin The address the peer connects from.
         /// \return The key the peer is known by, as \ref ZyNetwork::Connection::GetValue derives it.
-        UInt64 Admit(ZyNetwork::Connection Link);
+        UInt64 Admit(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin);
 
         /// \brief Drops a peer and every key it saw.
         ///
         /// \param Peer The key the peer is known by.
         /// \return The connection the peer was reached through, or an invalid one when it was not admitted.
         ZyNetwork::Connection Expel(UInt64 Peer);
+
+        /// \brief Gets where a peer connects from.
+        ///
+        /// \param Peer The key the peer is known by.
+        /// \return The address, or `nullptr` when no peer holds the key.
+        ZY_INLINE ConstPtr<ZyNetwork::Address> GetAddress(UInt64 Peer) const
+        {
+            const ConstPtr<Unique<Session>> Found = mSessions.Find(Peer);
+            return Found ? AddressOf((* Found)->Origin) : nullptr;
+        }
 
         /// \brief Replaces the keys a peer sees.
         ///
@@ -154,6 +165,9 @@ namespace ZyReplication
         {
             /// The connection the peer is reached through, whose value is the key the peer is known by.
             ZyNetwork::Connection Link;
+
+            /// The address the peer connects from.
+            ZyNetwork::Address    Origin;
 
             /// The interest keys the peer sees.
             Bag<UInt64>           Keys;

@@ -181,8 +181,13 @@ namespace ZyNetwork
             switch (Entry.Kind)
             {
             case Mailbox::Signal::Connect:
-                Listener->OnConnect(Entry.Link);
+            {
+                const ConstSpan<Byte> Host = mDrain.GetPayload(Entry);
+                const Text            Name(reinterpret_cast<ConstPtr<Char>>(Host.GetData()), Host.GetSize());
+
+                Listener->OnConnect(Entry.Link, Address(Name, Entry.Port));
                 break;
+            }
             case Mailbox::Signal::Disconnect:
                 Listener->OnDisconnect(Entry.Link, Entry.Cause);
 

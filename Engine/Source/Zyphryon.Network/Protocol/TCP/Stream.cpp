@@ -268,7 +268,7 @@ namespace ZyNetwork::TCP
         mState  = State::Live;
         mExpiry = 0.0;
 
-        Output.Connect(mLink);
+        Output.Connect(mLink, mAddress);
 
         Fill(Watcher);
         Drain(Watcher);

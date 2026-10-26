@@ -217,7 +217,7 @@ namespace ZyNetwork::UDP
         Entry.Freshness = mClock;
         Origin.Describe(Entry.Origin);
 
-        Output.Connect(Entry.Link);
+        Output.Connect(Entry.Link, Entry.Origin);
         return Slot;
     }
 

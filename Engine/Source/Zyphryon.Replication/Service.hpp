@@ -120,6 +120,12 @@ namespace ZyReplication
         /// \param Peer The key the peer is known by, its listener told once the connection closed.
         void Expel(UInt64 Peer);
 
+        /// \brief Gets where a peer connects from, while this side serves.
+        ///
+        /// \param Peer The key the peer is known by.
+        /// \return The address, or `nullptr` when no peer holds the key or this side does not serve.
+        ConstPtr<ZyNetwork::Address> GetAddress(UInt64 Peer) const;
+
         /// \brief Sends a message to the serving side, reliable and in order, while this side follows.
         ///
         /// \param Message The payload, which the serving side's listener receives as it was written.
@@ -190,8 +196,8 @@ namespace ZyReplication
             /// \param Listener The listener the game hears the session through.
             Gate(Ref<Service> Owner, ConstRetainer<Listener> Listener);
 
-            /// \see ZyNetwork::Handler::OnConnect(ZyNetwork::Connection)
-            void OnConnect(ZyNetwork::Connection Link) override;
+            /// \see ZyNetwork::Handler::OnConnect(ZyNetwork::Connection, ConstRef<ZyNetwork::Address>)
+            void OnConnect(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin) override;
 
             /// \see ZyNetwork::Handler::OnDisconnect(ZyNetwork::Connection, ZyNetwork::Reason)
             void OnDisconnect(ZyNetwork::Connection Link, ZyNetwork::Reason Reason) override;

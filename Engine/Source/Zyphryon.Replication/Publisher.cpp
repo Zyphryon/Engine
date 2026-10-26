@@ -59,12 +59,12 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt64 Publisher::Admit(ZyNetwork::Connection Link)
+    UInt64 Publisher::Admit(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin)
     {
         const UInt64 Peer = Link.GetValue();
         Expel(Peer);
 
-        mSessions.Assign(Peer, Unique<Session>::Create(Link));
+        mSessions.Assign(Peer, Unique<Session>::Create(Link, Origin));
         return Peer;
     }
 

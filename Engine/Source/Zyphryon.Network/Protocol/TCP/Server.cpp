@@ -278,7 +278,7 @@ namespace ZyNetwork::TCP
 
         if (Entry->Adopt(Watcher))
         {
-            Output.Connect(Link);
+            Output.Connect(Link, Address);
         }
         else
         {

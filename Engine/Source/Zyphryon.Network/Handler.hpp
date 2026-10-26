@@ -30,8 +30,9 @@ namespace ZyNetwork
 
         /// \brief Called when a peer becomes ready to exchange messages.
         ///
-        /// \param Link The peer that was opened.
-        virtual void OnConnect(Connection Link)
+        /// \param Link   The peer that was opened.
+        /// \param Origin The address the peer is at, or the one reached for when this side connected.
+        virtual void OnConnect(Connection Link, ConstRef<Address> Origin)
         {
         }
 

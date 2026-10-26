@@ -157,6 +157,14 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ConstPtr<ZyNetwork::Address> Service::GetAddress(UInt64 Peer) const
+    {
+        return mPublisher ? mPublisher->GetAddress(Peer) : nullptr;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Service::Send(ConstSpan<Byte> Message)
     {
         if (mSubscriber && mLink.IsValid())
@@ -284,12 +292,12 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Gate::OnConnect(ZyNetwork::Connection Link)
+    void Service::Gate::OnConnect(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin)
     {
         // The serving side's own endpoint opening is no peer.
         if (mOwner.mPublisher && Link.IsPeer())
         {
-            mListener->OnJoin(mOwner.mPublisher->Admit(Link));
+            mListener->OnJoin(mOwner.mPublisher->Admit(Link, Origin));
         }
         else if (mOwner.mSubscriber)
         {

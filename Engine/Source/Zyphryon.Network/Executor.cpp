@@ -290,7 +290,7 @@ namespace ZyNetwork
                 // A listener or a datagram endpoint has no attempt to settle, so it is open once bound.
                 if (Entry.Server || Entry.Transport == Transport::UDP)
                 {
-                    mReport.Connect(Entry.Link);
+                    mReport.Connect(Entry.Link, Entry.Origin);
                 }
             }
             else

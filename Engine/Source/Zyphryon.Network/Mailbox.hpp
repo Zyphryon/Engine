@@ -48,6 +48,9 @@ namespace ZyNetwork
             /// The reason a connection ended, meaningless for anything else.
             Reason     Cause  = Reason::None;
 
+            /// The port a peer became ready at, whose host is the payload, meaningless for anything else.
+            UInt16     Port   = 0;
+
             /// The offset into the arena where the payload begins.
             UInt32     Offset = 0;
 
@@ -82,12 +85,15 @@ namespace ZyNetwork
             return ConstSpan(mArena.GetData() + Entry.Offset, Entry.Size);
         }
 
-        /// \brief Records that a peer became ready.
+        /// \brief Records that a peer became ready, and where it is.
         ///
-        /// \param Link The peer that is now open.
-        ZY_INLINE void Connect(Connection Link)
+        /// \param Link   The peer that is now open.
+        /// \param Origin The address the peer is at, whose host is carried as the payload.
+        ZY_INLINE void Connect(Connection Link, ConstRef<Address> Origin)
         {
-            Push(Link, Signal::Connect, Delivery::Unreliable, Reason::None, ConstSpan<Byte>());
+            const ConstSpan<Byte> Host(reinterpret_cast<ConstPtr<Byte>>(Origin.Host.GetData()), Origin.Host.GetSize());
+
+            Push(Link, Signal::Connect, Delivery::Unreliable, Reason::None, Host).Port = Origin.Port;
         }
 
         /// \brief Records that a peer stopped.
@@ -151,7 +157,8 @@ namespace ZyNetwork
         /// \param Mode    The guarantee a message was sent under, ignored for anything else.
         /// \param Cause   The reason a connection ended, ignored for anything else.
         /// \param Payload The payload, which is empty for anything that carries none.
-        ZY_INLINE void Push(Connection Link, Signal Kind, Delivery Mode, Reason Cause, ConstSpan<Byte> Payload)
+        /// \return The notification recorded, valid until the next one is.
+        ZY_INLINE Ref<Entry> Push(Connection Link, Signal Kind, Delivery Mode, Reason Cause, ConstSpan<Byte> Payload)
         {
             Ref<Entry> Slot = mEntries.Append();
             Slot.Link   = Link;
@@ -162,6 +169,7 @@ namespace ZyNetwork
             Slot.Size   = static_cast<UInt32>(Payload.GetSize());
 
             mArena.Append(Payload);
+            return Slot;
         }
 
     private:
