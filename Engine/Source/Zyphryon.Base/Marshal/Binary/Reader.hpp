@@ -179,7 +179,7 @@ inline namespace ZyBase
             using Unsigned = Unsigned<Type>;
 
             const Unsigned Value = ReadUInt<Unsigned>();
-            return static_cast<Type>((Value >> 1) ^ -(Value & 1));
+            return static_cast<Type>((Value >> 1) ^ (Unsigned(0) - (Value & 1)));
         }
 
         /// \brief Reads a UTF-8 text string prefixed with its length.
