@@ -83,6 +83,14 @@ namespace ZyScene
             return kMinRangeEntities + static_cast<UInt32>(mEntities.Slots.GetSize());
         }
 
+        /// \brief Gets how far the archetype slots reach, handed out or not.
+        ///
+        /// \return One past the highest archetype slot ever handed out, or the first one when none was.
+        ZY_INLINE UInt32 GetArchetypes() const
+        {
+            return Clamp(static_cast<UInt32>(mFixed.Slots.GetSize()), kMinRangeArchetypes + 1, kMaxRangeArchetypes + 1);
+        }
+
         /// \brief Checks whether a handle still names a living entity.
         ///
         /// \param Actor The handle, which may be stale or name nothing.

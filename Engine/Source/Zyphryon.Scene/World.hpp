@@ -93,6 +93,27 @@ namespace ZyScene
             return Entity(this, Actor);
         }
 
+        /// \brief Finds the root archetype a name names, which no spread walk may be running to ask for.
+        ///
+        /// \param Name The name the archetype holds, as \ref Entity::SetName gave it.
+        /// \return The archetype, or one naming nothing when no root archetype holds the name.
+        Entity GetArchetype(Text Name);
+
+        /// \brief Hands every archetype to a callback, parts included, in the order of their slots.
+        ///
+        /// \param Callback The callable, taking each archetype, which must not make or destroy one.
+        template<typename Callable>
+        ZY_INLINE void ForEachArchetype(AnyRef<Callable> Callback)
+        {
+            for (UInt32 Index = kMinRangeArchetypes + 1; Index < mDirectory.GetArchetypes(); ++Index)
+            {
+                if (mDirectory.IsHeld(Index))
+                {
+                    Callback(Entity(this, mDirectory.GetHandle(Index)));
+                }
+            }
+        }
+
         /// \brief Starts a query over the entities holding some components, the writable ones as their own.
         ///
         /// \return The description, which becomes the query when it is converted to one.
@@ -330,8 +351,9 @@ namespace ZyScene
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Scheduler        mScheduler;
-        Sequence<Module> mModules;
-        UInt32           mImporting;
+        Scheduler             mScheduler;
+        Sequence<Module>      mModules;
+        UInt32                mImporting;
+        Table<UInt64, UInt32> mArchetypes;
     };
 }

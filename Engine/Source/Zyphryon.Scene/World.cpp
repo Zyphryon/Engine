@@ -44,6 +44,39 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Entity World::GetArchetype(Text Name)
+    {
+        ZY_ASSERT(!mDeferral.IsSpreading(), "An archetype is found by name only outside a spread walk");
+
+        const auto Holds = [this, Name](UInt32 Index)
+        {
+            return mDirectory.IsHeld(Index)
+                && mDirectory.GetParent(Index) == 0
+                && Entity(this, mDirectory.GetHandle(Index)).GetName() == Name;
+        };
+
+        // A name found before is checked again, since its archetype may have been renamed or destroyed since.
+        const UInt64 Key = Hash(Name);
+
+        if (const ConstPtr<UInt32> Known = mArchetypes.Find(Key); Known && Holds(* Known))
+        {
+            return Entity(this, mDirectory.GetHandle(* Known));
+        }
+
+        for (UInt32 Index = kMinRangeArchetypes + 1; Index < mDirectory.GetArchetypes(); ++Index)
+        {
+            if (Holds(Index))
+            {
+                mArchetypes.Assign(Key, Index);
+                return Entity(this, mDirectory.GetHandle(Index));
+            }
+        }
+        return Entity();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void World::Progress()
     {
         mScheduler.Progress();
