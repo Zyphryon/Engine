@@ -492,8 +492,15 @@ namespace ZyReplication
             }
             Actor.Set(Above.IsAlive() ? Locus() : Locus(mSection));
 
+            // What this side already plays only changes key, so its own state is kept over the publisher's older one.
+            const Bool Fresh = !Actor.Has<Possessed>();
+
             Claim(Actor, Peer);
-            Apply(Actor, Set, IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
+
+            if (Fresh)
+            {
+                Apply(Actor, Set, IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
+            }
         });
 
         // Children that came before it arrive now.
