@@ -80,6 +80,9 @@ namespace ZyReflection
                     }
                 }
                 break;
+            case Kind::Structure:
+                Written = Given->IsObject() && Of(Each).Decode(* Given, Each.Read(Instance).GetAddress());
+                break;
             default:
                 break;
             }
