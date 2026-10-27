@@ -512,6 +512,21 @@ inline namespace ZyMath
                 Vector4(0.0f, 0.0f, 1.0f, Vector.GetZ()));
         }
 
+        /// \brief Creates a matrix from the axes a frame runs along and the place it stands at.
+        ///
+        /// \param AxisX  The direction local X runs along, its length the scale along it.
+        /// \param AxisY  The direction local Y runs along, its length the scale along it.
+        /// \param AxisZ  The direction local Z runs along, its length the scale along it.
+        /// \param Origin The place the local origin ends up at.
+        /// \return A matrix that lays local space out along the given axes from the given origin.
+        ZY_INLINE static Matrix4x3 FromAxes(Vector3 AxisX, Vector3 AxisY, Vector3 AxisZ, Vector3 Origin)
+        {
+            return Matrix4x3(
+                Vector4(AxisX.GetX(), AxisY.GetX(), AxisZ.GetX(), Origin.GetX()),
+                Vector4(AxisX.GetY(), AxisY.GetY(), AxisZ.GetY(), Origin.GetY()),
+                Vector4(AxisX.GetZ(), AxisY.GetZ(), AxisZ.GetZ(), Origin.GetZ()));
+        }
+
         /// \brief Creates a scaling matrix.
         ///
         /// \param Vector The scale factor to apply along each axis.
