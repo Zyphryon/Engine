@@ -685,6 +685,21 @@ inline namespace ZyMath
             return AnyVector3(Angle::Cosine(Bearing) * Flat, Angle::Sine(Elevation), Angle::Sine(Bearing) * Flat);
         }
 
+        /// \brief Gets a vector perpendicular to the given vector.
+        ///
+        /// \param Vector The vector to compute the perpendicular of.
+        /// \return The vector crossed with the axis it leans on least, zero only for a zero vector.
+        ZY_INLINE static constexpr AnyVector3 Perpendicular(AnyVector3 Vector)
+        {
+            const AnyVector3 Lean = Abs(Vector);
+
+            if (Lean.GetX() < Lean.GetY() && Lean.GetX() < Lean.GetZ())
+            {
+                return Cross(Vector, UnitX());
+            }
+            return Cross(Vector, Lean.GetY() < Lean.GetZ() ? UnitY() : UnitZ());
+        }
+
         /// \brief Projects the source vector onto the target vector.
         ///
         /// \param Source The vector to be projected.
