@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Sweep.hpp"
+#include "Collide.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -95,6 +96,38 @@ inline namespace ZyMath
                 return Test(P0, P1, Motion, Contact);
             });
         });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Real32 Sweep::Cast(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Real32 Skin, Ref<Vector3> Normal)
+    {
+        if (Manifold Touch; Collide::Test(First, Second, Touch))
+        {
+            const Vector3 Facing = Touch.GetNormal();
+
+            if (Vector3::Dot(Motion, Facing) >= 0.0f)
+            {
+                return 1.0f;
+            }
+            Normal = Facing;
+            return 0.0f;
+        }
+
+        Manifold Contact;
+
+        if (Test(First, Second, Motion, Contact))
+        {
+            // The motion stops a skin short, so a volume resting against a face can still be asked to slide along it.
+            const Real32 Closing = -Vector3::Dot(Motion, Contact.GetNormal());
+            const Real32 Backoff = (Closing > kMinimumReach ? Skin / Closing : 0.0f);
+
+            Normal = Contact.GetNormal();
+
+            return Clamp(Contact.GetTime() - Backoff, 0.0f, 1.0f);
+        }
+        return 1.0f;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

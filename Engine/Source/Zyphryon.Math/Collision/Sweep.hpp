@@ -76,6 +76,16 @@ inline namespace ZyMath
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Test(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Ref<Manifold> Contact);
 
+        /// \brief Finds how far a moving shape travels before it comes within a skin of a standing one.
+        ///
+        /// \param First  The volume being moved.
+        /// \param Second The volume standing in its way.
+        /// \param Motion The displacement of the first volume.
+        /// \param Skin   The gap the motion stops short of the contact by, in the same units as the motion.
+        /// \param Normal Receives the way out of the face met, unchanged when nothing is.
+        /// \return The fraction of the motion that is free, from 0 to 1, where 1 meets nothing.
+        static Real32 Cast(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Real32 Skin, Ref<Vector3> Normal);
+
     private:
 
         /// \brief Holds the stretch of the motion that is still in play, and the face that last narrowed it.
