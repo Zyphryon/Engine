@@ -409,13 +409,13 @@ namespace ZyEnum
         return Result;
     }
 
-    /// \brief Converts a string to an enum value using case-insensitive comparison.
+    /// \brief Finds the enum value a string names using case-insensitive comparison.
     ///
-    /// \param Name    The string name of the enum value.
-    /// \param Default The default value to return if the name is not found.
-    /// \return An enum value corresponding to \p Name, or \p Default if not found.
+    /// \param Name   The string name of the enum value.
+    /// \param Output Receives the enum value named, unchanged when the name is not found.
+    /// \return `true` if \p Name names a value of \p Type, `false` otherwise.
     template<IsEnum Type>
-    constexpr Type Cast(Text Name, Type Default)
+    constexpr Bool Find(Text Name, Ref<Type> Output)
     {
         ConstRef<decltype(Detail::kReflection<Type>)> Reflection = Detail::kReflection<Type>;
 
@@ -427,10 +427,24 @@ namespace ZyEnum
 
             if (StrEqualCaseInsensitive(Entry, Name))
             {
-                return Item.Value;
+                Output = Item.Value;
+                return true;
             }
         }
-        return Default;
+        return false;
+    }
+
+    /// \brief Converts a string to an enum value using case-insensitive comparison.
+    ///
+    /// \param Name    The string name of the enum value.
+    /// \param Default The default value to return if the name is not found.
+    /// \return An enum value corresponding to \p Name, or \p Default if not found.
+    template<IsEnum Type>
+    constexpr Type Cast(Text Name, Type Default)
+    {
+        Type Result = Default;
+        Find(Name, Result);
+        return Result;
     }
 
     /// \brief Converts an enum value to its underlying integer type.
