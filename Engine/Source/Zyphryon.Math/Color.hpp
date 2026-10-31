@@ -9,6 +9,12 @@
 #pragma once
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// [  HEADER  ]
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+#include "Vector3.hpp"
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -78,6 +84,29 @@ inline namespace ZyMath
             const Real32 G = static_cast<Real32>(GetGreen()) / static_cast<Real32>(Limit());
             const Real32 B = static_cast<Real32>(GetBlue())  / static_cast<Real32>(Limit());
             return R * 0.2126f + G * 0.7152f + B * 0.0722f;
+        }
+
+        /// \brief Gets the hue, saturation and value of the color, its alpha left out.
+        ///
+        /// \return The hue in turns, then the saturation and the value, each from 0 to 1.
+        ZY_INLINE constexpr Vector3 GetHSV() const
+        {
+            const Real32 R = static_cast<Real32>(GetRed())   / static_cast<Real32>(Limit());
+            const Real32 G = static_cast<Real32>(GetGreen()) / static_cast<Real32>(Limit());
+            const Real32 B = static_cast<Real32>(GetBlue())  / static_cast<Real32>(Limit());
+
+            const Real32 Most  = ::Max(R, ::Max(G, B));
+            const Real32 Least = ::Min(R, ::Min(G, B));
+            const Real32 Span  = Most - Least;
+
+            Real32 Hue = 0.0f;
+
+            if (Span > 0.0f)
+            {
+                Hue = (Most == R ? (G - B) / Span : Most == G ? 2.0f + (B - R) / Span : 4.0f + (R - G) / Span) / 6.0f;
+                Hue = (Hue < 0.0f ? Hue + 1.0f : Hue);
+            }
+            return Vector3(Hue, Most > 0.0f ? Span / Most : 0.0f, Most);
         }
 
         /// \brief Checks if the color is opaque (alpha channel is at maximum value).
@@ -451,68 +480,22 @@ inline namespace ZyMath
             return AnyColor(R, G, B, A);
         }
 
-        /// \brief Constructs a fully saturated color from a hue value.
+        /// \brief Constructs a color from a hue, a saturation and a value.
         ///
-        /// \param Hue   The hue in turns, where one full revolution of the color wheel spans [0, 1).
-        /// \param Alpha The alpha component in the range [0, 255].
-        /// \return The color at that hue, at full saturation and brightness.
-        ZY_INLINE static constexpr AnyColor FromHue(Real32 Hue, UInt8 Alpha = 255)
+        /// \param Shade The hue in turns, then the saturation and the value, each from 0 to 1.
+        /// \param Alpha The alpha component, in the same range as the other channels.
+        /// \return The color at that hue, saturation and value.
+        ZY_INLINE static constexpr AnyColor FromHSV(Vector3 Shade, Type Alpha = Limit())
         {
-            const Real32 H = (Hue - Floor(Hue)) * 6.0f;
-            const Real32 X = 1.0f - Abs(Mod(H, 2.0f) - 1.0f);
-
-            Real32 R = 0.0f;
-            Real32 G = 0.0f;
-            Real32 B = 0.0f;
-
-            switch (static_cast<UInt32>(H))
+            const auto Channel = [Shade](Real32 Offset)
             {
-            case 0:
-                R = 1.0f;
-                G = X;
-                break;
-            case 1:
-                R = X;
-                G = 1.0f;
-                break;
-            case 2:
-                G = 1.0f;
-                B = X;
-                break;
-            case 3:
-                G = X;
-                B = 1.0f;
-                break;
-            case 4:
-                R = X;
-                B = 1.0f;
-                break;
-            default:
-                R = 1.0f;
-                B = X;
-                break;
-            }
+                Real32 Turn = Offset + Shade.GetX() * 6.0f;
+                Turn -= Floor(Turn / 6.0f) * 6.0f;
 
-            if constexpr (IsReal<Type>)
-            {
-                constexpr Real32 kInvLimit = 1.0f / Limit<UInt8>();
-
-                return AnyColor(
-                    static_cast<Type>(R),
-                    static_cast<Type>(G),
-                    static_cast<Type>(B),
-                    static_cast<Type>(Alpha * kInvLimit));
-            }
-            else
-            {
-                constexpr Real32 kLimit = static_cast<Real32>(Limit<Type>());
-
-                return AnyColor(
-                    static_cast<Type>(R * kLimit),
-                    static_cast<Type>(G * kLimit),
-                    static_cast<Type>(B * kLimit),
-                    static_cast<Type>(Alpha));
-            }
+                const Real32 Drop = Shade.GetY() * ::Max(0.0f, ::Min(Turn, ::Min(4.0f - Turn, 1.0f)));
+                return static_cast<Type>(Shade.GetZ() * (1.0f - Drop) * static_cast<Real32>(Limit()));
+            };
+            return AnyColor(Channel(5.0f), Channel(3.0f), Channel(1.0f), Alpha);
         }
 
         /// \brief Returns a fully transparent black color.
