@@ -58,7 +58,7 @@ namespace ZyRuntime
             Startup::Window Settings = mStartup.GetWindow();
             Real32          Scale    = 1.0f;
 
-            if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window.GetX(), Window.GetY()))
+            if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window))
             {
                 Settings.Monitor = Monitor->GetName();
                 Scale = Monitor->GetScale();
@@ -239,8 +239,7 @@ namespace ZyRuntime
 
             if (Config.ColorFormat == ZyGraphic::TextureFormat::Unspecified)
             {
-                const ConstPtr<ZyPlatform::Monitor> Monitor =
-                    Platform->GetDisplay().GetMonitor(Window.GetX(), Window.GetY());
+                const ConstPtr<ZyPlatform::Monitor> Monitor = Platform->GetDisplay().GetMonitor(Window);
 
                 Config.ColorFormat = (Monitor && Monitor->IsHDR())
                     ? ZyGraphic::TextureFormat::RGBA16Float

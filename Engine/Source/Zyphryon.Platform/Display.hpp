@@ -13,6 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Monitor.hpp"
+#include "Window.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -73,6 +74,17 @@ namespace ZyPlatform
                 }
             }
             return nullptr;
+        }
+
+        /// \brief Gets the monitor that holds the middle of a window.
+        ///
+        /// \param Window The window to look under.
+        /// \return The monitor under the window's middle, or `nullptr` if none is.
+        ZY_INLINE ConstPtr<Monitor> GetMonitor(ConstRef<Window> Window) const
+        {
+            const SInt32 X = Window.GetX() + static_cast<SInt32>(Window.GetWidth() / 2);
+            const SInt32 Y = Window.GetY() + static_cast<SInt32>(Window.GetHeight() / 2);
+            return GetMonitor(X, Y);
         }
 
         /// \brief Gets all available monitors attached to the system.
