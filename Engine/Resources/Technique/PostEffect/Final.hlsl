@@ -14,11 +14,11 @@
 
 cbuffer cb_Pass : register(b1)
 {
-    float4 u_Grading;   // X = Exposure, Y = Saturation, Z = Vignette, W = Grain
+    float4 u_Grading;   // X = Exposure, Y = Saturation, Z = Twice the vignette, W = Grain
     float4 u_Lift;      // RGB = Lift,   W = The grain's frame, or below zero when nothing past the curve is graded
     float4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
-    float4 u_Gain;      // RGB = Gain,   W = The levels each channel is stepped to
-    float4 u_Lens;      // XY = A texel of the scene, Z = Aberration in pixels
+    float4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
+    float4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
 };
 
 struct fs_Input
@@ -59,9 +59,12 @@ SamplerState s_Scene : register(s0);
 Texture2D    t_Bloom : register(t1);
 SamplerState s_Bloom : register(s1);
 
-// GT7 is the curve the image is authored against; ACES is the variant a scene can ask for instead.
 #if defined(ENABLE_TONEMAP_ACES)
     #define Tonemap ZyTonemapAces
+#elif defined(ENABLE_TONEMAP_NEUTRAL)
+    #define Tonemap ZyTonemapNeutral
+#elif defined(ENABLE_TONEMAP_AGX)
+    #define Tonemap ZyTonemapAgx
 #else
     #define Tonemap ZyTonemapGt
 #endif // ENABLE_TONEMAP_ACES
@@ -74,7 +77,7 @@ float Grain(float2 Pixel, uint Frame)
     return float(Seed & 0xFFFFu) * (1.0 / 65535.0) - 0.5;
 }
 
-// A 4x4 ordered matrix that dithers a stepped gradient, each cell half a step in so the nudges centre on nought.
+// A 4x4 ordered matrix of the thresholds a stepped gradient rounds up at, each cell half a step in.
 static const float kBayer[16] =
 {
      0.5 / 16.0,  8.5 / 16.0,  2.5 / 16.0, 10.5 / 16.0,
@@ -83,12 +86,11 @@ static const float kBayer[16] =
     15.5 / 16.0,  7.5 / 16.0, 13.5 / 16.0,  5.5 / 16.0,
 };
 
-float3 Palette(float3 Color, float Levels, float2 Pixel)
+float3 Palette(float3 Color, float Steps, float2 Pixel)
 {
-    const int2  Cell  = int2(Pixel) & 3;
-    const float Steps = Levels - 1.0;
+    const int2 Cell = int2(Pixel) & 3;
 
-    return floor(Color * Steps + 0.5 + (kBayer[Cell.y * 4 + Cell.x] - 0.5)) / Steps;
+    return floor(Color * Steps + kBayer[Cell.y * 4 + Cell.x]) / Steps;
 }
 
 float4 main(fs_Input Input) : SV_Target
@@ -102,7 +104,7 @@ float4 main(fs_Input Input) : SV_Target
     // Red and blue part from green toward the corners, as a lens that bends each colour by its own amount.
     if (u_Lens.z > 0.0)
     {
-        const float2 Shift = (Input.Texture - 0.5) * 2.0 * u_Lens.z * u_Lens.xy;
+        const float2 Shift = (Input.Texture - 0.5) * u_Lens.zw;
 
         Scene.r = t_Scene.SampleLevel(s_Scene, Input.Texture + Shift, 0).r;
         Scene.b = t_Scene.SampleLevel(s_Scene, Input.Texture - Shift, 0).b;
@@ -123,7 +125,7 @@ float4 main(fs_Input Input) : SV_Target
     Color = lerp(float3(Luma, Luma, Luma), Color, u_Grading.y);
 
     const float2 Offset   = Input.Texture - 0.5;
-    const float  Vignette = 1.0 - u_Grading.z * saturate(dot(Offset, Offset) * 2.0);
+    const float  Vignette = 1.0 - u_Grading.z * dot(Offset, Offset);
 
     Color *= Vignette;
 
@@ -152,7 +154,7 @@ float4 main(fs_Input Input) : SV_Target
     Shown  = saturate(Shown);
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
-    if (u_Gain.w > 1.0)
+    if (u_Gain.w > 0.0)
     {
         Shown = Palette(Shown, u_Gain.w, Input.Position.xy);
     }

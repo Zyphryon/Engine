@@ -33,6 +33,8 @@ namespace ZyRender
         {
             GT7,        ///< Uchimura's Gran Turismo curve, which leaves the midtones where they were authored.
             ACES,       ///< The ACES filmic curve, which adds contrast and rolls highlights further.
+            Neutral,    ///< Khronos's PBR Neutral curve, which keeps colours as authored until they near white.
+            AgX,        ///< The AgX curve, which keeps hues as bright colours wash toward white.
         };
 
         /// \brief Enumerates the ways the edges of the image are smoothed as it is read.
@@ -49,7 +51,29 @@ namespace ZyRender
             Real32  Level = 1.0f;
 
             /// The curve the image is compressed into the display range with.
-            Tonemap Curve = Tonemap::GT7;
+            Tonemap Curve = Tonemap::ACES;
+
+            /// \brief Serializes the state of the object to or from the specified archive.
+            ///
+            /// \param Archive The archive to serialize the object with.
+            template<typename Serializer>
+            ZY_INLINE void Serialize(Serializer Archive)
+            {
+                Archive.Serialize(Level);
+                Archive.Serialize(Curve);
+            }
+
+            /// \brief Provides the reflected members of this type.
+            ///
+            /// \return The fields of the type, in the order they are shown.
+            ZY_INLINE static constexpr auto OnDescribe()
+            {
+                return Array(
+                    ZyReflection::Field::Property<&Exposure::Level>("Level")
+                        .Between(0.0f, 64.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Exposure::Curve>("Curve"));
+            }
         };
 
         /// \brief Represents how the exposed image is pushed around in colour before it is shown.
@@ -58,7 +82,7 @@ namespace ZyRender
             /// The factor the colour's distance from grey is scaled by, where zero is grey and one leaves it be.
             Real32  Saturation = 1.0f;
 
-            /// The push the shadows are lifted by on each channel, from -1 to 1 and zero to leave them be.
+            /// The push black is raised or lowered by on each channel, from -0.25 to 0.25 of the display range.
             Vector3 Lift       = Vector3::Zero();
 
             /// The push the midtones are bent by on each channel, from -1 to 1 and zero to leave them be.
@@ -82,6 +106,41 @@ namespace ZyRender
 
             /// The distance red and blue part from green at the corners, in pixels, or zero to keep them together.
             Real32 Aberration = 0.0f;
+
+            /// The frames a second the grain is stirred at, a film's 24 by default, or zero to hold it still.
+            Real32 Cadence    = 24.0f;
+
+            /// \brief Serializes the state of the object to or from the specified archive.
+            ///
+            /// \param Archive The archive to serialize the object with.
+            template<typename Serializer>
+            ZY_INLINE void Serialize(Serializer Archive)
+            {
+                Archive.Serialize(Vignette);
+                Archive.Serialize(Grain);
+                Archive.Serialize(Aberration);
+                Archive.Serialize(Cadence);
+            }
+
+            /// \brief Provides the reflected members of this type.
+            ///
+            /// \return The fields of the type, in the order they are shown.
+            ZY_INLINE static constexpr auto OnDescribe()
+            {
+                return Array(
+                    ZyReflection::Field::Property<&Lens::Vignette>("Vignette")
+                        .Between(0.0f, 2.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Lens::Grain>("Grain")
+                        .Between(0.0f, 1.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Lens::Aberration>("Aberration")
+                        .Between(0.0f, 16.0f)
+                        .Stepped(0.1f),
+                    ZyReflection::Field::Property<&Lens::Cadence>("Cadence")
+                        .Between(0.0f, 60.0f)
+                        .Stepped(1.0f));
+            }
         };
 
     public:
@@ -93,20 +152,42 @@ namespace ZyRender
         /// \param Surface `true` when the pass writes straight onto the display surface, `false` for a target.
         PostEffectFinal(Ref<ZyEngine::Subsystem::Host> Host, UInt32 Source, Bool Surface);
 
+        /// \copydoc Pass::Run
+        void Run(Ref<Encoder> Encoder, ConstRef<Graph> Graph) override;
+
+    private:
+
+        /// \brief The frames the grain counts before it wraps, the most a float carries whole.
+        static constexpr Real64 kFrames    = 16777216.0;
+
+        /// \brief The technique developing the image through the exposure, curve, grade and lens.
+        static constexpr Text   kTechnique = "Embedded://Technique/PostEffect/Final.vfx";
+
+        /// \brief Represents the per-pass data the final technique consumes.
+        struct GpuFinalLayout final
+        {
+            /// The exposure, the saturation, twice the vignette and the grain, in that order.
+            Vector4 Grading;
+
+            /// The offset the shadows are lifted by, with the grain's frame in `W`, below zero when nothing is graded.
+            Vector4 Lift;
+
+            /// The exponent the midtones are bent by, with the strength of the halo in `W`.
+            Vector4 Gamma;
+
+            /// The factor the highlights are gained by, with the steps between the levels in `W`, or zero for none.
+            Vector4 Gain;
+
+            /// A texel of the source across and up, then the aberration across the image in texels.
+            Vector4 Lens;
+        };
+
         /// \brief Sets how much light the image is given, and the curve it is rolled off with.
         ///
         /// \param Exposure The exposure to give the image.
         ZY_INLINE void SetExposure(ConstRef<Exposure> Exposure)
         {
             mExposure = Exposure;
-        }
-
-        /// \brief Gets how much light the image is given, and the curve it is rolled off with.
-        ///
-        /// \return The exposure the image is given.
-        ZY_INLINE ConstRef<Exposure> GetExposure() const
-        {
-            return mExposure;
         }
 
         /// \brief Sets how the exposed image is pushed around in colour.
@@ -117,28 +198,12 @@ namespace ZyRender
             mGrade = Grade;
         }
 
-        /// \brief Gets how the exposed image is pushed around in colour.
-        ///
-        /// \return The grade the colour is pushed by.
-        ZY_INLINE ConstRef<Grade> GetGrade() const
-        {
-            return mGrade;
-        }
-
         /// \brief Sets what the glass the image is seen through leaves on it.
         ///
         /// \param Lens The lens to see the image through.
         ZY_INLINE void SetLens(ConstRef<Lens> Lens)
         {
             mLens = Lens;
-        }
-
-        /// \brief Gets what the glass the image is seen through leaves on it.
-        ///
-        /// \return The lens the image is seen through.
-        ZY_INLINE ConstRef<Lens> GetLens() const
-        {
-            return mLens;
         }
 
         /// \brief Sets the way the edges of the image are smoothed as it is read.
@@ -149,44 +214,6 @@ namespace ZyRender
             mAntialias = Antialias;
         }
 
-        /// \brief Gets the way the edges of the image are smoothed as it is read.
-        ///
-        /// \return The way they are smoothed, which is \ref Antialias::None until one is set.
-        ZY_INLINE Antialias GetAntialias() const
-        {
-            return mAntialias;
-        }
-
-        /// \copydoc Pass::Run
-        void Run(Ref<Encoder> Encoder, ConstRef<Graph> Graph) override;
-
-    private:
-
-        /// \brief The furthest a fully pushed lift may walk the shadows, in display range.
-        static constexpr Real32 kLiftRange = 0.25f;
-
-        /// \brief The technique developing the image through the exposure, curve, grade and lens.
-        static constexpr Text   kTechnique = "Embedded://Technique/PostEffect/Final.vfx";
-
-        /// \brief Represents the per-pass data the final technique consumes.
-        struct GpuFinalLayout final
-        {
-            /// The exposure, the saturation, the vignette and the grain, in that order.
-            Vector4 Grading;
-
-            /// The offset the shadows are lifted by, with the grain's frame in `W`, below zero when nothing is graded.
-            Vector4 Lift;
-
-            /// The exponent the midtones are bent by, with the strength of the halo in `W`.
-            Vector4 Gamma;
-
-            /// The factor the highlights are gained by, with the levels each channel is stepped to in `W`.
-            Vector4 Gain;
-
-            /// A texel of the source across and up, then the aberration in pixels.
-            Vector4 Lens;
-        };
-
         /// \brief Sets the share of the bloom's halo laid back over the image.
         ///
         /// \param Halo The share to lay back, or zero to lay none.
@@ -195,12 +222,13 @@ namespace ZyRender
             mHalo = Halo;
         }
 
-        /// \brief Sets the frame the grain is stirred by.
+        /// \brief Sets the time the grain is stirred by, counted into frames at the lens's cadence.
         ///
-        /// \param Frame The frame, which a new value reseeds the grain with.
-        ZY_INLINE void SetFrame(UInt32 Frame)
+        /// \param Time The time of the frame, in seconds.
+        ZY_INLINE void SetTime(Real64 Time)
         {
-            mFrame = Frame;
+            const Real64 Count = Floor(Time * mLens.Cadence);
+            mFrame = static_cast<UInt32>(Count - Floor(Count / kFrames) * kFrames);
         }
 
     private:

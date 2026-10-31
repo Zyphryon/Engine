@@ -38,7 +38,7 @@ namespace ZyRender
     {
         ZY_PROFILE_SCOPE("Render::PostEffectFinal::Run");
 
-        const Vector3 Lift  = mGrade.Lift * kLiftRange;
+        const Vector3 Lift  = mGrade.Lift;
         const Vector3 Gamma = mGrade.Gamma;
         const Vector3 Gain  = mGrade.Gain;
 
@@ -51,17 +51,16 @@ namespace ZyRender
 
         const UInt16 Width  = Graph.GetWidth(mSource);
         const UInt16 Height = Graph.GetHeight(mSource);
+        const Real32 TexelX = (Width  > 0 ? 1.0f / Width  : 0.0f);
+        const Real32 TexelY = (Height > 0 ? 1.0f / Height : 0.0f);
+        const Real32 Steps  = Max(mGrade.Posterize - 1.0f, 0.0f);
 
-        // The tone map's knee sits at a fixed place in the range, so exposure is what moves the image into it.
         Encoder.SetPass(GpuFinalLayout {
-            .Grading = Vector4(mExposure.Level, mGrade.Saturation, mLens.Vignette, mLens.Grain),
+            .Grading = Vector4(mExposure.Level, mGrade.Saturation, 2.0f * mLens.Vignette, mLens.Grain),
             .Lift    = Vector4(Lift, Plain ? -1.0f : static_cast<Real32>(mFrame)),
             .Gamma   = Vector4(Pow(2.0f, -Gamma.GetX()), Pow(2.0f, -Gamma.GetY()), Pow(2.0f, -Gamma.GetZ()), mHalo),
-            .Gain    = Vector4(1.0f + Gain.GetX(), 1.0f + Gain.GetY(), 1.0f + Gain.GetZ(), mGrade.Posterize),
-            .Lens    = Vector4(Width  > 0 ? 1.0f / Width  : 0.0f,
-                               Height > 0 ? 1.0f / Height : 0.0f,
-                               mLens.Aberration,
-                               0.0f)
+            .Gain    = Vector4(1.0f + Gain.GetX(), 1.0f + Gain.GetY(), 1.0f + Gain.GetZ(), Steps),
+            .Lens    = Vector4(TexelX, TexelY, 2.0f * mLens.Aberration * TexelX, 2.0f * mLens.Aberration * TexelY)
         });
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);

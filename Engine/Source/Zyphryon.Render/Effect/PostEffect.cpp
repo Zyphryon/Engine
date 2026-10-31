@@ -72,7 +72,7 @@ namespace ZyRender
         mFinal->AddInput({ .Name = "Bloom"_Hash, .Target = mUp[0] });
 
         // The bloom does not run until something asks for it.
-        SetBloom(0.0f, 1.0f);
+        SetBloom(PostEffect::Bloom());
         SetBloomScale(Target::Scale::Quarter);
     }
 
@@ -81,19 +81,17 @@ namespace ZyRender
 
     void PostEffect::Advance(Real64 Time)
     {
-        // The grain's frame is counted off the clock, and wrapped while a float still carries it whole.
-        const Real64 Count = Floor(Time * kCadence);
-        mFinal->SetFrame(static_cast<UInt32>(Count - Floor(Count / kFrames) * kFrames));
+        mFinal->SetTime(Time);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void PostEffect::SetBloom(Real32 Strength, Real32 Threshold)
+    void PostEffect::SetBloom(ConstRef<Bloom> Bloom)
     {
-        const Bool Glow = (Strength > 0.0f);
+        const Bool Glow = (Bloom.Strength > 0.0f);
 
-        mBloom[0]->SetThreshold(Threshold);
+        mBloom[0]->SetThreshold(Bloom.Threshold);
 
         for (const Ptr<PostEffectBloom> Step : mBloom)
         {
@@ -101,7 +99,7 @@ namespace ZyRender
         }
 
         // The halo sums every level on the way up, so it is laid back as their mean.
-        mFinal->SetHalo(Glow ? Strength / kLevels : 0.0f);
+        mFinal->SetHalo(Glow ? Bloom.Strength / kLevels : 0.0f);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

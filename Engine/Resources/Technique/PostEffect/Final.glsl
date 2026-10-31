@@ -14,11 +14,11 @@
 
 layout(std140, binding = 1) uniform cb_Pass
 {
-    vec4 u_Grading;   // X = Exposure, Y = Saturation, Z = Vignette, W = Grain
+    vec4 u_Grading;   // X = Exposure, Y = Saturation, Z = Twice the vignette, W = Grain
     vec4 u_Lift;      // RGB = Lift,   W = The grain's frame, or below zero when nothing past the curve is graded
     vec4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
-    vec4 u_Gain;      // RGB = Gain,   W = The levels each channel is stepped to
-    vec4 u_Lens;      // XY = A texel of the scene, Z = Aberration in pixels
+    vec4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
+    vec4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -53,9 +53,12 @@ layout(location = 0) out vec4 out_Color;
 
 layout(binding = 1) uniform sampler2D t_Bloom;
 
-// GT7 is the curve the image is authored against; ACES is the variant a scene can ask for instead.
 #if defined(ENABLE_TONEMAP_ACES)
     #define Tonemap ZyTonemapAces
+#elif defined(ENABLE_TONEMAP_NEUTRAL)
+    #define Tonemap ZyTonemapNeutral
+#elif defined(ENABLE_TONEMAP_AGX)
+    #define Tonemap ZyTonemapAgx
 #else
     #define Tonemap ZyTonemapGt
 #endif // ENABLE_TONEMAP_ACES
@@ -68,7 +71,7 @@ float Grain(vec2 Pixel, uint Frame)
     return float(Seed & 0xFFFFu) * (1.0 / 65535.0) - 0.5;
 }
 
-// A 4x4 ordered matrix that dithers a stepped gradient, each cell half a step in so the nudges centre on nought.
+// A 4x4 ordered matrix of the thresholds a stepped gradient rounds up at, each cell half a step in.
 const float kBayer[16] = float[16](
      0.5 / 16.0,  8.5 / 16.0,  2.5 / 16.0, 10.5 / 16.0,
     12.5 / 16.0,  4.5 / 16.0, 14.5 / 16.0,  6.5 / 16.0,
@@ -76,12 +79,11 @@ const float kBayer[16] = float[16](
     15.5 / 16.0,  7.5 / 16.0, 13.5 / 16.0,  5.5 / 16.0
 );
 
-vec3 Palette(vec3 Color, float Levels, vec2 Pixel)
+vec3 Palette(vec3 Color, float Steps, vec2 Pixel)
 {
-    ivec2 Cell  = ivec2(Pixel) & 3;
-    float Steps = Levels - 1.0;
+    ivec2 Cell = ivec2(Pixel) & 3;
 
-    return floor(Color * Steps + 0.5 + (kBayer[Cell.y * 4 + Cell.x] - 0.5)) / Steps;
+    return floor(Color * Steps + kBayer[Cell.y * 4 + Cell.x]) / Steps;
 }
 
 void main()
@@ -95,7 +97,7 @@ void main()
     // Red and blue part from green toward the corners, as a lens that bends each colour by its own amount.
     if (u_Lens.z > 0.0)
     {
-        vec2 Shift = (v_Texture - 0.5) * 2.0 * u_Lens.z * u_Lens.xy;
+        vec2 Shift = (v_Texture - 0.5) * u_Lens.zw;
 
         Scene.r = textureLod(t_Scene, v_Texture + Shift, 0.0).r;
         Scene.b = textureLod(t_Scene, v_Texture - Shift, 0.0).b;
@@ -116,7 +118,7 @@ void main()
     Color = mix(vec3(Luma), Color, u_Grading.y);
 
     vec2  Offset   = v_Texture - 0.5;
-    float Vignette = 1.0 - u_Grading.z * clamp(dot(Offset, Offset) * 2.0, 0.0, 1.0);
+    float Vignette = 1.0 - u_Grading.z * dot(Offset, Offset);
 
     Color *= Vignette;
 
@@ -147,7 +149,7 @@ void main()
     Shown = clamp(Shown, 0.0, 1.0);
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
-    if (u_Gain.w > 1.0)
+    if (u_Gain.w > 0.0)
     {
         Shown = Palette(Shown, u_Gain.w, gl_FragCoord.xy);
     }

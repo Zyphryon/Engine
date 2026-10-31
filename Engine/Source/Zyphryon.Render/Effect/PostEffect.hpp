@@ -26,6 +26,57 @@ namespace ZyRender
     {
     public:
 
+        /// \brief Names the ways the edges of the image are smoothed as it is read.
+        using Antialias = PostEffectFinal::Antialias;
+
+        /// \brief Names how much light the image is given, and the curve it is rolled off with.
+        using Exposure  = PostEffectFinal::Exposure;
+
+        /// \brief Names how the exposed image is pushed around in colour before it is shown.
+        using Grade     = PostEffectFinal::Grade;
+
+        /// \brief Names what the glass the image is seen through leaves on it.
+        using Lens      = PostEffectFinal::Lens;
+
+        /// \brief Names the curves the image is compressed into the display range with.
+        using Tonemap   = PostEffectFinal::Tonemap;
+
+        /// \brief Represents the glow the brightest of the image is allowed to spill.
+        struct Bloom final
+        {
+            /// The share of the glow laid back over the image, or zero to gather none at all.
+            Real32 Strength  = 0.0f;
+
+            /// The brightness a pixel has to pass before it spills, in scene units where one is white.
+            Real32 Threshold = 1.0f;
+
+            /// \brief Serializes the state of the object to or from the specified archive.
+            ///
+            /// \param Archive The archive to serialize the object with.
+            template<typename Serializer>
+            ZY_INLINE void Serialize(Serializer Archive)
+            {
+                Archive.Serialize(Strength);
+                Archive.Serialize(Threshold);
+            }
+
+            /// \brief Provides the reflected members of this type.
+            ///
+            /// \return The fields of the type, in the order they are shown.
+            ZY_INLINE static constexpr auto OnDescribe()
+            {
+                return Array(
+                    ZyReflection::Field::Property<&Bloom::Strength>("Strength")
+                        .Between(0.0f, 4.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Bloom::Threshold>("Threshold")
+                        .Between(0.0f, 64.0f)
+                        .Stepped(0.05f));
+            }
+        };
+
+    public:
+
         /// \brief Constructs the chain, declaring its targets and appending its passes to the blueprint.
         ///
         /// \param Host      The service host the techniques are loaded through.
@@ -41,33 +92,50 @@ namespace ZyRender
 
         /// \brief Sets the glow the brightest of the image is allowed to spill.
         ///
-        /// \param Strength  The share of the glow laid back over the image, or zero to gather none at all.
-        /// \param Threshold The brightness a pixel has to pass before it spills, in scene units where one is white.
-        void SetBloom(Real32 Strength, Real32 Threshold);
+        /// \param Bloom The glow to allow.
+        void SetBloom(ConstRef<Bloom> Bloom);
 
         /// \brief Sets the fraction of the output the first level of the bloom is gathered at.
         ///
         /// \param Sizing The fraction to gather it at, which every level below halves again.
         void SetBloomScale(Target::Scale Sizing);
 
-        /// \brief Gets the final pass, which the exposure, the grade, the lens and the antialiasing are set on.
+        /// \brief Sets how much light the image is given, and the curve it is rolled off with.
         ///
-        /// \return The final pass of the chain.
-        ZY_INLINE Ref<PostEffectFinal> GetFinal()
+        /// \param Exposure The exposure to give the image.
+        ZY_INLINE void SetExposure(ConstRef<Exposure> Exposure)
         {
-            return * mFinal;
+            mFinal->SetExposure(Exposure);
+        }
+
+        /// \brief Sets how the exposed image is pushed around in colour.
+        ///
+        /// \param Grade The grade to push the colour by.
+        ZY_INLINE void SetGrade(ConstRef<Grade> Grade)
+        {
+            mFinal->SetGrade(Grade);
+        }
+
+        /// \brief Sets what the glass the image is seen through leaves on it.
+        ///
+        /// \param Lens The lens to see the image through.
+        ZY_INLINE void SetLens(ConstRef<Lens> Lens)
+        {
+            mFinal->SetLens(Lens);
+        }
+
+        /// \brief Sets the way the edges of the image are smoothed as it is read.
+        ///
+        /// \param Antialias The way to smooth them, or \ref Antialias::None to read the image as it lies.
+        ZY_INLINE void SetAntialias(Antialias Antialias)
+        {
+            mFinal->SetAntialias(Antialias);
         }
 
     private:
 
         /// \brief The levels the bloom halves the image through, each spreading the glow twice as wide as the one above.
-        static constexpr UInt32 kLevels  = 4;
-
-        /// \brief The frames a second the grain is stirred at, which is a film's cadence.
-        static constexpr Real64 kCadence = 24.0;
-
-        /// \brief The frames the grain counts before it wraps, the most a float carries whole.
-        static constexpr Real64 kFrames  = 16777216.0;
+        static constexpr UInt32 kLevels = 4;
 
     private:
 

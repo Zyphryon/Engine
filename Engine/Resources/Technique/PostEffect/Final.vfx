@@ -42,6 +42,18 @@
       }
     },
     {
+      "Name": "Neutral",
+      "Program": {
+        "Defines": ["ENABLE_TONEMAP_NEUTRAL"]
+      }
+    },
+    {
+      "Name": "AgX",
+      "Program": {
+        "Defines": ["ENABLE_TONEMAP_AGX"]
+      }
+    },
+    {
       "Name": "Gamma",
       "Program": {
         "Defines": ["ENABLE_ENCODED_OUTPUT"]
@@ -57,6 +69,10 @@
   "Preload": [
     ["ACES"],
     ["ACES", "FXAA"],
+    ["Neutral"],
+    ["Neutral", "FXAA"],
+    ["AgX"],
+    ["AgX", "FXAA"],
     ["FXAA"]
   ]
 }
