@@ -753,6 +753,21 @@ inline namespace ZyMath
             return Incident - Normal * Dot(Incident, Normal);
         }
 
+        /// \brief Moves a point toward a target, never travelling further than a step.
+        ///
+        /// \param Origin The point to move from.
+        /// \param Target The point to move toward.
+        /// \param Step   The longest distance the point may travel, never negative.
+        /// \return The point moved, or the target when it lies within the step.
+        ZY_INLINE static AnyVector3 Toward(AnyVector3 Origin, AnyVector3 Target, Type Step)
+            requires(IsReal<Type>)
+        {
+            const AnyVector3 Apart = Target - Origin;
+            const Type       Span  = Apart.GetLength();
+
+            return Span > Step ? Origin + Apart * (Step / Span) : Target;
+        }
+
         /// \brief Encodes a vector into the whole range of an integer per lane.
         ///
         /// \param Value The vector to encode, each lane held to the range the integer spans.

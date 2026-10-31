@@ -12,9 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Math/Matrix3x2.hpp"
-#include "Zyphryon.Math/Matrix4x3.hpp"
-#include "Zyphryon.Math/Pivot2D.hpp"
+#include "Rect.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -216,6 +214,15 @@ inline namespace ZyMath
             const Real32 DistanceSquared = mCenter.GetDistanceSquared(Other.mCenter);
             const Real32 RadiusSum       = mRadius + Other.mRadius;
             return DistanceSquared <= (RadiusSum * RadiusSum);
+        }
+
+        /// \brief Checks if this circle intersects with a rectangle.
+        ///
+        /// \param Other The rectangle to check.
+        /// \return `true` if the circle and the rectangle overlap or touch, `false` otherwise.
+        ZY_INLINE constexpr Bool Test(Rect Other) const
+        {
+            return mCenter.GetDistanceSquared(Other.GetNearest(mCenter)) <= (mRadius * mRadius);
         }
 
         /// \brief Checks if this circle is equal to another circle.

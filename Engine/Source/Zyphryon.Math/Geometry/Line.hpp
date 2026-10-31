@@ -170,6 +170,28 @@ inline namespace ZyMath
             return ::Lerp(mStart, mEnd, Factor);
         }
 
+        /// \brief Gets the point on the line segment closest to a given point.
+        ///
+        /// \param Point The point to measure from.
+        /// \return The closest point of the segment, the start when the segment has no length.
+        ZY_INLINE constexpr Vector2 GetNearest(Vector2 Point) const
+        {
+            const Vector2 Direction = mEnd - mStart;
+            const Real32  Length    = Vector2::Dot(Direction, Direction);
+            const Real32  Ratio     = Length > 0.0f ? Vector2::Dot(Point - mStart, Direction) / Length : 0.0f;
+
+            return GetPoint(Clamp(Ratio, 0.0f, 1.0f));
+        }
+
+        /// \brief Gets the shortest distance from the line segment to a point.
+        ///
+        /// \param Point The point to measure to.
+        /// \return The distance between the point and the segment.
+        ZY_INLINE Real32 GetDistance(Vector2 Point) const
+        {
+            return (Point - GetNearest(Point)).GetLength();
+        }
+
         /// \brief Checks if the line segment contains a point (point lies on the segment).
         ///
         /// \param Point The point to check for containment.
