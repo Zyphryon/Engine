@@ -102,9 +102,10 @@ vec3 ZyTonemapAgx(vec3 Color)
 
     vec3 Square = Color * Color;
     vec3 Fourth = Square * Square;
+    vec3 Fifth  = Fourth * Color;
+    vec3 Sixth  = Fourth * Square;
 
-    Color = 15.5 * Fourth * Square - 40.14 * Fourth * Color + 31.96 * Fourth - 6.868 * Square * Color
-          + 0.4298 * Square + 0.1191 * Color - 0.00232;
+    Color = 15.5 * Sixth - 40.14 * Fifth + 31.96 * Fourth - 6.868 * Square * Color + 0.4298 * Square + 0.1191 * Color - 0.00232;
 
     return clamp(pow(max(ZY_AGX_OUTPUT * Color, vec3(0.0)), vec3(2.2)), 0.0, 1.0);
 }
