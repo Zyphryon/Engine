@@ -569,6 +569,12 @@ inline namespace ZyBase
             return Blob();
         }
 
+        // A byte of LZ4 grows into at most 255, so a larger claim is malformed and is refused before it is allocated.
+        if (Size > static_cast<UInt64>(Source.GetSize()) * 255u)
+        {
+            return Blob();
+        }
+
         Blob Result = Blob::Allocate<Byte>(Size);
 
         if (Size == Source.GetSize())
