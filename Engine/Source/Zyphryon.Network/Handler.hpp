@@ -25,7 +25,7 @@ namespace ZyNetwork
     {
     public:
 
-        /// \brief Destructor for proper cleanup in derived classes.
+        /// \brief Destroys the handler.
         virtual ~Handler() = default;
 
         /// \brief Called when a peer becomes ready to exchange messages.

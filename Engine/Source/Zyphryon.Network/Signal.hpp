@@ -48,7 +48,7 @@ namespace ZyNetwork
 
         /// \brief Sets the value the sender says from here on.
         ///
-        /// \param Value The value, which goes out on the next tick if it differs from what was last said.
+        /// \param Value The value to say, which goes out on the next tick if it differs from what was last said.
         ZY_INLINE void Set(ConstRef<Type> Value)
         {
             mValue = Value;

@@ -92,13 +92,13 @@ namespace ZyNetwork
             /// The reason the socket ended, kept so a read posted afterwards is still answered.
             Reason                 Cause    = Reason::None;
 
-            /// `true` while an attempt to reach the peer is outstanding.
+            /// `true` while an attempt to reach the peer is outstanding, `false` once it settled.
             Bool                   Reaching = false;
 
-            /// `true` while a read is outstanding.
+            /// `true` while a read is outstanding, `false` otherwise.
             Bool                   Reading  = false;
 
-            /// `true` once the peer has answered, which tells a socket that failed to reach from one that was cut.
+            /// `true` once the peer has answered, `false` if it never did, which tells a failed reach from a cut.
             Bool                   Opened   = false;
         };
 

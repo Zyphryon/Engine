@@ -61,9 +61,7 @@ namespace ZyNetwork
         /// \return `true` if operations can now be posted, `false` otherwise.
         Bool Start();
 
-        /// \brief Closes the platform's completion queue.
-        ///
-        /// \note Every operation must have come back before this is called.
+        /// \brief Closes the platform's completion queue, once every operation posted to it has come back.
         void Stop();
 
         /// \brief Puts a socket under the completion queue, which every later operation on it answers to.

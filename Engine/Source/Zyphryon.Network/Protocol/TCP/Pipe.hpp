@@ -73,7 +73,7 @@ namespace ZyNetwork
 
         /// \brief Gets the bytes waiting to be taken.
         ///
-        /// \return A pointer to the first byte not yet taken.
+        /// \return The first byte not yet taken.
         ZY_INLINE ConstPtr<Byte> GetData() const
         {
             return mData.GetData() + mReader;
@@ -227,7 +227,7 @@ namespace ZyNetwork
 
         /// \brief Gets how far along the frame at the front of the pipe is.
         ///
-        /// \return How much of the frame at the front has arrived, or \ref Front::Broken when its length says it never will.
+        /// \return The share of the front frame that arrived, or \ref Front::Broken when its length says it never will.
         ZY_INLINE Front Inspect() const
         {
             if (GetSize() < kHeader)

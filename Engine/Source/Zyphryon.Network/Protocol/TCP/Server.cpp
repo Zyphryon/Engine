@@ -23,7 +23,8 @@ namespace ZyNetwork::TCP
 
     Server::Server(Connection Link, ConstRef<Address> Address, ConstRetainer<Handler> Listener)
         : Channel  { Link, Address, Listener },
-          mInvited { 0 }
+          mInvited { 0 },
+          mPause   { 0.0 }
     {
     }
 
@@ -98,6 +99,13 @@ namespace ZyNetwork::TCP
                 --mInvited;
             }
 
+            // Running out of descriptors would fail the next accept at once, so only that waits, while a peer that gave up does not.
+            if (Event.Cause == Reason::Unreachable)
+            {
+                mPause = Time + kPause;
+                return;
+            }
+
             if (Event.Cause == Reason::None)
             {
                 if (mState == State::Live)
@@ -140,7 +148,10 @@ namespace ZyNetwork::TCP
             return Reap(Watcher, Time, Peer, Output);
         });
 
-        Invite(Watcher);
+        if (Time >= mPause)
+        {
+            Invite(Watcher);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -221,8 +232,7 @@ namespace ZyNetwork::TCP
 
     Ptr<Stream> Server::Locate(Connection Link) const
     {
-        // The key carries the epoch its slot was handed out at, so a handle kept past the peer it named is
-        // turned away here rather than reaching whoever took the slot next.
+        // The key carries its slot's epoch, so a stale handle is turned away rather than reaching the slot's next peer.
         if (const ConstPtr<Retainer<Stream>> Entry = mPeers.TryGet(Link.GetPeer()))
         {
             return static_cast<Ptr<Stream>>(* Entry);

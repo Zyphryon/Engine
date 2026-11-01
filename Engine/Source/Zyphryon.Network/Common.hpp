@@ -20,7 +20,7 @@ namespace ZyNetwork
     /// \brief Maximum number of peers a single endpoint can accept.
     inline constexpr UInt16 kMaxPeers     = 4096;
 
-    /// \brief Maximum size, in bytes, of the payload carried by a single unreliable message.
+    /// \brief Maximum size, in bytes, of one datagram sent, its envelope and header included.
     inline constexpr UInt16 kMaxDatagram  = 1200;
 
     /// \brief Maximum size, in bytes, a peer may have waiting to go out before anything further is dropped.

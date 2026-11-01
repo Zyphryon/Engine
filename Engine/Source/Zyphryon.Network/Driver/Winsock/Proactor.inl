@@ -78,6 +78,9 @@ namespace ZyNetwork
 
     struct Proactor::Backend final
     {
+        /// The status a read finishes with when its datagram was larger than the buffer, `STATUS_BUFFER_OVERFLOW`.
+        static constexpr ULONG_PTR kTruncated = 0x80000005;
+
         /// \brief Represents one operation as the platform holds it, which outlives the socket it was posted on.
         struct Record final
         {
@@ -488,8 +491,9 @@ namespace ZyNetwork
 
             const Ptr<Backend::Record> Entry = reinterpret_cast<Ptr<Backend::Record>>(Finished.lpOverlapped);
 
-            // Read off the operation the platform has already written its answer into.
-            const Bool Success = (Entry->Header.Internal == 0);
+            // A datagram too large for the buffer arrives cut short, as on Posix, rather than failing its whole endpoint.
+            const Bool Truncated = (Entry->Kind == Operation::Receive && Entry->Header.Internal == Backend::kTruncated);
+            const Bool Success   = (Entry->Header.Internal == 0 || Truncated);
 
             Ref<Event> Report = mBackend->Events.Append();
             Report.Link  = Entry->Link;

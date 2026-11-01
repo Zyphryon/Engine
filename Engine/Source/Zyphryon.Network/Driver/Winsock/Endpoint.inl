@@ -95,7 +95,7 @@ namespace ZyNetwork
         {
             const ConstPtr<sockaddr_in6> Value = reinterpret_cast<ConstPtr<sockaddr_in6>>(Source);
 
-            // The scope tells link-local peers apart; the flow label is left out since a peer may change it.
+            // The scope tells link-local peers apart, and the flow label is left out since a peer may change it.
             Blit(Output.GetData() + 0, sizeof(Value->sin6_family),   AddressOf(Value->sin6_family));
             Blit(Output.GetData() + 2, sizeof(Value->sin6_port),     AddressOf(Value->sin6_port));
             Blit(Output.GetData() + 4, sizeof(Value->sin6_scope_id), AddressOf(Value->sin6_scope_id));
@@ -126,8 +126,7 @@ namespace ZyNetwork
             return false;
         }
 
-        // Compared field by field rather than as raw bytes, because the platform's own structures carry padding
-        // it never promises to zero, and two views of one peer would then read as different peers.
+        // Compared field by field, since the platform never promises to zero the padding its structures carry.
         if (Left->sa_family == AF_INET)
         {
             const ConstPtr<sockaddr_in> First  = reinterpret_cast<ConstPtr<sockaddr_in>>(Left);

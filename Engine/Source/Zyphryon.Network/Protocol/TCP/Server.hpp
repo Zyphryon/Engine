@@ -70,10 +70,13 @@ namespace ZyNetwork::TCP
         /// \brief Maximum number of accepts kept out with the platform at once, so peers arrive in batches.
         static constexpr UInt32 kMaxInvites = 32;
 
+        /// \brief Time, in seconds, accepts wait to be posted again after one failed.
+        static constexpr Real64 kPause      = 1.0;
+
         /// \brief Gets the peer a connection names.
         ///
         /// \param Link The connection naming the peer to find, or this endpoint.
-        /// \return A pointer to the peer, or `nullptr` when the connection names none of them.
+        /// \return The peer, or `nullptr` when the connection names none of them.
         Ptr<Stream> Locate(Connection Link) const;
 
         /// \brief Posts accepts until as many are out as this endpoint keeps, or the platform will take no more.
@@ -104,6 +107,7 @@ namespace ZyNetwork::TCP
         Socket                            mSocket;
         Endpoint                          mLocal;
         UInt32                            mInvited;
+        Real64                            mPause;
         Pool<Retainer<Stream>, kMaxPeers> mPeers;
     };
 }

@@ -163,11 +163,12 @@ namespace ZyNetwork::UDP
             return;
         }
 
-        if (const UInt32 Size = mSession.Build(Time, Span(Data + kEnvelope, mTransmit.GetCapacity() - kEnvelope)))
+        if (const UInt32 Size = mSession.Build(Time, Span(Data + kChallenge, mTransmit.GetCapacity() - kChallenge)))
         {
             Data[0] = ZyEnum::Cast(Envelope::Data);
+            Blit(Data + kEnvelope, sizeof(mCookie), AddressOf(mCookie));
 
-            Await(Operation::Send, Watcher.Send(mSocket, mLink, ConstSpan(Data, kEnvelope + Size)));
+            Await(Operation::Send, Watcher.Send(mSocket, mLink, ConstSpan(Data, kChallenge + Size)));
         }
     }
 

@@ -46,14 +46,25 @@ namespace ZyNetwork
         }
         else
         {
-            // A datagram socket that hears an ICMP refusal would otherwise fail every later read with
-            // `WSAECONNRESET`, which on a server means one peer going quiet takes the whole endpoint down.
+            // An ICMP refusal would fail every later read with `WSAECONNRESET` and take a whole server down with it.
             BOOL  Reset   = FALSE;
             DWORD Ignored = 0;
 
             WSAIoctl(
                 Handle,
                 SIO_UDP_CONNRESET,
+                AddressOf(Reset),
+                sizeof(Reset),
+                nullptr,
+                0,
+                AddressOf(Ignored),
+                nullptr,
+                nullptr);
+
+            // A forged ICMP time-exceeded would do the same through `WSAENETRESET`.
+            WSAIoctl(
+                Handle,
+                SIO_UDP_NETRESET,
                 AddressOf(Reset),
                 sizeof(Reset),
                 nullptr,

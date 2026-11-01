@@ -199,15 +199,14 @@ namespace ZyNetwork::UDP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Connection::Peer Server::Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output)
+    Connection::Peer Server::Admit(ConstRef<Endpoint> Origin, UInt64 Cookie, Ref<Mailbox> Output)
     {
         if (mPeers.IsFull())
         {
             return Connection::Peer();
         }
 
-        // The slot is the peer half of the connection, since the pool counts from one already, and it is
-        // constructed fresh so nothing the peer before it left queued can survive into this one.
+        // The slot is the connection's peer half as it stands, and comes constructed fresh past its last tenant.
         const Connection::Peer Slot = mPeers.Allocate();
         mRegistry.Assign(Digest(Origin.Hash()), Slot);
 
@@ -215,6 +214,7 @@ namespace ZyNetwork::UDP
         Entry.Link      = mLink.Derive(Slot);
         Entry.Remote    = Origin;
         Entry.Freshness = mClock;
+        Entry.Cookie    = Cookie;
         Origin.Describe(Entry.Origin);
 
         Output.Connect(Entry.Link, Entry.Origin);
@@ -255,11 +255,20 @@ namespace ZyNetwork::UDP
         Ref<Peer>        Entry = mPeers[Slot];
         const Connection Link  = Entry.Link;
 
+        UInt64 Cookie = 0;
+        Blit(AddressOf(Cookie), sizeof(Cookie), mInbound.GetData() + kEnvelope);
+
+        // A packet without the peer's proof came from someone else forging its address, and is dropped unread.
+        if (Cookie != Entry.Cookie)
+        {
+            return;
+        }
+
         Entry.Freshness = mClock;
 
         Entry.Session.Parse(
             Time,
-            ConstSpan(mInbound.GetData() + kEnvelope, Size - kEnvelope),
+            ConstSpan(mInbound.GetData() + kChallenge, Size - kChallenge),
             [&](Delivery Mode, ConstSpan<Byte> Message)
             {
                 Output.Message(Link, Mode, Message);
@@ -426,7 +435,10 @@ namespace ZyNetwork::UDP
             {
                 if (mSentry.Approve(Origin, ConstSpan(mInbound.GetData(), Size)))
                 {
-                    Admit(Origin, Output);
+                    UInt64 Cookie = 0;
+                    Blit(AddressOf(Cookie), sizeof(Cookie), mInbound.GetData() + kEnvelope);
+
+                    Admit(Origin, Cookie, Output);
                 }
             }
             else if (Kind == Envelope::Data && Whole)
@@ -445,8 +457,7 @@ namespace ZyNetwork::UDP
     {
         const auto Index = Event.Link.GetPeer().Rebind<kMaxFlight>();
 
-        // The pool hands a finished flight's slot straight back out, so the epoch riding in the key is what
-        // keeps a late completion from retiring whichever send took its place.
+        // The key's epoch keeps a late completion from retiring whichever send took the flight's slot since.
         const Ptr<Flight> Carry = mFlights.TryGet(Index);
 
         if (Carry == nullptr)

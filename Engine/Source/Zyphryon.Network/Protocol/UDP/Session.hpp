@@ -33,7 +33,7 @@ namespace ZyNetwork::UDP
         static constexpr UInt kMessage = 3;
 
         /// \brief Maximum size, in bytes, of a payload, which is a whole datagram less everything that names it.
-        static constexpr UInt kPayload = kMaxDatagram - kEnvelope - kHeader - kMessage;
+        static constexpr UInt kPayload = kMaxDatagram - kChallenge - kHeader - kMessage;
 
     public:
 

@@ -177,15 +177,7 @@ namespace ZyNetwork::TCP
     {
         if (mState == State::Pending || mState == State::Live)
         {
-            if (mTransmit.GetSize() + mOutbound.GetSize() > kMaxBacklog)
-            {
-                mCause = Reason::Congested;
-                return;
-            }
-
             Enqueue(Tag::Message, Message);
-
-            mStats.Pending = mTransmit.GetSize() + mOutbound.GetSize();
         }
     }
 
@@ -225,9 +217,17 @@ namespace ZyNetwork::TCP
 
     void Stream::Enqueue(Tag Kind, ConstSpan<Byte> Payload)
     {
+        if (mTransmit.GetSize() + mOutbound.GetSize() > kMaxBacklog)
+        {
+            mCause = Reason::Congested;
+            return;
+        }
+
         mOutbound.Frame(static_cast<UInt32>(Payload.GetSize()) + 1);
         mOutbound.Append(ZyEnum::Cast(Kind));
         mOutbound.Append(Payload);
+
+        mStats.Pending = mTransmit.GetSize() + mOutbound.GetSize();
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -283,11 +283,12 @@ namespace ZyNetwork::TCP
 
         mStats.Received += Size;
 
-        mExpiry = 0.0;
-
         while (mInbound.IsWhole())
         {
             const ConstSpan<Byte> Frame = mInbound.Take();
+
+            // Only a whole frame proves the peer alive, so one that trickles a frame byte by byte still times out.
+            mExpiry = 0.0;
 
             if (Frame.IsEmpty())
             {
@@ -338,8 +339,7 @@ namespace ZyNetwork::TCP
             return;
         }
 
-        // Given back here, in the gap between the read that finished and the one about to be posted, since
-        // the platform holds a pointer into this queue for as long as one is out on it.
+        // Given back between reads, since the platform holds a pointer into this queue while one is out on it.
         if (Time >= mCompact)
         {
             mInbound.Compact();

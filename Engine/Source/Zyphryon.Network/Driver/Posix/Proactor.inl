@@ -67,7 +67,7 @@ namespace ZyNetwork
 
     struct Proactor::Backend final
     {
-        /// \brief Number of operations the ring makes room for, which caps how many may be out at once.
+        /// \brief Number of submissions the ring holds until the kernel takes them, with twice that for completions.
         static constexpr UInt32 kDepth  = 4096;
 
         /// \brief Tag the read on the beacon is queued under, which names no record.
@@ -166,7 +166,7 @@ namespace ZyNetwork
         /// The completions themselves.
         Ptr<io_uring_cqe> Results    = nullptr;
 
-        /// `true` while the read on the beacon is out, which keeps a second from being posted behind it.
+        /// `true` while the read on the beacon is out, `false` when the next wait has to post it again.
         Bool              Watching   = false;
 
         /// The number of submissions queued and not yet handed over.
@@ -350,7 +350,8 @@ namespace ZyNetwork
             return false;
         }
 
-        mBackend->Beacon = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+        // Left blocking, since the ring finishes a read of a non-blocking descriptor at once with nothing rather than wait.
+        mBackend->Beacon = eventfd(0, EFD_CLOEXEC);
 
         if (mBackend->Beacon < 0)
         {
@@ -430,6 +431,8 @@ namespace ZyNetwork
         {
             return;
         }
+
+        shutdown(static_cast<SInt32>(Handle.GetHandle()), SHUT_RDWR);
 
         if (const Ptr<io_uring_sqe> Slot = mBackend->Reserve())
         {

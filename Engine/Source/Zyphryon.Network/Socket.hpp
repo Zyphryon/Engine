@@ -25,7 +25,7 @@ namespace ZyNetwork
     {
     public:
 
-        /// \brief The value a descriptor takes when it refers to no socket.
+        /// \brief Value a descriptor takes when it refers to no socket.
         static constexpr UInt64 kInvalid = kMaximum<UInt64>;
 
     public:

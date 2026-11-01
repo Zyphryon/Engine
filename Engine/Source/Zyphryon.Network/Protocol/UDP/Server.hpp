@@ -96,6 +96,9 @@ namespace ZyNetwork::UDP
 
             /// The time anything last arrived from it, which a lapse is measured from.
             Real64     Freshness = 0.0;
+
+            /// The proof it was admitted with, which every packet it sends carries so a forged address cannot speak for it.
+            UInt64     Cookie    = 0;
         };
 
         /// \brief Finds the peer an address belongs to, without taking on one it does not.
@@ -107,9 +110,10 @@ namespace ZyNetwork::UDP
         /// \brief Takes on the peer at an address, which is only ever reached once the address has been shown.
         ///
         /// \param Origin The address to take a peer on at.
+        /// \param Cookie The proof the address answered with, which the peer's packets must carry from then on.
         /// \param Output Receives a notice for the peer if it was taken on.
         /// \return The place the peer sits, or zero when there was no room for another.
-        Connection::Peer Admit(ConstRef<Endpoint> Origin, Ref<Mailbox> Output);
+        Connection::Peer Admit(ConstRef<Endpoint> Origin, UInt64 Cookie, Ref<Mailbox> Output);
 
         /// \brief Asks an address to show that it reaches whoever sent from it, writing nothing down either way.
         ///

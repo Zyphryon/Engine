@@ -85,12 +85,12 @@ namespace ZyNetwork::TCP
         /// \brief Specifies what a frame carries, which the byte opening every one of them says.
         enum class Tag : UInt8
         {
-            Message, ///< The rest of the frame is a payload for the application.
+            Message, ///< Carries a payload for the application in the rest of the frame.
             Ping,    ///< Asks the peer to answer, so an idle peer can be told from a dead one.
             Pong,    ///< Answers a ping.
         };
 
-        /// \brief Frames a payload behind the byte that says what it carries, at the back of the outbound queue.
+        /// \brief Frames a payload at the back of the outbound queue, or marks the stream congested when it is full.
         ///
         /// \param Kind    The kind of payload the frame carries.
         /// \param Payload The bytes behind the tag, which are copied.
