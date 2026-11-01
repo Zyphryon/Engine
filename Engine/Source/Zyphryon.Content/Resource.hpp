@@ -212,7 +212,7 @@ namespace ZyContent
 
         /// \brief Gets the singleton cache instance for this resource type.
         ///
-        /// \return A reference to the cache managing resources of this type.
+        /// \return The cache managing resources of this type.
         ZY_INLINE static Ref<Cache> GetCache()
         {
             static Cache Instance;

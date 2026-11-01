@@ -108,7 +108,7 @@ namespace ZyContent
         /// \param Callback The callback invoked with the result and, on success, the file's contents.
         void Read(ConstRef<Uri> Key, AnyRef<Mount::OnRead> Callback);
 
-        /// \brief Reads the contents of the file at the specified URI, delivering them on a lane of the caller's choosing.
+        /// \brief Reads the contents of the file at the specified URI, delivering them on the given lane.
         ///
         /// \param Key      The URI key identifying the file to read.
         /// \param Lane     The lane the callback runs on.
@@ -127,7 +127,7 @@ namespace ZyContent
         /// \tparam Type   The resource type to load.
         /// \param  Key    The URI of the resource to load.
         /// \param  Parent The parent scope for resolving relative URIs, or `nullptr`.
-        /// \return A handle to the resource, which finishes loading in the background.
+        /// \return The handle to the resource, which finishes loading in the background.
         template<typename Type>
         ZY_INLINE Retainer<Type> Load(ConstRef<Uri> Key, Ptr<Scope> Parent = nullptr)
         {
@@ -168,7 +168,7 @@ namespace ZyContent
         /// \brief Evicts unreferenced resources from the cache of the specified resource type, never one still loading.
         ///
         /// \tparam Type  The resource type whose cache to prune.
-        /// \param  Force `true` to remove every finished asset regardless of tracking state, `false` to remove only the unreferenced ones.
+        /// \param  Force `true` to remove every finished asset, `false` to remove only the unreferenced ones.
         template<typename Type>
         ZY_INLINE void Prune(Bool Force)
         {
@@ -188,7 +188,7 @@ namespace ZyContent
         ///
         /// \param Asset    The resource to wait on, or empty for nothing to wait on.
         /// \param Function The callback to invoke once the resource finishes, never when it already has.
-        /// \return `true` when the resource has already finished loading, `false` when it is still on its way or absent.
+        /// \return `true` when the resource has finished loading, `false` when it is still on its way or absent.
         template<typename Handle>
         ZY_INLINE Bool Await(ConstRef<Handle> Asset, AnyRef<Callback> Function)
         {

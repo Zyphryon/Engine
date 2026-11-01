@@ -137,7 +137,7 @@ namespace ZyContent
 
         /// \brief Computes a 64-bit hash of the object's state.
         ///
-        /// \return A 64-bit hash of the URL.
+        /// \return The 64-bit hash of the URL.
         ZY_INLINE UInt64 Hash() const
         {
             return ZyBase::Hash(mUrl);
@@ -167,7 +167,7 @@ namespace ZyContent
         ///
         /// \param Relative The relative URI to expand.
         /// \param Parent   The parent URI to resolve against.
-        /// \return A new URI with the relative path resolved against the parent.
+        /// \return The URI with the relative path resolved against the parent.
         ZY_INLINE static Uri Expand(ConstRef<Uri> Relative, ConstRef<Uri> Parent)
         {
             if (!Relative.HasSchema())

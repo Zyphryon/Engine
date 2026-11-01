@@ -41,7 +41,7 @@ namespace ZyContent
 
         /// \brief Gets the resource associated with this scope.
         ///
-        /// \return A shared handle to the associated resource, or an empty handle if none.
+        /// \return The associated resource, or an empty handle if none.
         ZY_INLINE ConstRetainer<Resource> GetResource() const
         {
             return mResource;

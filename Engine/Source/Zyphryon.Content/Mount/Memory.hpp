@@ -20,7 +20,7 @@
 
 namespace ZyContent
 {
-    /// \brief Represents a virtual mount that serves read-only resources from in-memory, typically compiled-in, buffers.
+    /// \brief Represents a virtual mount serving read-only resources from in-memory, typically compiled-in, buffers.
     class ZY_API Memory final : public Mount
     {
     public:
@@ -39,7 +39,7 @@ namespace ZyContent
 
         /// \brief Constructs a memory mount over a set of embedded entries.
         ///
-        /// \param Entries The resource entries to serve; their buffers must outlive the mount.
+        /// \param Entries The resource entries to serve, whose buffers must outlive the mount.
         explicit Memory(ConstSpan<Entry> Entries);
 
         /// \see Mount::IsAsynchronous

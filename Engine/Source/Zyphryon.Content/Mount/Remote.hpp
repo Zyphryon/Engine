@@ -52,10 +52,10 @@ namespace ZyContent
 
     private:
 
-        /// \brief How many requests are allowed to be waiting on an answer at once.
+        /// \brief The number of requests allowed to be waiting on an answer at once.
         static constexpr UInt32 kMaxInFlight = 6;
 
-        /// \brief How many times a request that was refused for arriving too fast is sent again.
+        /// \brief The number of times a request that was refused for arriving too fast is sent again.
         static constexpr UInt32 kMaxAttempts = 4;
 
         /// \brief The status a server answers with when it is being asked for too much at once.

@@ -84,8 +84,7 @@ namespace ZyContent
 
 #else
 
-        // Nothing else here speaks over the wire yet, and answering as though it did would have the caller
-        // wait for something that is never coming.
+        // Nothing else here speaks over the wire yet, so the read is refused rather than left waiting forever.
         Callback(Filesystem::Result::Denied, Blob());
 
 #endif // ZY_PLATFORM_WEB
@@ -174,8 +173,7 @@ namespace ZyContent
             return;
         }
 
-        // A file that is not there and an address that cannot be reached are told apart, since only one
-        // of them is worth asking about again.
+        // A missing file is told apart from an unreachable address, since only the latter is worth asking again.
         Close(Handle, Status == kMissing ? Filesystem::Result::Inexistent : Filesystem::Result::Unknown, Blob());
     }
 

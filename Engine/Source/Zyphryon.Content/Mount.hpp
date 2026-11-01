@@ -14,9 +14,7 @@
 
 namespace ZyContent
 {
-    /// \brief Defines the interface for a mount point that enumerates, reads, writes, copies and deletes asset files.
-    ///
-    /// A mount abstracts an underlying storage system (e.g., filesystem directory, archive file, or remote source).
+    /// \brief Defines the interface for a storage mount that enumerates, reads, writes, copies and deletes asset files.
     class ZY_API Mount : public Retainable<Mount>
     {
     public:
