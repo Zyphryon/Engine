@@ -43,8 +43,8 @@ namespace ZyPlatform
         /// \param Title      The title to display in the window's title bar.
         /// \param Width      The width of the window at standard density, scaled to the monitor and clamped to it.
         /// \param Height     The height of the window at standard density, scaled to the monitor and clamped to it.
-        /// \param Borderless `true` to create the window without borders or title bar.
-        /// \param Fullscreen `true` to create the window in fullscreen mode.
+        /// \param Borderless `true` to create the window without borders or title bar, `false` to give it both.
+        /// \param Fullscreen `true` to create the window in fullscreen mode, `false` to open it windowed.
         /// \return `true` if the window was successfully initialized, otherwise `false`.
         Bool Initialize(Text Target, Text Title, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
 

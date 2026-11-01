@@ -302,11 +302,8 @@ namespace ZyPlatform
         {
             if (Lock)
             {
-                RECT Rect;
-                ::GetClientRect(Handle, AddressOf(Rect));
-                ::ClientToScreen(Handle, reinterpret_cast<Ptr<POINT>>(AddressOf(Rect.left)));
-                ::ClientToScreen(Handle, reinterpret_cast<Ptr<POINT>>(AddressOf(Rect.right)));
-                ::ClipCursor(AddressOf(Rect));
+                Confine();
+                
                 ::ShowCursor(FALSE);
             }
             else
@@ -318,6 +315,18 @@ namespace ZyPlatform
                 ::ClipCursor(nullptr);
                 ::ShowCursor(TRUE);
             }
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        void Confine()
+        {
+            RECT Rect;
+            ::GetClientRect(Handle, AddressOf(Rect));
+            ::ClientToScreen(Handle, reinterpret_cast<Ptr<POINT>>(AddressOf(Rect.left)));
+            ::ClientToScreen(Handle, reinterpret_cast<Ptr<POINT>>(AddressOf(Rect.right)));
+            ::ClipCursor(AddressOf(Rect));
         }
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -353,6 +362,11 @@ namespace ZyPlatform
 
                 Window->mX = Parameter->x;
                 Window->mY = Parameter->y;
+
+                if (Window->IsCursorLocked() && Window->IsFocused())
+                {
+                    Confine();
+                }
                 return ::DefWindowProcW(Handle, Message, Arg0, Arg1);
             }
             case WM_SETFOCUS:
@@ -623,6 +637,9 @@ namespace ZyPlatform
                 Instance->mBackend->Handle = Handle;
 
                 ::SetWindowLongPtrW(Handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Instance));
+
+                // Per-monitor v1 leaves the title bar and borders at their first scale unless the window asks here.
+                ::EnableNonClientDpiScaling(Handle);
             }
             else
             {

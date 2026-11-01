@@ -43,12 +43,12 @@ namespace ZyPlatform
                 Monitor.SetAttribute(Monitor::Attribute::Primary);
             }
 
-            DEVICE_SCALE_FACTOR Factor;
-            if (FAILED(::GetScaleFactorForMonitor(Handle, AddressOf(Factor))))
-            {
-                Factor = DEVICE_SCALE_FACTOR::SCALE_100_PERCENT;
-            }
-            Monitor.SetScale(static_cast<Real32>(Factor) * 0.01f);
+            // The effective DPI is the scale a window on the monitor is laid out at, custom scaling included.
+            UINT DpiX = USER_DEFAULT_SCREEN_DPI;
+            UINT DpiY = USER_DEFAULT_SCREEN_DPI;
+            ::GetDpiForMonitor(Handle, MDT_EFFECTIVE_DPI, AddressOf(DpiX), AddressOf(DpiY));
+
+            Monitor.SetScale(static_cast<Real32>(DpiX) / static_cast<Real32>(USER_DEFAULT_SCREEN_DPI));
         }
         return TRUE;
     }

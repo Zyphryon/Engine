@@ -282,7 +282,7 @@ namespace ZyPlatform
 
     struct Window::Backend
     {
-        /// How long a read of the clipboard waits for the program holding it to answer, in milliseconds.
+        /// The time a read of the clipboard waits for the program holding it to answer, in milliseconds.
         static constexpr SInt32 kTimeout = 500;
 
         /// The connection to the X server, owned for the lifetime of the window.
@@ -553,7 +553,11 @@ namespace ZyPlatform
                         nullptr,
                         AddressOf(Result));
 
-                    if (Length > 0 && (Result == XLookupChars || Result == XLookupBoth))
+                    // Backspace, Delete, Escape and Ctrl+letter come back as control bytes, which are keys and not text.
+                    const Byte First   = static_cast<Byte>(Buffer[0]);
+                    const Bool Control = (Length == 1 && (First < 0x20 || First == 0x7F)) && First != '\t' && First != '\r' && First != '\n';
+
+                    if (Length > 0 && !Control && (Result == XLookupChars || Result == XLookupBoth))
                     {
                         Dispatcher.QueueKeyType(Text(Buffer.GetData(), static_cast<UInt>(Length)));
                     }
@@ -791,7 +795,7 @@ namespace ZyPlatform
         XEvent Answer { };
         pollfd Socket { .fd = ::XConnectionNumber(mBackend->Connection), .events = POLLIN, .revents = 0 };
 
-        // Other events stay queued for the next poll; a program that never answers leaves the clipboard empty.
+        // Other events stay queued for the next poll, and a program that never answers leaves the clipboard empty.
         while (!::XCheckTypedWindowEvent(mBackend->Connection, mBackend->Handle, SelectionNotify, AddressOf(Answer)))
         {
             if (::poll(AddressOf(Socket), 1, Backend::kTimeout) <= 0)
