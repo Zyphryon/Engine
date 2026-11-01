@@ -34,7 +34,7 @@ namespace ZyLog   // TODO: Proper implementation
 
     /// \brief Writes a formatted message to all active log outputs.
     ///
-    /// \param Priority The severity level of the message. Controls prefix, color, and routing.
+    /// \param Priority The severity of the message, from 0 (debug) to 3 (error), which picks its prefix and color.
     /// \param Message  The fully formatted message text to emit.
     ZY_API void Write(UInt8 Priority, Text Message);
 

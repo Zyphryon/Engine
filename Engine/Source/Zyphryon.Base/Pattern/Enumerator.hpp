@@ -12,10 +12,8 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Zyphryon.Base/Concept.hpp"
 #include "Zyphryon.Base/Container/Array.hpp"
 #include "Zyphryon.Base/Lexical/Algorithm.hpp"
-#include "Zyphryon.Base/Lexical/Text.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -54,10 +52,10 @@ namespace ZyEnum
 #define ZY_DEFINE_BITWISE_ENUM(Enum)        ZY_DEFINE_BITWISE_ENUM_TYPE(Enum, inline)
 
 /// \def ZY_DEFINE_BITWISE_FRIEND_ENUM
-/// \brief Defines bitwise operators for the specified enum type with friend access, allowing them to be used in class scopes.
+/// \brief Defines bitwise operators for the specified enum type with friend access, for use inside a class.
 #define ZY_DEFINE_BITWISE_FRIEND_ENUM(Enum) ZY_DEFINE_BITWISE_ENUM_TYPE(Enum, friend)
 
-    /// \brief Provides the customization point that defines the range of underlying values probed when reflecting \p Type.
+    /// \brief Provides the customization point for the range of underlying values probed when reflecting \p Type.
     ///
     /// \note Specialize this trait for a specific enum if it ever needs a wider or negative range.
     template<IsEnum Type>
@@ -86,7 +84,7 @@ namespace ZyEnum
             UInt16 Length;
         };
 
-        /// \brief Represents the result of reflecting an enum: a dense array of entries.
+        /// \brief Represents the result of reflecting an enum, its dense entries and the names they point into.
         template<IsEnum Type, UInt Capacity, UInt Chars>
         struct Reflection final
         {
@@ -108,6 +106,12 @@ namespace ZyEnum
         };
 
         /// \brief Records one discovered enumerator into \p Result.
+        ///
+        /// \param Result      The reflection the enumerator is written into.
+        /// \param EntryCursor The index of the next entry, advanced past this one.
+        /// \param CharCursor  The offset of the next name in the pool, advanced past this name and its terminator.
+        /// \param Candidate   The value the enumerator holds.
+        /// \param Name        The name the enumerator is declared with.
         template<IsEnum Type, UInt Capacity, UInt Chars>
         constexpr void AppendEntry(
             Ref<Reflection<Type, Capacity, Chars>> Result,

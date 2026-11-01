@@ -487,7 +487,7 @@ namespace ZyReflection
             /// The tag naming who understands a value this module cannot describe.
             Text               Label;
 
-            /// What a run of elements holds, laid down once per type it is read out of.
+            /// The listing of what a run of elements holds, laid down once per type it is read out of.
             ConstPtr<Listing>  Elements;
         };
 
@@ -510,14 +510,14 @@ namespace ZyReflection
             Trait  Traits,
             UInt   Size,
             UInt   Align)
-            : mName       { Name },
-              mReader     { Read },
-              mWriter     { Write },
-              mExtra      { Slot },
-              mKind       { Tag },
-              mTraits     { Traits },
-              mSize       { static_cast<UInt16>(Size) },
-              mAlignment  { static_cast<UInt8>(Align) }
+            : mName      { Name },
+              mReader    { Read },
+              mWriter    { Write },
+              mExtra     { Slot },
+              mKind      { Tag },
+              mTraits    { Traits },
+              mSize      { static_cast<UInt16>(Size) },
+              mAlignment { static_cast<UInt8>(Align) }
         {
             ZY_ASSERT(Size <= 65535 && Align <= 255, "A described type is at most 65535 bytes wide and 255 aligned");
         }

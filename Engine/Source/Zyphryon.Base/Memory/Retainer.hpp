@@ -42,7 +42,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a retainer taking ownership of the given heap-allocated instance.
         ///
-        /// \param Instance The pointer to the instance to manage. Must be heap-allocated.
+        /// \param Instance The instance to manage, which must be heap-allocated.
         template<typename Derived>
         ZY_INLINE explicit Retainer(Ptr<Derived> Instance)
             requires IsDerived<Type, Derived>
@@ -73,7 +73,7 @@ inline namespace ZyBase
 
         /// \brief Move constructor that transfers ownership from another retainer of the same type.
         ///
-        /// \param Other The retainer to move from. Left empty after the transfer.
+        /// \param Other The retainer to move from, left empty after the transfer.
         ZY_INLINE Retainer(AnyRef<Retainer> Other)
             : mInstance { Exchange(Other.mInstance, nullptr) }
         {
@@ -81,7 +81,7 @@ inline namespace ZyBase
 
         /// \brief Converting move constructor that transfers ownership from a retainer of a compatible derived type.
         ///
-        /// \param Other The retainer of the derived type to move from. Left empty after the transfer.
+        /// \param Other The retainer of the derived type to move from, left empty after the transfer.
         template<typename Derived>
         ZY_INLINE Retainer(AnyRef<Retainer<Derived>> Other)
             requires IsDerived<Type, Derived>
@@ -112,7 +112,7 @@ inline namespace ZyBase
 
         /// \brief Move assignment operator that transfers ownership from another retainer of the same type.
         ///
-        /// \param Other The retainer to move from. Left empty after the transfer.
+        /// \param Other The retainer to move from, left empty after the transfer.
         /// \return A reference to this retainer.
         ZY_INLINE Ref<Retainer> operator=(AnyRef<Retainer> Other)
         {

@@ -70,10 +70,27 @@ inline namespace ZyBase
     {
         Char Buffer[kMaxPathLength];
 
+#if defined(ZY_PLATFORM_LINUX)
+        const ssize_t Size = readlink("/proc/self/exe", Buffer, sizeof(Buffer));
+
+        if (Size > 0 && static_cast<UInt>(Size) < kMaxPathLength)
+        {
+            Path Root(Text(Buffer, static_cast<UInt>(Size)));
+            Root.RemoveLast(Root.GetSize() - StrFindLast(Root, '/') - 1);
+            return Root;
+        }
+#else
         if (getcwd(Buffer, sizeof(Buffer)))
         {
-            return StrConvert(Buffer);
+            Path Root(StrConvert(Buffer));
+
+            if (!StrEndsWith(Root, "/"))
+            {
+                Root.Append('/');
+            }
+            return Root;
         }
+#endif
         return "/";
     }
 
@@ -133,17 +150,22 @@ inline namespace ZyBase
             {
                 const Text Name = StrConvert(Entry->d_name);
 
-                if (!StrStartsWith(Entry->d_name, ".") && !StrStartsWith(Entry->d_name, ".."))
+                if (Name != "." && Name != "..")
                 {
                     struct stat Statistics { };
 
-                    if (fstatat(Handle, Entry->d_name, AddressOf(Statistics), 0) == 0)
+                    if (fstatat(Handle, Entry->d_name, AddressOf(Statistics), AT_SYMLINK_NOFOLLOW) == 0)
                     {
                         Record Data;
                         Data.Name = Name;
                         Data.Time = static_cast<UInt64>(Statistics.st_mtime);
 
-                        if (S_ISDIR(Statistics.st_mode))
+                        if (S_ISLNK(Statistics.st_mode))
+                        {
+                            Data.Type = Type::Link;
+                            Data.Size = 0;
+                        }
+                        else if (S_ISDIR(Statistics.st_mode))
                         {
                             Data.Type = Type::Directory;
                             Data.Size = 0;
@@ -214,11 +236,12 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Delete(Text Path)
+    Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
     {
-        const Filesystem::Path InPath(Path);
+        const Filesystem::Path InSource(Source);
+        const Filesystem::Path InDestination(Destination);
 
-        if (remove(InPath.GetData()) == 0 || errno == ENOENT)
+        if (rename(InSource.GetData(), InDestination.GetData()) == 0)
         {
             return Result::Success;
         }
@@ -228,12 +251,11 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
+    Filesystem::Result Filesystem::Delete(Text Path)
     {
-        const Filesystem::Path InSource(Source);
-        const Filesystem::Path InDestination(Destination);
+        const Filesystem::Path InPath(Path);
 
-        if (rename(InSource.GetData(), InDestination.GetData()) == 0)
+        if (remove(InPath.GetData()) == 0 || errno == ENOENT)
         {
             return Result::Success;
         }

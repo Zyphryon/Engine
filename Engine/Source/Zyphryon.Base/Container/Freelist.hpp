@@ -12,7 +12,6 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Array.hpp"
 #include "Bitset.hpp"
 #include "Key.hpp"
 #include "Zyphryon.Base/Scalar.hpp"

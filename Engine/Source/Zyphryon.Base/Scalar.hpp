@@ -53,7 +53,7 @@ inline namespace ZyBase
     /// \brief Computes the absolute value of the given number.
     ///
     /// \param Value The value to compute the absolute for.
-    /// \return A value equal to |\p Value|.
+    /// \return The magnitude of \p Value.
     template<IsSigned Type>
     constexpr Type Abs(Type Value)
     {
@@ -132,7 +132,7 @@ inline namespace ZyBase
         return Rest;
     }
 
-    /// \brief Brings a real number into the range from zero up to a size, counting down from the top for a negative one.
+    /// \brief Brings a real into the range from zero up to a size, counting down from the top for a negative one.
     ///
     /// \param Value The number to bring into range, of any sign.
     /// \param Size  The length of the range, above zero.
@@ -394,7 +394,7 @@ inline namespace ZyBase
     /// \param Left       The first value to compare.
     /// \param Right      The second value to compare.
     /// \param Additional The remaining values to compare.
-    /// \return A copy of the smallest value among all arguments.
+    /// \return The smallest value among all arguments.
     template<typename T0, typename T1, typename... Tail>
     constexpr auto Min(T0 Left, T1 Right, Tail... Additional)
     {
@@ -413,7 +413,7 @@ inline namespace ZyBase
     /// \param Left       The first value to compare.
     /// \param Right      The second value to compare.
     /// \param Additional The remaining values to compare.
-    /// \return A copy of the largest value among all arguments.
+    /// \return The largest value among all arguments.
     template<typename T0, typename T1, typename... Tail>
     constexpr auto Max(T0 Left, T1 Right, Tail... Additional)
     {
@@ -432,7 +432,7 @@ inline namespace ZyBase
     /// \param Value   The value to clamp.
     /// \param Minimum The lower bound of the range.
     /// \param Maximum The upper bound of the range.
-    /// \return A value clamped to the range [\p Minimum, \p Maximum].
+    /// \return The value clamped to the range [\p Minimum, \p Maximum].
     template<typename T0, typename T1, typename T2>
     constexpr auto Clamp(T0 Value, T1 Minimum, T2 Maximum)
     {
@@ -569,11 +569,11 @@ inline namespace ZyBase
     {
         if constexpr (sizeof(Type) == sizeof(Real32))
         {
-            return (std::bit_cast<UInt32>(Value) & 0x7FFFFFFFu) > 0x7F800000u;
+            return (CastBit<UInt32>(Value) & 0x7FFFFFFFu) > 0x7F800000u;
         }
         else
         {
-            return (std::bit_cast<UInt64>(Value) & 0x7FFFFFFFFFFFFFFFull) > 0x7FF0000000000000ull;
+            return (CastBit<UInt64>(Value) & 0x7FFFFFFFFFFFFFFFull) > 0x7FF0000000000000ull;
         }
     }
 
@@ -586,11 +586,11 @@ inline namespace ZyBase
     {
         if constexpr (sizeof(Type) == sizeof(Real32))
         {
-            return (std::bit_cast<UInt32>(Value) & 0x7FFFFFFFu) == 0x7F800000u;
+            return (CastBit<UInt32>(Value) & 0x7FFFFFFFu) == 0x7F800000u;
         }
         else
         {
-            return (std::bit_cast<UInt64>(Value) & 0x7FFFFFFFFFFFFFFFull) == 0x7FF0000000000000ull;
+            return (CastBit<UInt64>(Value) & 0x7FFFFFFFFFFFFFFFull) == 0x7FF0000000000000ull;
         }
     }
 
@@ -728,7 +728,7 @@ inline namespace ZyBase
     template<IsIntegral Type>
     constexpr Type EncodeNormalized(Real32 Value)
     {
-        if constexpr (std::is_signed_v<Type>)
+        if constexpr (IsSigned<Type>)
         {
             return static_cast<Type>(Round(Clamp(Value, -1.0f, 1.0f) * static_cast<Real32>(kMaximum<Type>)));
         }
@@ -747,7 +747,7 @@ inline namespace ZyBase
     {
         const Real32 Result = static_cast<Real32>(Value) / static_cast<Real32>(kMaximum<Type>);
 
-        if constexpr (std::is_signed_v<Type>)
+        if constexpr (IsSigned<Type>)
         {
             return Max(Result, -1.0f);
         }

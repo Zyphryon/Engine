@@ -26,7 +26,7 @@ inline namespace ZyBase
     ///
     /// \param Field The original field value to modify.
     /// \param Mask  The bitmask indicating which bits to set.
-    /// \return A new value with the specified bits set.
+    /// \return The field with the specified bits set.
     template<typename Type, typename Value>
     constexpr Type SetBit(Type Field, Value Mask)
     {
@@ -37,7 +37,7 @@ inline namespace ZyBase
     ///
     /// \param Field The original field value to modify.
     /// \param Mask  The bitmask indicating which bits to clear.
-    /// \return A new value with the specified bits cleared.
+    /// \return The field with the specified bits cleared.
     template<typename Type, typename Value>
     constexpr Type ClearBit(Type Field, Value Mask)
     {
@@ -49,7 +49,7 @@ inline namespace ZyBase
     /// \param Field  The original field value to modify.
     /// \param Mask   The bitmask indicating which bits to set or clear.
     /// \param Enable `true` to set the bits the mask specifies, `false` to clear them.
-    /// \return A new value with the specified bits either set or cleared based on the condition.
+    /// \return The field with the specified bits set or cleared as \p Enable says.
     template<typename Type, typename Value>
     constexpr Type SetOrClearBit(Type Field, Value Mask, Bool Enable)
     {
@@ -58,7 +58,7 @@ inline namespace ZyBase
 
     /// \brief Checks whether all bits in the given mask are set in the field.
     ///
-    /// \param Field The field to check.
+    /// \param Field The bits to test.
     /// \param Mask  The bitmask indicating which bits to compare.
     /// \return `true` if all bits in the mask are set in the field, `false` otherwise.
     template<typename Type, typename Value>
@@ -69,7 +69,7 @@ inline namespace ZyBase
 
     /// \brief Checks whether any bit in the given mask is set in the field.
     ///
-    /// \param Field The field to check.
+    /// \param Field The bits to test.
     /// \param Mask  The bitmask indicating which bits to compare.
     /// \return `true` if at least one bit in the mask is set in the field, `false` otherwise.
     template<typename Type, typename Value>
@@ -81,7 +81,7 @@ inline namespace ZyBase
     /// \brief Returns the number of set bits in \p Word.
     ///
     /// \param Word The value to inspect.
-    /// \return A count of bits set to `1` in \p Word.
+    /// \return The count of bits set to `1` in \p Word.
     template<typename Type>
     constexpr Type CountBits(Type Word)
     {
@@ -93,7 +93,7 @@ inline namespace ZyBase
     /// \note The count equals the index of the lowest set bit.
     ///
     /// \param Word The non-zero value to inspect.
-    /// \return A count of trailing zero bits in \p Word.
+    /// \return The count of trailing zero bits in \p Word.
     template<typename Type>
     constexpr Type CountTrailingZeros(Type Word)
     {
@@ -105,7 +105,7 @@ inline namespace ZyBase
     /// \brief Returns the number of leading zero bits in a non-zero \p Word.
     ///
     /// \param Word The non-zero value to inspect.
-    /// \return A count of leading zero bits in \p Word.
+    /// \return The count of leading zero bits in \p Word.
     template<typename Type>
     constexpr Type CountLeadingZeros(Type Word)
     {

@@ -111,7 +111,7 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the first element in the viewed sequence.
         ///
-        /// \return A pointer to the first element, or \c nullptr for a default-constructed span.
+        /// \return A pointer to the first element, or `nullptr` for a default-constructed span.
         ZY_INLINE constexpr Ptr<Type> GetData() const
         {
             return mData;

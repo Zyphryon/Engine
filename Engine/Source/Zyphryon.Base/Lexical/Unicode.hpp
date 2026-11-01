@@ -24,7 +24,7 @@ inline namespace ZyBase
     template<UInt Capacity>
     class String;
 
-    /// \brief Represents the UTF-8 encoding: decoding and encoding codepoints, and stepping through text by character.
+    /// \brief Represents the UTF-8 encoding, which decodes and encodes codepoints and steps through text by character.
     ///
     /// \note Every offset is a byte of the text, and every step lands on the first byte of a character.
     class Unicode final
@@ -210,7 +210,7 @@ inline namespace ZyBase
                 const UInt32 Codepoint = Decode(Content, Cursor);
                 const Bool   Control   = Codepoint < 0x20 || (Codepoint >= 0x7F && Codepoint <= 0x9F);
 
-                // Control characters are never text; a line break is kept where lines are, and a space elsewhere.
+                // Control characters are dropped, and a line break is kept where lines are and a space elsewhere.
                 if (Codepoint == '\n')
                 {
                     Output.Append(Lines ? '\n' : ' ');
@@ -345,7 +345,7 @@ inline namespace ZyBase
         /// \brief Finds the run of word characters, or of the others, holding the character at an offset.
         ///
         /// \param Content The text to search.
-        /// \param Offset  The offset of the character; past the end, the last character is taken.
+        /// \param Offset  The offset of the character, where one past the end takes the last character.
         /// \param Start   Receives where the run starts.
         /// \param End     Receives where the run ends.
         ZY_INLINE static constexpr void Word(Text Content, UInt Offset, Ref<UInt> Start, Ref<UInt> End)

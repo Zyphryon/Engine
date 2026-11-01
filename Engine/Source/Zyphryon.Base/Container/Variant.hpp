@@ -14,7 +14,6 @@
 
 #include "Array.hpp"
 #include "Zyphryon.Base/Scalar.hpp"
-#include "Zyphryon.Base/Utility.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -56,7 +55,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a variant by transferring ownership from another variant.
         ///
-        /// \param Other The variant to move from.
+        /// \param Other The variant to move from. Left empty after the operation.
         ZY_INLINE Variant(AnyRef<Variant> Other)
             : mSlot { kEmpty }
         {
@@ -113,7 +112,7 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the active value if it is of type \p Type.
         ///
-        /// \return A pointer to the value, or \c nullptr if the variant does not hold \p Type.
+        /// \return A pointer to the value, or `nullptr` if the variant does not hold \p Type.
         template<typename Type>
         ZY_INLINE Ptr<Type> TryGet()
             requires IsAnyOf<Type, Types...>
@@ -123,7 +122,7 @@ inline namespace ZyBase
 
         /// \brief Gets a constant pointer to the active value if it is of type \p Type.
         ///
-        /// \return A constant pointer to the value, or \c nullptr if the variant does not hold \p Type.
+        /// \return A constant pointer to the value, or `nullptr` if the variant does not hold \p Type.
         template<typename Type>
         ZY_INLINE ConstPtr<Type> TryGet() const
             requires IsAnyOf<Type, Types...>
@@ -227,7 +226,7 @@ inline namespace ZyBase
 
         /// \brief Assigns from another variant by moving its active value.
         ///
-        /// \param Other The variant to move from.
+        /// \param Other The variant to move from. Left empty after the operation.
         /// \return A reference to this variant.
         ZY_INLINE Ref<Variant> operator=(AnyRef<Variant> Other)
         {
@@ -304,6 +303,8 @@ inline namespace ZyBase
             }
             return Callback(Value.template Get<typename Identify<Element, Types...>::Type>());
         }
+
+    private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

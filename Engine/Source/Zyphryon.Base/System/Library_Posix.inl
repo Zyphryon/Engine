@@ -59,8 +59,7 @@ inline namespace ZyBase
 
         const Filesystem::Path Symbol(Name);
 
-        // Whatever was standing is cleared first, so a symbol that is honestly null is told apart from one
-        // that was never there.
+        // A standing error is cleared first, so a symbol that is null is told apart from one never there.
         dlerror();
 
         const Ptr<void> Address = dlsym(mHandle, Symbol.GetData());

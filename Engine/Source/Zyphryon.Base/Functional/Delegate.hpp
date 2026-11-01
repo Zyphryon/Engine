@@ -41,7 +41,7 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief Capacity of the internal storage buffer, in bytes.
+        /// \brief The capacity of the internal storage buffer, in bytes.
         static constexpr UInt32 kCapacity = static_cast<UInt32>(InlineSize) * sizeof(void *);
 
     public:
@@ -375,7 +375,9 @@ inline namespace ZyBase
                 Construct<Type>(reinterpret_cast<Ptr<Type>>(mStorage), Forward<Callable>(Object));
 
                 mExecute = AddressOf(InvokeStack<Type>);
-                mManage  = IsTriviallyCopyable<Type> ? AddressOf(ManagePlain<ZyBase::IsEmpty<Type> ? 0 : sizeof(Type)>) : AddressOf(ManageStack<Type>);
+                mManage  = IsTriviallyCopyable<Type>
+                    ? AddressOf(ManagePlain<ZyBase::IsEmpty<Type> ? 0 : sizeof(Type)>)
+                    : AddressOf(ManageStack<Type>);
             }
             else
             {
@@ -419,7 +421,8 @@ inline namespace ZyBase
         template<typename Callable>
         ZY_INLINE static auto InvokeStack(ConstPtr<void> Buffer, Arguments... Parameters)
         {
-            return (* Launder(static_cast<Ptr<Callable>>(const_cast<Ptr<void>>(Buffer))))(Forward<Arguments>(Parameters)...);
+            const Ptr<Callable> Instance = Launder(static_cast<Ptr<Callable>>(const_cast<Ptr<void>>(Buffer)));
+            return (* Instance)(Forward<Arguments>(Parameters)...);
         }
 
         /// \brief Invokes a callable held on the heap.
@@ -437,7 +440,7 @@ inline namespace ZyBase
             return true;
         }
 
-        /// \brief Manages a function pointer, object pointer or trivially copyable callable of \p Size bytes as plain bytes.
+        /// \brief Manages a function pointer, object pointer or trivially copyable callable as \p Size plain bytes.
         ///
         /// \param Action The operation to perform.
         /// \param Target The buffer to copy or move into, or to compare.
@@ -462,7 +465,7 @@ inline namespace ZyBase
         /// \param Action The operation to perform.
         /// \param Target The buffer to copy or move into, or whose callable is released or compared.
         /// \param Source The buffer to copy or move from, or to compare against.
-        /// \return `false` when asked to copy a callable that cannot be copied or the compared callables differ, `true` otherwise.
+        /// \return `false` when an uncopyable callable is copied or the compared callables differ, `true` otherwise.
         template<typename Callable>
         ZY_INLINE static Bool ManageStack(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
@@ -471,7 +474,8 @@ inline namespace ZyBase
             case Operation::Copy:
                 if constexpr (IsCopyConstructible<Callable>)
                 {
-                    Construct<Callable>(static_cast<Ptr<Callable>>(Target), * Launder(static_cast<ConstPtr<Callable>>(Source)));
+                    const ConstPtr<Callable> Origin = Launder(static_cast<ConstPtr<Callable>>(Source));
+                    Construct<Callable>(static_cast<Ptr<Callable>>(Target), * Origin);
                     return true;
                 }
                 else
@@ -491,7 +495,8 @@ inline namespace ZyBase
                 Destruct(* Launder(static_cast<Ptr<Callable>>(Target)));
                 break;
             case Operation::Compare:
-                return ZyBase::IsEmpty<Callable> || Compare(static_cast<ConstPtr<Byte>>(Target), static_cast<ConstPtr<Byte>>(Source), sizeof(Callable));
+                return ZyBase::IsEmpty<Callable> || Compare(static_cast<ConstPtr<Byte>>(Target),
+                                                            static_cast<ConstPtr<Byte>>(Source), sizeof(Callable));
             }
             return true;
         }
@@ -501,7 +506,7 @@ inline namespace ZyBase
         /// \param Action The operation to perform.
         /// \param Target The buffer to copy or move into, or whose callable is released or compared.
         /// \param Source The buffer to copy or move from, or to compare against.
-        /// \return `false` when asked to copy a callable that cannot be copied or the compared callables differ, `true` otherwise.
+        /// \return `false` when an uncopyable callable is copied or the compared callables differ, `true` otherwise.
         template<typename Callable>
         ZY_INLINE static Bool ManageHeap(Operation Action, Ptr<void> Target, ConstPtr<void> Source)
         {
@@ -510,7 +515,8 @@ inline namespace ZyBase
             case Operation::Copy:
                 if constexpr (IsCopyConstructible<Callable>)
                 {
-                    * static_cast<Ptr<Ptr<Callable>>>(Target) = new Callable(** static_cast<ConstPtr<Ptr<Callable>>>(Source));
+                    const Ptr<Callable> Origin = * static_cast<ConstPtr<Ptr<Callable>>>(Source);
+                    * static_cast<Ptr<Ptr<Callable>>>(Target) = new Callable(* Origin);
                     return true;
                 }
                 else
@@ -525,7 +531,7 @@ inline namespace ZyBase
                 delete * static_cast<Ptr<Ptr<Callable>>>(Target);
                 break;
             case Operation::Compare:
-                return (* static_cast<ConstPtr<Ptr<Callable>>>(Target) == * static_cast<ConstPtr<Ptr<Callable>>>(Source));
+                return * static_cast<ConstPtr<Ptr<Callable>>>(Target) == * static_cast<ConstPtr<Ptr<Callable>>>(Source);
             }
             return true;
         }
@@ -700,7 +706,7 @@ inline namespace ZyBase
     {
     public:
 
-        /// \brief Delegate type used by the multicast delegate.
+        /// \brief The delegate type the multicast list holds.
         using Type = Delegate<Return(Arguments...), InlineSize>;
 
     public:

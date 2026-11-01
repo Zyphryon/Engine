@@ -28,7 +28,7 @@ namespace ZyReflection
         /// The name the type is registered under.
         Text Name;
 
-        /// `true` when the type stands in for the one part it holds, rather than being stepped into.
+        /// `true` when the type stands in for the one part it holds, `false` when it is stepped into.
         Bool Flat = false;
     };
 
@@ -155,7 +155,7 @@ namespace ZyReflection
         template<typename Class, typename Type, Bool Data>
         struct Member
         {
-            /// `true` when the member is data, so reaching it needs no call.
+            /// `true` when the member is data reached without a call, `false` when it is a getter or a setter.
             static constexpr Bool kIsData = Data;
 
             /// The type the member is reached through.
@@ -222,6 +222,7 @@ namespace ZyReflection
         template<typename Type>
         struct Bare<const Type> final
         {
+            /// The type beneath the constness, bared in turn.
             using Result = typename Bare<Type>::Result;
         };
 
@@ -229,6 +230,7 @@ namespace ZyReflection
         template<typename Type>
         struct Bare<Type &> final
         {
+            /// The type beneath the reference, bared in turn.
             using Result = typename Bare<Type>::Result;
         };
 
@@ -279,6 +281,7 @@ namespace ZyReflection
         template<typename Type, UInt Count>
         struct Sequenced<Array<Type, Count>> final : Fixed<Count>
         {
+            /// The type of one element.
             using Element = Type;
         };
 
@@ -351,7 +354,7 @@ namespace ZyReflection
 
         /// \brief Fails the build when a borrowed kind is read out of something that dies with the call.
         ///
-        /// \note A prvalue `Text` is a view and cannot own; an lvalue reference names storage inside the instance.
+        /// \note A prvalue `Text` is a view and owns nothing, while an lvalue reference names storage in the instance.
         template<auto Handle, Kind Tag>
         ZY_INLINE constexpr void Borrow()
         {
@@ -510,7 +513,8 @@ namespace ZyReflection
 
             for (UInt Index = 0; Index < Values.GetSize(); ++Index)
             {
-                Result[Index] = Option(ZyEnum::GetName(Values[Index]), static_cast<SInt64>(ZyEnum::Cast(Values[Index])));
+                Result[Index] = Option(
+                    ZyEnum::GetName(Values[Index]), static_cast<SInt64>(ZyEnum::Cast(Values[Index])));
             }
             return Result;
         }

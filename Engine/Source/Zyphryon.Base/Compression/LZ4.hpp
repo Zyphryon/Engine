@@ -24,7 +24,7 @@ inline namespace ZyBase
     /// \brief The lowest search effort \ref LZ4Encode accepts.
     inline constexpr UInt32 kLZ4LevelMin = 1;
 
-    /// \brief The highest search effort \ref LZ4Encode accepts; beyond this the ratio stops moving.
+    /// \brief The highest search effort \ref LZ4Encode accepts, past which the ratio stops moving.
     inline constexpr UInt32 kLZ4LevelMax = 12;
 
     /// \brief Computes the worst-case compressed size for an input of the given length.
@@ -38,7 +38,7 @@ inline namespace ZyBase
 
     /// \brief Encodes a buffer into a single LZ4 block.
     ///
-    /// \note The encoder performs no bounds checks; sizing `Destination` below `LZ4Bound` is undefined behaviour.
+    /// \note The encoder performs no bounds checks, so sizing `Destination` below `LZ4Bound` is undefined behaviour.
     ///
     /// \param Source      The uncompressed input bytes.
     /// \param Destination Receives the compressed bytes.
@@ -48,7 +48,7 @@ inline namespace ZyBase
 
     /// \brief Encodes a buffer into a single LZ4 block, searching much harder for matches.
     ///
-    /// \note The encoder performs no bounds checks; sizing `Destination` below `LZ4Bound` is undefined behaviour.
+    /// \note The encoder performs no bounds checks, so sizing `Destination` below `LZ4Bound` is undefined behaviour.
     ///
     /// \param Source      The uncompressed input bytes.
     /// \param Destination Receives the compressed bytes.

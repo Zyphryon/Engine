@@ -133,9 +133,9 @@ namespace ZyReflection
 
         /// \brief Writes the fields a JSON object gives into an instance, over the values it already holds.
         ///
-        /// \param Fields   The JSON object to read; a field it leaves out keeps its value, and a key no field has is passed over.
+        /// \param Fields   The JSON object to read, where a missing field keeps its value and unknown keys are skipped.
         /// \param Instance The instance to write into, laid out as this schema describes.
-        /// \return `true` if every field the object gives was written, `false` if one had the wrong kind or an unknown option.
+        /// \return `true` if every field the object gives was written, `false` if one had a wrong kind or option.
         ZY_API Bool Decode(ConstRef<JsonValue> Fields, Ptr<void> Instance) const;
 
         /// \brief Writes the fields of an instance as they travel, each by its kind and a nested one in place.

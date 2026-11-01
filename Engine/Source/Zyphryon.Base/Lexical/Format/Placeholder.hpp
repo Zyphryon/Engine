@@ -35,10 +35,10 @@ namespace ZyFormat
         /// The padding character used when the output is shorter than the width.
         Char  Padding   = ' ';
 
-        /// The alignment character: '<' for left, '>' for right, '^' for center.
+        /// The alignment character, '<' for left, '>' for right and '^' for center.
         Char  Alignment = '<';
 
-        /// The sign character: '+' for always show, ' ' for space on positive, '-' for only negative.
+        /// The sign character, '+' to always write one, ' ' for a space before a positive and '-' for negatives only.
         Char  Sign      = '-';
 
         /// The type character, such as `x`, `X`, `b`, `B`, `c` or `f`.

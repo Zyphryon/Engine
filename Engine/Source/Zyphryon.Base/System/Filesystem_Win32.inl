@@ -194,6 +194,21 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
+    {
+        Sequence<Wide, kMaxPathLength> InSource      = Unicode::Widen<kMaxPathLength>(Source);
+        Sequence<Wide, kMaxPathLength> InDestination = Unicode::Widen<kMaxPathLength>(Destination);
+
+        if (MoveFileExW(InSource.GetData(), InDestination.GetData(), MOVEFILE_REPLACE_EXISTING))
+        {
+            return Result::Success;
+        }
+        return GetResult(GetLastError());
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Filesystem::Result Filesystem::Delete(Text Path)
     {
         Sequence<Wide, kMaxPathLength> InPath = Unicode::Widen<kMaxPathLength>(Path);
@@ -214,21 +229,6 @@ inline namespace ZyBase
                     return Result::Success;
                 }
             }
-        }
-        return GetResult(GetLastError());
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Filesystem::Result Filesystem::Rename(Text Source, Text Destination)
-    {
-        Sequence<Wide, kMaxPathLength> InSource      = Unicode::Widen<kMaxPathLength>(Source);
-        Sequence<Wide, kMaxPathLength> InDestination = Unicode::Widen<kMaxPathLength>(Destination);
-
-        if (MoveFileExW(InSource.GetData(), InDestination.GetData(), MOVEFILE_REPLACE_EXISTING))
-        {
-            return Result::Success;
         }
         return GetResult(GetLastError());
     }

@@ -25,7 +25,7 @@ inline namespace ZyBase
         /// The stride used by the wild-copy fast paths, in bytes.
         constexpr UInt32 kLZ4WildStride      = 16;
 
-        /// The smallest match the format can encode; shorter runs stay as literals.
+        /// The smallest match the format can encode, below which runs stay as literals.
         constexpr UInt32 kLZ4MinMatch        = 4;
 
         /// The number of trailing bytes always emitted as literals (format requirement).
@@ -233,8 +233,7 @@ inline namespace ZyBase
         {
             const UInt32 Match = Candidate - 1;
 
-            // Chain slots are recycled every 64 KiB, so a link that fails to step backward is a stale entry
-            // rather than a shorter distance, and walking it further would loop.
+            // Chain slots recycle every 64 KiB, so a link that fails to step backward is stale and would loop.
             if (Match >= Position || Position - Match > kLZ4MaxOffset)
             {
                 break;
@@ -353,7 +352,7 @@ inline namespace ZyBase
             }
         }
 
-        // Emit the trailing literal run; the decoder stops here without reading a match.
+        // Emit the trailing literal run, where the decoder stops without reading a match.
     Trailing:
 
         LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>(InputEnd - Anchor));
@@ -443,7 +442,7 @@ inline namespace ZyBase
             Free(Scratch);
         }
 
-        // Emit the trailing literal run; the decoder stops here without reading a match.
+        // Emit the trailing literal run, where the decoder stops without reading a match.
         LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>(InputEnd - Anchor));
 
         return static_cast<UInt32>(Output - Destination);

@@ -55,7 +55,7 @@ inline namespace ZyBase
 
     /// \brief Represents a unified reader/writer for serializing values to and from a binary archive.
     ///
-    /// \tparam Object The underlying archive type, either \c Reader or \c Writer.
+    /// \tparam Object The underlying archive type, either `Reader` or `Writer`.
     template<typename Object>
     class Archive
     {
@@ -143,7 +143,8 @@ inline namespace ZyBase
             }
             else
             {
-                static_assert(!IsAnyOf<Type, Type>, "Type must implement Serializable interface or be trivially copyable");
+                static_assert(!IsAnyOf<Type, Type>,
+                    "Type must implement Serializable interface or be trivially copyable");
             }
         }
 

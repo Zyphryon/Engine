@@ -106,7 +106,7 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the contiguous element storage.
         ///
-        /// \return A pointer to the first element, or \c nullptr when nothing is allocated.
+        /// \return A pointer to the first element, or `nullptr` when nothing is allocated.
         ZY_INLINE Ptr<Type> GetData()
         {
             return mData;
@@ -114,7 +114,7 @@ inline namespace ZyBase
 
         /// \brief Gets a read-only pointer to the contiguous element storage.
         ///
-        /// \return A pointer to the first element, or \c nullptr when nothing is allocated.
+        /// \return A pointer to the first element, or `nullptr` when nothing is allocated.
         ZY_INLINE ConstPtr<Type> GetData() const
         {
             return mData;

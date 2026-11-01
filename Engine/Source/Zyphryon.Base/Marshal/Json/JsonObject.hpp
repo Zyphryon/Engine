@@ -86,7 +86,7 @@ inline namespace ZyBase
         /// \brief Gets the untyped value for the specified key.
         ///
         /// \param Key The key to look up.
-        /// \return The untyped \ref JsonValue, or \c nullptr if the key is not found.
+        /// \return The untyped \ref JsonValue, or `nullptr` if the key is not found.
         ZY_INLINE ConstPtr<JsonValue> GetValue(Text Key) const
         {
             return Find(Key);
@@ -257,7 +257,7 @@ inline namespace ZyBase
         /// \brief Gets the value stored under the given key.
         ///
         /// \param Key The key to look up.
-        /// \return The value, or \c nullptr when the key is not found or the object wraps no node.
+        /// \return The value, or `nullptr` when the key is not found or the object wraps no node.
         ZY_INLINE Ptr<JsonValue> Find(Text Key) const
         {
             return mNode ? mNode->GetObject().Find(Key) : nullptr;

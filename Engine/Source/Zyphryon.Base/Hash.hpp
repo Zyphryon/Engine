@@ -24,8 +24,8 @@ inline namespace ZyBase
     {
         /// \brief Performs 64x64 -> 128-bit multiplication and stores the low and high halves of the result.
         ///
-        /// \param Low  The first operand; receives the low 64 bits of the product.
-        /// \param High The second operand; receives the high 64 bits of the product.
+        /// \param Low  The first operand, replaced by the low 64 bits of the product.
+        /// \param High The second operand, replaced by the high 64 bits of the product.
         constexpr void Mum(Ref<UInt64> Low, Ref<UInt64> High)
         {
             if consteval
@@ -67,7 +67,7 @@ inline namespace ZyBase
         ///
         /// \param Left  The left operand.
         /// \param Right The right operand.
-        /// \return A 64-bit hash of the product.
+        /// \return The 64-bit hash of the product.
         constexpr UInt64 Mix(UInt64 Left, UInt64 Right)
         {
             Mum(Left, Right);
@@ -115,7 +115,7 @@ inline namespace ZyBase
     ///
     /// \param Data The pointer to the raw bytes to hash.
     /// \param Size The number of bytes to hash.
-    /// \return A 64-bit hash of the given byte range.
+    /// \return The 64-bit hash of the given byte range.
     constexpr UInt64 Hash(ConstPtr<Char> Data, UInt Size)
     {
         static constexpr UInt64 kSecret[] =
@@ -158,8 +158,9 @@ inline namespace ZyBase
             }
             else
             {
-                A = static_cast<UInt64>(Data[0]) << 45 | static_cast<UInt64>(Data[Size - 1]);
-                B = static_cast<UInt64>(Data[Size >> 1]);
+                A = static_cast<UInt64>(static_cast<UInt8>(Data[0])) << 45
+                  | static_cast<UInt64>(static_cast<UInt8>(Data[Size - 1]));
+                B = static_cast<UInt64>(static_cast<UInt8>(Data[Size >> 1]));
             }
         }
         else
@@ -224,7 +225,7 @@ inline namespace ZyBase
     /// \brief Computes a hash for types implementing the Hashable concept.
     ///
     /// \param Data The value to hash.
-    /// \return A 64-bit hash of \p Data.
+    /// \return The 64-bit hash of \p Data.
     template<Hashable Type>
     constexpr UInt64 Hash(ConstRef<Type> Data)
     {
@@ -234,7 +235,7 @@ inline namespace ZyBase
     /// \brief Computes a hash for integral types.
     ///
     /// \param Data The integral value to hash.
-    /// \return A 64-bit hash of \p Data.
+    /// \return The 64-bit hash of \p Data.
     template<IsIntegral Type>
     constexpr UInt64 Hash(Type Data)
     {
@@ -244,7 +245,7 @@ inline namespace ZyBase
     /// \brief Computes a hash for trivially copyable types.
     ///
     /// \param Data The value to hash.
-    /// \return A 64-bit hash of the raw bytes of \p Data.
+    /// \return The 64-bit hash of the raw bytes of \p Data.
     template<IsTriviallyHashable Type>
     ZY_INLINE UInt64 Hash(ConstRef<Type> Data)
     {
@@ -254,7 +255,7 @@ inline namespace ZyBase
     /// \brief Computes a hash for the type \p Type using its name as a string.
     ///
     /// \tparam Type The type to hash.
-    /// \return A 64-bit hash of the name of \p Type.
+    /// \return The 64-bit hash of the name of \p Type.
     template<typename Type>
     consteval UInt64 Hash()
     {
@@ -266,7 +267,7 @@ inline namespace ZyBase
     /// \note Swapping two parameters changes the result.
     ///
     /// \param Parameters The parameters to hash and combine.
-    /// \return A combined 64-bit hash of all parameters.
+    /// \return The combined 64-bit hash of all parameters.
     template<typename... Arguments>
     constexpr UInt64 HashCombine(AnyRef<Arguments>... Parameters)
     {
@@ -275,7 +276,7 @@ inline namespace ZyBase
         return Result;
     }
 
-    /// \brief Represents a hash carried as a value of its own, so what was hashed cannot be confused with anything else.
+    /// \brief Represents a hash carried as a value of its own, so it cannot be confused with anything else.
     struct Digest final
     {
         /// The hash itself, which is what a table places the digest by.

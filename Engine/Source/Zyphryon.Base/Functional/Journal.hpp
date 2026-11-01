@@ -82,21 +82,25 @@ inline namespace ZyBase
         {
             using Payload = StripAll<Callable>;
 
-            static constexpr UInt32    Stride   = AlignPowTwo(sizeof(Payload), alignof(OnExecute));
-            static constexpr OnExecute Function = [](Ref<Ptr<Byte>> Cursor)
+            static_assert(alignof(Payload) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__, "A command is over-aligned");
+
+            static constexpr UInt32    kStride   = AlignPowTwo(sizeof(Payload), alignof(OnExecute));
+            static constexpr OnExecute kFunction = [](Ref<Ptr<Byte>> Cursor)
             {
-                Ref<Payload> Command = * Launder(reinterpret_cast<Ptr<Payload>>(Cursor));
+                const UInt      Address = AlignPowTwo(reinterpret_cast<UInt>(Cursor), alignof(Payload));
+                const Ptr<Byte> Memory  = reinterpret_cast<Ptr<Byte>>(Address);
+                Ref<Payload>    Command = * Launder(reinterpret_cast<Ptr<Payload>>(Memory));
                 Command();
 
                 Destruct(Command);
 
-                Cursor += Stride;
+                Cursor = Memory + kStride;
             };
 
             const Ptr<Byte> Allocation = Allocate(sizeof(OnExecute), alignof(OnExecute));
-            Blit(Allocation, sizeof(OnExecute), AddressOf(Function));
+            Blit(Allocation, sizeof(OnExecute), AddressOf(kFunction));
 
-            Ptr<Byte> Memory = Allocate(Stride, alignof(Payload));
+            Ptr<Byte> Memory = Allocate(kStride, alignof(Payload));
             Construct<Payload>(reinterpret_cast<Ptr<Payload>>(Memory), Forward<Callable>(Callback));
         }
 

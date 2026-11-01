@@ -27,7 +27,7 @@ inline namespace ZyBase
     /// \brief Casts \p Object to an rvalue reference, enabling move semantics.
     ///
     /// \param Object The object to move.
-    /// \return An rvalue reference to \p Object.
+    /// \return The rvalue reference to \p Object.
     template<typename Type>
     constexpr AnyRef<StripRef<Type>> Move(AnyRef<Type> Object)
     {
@@ -37,7 +37,7 @@ inline namespace ZyBase
     /// \brief Forwards an lvalue, preserving its value category for perfect forwarding.
     ///
     /// \param Object The lvalue to forward.
-    /// \return A forwarded reference to \p Object cast to \p Type.
+    /// \return The reference to \p Object cast to \p Type.
     template<typename Type>
     constexpr AnyRef<Type> Forward(Ref<StripRef<Type>> Object)
     {
@@ -47,7 +47,7 @@ inline namespace ZyBase
     /// \brief Forwards an rvalue, preserving its value category for perfect forwarding.
     ///
     /// \param Object The rvalue to forward.
-    /// \return A forwarded reference to \p Object cast to \p Type.
+    /// \return The reference to \p Object cast to \p Type.
     template<typename Type>
     constexpr AnyRef<Type> Forward(AnyRef<StripRef<Type>> Object)
     {
@@ -70,7 +70,7 @@ inline namespace ZyBase
     ///
     /// \param Left  The object whose value will be replaced.
     /// \param Right The value to move into the first object.
-    /// \return A copy of the original value of \p Left before the exchange.
+    /// \return The value \p Left held before the exchange.
     template<typename Type, typename Other = Type>
     constexpr Type Exchange(Ref<Type> Left, AnyRef<Other> Right)
     {
@@ -115,7 +115,7 @@ inline namespace ZyBase
     ///
     /// \param Memory     The raw memory address at which the object will be constructed.
     /// \param Parameters The constructor arguments to forward to \p Type.
-    /// \return A reference to the newly constructed object.
+    /// \return The newly constructed object.
     template<typename Type, typename... Arguments>
     constexpr Ref<Type> Construct(Ptr<Type> Memory, AnyRef<Arguments>... Parameters)
     {
@@ -148,7 +148,7 @@ inline namespace ZyBase
     /// \brief Obtains a pointer to the object at \p Memory.
     ///
     /// \param Memory The raw memory address holding a constructed object of \p Type.
-    /// \return A pointer to the \p Type object at \p Memory with provenance guarantee.
+    /// \return The pointer to the \p Type object at \p Memory, safe to read through.
     template<typename Type>
     constexpr Ptr<Type> Launder(Ptr<Type> Memory)
     {
@@ -290,7 +290,7 @@ inline namespace ZyBase
     /// \param Data  The pointer to the beginning of the range.
     /// \param Size  The number of elements to search.
     /// \param Value The value to search for.
-    /// \return A pointer to the first occurrence of \p Value, or `nullptr` if not found.
+    /// \return The first occurrence of \p Value, or `nullptr` if not found.
     template<typename Input>
     constexpr ConstPtr<Input> Find(ConstPtr<Input> Data, UInt Size, ConstRef<Input> Value)
     {
@@ -304,7 +304,7 @@ inline namespace ZyBase
     /// \param Data  The pointer to the beginning of the range.
     /// \param Size  The number of elements to search.
     /// \param Value The value to search for.
-    /// \return A pointer to the last occurrence of \p Value, or `nullptr` if not found.
+    /// \return The last occurrence of \p Value, or `nullptr` if not found.
     template<typename Input>
     constexpr ConstPtr<Input> FindLast(ConstPtr<Input> Data, UInt Size, ConstRef<Input> Value)
     {
@@ -319,7 +319,7 @@ inline namespace ZyBase
     /// \param Data  The pointer to the beginning of the range.
     /// \param Size  The number of elements to inspect.
     /// \param Value The value to count.
-    /// \return A count of elements equal to \p Value.
+    /// \return The count of elements equal to \p Value.
     template<typename Input>
     constexpr UInt Count(ConstPtr<Input> Data, UInt Size, ConstRef<Input> Value)
     {

@@ -44,6 +44,19 @@ inline namespace ZyBase
             Ensure(Capacity);
         }
 
+        /// \brief Copy-constructing a writer is not allowed.
+        Writer(ConstRef<Writer>) = delete;
+
+        /// \brief Constructs a writer by transferring ownership from \p Other.
+        ///
+        /// \param Other The source writer, left empty after the transfer.
+        ZY_INLINE Writer(AnyRef<Writer> Other)
+            : mData     { Exchange(Other.mData, nullptr) },
+              mSize     { Exchange(Other.mSize, 0u) },
+              mCapacity { Exchange(Other.mCapacity, 0u) }
+        {
+        }
+
         /// \brief Destroys the writer and releases the underlying storage.
         ZY_INLINE ~Writer()
         {
@@ -69,7 +82,7 @@ inline namespace ZyBase
 
         /// \brief Gets a pointer to the contiguous buffer storage.
         ///
-        /// \return A pointer to the first byte, or \c nullptr when empty.
+        /// \return A pointer to the first byte, or `nullptr` when empty.
         ZY_INLINE Ptr<Byte> GetData()
         {
             return mData;
@@ -77,7 +90,7 @@ inline namespace ZyBase
 
         /// \brief Gets a read-only pointer to the contiguous buffer storage.
         ///
-        /// \return A pointer to the first byte, or \c nullptr when empty.
+        /// \return A pointer to the first byte, or `nullptr` when empty.
         ZY_INLINE ConstPtr<Byte> GetData() const
         {
             return mData;
@@ -106,7 +119,9 @@ inline namespace ZyBase
         {
             if (const UInt Required = mSize + Length; Required > mCapacity)
             {
-                const UInt Capacity = mCapacity > 0 ? Max(mCapacity * 2, Required) : Max(static_cast<UInt>(16), Required);
+                const UInt Capacity = mCapacity > 0
+                    ? Max(mCapacity * 2, Required)
+                    : Max(static_cast<UInt>(16), Required);
 
                 const Ptr<Byte> Data = static_cast<Ptr<Byte>>(::operator new[](sizeof(Byte) * Capacity));
                 Copy(Data, mSize, mData);
@@ -240,6 +255,26 @@ inline namespace ZyBase
 
             Write<Header>(Value.GetSize());
             WriteBlock<Header>(Size < Value.GetSize() ? ConstSpan<Byte>(Packed.GetData<Byte>(), Size) : Value);
+        }
+
+        /// \brief Copy-assigning a writer is not allowed.
+        Ref<Writer> operator=(ConstRef<Writer>) = delete;
+
+        /// \brief Move-assigns a writer by transferring ownership from \p Other.
+        ///
+        /// \param Other The source writer, left empty after the transfer.
+        /// \return A reference to this writer.
+        ZY_INLINE Ref<Writer> operator=(AnyRef<Writer> Other)
+        {
+            if (this != AddressOf(Other))
+            {
+                ::operator delete[](mData);
+
+                mData     = Exchange(Other.mData, nullptr);
+                mSize     = Exchange(Other.mSize, 0u);
+                mCapacity = Exchange(Other.mCapacity, 0u);
+            }
+            return (* this);
         }
 
     private:

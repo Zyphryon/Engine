@@ -20,7 +20,7 @@
 
 inline namespace ZyBase
 {
-    /// \brief Describes the first thing a JSON parse could not read: what was wrong, the line and column, and the value.
+    /// \brief Describes the first thing a JSON parse could not read, with its reason, line, column and path.
     struct JsonError final
     {
         /// The reason, as one sentence.
@@ -32,7 +32,7 @@ inline namespace ZyBase
         /// The column the parse stopped at, counted from one, in bytes.
         UInt32 Column = 0;
 
-        /// The value being read when it stopped.
+        /// The path of the value being read when it stopped, as dotted keys and bracketed indices.
         Str    Path;
 
         /// \brief Gets a string representation of this object.

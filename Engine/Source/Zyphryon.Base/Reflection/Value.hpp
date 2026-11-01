@@ -52,7 +52,7 @@ namespace ZyReflection
     {
     public:
 
-        /// \brief The number of bytes a value carries inline.
+        /// The number of bytes a value carries inline.
         static constexpr UInt kCapacity = 16;
 
     public:

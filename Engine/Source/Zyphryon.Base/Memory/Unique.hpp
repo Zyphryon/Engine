@@ -36,7 +36,7 @@ inline namespace ZyBase
 
         /// \brief Constructs a unique taking exclusive ownership of the given heap-allocated instance.
         ///
-        /// \param Instance The pointer to the instance to manage. Must be heap-allocated or `nullptr`.
+        /// \param Instance The instance to manage, heap-allocated or `nullptr`.
         ZY_INLINE Unique(Ptr<Type> Instance)
             : mInstance { Instance }
         {
@@ -44,7 +44,7 @@ inline namespace ZyBase
 
         /// \brief Move constructor that transfers ownership from another unique of the same type.
         ///
-        /// \param Other The unique to move from. Left empty after the transfer.
+        /// \param Other The unique to move from, left empty after the transfer.
         ZY_INLINE Unique(AnyRef<Unique> Other)
             : mInstance { Exchange(Other.mInstance, nullptr) }
         {
@@ -52,7 +52,7 @@ inline namespace ZyBase
 
         /// \brief Converting move constructor that transfers ownership from a unique of a compatible derived type.
         ///
-        /// \param Other The unique of the derived type to move from. Left empty after the transfer.
+        /// \param Other The unique of the derived type to move from, left empty after the transfer.
         template<typename Derived>
         ZY_INLINE Unique(AnyRef<Unique<Derived>> Other)
             requires IsDerived<Type, Derived>
@@ -102,7 +102,7 @@ inline namespace ZyBase
 
         /// \brief Move assignment operator that transfers ownership from another unique of the same type.
         ///
-        /// \param Other The unique to move from. Left empty after the transfer.
+        /// \param Other The unique to move from, left empty after the transfer.
         /// \return A reference to this unique.
         ZY_INLINE Ref<Unique> operator=(AnyRef<Unique> Other)
         {

@@ -213,7 +213,7 @@ inline namespace ZyBase
         /// \brief Gets the element at the given index.
         ///
         /// \param Index The zero-based index of the element.
-        /// \return The element, or \c nullptr when the index is out of range or the array wraps no node.
+        /// \return The element, or `nullptr` when the index is out of range or the array wraps no node.
         ZY_INLINE Ptr<JsonValue> Find(UInt Index) const
         {
             return Index < GetSize() ? AddressOf(mNode->GetArray()[Index]) : nullptr;

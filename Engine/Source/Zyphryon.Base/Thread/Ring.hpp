@@ -23,7 +23,8 @@ inline namespace ZyBase
 {
     /// \brief Represents a lock-free single-producer / single-consumer ring buffer of fixed capacity.
     ///
-    /// \tparam Capacity The maximum number of elements the ring can hold. Must be a power of two.
+    /// \tparam Type     The element the ring carries, copied in and out.
+    /// \tparam Capacity The maximum number of elements the ring holds, a power of two.
     template<typename Type, UInt32 Capacity>
     class Ring final
     {

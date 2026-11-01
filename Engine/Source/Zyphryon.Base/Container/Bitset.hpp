@@ -217,29 +217,11 @@ inline namespace ZyBase
             return Size;
         }
 
-        /// \brief Gets the index of the lowest clear bit.
-        ///
-        /// \return The zero-based index of the first clear bit, or \p Size if all bits are set.
-        ZY_INLINE constexpr UInt FindFirstClear() const
-        {
-            for (UInt Index = 0u; Index < kWordCount; ++Index)
-            {
-                const Word Mask = (Index == kWordCount - 1) ? kLastMask : kWordFull;
-
-                if (const Word Inverted = ~mData[Index] & Mask; Inverted != 0u)
-                {
-                    const UInt Bit = Index * kWordBits + CountTrailingZeros(Inverted);
-                    return Bit < Size ? Bit : Size;
-                }
-            }
-            return Size;
-        }
-
         /// \brief Gets the index of the first clear bit at or after the given offset.
         ///
-        /// \param Offset The zero-based bit index to start searching from.
+        /// \param Offset The zero-based bit index to start searching from, the first bit by default.
         /// \return The zero-based index of the first clear bit at or after \p Offset, or \p Size if no such bit exists.
-        ZY_INLINE constexpr UInt FindFirstClear(UInt Offset) const
+        ZY_INLINE constexpr UInt FindFirstClear(UInt Offset = 0u) const
         {
             const UInt StartWord = Offset / kWordBits;
             const UInt StartBit  = Offset % kWordBits;
@@ -252,23 +234,7 @@ inline namespace ZyBase
 
                 if (Filtered != 0u)
                 {
-                    const UInt Bit = Index * kWordBits + CountTrailingZeros(Filtered);
-                    return Bit < Size ? Bit : Size;
-                }
-            }
-            return Size;
-        }
-
-        /// \brief Gets the index of the highest set bit.
-        ///
-        /// \return The zero-based index of the last set bit, or \p Size if no bit is set.
-        ZY_INLINE constexpr UInt FindLastSet() const
-        {
-            for (UInt Index = kWordCount; Index-- > 0;)
-            {
-                if (mData[Index] != 0)
-                {
-                    return Index * kWordBits + (kWordBits - 1 - CountLeadingZeros(mData[Index]));
+                    return Index * kWordBits + CountTrailingZeros(Filtered);
                 }
             }
             return Size;
@@ -276,10 +242,12 @@ inline namespace ZyBase
 
         /// \brief Gets the index of the highest set bit at or before the given offset.
         ///
-        /// \param Offset The zero-based bit index to start searching from (inclusive).
+        /// \param Offset The zero-based bit index to start searching from, inclusive, the last bit by default.
         /// \return The zero-based index of the last set bit at or before \p Offset, or \p Size if no such bit exists.
-        ZY_INLINE constexpr UInt FindLastSet(UInt Offset) const
+        ZY_INLINE constexpr UInt FindLastSet(UInt Offset = Size - 1u) const
         {
+            ZY_ASSERT(Offset < Size, "Bit index is out of range");
+
             const UInt StartWord = Offset / kWordBits;
             const Word StartMask = kWordFull >> (kWordBits - 1u - Offset % kWordBits);
 
@@ -307,8 +275,7 @@ inline namespace ZyBase
 
                 if (const Word Inverted = ~mData[Index] & Mask; Inverted != 0u)
                 {
-                    const UInt Bit = Index * kWordBits + (kWordBits - 1 - CountLeadingZeros(Inverted));
-                    return Bit < Size ? Bit : Size;
+                    return Index * kWordBits + (kWordBits - 1 - CountLeadingZeros(Inverted));
                 }
             }
             return Size;

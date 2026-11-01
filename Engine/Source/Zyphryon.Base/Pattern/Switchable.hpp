@@ -41,7 +41,7 @@ inline namespace ZyBase
         {
             Fallback,   ///< Stands in only while nothing else is registered.
             Low,        ///< Works everywhere, so it yields to anything written for the host.
-            Normal,     ///< The rank an implementation takes when it states none.
+            Normal,     ///< Taken by an implementation that states no rank.
             High,       ///< Written for the host, so it is taken over a portable one.
             Exclusive,  ///< Taken over every other implementation registered.
         };

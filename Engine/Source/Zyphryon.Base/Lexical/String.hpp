@@ -81,7 +81,7 @@ inline namespace ZyBase
 
         /// \brief Move constructor that transfers the contents from another string.
         ///
-        /// \param Other The string to move from. Left empty after the transfer.
+        /// \param Other The string to move from, left empty after the transfer.
         ZY_INLINE constexpr String(AnyRef<String> Other)
             : mBuffer { Move(Other.mBuffer) }
         {
@@ -650,7 +650,7 @@ inline namespace ZyBase
 
         /// \brief Move assignment operator that transfers the contents from another string.
         ///
-        /// \param Other The string to move from. Left empty after the transfer.
+        /// \param Other The string to move from, left empty after the transfer.
         /// \return A reference to this string.
         ZY_INLINE constexpr Ref<String> operator=(AnyRef<String> Other)
         {

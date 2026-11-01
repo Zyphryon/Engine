@@ -68,7 +68,7 @@ inline namespace ZyBase
         };
 
         /// \brief The work a thread runs, handed the token that tells it when to stop.
-        using Work   = Delegate<void(ConstRef<Token>)>;
+        using Work = Delegate<void(ConstRef<Token>)>;
 
     public:
 
@@ -158,7 +158,7 @@ inline namespace ZyBase
             ///
             /// \param Callback The work the thread runs.
             ZY_INLINE explicit State(AnyRef<Work> Callback)
-                : Body   { Move(Callback) }
+                : Body { Move(Callback) }
             {
             }
 
