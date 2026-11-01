@@ -127,7 +127,7 @@ namespace ZyRender
         /// \param Width    The width of the outline, as a share of the field range.
         /// \param Softness The share of the outline that fades out, from `0` to `1`.
         /// \param Tint     The color tint of the outline.
-        /// \return An effect that outlines the stroke.
+        /// \return The effect that outlines the stroke.
         ZY_INLINE static constexpr FontEffect Outline(Real32 Width, Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, 0.0f, Width, 0.0f, Softness, 1.0f, 0.5f);
@@ -137,7 +137,7 @@ namespace ZyRender
         ///
         /// \param Softness The share of the shadow that fades out, from `0` to `1`.
         /// \param Tint     The color tint of the shadow.
-        /// \return An effect that casts a shadow behind the stroke.
+        /// \return The effect that casts a shadow behind the stroke.
         ZY_INLINE static constexpr FontEffect Shadow(Real32 Softness, IntColor8 Tint)
         {
             return FontEffect(Tint, -1.0f / 2.0f, 1.0f / 4.0f, 2.0f, Softness, 1.0f, 0.5f);
@@ -146,7 +146,7 @@ namespace ZyRender
         /// \brief Creates a bold text effect with specified thickness.
         ///
         /// \param Thickness The thickness of the bold, from `0.02` (slight) to `0.20` (heaviest).
-        /// \return An effect that thickens the stroke.
+        /// \return The effect that thickens the stroke.
         ZY_INLINE static constexpr FontEffect Bold(Real32 Thickness)
         {
             return FontEffect(IntColor8::Transparent(), 0.0f, 0.0f, Thickness, 0.0f, 1.0f, 0.5f - Thickness);

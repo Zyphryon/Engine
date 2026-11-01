@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents one realization of a \ref Blueprint: a texture per target and a handle per pass, at one size.
+    /// \brief Represents one realization of a \ref Blueprint, a texture per target and a handle per pass at one size.
     ///
     /// \note A view is a graph, so drawing the same scene from another camera costs just another set of buffers.
     class ZY_API Graph final
@@ -125,7 +125,7 @@ namespace ZyRender
             /// The pass handle the step draws through.
             ZyGraphic::Object   Handle = 0;
 
-            /// The viewport covering the target the pass draws into, left unset for the display, which tracks the output.
+            /// The viewport over the target the pass draws into, unset for the display, which tracks the output.
             ZyGraphic::Viewport Viewport;
         };
 

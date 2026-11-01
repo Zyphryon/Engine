@@ -31,7 +31,7 @@ namespace ZyRender
             /// The sheet row the key belongs to, one per drawn direction.
             UInt8   Row      = 0;
 
-            /// The frame the key sits on; frames between keys are interpolated.
+            /// The frame the key sits on, with the frames between keys interpolated.
             UInt8   Keyframe = 0;
 
             /// The position of the bone, in the frame's own units from its bottom-left corner, x right and y up.

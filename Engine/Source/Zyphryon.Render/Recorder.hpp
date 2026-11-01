@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents the draws of one pass, gathered for a \ref Collector to order and written batch by batch as it hands them back.
+    /// \brief Represents the draws of one pass, gathered for a \ref Collector to order and written batch by batch.
     ///
     /// \tparam Layout The per-instance data one draw is laid out from, in the layout its technique reads.
     template<typename Layout>

@@ -186,7 +186,7 @@ namespace ZyRender
 
         /// \brief Sets how many facing directions the clip is drawn in, each on its own row of the sheet.
         ///
-        /// \param Directions The number of directions, where `1` draws one row for every facing and `0` is raised to `1`.
+        /// \param Directions The number of directions, where `1` draws one row for every facing and `0` counts as `1`.
         ZY_INLINE void SetDirections(UInt8 Directions)
         {
             mDirections = Max<UInt8>(Directions, 1);
@@ -234,7 +234,7 @@ namespace ZyRender
 
         /// \brief Sets whether the sheet holds only half the directions, the other half drawn as their mirror.
         ///
-        /// \param Mirrored `true` to mirror the far half from the near half, `false` to give every direction its own row.
+        /// \param Mirrored `true` to draw the far half mirrored, `false` to give each direction its own row.
         ZY_INLINE void SetMirrored(Bool Mirrored)
         {
             mMirrored = Mirrored;

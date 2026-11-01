@@ -134,7 +134,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief The levels the bloom halves the image through, each spreading the glow twice as wide as the one above.
+        /// \brief The levels the bloom halves the image through, each spreading the glow twice as far as the one above.
         static constexpr UInt32 kLevels = 4;
 
     private:

@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Describes what a frame draws: the targets it needs, and the passes that fill them, in order.
+    /// \brief Describes what a frame draws, the targets it needs and the passes that fill them, in order.
     ///
     /// \note A scene drawn from several cameras keeps a single set of passes and the state each of them carries.
     class Blueprint final
@@ -43,7 +43,7 @@ namespace ZyRender
 
         /// \brief Gets the targets the blueprint declares.
         ///
-        /// \return A read-only reference to the target list, in slot order.
+        /// \return The targets, in slot order.
         ZY_INLINE ConstSpan<Target> GetTargets() const
         {
             return mTargets;
@@ -75,7 +75,7 @@ namespace ZyRender
         ///
         /// \param Name       The name a profiler and a frame capture show the pass under.
         /// \param Parameters The arguments forwarded to the pass's constructor.
-        /// \return A reference to the newly created pass.
+        /// \return The pass just created.
         template<typename Type, typename... Arguments>
         ZY_INLINE Ref<Type> AddPass(Text Name, AnyRef<Arguments>... Parameters)
         {

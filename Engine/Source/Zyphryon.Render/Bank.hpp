@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents an intern store for the block a run of instances shares, so each instance carries a number instead of a copy.
+    /// \brief Represents an intern store for the block a run of instances shares, which each instance names by number.
     ///
     /// \tparam Type     The block one run shares, in the layout its technique reads.
     /// \tparam Capacity The most runs one page holds, which the technique's own array has to be declared at.

@@ -25,8 +25,11 @@ namespace ZyRender
     {
     public:
 
-        /// \brief The number of clips an animator holds at once: the one playing, and the one it fades out of.
+        /// \brief The number of clips an animator holds at once, the one playing and the one it fades out of.
         static constexpr UInt kSources = 2;
+
+        /// \brief The value a slot takes while the clip asked for has not been found in the model.
+        static constexpr UInt16 kUnresolved = kMaximum<UInt16>;
 
         /// \brief Represents the scratch space for posing, shared by every animator advanced on one thread.
         ///
@@ -39,7 +42,7 @@ namespace ZyRender
             ///
             /// \param Bones The number of bones the caller is about to pose.
             /// \param Slot  The pose to hand out, below \ref kSources.
-            /// \return A pose covering exactly \p Bones, whose contents are indeterminate.
+            /// \return The pose covering exactly \p Bones, whose contents are indeterminate.
             Skeleton3D::Pose Acquire(UInt Bones, UInt Slot = 0);
 
         private:
@@ -75,7 +78,14 @@ namespace ZyRender
         /// \return The clip, or `nullptr` until the model has loaded and the clip asked for has been found in it.
         ZY_INLINE ConstPtr<Model3D::Clip> GetClip() const
         {
-            return mModel && mModel->HasCompleted() ? mModel->FindClip(mSources[mActive].Name) : nullptr;
+            if (mModel && mModel->HasCompleted())
+            {
+                ConstRef<Source>               Active = mSources[mActive];
+                const ConstSpan<Model3D::Clip> Clips  = mModel->GetClips();
+                const Bool                     Found  = Active.Slot < Clips.GetSize() && Clips[Active.Slot].Name == Active.Name;
+                return Found ? AddressOf(Clips[Active.Slot]) : nullptr;
+            }
+            return nullptr;
         }
 
         /// \brief Sets the playback rate relative to the authored speed of every clip.
@@ -100,7 +110,7 @@ namespace ZyRender
         /// \brief Gets how far through the clip the animator is, counted the way \ref Play takes it back.
         ///
         /// \return The share of the clip's duration elapsed from zero to one, or the share asked for until it starts.
-        ZY_INLINE Real64 GetPhase() const
+        ZY_INLINE Real32 GetPhase() const
         {
             ConstRef<Source> Active = mSources[mActive];
             return Active.Bound ? Active.Cursor.GetProgress() : Active.Phase;
@@ -151,7 +161,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief Represents one clip paired with a rig: where it has reached, and how its lanes reach the bones.
+        /// \brief Represents one clip paired with a rig, where it has reached and how its lanes reach the bones.
         struct Source final
         {
             /// The hash of the clip's name, or zero when the source holds none.
@@ -166,16 +176,19 @@ namespace ZyRender
             /// The share of the clip to start at, where zero is its first pose.
             Real32                Phase     = 0.0f;
 
+            /// The place of the clip in the model's list, or \ref kUnresolved while the model lists no such clip.
+            UInt16                Slot      = kUnresolved;
+
             /// The cursor tracking where the clip has reached.
             Playback              Cursor;
 
             /// The bone index of every lane, as resolved by \ref Animation3D::Resolve.
             Sequence<SInt32>      Binding;
 
-            /// `true` once the clip has been paired with the rig, so a frame need not rediscover it.
+            /// `true` once the clip is paired with the rig, so a frame need not rediscover it, `false` until then.
             Bool                  Bound     = false;
 
-            /// `true` when the clip writes every component of every bone, so the rest pose may be skipped.
+            /// `true` when the clip writes every component of every bone, so no rest pose is seeded, otherwise `false`.
             Bool                  Covered   = false;
         };
 

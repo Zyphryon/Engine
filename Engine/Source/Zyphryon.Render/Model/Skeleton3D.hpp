@@ -109,7 +109,7 @@ namespace ZyRender
         /// \brief Finds the bone a name belongs to.
         ///
         /// \param Name The hash of the bone's name.
-        /// \return The bone's index, or \ref kMissing when the skeleton has no such bone.
+        /// \return The index of the bone, or \ref kMissing when the skeleton has no such bone.
         ZY_INLINE SInt32 Find(UInt64 Name) const
         {
             const ConstPtr<UInt16> Entry = mRegistry.Find(Name);
@@ -140,7 +140,7 @@ namespace ZyRender
         /// \note Kept apart from \ref Compose, whose output a socket reads.
         ///
         /// \param Composed The bone transforms in skeleton space, as produced by \ref Compose.
-        /// \param Palette  Receives the matrix each bone deforms its vertices by; may alias \p Composed.
+        /// \param Palette  Receives the matrix each bone deforms its vertices by, which may alias \p Composed.
         void Skin(ConstSpan<Matrix4x3> Composed, Span<Matrix4x3> Palette) const;
 
     public:

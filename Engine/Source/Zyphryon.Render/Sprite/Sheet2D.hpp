@@ -28,13 +28,13 @@ namespace ZyRender
     {
     public:
 
-        /// \brief Represents one clip of the sheet: the frames it shows, and the bone keys laid on them.
+        /// \brief Represents one clip of the sheet, the frames it shows and the bone keys laid on them.
         struct Clip final
         {
             /// The hash of the clip's name.
             UInt64      Name = 0;
 
-            /// The name the clip is shown by, which may be cut short; lookups go by \ref Name alone.
+            /// The name the clip is shown by, which may be cut short, while lookups go by \ref Name alone.
             Str32       Label;
 
             /// The frames the clip shows, and how it plays them.
@@ -102,7 +102,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief Lays every clip's lanes out over the skeleton, so the lane at each index drives the bone at that index.
+        /// \brief Lays every clip's lanes out over the skeleton, so the lane at an index drives the bone at that index.
         ///
         /// \return `true` when every keyed lane drives a bone of the skeleton, otherwise `false`.
         Bool Arrange();

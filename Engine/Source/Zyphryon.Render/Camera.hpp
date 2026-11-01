@@ -22,7 +22,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents a camera: where it stands, how it projects, and the matrices both derive.
+    /// \brief Represents where a camera stands, how it projects, and the matrices both derive.
     class ZY_API Camera final
     {
     public:
@@ -57,7 +57,7 @@ namespace ZyRender
 
         /// \brief Sets the projection matrix of the camera.
         ///
-        /// \param Matrix The projection, built with \ref Matrix4x4::CreatePerspective or \ref Matrix4x4::CreateOrthographic.
+        /// \param Matrix The projection, from \ref Matrix4x4::CreatePerspective or \ref Matrix4x4::CreateOrthographic.
         ZY_INLINE void SetProjection(ConstRef<Matrix4x4> Matrix)
         {
             mProjection = Matrix;

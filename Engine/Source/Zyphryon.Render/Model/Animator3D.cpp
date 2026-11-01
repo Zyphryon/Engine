@@ -211,6 +211,7 @@ namespace ZyRender
         const ConstPtr<Model3D::Clip> Clip = mModel->FindClip(Entry.Name);
 
         // A name the model does not list plays nothing, as a source holding no clip does.
+        Entry.Slot    = Clip ? static_cast<UInt16>(Clip - mModel->GetClips().GetData()) : kUnresolved;
         Entry.Motion  = Clip ? Clip->Motion : Retainer<Animation3D>();
         Entry.Covered = Entry.Motion && Entry.Motion->Resolve(Rig, Entry.Binding);
 
@@ -247,6 +248,7 @@ namespace ZyRender
         mFade = 0.0;
 
         Entry.Name    = 0;
+        Entry.Slot    = kUnresolved;
         Entry.Motion  = Retainer<Animation3D>();
         Entry.Binding.Clear();
         Entry.Bound   = false;

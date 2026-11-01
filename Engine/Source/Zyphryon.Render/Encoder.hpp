@@ -28,7 +28,7 @@ namespace ZyRender
     {
     public:
 
-        /// \brief Represents one draw being bound, filling the bindings a technique's signature declares and then emitting the draw that reads them.
+        /// \brief Represents one draw being bound, filling what a technique's signature declares, then emitting it.
         class Binder final
         {
         public:
@@ -192,7 +192,7 @@ namespace ZyRender
 
         /// \brief Sets the rectangle every subsequent draw is clipped to.
         ///
-        /// \note Honoured only by a technique whose rasterizer enables the scissor; an empty rectangle keeps nothing.
+        /// \note Only a technique whose rasterizer enables the scissor honours it, and an empty one keeps nothing.
         ///
         /// \param Scissor The region to keep, in pixels from the target's top-left on both APIs.
         void SetScissor(ZyGraphic::Scissor Scissor);
@@ -218,7 +218,7 @@ namespace ZyRender
 
     private:
 
-        /// \brief Represents what a material resolves to under a technique: its variant, packed block, images and samplers.
+        /// \brief Represents the variant, packed block, images and samplers a material resolves to under a technique.
         struct Binding final
         {
             /// The technique the material was resolved under.
@@ -258,7 +258,7 @@ namespace ZyRender
         /// \param Frequency The uniform block to pack.
         /// \param Technique The technique describing the block's layout.
         /// \param Source    The provider supplying field values by hash.
-        /// \return A transient stream holding the packed block, or an empty stream if the block declares no fields.
+        /// \return The transient stream holding the packed block, or an empty stream if the block declares no fields.
         template<typename Provider>
         ZY_INLINE ZyGraphic::Stream Pack(
             ZyGraphic::Frequency           Frequency,
@@ -295,7 +295,7 @@ namespace ZyRender
             return Slice.GetStream();
         }
 
-        /// \brief Resolves a material under a technique into \ref mBinding, keeping the last resolution while both are unchanged.
+        /// \brief Resolves a material under a technique into \ref mBinding, unless both match the last resolution.
         ///
         /// \note The cache holds one entry and is dropped by \ref Reset and \ref SetFrame.
         ///
@@ -303,7 +303,7 @@ namespace ZyRender
         /// \param Material  The material to source the variant, block, images and samplers from.
         void Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
 
-        /// \brief Gets what a texture slot reads when nothing binds it: the pass's input of its name, or its fallback.
+        /// \brief Gets what an unbound texture slot reads, the pass's input of its name or else its fallback.
         ///
         /// \param Texture The texture the technique drawn declares at the slot.
         /// \return The image to bind, which is zero when neither the pass nor the technique supplies one.

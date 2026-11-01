@@ -35,7 +35,7 @@ namespace ZyRender
         {
             const Angle Apart = Angle::Between(mHeading + Step * Current, Facing);
 
-            // Half a step reaches the boundary; the hysteresis is the slack allowed past it.
+            // Half a step reaches the boundary, and the hysteresis is the slack allowed past it.
             if (Abs(Apart.GetRadians()) <= Step.GetRadians() * (0.5f + mHysteresis))
             {
                 return Current;

@@ -61,7 +61,7 @@ namespace ZyRender
 
         /// \brief Gets the geometry of this model.
         ///
-        /// \return The referenced mesh resource, or null if unset.
+        /// \return The referenced mesh resource, or an empty retainer when none was set.
         ZY_INLINE ConstRetainer<ZyGraphic::Mesh> GetMesh() const
         {
             return mMesh;
@@ -77,7 +77,7 @@ namespace ZyRender
 
         /// \brief Gets the bone hierarchy this model's geometry is skinned to.
         ///
-        /// \return The referenced skeleton resource, or null when the model does not deform.
+        /// \return The referenced skeleton resource, or an empty retainer when the model does not deform.
         ZY_INLINE ConstRetainer<Skeleton3D> GetSkeleton() const
         {
             return mSkeleton;

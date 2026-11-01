@@ -40,7 +40,7 @@ namespace ZyRender
             /// The operation applied when the pass closes.
             ZyGraphic::Action Store  = ZyGraphic::Action::Store;
 
-            /// The color this attachment is cleared to (used when \ref Load is \ref ZyGraphic::Action::Clear).
+            /// The color this attachment is cleared to, read when \ref Load is \ref ZyGraphic::Action::Clear.
             Color             Tint   = Color(0.0f, 0.0f, 0.0f, 1.0f);
         };
 
@@ -62,14 +62,14 @@ namespace ZyRender
             /// The operation applied to the stencil buffer when the pass closes.
             ZyGraphic::Action StencilStore = ZyGraphic::Action::Store;
 
-            /// The value the depth buffer is cleared to (used when \ref DepthLoad is \ref ZyGraphic::Action::Clear).
+            /// The value the depth buffer is cleared to, read when \ref DepthLoad is \ref ZyGraphic::Action::Clear.
             Real32            Depth        = 1.0f;
 
-            /// The value the stencil buffer is cleared to (used when \ref StencilLoad is \ref ZyGraphic::Action::Clear).
+            /// The value the stencil buffer is cleared to, read when \ref StencilLoad is \ref ZyGraphic::Action::Clear.
             UInt8             Stencil      = 0;
         };
 
-        /// \brief Represents a declared input, a target the pass reads under the name its techniques declare the texture by.
+        /// \brief Represents a declared input, a target the pass reads under the texture name its techniques declare.
         struct InputAttachment final
         {
             /// The hash of the texture's name, as every technique drawn in the pass declares it.

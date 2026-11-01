@@ -45,7 +45,7 @@ namespace ZyRender
 
         const JsonObject Root(Document);
 
-        // Resolve the referenced binary mesh; the content system tracks it as a dependency of this model.
+        // Resolve the referenced binary mesh, which the content system tracks as a dependency of this model.
         if (const Text Path = Root.GetString("Mesh"); !Path.IsEmpty())
         {
             Asset->SetMesh(Service.Load<ZyGraphic::Mesh>(Path, AddressOf(Scope)));
@@ -56,7 +56,7 @@ namespace ZyRender
             return false;
         }
 
-        // Resolve the bone hierarchy, when the model deforms. Absent means static geometry.
+        // Resolve the bone hierarchy when the model deforms, since a model without one is static geometry.
         if (const Text Path = Root.GetString("Skeleton"); !Path.IsEmpty())
         {
             Asset->SetSkeleton(Service.Load<Skeleton3D>(Path, AddressOf(Scope)));

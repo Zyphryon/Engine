@@ -51,9 +51,9 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator2D::Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real64 Phase)
+    void Animator2D::Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real32 Phase)
     {
-        // The repeat each status plays under, in the order they are declared; the backward one alone runs from its end.
+        // The repeat each status plays under, in declared order, and the backward one alone runs from its end.
         static constexpr Array kRepeats(Repeat::Once, Repeat::Once, Repeat::Loop, Repeat::Mirror);
 
         const Real64 Duration = Frames.GetDuration();

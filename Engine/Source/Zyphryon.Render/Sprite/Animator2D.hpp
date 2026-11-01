@@ -78,7 +78,7 @@ namespace ZyRender
 
         /// \brief Sets the playback rate relative to the authored frame durations.
         ///
-        /// \param Rate The rate, where `1` plays as authored and `0` holds the current frame; negative is clamped to `0`.
+        /// \param Rate The rate, where `1` plays as authored, `0` holds the current frame and a negative one is `0`.
         ZY_INLINE void SetRate(Real32 Rate)
         {
             mPlayback.SetSpeed(mBackward ? -Max(Rate, 0.0f) : Max(Rate, 0.0f));
@@ -94,15 +94,20 @@ namespace ZyRender
 
         /// \brief Gets how far through the clip the animator is, counted the way \ref Play takes it back.
         ///
-        /// \return The share of the clip's duration elapsed in the direction it plays, from zero to one.
-        ZY_INLINE Real64 GetPhase() const
+        /// \return The share elapsed in the direction it plays, from zero to one, or the share asked for until it starts.
+        ZY_INLINE Real32 GetPhase() const
         {
+            if (!GetClip())
+            {
+                return mPhase;
+            }
+
             if (mPlayback.GetDuration() > 0.0)
             {
-                const Real64 Share = mPlayback.GetProgress();
-                return mBackward ? 1.0 - Share : Share;
+                const Real32 Share = mPlayback.GetProgress();
+                return mBackward ? 1.0f - Share : Share;
             }
-            return 0.0;
+            return 0.0f;
         }
 
         /// \brief Gets the frame the animator is on.
@@ -125,7 +130,7 @@ namespace ZyRender
         ///
         /// \param Clip      The hash of the clip's name.
         /// \param Timestamp The time playback starts, in seconds, on the clock \ref Advance is given.
-        /// \param Phase     The share of the clip to start at, counted the way it plays, where zero is the first frame shown.
+        /// \param Phase     The share of the clip to start at, counted as it plays, with zero on the first frame shown.
         ZY_INLINE void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f)
         {
             mClip  = Clip;
@@ -137,7 +142,7 @@ namespace ZyRender
 
         /// \brief Advances playback to a time and records every frame entered on the way.
         ///
-        /// \note A step spanning many laps reports one whole lap between its ends, or a pair for a mirror, not every lap.
+        /// \note A step spanning many laps reports one whole lap between its ends, or a pair for a mirror.
         ///
         /// \param Time    The current time, in seconds, on the same clock every call is given.
         /// \param Visited Receives the frames entered, in the order they were entered.
@@ -165,12 +170,12 @@ namespace ZyRender
         /// \return `true` when a play-once clip is holding on its final frame, otherwise `false`.
         ZY_INLINE Bool HasEnded() const
         {
-            return mPlayback.IsComplete();
+            return GetClip() && mPlayback.IsComplete();
         }
 
     private:
 
-        /// \brief Finds the clip asked for in the sheet, starting it from the phase asked for the first time it is found.
+        /// \brief Finds the clip asked for in the sheet, starting it from the phase asked for once it is first found.
         ///
         /// \param Timestamp The time the clip starts at, should it be found now.
         /// \return The clip, or `nullptr` while the sheet is loading or carries no clip by that name.
@@ -181,7 +186,7 @@ namespace ZyRender
         /// \param Frames    The frames of the clip to play.
         /// \param Timestamp The time playback starts, in seconds.
         /// \param Phase     The share of the clip to start at, counted the way it plays.
-        void Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real64 Phase);
+        void Restart(ConstRef<Animation2D> Frames, Real64 Timestamp, Real32 Phase);
 
         /// \brief Moves the playback cursor over a clip's frames and records every frame entered on the way.
         ///
@@ -227,7 +232,7 @@ namespace ZyRender
         /// \brief Checks whether frames are entered in rising order during a pass.
         ///
         /// \param Pass   The index of the pass, as \ref GetPass counts them.
-        /// \param Rising The direction local time is moving, `true` when it grows.
+        /// \param Rising `true` when local time grows, `false` when it shrinks.
         /// \return `true` when frames are entered from first to last, otherwise `false`.
         ZY_INLINE Bool IsAscending(SInt64 Pass, Bool Rising) const
         {
@@ -239,7 +244,7 @@ namespace ZyRender
         /// \param Visited   Receives the frames walked.
         /// \param From      The frame walked from.
         /// \param Into      The frame walked to.
-        /// \param Ascending The direction, `true` to count up, `false` to count down.
+        /// \param Ascending `true` to count up, `false` to count down.
         ZY_INLINE static void Walk(Ref<Visited> Visited, UInt8 From, UInt8 Into, Bool Ascending)
         {
             const SInt32 Step = Ascending ? 1 : -1;

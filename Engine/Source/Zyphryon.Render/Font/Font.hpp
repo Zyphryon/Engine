@@ -86,7 +86,7 @@ namespace ZyRender
         /// \brief The kerning adjustments, keyed by codepoint pair.
         using Kerning = Table<UInt64, Real64>;
 
-        /// \brief The materials, one per atlas page, indexed by \c Glyph::Page.
+        /// \brief The materials, one per atlas page, indexed by `Glyph::Page`.
         using Atlases = Sequence<Retainer<ZyGraphic::Material>>;
 
     public:
@@ -101,7 +101,7 @@ namespace ZyRender
         /// \param Metrics The size, field spread, ascent, descent and underline of the face.
         /// \param Glyphs  The table of glyphs indexed by Unicode codepoint.
         /// \param Kerning The table of kerning adjustments for character pairs.
-        /// \param Atlases The materials, one per atlas page, indexed by \c Glyph::Page.
+        /// \param Atlases The materials, one per atlas page, indexed by `Glyph::Page`.
         void Setup(AnyRef<Metrics> Metrics, AnyRef<Glyphs> Glyphs, AnyRef<Kerning> Kerning, AnyRef<Atlases> Atlases);
 
         /// \brief Gets the font metrics describing ascent, descent, and underline properties.
@@ -125,7 +125,7 @@ namespace ZyRender
         ///
         /// \param Codepoint The Unicode codepoint to look up.
         /// \param Fallback  The codepoint to use if the requested glyph is not available.
-        /// \return The glyph data, or nullptr if neither the codepoint nor fallback exist.
+        /// \return The glyph data, or `nullptr` if neither the codepoint nor the fallback exists.
         ZY_INLINE ConstPtr<Glyph> GetGlyph(UInt32 Codepoint, UInt32 Fallback = '?') const
         {
             if (const ConstPtr<Glyph> Result = mGlyphs.Find(Codepoint))
@@ -147,7 +147,7 @@ namespace ZyRender
 
         /// \brief Gets the material that renders one of this font's atlas pages.
         ///
-        /// \param Page The atlas page, as carried by \c Glyph::Page.
+        /// \param Page The atlas page, as carried by `Glyph::Page`.
         /// \return The material containing that page's atlas texture.
         ZY_INLINE ConstRetainer<ZyGraphic::Material> GetMaterial(UInt32 Page = 0) const
         {

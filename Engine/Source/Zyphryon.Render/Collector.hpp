@@ -20,7 +20,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents the queue rendering commands are collected in for efficient submission to the graphics service.
+    /// \brief Represents the queue draw commands are collected in, to be sorted and batched before submission.
     class ZY_API Collector final
     {
     public:
@@ -35,10 +35,10 @@ namespace ZyRender
         /// \brief Represents a reference to a rendering object.
         struct Object final
         {
-            /// The type of object associated with this entry.
+            /// The tag naming which kind of object to draw.
             UInt32 Type : 8u;
 
-            /// The slot of object associated with this entry.
+            /// The index of the object among those of its kind.
             UInt32 Slot : 24u;
 
             /// \brief Constructs an empty entry with default type and slot values.
@@ -167,9 +167,9 @@ namespace ZyRender
         /// \brief Sorts commands by order key with a radix sort that alternates between the two buffers.
         ///
         /// \param Input  The input buffer containing the commands to sort.
-        /// \param Output The output buffer with space for at least \p Count commands.
+        /// \param Output The output buffer with space for at least `Count` commands.
         /// \param Count  The number of commands to sort.
-        /// \return A pointer to the buffer containing the sorted commands.
+        /// \return The buffer holding the sorted commands, either of the two.
         static Ptr<Command> RadixSort64(Ptr<Command> Input, Ptr<Command> Output, UInt32 Count);
 
         /// \brief Generates a sort key for a draw command based on rendering state and priority.
@@ -179,7 +179,7 @@ namespace ZyRender
         /// \param Material The material used for the draw call.
         /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
-        /// \return A 64-bit key that encodes rendering state for optimal draw call ordering.
+        /// \return The 64-bit key the command is sorted and batched by.
         ZY_INLINE static constexpr UInt64 GenerateOrderKey(
             Priority Phase,
             UInt16   Pipeline,
@@ -198,7 +198,7 @@ namespace ZyRender
         /// \param Material The material used for the draw call.
         /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
-        /// \return A 64-bit key that can be used to sort opaque draw calls for optimal rendering order.
+        /// \return The 64-bit key that sorts opaque draw calls by state, then front to back.
         ZY_INLINE static constexpr UInt64 GenerateOpaqueOrderKey(
             UInt16 Pipeline,
             UInt16 Material,
@@ -217,7 +217,7 @@ namespace ZyRender
         /// \param Material The material used for the draw call.
         /// \param Group    The value that splits batches beyond pipeline and material.
         /// \param Depth    The depth value for sorting the draw call.
-        /// \return A 64-bit key that can be used to sort transparent draw calls for correct back-to-front rendering order.
+        /// \return The 64-bit key that sorts transparent draw calls back to front, then by state.
         ZY_INLINE static constexpr UInt64 GenerateAlphaOrderKey(
             UInt16 Pipeline,
             UInt16 Material,
@@ -233,7 +233,7 @@ namespace ZyRender
         /// \brief Converts a floating-point depth value to the 24-bit depth field of an order key.
         ///
         /// \param Depth The depth value to convert, which may be any finite floating-point value.
-        /// \return A sortable integer where the natural integer order matches the original float order.
+        /// \return The integer whose natural order matches the order of the original floats.
         ZY_INLINE static constexpr UInt32 DepthToBits(Real32 Depth)
         {
             const UInt32 Raw  = CastBit<UInt32>(Depth);

@@ -178,7 +178,7 @@ namespace ZyRender
             /// The factor the highlights are gained by, with the steps between the levels in `W`, or zero for none.
             Vector4 Gain;
 
-            /// A texel of the source across and up, then the aberration across the image in texels.
+            /// The texel of the source across and up, then the aberration across the image in texels.
             Vector4 Lens;
         };
 

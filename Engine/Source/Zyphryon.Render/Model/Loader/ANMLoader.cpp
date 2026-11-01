@@ -29,7 +29,7 @@ namespace ZyRender
         const UInt32 Keys     = Fixed ? 1u : Count;
         const Bool   Tangents = Mode == Interpolation::Hermite && !Fixed;
 
-        if (Input.GetAvailable() < Keys * sizeof(Type) * (Tangents ? 3 : 1))
+        if (Input.GetAvailable() < static_cast<UInt64>(Keys) * sizeof(Type) * (Tangents ? 3 : 1))
         {
             return false;
         }
