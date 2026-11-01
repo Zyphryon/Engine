@@ -57,7 +57,7 @@ namespace ZyEngine
 
         /// \brief Gets the host system that owns this subsystem.
         ///
-        /// \return A reference to the owning host.
+        /// \return The host that owns this subsystem.
         ZY_INLINE Ref<Host> GetHost() const
         {
             return mHost;

@@ -37,7 +37,7 @@ namespace ZyEngine
 
         /// \brief Gets the resolved service instance.
         ///
-        /// \return A reference to the service instance.
+        /// \return The service, as resolved when the dependency was constructed.
         ZY_INLINE Ref<Type> Fetch()
         {
             return (* mService);
@@ -45,7 +45,7 @@ namespace ZyEngine
 
         /// \brief Gets the resolved service instance.
         ///
-        /// \return A constant reference to the service instance.
+        /// \return The service, as resolved when the dependency was constructed.
         ZY_INLINE ConstRef<Type> Fetch() const
         {
             return (* mService);

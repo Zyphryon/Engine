@@ -30,12 +30,12 @@ namespace ZyEngine
 
         /// \brief Gets the name of the module.
         ///
-        /// \return The module name.
+        /// \return The name the module is announced under when it attaches.
         virtual Text GetName() const = 0;
 
         /// \brief Gets the version of the module.
         ///
-        /// \return The module version.
+        /// \return The version the module is announced with when it attaches.
         virtual Text GetVersion() const = 0;
 
         /// \brief Called when the module is attached to a host.

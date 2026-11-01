@@ -31,7 +31,7 @@ namespace ZyEngine
             });
         }
 
-        /// \brief Tears down all registered subsystems and clears the service registry.
+        /// \brief Tears down every registered subsystem in the order it was registered, then clears the registry.
         ZY_INLINE void Teardown()
         {
             mServices.ForEach([](UInt64, ConstRetainer<Unit> Service)
@@ -56,7 +56,7 @@ namespace ZyEngine
             return Instance;
         }
 
-        /// \brief Unregisters a service from the system.
+        /// \brief Unregisters a service from the system without tearing it down.
         ///
         /// \tparam Type The service type to unregister.
         template<typename Type>
@@ -68,7 +68,7 @@ namespace ZyEngine
         /// \brief Gets the registered service of the given type.
         ///
         /// \tparam Type The service type to look up.
-        /// \return A handle to the service, or an empty handle if not found.
+        /// \return The service, or an empty handle when none of that type is registered.
         template<typename Type>
         ZY_INLINE Retainer<Type> GetService() const
         {
