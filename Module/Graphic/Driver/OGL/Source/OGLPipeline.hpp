@@ -161,7 +161,7 @@ namespace ZyGraphic::OGL
 
         /// \brief Issues the compile and link of the program and resolves the fixed-function state it draws with.
         ///
-        /// \note The link is left to run; the first draw that wants the program settles it.
+        /// \note The link is left to run, and the first draw that wants the program settles it.
         ///
         /// \param Device    The device of the context, which gates depth clamping and wireframe.
         /// \param Compiler  The compiler that builds the program, or shares one built from the same modules.
@@ -177,7 +177,7 @@ namespace ZyGraphic::OGL
         /// \return `true` when the pipeline can be drawn with, `false` while it links or once it failed.
         Bool Settle(Ref<Compiler> Compiler);
 
-        /// \brief Lets go of the program, which the compiler deletes once no pipeline draws with it, and returns to the empty state.
+        /// \brief Lets go of the program, which the compiler deletes once unused, and returns to the empty state.
         ///
         /// \param Compiler The compiler that issued the link.
         void Delete(Ref<Compiler> Compiler);

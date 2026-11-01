@@ -33,7 +33,7 @@ namespace ZyGraphic::OGL
 
     Bool Pipeline::Create(ConstRef<Device> Device, Ref<Compiler> Compiler, ConstRef<Program> Program, ConstRef<Signature> Signature, ConstRef<States> States)
     {
-        // Clamped depth and wireframe only change what crosses the near or far plane and how edges look, so both degrade.
+        // Clamping and wireframe only change what crosses the depth planes and how edges look, so both degrade.
         if (!States.DepthClip && !Device.Has(Feature::DepthClamp))
         {
             LOG_W("Graphics: The context lacks DepthClamp, so the pipeline's depth is clipped rather than clamped");

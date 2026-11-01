@@ -21,9 +21,7 @@
 
 namespace ZyGraphic::OGL
 {
-    /// \brief Represents the system's OpenGL library and the entry points taken out of it.
-    ///
-    /// \note The entry points are process-wide, since the driver and Tracy call them by their global names.
+    /// \brief Represents the system's OpenGL library and the process-wide entry points the driver and Tracy call.
     class Loader final
     {
     public:
@@ -34,19 +32,15 @@ namespace ZyGraphic::OGL
         /// \brief Forgets every entry point, then lets go of the library.
         ~Loader();
 
-        /// \brief Opens the system's OpenGL library and the window system's own function finder.
-        ///
-        /// \note Nothing is opened on the web, where every entry point is linked.
+        /// \brief Opens the system's OpenGL library and the window system's own function finder, or nothing on the web.
         ///
         /// \return `true` when the library and its finder were found, `false` otherwise.
         Bool Open();
 
         /// \brief Finds a function by name, asking the window system first and the library's exports second.
         ///
-        /// \note Window system functions need a current context to answer for anything but themselves.
-        ///
         /// \param Name The function's name, as exported.
-        /// \return The function's address, or `nullptr` when neither knows the name.
+        /// \return The function's address, or `nullptr` when neither knows it or the context it needs is not current.
         Ptr<void> Find(Text Name) const;
 
         /// \brief Takes every entry point of the baseline out of the current context.
@@ -64,7 +58,7 @@ namespace ZyGraphic::OGL
         /// \brief Describes one entry point and the pointer it is loaded into.
         struct Entry final
         {
-            /// `true` when the entry point belongs to the baseline every context has.
+            /// `true` when the entry point belongs to the baseline every context has, `false` when a feature grants it.
             Bool           Core;
 
             /// The feature that grants the entry point, ignored for the baseline.

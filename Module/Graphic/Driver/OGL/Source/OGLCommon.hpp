@@ -192,7 +192,7 @@ namespace ZyGraphic::OGL
         return kMapping[ZyEnum::Cast(Value)];
     }
 
-    /// \brief Converts \ref TextureAddress into the matching OpenGL wrap enumeration, for a context with or without border clamping.
+    /// \brief Converts \ref TextureAddress into the OpenGL wrap enumeration a context with or without borders can do.
     constexpr GLenum ConvertAddress(TextureAddress Value, Bool Border)
     {
         // Without border clamping the nearest a context can do is repeat the edge texel.
@@ -203,16 +203,16 @@ namespace ZyGraphic::OGL
     constexpr GLenum ConvertMinFilter(TextureFilter Value)
     {
         static constexpr Array kMapping = {
-            static_cast<GLenum>(GL_NEAREST),                    // Point
-            static_cast<GLenum>(GL_NEAREST_MIPMAP_NEAREST),     // PointMipPoint
-            static_cast<GLenum>(GL_NEAREST_MIPMAP_LINEAR),      // PointMipLinear
-            static_cast<GLenum>(GL_LINEAR),                     // Linear
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_NEAREST),      // LinearMipPoint
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // LinearMipLinear
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic2x
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic4x
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic8x
-            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // Anisotropic16x
+            static_cast<GLenum>(GL_NEAREST),                    // TextureFilter::Point
+            static_cast<GLenum>(GL_NEAREST_MIPMAP_NEAREST),     // TextureFilter::PointMipPoint
+            static_cast<GLenum>(GL_NEAREST_MIPMAP_LINEAR),      // TextureFilter::PointMipLinear
+            static_cast<GLenum>(GL_LINEAR),                     // TextureFilter::Linear
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_NEAREST),      // TextureFilter::LinearMipPoint
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // TextureFilter::LinearMipLinear
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // TextureFilter::Anisotropic2x
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // TextureFilter::Anisotropic4x
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // TextureFilter::Anisotropic8x
+            static_cast<GLenum>(GL_LINEAR_MIPMAP_LINEAR),       // TextureFilter::Anisotropic16x
         };
         return kMapping[ZyEnum::Cast(Value)];
     }
@@ -231,7 +231,7 @@ namespace ZyGraphic::OGL
         }
     }
 
-    /// \brief Resolves the maximum anisotropy requested by a \ref TextureFilter.
+    /// \brief Converts \ref TextureFilter into the maximum anisotropy it samples with.
     constexpr GLfloat ConvertAnisotropy(TextureFilter Value)
     {
         switch (Value)

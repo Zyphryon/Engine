@@ -319,7 +319,7 @@ namespace ZyGraphic::OGL
 
         if (mDevice.GetProfile() == Profile::Desktop)
         {
-            // 4.1 and newer get their own dialect, so a Level3 context has gather in core; 4.0 stays on 3.30.
+            // 4.1 and newer get their own dialect, so a Level3 context has gather in core, while 4.0 stays on 3.30.
             const UInt32 Version = (Language >= 410) ? Min(Language - Language % 10u, 460u) : 330u;
 
             mVersion.Format<"#version {0} core\n">(Version);
@@ -371,7 +371,7 @@ namespace ZyGraphic::OGL
     {
         const UInt64 Key = Fingerprint(Program);
 
-        // A program switch is what a draw costs most under OpenGL, so pipelines that differ only in their states share one.
+        // A program switch costs a draw the most under OpenGL, so pipelines differing only in states share one.
         if (const Ptr<Linkage> Shared = mPrograms.Find(Key))
         {
             ++Shared->Users;
@@ -527,7 +527,7 @@ namespace ZyGraphic::OGL
 
     GLuint Compiler::Compile(ShaderStage Stage, ConstRef<Blob> Source, ConstRef<Sequence<Macro>> Macros, Ref<Build> Build) const
     {
-        // Extensions are hoisted out of the source, and binding qualifiers taken out where the context cannot keep them.
+        // Extensions are hoisted, and binding qualifiers taken out where the context cannot keep them.
         Str        Extensions;
         const Text Code(Source.GetData<Char>(), Source.GetSize());
         const Str  Body = Rewrite(Code, !mDevice.Has(Feature::ShaderBinding), Extensions, Build.Bindings);

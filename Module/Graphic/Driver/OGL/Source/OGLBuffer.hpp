@@ -31,7 +31,7 @@ namespace ZyGraphic::OGL
 
         /// \brief Creates the buffer object and fills it with its initial contents.
         ///
-        /// \param Device   The device whose uniform alignment a uniform buffer's size is rounded up to.
+        /// \param Device   The device whose buffer storage decides whether a dynamic buffer is staged.
         /// \param Storage  The update frequency the buffer is hinted with.
         /// \param Usage    The bindings the buffer is drawn from.
         /// \param Capacity The size of the buffer, in bytes.

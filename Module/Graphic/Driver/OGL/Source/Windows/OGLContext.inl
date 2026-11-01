@@ -7,12 +7,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// [  HEADER  ]
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-#include <windows.h>
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -206,7 +200,11 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Bool Choose(ConstRef<WGLBootstrap> Interface, HDC Surface, ConstRef<Configuration> Config, Ref<SInt32> Format)
+    static Bool Choose(
+        ConstRef<WGLBootstrap>  Interface,
+        HDC                     Surface,
+        ConstRef<Configuration> Config,
+        Ref<SInt32>             Format)
     {
         SInt32 Color;
         SInt32 Alpha;
@@ -214,10 +212,6 @@ namespace ZyGraphic::OGL
         SInt32 Stencil;
         ResolveColorBits(Config.ColorFormat, Color, Alpha);
         ResolveDepthBits(Config.DepthFormat, Depth, Stencil);
-
-        const Bool IsFloat = Config.ColorFormat == TextureFormat::RGBA16Float
-            ? WGL_TYPE_RGBA_FLOAT_ARB
-            : WGL_TYPE_RGBA_ARB;
 
         // Select an accelerated, double-buffered pixel format through the ARB path, as key and value pairs.
         Sequence<SInt32, 32> Attributes;
@@ -247,7 +241,8 @@ namespace ZyGraphic::OGL
         Request(Attributes, 0, 0);
 
         UINT Count;
-        return Interface.ChoosePixelFormat(Surface, Attributes.GetData(), nullptr, 1, AddressOf(Format), AddressOf(Count)) && Count > 0;
+        return Interface.ChoosePixelFormat(
+            Surface, Attributes.GetData(), nullptr, 1, AddressOf(Format), AddressOf(Count)) && Count > 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -255,7 +250,7 @@ namespace ZyGraphic::OGL
 
     static Bool ChooseFormat(ConstRef<WGLBootstrap> Interface, HDC Surface, Ref<Configuration> Config)
     {
-        // A floating-point back-buffer needs a pixel type of its own; without it the request falls back to 8 bits.
+        // A floating-point back-buffer needs a pixel type of its own, so without it the request falls back to 8 bits.
         if (Config.ColorFormat == TextureFormat::RGBA16Float && !HasToken(Interface.Extensions, "WGL_ARB_pixel_format_float"))
         {
             LOG_W("Graphics: The driver lacks WGL_ARB_pixel_format_float, so the back-buffer stays at 8 bits");
@@ -275,7 +270,7 @@ namespace ZyGraphic::OGL
         SInt32 Format = 0;
         Bool   Found  = Choose(Interface, Surface, Config, Format);
 
-        // A driver may list the extension yet offer no window format of that kind, so 8 bits are tried before giving up.
+        // A driver may list the extension yet offer no window format of that kind, so 8 bits are tried last.
         if (!Found && Config.ColorFormat != TextureFormat::RGBA8UIntNorm)
         {
             LOG_W("Graphics: No pixel format presents the requested back-buffer, so it falls back to 8 bits");
@@ -307,7 +302,7 @@ namespace ZyGraphic::OGL
 
     static HGLRC CreateHandle(ConstRef<WGLBootstrap> Interface, HDC Surface)
     {
-        // The newest version the driver grants wins; a refused one only costs the attempt.
+        // The newest version the driver grants wins, and a refused one only costs the attempt.
         for (const UInt8 Version : Context::kLadder)
         {
             const SInt32 Attributes[] =

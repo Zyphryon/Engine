@@ -51,21 +51,16 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Context::Initialize(Ptr<void> Output, ConstRef<Configuration> Config, ConstRef<Loader> Loader, Ref<Device> Device)
+    Bool Context::Initialize(
+        Ptr<void>               Output,
+        ConstRef<Configuration> Config,
+        ConstRef<Loader>        Loader,
+        Ref<Device>             Device)
     {
         mLoader = AddressOf(Loader);
         mConfig = Config;
 
         return Create(Output, Device);
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Context::Resize(UInt16 Width, UInt16 Height)
-    {
-        mConfig.Width  = Width;
-        mConfig.Height = Height;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -109,7 +104,7 @@ namespace ZyGraphic::OGL
         // Front faces wind clockwise, as they do in D3D.
         glFrontFace(GL_CW);
 
-        // ES and D3D11 behave as if these were always on; only desktop leaves them off by default.
+        // ES and D3D11 behave as if these were always on, and only desktop leaves them off by default.
         if (Device.GetProfile() == Profile::Desktop)
         {
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -121,5 +116,14 @@ namespace ZyGraphic::OGL
             }
         }
         return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Context::Resize(UInt16 Width, UInt16 Height)
+    {
+        mConfig.Width  = Width;
+        mConfig.Height = Height;
     }
 }

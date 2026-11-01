@@ -81,7 +81,7 @@ namespace ZyGraphic::OGL
 
     void Texture::Create(ConstRef<Device> Device, TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data)
     {
-        ZY_ASSERT(IsSupported(Device, Format), "OpenGL: The context lacks the feature the texture's format needs");
+        ZY_ASSERT(IsSupported(Device, Format), "The context lacks the feature the texture's format needs");
 
         const Bool   IsCube  = (Layout == TextureLayout::TextureCube);
         const Bool   IsArray = (Layout == TextureLayout::Texture2DArray);

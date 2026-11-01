@@ -228,7 +228,7 @@ namespace ZyGraphic::OGL
         mDescription.Backend  = kBackends[ZyEnum::Cast(mProfile)];
         mDescription.Language = ShaderLanguage::GLSL;
 
-        // Compute and storage buffers arrive with desktop 4.3 and ES 3.1; WebGL 2 never reaches either.
+        // Compute and storage buffers arrive with desktop 4.3 and ES 3.1, which WebGL 2 never reaches.
         const Bool Extended = (mProfile == Profile::Desktop  && mVersion >= 43)
                            || (mProfile == Profile::Embedded && mVersion >= 31);
         mDescription.Tier = Extended ? Tier::Level3 : Tier::Level2;

@@ -56,7 +56,7 @@ namespace ZyGraphic::OGL
         glGenFramebuffers(1, AddressOf(mHandle));
         glBindFramebuffer(GL_FRAMEBUFFER, mHandle);
 
-        // An sRGB attachment is written gamma-encoded, as D3D does; a linear one ignores the switch.
+        // An sRGB attachment is written gamma-encoded as D3D does, while a linear one ignores the switch.
         mEncode = true;
 
         Sequence<GLenum, kMaxAttachments> Points;
@@ -117,7 +117,7 @@ namespace ZyGraphic::OGL
     {
         glBindFramebuffer(GL_FRAMEBUFFER, mHandle);
 
-        // Only desktop has the switch; ES and WebGL always encode writes into sRGB attachments.
+        // Only desktop has the switch, since ES and WebGL always encode writes into sRGB attachments.
         if (Device.GetProfile() == Profile::Desktop)
         {
             if (mEncode)
@@ -150,7 +150,7 @@ namespace ZyGraphic::OGL
 
     void Pass::Commit(ConstRef<Device> Device)
     {
-        // Whatever the pass does not keep is dropped now, which spares a tiled GPU the write of the tile back to memory.
+        // What the pass does not keep is dropped now, sparing a tiled GPU the write of each tile back to memory.
         Sequence<GLenum, kMaxAttachments + 2> Discards;
 
         for (UInt32 Slot = 0; Slot < mColors.GetSize(); ++Slot)
@@ -184,7 +184,7 @@ namespace ZyGraphic::OGL
 
     void Pass::Clear(ConstSpan<Color> Colors, Real32 Depth, UInt8 Stencil) const
     {
-        // A clear honours the scissor and the write masks, so it opens them all; the next draw sets its own again.
+        // A clear honours the scissor and the write masks, so it opens them all until the next draw sets its own.
         glDisable(GL_SCISSOR_TEST);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glDepthMask(GL_TRUE);

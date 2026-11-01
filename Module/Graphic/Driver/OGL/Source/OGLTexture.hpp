@@ -31,7 +31,7 @@ namespace ZyGraphic::OGL
 
         /// \brief Creates the texture object, allocates every level of every slice and uploads the initial contents.
         ///
-        /// \note The context must have the format; its description leaves out S3TC sRGB and 16-bit normalized.
+        /// \note The context must have the format, though its description leaves out S3TC sRGB and 16-bit normalized.
         ///
         /// \param Device The device of the context.
         /// \param Layout The kind of texture to create.

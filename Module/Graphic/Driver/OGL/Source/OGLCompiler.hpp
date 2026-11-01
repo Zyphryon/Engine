@@ -58,7 +58,7 @@ namespace ZyGraphic::OGL
             /// The OpenGL program, `0` once its link has failed.
             GLuint Handle = 0;
 
-            /// What the program still owes until its link has landed, empty once it has settled.
+            /// The work the program still owes until its link has landed, empty once it has settled.
             Build  Build;
 
             /// The number of pipelines that draw with the program.

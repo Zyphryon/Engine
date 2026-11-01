@@ -46,7 +46,7 @@ namespace ZyGraphic::OGL
         Copy(Buffer, Name.GetSize(), Name.GetData());
         Buffer[Name.GetSize()] = '\0';
 
-        // GLX hands back a stub for any name at all, so what it answers proves nothing; the version does.
+        // GLX hands back a stub for any name at all, so only the version or the extension list proves a function.
         if (const Procedure Address = reinterpret_cast<Finder>(mFinder)(reinterpret_cast<ConstPtr<UInt8>>(Buffer)))
         {
             return reinterpret_cast<Ptr<void>>(Address);

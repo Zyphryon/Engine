@@ -63,7 +63,11 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static GLXContext CreateContext(ConstRef<GLXInterface> Interface, Ptr<::Display> Connection, GLXFBConfig Config, UInt8 Version)
+    static GLXContext CreateContext(
+        ConstRef<GLXInterface> Interface,
+        Ptr<::Display>         Connection,
+        GLXFBConfig            Config,
+        UInt8                  Version)
     {
         const SInt32 Attributes[] =
         {
@@ -126,7 +130,11 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static SInt32 GetConfigAttribute(ConstRef<GLXInterface> Interface, Ptr<::Display> Connection, GLXFBConfig Config, SInt32 Attribute)
+    static SInt32 GetConfigAttribute(
+        ConstRef<GLXInterface> Interface,
+        Ptr<::Display>         Connection,
+        GLXFBConfig            Config,
+        SInt32                 Attribute)
     {
         SInt32 Value = 0;
         Interface.GetFBConfigAttrib(Connection, Config, Attribute, AddressOf(Value));
@@ -136,7 +144,14 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Bool SelectConfig(ConstRef<GLXInterface> Interface, Ptr<::Display> Connection, SInt32 Screen, VisualID Visual, SInt32 Depth, SInt32 Stencil, Ref<GLXFBConfig> Result)
+    static Bool SelectConfig(
+        ConstRef<GLXInterface> Interface,
+        Ptr<::Display>         Connection,
+        SInt32                 Screen,
+        VisualID               Visual,
+        SInt32                 Depth,
+        SInt32                 Stencil,
+        Ref<GLXFBConfig>       Result)
     {
         SInt32 Count = 0;
 
@@ -221,6 +236,17 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Context::Present()
+    {
+        ZY_PROFILE_SCOPE("Driver::Present");
+
+        const Ptr<::Display> Connection = static_cast<Ptr<::Display>>(mConnection);
+        reinterpret_cast<GLXSwapBuffers>(mSwap)(Connection, static_cast<GLXDrawable>(mWindow));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Context::SetTearless(Bool Tearless)
     {
         if (mInterval == nullptr)
@@ -238,17 +264,6 @@ namespace ZyGraphic::OGL
             const GLXDrawable    Drawable   = static_cast<GLXDrawable>(mWindow);
             reinterpret_cast<GLXSwapIntervalEXT>(mInterval)(Connection, Drawable, Tearless ? 1 : 0);
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    void Context::Present()
-    {
-        ZY_PROFILE_SCOPE("Driver::Present");
-
-        const Ptr<::Display> Connection = static_cast<Ptr<::Display>>(mConnection);
-        reinterpret_cast<GLXSwapBuffers>(mSwap)(Connection, static_cast<GLXDrawable>(mWindow));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -290,7 +305,7 @@ namespace ZyGraphic::OGL
         Interface.DestroyContext        = Resolve<GLXDestroyContext>(* mLoader, "glXDestroyContext");
         Interface.QueryExtensionsString = Resolve<GLXQueryExtensionsString>(* mLoader, "glXQueryExtensionsString");
         Interface.CreateContextAttribs  = Resolve<GLXCreateContextAttribsARB>(* mLoader, "glXCreateContextAttribsARB");
-        mSwap                    = mLoader->Find("glXSwapBuffers");
+        mSwap                           = mLoader->Find("glXSwapBuffers");
 
         const Bool Complete = Interface.GetFBConfigs && Interface.GetFBConfigAttrib && Interface.MakeCurrent
                            && Interface.DestroyContext && Interface.QueryExtensionsString && mSwap;
@@ -310,7 +325,7 @@ namespace ZyGraphic::OGL
         }
 
         mConnection = Connection;
-        mWindow  = reinterpret_cast<UInt>(Output);
+        mWindow     = reinterpret_cast<UInt>(Output);
 
         const SInt32         Screen     = ::XDefaultScreen(Connection);
         const ConstPtr<Char> Listing    = Interface.QueryExtensionsString(Connection, Screen);
@@ -350,7 +365,7 @@ namespace ZyGraphic::OGL
             return false;
         }
 
-        // The newest version the driver grants wins; a refused one only costs the attempt.
+        // The newest version the driver grants wins, and a refused one only costs the attempt.
         for (const UInt8 Version : Context::kLadder)
         {
             mHandle = CreateContext(Interface, Connection, Selection, Version);

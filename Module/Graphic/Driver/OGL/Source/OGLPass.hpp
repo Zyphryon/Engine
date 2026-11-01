@@ -55,7 +55,7 @@ namespace ZyGraphic::OGL
         /// \brief Deletes the framebuffer and returns to the empty state.
         void Delete();
 
-        /// \brief Binds the framebuffer, sets the clip origin, viewport and depth range, and clears what the pass loads clear.
+        /// \brief Binds the framebuffer, sets its clip origin, viewport and depth range, and runs the clears it loads.
         ///
         /// \param Device   The device of the context, whose profile decides whether encoding is switched.
         /// \param Viewport The viewport, with its origin at the top-left corner.

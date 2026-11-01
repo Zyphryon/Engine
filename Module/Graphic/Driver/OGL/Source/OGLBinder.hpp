@@ -99,7 +99,7 @@ namespace ZyGraphic::OGL
         /// \param Scissor The rectangle, with its origin at the top-left corner.
         void Clip(ConstRef<Scissor> Scissor) const;
 
-        /// \brief Gets the base vertex a draw folds into its per-vertex streams, when the context cannot apply it itself.
+        /// \brief Gets the base vertex a draw folds into its per-vertex streams when the context cannot apply it.
         ///
         /// \param Draw The draw whose base is folded.
         /// \return The base vertex of an indexed draw without \ref Feature::BaseVertex, otherwise `0`.

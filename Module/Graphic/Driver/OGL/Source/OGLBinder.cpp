@@ -300,7 +300,7 @@ namespace ZyGraphic::OGL
         const SInt32 Base  = Fold(Draw);
         const UInt32 Limit = static_cast<UInt32>(Max(mCommand.Vertices.GetSize(), Draw.Vertices.GetSize()));
 
-        // A new pipeline or a new folded base moves every stream, so only a draw that keeps both binds just what differs.
+        // A new pipeline or folded base moves every stream, so only a draw keeping both binds just what differs.
         const Bool Kept = mCommand.Pipeline == Draw.Pipeline && Fold(mCommand) == Base;
 
         if (!Differ<Stream>(Kept, mCommand.Vertices, Draw.Vertices, Limit, First, Count))
@@ -332,7 +332,7 @@ namespace ZyGraphic::OGL
 
                 ConstRef<Stream> Stream = Draw.Vertices[Attribute.Stream];
 
-                // Pointing an attribute reads GL_ARRAY_BUFFER, so each stream's buffer is bound as the attributes reach it.
+                // Pointing an attribute reads GL_ARRAY_BUFFER, so each stream's buffer is bound as attributes reach it.
                 if (const GLuint Handle = mBuffers[Stream.Buffer].GetHandle(); Handle != Bound)
                 {
                     glBindBuffer(GL_ARRAY_BUFFER, Handle);
@@ -354,7 +354,7 @@ namespace ZyGraphic::OGL
 
     void Binder::ApplyIndices(ConstRef<Stream> Indices)
     {
-        // The index buffer is part of the vertex array, which uploads through GL_ELEMENT_ARRAY_BUFFER also change.
+        // The index buffer belongs to the vertex array, which an upload through GL_ELEMENT_ARRAY_BUFFER also changes.
         if (mCommand.Indices != Indices)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBuffers[Indices.Buffer].GetHandle());

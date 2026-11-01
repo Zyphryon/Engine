@@ -32,7 +32,7 @@ namespace ZyGraphic::OGL
 
     Driver::~Driver()
     {
-        // The service destroys the driver on the drawing thread; a context that never came up holds nothing to delete.
+        // The service destroys the driver on the drawing thread, and a context that never came up holds nothing.
         if (!mContext.Acquire())
         {
             return;

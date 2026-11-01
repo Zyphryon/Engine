@@ -117,14 +117,20 @@ inline void glDrawElementsBaseVertex(GLenum Mode, GLsizei Count, GLenum Type, co
     glDrawElementsInstancedBaseVertexBaseInstanceWEBGL(Mode, Count, Type, Indices, 1, Base, 0);
 }
 
-inline void glDrawElementsInstancedBaseVertex(GLenum Mode, GLsizei Count, GLenum Type, const void * Indices, GLsizei Instances, GLint Base)
+inline void glDrawElementsInstancedBaseVertex(
+    GLenum       Mode,
+    GLsizei      Count,
+    GLenum       Type,
+    const void * Indices,
+    GLsizei      Instances,
+    GLint        Base)
 {
     glDrawElementsInstancedBaseVertexBaseInstanceWEBGL(Mode, Count, Type, Indices, Instances, Base, 0);
 }
 
 inline void glMaxShaderCompilerThreads(GLuint)
 {
-    // The browser picks its own compiler threads; KHR_parallel_shader_compile is a query alone on the web.
+    // The browser picks its own compiler threads, so KHR_parallel_shader_compile is only a query on the web.
 }
 
 inline void glBindVertexBuffer(GLuint, GLuint, GLintptr, GLsizei)
@@ -475,8 +481,7 @@ using GLsync     = Ptr<struct GLsyncObject>;
 #undef ZY_GL_CORE
 #undef ZY_GL_FEATURE
 
-// The global names are what the driver and Tracy call; each is a macro over the loader's own pointer, so no
-// symbol of the system's OpenGL library is ever shadowed by one of ours.
+// Every call keeps its GL name, which is a macro over the loader's own pointer, so no system symbol is shadowed.
 #define glActiveTexture                    zyglActiveTexture
 #define glAttachShader                     zyglAttachShader
 #define glBeginQuery                       zyglBeginQuery

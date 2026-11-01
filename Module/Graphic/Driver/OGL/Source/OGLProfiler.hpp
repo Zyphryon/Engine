@@ -30,7 +30,7 @@ namespace ZyGraphic::OGL
     {
     public:
 
-        /// \brief Constructs a profiler with no zone open.
+        /// \brief Constructs a profiler that times nothing until \ref Initialize.
         Profiler();
 
         /// \brief Creates the profiler context for the current OpenGL context, where it can time the GPU.

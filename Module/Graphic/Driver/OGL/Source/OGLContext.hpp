@@ -81,7 +81,7 @@ namespace ZyGraphic::OGL
         ///
         /// \param Width  The width to compare against, in pixels.
         /// \param Height The height to compare against, in pixels.
-        /// \return `true` when the back buffer has that size, otherwise `false`.
+        /// \return `true` when the back buffer has that size, `false` otherwise.
         ZY_INLINE Bool Matches(UInt16 Width, UInt16 Height) const
         {
             return mConfig.Width == Width && mConfig.Height == Height;
