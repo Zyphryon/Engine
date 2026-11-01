@@ -44,4 +44,10 @@ float3 ZyApplyAffine(ZyAffine Transform, float3 Local)
     return Transform.Origin + Local.x * Transform.ColumnX + Local.y * Transform.ColumnY + Local.z * Transform.ColumnZ;
 }
 
+/// Carries a direction from the instance's own space into the space it is placed in, leaving the origin out.
+float3 ZyTurnAffine(ZyAffine Transform, float3 Local)
+{
+    return Local.x * Transform.ColumnX + Local.y * Transform.ColumnY + Local.z * Transform.ColumnZ;
+}
+
 #endif // ZY_AFFINE_INCLUDED

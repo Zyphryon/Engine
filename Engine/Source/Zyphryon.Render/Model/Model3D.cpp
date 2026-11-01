@@ -85,6 +85,11 @@ namespace ZyRender
             Service.Reload(mSkeleton);
         }
 
+        for (ConstRef<Clip> Entry : mClips)
+        {
+            Service.Reload(Entry.Motion);
+        }
+
         for (ConstRetainer<ZyGraphic::Material> Material : mMaterials)
         {
             if (Material)

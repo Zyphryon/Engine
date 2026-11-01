@@ -12,9 +12,10 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Skeleton3D.hpp"
+#include "Animation3D.hpp"
 #include "Zyphryon.Graphic/Material.hpp"
 #include "Zyphryon.Graphic/Mesh.hpp"
+#include "Zyphryon.Math/Motion/Playback.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -25,6 +26,24 @@ namespace ZyRender
     /// \brief Represents a renderable model combining geometry, materials, and an optional rig to deform on.
     class ZY_API Model3D final : public ZyContent::AbstractResource<Model3D>
     {
+    public:
+
+        /// \brief Represents one clip of the model, the motion it plays and the way it plays it.
+        struct Clip final
+        {
+            /// The hash of the clip's name.
+            UInt64                Name = 0;
+
+            /// The name the clip is shown by, which may be cut short, while lookups go by \ref Name alone.
+            Str32                 Label;
+
+            /// The motion the clip plays over the model's rig, which other models with the same bones may share.
+            Retainer<Animation3D> Motion;
+
+            /// The way the clip behaves once it reaches its end.
+            Repeat                Mode = Repeat::Loop;
+        };
+
     public:
 
         /// \brief Constructs a model resource with the given content key.
@@ -97,6 +116,35 @@ namespace ZyRender
             return mMaterials[Slot];
         }
 
+        /// \brief Replaces every clip of the model.
+        ///
+        /// \param Clips The clips, in authored order.
+        ZY_INLINE void SetClips(AnyRef<Sequence<Clip>> Clips)
+        {
+            mClips = Move(Clips);
+        }
+
+        /// \brief Gets every clip of the model.
+        ///
+        /// \return The clips, in authored order.
+        ZY_INLINE ConstSpan<Clip> GetClips() const
+        {
+            return mClips;
+        }
+
+        /// \brief Finds a clip by name.
+        ///
+        /// \param Name The hash of the clip's name.
+        /// \return The clip, or `nullptr` when the model has no clip by that name.
+        ZY_INLINE ConstPtr<Clip> FindClip(UInt64 Name) const
+        {
+            const SInt Index = mClips.Find([Name](ConstRef<Clip> Entry)
+            {
+                return Entry.Name == Name;
+            });
+            return Index < 0 ? nullptr : AddressOf(mClips[Index]);
+        }
+
     public:
 
         /// \brief Uploads the model's exclusively-owned mesh and materials to the GPU.
@@ -133,5 +181,6 @@ namespace ZyRender
         Retainer<ZyGraphic::Mesh>               mMesh;
         Retainer<Skeleton3D>                    mSkeleton;
         Sequence<Retainer<ZyGraphic::Material>> mMaterials;
+        Sequence<Clip>                          mClips;
     };
 }

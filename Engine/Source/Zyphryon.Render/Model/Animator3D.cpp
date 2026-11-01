@@ -45,8 +45,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Animator3D::Animator3D()
-        : mClock  { 0.0 },
-          mEpoch  { 0.0 },
+        : mEpoch  { 0.0 },
           mFade   { 0.0 },
           mActive { 0 }
     {
@@ -59,14 +58,8 @@ namespace ZyRender
     {
         mModel = Model;
 
-        // The bone count is unknown until the rig lands, so Update sizes the palette instead.
+        // The bone count is unknown until the rig lands, so sizing the palette again pairs every source with it anew.
         mPalette.Clear();
-
-        // A new model may carry another rig, so every source pairs with it again.
-        for (Ref<Source> Entry : mSources)
-        {
-            Entry.Bound = false;
-        }
 
         // The pose being faded out stands on bones the arriving rig need not carry.
         Retire(mSources[mActive ^ 1]);
@@ -75,13 +68,13 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator3D::Play(ConstRetainer<Animation3D> Animation, Repeat Mode, Real64 Fade)
+    void Animator3D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Real64 Fade)
     {
         // Only a clip already paired with the rig has a pose worth fading out of.
-        if (Fade > 0.0 && mSources[mActive].Clip && mSources[mActive].Bound)
+        if (Fade > 0.0 && mSources[mActive].Motion && mSources[mActive].Bound)
         {
             mActive ^= 1;
-            mEpoch   = mClock;
+            mEpoch   = Timestamp;
             mFade    = Fade;
         }
         else
@@ -90,12 +83,10 @@ namespace ZyRender
         }
 
         Ref<Source> Incoming = mSources[mActive];
-        Incoming.Clip  = Animation;
-        Incoming.Bound = false;
-
-        // A clip still loading carries neither its length nor its lanes; Rebind adopts both once they land.
-        Incoming.Cursor.SetRepeat(Mode);
-        Incoming.Cursor.Play();
+        Incoming.Name      = Clip;
+        Incoming.Timestamp = Timestamp;
+        Incoming.Phase     = Phase;
+        Incoming.Bound     = false;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -103,16 +94,14 @@ namespace ZyRender
 
     Skeleton3D::Pose Animator3D::Sample(Real64 Time, Ref<Scratch> Scratch)
     {
-        mClock = Time;
-
-        if (!mModel)
+        // The rig and every clip load with the model, so there is nothing to pose until it has landed.
+        if (!mModel || !mModel->HasCompleted())
         {
             return Skeleton3D::Pose();
         }
 
         ConstRetainer<Skeleton3D> Rig = mModel->GetSkeleton();
 
-        // Model and rig both load in the background; there is no pose to build until the bones arrive.
         if (!Rig || Rig->IsEmpty())
         {
             return Skeleton3D::Pose();
@@ -132,13 +121,12 @@ namespace ZyRender
 
         Ref<Source> Active = mSources[mActive];
 
-        // Advanced before the pairing, so the cursor Rebind anchors is measured against this moment.
+        // Paired before the advance, so the clip runs from its timestamp however long the model took to land.
+        Rebind(Active, * Rig);
         Active.Cursor.Advance(Time);
 
-        const Bool Ready = Rebind(Active, * Rig);
-
-        // A clip still loading, or none at all, leaves the model in its rest pose.
-        if (!Ready || !Active.Clip)
+        // No clip, or one the model does not list, leaves the model in its rest pose.
+        if (!Active.Motion)
         {
             return Skeleton3D::Pose();
         }
@@ -150,16 +138,14 @@ namespace ZyRender
         Ref<Source> Outgoing = mSources[mActive ^ 1];
 
         // The outgoing clip keeps playing, so a stride caught mid-swing finishes instead of sliding.
-        Bool Blending = Weight < 1.0f && Outgoing.Clip;
+        const Bool Blending = Weight < 1.0f && Outgoing.Motion;
 
         if (Blending)
         {
+            Rebind(Outgoing, * Rig);
             Outgoing.Cursor.Advance(Time);
-
-            Blending = Rebind(Outgoing, * Rig);
         }
-
-        if (!Blending && (mFade > 0.0 || Outgoing.Clip))
+        else if (mFade > 0.0 || Outgoing.Motion)
         {
             Retire(Outgoing);
         }
@@ -215,35 +201,29 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Animator3D::Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig)
+    void Animator3D::Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig)
     {
         if (Entry.Bound)
         {
-            return true;
+            return;
         }
 
-        // A clip still in flight binds no lane, and nothing would revisit the pairing once its bytes land.
-        if (Entry.Clip && Entry.Clip->IsEmpty() && !Entry.Clip->HasFinished())
-        {
-            return false;
-        }
+        const ConstPtr<Model3D::Clip> Clip = mModel->FindClip(Entry.Name);
 
-        if (Entry.Clip)
-        {
-            Entry.Covered = Entry.Clip->Resolve(Rig, Entry.Binding);
-        }
-        else
-        {
-            Entry.Covered = false;
-            Entry.Binding.Clear();
-        }
+        // A name the model does not list plays nothing, as a source holding no clip does.
+        Entry.Motion  = Clip ? Clip->Motion : Retainer<Animation3D>();
+        Entry.Covered = Entry.Motion && Entry.Motion->Resolve(Rig, Entry.Binding);
 
-        // Anchored here rather than in Play, so a clip that spent frames loading opens on its first sample.
-        Entry.Cursor.SetDuration(Entry.Clip ? Entry.Clip->GetDuration() : 0.0);
-        Entry.Cursor.Seek(0.0);
+        const Real64 Duration = Entry.Motion ? Entry.Motion->GetDuration() : 0.0;
+
+        // Move the clock to the start time first, so playback is anchored there and not at the last advance.
+        Entry.Cursor.Advance(Entry.Timestamp);
+        Entry.Cursor.SetDuration(Duration);
+        Entry.Cursor.SetRepeat(Clip ? Clip->Mode : Repeat::Loop);
+        Entry.Cursor.Seek(Entry.Phase * Duration);
+        Entry.Cursor.Play();
 
         Entry.Bound = true;
-        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -256,7 +236,7 @@ namespace ZyRender
         {
             Rig.Rest(Output);
         }
-        Entry.Clip->Sample(Entry.Cursor.GetTime(), Entry.Binding, Output);
+        Entry.Motion->Sample(Entry.Cursor.GetTime(), Entry.Binding, Output);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -266,7 +246,8 @@ namespace ZyRender
     {
         mFade = 0.0;
 
-        Entry.Clip = Retainer<Animation3D>();
+        Entry.Name    = 0;
+        Entry.Motion  = Retainer<Animation3D>();
         Entry.Binding.Clear();
         Entry.Bound   = false;
         Entry.Covered = false;

@@ -12,9 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "Animation3D.hpp"
 #include "Model3D.hpp"
-#include "Zyphryon.Math/Motion/Playback.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -72,22 +70,49 @@ namespace ZyRender
             return mModel;
         }
 
-        /// \brief Starts a clip over the attached model's rig.
+        /// \brief Gets the clip being played.
         ///
-        /// \param Animation The clip to play.
-        /// \param Mode      The way the clip behaves once it reaches its end.
-        /// \param Fade      The time to blend out of the clip already playing, in seconds.
-        void Play(ConstRetainer<Animation3D> Animation, Repeat Mode = Repeat::Loop, Real64 Fade = 0.0);
-
-        /// \brief Gets the cursor tracking where the playing clip has reached.
-        ///
-        /// \note A clip being faded out keeps its own cursor, which this does not reach.
-        ///
-        /// \return The playback cursor of the clip that is taking hold.
-        ZY_INLINE Ref<Playback> GetPlayback()
+        /// \return The clip, or `nullptr` until the model has loaded and the clip asked for has been found in it.
+        ZY_INLINE ConstPtr<Model3D::Clip> GetClip() const
         {
-            return mSources[mActive].Cursor;
+            return mModel && mModel->HasCompleted() ? mModel->FindClip(mSources[mActive].Name) : nullptr;
         }
+
+        /// \brief Sets the playback rate relative to the authored speed of every clip.
+        ///
+        /// \param Rate The rate, where `1` plays as authored, `0` holds the current pose and a negative one is `0`.
+        ZY_INLINE void SetRate(Real32 Rate)
+        {
+            for (Ref<Source> Entry : mSources)
+            {
+                Entry.Cursor.SetSpeed(Max(Rate, 0.0f));
+            }
+        }
+
+        /// \brief Gets the playback rate relative to the authored speed of every clip.
+        ///
+        /// \return The rate, where `1` plays as authored.
+        ZY_INLINE Real32 GetRate() const
+        {
+            return mSources[mActive].Cursor.GetSpeed();
+        }
+
+        /// \brief Gets how far through the clip the animator is, counted the way \ref Play takes it back.
+        ///
+        /// \return The share of the clip's duration elapsed from zero to one, or the share asked for until it starts.
+        ZY_INLINE Real64 GetPhase() const
+        {
+            ConstRef<Source> Active = mSources[mActive];
+            return Active.Bound ? Active.Cursor.GetProgress() : Active.Phase;
+        }
+
+        /// \brief Starts a clip of the model, playing it the way its \ref Model3D::Clip::Mode says.
+        ///
+        /// \param Clip      The hash of the clip's name.
+        /// \param Timestamp The time playback starts, in seconds, on the clock \ref Sample is given.
+        /// \param Phase     The share of the clip to start at, where zero is its first pose.
+        /// \param Fade      The time to blend out of the clip already playing, in seconds, counted from the timestamp.
+        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Real64 Fade = 0.0);
 
         /// \brief Advances the clip and samples the local pose it puts the rig in, leaving the palette as it was.
         ///
@@ -115,13 +140,31 @@ namespace ZyRender
             return mPalette;
         }
 
+        /// \brief Checks whether a clip that plays once has reached its end.
+        ///
+        /// \return `true` when a play-once clip is holding on its final pose, otherwise `false`.
+        ZY_INLINE Bool HasEnded() const
+        {
+            ConstRef<Source> Active = mSources[mActive];
+            return Active.Bound && Active.Cursor.IsComplete();
+        }
+
     private:
 
         /// \brief Represents one clip paired with a rig: where it has reached, and how its lanes reach the bones.
         struct Source final
         {
-            /// The clip being played, or empty when the source holds none.
-            Retainer<Animation3D> Clip;
+            /// The hash of the clip's name, or zero when the source holds none.
+            UInt64                Name      = 0;
+
+            /// The motion of the clip last paired, empty when none was or the model lists no such clip.
+            Retainer<Animation3D> Motion;
+
+            /// The time the clip starts at, in seconds, on the clock \ref Sample is given.
+            Real64                Timestamp = 0.0;
+
+            /// The share of the clip to start at, where zero is its first pose.
+            Real32                Phase     = 0.0f;
 
             /// The cursor tracking where the clip has reached.
             Playback              Cursor;
@@ -130,18 +173,17 @@ namespace ZyRender
             Sequence<SInt32>      Binding;
 
             /// `true` once the clip has been paired with the rig, so a frame need not rediscover it.
-            Bool                  Bound   = false;
+            Bool                  Bound     = false;
 
             /// `true` when the clip writes every component of every bone, so the rest pose may be skipped.
-            Bool                  Covered = false;
+            Bool                  Covered   = false;
         };
 
-        /// \brief Resolves what only changes when the clip does, so a frame need not rediscover it.
+        /// \brief Finds the clip in the model and pairs it with the rig, starting it from its timestamp and phase.
         ///
-        /// \param Entry The source to pair.
+        /// \param Entry The source to pair, left as it is once paired.
         /// \param Rig   The skeleton the clip is playing over.
-        /// \return `true` once the clip has been paired with the rig, `false` while it is still loading.
-        Bool Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig);
+        void Rebind(Ref<Source> Entry, ConstRef<Skeleton3D> Rig);
 
         /// \brief Seeds a pose and samples one source's clip over it.
         ///
@@ -163,7 +205,6 @@ namespace ZyRender
         Retainer<Model3D>   mModel;
         Source              mSources[kSources];
         Sequence<Matrix4x3> mPalette;
-        Real64              mClock;
         Real64              mEpoch;
         Real64              mFade;
         UInt8               mActive;

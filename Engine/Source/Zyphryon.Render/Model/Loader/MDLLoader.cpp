@@ -89,6 +89,27 @@ namespace ZyRender
             }
             Asset->SetMaterials(Move(Table));
         }
+
+        if (const JsonArray List = Root.GetArray("Clips"); !List.IsNullOrEmpty())
+        {
+            const UInt Count = List.GetSize();
+
+            Sequence<Model3D::Clip> Clips;
+            Clips.Reserve(Count);
+
+            for (UInt Index = 0; Index < Count; ++Index)
+            {
+                const JsonObject Definition = List.GetObject(Index);
+                const Text       Name       = Definition.GetString("Name");
+
+                Ref<Model3D::Clip> Clip = Clips.Append();
+                Clip.Name   = Hash(Name);
+                Clip.Label  = Name;
+                Clip.Motion = Service.Load<Animation3D>(Definition.GetString("Path"), AddressOf(Scope));
+                Clip.Mode   = Definition.GetEnum("Repeat", Repeat::Loop);
+            }
+            Asset->SetClips(Move(Clips));
+        }
         return true;
     }
 }
