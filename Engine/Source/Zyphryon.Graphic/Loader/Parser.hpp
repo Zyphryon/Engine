@@ -22,9 +22,7 @@ namespace ZyGraphic
 {
     /// \brief Parses a shader parameter, as techniques and materials both write one, into its value.
     ///
-    /// \note A component the document leaves out reads as zero, and a missing value as the type's zero.
-    ///
-    /// \param Json The JSON object holding the parameter's `"Type"` (float when absent) and `"Value"`.
+    /// \param Json The JSON object holding the parameter's `"Type"` (float when absent) and `"Value"` (zero if absent).
     /// \return The parameter holding the parsed value, of the alternative its type names.
     Parameter ParseParameter(ConstRef<JsonObject> Json);
 

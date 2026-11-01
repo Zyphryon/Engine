@@ -233,7 +233,7 @@ namespace ZyGraphic
         ///
         /// \param Key       The bitmask of the features the variant compiles with.
         /// \param Program   Receives the shader program the variant compiles.
-        /// \param Signature Receives the resource interface the variant exposes.
+        /// \param Signature Receives the vertex attributes the variant's input stage consumes.
         /// \param States    Receives the fixed-function states the variant is created with.
         void Assemble(Key Key, Ref<Program> Program, Ref<Signature> Signature, Ref<States> States) const;
 

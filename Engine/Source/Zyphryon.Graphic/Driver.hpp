@@ -61,7 +61,7 @@ namespace ZyGraphic
         /// \param ID       The handle the service allocated for the buffer.
         /// \param Storage  The CPU access pattern of the buffer.
         /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
-        /// \param Capacity The capacity of the buffer in bytes, a multiple of the uniform block alignment for a uniform buffer.
+        /// \param Capacity The capacity of the buffer in bytes, a multiple of the block alignment for a uniform buffer.
         /// \param Data     The optional initial data, either empty or exactly \p Capacity bytes long.
         virtual void CreateBuffer(Object ID, Storage Storage, Usage Usage, UInt32 Capacity, ConstSpan<Byte> Data)
         {
@@ -86,12 +86,12 @@ namespace ZyGraphic
 
         }
 
-        /// \brief Maps a region of a buffer resource into CPU address space for direct access.
+        /// \brief Maps a buffer resource into CPU address space for writing, discarding what it held.
         ///
         /// \param ID     The identifier of the buffer resource to map.
-        /// \param Offset The byte offset within the buffer to start mapping from.
+        /// \param Offset The byte offset within the buffer to start mapping from, which must be zero.
         /// \param Size   The number of bytes to map.
-        /// \return A pointer to the mapped region in CPU address space, or `nullptr` if mapping fails.
+        /// \return A pointer to the mapped region in CPU address space, or `nullptr` when the backend maps nothing.
         virtual Ptr<Byte> MapBuffer(Object ID, UInt32 Offset, UInt32 Size)
         {
             return nullptr;

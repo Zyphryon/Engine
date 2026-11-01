@@ -67,7 +67,7 @@ namespace ZyGraphic
             Object             Handle = 0;
         };
 
-        /// \brief Describes a texture the program samples, with the one-texel texture bound where a material supplies none.
+        /// \brief Describes a texture the program samples, with the one-texel texture bound where a material has none.
         struct Texture final
         {
             /// The hash identifying the name a material binds its image under.

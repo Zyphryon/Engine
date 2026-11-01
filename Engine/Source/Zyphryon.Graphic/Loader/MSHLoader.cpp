@@ -40,7 +40,7 @@ namespace ZyGraphic
             return false;
         }
 
-        // Walk the tag-length-value chunk stream; unrecognized tags are skipped by their length.
+        // Walk the tag-length-value chunk stream, skipping an unrecognized tag by its length.
         while (Input.GetAvailable() >= 2 * sizeof(UInt32))
         {
             const UInt32 Tag    = Input.Read<UInt32>();

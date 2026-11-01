@@ -163,9 +163,9 @@ namespace ZyGraphic
     /// \brief Specifies the intended storage pattern of a GPU resource in terms of CPU and GPU access.
     enum class Storage : UInt8
     {
-        Immutable, ///< Initialized once at creation; read-only by the GPU.
-        Dynamic,   ///< Written frequently by the CPU; read by the GPU (mapped access).
-        Stream,    ///< Written occasionally by the CPU via explicit uploads; read by the GPU.
+        Immutable, ///< Initialized once at creation and only read by the GPU after.
+        Dynamic,   ///< Written frequently by the CPU through a mapping and read by the GPU.
+        Stream,    ///< Written occasionally by the CPU through explicit uploads and read by the GPU.
     };
 
     /// \brief Specifies the action to perform when a test (e.g., stencil) passes or fails.
@@ -198,9 +198,9 @@ namespace ZyGraphic
     /// \brief Specifies how texture coordinates outside the [0,1] range are handled.
     enum class TextureAddress : UInt8
     {
-        Clamp,   ///< Clamp to edge; coordinates are clamped to the nearest valid texel.
-        Border,  ///< Clamp to border; coordinates outside range use a border color.
-        Repeat,  ///< Repeat texture; coordinates wrap around.
+        Clamp,   ///< Clamp coordinates to the nearest edge texel.
+        Border,  ///< Read the border color for coordinates outside the range.
+        Repeat,  ///< Wrap coordinates around.
         Mirror,  ///< Mirror texture at every integer boundary.
     };
 
@@ -247,8 +247,8 @@ namespace ZyGraphic
         BC7UIntNorm_sRGB,           ///< High-quality block-compressed RGBA, sRGB.
         ETC2RGBUIntNorm,            ///< Block-compressed RGB (ETC2), unsigned normalized.
         ETC2RGBUIntNorm_sRGB,       ///< Block-compressed RGB (ETC2), sRGB gamma-corrected.
-        ETC2RGBA1UIntNorm,          ///< Block-compressed RGB (ETC2) with 1-bit punch-through alpha, unsigned normalized.
-        ETC2RGBA1UIntNorm_sRGB,     ///< Block-compressed RGB (ETC2) with 1-bit punch-through alpha, sRGB gamma-corrected.
+        ETC2RGBA1UIntNorm,          ///< Block-compressed RGB (ETC2) with punch-through alpha, unsigned normalized.
+        ETC2RGBA1UIntNorm_sRGB,     ///< Block-compressed RGB (ETC2) with punch-through alpha, sRGB gamma-corrected.
         ETC2RGBAUIntNorm,           ///< Block-compressed RGBA (ETC2/EAC), unsigned normalized.
         ETC2RGBAUIntNorm_sRGB,      ///< Block-compressed RGBA (ETC2/EAC), sRGB gamma-corrected.
         EACR11UIntNorm,             ///< Block-compressed single-channel (red, EAC), unsigned normalized.
@@ -298,7 +298,7 @@ namespace ZyGraphic
         RGB10A2UInt,                ///< 10-bit RGB + 2-bit alpha, unsigned integer.
         RGB10A2UIntNorm,            ///< 10-bit RGB + 2-bit alpha, unsigned normalized.
         R11G11B10Float,             ///< 11-bit red and green + 10-bit blue, unsigned floating-point.
-        RGB9E5Float,                ///< 9-bit RGB mantissas sharing a 5-bit exponent; sampling only, never renderable.
+        RGB9E5Float,                ///< 9-bit RGB mantissas sharing a 5-bit exponent, sampled but never rendered to.
         D16UIntNorm,                ///< 16-bit unsigned normalized depth.
         D32Float,                   ///< 32-bit floating-point depth.
         D24S8UIntNorm,              ///< 24-bit unsigned normalized depth + 8-bit stencil.
@@ -521,7 +521,7 @@ namespace ZyGraphic
     /// \brief Describes the graphics device and its capabilities.
     struct Description final
     {
-        /// The graphics backend currently in use (e.g., Direct3D 11, OpenGL ES 3.x).
+        /// The name of the graphics backend in use, such as Direct3D 11 or OpenGL.
         Str16             Backend      = "None";
 
         /// The feature tier the graphics device reaches.

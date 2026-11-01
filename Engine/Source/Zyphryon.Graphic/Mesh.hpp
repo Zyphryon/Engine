@@ -22,7 +22,7 @@
 
 namespace ZyGraphic
 {
-    /// \brief Represents a GPU-backed geometry asset: one shared vertex/index buffer split into drawable primitives.
+    /// \brief Represents a GPU-backed geometry asset, one shared vertex/index buffer split into drawable primitives.
     class ZY_API Mesh final : public ZyContent::AbstractResource<Mesh>
     {
     public:
@@ -49,7 +49,7 @@ namespace ZyGraphic
             /// The element format of this attribute.
             VertexFormat Format = VertexFormat::Float32x4;
 
-            /// The byte stride between consecutive vertices in this attribute's interleaving group; `0` if absent.
+            /// The byte stride between consecutive vertices in this attribute's interleaving group, or `0` if absent.
             UInt16       Stride = 0;
 
             /// The byte offset where this attribute's data begins within the shared buffer.
@@ -73,7 +73,7 @@ namespace ZyGraphic
         enum class Property : UInt8
         {
             None     = 0,      ///< No flags set.
-            Extended = 1 << 0, ///< Index buffer is 32-bit (else 16-bit).
+            Extended = 1 << 0, ///< Stores 32-bit indices rather than 16-bit ones.
         };
         ZY_DEFINE_BITWISE_FRIEND_ENUM(Property)
 
@@ -111,7 +111,7 @@ namespace ZyGraphic
 
         /// \brief Appends a primitive that draws a subrange of the shared buffers.
         ///
-        /// \param Definition The draw range and material slot.
+        /// \param Definition The draw range, material slot and level of detail, a level the mesh already declares.
         void AddPrimitive(ConstRef<Primitive> Definition);
 
         /// \brief Gets the primitives that compose this mesh, across every level.
@@ -197,7 +197,7 @@ namespace ZyGraphic
         /// \brief Gets the physical placement of a vertex attribute.
         ///
         /// \param Slot The attribute's semantic slot.
-        /// \return The attribute's binding; its `Stride` is `0` when the mesh does not provide the attribute.
+        /// \return The attribute's binding, whose `Stride` is `0` when the mesh does not provide the attribute.
         ZY_INLINE Binding GetBinding(VertexSlot Slot) const
         {
             return mBindings[ZyEnum::Cast(Slot)];

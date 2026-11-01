@@ -435,9 +435,12 @@ namespace ZyGraphic
 #if defined(ZY_PLATFORM_WEB)
             mDriver->UpdateBuffer(Arena.Buffer, 0, Data);
 #else
-            const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize());
-            Blit(Address, Data.GetSize(), Data.GetData());
-            mDriver->UnmapBuffer(Arena.Buffer, Data.GetSize());
+            // A lost device maps nothing, and the frame's data is dropped with it.
+            if (const Ptr<void> Address = mDriver->MapBuffer(Arena.Buffer, 0, Data.GetSize()))
+            {
+                Blit(Address, Data.GetSize(), Data.GetData());
+                mDriver->UnmapBuffer(Arena.Buffer, Data.GetSize());
+            }
 #endif
 
             // The writer keeps its storage, so the next frame that spills reuses it.

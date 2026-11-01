@@ -39,7 +39,7 @@ namespace ZyGraphic
         /// \param Delta The elapsed time in seconds since the last tick.
         void OnTick(Real64 Delta) override;
 
-        /// \brief Tears down the service, destroying the driver on the GPU worker thread before stopping it.
+        /// \brief Tears down the service, handing the GPU worker thread its last frame and then stopping it.
         void OnTeardown() override;
 
         /// \brief Initializes the service with the named driver and display parameters.
@@ -168,7 +168,7 @@ namespace ZyGraphic
 
         /// \brief Creates a buffer resource with the specified parameters and optional initial data.
         ///
-        /// \note A uniform buffer's capacity is a multiple of the uniform block alignment, as its blocks are bound in those units.
+        /// \note A uniform buffer's capacity is a multiple of the uniform block alignment its blocks are bound in.
         ///
         /// \param Storage  The CPU access pattern of the buffer.
         /// \param Usage    The ways the buffer is bound, such as vertex or uniform.
@@ -192,7 +192,7 @@ namespace ZyGraphic
         ///
         /// \param Storage The CPU access pattern of the buffer.
         /// \param Usage   The ways the buffer is bound, such as vertex or uniform.
-        /// \param Data    The initial data to populate the buffer with; the buffer capacity is derived from the data size.
+        /// \param Data    The initial data, whose size becomes the buffer's capacity.
         /// \return The identifier of the created buffer resource, or zero if creation failed.
         ZY_INLINE Object CreateBuffer(Storage Storage, Usage Usage, AnyRef<Blob> Data)
         {
@@ -309,7 +309,7 @@ namespace ZyGraphic
         ///
         /// \param ID     The identifier of the texture resource to update.
         /// \param Level  The mipmap level to update.
-        /// \param Layer  The array slice to update; zero for a plain 2D texture, the face index for a cube map.
+        /// \param Layer  The array slice to update, the face index for a cube map or zero for a plain 2D texture.
         /// \param X      The X offset within the texture to start updating.
         /// \param Y      The Y offset within the texture to start updating.
         /// \param Width  The width of the region to update in pixels.
@@ -418,7 +418,7 @@ namespace ZyGraphic
         /// \param Config The surface size, formats and presentation mode to start with.
         void Setup(Ptr<void> Output, ConstRef<Configuration> Config);
 
-        /// \brief Swaps the producer and consumer journals and signals the GPU thread to begin processing the current frame.
+        /// \brief Waits for the GPU thread, swaps the producer and consumer frames and hands it the one just recorded.
         void Flush();
 
         /// \brief Consumes and executes all pending commands in the current consumer journal.
