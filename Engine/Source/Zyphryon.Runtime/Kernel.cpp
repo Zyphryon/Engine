@@ -39,7 +39,7 @@ namespace ZyRuntime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Kernel::Kernel()
-        : mAlive { }
+        : mAlive { false }
     {
     }
 
@@ -61,7 +61,7 @@ namespace ZyRuntime
             if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window))
             {
                 Settings.Monitor = Monitor->GetName();
-                Scale = Monitor->GetScale();
+                Scale            = Monitor->GetScale();
             }
             else if (!Display.GetMonitors().IsEmpty())
             {
