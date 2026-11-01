@@ -23,7 +23,7 @@ inline namespace ZyMath
 {
     /// \brief Provides the tests for whether two standing volumes overlap, and the shortest way out.
     ///
-    /// \note This is the case \ref Sweep declines: a pair already overlapping has no face the motion came in through.
+    /// \note This is the case \ref Sweep declines, as a pair already overlapping has no face the motion entered by.
     class ZY_API Collide final
     {
     public:
@@ -76,7 +76,7 @@ inline namespace ZyMath
         /// \param FirstTop     The top of the first span.
         /// \param SecondBottom The underside of the second span.
         /// \param SecondTop    The top of the second span.
-        /// \return How much of the height the two share, which is zero or less when they never meet.
+        /// \return The height the two share, which is zero or less when they never meet.
         static Real32 Shared(Real32 FirstBottom, Real32 FirstTop, Real32 SecondBottom, Real32 SecondTop);
 
         /// \brief Settles which way out of a contact is shorter, the one across the ground or the one up the height.
@@ -85,7 +85,7 @@ inline namespace ZyMath
         /// \param Span     The length of \p Apart, so it is measured once.
         /// \param Ground   The depth one has sunk into the other across the ground.
         /// \param Standing The depth one has sunk into the other up the height.
-        /// \param Under    `true` when the first volume stands below the second.
+        /// \param Under    `true` when the first volume stands below the second, `false` when it stands level or above.
         /// \param Contact  Receives the way out and the depth along it.
         /// \return `true` always, so a caller may hand the answer straight back.
         static Bool Escapes(

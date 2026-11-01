@@ -26,7 +26,7 @@ inline namespace ZyMath
     {
     public:
 
-        /// \brief The shortest length worth treating as a direction; below it a motion stands still.
+        /// \brief The shortest length worth treating as a direction, below which a motion stands still.
         static constexpr Real32 kMinimumReach = 0.0001f;
 
     public:
@@ -84,7 +84,12 @@ inline namespace ZyMath
         /// \param Skin   The gap the motion stops short of the contact by, in the same units as the motion.
         /// \param Normal Receives the way out of the face met, unchanged when nothing is.
         /// \return The fraction of the motion that is free, from 0 to 1, where 1 meets nothing.
-        static Real32 Cast(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Real32 Skin, Ref<Vector3> Normal);
+        static Real32 Cast(
+            ConstRef<Shape> First,
+            ConstRef<Shape> Second,
+            Vector3         Motion,
+            Real32          Skin,
+            Ref<Vector3>    Normal);
 
     private:
 
@@ -133,7 +138,7 @@ inline namespace ZyMath
         /// \brief Settles a narrowed interval into a contact.
         ///
         /// \param Result  The interval every narrowing left behind.
-        /// \param Met     `true` when each narrowing in turn kept some of the motion.
+        /// \param Met     `true` when each narrowing in turn kept some of the motion, `false` once one emptied it.
         /// \param Contact Receives where the two meet, unchanged when they never do.
         /// \return `true` if the two meet within the motion, `false` otherwise.
         static Bool Close(ConstRef<Interval> Result, Bool Met, Ref<Manifold> Contact);

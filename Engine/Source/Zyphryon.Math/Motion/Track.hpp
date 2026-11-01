@@ -106,7 +106,7 @@ inline namespace ZyMath
             return mValues.GetSize();
         }
 
-        /// \brief Appends a sample at an explicit time; samples must be added in ascending time order.
+        /// \brief Appends a sample at an explicit time, which is never earlier than the last sample's.
         ///
         /// \param Time  The sample's time, in seconds.
         /// \param Value The value the track holds at \p Time.

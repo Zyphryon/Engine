@@ -253,7 +253,7 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Gets a sphere that contains nothing and is grown into.
+        /// \brief Gets a sphere that fails every validity check and is the identity of \ref Merge.
         ///
         /// \return A sphere with a radius of minus one.
         ZY_INLINE static constexpr Sphere Invalid()

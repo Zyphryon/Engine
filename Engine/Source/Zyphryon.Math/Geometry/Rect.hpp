@@ -662,13 +662,15 @@ inline namespace ZyMath
         ///
         /// \param Value The rectangle to encode.
         /// \param Scale The count of steps one unit is cut into.
-        /// \return The minimum corner then the maximum corner, each edge in steps and held to what the integer can carry.
+        /// \return The minimum corner then the maximum corner, each edge in steps held to what the integer can carry.
         template<typename Integer>
         ZY_INLINE static Array<Integer, 4> EncodeFixed(AnyRect Value, Real32 Scale)
             requires IsIntegral<Integer>
         {
-            return Array(::EncodeFixed<Integer>(Value.mMinimumX, Scale), ::EncodeFixed<Integer>(Value.mMinimumY, Scale),
-                         ::EncodeFixed<Integer>(Value.mMaximumX, Scale), ::EncodeFixed<Integer>(Value.mMaximumY, Scale));
+            return Array(::EncodeFixed<Integer>(Value.mMinimumX, Scale),
+                         ::EncodeFixed<Integer>(Value.mMinimumY, Scale),
+                         ::EncodeFixed<Integer>(Value.mMaximumX, Scale),
+                         ::EncodeFixed<Integer>(Value.mMaximumY, Scale));
         }
 
         /// \brief Gets the component-wise minimum of two rectangles.

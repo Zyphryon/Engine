@@ -55,16 +55,16 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is approximately equal to another matrix within a tolerance.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if all corresponding elements are within the default floating-point tolerance, `false` otherwise.
+        /// \return `true` if every element is within the default floating-point tolerance, `false` otherwise.
         ZY_INLINE constexpr Bool IsAlmostEqual(ConstRef<Matrix3x2> Other) const
         {
             return mColumns[0] == Other.mColumns[0] && mColumns[1] == Other.mColumns[1];
         }
 
-        /// \brief Gets a column vector from the matrix.
+        /// \brief Gets a mutable reference to a column vector.
         ///
-        /// \param Column The zero-based index of the column to access.
-        /// \return The column vector at the specified index.
+        /// \param Column The zero-based column index (0-1).
+        /// \return A mutable reference to the requested column vector.
         ZY_INLINE constexpr Ref<Vector3> GetColumn(UInt32 Column)
         {
             ZY_ASSERT(Column < 2, "GetColumn index out of range");
@@ -72,9 +72,9 @@ inline namespace ZyMath
             return mColumns[Column];
         }
 
-        /// \brief Gets a column vector from the matrix.
+        /// \brief Gets a column vector by value.
         ///
-        /// \param Column The zero-based index of the column to access.
+        /// \param Column The zero-based column index (0-1).
         /// \return The column vector at the specified index.
         ZY_INLINE constexpr Vector3 GetColumn(UInt32 Column) const
         {
@@ -127,7 +127,7 @@ inline namespace ZyMath
 
         /// \brief Multiplies this matrix by another matrix.
         ///
-        /// \param Other The matrix to multiply by.
+        /// \param Other The right-hand matrix operand, applied before this one.
         /// \return A new matrix that is the product of the two matrices.
         ZY_INLINE constexpr Matrix3x2 operator*(ConstRef<Matrix3x2> Other) const
         {
@@ -146,9 +146,9 @@ inline namespace ZyMath
             return Matrix3x2(M00, M10, M20, M01, M11, M21);
         }
 
-        /// \brief Multiplies this matrix by another matrix (in-place).
+        /// \brief Multiplies this matrix by another matrix in-place.
         ///
-        /// \param Other The matrix to multiply by.
+        /// \param Other The right-hand matrix operand, applied before this one.
         /// \return A reference to the updated matrix.
         ZY_INLINE constexpr Ref<Matrix3x2> operator*=(ConstRef<Matrix3x2> Other)
         {
@@ -325,9 +325,9 @@ inline namespace ZyMath
 
         /// \brief Creates a transformation matrix from translation, scale, rotation, and origin components.
         ///
-        /// \param Origin      The center point around which scale and rotation are applied.
-        /// \param Translation The final position offset applied after all transformations.
-        /// \param Scale       The scaling factors along the X and Y axes.
+        /// \param Origin      The point, in local space, that scale and rotation are applied around.
+        /// \param Translation The position the origin ends up at.
+        /// \param Scale       The per-axis scale factors.
         /// \param Rotation    The angle to rotate by.
         /// \return The transformation matrix combining scale, rotation, and translation around the given origin.
         ZY_INLINE static Matrix3x2 FromTransform(Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation)
@@ -347,11 +347,11 @@ inline namespace ZyMath
 
         /// \brief Creates a transformation matrix from translation, scale, rotation, skew, and origin components.
         ///
-        /// \param Origin      The center point around which scale, rotation, and skew are applied.
-        /// \param Translation The final position offset applied after all transformations.
-        /// \param Scale       The scaling factors along the X and Y axes.
+        /// \param Origin      The point, in local space, that scale, rotation, and skew are applied around.
+        /// \param Translation The position the origin ends up at.
+        /// \param Scale       The per-axis scale factors.
         /// \param Rotation    The angle to rotate by.
-        /// \param Skew        The shear angles: X skew shears horizontally, Y skew shears vertically.
+        /// \param Skew        The shear angles, X shearing horizontally and Y shearing vertically.
         /// \return The transformation matrix combining scale, rotation, skew, and translation around the given origin.
         ZY_INLINE static Matrix3x2 FromTransform(
             Vector2 Origin, Vector2 Translation, Vector2 Scale, Angle Rotation, Vector2 Skew)
@@ -385,7 +385,7 @@ inline namespace ZyMath
                              Column1.GetX(), Column1.GetY(), Column1.GetZ() + Offset.GetY());
         }
 
-        /// \brief Applies a scaling transformation to an existing matrix, returning a new matrix with the scale applied.
+        /// \brief Scales the basis of an existing matrix along the world axes, leaving its translation untouched.
         ///
         /// \param Matrix The original matrix to apply the scaling to.
         /// \param Factor The scaling factors along the X and Y axes to apply to the matrix.

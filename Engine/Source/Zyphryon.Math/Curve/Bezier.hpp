@@ -134,7 +134,7 @@ inline namespace ZyMath
         /// \param Quadratic  The axis's coefficient of the squared term in the derivative.
         /// \param Linear     The axis's coefficient of the linear term, halved.
         /// \param Constant   The axis's constant term.
-        /// \param Horizontal The axis to widen, `true` for X and `false` for Y.
+        /// \param Horizontal `true` to widen the X axis, `false` to widen the Y axis.
         /// \param Minimum    Receives the lowest value the axis reaches.
         /// \param Maximum    Receives the highest value the axis reaches.
         ZY_INLINE void Widen(

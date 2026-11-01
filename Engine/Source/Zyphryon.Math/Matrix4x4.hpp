@@ -99,7 +99,7 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is approximately equal to another matrix.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if all corresponding elements are within the default floating-point tolerance, `false` otherwise.
+        /// \return `true` if every element is within the default floating-point tolerance, `false` otherwise.
         ZY_INLINE Bool IsAlmostEqual(ConstRef<Matrix4x4> Other) const
         {
             return mColumns[0].IsAlmostEqual(Other.mColumns[0])
@@ -215,7 +215,7 @@ inline namespace ZyMath
 
         /// \brief Gets the per-axis scale factors encoded in the matrix.
         ///
-        /// \return A \ref Vector3 containing the scale of each axis (X, Y, Z).
+        /// \return The length of each basis vector.
         ZY_INLINE Vector3 GetScale() const
         {
             const Real32 ScaleX = mColumns[0].GetLength();
@@ -235,9 +235,7 @@ inline namespace ZyMath
 
         /// \brief Gets the rotation component of the transformation matrix as a quaternion.
         ///
-        /// \note The basis is normalized first, so scale never reaches the rotation.
-        ///
-        /// \return A \ref Quaternion representing the rotation encoded in the upper-left 3x3 sub-matrix.
+        /// \return The rotation encoded in the upper-left 3x3, normalized first so scale never reaches it.
         ZY_INLINE Quaternion GetRotation() const
         {
             return Quaternion::FromDirection(
@@ -382,9 +380,9 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Gets the 4x4 identity matrix.
+        /// \brief Gets the identity matrix.
         ///
-        /// \return A matrix with 1 on the diagonal and 0 elsewhere.
+        /// \return The identity matrix.
         ZY_INLINE static Matrix4x4 Identity()
         {
             return Matrix4x4();
@@ -502,12 +500,13 @@ inline namespace ZyMath
         /// \param ZNear  The near plane distance.
         /// \param ZFar   The far plane distance.
         /// \return An orthographic projection matrix.
-        static Matrix4x4 CreateOrthographic(Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar);
+        static Matrix4x4 CreateOrthographic(
+            Real32 Left, Real32 Right, Real32 Bottom, Real32 Top, Real32 ZNear, Real32 ZFar);
 
-        /// \brief Creates a translation matrix from a 3D vector.
+        /// \brief Creates a translation matrix.
         ///
-        /// \param Vector The 3D translation offset.
-        /// \return A column-major translation matrix.
+        /// \param Vector The offset to translate by.
+        /// \return The translation matrix.
         ZY_INLINE static Matrix4x4 FromTranslation(Vector3 Vector)
         {
             const Real32 X = Vector.GetX();
@@ -520,10 +519,10 @@ inline namespace ZyMath
                              X,    Y,    Z,    1.0f);
         }
 
-        /// \brief Creates a non-uniform scaling matrix from a 3D vector.
+        /// \brief Creates a scaling matrix.
         ///
-        /// \param Vector The scale factors along X, Y, and Z.
-        /// \return A scaling matrix.
+        /// \param Vector The factor to scale by along each axis.
+        /// \return The scaling matrix.
         ZY_INLINE static Matrix4x4 FromScale(Vector3 Vector)
         {
             const Real32 X = Vector.GetX();
@@ -584,7 +583,7 @@ inline namespace ZyMath
         /// \brief Creates a rotation matrix from a quaternion.
         ///
         /// \param Rotation The unit quaternion representing the desired rotation.
-        /// \return A 4x4 rotation matrix equivalent to the quaternion.
+        /// \return The rotation matrix equivalent to the quaternion.
         ZY_INLINE static Matrix4x4 FromRotation(Quaternion Rotation)
         {
             const Vector4 Components = Rotation;
@@ -594,7 +593,8 @@ inline namespace ZyMath
                                      - Vector4::Swizzle<1, 0, 0, 3>(Squared)
                                      - Vector4::Swizzle<2, 2, 1, 3>(Squared);
 
-            const Vector4 Symmetric     = Vector4::Swizzle<0, 1, 0, 3>(Components) * Vector4::Swizzle<1, 2, 2, 3>(Doubled);
+            const Vector4 Symmetric     = Vector4::Swizzle<0, 1, 0, 3>(Components)
+                                        * Vector4::Swizzle<1, 2, 2, 3>(Doubled);
             const Vector4 Antisymmetric = Vector4::SplatW(Components) * Vector4::Swizzle<2, 0, 1, 3>(Doubled);
 
             const Vector4 Sum        = Symmetric + Antisymmetric;

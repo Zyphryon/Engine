@@ -148,7 +148,7 @@ inline namespace ZyMath
 
         /// \brief Gets the (x, y) components as a 2D vector.
         ///
-        /// \return A new 2D vector containing the x and y components.
+        /// \return A new 2D vector holding the (x, y) components.
         ZY_INLINE Vector2 GetXY() const
         {
             return Vector2(GetX(), GetY());
@@ -156,7 +156,7 @@ inline namespace ZyMath
 
         /// \brief Gets the (x, y, z) components as a 3D vector.
         ///
-        /// \return A new 3D vector containing the x, y, and z components.
+        /// \return A new 3D vector holding the (x, y, z) components.
         ZY_INLINE Vector3 GetXYZ() const
         {
             return Vector3(GetX(), GetY(), GetZ());
@@ -241,7 +241,7 @@ inline namespace ZyMath
 
         /// \brief Adds a scalar to all components of this vector.
         ///
-        /// \param Scalar The scalar value to add.
+        /// \param Scalar The scalar to add.
         /// \return A new vector with the scalar added to all components.
         ZY_INLINE Vector4 operator+(Real32 Scalar) const
         {
@@ -261,7 +261,7 @@ inline namespace ZyMath
 
         /// \brief Subtracts a scalar from all components of this vector.
         ///
-        /// \param Scalar The scalar value to subtract.
+        /// \param Scalar The scalar to subtract.
         /// \return A new vector with the scalar subtracted from all components.
         ZY_INLINE Vector4 operator-(Real32 Scalar) const
         {
@@ -271,13 +271,13 @@ inline namespace ZyMath
         /// \brief Multiplies all components of this vector by another vector.
         ///
         /// \param Other The vector to multiply by.
-        /// \return A new vector with component-wise multiplication.
+        /// \return A new vector that is the product of the two vectors.
         ZY_INLINE Vector4 operator*(Vector4 Other) const;
 
         /// \brief Multiplies all components of this vector by a scalar.
         ///
-        /// \param Scalar The scalar value to multiply.
-        /// \return A new vector with all components multiplied by the scalar.
+        /// \param Scalar The scalar to multiply by.
+        /// \return A new vector with the scalar multiplied by all components.
         ZY_INLINE Vector4 operator*(Real32 Scalar) const
         {
             return (* this) * Vector4(Scalar);
@@ -286,12 +286,12 @@ inline namespace ZyMath
         /// \brief Divides all components of this vector by another vector.
         ///
         /// \param Other The vector to divide by.
-        /// \return A new vector with component-wise division.
+        /// \return A new vector that is the quotient of the two vectors.
         ZY_INLINE Vector4 operator/(Vector4 Other) const;
 
         /// \brief Divides all components of this vector by a scalar.
         ///
-        /// \param Scalar The scalar value to divide by.
+        /// \param Scalar The scalar to divide by.
         /// \return A new vector with all components divided by the scalar.
         ZY_INLINE Vector4 operator/(Real32 Scalar) const
         {
@@ -572,7 +572,7 @@ inline namespace ZyMath
         /// \return The lanes in order, each spread over the integer's range.
         template<typename Integer>
         ZY_INLINE static Array<Integer, 4> EncodeNormalized(Vector4 Value)
-            requires IsIntegral<Integer>
+            requires(IsIntegral<Integer>)
         {
             return Array(
                 ::EncodeNormalized<Integer>(Value.GetX()),
@@ -588,7 +588,7 @@ inline namespace ZyMath
         /// \return The lanes in order, each in steps and held to what the integer can carry.
         template<typename Integer>
         ZY_INLINE static Array<Integer, 4> EncodeFixed(Vector4 Value, Real32 Scale)
-            requires IsIntegral<Integer>
+            requires(IsIntegral<Integer>)
         {
             return Array(
                 ::EncodeFixed<Integer>(Value.GetX(), Scale),
@@ -631,23 +631,23 @@ inline namespace ZyMath
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return A vector with the minimum values from each component.
+        /// \return A vector with the component-wise minimum values.
         ZY_INLINE static Vector4 Min(Vector4 P0, Vector4 P1);
 
         /// \brief Gets the component-wise maximum of two vectors.
         ///
         /// \param P0 The first vector.
         /// \param P1 The second vector.
-        /// \return A vector with the maximum values from each component.
+        /// \return A vector with the component-wise maximum values.
         ZY_INLINE static Vector4 Max(Vector4 P0, Vector4 P1);
 
-        /// \brief Gets the absolute value of each component.
+        /// \brief Gets the component-wise absolute value of a vector.
         ///
-        /// \param Vector The vector to compute absolute value of.
+        /// \param Vector The vector to take the absolute value of.
         /// \return A vector with the absolute value of each component.
         ZY_INLINE static Vector4 Abs(Vector4 Vector);
 
-        /// \brief Clamps each component of a vector between corresponding min and max components.
+        /// \brief Clamps each component of a vector between the corresponding components of min and max vectors.
         ///
         /// \param Vector  The source vector to clamp.
         /// \param Minimum The vector specifying the minimum bounds.

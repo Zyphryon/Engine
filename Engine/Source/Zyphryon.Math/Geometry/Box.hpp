@@ -720,7 +720,7 @@ inline namespace ZyMath
         ///
         /// \param First  The first box.
         /// \param Second The second box.
-        /// \return A box representing the overlapping region. If they don't overlap, the box may be invalid.
+        /// \return The overlapping region, invalid when the boxes do not overlap.
         ZY_INLINE static constexpr AnyBox Intersection(AnyBox First, AnyBox Second)
         {
             return AnyBox(AnyVector3<Type>::Max(First.mMinimum, Second.mMinimum),

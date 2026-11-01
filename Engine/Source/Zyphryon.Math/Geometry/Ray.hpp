@@ -166,7 +166,7 @@ inline namespace ZyMath
 
     public:
 
-        /// \brief Gets a ray that travels nowhere and hits nothing.
+        /// \brief Gets a ray that travels nowhere, which fails \ref IsValid and must not be cast.
         ///
         /// \return A ray with a zero direction.
         ZY_INLINE static constexpr Ray Invalid()
@@ -243,6 +243,8 @@ inline namespace ZyMath
             Ref<Real32>   Exit,
             Real32        Limit = kInfinity<Real32>)
         {
+            ZY_ASSERT(Source.IsValid(), "An invalid ray cannot be cast");
+
             const Vector3 Origin  = Source.mOrigin;
             const Vector3 Inverse = Source.mInverse;
             const Vector3 Minimum = Volume.GetMinimum();
@@ -312,6 +314,8 @@ inline namespace ZyMath
             Ref<Real32>      Exit,
             Real32           Limit = kInfinity<Real32>)
         {
+            ZY_ASSERT(Source.IsValid(), "An invalid ray cannot be cast");
+
             const Vector3 Offset  = Volume.GetCenter() - Source.mOrigin;
             const Real32  Closest = Vector3::Dot(Offset, Source.mDirection);
             const Real32  Radius  = Volume.GetRadius();
@@ -395,7 +399,7 @@ inline namespace ZyMath
         /// \param Maximum The far plane of the slab.
         /// \param Near    The entry distance, pushed forward in place.
         /// \param Far     The exit distance, pulled back in place.
-        /// \return `false` once the interval collapses, meaning the ray misses the volume.
+        /// \return `true` while the interval stays open, `false` once it collapses and the ray misses the volume.
         ZY_INLINE static Bool Clip(
             Real32      Origin,
             Real32      Inverse,

@@ -97,7 +97,7 @@ inline namespace ZyMath
 
         /// \brief Sets the translation vector for the transform (Z component set to 0).
         ///
-        /// \param Translation The new position.
+        /// \param Translation The translation to set.
         /// \return A reference to this transform, modified by the new translation.
         ZY_INLINE Ref<Transform> SetTranslation(Vector2 Translation)
         {
@@ -107,7 +107,7 @@ inline namespace ZyMath
 
         /// \brief Sets the translation vector for the transform in 3D space.
         ///
-        /// \param Translation The new position.
+        /// \param Translation The translation to set.
         /// \return A reference to this transform, modified by the new translation.
         ZY_INLINE Ref<Transform> SetTranslation(Vector3 Translation)
         {
@@ -125,7 +125,7 @@ inline namespace ZyMath
 
         /// \brief Sets the scale vector for the transform (Z scale = 1.0f).
         ///
-        /// \param Scale The new scale.
+        /// \param Scale The scale to set.
         /// \return A reference to this transform, modified by the new scale.
         ZY_INLINE Ref<Transform> SetScale(Vector2 Scale)
         {
@@ -134,7 +134,7 @@ inline namespace ZyMath
 
         /// \brief Sets the scale vector for the transform.
         ///
-        /// \param Scale The new scale.
+        /// \param Scale The scale to set.
         /// \return A reference to this transform, modified by the new scale.
         ZY_INLINE Ref<Transform> SetScale(Vector3 Scale)
         {
@@ -152,7 +152,7 @@ inline namespace ZyMath
 
         /// \brief Sets the rotation for the transform.
         ///
-        /// \param Rotation The new rotation.
+        /// \param Rotation The rotation to set.
         /// \return A reference to this transform, modified by the new rotation.
         ZY_INLINE Ref<Transform> SetRotation(Quaternion Rotation)
         {

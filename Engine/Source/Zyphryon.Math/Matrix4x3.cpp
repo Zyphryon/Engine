@@ -27,7 +27,7 @@ inline namespace ZyMath
         ZY_ASSERT(Up.IsNormalized(), "Up must be normalized");
         ZY_ASSERT(!Up.IsParallel(Direction), "Up vector is parallel to Direction");
 
-        const Vector3 Forward = -Direction;
+        const Vector3 Forward = Direction;
         const Vector3 Right   = Vector3::Normalize(Vector3::Cross(Up, Forward));
         const Vector3 Upward  = Vector3::Cross(Forward, Right);
 

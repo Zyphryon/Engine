@@ -101,7 +101,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is component-wise less than another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if all components are less, otherwise `false`.
+        /// \return `true` if all components are less, `false` otherwise.
         ZY_INLINE constexpr Bool IsComponentWiseLess(AnyVector2 Other) const
         {
             return mX < Other.mX && mY < Other.mY;
@@ -110,7 +110,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is component-wise less than or equal to another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if all components are less or equal, otherwise `false`.
+        /// \return `true` if all components are less or equal, `false` otherwise.
         ZY_INLINE constexpr Bool IsComponentWiseLessOrEqual(AnyVector2 Other) const
         {
             return mX <= Other.mX && mY <= Other.mY;
@@ -119,7 +119,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is component-wise greater than another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if all components are greater, otherwise `false`.
+        /// \return `true` if all components are greater, `false` otherwise.
         ZY_INLINE constexpr Bool IsComponentWiseGreater(AnyVector2 Other) const
         {
             return mX > Other.mX && mY > Other.mY;
@@ -128,7 +128,7 @@ inline namespace ZyMath
         /// \brief Checks if this vector is component-wise greater than or equal to another vector.
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if all components are greater or equal, otherwise `false`.
+        /// \return `true` if all components are greater or equal, `false` otherwise.
         ZY_INLINE constexpr Bool IsComponentWiseGreaterOrEqual(AnyVector2 Other) const
         {
             return mX >= Other.mX && mY >= Other.mY;
@@ -145,8 +145,8 @@ inline namespace ZyMath
 
         /// \brief Sets the components of the vector to new values.
         ///
-        /// \param X The new x value.
-        /// \param Y The new y value.
+        /// \param X The x-component to set.
+        /// \param Y The y-component to set.
         /// \return A reference to this vector after the update.
         ZY_INLINE constexpr Ref<AnyVector2> Set(Type X, Type Y)
         {
@@ -157,7 +157,7 @@ inline namespace ZyMath
 
         /// \brief Sets the x-component of the vector.
         ///
-        /// \param X The new x-component.
+        /// \param X The x-component to set.
         /// \return A reference to this vector after the update.
         ZY_INLINE constexpr Ref<AnyVector2> SetX(Type X)
         {
@@ -175,7 +175,7 @@ inline namespace ZyMath
 
         /// \brief Sets the y-component of the vector.
         ///
-        /// \param Y The new y-component.
+        /// \param Y The y-component to set.
         /// \return A reference to this vector after the update.
         ZY_INLINE constexpr Ref<AnyVector2> SetY(Type Y)
         {
@@ -462,7 +462,7 @@ inline namespace ZyMath
 
         /// \brief Multiplies all components of the vector by another vector.
         ///
-        /// \param Other The vector to multiply.
+        /// \param Other The vector to multiply by.
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator*=(AnyVector2 Other)
         {
@@ -471,7 +471,7 @@ inline namespace ZyMath
 
         /// \brief Multiplies all components of the vector by a scalar value.
         ///
-        /// \param Scalar The scalar value to multiply.
+        /// \param Scalar The scalar value to multiply by.
         /// \return A reference to the updated vector.
         ZY_INLINE constexpr Ref<AnyVector2> operator*=(Type Scalar)
         {
@@ -537,7 +537,7 @@ inline namespace ZyMath
         /// \brief Compares this vector with another for less-than relationship (lexicographic ordering).
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if this vector is lexicographically less than the other vector, otherwise `false`.
+        /// \return `true` if this vector is lexicographically less than the other, `false` otherwise.
         ZY_INLINE constexpr Bool operator<(AnyVector2 Other) const
         {
             return (mX < Other.mX) || (mX == Other.mX && mY < Other.mY);
@@ -546,7 +546,7 @@ inline namespace ZyMath
         /// \brief Compares this vector with another for less-than or equal relationship (lexicographic ordering).
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if this vector is lexicographically less than or equal to the other vector, otherwise `false`.
+        /// \return `true` if this vector is lexicographically less than or equal to the other, `false` otherwise.
         ZY_INLINE constexpr Bool operator<=(AnyVector2 Other) const
         {
             return (mX < Other.mX) || (mX == Other.mX && mY <= Other.mY);
@@ -555,7 +555,7 @@ inline namespace ZyMath
         /// \brief Compares this vector with another for greater-than relationship (lexicographic ordering).
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if this vector is lexicographically greater than the other vector, otherwise `false`.
+        /// \return `true` if this vector is lexicographically greater than the other, `false` otherwise.
         ZY_INLINE constexpr Bool operator>(AnyVector2 Other) const
         {
             return Other < (* this);
@@ -564,7 +564,7 @@ inline namespace ZyMath
         /// \brief Compares this vector with another for greater-than or equal relationship (lexicographic ordering).
         ///
         /// \param Other The vector to compare against.
-        /// \return `true` if this vector is lexicographically greater than or equal to the other vector, otherwise `false`.
+        /// \return `true` if this vector is lexicographically greater than or equal to the other, `false` otherwise.
         ZY_INLINE constexpr Bool operator>=(AnyVector2 Other) const
         {
             return Other <= (* this);
@@ -692,7 +692,7 @@ inline namespace ZyMath
         /// \return The lanes in order, each spread over the integer's range.
         template<typename Integer>
         ZY_INLINE static Array<Integer, 2> EncodeNormalized(AnyVector2 Value)
-            requires IsIntegral<Integer>
+            requires(IsIntegral<Integer>)
         {
             return Array(::EncodeNormalized<Integer>(Value.GetX()), ::EncodeNormalized<Integer>(Value.GetY()));
         }
@@ -704,7 +704,7 @@ inline namespace ZyMath
         /// \return The lanes in order, each in steps and held to what the integer can carry.
         template<typename Integer>
         ZY_INLINE static Array<Integer, 2> EncodeFixed(AnyVector2 Value, Real32 Scale)
-            requires IsIntegral<Integer>
+            requires(IsIntegral<Integer>)
         {
             return Array(::EncodeFixed<Integer>(Value.GetX(), Scale), ::EncodeFixed<Integer>(Value.GetY(), Scale));
         }
@@ -746,7 +746,8 @@ inline namespace ZyMath
         /// \return The signed area, twice that of the triangle the three points form.
         ZY_INLINE static constexpr Type Cross(AnyVector2 P0, AnyVector2 P1, AnyVector2 P2)
         {
-            return (P0.GetX() - P2.GetX()) * (P1.GetY() - P2.GetY()) - (P0.GetY() - P2.GetY()) * (P1.GetX() - P2.GetX());
+            return (P0.GetX() - P2.GetX()) * (P1.GetY() - P2.GetY())
+                 - (P0.GetY() - P2.GetY()) * (P1.GetX() - P2.GetX());
         }
 
         /// \brief Gets the component-wise minimum of two vectors.
@@ -809,7 +810,7 @@ inline namespace ZyMath
             return AnyVector2(::Ceil(Vector.mX), ::Ceil(Vector.mY));
         }
 
-        /// \brief Walks every cell of a grid that a line between the middles of two cells passes through, a step at a time.
+        /// \brief Walks every grid cell a line between the middles of two cells passes through, a step at a time.
         ///
         /// \param From  The cell the line starts in.
         /// \param Into  The cell the line ends in.

@@ -91,6 +91,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr void SetCorner(UInt32 Corner, Vector2 Point)
         {
             ZY_ASSERT(Corner < 4, "Corner index must be in range [0, 3]");
+
             mCorners[Corner] = Point;
         }
 
@@ -101,6 +102,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr Vector2 GetCorner(UInt32 Corner) const
         {
             ZY_ASSERT(Corner < 4, "Corner index must be in range [0, 3]");
+
             return mCorners[Corner];
         }
 

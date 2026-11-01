@@ -351,7 +351,8 @@ inline namespace ZyMath
 
     Vector4 Vector4::SqrtFast(Vector4 Vector)
     {
-        return _mm_mul_ps(Vector.mData, _mm_rsqrt_ps(Vector.mData));
+        const __m128 Product = _mm_mul_ps(Vector.mData, _mm_rsqrt_ps(Vector.mData));
+        return _mm_and_ps(Product, _mm_cmpneq_ps(Vector.mData, _mm_setzero_ps()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

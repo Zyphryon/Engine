@@ -33,7 +33,7 @@ inline namespace ZyMath
         {
         }
 
-        /// \brief Constructs a stopped cursor over the given duration; call `Play` to start it.
+        /// \brief Constructs a stopped cursor over the given duration, which waits for `Play` to start it.
         ///
         /// \param Duration The total duration, in seconds.
         /// \param Mode     The behavior once the end is reached.
@@ -207,7 +207,7 @@ inline namespace ZyMath
         {
             if (mRepeat == Repeat::Mirror && mDuration > 0.0)
             {
-                return ::Wrap(GetElapsed(), mDuration * 2.0) <= mDuration;
+                return (::Wrap(GetElapsed(), mDuration * 2.0) <= mDuration) == (mSpeed >= 0.0f);
             }
             return mSpeed >= 0.0f;
         }

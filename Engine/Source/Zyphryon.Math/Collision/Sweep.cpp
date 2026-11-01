@@ -135,10 +135,10 @@ inline namespace ZyMath
 
     Bool Sweep::NarrowSlab(Real32 Apart, Real32 Reach, Real32 Motion, Vector3 Facing, Ref<Interval> Result)
     {
-        // A motion that never travels along the axis either lies between the faces the whole way or never does.
+        // A motion that never travels along the axis lies strictly between the faces the whole way or never does.
         if (Abs(Motion) < kMinimumReach)
         {
-            return Abs(Apart) <= Reach;
+            return Abs(Apart) < Reach;
         }
 
         const Real32 First = (-Reach - Apart) / Motion;
@@ -151,8 +151,8 @@ inline namespace ZyMath
             return false;
         }
 
-        // Only the last face reached decides the contact, so the facing follows whichever narrowed the interval.
-        if (Enter > Result.Entry)
+        // Only the last face reached decides the contact, and a face met at the start counts for one resting on it.
+        if (Enter >= Result.Entry)
         {
             Result.Entry  = Enter;
             Result.Normal = (Motion > 0.0f ? -Facing : Facing);
@@ -174,7 +174,7 @@ inline namespace ZyMath
         // A motion that never travels on the ground either lies inside the circle the whole way or never does.
         if (Square < kMinimumReach * kMinimumReach)
         {
-            return Beyond <= 0.0f;
+            return Beyond < 0.0f;
         }
 
         const Real32 Root = Along * Along - Square * Beyond;
@@ -193,7 +193,7 @@ inline namespace ZyMath
             return false;
         }
 
-        if (Enter > Result.Entry)
+        if (Enter >= Result.Entry)
         {
             Result.Entry  = Enter;
             Result.Normal = Vector3::FromXZ(Vector2::Normalize(Apart + Motion * Enter));
@@ -259,7 +259,7 @@ inline namespace ZyMath
             return false;
         }
 
-        if (Entry > Result.Entry)
+        if (Entry >= Result.Entry)
         {
             Result.Entry  = Entry;
             Result.Normal = Facing;

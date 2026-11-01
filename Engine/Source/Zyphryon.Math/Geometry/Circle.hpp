@@ -44,8 +44,8 @@ inline namespace ZyMath
 
         /// \brief Constructs a circle from the coordinates of its center and a radius.
         ///
-        /// \param X      The x-coordinate of the center.
-        /// \param Y      The y-coordinate of the center.
+        /// \param X      The center's x-coordinate.
+        /// \param Y      The center's y-coordinate.
         /// \param Radius The radius of the circle.
         ZY_INLINE constexpr Circle(Real32 X, Real32 Y, Real32 Radius)
             : mCenter { X, Y },
@@ -110,6 +110,7 @@ inline namespace ZyMath
         ZY_INLINE constexpr void SetRadius(Real32 Radius)
         {
             ZY_ASSERT(Radius >= 0.0f, "Circle radius must be non-negative");
+
             mRadius = Radius;
         }
 

@@ -138,7 +138,7 @@ inline namespace ZyMath
         /// \brief Checks if this matrix is approximately equal to another matrix.
         ///
         /// \param Other The matrix to compare to.
-        /// \return `true` if all corresponding elements are within the default floating-point tolerance, `false` otherwise.
+        /// \return `true` if every element is within the default floating-point tolerance, `false` otherwise.
         ZY_INLINE Bool IsAlmostEqual(ConstRef<Matrix4x3> Other) const
         {
             return mColumns[0].IsAlmostEqual(Other.mColumns[0])
@@ -277,7 +277,7 @@ inline namespace ZyMath
 
         /// \brief Gets the per-axis scale factors encoded in the matrix.
         ///
-        /// \return A \ref Vector3 containing the scale of each axis (X, Y, Z).
+        /// \return The length of each basis vector.
         ZY_INLINE Vector3 GetScale() const
         {
             return Vector3(GetBasisX().GetLength(), GetBasisY().GetLength(), GetBasisZ().GetLength());
@@ -293,9 +293,7 @@ inline namespace ZyMath
 
         /// \brief Gets the rotation component of the transformation matrix as a quaternion.
         ///
-        /// \note The basis is normalized first, so scale never reaches the rotation.
-        ///
-        /// \return A \ref Quaternion representing the rotation encoded in the basis.
+        /// \return The rotation encoded in the basis, normalized first so scale never reaches it.
         ZY_INLINE Quaternion GetRotation() const
         {
             return Quaternion::FromDirection(Vector3::Normalize(GetBasisZ()), Vector3::Normalize(GetBasisY()));
@@ -365,7 +363,7 @@ inline namespace ZyMath
 
         /// \brief Gets the identity matrix.
         ///
-        /// \return A matrix with 1 on the diagonal and 0 elsewhere.
+        /// \return The identity matrix.
         ZY_INLINE static Matrix4x3 Identity()
         {
             return Matrix4x3();
@@ -374,7 +372,7 @@ inline namespace ZyMath
         /// \brief Computes the determinant of the matrix's basis.
         ///
         /// \param Matrix The matrix to compute the determinant for.
-        /// \return The scalar determinant value. A value of 0 indicates a singular basis.
+        /// \return The determinant of the basis, zero when it is singular.
         ZY_INLINE static Real32 GetDeterminant(ConstRef<Matrix4x3> Matrix)
         {
             return Vector3::Dot(Matrix.GetBasisX(), Vector3::Cross(Matrix.GetBasisY(), Matrix.GetBasisZ()));
@@ -404,7 +402,7 @@ inline namespace ZyMath
         ///
         /// \param Matrix The transformation matrix to apply.
         /// \param Source The points to project.
-        /// \param Output Receives the projected points; may alias \p Source.
+        /// \param Output Receives the projected points, and may alias \p Source.
         ZY_INLINE static void Project(ConstRef<Matrix4x3> Matrix, ConstSpan<Vector2> Source, Span<Vector2> Output)
         {
             ZY_ASSERT(Output.GetSize() >= Source.GetSize(), "Projection output must have room for every point");
@@ -421,7 +419,7 @@ inline namespace ZyMath
         ///
         /// \param Matrix The transformation matrix to apply.
         /// \param Source The points to project.
-        /// \param Output Receives the projected points; may alias \p Source.
+        /// \param Output Receives the projected points, and may alias \p Source.
         ZY_INLINE static void Project(ConstRef<Matrix4x3> Matrix, ConstSpan<Vector3> Source, Span<Vector3> Output)
         {
             ZY_ASSERT(Output.GetSize() >= Source.GetSize(), "Projection output must have room for every point");
@@ -457,13 +455,10 @@ inline namespace ZyMath
         /// \return A look-at view matrix.
         ZY_INLINE static Matrix4x3 CreateLook(Vector3 Eye, Vector3 Focus, Vector3 Up)
         {
-            return CreateDirection(Eye, Vector3::Normalize(Eye - Focus), Up);
+            return CreateDirection(Eye, Vector3::Normalize(Focus - Eye), Up);
         }
 
-        /// \brief Creates a right-handed view matrix from an explicit forward direction.
-        ///
-        /// A view matrix is rigid, so it belongs here rather than on \ref Matrix4x4: it is the basis
-        /// transposed with the eye projected onto each axis, which is exactly one row per axis.
+        /// \brief Creates a left-handed view matrix whose +Z looks along an explicit forward direction.
         ///
         /// \param Eye       The camera position in world space.
         /// \param Direction The normalized forward direction the camera is facing.
@@ -473,7 +468,7 @@ inline namespace ZyMath
 
         /// \brief Computes the inverse of the matrix.
         ///
-        /// \param Matrix The matrix to invert. Its basis must be non-singular.
+        /// \param Matrix The matrix to invert, whose basis must be non-singular.
         /// \return The inverse of the given matrix.
         static Matrix4x3 Inverse(ConstRef<Matrix4x3> Matrix);
 
@@ -502,8 +497,8 @@ inline namespace ZyMath
 
         /// \brief Creates a translation matrix.
         ///
-        /// \param Vector The translation to apply along each axis.
-        /// \return A matrix that translates by the given amount.
+        /// \param Vector The offset to translate by.
+        /// \return The translation matrix.
         ZY_INLINE static Matrix4x3 FromTranslation(Vector3 Vector)
         {
             return Matrix4x3(
@@ -529,8 +524,8 @@ inline namespace ZyMath
 
         /// \brief Creates a scaling matrix.
         ///
-        /// \param Vector The scale factor to apply along each axis.
-        /// \return A matrix that scales by the given factors.
+        /// \param Vector The factor to scale by along each axis.
+        /// \return The scaling matrix.
         ZY_INLINE static Matrix4x3 FromScale(Vector3 Vector)
         {
             return Matrix4x3(
@@ -587,7 +582,7 @@ inline namespace ZyMath
         /// \brief Creates a rotation matrix from a quaternion.
         ///
         /// \param Rotation The unit quaternion representing the desired rotation.
-        /// \return A 4x3 rotation matrix equivalent to the quaternion.
+        /// \return The rotation matrix equivalent to the quaternion.
         ZY_INLINE static Matrix4x3 FromRotation(Quaternion Rotation)
         {
             return FromTransform(Vector3::Zero(), Vector3::One(), Rotation);
@@ -609,7 +604,8 @@ inline namespace ZyMath
                                    - Vector4::Swizzle<1, 0, 0, 3>(Squared)
                                    - Vector4::Swizzle<2, 2, 1, 3>(Squared);
 
-            const Vector4 Symmetric     = Vector4::Swizzle<0, 1, 0, 3>(Components) * Vector4::Swizzle<1, 2, 2, 3>(Doubled);
+            const Vector4 Symmetric     = Vector4::Swizzle<0, 1, 0, 3>(Components)
+                                        * Vector4::Swizzle<1, 2, 2, 3>(Doubled);
             const Vector4 Antisymmetric = Vector4::SplatW(Components) * Vector4::Swizzle<2, 0, 1, 3>(Doubled);
 
             const Vector4 Sum        = Symmetric + Antisymmetric;

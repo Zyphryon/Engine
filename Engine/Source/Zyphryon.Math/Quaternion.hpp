@@ -216,7 +216,7 @@ inline namespace ZyMath
 
         /// \brief Decomposes the quaternion into Euler angles (pitch, yaw, roll).
         ///
-        /// \return A vector where X = pitch, Y = yaw, Z = roll (in radians).
+        /// \return The pitch, yaw and roll as X, Y and Z, in radians.
         Vector3 ToEulerAngles() const;
 
         /// \brief Adds another quaternion to this quaternion.
@@ -389,7 +389,7 @@ inline namespace ZyMath
 
         /// \brief Rotates a 3D vector by the given quaternion.
         ///
-        /// \param Rotation The quaternion that defines the rotation. Must be normalized.
+        /// \param Rotation The rotation to apply, which must be normalized.
         /// \param Vector   The vector to rotate (treated as a direction, w = 0).
         /// \return The rotated vector.
         ZY_INLINE static Vector3 Rotate(Quaternion Rotation, Vector3 Vector)

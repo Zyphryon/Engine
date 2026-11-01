@@ -369,7 +369,7 @@ inline namespace ZyMath
 
         /// \brief Returns the maximum channel value for the given primitive type.
         ///
-        /// \return `1.0` for floating-point types or the maximum representable value for integral types.
+        /// \return The full channel value, which is `1.0` for real types and the type's maximum for integral ones.
         template<typename Primitive = Type>
         ZY_INLINE static constexpr Primitive Limit()
         {
