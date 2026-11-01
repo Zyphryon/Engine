@@ -20,7 +20,7 @@
 
 namespace ZyAudio::Codec
 {
-    /// \brief Represents a decoder that expands the Opus packets of a baked sound into the mixer's floating-point frames.
+    /// \brief Represents a decoder that expands the Opus packets of a baked sound into floating-point frames.
     class ZY_API Opus final : public Decoder
     {
     public:
@@ -56,11 +56,22 @@ namespace ZyAudio::Codec
         /// \brief The largest frame count a single Opus packet can carry at 48 kHz, being 120 milliseconds.
         static constexpr UInt32 kMaxPacketFrames = 5760;
 
+        /// \brief The bytes the preskip, the packet frames and the packet count take at the head of the payload.
+        static constexpr UInt32 kHeader = sizeof(UInt16) + sizeof(UInt16) + sizeof(UInt32);
+
         /// \brief Decodes the packet at the given index into the staging buffer.
         ///
         /// \param Packet The zero-based index of the packet to decode.
         /// \return The number of frames the packet produced, or zero on failure.
         UInt32 Expand(UInt32 Packet);
+
+    public:
+
+        /// \brief Checks that a payload's directory and the packets it lists fit within the payload.
+        ///
+        /// \param Samples The payload to check, opening with the packet directory.
+        /// \return `true` if the payload can be decoded without reading past its end, `false` otherwise.
+        static Bool Validate(ConstSpan<Byte> Samples);
 
     private:
 

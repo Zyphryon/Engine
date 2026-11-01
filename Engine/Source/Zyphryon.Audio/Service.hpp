@@ -28,7 +28,7 @@ namespace ZyAudio
     {
     public:
 
-        /// \brief Callback invoked when playback ends, carrying the reason it did.
+        /// \brief Represents the callback invoked when a playback ends, carrying the reason it did.
         using Callback = Delegate<void(Object, Reason)>;
 
     public:
@@ -49,7 +49,7 @@ namespace ZyAudio
         /// \return `true` if the device was successfully opened, `false` otherwise.
         Bool Initialize(Text Device);
 
-        /// \brief Queries the driver and fills the provided structure with the backend, adapter, and available endpoints.
+        /// \brief Queries the driver for the backend, adapter, and available endpoints.
         ///
         /// \param Output Receives the device description.
         void Probe(Ref<Description> Output) const;
@@ -97,11 +97,11 @@ namespace ZyAudio
         /// \brief Plays a sound, as a spatial source when an emitter and a transform are given.
         ///
         /// \param Category  The audio category for the playback.
-        /// \param Sound     The audio sound to play; the service retains it for the playback's lifetime.
+        /// \param Sound     The sound to play, which the service retains for the playback's lifetime.
         /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
         /// \param Emitter   The spatial configuration of the source, or `nullptr` for a non-spatial playback.
         /// \param Transform The initial world transform of the source, or `nullptr` for a non-spatial playback.
-        /// \return A handle to the playback instance, or `0` if the operation failed.
+        /// \return The handle of the playback, or `0` if the operation failed.
         Object Play(
             Category             Category,
             ConstRetainer<Sound> Sound,

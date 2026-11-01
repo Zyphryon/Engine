@@ -92,8 +92,8 @@ namespace ZyAudio
 
         /// \brief Streams output frames, pulling source frames on demand through a provider.
         ///
-        /// \param Output   The destination buffer; its size is the maximum number of output frames to produce.
-        /// \param Limit    The total output-frame length of the stream; production stops once the cursor reaches it.
+        /// \param Output   The destination buffer, whose size caps the output frames produced.
+        /// \param Limit    The total output-frame length of the stream, past which nothing is produced.
         /// \param Provider The callable that writes one interleaved source frame and returns `false` at end-of-stream.
         /// \return The number of output frames written into \p Output.
         template<typename Callable>
@@ -103,7 +103,7 @@ namespace ZyAudio
             const UInt64      Capacity = Output.GetSize();
             UInt64            Produced = 0;
 
-            // Seed both endpoints of the interpolation window; a single-frame stream mirrors its only sample.
+            // Seed both endpoints of the interpolation window, mirroring the only sample of a single-frame stream.
             if (!mPrimed)
             {
                 if (!Provider(mPrevious))
@@ -165,7 +165,7 @@ namespace ZyAudio
         /// \param Source   The sample rate of \p Input, in hertz.
         /// \param Target   The sample rate to convert to, in hertz.
         /// \param Produced Receives the number of output frames written into the returned buffer.
-        /// \return A newly allocated buffer holding the resampled interleaved PCM.
+        /// \return The newly allocated buffer holding the resampled interleaved PCM.
         ZY_INLINE static Blob Convert(
             ConstSpan<Real32> Input, UInt16 Stride, UInt64 Frames, UInt32 Source, UInt32 Target, Ref<UInt64> Produced)
         {

@@ -29,7 +29,7 @@ namespace ZyAudio
         /// The decoder that owns and supplies the source PCM (already at the mixer sample rate).
         Unique<Decoder> Decoder;
 
-        /// The spatial configuration used when \c Spatial is set.
+        /// The spatial configuration used when `Spatial` is set.
         Emitter         Emitter;
 
         /// The source's world-space position (spatial voices only).

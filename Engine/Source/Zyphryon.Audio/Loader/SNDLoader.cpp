@@ -69,6 +69,12 @@ namespace ZyAudio
             return false;
         }
 
+        if (Frequency != kMixerFrequency)
+        {
+            LOG_W("'{0}' is baked at {1} Hz, which is not the mixer's rate", Asset.GetKey(), Frequency);
+            return false;
+        }
+
         Blob Buffer = Input.ReadBlockCompressed<UInt32>();
 
         if (!Buffer)
@@ -83,16 +89,27 @@ namespace ZyAudio
         switch (Format)
         {
         case Encoding::Linear:
+            if (Buffer.GetSize() / (sizeof(SInt16) * Stride) < Frames)
+            {
+                LOG_W("'{0}' declares more frames than its payload holds", Asset.GetKey());
+                return false;
+            }
             Factory = Decode<Codec::Linear, SInt16>;
             break;
         case Encoding::Adaptive:
             Factory = Decode<Codec::Adaptive, Byte>;
             break;
         case Encoding::Opus:
+            if (!Codec::Opus::Validate(ConstSpan(Buffer.GetData<Byte>(), Buffer.GetSize())))
+            {
+                LOG_W("'{0}' has an Opus directory that does not fit its payload", Asset.GetKey());
+                return false;
+            }
             Factory = Decode<Codec::Opus, Byte>;
             break;
         default:
-            break;
+            LOG_W("'{0}' has an unknown encoding", Asset.GetKey());
+            return false;
         }
 
         Asset.Load(Frames, Frequency, Stride, Move(Factory), Move(Buffer));

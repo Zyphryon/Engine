@@ -50,7 +50,7 @@ namespace ZyAudio
 
         /// \brief Creates a new decoder instance for this sound's audio data using the associated codec.
         ///
-        /// \return A unique pointer to a new decoder instance, or `nullptr` if the codec fails to create one.
+        /// \return The new decoder, or `nullptr` if the codec fails to create one.
         ZY_INLINE Unique<Decoder> Decode() const
         {
             return mCodec(mSamples, * this);

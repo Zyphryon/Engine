@@ -398,7 +398,7 @@ namespace ZyAudio
 
         if (Produced > 0)
         {
-            // Only a voice under the open cutoff pays for a section, and its coefficients follow from that cutoff alone.
+            // Only a voice under the open cutoff pays for a section, whose coefficients follow from that cutoff alone.
             const Bool Occluded = Voice.Cutoff < static_cast<Real32>(kMixerCutoff);
 
             if (Voice.Spatial)
@@ -453,7 +453,7 @@ namespace ZyAudio
 
             if (Decoded == 0)
             {
-                // Restart from the top when looping; otherwise the stream has ended.
+                // Restart from the top when looping, otherwise the stream has ended.
                 if (Voice.Looping)
                 {
                     if (!Voice.Decoder->Seek(0))

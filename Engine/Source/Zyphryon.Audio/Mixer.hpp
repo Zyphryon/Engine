@@ -266,14 +266,14 @@ namespace ZyAudio
         /// \param Left   Receives the left channel, or the whole image of a spatial voice.
         /// \param Right  Receives the right channel, left untouched by a spatial voice.
         /// \param Frames The number of frames to read.
-        /// \return The number of frames actually read; fewer than \p Frames indicates the stream ended.
+        /// \return The number of frames actually read, fewer than \p Frames once the stream ended.
         UInt32 Read(Ref<Voice> Voice, Ptr<Real32> Left, Ptr<Real32> Right, UInt32 Frames);
 
         /// \brief Advances a voice past a block it contributes nothing to, so a silent voice still ends on time.
         ///
         /// \param Voice  The voice to advance.
         /// \param Frames The number of frames to advance past.
-        /// \return The number of frames actually advanced; fewer than \p Frames indicates the stream ended.
+        /// \return The number of frames actually advanced, fewer than \p Frames once the stream ended.
         UInt32 Silence(Ref<Voice> Voice, UInt32 Frames);
 
         /// \brief Renders one sub-block of up to \ref kMixerBlock frames (audio thread).

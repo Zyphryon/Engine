@@ -35,28 +35,15 @@ namespace ZyAudio::Codec
           mStagedFrames { 0 }
     {
         ZY_ASSERT(Stride > 0 && Stride <= kMixerStride, "Opus carries at most the mixer's channel count");
+        ZY_ASSERT(Validate(Samples), "The Opus payload must be validated by its loader");
 
         // The directory sits at the head of the payload, so the packets can be addressed without a scan.
-        constexpr UInt32 kHeader = sizeof(UInt16) + sizeof(UInt16) + sizeof(UInt32);
-
-        if (Samples.GetSize() < kHeader)
-        {
-            LOG_E("Audio: The Opus payload is too small to hold its directory");
-            return;
-        }
-
         Reader Input(Samples);
 
         mPreskip               = Input.Read<UInt16>();
         mPacketFrames          = Input.Read<UInt16>();
         const UInt32 Count     = Input.Read<UInt32>();
-        const UInt32 Directory = kHeader + Count * sizeof(UInt16);
-
-        if (mPacketFrames == 0 || mPacketFrames > kMaxPacketFrames || Samples.GetSize() < Directory)
-        {
-            LOG_E("Audio: The Opus payload declares a directory it cannot hold");
-            return;
-        }
+        const UInt   Directory = kHeader + static_cast<UInt>(Count) * sizeof(UInt16);
 
         mLengths = ConstSpan(reinterpret_cast<ConstPtr<UInt16>>(Samples.GetData() + kHeader), Count);
         mPackets = ConstSpan(Samples.GetData() + Directory, Samples.GetSize() - Directory);
@@ -213,5 +200,37 @@ namespace ZyAudio::Codec
         mStaged       = Packet + 1;
         mStagedFrames = static_cast<UInt32>(Produced);
         return mStagedFrames;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Opus::Validate(ConstSpan<Byte> Samples)
+    {
+        if (Samples.GetSize() < kHeader)
+        {
+            return false;
+        }
+
+        Reader Input(Samples);
+        Input.Skip(sizeof(UInt16));
+
+        const UInt16 Frames    = Input.Read<UInt16>();
+        const UInt32 Count     = Input.Read<UInt32>();
+        const UInt   Directory = kHeader + static_cast<UInt>(Count) * sizeof(UInt16);
+
+        if (Frames == 0 || Frames > kMaxPacketFrames || Samples.GetSize() < Directory)
+        {
+            return false;
+        }
+
+        // Every packet the directory lists must lie within the bytes that follow it.
+        UInt Total = 0;
+
+        for (UInt32 Index = 0; Index < Count; ++Index)
+        {
+            Total += Input.Read<UInt16>();
+        }
+        return Total <= Samples.GetSize() - Directory;
     }
 }

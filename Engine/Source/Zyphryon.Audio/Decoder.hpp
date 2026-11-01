@@ -49,7 +49,7 @@ namespace ZyAudio
         /// \brief Advances past a number of frames without producing any samples.
         ///
         /// \param Frames The number of frames to advance past.
-        /// \return The number of frames actually advanced; fewer than \p Frames indicates the stream ended.
+        /// \return The number of frames actually advanced, fewer than \p Frames once the stream ended.
         virtual UInt64 Skip(UInt64 Frames) = 0;
     };
 }

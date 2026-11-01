@@ -35,7 +35,7 @@ namespace ZyAudio
         static constexpr UInt32 kBlock = kMixerPeriod;
 #endif
 
-        /// The render callback the service installs; the mixer fills \c Mix through it each block.
+        /// The render callback the service installs, through which the mixer fills `Mix` each block.
         Driver::Callback Callback;
 
         /// The interleaved stereo scratch the mixer fills each block before it is handed to Web Audio.
@@ -107,7 +107,7 @@ namespace ZyAudio
                 return;
             }
 
-            // A single stereo output; the mixer always produces interleaved 48 kHz stereo float.
+            // A single stereo output, since the mixer always produces interleaved 48 kHz stereo float.
             int                                     OutputChannels[] = { kMixerStride };
             EmscriptenAudioWorkletNodeCreateOptions Options          = { };
             Options.numberOfInputs      = 0;
@@ -125,7 +125,7 @@ namespace ZyAudio
             emscripten_audio_node_connect(Backend.Node, Context, 0, 0);
             Backend.Running.store(true, std::memory_order_release);
 
-            // Browsers start an AudioContext suspended until a user gesture; try now and again on the first input.
+            // Browsers start an AudioContext suspended until a user gesture, so resume now and on the first input.
             emscripten_resume_audio_context_async(Context, nullptr, nullptr);
 
             MAIN_THREAD_EM_ASM(
@@ -210,7 +210,7 @@ namespace ZyAudio
             return false;
         }
 
-        // Spin up the dedicated audio worklet thread; the render node is created once it signals ready.
+        // Spin up the dedicated audio worklet thread, which creates the render node once it signals ready.
         emscripten_start_wasm_audio_worklet_thread_async(
             mBackend->Context,
             mBackend->Stack,
@@ -229,7 +229,7 @@ namespace ZyAudio
                 const Context     = new Constructor({ sampleRate : $0, latencyHint : 'interactive' });
                 Module['zyWebAudio'] = Context;
 
-                // Browsers start a context suspended until a user gesture; resume on the first interaction.
+                // Browsers start a context suspended until a user gesture, so resume on the first interaction.
                 const Resume = function()
                 {
                     Context.resume();

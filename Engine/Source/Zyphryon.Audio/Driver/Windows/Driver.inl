@@ -40,10 +40,10 @@ namespace ZyAudio
 
     struct Driver::Backend
     {
-        /// The endpoint actually opened, reported by \c Probe.
+        /// The endpoint actually opened, reported by `Probe`.
         Str                      Name       = "Default";
 
-        /// The device enumerator, owned from a successful \c Open until \c Close.
+        /// The device enumerator, owned from a successful `Open` until `Close`.
         Ptr<IMMDeviceEnumerator> Enumerator = nullptr;
 
         /// The render endpoint the audio client is activated on.
@@ -58,7 +58,7 @@ namespace ZyAudio
         /// The event WASAPI signals when the buffer has room for more frames.
         HANDLE                   Event      = nullptr;
 
-        /// The thread that refills the buffer each time \c Event is signaled.
+        /// The thread that refills the buffer each time `Event` is signaled.
         Thread                   Worker;
 
         /// The size of the endpoint buffer, in frames.

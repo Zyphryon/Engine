@@ -23,16 +23,16 @@ namespace ZyAudio
 
     struct Driver::Backend
     {
-        /// The endpoint \c Device was opened from; ALSA matches it literally, so the default is lower case.
+        /// The endpoint `Device` was opened from, matched literally by ALSA, so the default is lower case.
         Str              Name      = "default";
 
-        /// The playback stream, owned from a successful \c Open until \c Close drains and releases it.
+        /// The playback stream, owned from a successful `Open` until `Close` drains and releases it.
         Ptr<snd_pcm_t>   Device    = nullptr;
 
-        /// The thread that pulls one block through \c Callback and writes it to \c Device, until asked to stop.
+        /// The thread that pulls one block through `Callback` and writes it to `Device`, until asked to stop.
         Thread           Worker;
 
-        /// The render callback the service installs; the mixer fills \c Mix through it each block.
+        /// The render callback the service installs, through which the mixer fills `Mix` each block.
         Driver::Callback Callback;
 
         /// `true` while output is suspended, so the worker writes silence instead of pulling the mixer.
@@ -41,7 +41,7 @@ namespace ZyAudio
         /// `true` once the worker abandoned the stream after an unrecoverable write error.
         Atomic<Bool>     Faulted   { false };
 
-        /// The interleaved stereo scratch the mixer fills each block before it is written to \c Device.
+        /// The interleaved stereo scratch the mixer fills each block before it is written to `Device`.
         Real32           Mix[kMixerPeriod * kMixerStride];
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -106,7 +106,7 @@ namespace ZyAudio
             {
                 const Ptr<Char> Direction = ::snd_device_name_get_hint(* Hint, "IOID");
 
-                // A null direction means the endpoint is bidirectional; anything but playback is skipped.
+                // A null direction means the endpoint is bidirectional, and anything but playback is skipped.
                 const Bool      Playable  = (Direction == nullptr) || StrConvert(Direction) == Text("Output");
 
                 if (const Ptr<Char> Name = ::snd_device_name_get_hint(* Hint, "NAME"); Name)
@@ -271,7 +271,7 @@ namespace ZyAudio
         {
             const Ptr<Char> Direction = ::snd_device_name_get_hint(* Hint, "IOID");
 
-            // A null direction means the endpoint is bidirectional; anything but playback is skipped.
+            // A null direction means the endpoint is bidirectional, and anything but playback is skipped.
             const Bool      Playable  = (Direction == nullptr) || StrConvert(Direction) == Text("Output");
 
             if (const Ptr<Char> Name = ::snd_device_name_get_hint(* Hint, "NAME"); Name)
