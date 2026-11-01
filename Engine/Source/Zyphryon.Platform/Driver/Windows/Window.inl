@@ -272,7 +272,7 @@ namespace ZyPlatform
     {
         MONITORINFO Info { .cbSize = sizeof(MONITORINFO) };
         ::GetMonitorInfoW(Monitor, AddressOf(Info));
-        return Info.rcMonitor;
+        return Info.rcWork;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -900,12 +900,28 @@ namespace ZyPlatform
         };
         ::AdjustWindowRectExForDpi(AddressOf(Frame), ConvertStyle(Borderless, false), FALSE, WS_EX_APPWINDOW, DpiX);
 
+        // A window taller than the work area is cut down to it, so the taskbar never covers its bottom edge.
+        const RECT Work = Measure(Monitor);
+        const LONG Room = Work.bottom - Work.top;
+
+        if (!Fullscreen && Frame.bottom - Frame.top > Room)
+        {
+            Height       = static_cast<UInt32>(Room - (Frame.bottom - Frame.top - static_cast<LONG>(Height)));
+            Frame.bottom = Frame.top + Room;
+        }
+
         mBackend->Region = {
             .left   = X,
             .top    = Y,
             .right  = X + (Frame.right - Frame.left),
             .bottom = Y + (Frame.bottom - Frame.top)
         };
+
+        // A window centred low on its monitor is lifted onto the work area, so the taskbar never covers it.
+        const LONG Lift = mBackend->Region.bottom > Work.bottom ? mBackend->Region.bottom - Work.bottom : 0;
+
+        mBackend->Region.top    -= Lift;
+        mBackend->Region.bottom -= Lift;
 
         const RECT Bounds = Fullscreen ? Measure(Monitor) : mBackend->Region;
 
