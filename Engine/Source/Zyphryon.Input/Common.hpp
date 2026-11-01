@@ -204,39 +204,39 @@ namespace ZyInput
             /// \brief Holds the data for \ref Type::KeyUp, \ref Type::KeyDown and \ref Type::KeyRepeat.
             struct
             {
-                Key Key; ///< Physical key code.
+                Key Key; ///< The physical key.
             } KeyAction;
 
             /// \brief Holds the data for \ref Type::MouseMove.
             struct
             {
-                Real32 X;      ///< Actual X position.
-                Real32 Y;      ///< Actual Y position.
-                Real32 DeltaX; ///< Delta X since last event.
-                Real32 DeltaY; ///< Delta Y since last event.
+                Real32 X;      ///< The X position of the cursor.
+                Real32 Y;      ///< The Y position of the cursor.
+                Real32 DeltaX; ///< The distance moved along X since the last event.
+                Real32 DeltaY; ///< The distance moved along Y since the last event.
             } MouseAxis;
 
             /// \brief Holds the data for \ref Type::MouseUp and \ref Type::MouseDown.
             struct
             {
-                Button Button; ///< Mouse button identifier.
+                Button Button; ///< The mouse button.
             } MouseAction;
 
             /// \brief Holds the data for \ref Type::MouseScroll.
             struct
             {
-                Real32 DeltaX; ///< Delta X since last event.
-                Real32 DeltaY; ///< Delta Y since last event.
+                Real32 DeltaX; ///< The distance scrolled along X since the last event.
+                Real32 DeltaY; ///< The distance scrolled along Y since the last event.
             } MouseScroll;
 
-            /// \brief Holds the data for \ref Type::TouchDown, \ref Type::TouchMove, \ref Type::TouchUp and \ref Type::TouchCancel.
+            /// \brief Holds the data for the touch events, \ref Type::TouchDown through \ref Type::TouchCancel.
             struct
             {
                 UInt32 ID;     ///< The identity the platform gave this touch, held until it leaves.
-                Real32 X;      ///< Actual X position.
-                Real32 Y;      ///< Actual Y position.
-                Real32 DeltaX; ///< Delta X since last event.
-                Real32 DeltaY; ///< Delta Y since last event.
+                Real32 X;      ///< The X position of the touch.
+                Real32 Y;      ///< The Y position of the touch.
+                Real32 DeltaX; ///< The distance moved along X since the last event.
+                Real32 DeltaY; ///< The distance moved along Y since the last event.
             } TouchAction;
 
             /// \brief Holds the data for \ref Type::WindowFocus.
@@ -248,14 +248,14 @@ namespace ZyInput
             /// \brief Holds the data for \ref Type::WindowResize.
             struct
             {
-                UInt32 Width;  ///< New window width in pixels.
-                UInt32 Height; ///< New window height in pixels.
+                UInt32 Width;  ///< The new width of the window in pixels.
+                UInt32 Height; ///< The new height of the window in pixels.
             } WindowResize;
 
             /// \brief Holds the data for \ref Type::WindowScale.
             struct
             {
-                Real32 Scale; ///< New display scale, one at the platform's standard density.
+                Real32 Scale; ///< The new display scale, one at the platform's standard density.
             } WindowScale;
         };
 

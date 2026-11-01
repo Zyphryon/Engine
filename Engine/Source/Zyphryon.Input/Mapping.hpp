@@ -148,10 +148,10 @@ namespace ZyInput
             /// The value fed from code since the last update, waiting for the next one.
             Real32            Fed     = 0.0f;
 
-            /// `true` when the action is held this frame.
+            /// `true` when the action is held this frame, `false` when it is released.
             Bool              Down    = false;
 
-            /// `true` when the action was held the frame before.
+            /// `true` when the action was held the frame before, `false` when it was released.
             Bool              WasDown = false;
         };
 

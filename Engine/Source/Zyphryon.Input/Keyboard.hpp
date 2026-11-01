@@ -49,7 +49,7 @@ namespace ZyInput
         /// \brief Checks whether a key was pressed during the current frame.
         ///
         /// \param Key The key to check.
-        /// \return `true` if the key was pressed this frame, otherwise `false`.
+        /// \return `true` if the key transitioned from released to pressed this frame, otherwise `false`.
         ZY_INLINE Bool IsKeyPressed(Key Key) const
         {
             return !mLastKeys.Test(ZyEnum::Cast(Key)) && mThisKeys.Test(ZyEnum::Cast(Key));
@@ -67,7 +67,7 @@ namespace ZyInput
         /// \brief Checks whether a key was released during the current frame.
         ///
         /// \param Key The key to check.
-        /// \return `true` if the key was released this frame, otherwise `false`.
+        /// \return `true` if the key transitioned from pressed to released this frame, otherwise `false`.
         ZY_INLINE Bool IsKeyReleased(Key Key) const
         {
             return mLastKeys.Test(ZyEnum::Cast(Key)) && !mThisKeys.Test(ZyEnum::Cast(Key));
