@@ -62,7 +62,7 @@ namespace ZyScene
 
         /// \brief Runs a task kept in the room behind its call, then destroys it.
         ///
-        /// \param Payload The payload, the call first and the task at \p Offset.
+        /// \param Payload The bytes the change carries, the call first and the task at `Offset`.
         template<typename Function, UInt Offset>
         static void Run(Ptr<Byte> Payload)
         {
@@ -98,7 +98,7 @@ namespace ZyScene
 
         /// \brief Marks a walk as ended.
         ///
-        /// \return `true` when the outermost walk ended outside a flush, so what waits may be applied.
+        /// \return `true` when the outermost walk ended outside a flush, so what waits is applied, `false` otherwise.
         ZY_INLINE Bool Leave()
         {
             return --mDepth == 0 && !mFlushing;

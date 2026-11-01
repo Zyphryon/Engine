@@ -63,10 +63,10 @@ namespace ZyScene
         /// \brief Represents one range of slot numbers, counted from its first, since entities start far past zero.
         struct Range final
         {
-            /// Where each entity sits.
+            /// The slot of each number in the range.
             Sequence<Slot>   Slots;
 
-            /// Where each sits in the hierarchy, grown only as far as the highest slot ever linked.
+            /// The place of each in the hierarchy, grown only as far as the highest slot ever linked.
             Sequence<Family> Families;
         };
 
@@ -152,7 +152,7 @@ namespace ZyScene
 
         /// \brief Takes a slot for a new entity, reusing a freed one first.
         ///
-        /// \param Archetype `true` for one of the slots archetypes are handed.
+        /// \param Archetype `true` for one of the slots archetypes are handed, `false` for an entity's.
         /// \return The handle, whose slot sits in no chunk yet.
         Handle Allocate(Bool Archetype);
 
@@ -164,7 +164,7 @@ namespace ZyScene
 
         /// \brief Gives a slot back, raising its generation so handles to it stop naming anything.
         ///
-        /// \param Index The slot number, which sits in no chunk and has no parent or child.
+        /// \param Index The slot number, whose row was taken out of its chunk and which has no parent or child.
         void Release(UInt32 Index);
 
         /// \brief Links an entity as the last child of another.

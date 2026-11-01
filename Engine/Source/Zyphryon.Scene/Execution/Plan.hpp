@@ -25,23 +25,23 @@ namespace ZyScene
     /// \brief Represents one value a walk hands its callback.
     ///
     /// \tparam Type    The component, `const` when only read.
-    /// \tparam Pointer `true` when handed as a pointer, which may be missing or read from an ancestor.
+    /// \tparam Pointer `true` when handed as a pointer, which may be missing or climb, `false` for a reference.
     template<typename Type, Bool Pointer>
     struct Field final
     {
         /// The component, `const` when only read.
         using Value = Type;
 
-        /// `true` when handed as a pointer.
+        /// `true` when handed as a pointer, `false` when handed by reference.
         static constexpr Bool kPointer = Pointer;
 
-        /// `true` when the component carries no data, so a fresh one is handed.
+        /// `true` when the component carries no data, so a fresh one is handed, `false` when it is read from storage.
         static constexpr Bool kTag     = IsEmpty<StripAll<Type>>;
 
-        /// `true` when the callback writes it, so it lives in the entity's own column.
+        /// `true` when the callback writes it, so it lives in the entity's own column, `false` when it only reads it.
         static constexpr Bool kWritten = !IsImmutable<Type>;
 
-        /// `true` when a match must hold it in its own column, a written component with data to write.
+        /// `true` when a match must hold it in its own column, a written component with data, `false` otherwise.
         static constexpr Bool kOwned   = kWritten && !kTag;
     };
 
@@ -151,7 +151,7 @@ namespace ZyScene
     template<typename... Arguments>
     struct Parameters : Fieldset<typename FieldOf<Arguments>::Type...>
     {
-        /// `true` when the callback takes the entity ahead of its fields.
+        /// `true` when the callback takes the entity ahead of its fields, `false` when it takes only fields.
         static constexpr Bool kEntity = false;
     };
 
@@ -163,7 +163,7 @@ namespace ZyScene
         requires IsAnyOf<StripAll<First>, Entity>
     struct Parameters<First, Rest...> : Parameters<Rest...>
     {
-        /// `true` when the callback takes the entity ahead of its fields.
+        /// `true` when the callback takes the entity ahead of its fields, `false` when it takes only fields.
         static constexpr Bool kEntity = true;
     };
 

@@ -173,7 +173,7 @@ namespace ZyScene
             /// The component it records changes of.
             UInt32              Identifier;
 
-            /// The readers of the list.
+            /// The number of readers of the list.
             UInt32              Subscribers = 0;
 
             /// The position of the first entry held, counted from the list's first ever.

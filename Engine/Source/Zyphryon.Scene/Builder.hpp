@@ -305,7 +305,7 @@ namespace ZyScene
 
         /// \brief Makes a system read changes of a component rather than walk every match.
         ///
-        /// \return The description, which leaves archetypes and sleepers out unless it asks for them.
+        /// \return The description, archetypes and sleepers left out unless asked, though removals keep sleepers.
         template<typename List>
         ZY_INLINE Builder<Cursor<List>> Reads() &&
             requires IsAnyOf<Kind, System>

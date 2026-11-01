@@ -44,7 +44,7 @@ namespace ZyScene
         ///
         /// \param Name    The name profiles show.
         /// \param Phase   The phase to run it in.
-        /// \param Rate    The progresses from one run to the next, one to run on every one.
+        /// \param Rate    The progresses from one run to the next, zero or one to run on every one.
         /// \param Run     The callable the phase runs.
         /// \param Package The module that makes it, or zero.
         void Install(Text Name, UInt32 Phase, UInt16 Rate, AnyRef<Runner> Run, UInt32 Package);
@@ -89,7 +89,7 @@ namespace ZyScene
             /// The module that made it, or zero.
             UInt32 Package = 0;
 
-            /// `true` until its module is discarded.
+            /// `true` until its module is discarded, `false` once it waits to be destroyed.
             Bool   Alive   = true;
         };
 
@@ -105,7 +105,7 @@ namespace ZyScene
             /// The module that made it, or zero.
             UInt32                    Package = 0;
 
-            /// `true` until its module is discarded.
+            /// `true` until its module is discarded, `false` once none of its systems runs again.
             Bool                      Alive   = true;
 
             /// `true` while its systems run each progress, `false` while they are skipped.

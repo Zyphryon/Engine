@@ -158,8 +158,7 @@ namespace ZyScene
         {
             const Ptr<Chunk> Target = State.Chunks[Match];
 
-            // An entity moved from the head of one match onto the tail of the one before it leaves the snapshot as it
-            // was, but not where its gathered row points, so each match must still hold as many rows as it did.
+            // A row moved into the match before keeps the snapshot equal, so each match must keep its size too.
             if (Target->GetSize() != State.Sizes[Match])
             {
                 return false;

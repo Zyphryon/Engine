@@ -248,13 +248,13 @@ namespace ZyScene
             /// The components it registered.
             Sequence<UInt32> Types;
 
-            /// `true` while the module is in the world.
+            /// `true` while the module is in the world, `false` once it was discarded.
             Bool             Alive;
         };
 
         /// \brief Places an entity where its archetype and components lead, building its values and parts there.
         ///
-        /// \param Actor     The entity, sitting in no chunk or in the root.
+        /// \param Actor     The entity, sitting in no chunk or in the pending one.
         /// \param Archetype The slot of the archetype it reads from, or zero.
         /// \param Parent    The slot of the entity it hangs from, or zero.
         /// \param Values    The components it holds itself, moved into place.
@@ -265,7 +265,7 @@ namespace ZyScene
             Ptr<Chunk> Target = Archetype ? FindHeir(Archetype, false) : mLayout.GetRoot();
             ((Target = Extend(* Target, IdentifierOf<StripAll<Types>>())), ...);
 
-            // Made during a walk, it waits in the root, otherwise it sits nowhere yet.
+            // Made during a walk, it waits in the pending chunk, otherwise it sits nowhere yet.
             const UInt32 Index = Actor.GetIndex();
 
             if (mDirectory[Index].Holder)

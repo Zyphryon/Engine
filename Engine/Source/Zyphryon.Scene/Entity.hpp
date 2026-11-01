@@ -101,7 +101,7 @@ namespace ZyScene
                 ConstRef<Directory::Slot> Entry      = mStorage->mDirectory[GetIndex()];
                 const Ptr<Type>           Held       = Entry.Holder->Fetch<Type>(Identifier, Entry.Row);
 
-                // In place, even mid-walk, unless a change of this entity waits already; a reader is told after.
+                // In place, even mid-walk, unless a change of this entity waits already, and a reader is told after.
                 if (Held && !mStorage->mDeferral.IsMarked(GetIndex()))
                 {
                     * Held = Forward<Value>(Data);
@@ -155,7 +155,7 @@ namespace ZyScene
 
         /// \brief Checks whether the entity carries a component, held or inherited.
         ///
-        /// \return `true` if it holds the component or its archetype lends it, `false` otherwise.
+        /// \return `true` if it holds the component or its archetype lends it, `false` otherwise or when not alive.
         template<typename Type>
         ZY_INLINE Bool Has() const
         {

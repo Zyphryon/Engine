@@ -159,13 +159,13 @@ namespace ZyScene
                 /// The instances each field steps per row, zero for one read from one place.
                 UInt      Steps[kCount + 1];
 
-                /// `true` for each field read from the nearest ancestor.
+                /// `true` for each field read from the nearest ancestor, `false` for the rest.
                 Bool      Climbs[kCount + 1];
 
-                /// `true` when every field steps.
+                /// `true` when every field steps, `false` when one is read from one place.
                 Bool      Dense;
 
-                /// `true` when the written fields step and the read ones stay in one place.
+                /// `true` when the written fields step and the read ones stay in one place, `false` otherwise.
                 Bool      Invariant;
 
                 /// \brief Gets where a field starts in a page, or the one place every row reads it from.
@@ -185,8 +185,8 @@ namespace ZyScene
             /// \param State The query, naming the component of each field.
             /// \param Where The places each field of the chunk is read from.
             /// \param Actor The entity about to be handed over.
-            /// \param Above The parent the fields last climbed from, set to the entity's own.
-            /// \param Bases The place each field reads from, replaced for the ones that climb.
+            /// \param Above The parent the fields last climbed from, which receives the entity's own.
+            /// \param Bases The place each field reads from, which the ones that climb receive anew.
             template<typename... Pointers>
             ZY_INLINE static void Climb(
                 Ref<Storage>         Owner,
@@ -209,7 +209,7 @@ namespace ZyScene
             ///
             /// \param Where    The places each field of the chunk is read from.
             /// \param Position The position of the field.
-            /// \return One for a field that steps, zero for one read from one place.
+            /// \return The instances, one for a field that steps and zero for one read from one place.
             template<Stride Mode, typename Field>
             ZY_INLINE static UInt Step(ConstRef<Places> Where, UInt Position)
             {
@@ -228,7 +228,7 @@ namespace ZyScene
             /// \param Owner The storage the query belongs to.
             /// \param State The query, holding the source of each field per match.
             /// \param Match The position of the chunk among the matches.
-            /// \param Into  The places to fill.
+            /// \param Into  Receives where each field is read from.
             static void Prepare(Ref<Storage> Owner, ConstRef<Selection> State, UInt32 Match, Ref<Places> Into)
             {
                 constexpr Bool kTags[kCount + 1]   = { Parts::kTag..., false };
@@ -509,8 +509,8 @@ namespace ZyScene
 
             /// \brief Takes the next share, when one is left, and holds what the calling thread changes in it apart.
             ///
-            /// \param Begin The first row of the share, set when one is taken.
-            /// \param Until The row past the last one, set when one is taken.
+            /// \param Begin Receives the first row of the share, when one is taken.
+            /// \param Until Receives the row past the last one, when one is taken.
             /// \return `true` if a share was taken, `false` when none is left.
             ZY_INLINE Bool Take(Ref<UInt32> Begin, Ref<UInt32> Until)
             {

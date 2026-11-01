@@ -40,7 +40,7 @@ namespace ZyScene
         {
         }
 
-        /// \brief Constructs a cursor of a world, seeing every change from now on, archetypes and sleepers left out.
+        /// \brief Constructs a cursor of a world's changes from now on, archetypes left out, sleepers kept by removals.
         ///
         /// \param Owner The world whose changes the cursor reads.
         ZY_INLINE explicit Cursor(Ref<Storage> Owner)
@@ -153,7 +153,7 @@ namespace ZyScene
         {
             if constexpr (List::kKind == Pull::Removed)
             {
-                // An archetype or a sleeper that goes is a removal like any other.
+                // A sleeper that goes is a removal like any other, and an archetype is passed over by its slot instead.
                 State->Excluded.Erase(IdentifierOf<Prefab>());
                 State->Excluded.Erase(IdentifierOf<Asleep>());
 

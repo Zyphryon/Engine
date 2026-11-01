@@ -464,7 +464,7 @@ namespace ZyScene
         /// \param Index     The slot of the entity, which sits in its new chunk.
         /// \param Source    The chunk it came from.
         /// \param Except    The component the caller builds, or zero.
-        /// \param Recording `true` to record each component the entity came to hold, bar the caller's own.
+        /// \param Recording `true` to record each component it came to hold, bar the caller's own, `false` not to.
         void Build(UInt32 Index, ConstRef<Chunk> Source, UInt32 Except, Bool Recording);
 
     private:
@@ -499,7 +499,7 @@ namespace ZyScene
 
         /// \brief Lists what a walk marked written of the rows a row's leaving moves, before they leave their pages.
         ///
-        /// \param Holder  The chunk.
+        /// \param Holder  The chunk the row sits in.
         /// \param Row     The row about to be taken out, which the last row fills.
         /// \param Target  The chunk the row's entity moves to, or `nullptr` when it is destroyed.
         /// \param Landing The row it takes there, ignored without a chunk to move to.

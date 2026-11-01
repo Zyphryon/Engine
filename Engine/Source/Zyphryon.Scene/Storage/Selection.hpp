@@ -110,7 +110,7 @@ namespace ZyScene
         /// The links the directory had made when the rows gathered were sorted, which changes with the hierarchy.
         UInt32                     Links;
 
-        /// `true` when matches are visited parents first.
+        /// `true` when matches are visited parents first, `false` when they are visited in the order they were made.
         Bool                       Ordered;
 
         /// \brief Constructs a selection that asks for nothing, leaving archetypes and sleepers out until asked.

@@ -102,7 +102,7 @@ namespace ZyScene
 
         /// The name, empty for none.
         Str Value;
-        
+
         /// \brief Constructs an empty name.
         ZY_INLINE Named() = default;
 
