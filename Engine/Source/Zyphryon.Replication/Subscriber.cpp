@@ -446,6 +446,8 @@ namespace ZyReplication
 
         ZyScene::Entity Actor = Find(Identifier);
 
+        ZY_ASSERT(!(Identifier & kPersistent) || !Actor.IsAlive(), "A loaded persistent replica never arrives again");
+
         if (!Actor.IsAlive())
         {
             // A persistent replica comes from disk, never from an arrival, which would make a copy of it.
@@ -710,6 +712,8 @@ namespace ZyReplication
 
     void Subscriber::Apply(ZyScene::Entity Actor, ConstSpan<Byte> Set, Mask Ignored)
     {
+        ZY_ASSERT(!Actor.Has<Client>(), "What is kept to this side is never the publisher's to write");
+
         Reader Input(Set);
 
         if (!mManifest.Read(Input, Actor, Ignored))

@@ -332,7 +332,11 @@ namespace ZyReplication
         // The serving side hears only the game's messages, and the following side only frames.
         if (mOwner.mPublisher)
         {
-            mListener->OnMessage(Link.GetValue(), Message);
+            // A peer expelled hears nothing more, though its last messages are still on the way.
+            if (mOwner.mPublisher->GetAddress(Link.GetValue()))
+            {
+                mListener->OnMessage(Link.GetValue(), Message);
+            }
         }
         else if (mOwner.mSubscriber)
         {

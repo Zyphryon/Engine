@@ -189,7 +189,7 @@ namespace ZyReplication
         /// \param Input   The reader, at the set, left after it.
         /// \param Actor   The entity, which must be alive, the world entity for singletons.
         /// \param Ignored The components read past whole, which this side keeps as it decided them, `Others` ones only.
-        /// \return `true` if the set was read whole, `false` if it was cut short or named an unknown component.
+        /// \return `true` if the set was read whole, `false` if cut short, naming an unknown component or lying.
         Bool Read(Ref<Reader> Input, ZyScene::Entity Actor, Mask Ignored) const;
 
         /// \brief Reads past a set without applying it, checking its length fits.
