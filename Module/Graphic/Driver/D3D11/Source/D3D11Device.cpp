@@ -58,7 +58,7 @@ namespace ZyGraphic::D3D11
         ComPtr<IDXGIAdapter1> Adapter;
         for (UInt Index = 0; SUCCEEDED(Factory->EnumAdapters1(Index, Adapter.ReleaseAndGetAddressOf())); ++Index)
         {
-            // Skip software (WARP) adapters so the enumeration reflects only physical devices.
+            // Software (WARP) adapters are skipped, so the list holds physical devices alone.
             DXGI_ADAPTER_DESC1 Description;
             if (FAILED(Adapter->GetDesc1(AddressOf(Description))) || (Description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
             {
@@ -69,7 +69,7 @@ namespace ZyGraphic::D3D11
             Entry.Description = Str::ConvertFromUTF16(StrConvert(Description.Description));
             Entry.Memory      = Description.DedicatedVideoMemory >> 20;
 
-            // Enumerate the supported display modes exposed by the adapter's primary output.
+            // The display modes are the ones the adapter's primary output lists.
             if (ComPtr<IDXGIOutput> Monitor; SUCCEEDED(Adapter->EnumOutputs(0, Monitor.GetAddressOf())))
             {
                 UINT Length = 0;
@@ -106,12 +106,12 @@ namespace ZyGraphic::D3D11
         Output.Backend  = "D3D11";
         Output.Language = ShaderLanguage::HLSL;
 
-        // Determine common supported capabilities.
+        // Every feature level the device is created at has these.
         Output.Capabilities.SupportsBaseVertex    = true;
         Output.Capabilities.SupportsFormatS3TC    = true;
         Output.Capabilities.UniformBlockAlignment = 256;
 
-        // Determine the supported shader model based on the Direct3D feature level.
+        // The tier and the limits follow the feature level.
         switch (Level)
         {
         case D3D_FEATURE_LEVEL_11_1:

@@ -233,7 +233,7 @@ namespace ZyGraphic::D3D11
             }
             else
             {
-                mDevice.GetContext()->DrawInstanced(Count, Instances, Offset, 0);
+                mDevice.GetContext()->DrawInstanced(Count, Instances, static_cast<UInt32>(Offset + Base), 0);
             }
         }
     }

@@ -68,7 +68,7 @@ namespace ZyGraphic::D3D11
 
         /// \brief Gets the vertex shader.
         ///
-        /// \return The vertex shader, or `nullptr` when the pipeline failed to build.
+        /// \return The vertex shader, or `nullptr` while the pipeline compiles or once it failed.
         ZY_INLINE Ptr<ID3D11VertexShader> GetVertex() const
         {
             return mVertex.Get();

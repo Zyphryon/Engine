@@ -58,7 +58,7 @@ namespace ZyGraphic::D3D11
         /// \return The back buffer, or empty when it could not be obtained.
         ComPtr<ID3D11Texture2D> GetBuffer() const;
 
-        /// \brief Changes whether presentation waits for the vertical blank.
+        /// \brief Sets whether presentation waits for the vertical blank.
         ///
         /// \param Tearless `true` to wait for the vertical blank, `false` to present as soon as a frame is ready.
         ZY_INLINE void SetTearless(Bool Tearless)
