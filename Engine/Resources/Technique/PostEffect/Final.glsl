@@ -144,9 +144,7 @@ void main()
     float Density = sqrt(clamp(4.0 * Exposed * (1.0 - Exposed), 0.0, 1.0));
 
     // The grain is stirred by the scene's clock, at a film's cadence, which keeps it from reading as dirt on the lens.
-    Shown += Grain(gl_FragCoord.xy, uint(u_Lift.w)) * (u_Grading.w * Density);
-
-    Shown = clamp(Shown, 0.0, 1.0);
+    Shown = clamp(Shown + Grain(gl_FragCoord.xy, uint(u_Lift.w)) * (u_Grading.w * Density), 0.0, 1.0);
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
     if (u_Gain.w > 0.0)

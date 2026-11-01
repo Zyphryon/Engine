@@ -83,7 +83,7 @@ float ZyShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_SHADOW_GATHER; ++Probe)
     {
-        const float4 Stored  = Depths.GatherRed(Point, Uv + ZySpiral(Probe, ZY_SHADOW_GATHER, Turn) * Search);
+        const float4 Stored  = Depths.GatherRed(Point, Uv + ZySpiral(Probe, float(ZY_SHADOW_GATHER), Turn) * Search);
         const float4 Blocked = float4(Stored < Depth);
 
         Found += dot(Stored, Blocked);
@@ -97,7 +97,7 @@ float ZyShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_SHADOW_SEARCH; ++Probe)
     {
-        const float Stored = Depths.SampleLevel(Point, Uv + ZySpiral(Probe, ZY_SHADOW_SEARCH, Turn) * Search, 0.0).r;
+        const float Stored = Depths.SampleLevel(Point, Uv + ZySpiral(Probe, float(ZY_SHADOW_SEARCH), Turn) * Search, 0.0).r;
 
         if (Stored < Depth)
         {
@@ -133,7 +133,7 @@ float ZyShadow(
     [unroll]
     for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
     {
-        Lit += Map.SampleCmpLevelZero(Compare, Uv + ZySpiral(Tap, ZY_SHADOW_TAPS, Turn) * Penumbra, Depth);
+        Lit += Map.SampleCmpLevelZero(Compare, Uv + ZySpiral(Tap, float(ZY_SHADOW_TAPS), Turn) * Penumbra, Depth);
     }
     return Lit / float(ZY_SHADOW_TAPS);
 }

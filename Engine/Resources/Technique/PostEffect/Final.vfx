@@ -19,7 +19,7 @@
     ],
     "Samplers": [
       { "Name": "Scene", "Filter": "Linear" },
-      { "Name": "Bloom", "Filter": "Linear"          }
+      { "Name": "Bloom", "Filter": "Linear" }
     ]
   },
   "Program": {

@@ -66,7 +66,7 @@ vec4 ZyFontShade(ZyFontEffect Effect, vec4 Sample, float Spread, vec4 Tint)
     float BlurStart  = Effect.OutsetWidth + Effect.OutsetBias / Spread;
     float BlurEnd    = BlurStart * (1.0 - Effect.OutsetBlur);
     float BlurDepth  = Effect.InsetThreshold - Smooth - Effect.OutsetOffset / Spread;
-    float BlurFactor = mix(1.0, 1.0 - smoothstep(BlurEnd, BlurStart, BlurDepth), step(0.0001, Effect.OutsetBlur));
+    float BlurFactor = Effect.OutsetBlur > 0.0001 ? 1.0 - smoothstep(BlurEnd, BlurStart, BlurDepth) : 1.0;
 
     vec4 Outset = ZyUnpackTint(Effect.OutsetTint) * BlurFactor;
 

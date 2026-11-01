@@ -149,9 +149,8 @@ float4 main(fs_Input Input) : SV_Target
     const float Exposed = saturate(ZyLuminance(Shown));
     const float Density = sqrt(saturate(4.0 * Exposed * (1.0 - Exposed)));
 
-    // The grain is stirred by the frame it is handed, which keeps it from reading as dirt on the lens.
-    Shown += Grain(Input.Position.xy, uint(u_Lift.w)) * (u_Grading.w * Density);
-    Shown  = saturate(Shown);
+    // The grain is stirred by the scene's clock, at a film's cadence, which keeps it from reading as dirt on the lens.
+    Shown = saturate(Shown + Grain(Input.Position.xy, uint(u_Lift.w)) * (u_Grading.w * Density));
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
     if (u_Gain.w > 0.0)

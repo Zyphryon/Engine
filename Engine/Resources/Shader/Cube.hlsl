@@ -129,7 +129,7 @@ bool ZyCubeLocateFace(
     const float  Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
     const float3 View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     const float2 Mid   = ZyCubeTile(Tile, Per);
-    const float2 Clip  = View.xy * Scale / (View.z * Per) + Mid;
+    const float2 Clip  = View.xy * Scale / (max(View.z, Near) * Per) + Mid;
     const float2 Heart = float2(Mid.x * 0.5 + 0.5, 0.5 - Mid.y * 0.5);
 
     Uv       = float2(Clip.x * 0.5 + 0.5, 0.5 - Clip.y * 0.5);
@@ -198,7 +198,7 @@ float ZyCubeShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_CUBE_GATHER; ++Probe)
     {
-        const float2 At      = clamp(Uv + ZySpiral(Probe, ZY_CUBE_GATHER, Spin) * Search, Least, Most);
+        const float2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
         const float4 Stored  = Depths.GatherRed(Point, At);
         const float4 Blocked = float4(Stored < Depth);
 
@@ -213,7 +213,7 @@ float ZyCubeShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_CUBE_SEARCH; ++Probe)
     {
-        const float2 At     = clamp(Uv + ZySpiral(Probe, ZY_CUBE_SEARCH, Spin) * Search, Least, Most);
+        const float2 At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH), Spin) * Search, Least, Most);
         const float  Stored = Depths.SampleLevel(Point, At, 0.0).r;
 
         if (Stored < Depth)
@@ -251,7 +251,7 @@ float ZyCubeShadow(
     [unroll]
     for (int Tap = 0; Tap < ZY_CUBE_TAPS; ++Tap)
     {
-        const float2 At = clamp(Uv + ZySpiral(Tap, ZY_CUBE_TAPS, Spin) * Penumbra, Least, Most);
+        const float2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_TAPS), Spin) * Penumbra, Least, Most);
 
         Lit += Map.SampleCmpLevelZero(Compare, At, Depth);
     }

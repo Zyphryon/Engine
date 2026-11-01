@@ -142,7 +142,7 @@ ZyLobe ZyPrepareLobe(vec3 Normal, vec3 Sight, vec3 Diffuse, vec3 Specular, float
 /// Light sent to the eye from a light of given angular radius, using a prepared lobe.
 vec3 ZyBrdf(ZyLobe Lobe, vec3 Normal, vec3 Sight, vec3 Incident, vec3 Specular, float Spread)
 {
-    vec3  Halfway = normalize(Sight + Incident);
+    vec3  Halfway = ZySafeNormalize(Sight + Incident);
     float NoL     = clamp(dot(Normal, Incident), 0.0, 1.0);
     float NoH     = clamp(dot(Normal, Halfway), 0.0, 1.0);
     float VoH     = clamp(dot(Sight, Halfway), 0.0, 1.0);

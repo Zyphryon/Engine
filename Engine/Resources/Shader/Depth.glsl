@@ -27,16 +27,10 @@ float ZyDepthSpan(mat4 Inverse)
     return length((Inverse * vec4(0.0, 0.0, 1.0, 0.0)).xyz);
 }
 
-/// Turns a depth-buffer value into clip-space depth.
-float ZyClipDepth(float Depth)
-{
-    return Depth;
-}
-
 /// Rebuilds a position from a texture coordinate and depth, through an inverse matrix.
 vec3 ZyPositionFromDepth(vec2 Uv, float Depth, mat4 Inverse)
 {
-    vec4 Clip     = vec4(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0, ZyClipDepth(Depth), 1.0);
+    vec4 Clip     = vec4(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0, Depth, 1.0);
     vec4 Position = Inverse * Clip;
 
     return Position.xyz / Position.w;

@@ -21,17 +21,17 @@ const mat3 ZY_ACES_OUTPUT = mat3(
     -0.10208,  1.10813, -0.00605,
     -0.00327, -0.07276,  1.07602);
 
-/// Carries linear sRGB into the inset space AgX compresses in, listed by column.
+/// Carries linear sRGB into the inset space AgX compresses in.
 const mat3 ZY_AGX_INPUT = mat3(
-    0.842479062253094,  0.0423282422610123, 0.0423756549057051,
-    0.0784335999999992, 0.878468636469772,  0.0784336,
-    0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+    0.842479062253094,  0.0784335999999992, 0.0792237451477643,
+    0.0423282422610123, 0.878468636469772,  0.0791661274605434,
+    0.0423756549057051, 0.0784336,          0.879142973793104);
 
-/// Carries AgX's compressed result back out of the inset space, listed by column.
+/// Carries AgX's compressed result back out of the inset space.
 const mat3 ZY_AGX_OUTPUT = mat3(
-     1.19687900512017,  -0.0528968517574562, -0.0529716355144438,
-    -0.0980208811401368,  1.15190312990417,  -0.0980434501171241,
-    -0.0990297440797205, -0.0989611768448433,  1.15107367264116);
+     1.19687900512017,   -0.0980208811401368, -0.0990297440797205,
+    -0.0528968517574562,  1.15190312990417,   -0.0989611768448433,
+    -0.0529716355144438, -0.0980434501171241,  1.15107367264116);
 
 /// Default GT peak brightness.
 #define ZY_GT_PEAK            1.00
@@ -97,7 +97,7 @@ vec3 ZyTonemapAgx(vec3 Color)
     const float Lowest  = -12.47393;
     const float Highest = 4.026069;
 
-    Color = ZY_AGX_INPUT * Color;
+    Color = Color * ZY_AGX_INPUT;
     Color = (clamp(log2(max(Color, vec3(1e-10))), Lowest, Highest) - Lowest) / (Highest - Lowest);
 
     vec3 Square = Color * Color;
@@ -107,7 +107,7 @@ vec3 ZyTonemapAgx(vec3 Color)
 
     Color = 15.5 * Sixth - 40.14 * Fifth + 31.96 * Fourth - 6.868 * Square * Color + 0.4298 * Square + 0.1191 * Color - 0.00232;
 
-    return clamp(pow(max(ZY_AGX_OUTPUT * Color, vec3(0.0)), vec3(2.2)), 0.0, 1.0);
+    return clamp(pow(max(Color * ZY_AGX_OUTPUT, vec3(0.0)), vec3(2.2)), 0.0, 1.0);
 }
 
 /// Uchimura's Gran Turismo tonemap for one channel, blending a toe, a line and a shoulder.

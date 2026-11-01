@@ -93,11 +93,12 @@ float3 Halve(float2 Uv)
 #if defined(BLOOM_SIFT)
 
 // Keeps what clears the threshold, eased in over the knee.
-float3 Extract(float3 Color)
+float3 Extract(float3 Scene)
 {
-    const float Peak = ZyMax3(Color.r, Color.g, Color.b);
-    const float Soft = clamp(Peak - u_Filter.x + u_Filter.y, 0.0, 2.0 * u_Filter.y);
-    const float Gain = max(Peak - u_Filter.x, Soft * Soft / (4.0 * u_Filter.y + 0.0001));
+    const float3 Color = min(Scene, 65504.0);
+    const float  Peak  = ZyMax3(Color.r, Color.g, Color.b);
+    const float  Soft  = clamp(Peak - u_Filter.x + u_Filter.y, 0.0, 2.0 * u_Filter.y);
+    const float  Gain  = max(Peak - u_Filter.x, Soft * Soft / (4.0 * u_Filter.y + 0.0001));
 
     return Color * (Gain / max(Peak, 0.0001));
 }

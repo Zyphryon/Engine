@@ -123,7 +123,7 @@ bool ZyCubeLocateFace(
     float Grain = 2.0 * ZyMax3(Size.x, Size.y, Size.z) / (Scale * Atlas.w);
     vec3  View  = ZyCubeView(Reach + Normal * (Grain * ZY_CUBE_LIFT), Face);
     vec2  Mid   = ZyCubeTile(Tile, Per);
-    vec2  Clip  = View.xy * Scale / (View.z * Per) + Mid;
+    vec2  Clip  = View.xy * Scale / (max(View.z, Near) * Per) + Mid;
     vec2  Heart = vec2(Mid.x * 0.5 + 0.5, 0.5 - Mid.y * 0.5);
 
     Uv       = vec2(Clip.x * 0.5 + 0.5, 0.5 - Clip.y * 0.5);

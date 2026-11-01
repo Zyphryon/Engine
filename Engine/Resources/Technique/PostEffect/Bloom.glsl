@@ -86,11 +86,12 @@ vec3 Halve(vec2 Uv)
 #if defined(BLOOM_SIFT)
 
 // Keeps what clears the threshold, eased in over the knee.
-vec3 Extract(vec3 Color)
+vec3 Extract(vec3 Scene)
 {
-    float Peak = ZyMax3(Color.r, Color.g, Color.b);
-    float Soft = clamp(Peak - u_Filter.x + u_Filter.y, 0.0, 2.0 * u_Filter.y);
-    float Gain = max(Peak - u_Filter.x, Soft * Soft / (4.0 * u_Filter.y + 0.0001));
+    vec3  Color = min(Scene, vec3(65504.0));
+    float Peak  = ZyMax3(Color.r, Color.g, Color.b);
+    float Soft  = clamp(Peak - u_Filter.x + u_Filter.y, 0.0, 2.0 * u_Filter.y);
+    float Gain  = max(Peak - u_Filter.x, Soft * Soft / (4.0 * u_Filter.y + 0.0001));
 
     return Color * (Gain / max(Peak, 0.0001));
 }

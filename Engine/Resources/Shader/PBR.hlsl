@@ -142,7 +142,7 @@ ZyLobe ZyPrepareLobe(float3 Normal, float3 Sight, float3 Diffuse, float3 Specula
 /// Light sent to the eye from a light of given angular radius, using a prepared lobe.
 float3 ZyBrdf(ZyLobe Lobe, float3 Normal, float3 Sight, float3 Incident, float3 Specular, float Spread)
 {
-    const float3 Halfway = normalize(Sight + Incident);
+    const float3 Halfway = ZySafeNormalize(Sight + Incident);
     const float  NoL     = saturate(dot(Normal, Incident));
     const float  NoH     = saturate(dot(Normal, Halfway));
     const float  VoH     = saturate(dot(Sight, Halfway));
