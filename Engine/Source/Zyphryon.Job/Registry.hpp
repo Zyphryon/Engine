@@ -34,7 +34,7 @@ namespace ZyJob
             /// The claims outstanding on the slot, one for the pending execution plus one if a handle was handed out.
             UInt8  References = 0;
 
-            /// `true` once the job has finished executing.
+            /// `true` once the job has finished executing, `false` while it is queued or running.
             Bool   Complete   = false;
         };
 
@@ -57,7 +57,7 @@ namespace ZyJob
         /// \brief Mints the handle that names the given slot.
         ///
         /// \param Value The slot to name.
-        /// \return A handle that resolves back to \p Value until the slot is recycled.
+        /// \return The handle resolving back to the slot until the slot is recycled.
         ZY_INLINE Handle Mint(Slot Value) const
         {
             return mAllocator.GetKey(static_cast<Handle::Slot>(Value));

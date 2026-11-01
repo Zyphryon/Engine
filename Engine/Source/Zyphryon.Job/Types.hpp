@@ -22,10 +22,10 @@ namespace ZyJob
         IO,         ///< Runs on a small pool reserved for work that blocks in the kernel, such as filesystem access.
     };
 
-    /// \brief Number of distinct lanes, used to size the per-lane executors.
+    /// \brief The number of distinct lanes, which sizes the per-lane executors.
     inline constexpr UInt32 kMaxLanes = ZyEnum::Count<Lane>();
 
-    /// \brief Maximum number of jobs that may be in flight at once.
+    /// \brief The number of jobs that may be in flight at once.
     inline constexpr UInt32 kMaxJobs  = 1024;
 
     /// \brief Opaque reference to a submitted job, where a key naming nothing denotes an invalid job.

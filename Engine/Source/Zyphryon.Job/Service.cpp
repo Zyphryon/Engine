@@ -117,7 +117,7 @@ namespace ZyJob
 #if defined(ZY_HAS_THREADS)
         for (Ref<Executor> Each : mExecutors)
         {
-            Each.Stop();
+            Each.Stop(mMutex);
         }
 #endif
 
@@ -176,12 +176,9 @@ namespace ZyJob
         {
             GetExecutor(Actual).Signal();
         }
-        else
+        else if (Starved)
         {
-            if (Starved)
-            {
-                Work();
-            }
+            Work();
         }
         return Result;
     }
@@ -238,8 +235,7 @@ namespace ZyJob
     {
         ZY_PROFILE_SCOPE("Job::Execute");
 
-        // The slot cannot be recycled while its execution claim is held, so this reference survives the unlocked
-        // call below even though the registry is only serialized inside the guard.
+        // The execution claim keeps the slot from recycling, so this reference outlives the unlocked call below.
         Ref<Registry::Entry> Job = mRegistry[Value];
 
         // Consume it, since a waiter may recycle the slot the instant it observes it.

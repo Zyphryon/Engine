@@ -25,7 +25,7 @@ namespace ZyJob
     {
         if (mAllocator.IsFull())
         {
-            LOG_W("Exhausted the job table; too many jobs in flight at once");
+            LOG_W("Job: Exhausted the job table with too many jobs in flight at once");
             return 0;
         }
 

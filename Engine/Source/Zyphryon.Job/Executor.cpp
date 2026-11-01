@@ -21,13 +21,17 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Executor::Stop()
+    void Executor::Stop(Ref<Mutex> Barrier)
     {
         for (Ref<Thread> Worker : mThreads)
         {
             Worker.Stop();
         }
 
+        // A worker between its check and its sleep holds the mutex, so taking it once means the wake cannot slip by.
+        {
+            Guard Guard(Barrier);
+        }
         mGate.Broadcast();
 
         for (Ref<Thread> Worker : mThreads)

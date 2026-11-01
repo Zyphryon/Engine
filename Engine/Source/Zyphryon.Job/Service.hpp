@@ -59,7 +59,7 @@ namespace ZyJob
         ///
         /// \param Target The lane to execute the job on.
         /// \param Work   The job to execute.
-        /// \return A handle that must be passed to \ref Wait or \ref Discard exactly once.
+        /// \return The handle tracking the job, which must be passed to \ref Wait or \ref Discard exactly once.
         Handle Submit(Lane Target, AnyRef<Task> Work);
 
         /// \brief Blocks until the given job completes, executing other compute jobs meanwhile, then releases it.
@@ -77,7 +77,7 @@ namespace ZyJob
         /// \param Target    The lane to spread the range over, which cannot be \ref Lane::Main.
         /// \param Count     The number of indices to visit.
         /// \param Callback  The callback invoked with one half-open chunk of the range, on whichever worker took it.
-        /// \param Partition The number of chunks to cut per worker; raise it when the per-index cost is very uneven.
+        /// \param Partition The number of chunks to cut per worker, raised when the per-index cost is very uneven.
         template<typename Callable>
         void Parallel(Lane Target, UInt32 Count, AnyRef<Callable> Callback, UInt32 Partition = 8)
         {
@@ -112,7 +112,7 @@ namespace ZyJob
 
     private:
 
-        /// \brief Maximum time, in seconds, a tick may spend on the main lane without threads before the rest waits.
+        /// \brief The time in seconds a tick may spend on the main lane without threads before the rest waits.
         static constexpr Real64 kMaxTickBudget = 0.006;
 
         /// \brief Runs a job to completion, then publishes it to its waiters.

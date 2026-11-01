@@ -20,7 +20,7 @@
 
 namespace ZyJob
 {
-    /// \brief Represents one lane's runtime state: the jobs queued on it and the workers that drain them.
+    /// \brief Represents one lane's runtime state, the jobs queued on it and the workers that drain them.
     class Executor final
     {
     public:
@@ -42,8 +42,8 @@ namespace ZyJob
 
         /// \brief Asks every worker to stop and waits for them to leave.
         ///
-        /// \note The caller must not hold the scheduler's mutex, since a worker needs it to observe the stop.
-        void Stop();
+        /// \param Barrier The scheduler's mutex the workers wait under, which the caller must not hold.
+        void Stop(Ref<Mutex> Barrier);
 
         /// \brief Appends a slot to the tail of the queue.
         ///
