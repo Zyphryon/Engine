@@ -22,10 +22,13 @@ namespace ZyAI
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Bool ReadNode(ConstRef<JsonObject> Definition, UInt32 Depth, Ref<Sequence<Behaviour::Node>> Nodes,
-        Ref<Sequence<JsonValue>> Arguments)
+    static Bool ReadNode(
+        ConstRef<JsonObject>           Definition,
+        UInt32                         Depth,
+        Ref<Sequence<Behaviour::Node>> Nodes,
+        Ref<Sequence<JsonValue>>       Arguments)
     {
-        if (!Definition.IsValid() || Depth > 64 || Nodes.GetSize() >= Behaviour::kMaxNodes)
+        if (!Definition.IsValid() || Depth > Behaviour::kMaxDepth || Nodes.GetSize() >= Behaviour::kMaxNodes)
         {
             return false;
         }

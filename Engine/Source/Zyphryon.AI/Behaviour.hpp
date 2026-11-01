@@ -87,6 +87,9 @@ namespace ZyAI
         /// \brief The maximum number of nodes in a behaviour.
         static constexpr UInt32 kMaxNodes = kMaximum<UInt16>;
 
+        /// \brief The deepest a node may nest below the root.
+        static constexpr UInt32 kMaxDepth = 64;
+
     public:
 
         /// \brief Constructs a behaviour resource with the given content key.

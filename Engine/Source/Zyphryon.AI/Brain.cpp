@@ -22,7 +22,8 @@ namespace ZyAI
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Brain::Brain()
-        : mClock { 0.0 }
+        : mNodes { nullptr },
+          mClock { 0.0 }
     {
     }
 
@@ -38,8 +39,11 @@ namespace ZyAI
             return Status::Failure;
         }
 
-        if (mMemory.GetSize() != Nodes.GetSize())
+        // A reload replaces the nodes in place, so the same tree may come back with another shape.
+        if (mNodes != Nodes.GetData() || mMemory.GetSize() != Nodes.GetSize())
         {
+            mNodes = Nodes.GetData();
+
             mMemory.Clear();
             mMemory.Resize(Nodes.GetSize());
         }
@@ -56,7 +60,7 @@ namespace ZyAI
     {
         const ConstSpan<Behaviour::Node> Nodes = Tree.GetNodes();
 
-        if (!Nodes.IsEmpty() && mMemory.GetSize() == Nodes.GetSize())
+        if (!Nodes.IsEmpty() && mNodes == Nodes.GetData() && mMemory.GetSize() == Nodes.GetSize())
         {
             Stop(Nodes, 0, Host);
         }
@@ -76,8 +80,9 @@ namespace ZyAI
     Status Brain::Visit(ConstSpan<Behaviour::Node> Nodes, UInt32 Index, Ref<Host> Host)
     {
         ConstRef<Behaviour::Node> Current = Nodes[Index];
+        Ref<Memory>               State   = mMemory[Index];
 
-        const Bool   Fresh = (mMemory[Index].Last != Status::Running);
+        const Bool   Fresh = (State.Last != Status::Running);
         const UInt32 First = Index + 1;
         const UInt32 Last  = Index + Current.Span;
 
@@ -89,9 +94,9 @@ namespace ZyAI
         {
             if (Fresh)
             {
-                mMemory[Index].Mark = mClock;
+                State.Mark = mClock;
             }
-            Result = Host.Tick(Index, Fresh, mClock - mMemory[Index].Mark, mBoard);
+            Result = Host.Tick(Index, Fresh, mClock - State.Mark, mBoard);
             break;
         }
         case Behaviour::Kind::Compare:
@@ -120,16 +125,16 @@ namespace ZyAI
             const Status Ending  = Ordered ? Status::Failure : Status::Success;
 
             // A priority asks its children again from the first every tick, remembering which one it left running.
-            const UInt32 Running = Fresh ? 0 : mMemory[Index].Cursor;
+            const UInt32 Running = Fresh ? 0 : State.Cursor;
 
             if (Fresh || Watched)
             {
-                mMemory[Index].Cursor = static_cast<UInt16>(First);
+                State.Cursor = static_cast<UInt16>(First);
             }
 
             Result = Ordered ? Status::Success : Status::Failure;
 
-            for (UInt32 Child = mMemory[Index].Cursor; Child < Last; Child += Nodes[Child].Span)
+            for (UInt32 Child = State.Cursor; Child < Last; Child += Nodes[Child].Span)
             {
                 const Status Got = Visit(Nodes, Child, Host);
 
@@ -141,7 +146,7 @@ namespace ZyAI
 
                 if (Got == Status::Running)
                 {
-                    mMemory[Index].Cursor = static_cast<UInt16>(Child);
+                    State.Cursor = static_cast<UInt16>(Child);
                     Result = Status::Running;
                     break;
                 }
@@ -212,16 +217,16 @@ namespace ZyAI
         {
             if (Fresh)
             {
-                mMemory[Index].Count = 0;
+                State.Count = 0;
             }
 
             Result = Visit(Nodes, First, Host);
 
             if (Result == Status::Success)
             {
-                ++mMemory[Index].Count;
+                ++State.Count;
 
-                if (Current.Count == 0 || mMemory[Index].Count < Current.Count)
+                if (Current.Count == 0 || State.Count < Current.Count)
                 {
                     Result = Status::Running;
                 }
@@ -230,7 +235,7 @@ namespace ZyAI
         }
         case Behaviour::Kind::Cooldown:
         {
-            if (Fresh && mClock < mMemory[Index].Mark)
+            if (Fresh && mClock < State.Mark)
             {
                 Result = Status::Failure;
                 break;
@@ -240,7 +245,7 @@ namespace ZyAI
 
             if (Result != Status::Running)
             {
-                mMemory[Index].Mark = mClock + Current.Value;
+                State.Mark = mClock + Current.Value;
             }
             break;
         }
@@ -248,20 +253,20 @@ namespace ZyAI
         {
             if (Fresh)
             {
-                mMemory[Index].Mark = mClock;
+                State.Mark = mClock;
             }
 
-            Result = (mClock - mMemory[Index].Mark >= Current.Value) ? Status::Success : Status::Running;
+            Result = (mClock - State.Mark >= Current.Value) ? Status::Success : Status::Running;
             break;
         }
         case Behaviour::Kind::Timeout:
         {
             if (Fresh)
             {
-                mMemory[Index].Mark = mClock;
+                State.Mark = mClock;
             }
 
-            if (mClock - mMemory[Index].Mark >= Current.Value)
+            if (mClock - State.Mark >= Current.Value)
             {
                 Stop(Nodes, First, Host);
                 Result = Status::Failure;
@@ -284,7 +289,7 @@ namespace ZyAI
         }
         }
 
-        mMemory[Index].Last = Result;
+        State.Last = Result;
         return Result;
     }
 

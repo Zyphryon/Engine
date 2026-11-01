@@ -31,9 +31,7 @@ namespace ZyAI
 
         /// \brief Ticks a behaviour from its root, resuming every running node.
         ///
-        /// \note The running state is reset when the behaviour's node count differs from the last one ticked.
-        ///
-        /// \param Tree  The behaviour to tick.
+        /// \param Tree  The behaviour to tick, whose running state restarts when its nodes are replaced.
         /// \param Delta The time since the last tick, in seconds.
         /// \param Host  The host that runs the leaves.
         /// \return The status of the root, or \ref Status::Failure when the behaviour is empty.
@@ -45,9 +43,7 @@ namespace ZyAI
         /// \param Host The host that runs the leaves.
         void Halt(ConstRef<Behaviour> Tree, Ref<Host> Host);
 
-        /// \brief Clears the running state without halting any leaf.
-        ///
-        /// \note The blackboard is kept.
+        /// \brief Clears the running state without halting any leaf, and keeps the blackboard.
         void Reset();
 
         /// \brief Gets the status a node was left in by the last tick.
@@ -127,8 +123,9 @@ namespace ZyAI
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Sequence<Memory> mMemory;
-        Blackboard       mBoard;
-        Real64           mClock;
+        ConstPtr<Behaviour::Node> mNodes;
+        Sequence<Memory>          mMemory;
+        Blackboard                mBoard;
+        Real64                    mClock;
     };
 }
