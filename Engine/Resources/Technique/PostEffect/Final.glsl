@@ -27,7 +27,10 @@ layout(std140, binding = 1) uniform cb_Pass
 
 #ifdef VERTEX_SHADER
 
+layout(binding = 2) uniform sampler2D t_Exposure;
+
 out vec2 v_Texture;
+flat out float v_Exposure;
 
 void main()
 {
@@ -35,6 +38,7 @@ void main()
 
     gl_Position = vec4(Screen.xy, 0.0, 1.0);
     v_Texture   = Screen.zw;
+    v_Exposure  = u_Grading.x * exp2(texelFetch(t_Exposure, ivec2(0, 0), 0).r);
 }
 
 #endif // VERTEX_SHADER
@@ -48,6 +52,7 @@ void main()
 layout(binding = 0) uniform sampler2D t_Scene;
 
 in vec2 v_Texture;
+flat in float v_Exposure;
 
 layout(location = 0) out vec4 out_Color;
 
@@ -111,7 +116,7 @@ void main()
         Lit += textureLod(t_Bloom, v_Texture, 0.0).rgb * u_Gamma.w;
     }
 
-    vec3 Color = Tonemap(Lit * u_Grading.x);
+    vec3 Color = Tonemap(Lit * v_Exposure);
 
     // Saturation and vignette hold only over light, so both are taken before the image is encoded.
     float Luma = ZyLuminance(Color);

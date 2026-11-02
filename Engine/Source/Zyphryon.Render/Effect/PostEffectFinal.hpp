@@ -47,11 +47,20 @@ namespace ZyRender
         /// \brief Represents how much light the image is given, and the curve it is rolled off with.
         struct Exposure final
         {
-            /// The factor the image is scaled by before the curve compresses it, where one leaves it be.
-            Real32  Level = 1.0f;
+            /// `true` to measure the image and ease toward the exposure it asks for, `false` to hold the level alone.
+            Bool    Auto    = false;
+
+            /// The factor the image is scaled by before the curve, on top of the measured one when automatic.
+            Real32  Level   = 1.0f;
+
+            /// The least factor an automatic exposure eases to, or zero for no limit.
+            Real32  Minimum = 0.25f;
+
+            /// The most factor an automatic exposure eases to, or zero for no limit.
+            Real32  Maximum = 4.0f;
 
             /// The curve the image is compressed into the display range with.
-            Tonemap Curve = Tonemap::ACES;
+            Tonemap Curve   = Tonemap::ACES;
 
             /// \brief Serializes the state of the object to or from the specified archive.
             ///
@@ -59,7 +68,10 @@ namespace ZyRender
             template<typename Serializer>
             ZY_INLINE void Serialize(Serializer Archive)
             {
+                Archive.Serialize(Auto);
                 Archive.Serialize(Level);
+                Archive.Serialize(Minimum);
+                Archive.Serialize(Maximum);
                 Archive.Serialize(Curve);
             }
 
@@ -69,7 +81,14 @@ namespace ZyRender
             ZY_INLINE static constexpr auto OnDescribe()
             {
                 return Array(
+                    ZyReflection::Field::Property<&Exposure::Auto>("Auto"),
                     ZyReflection::Field::Property<&Exposure::Level>("Level")
+                        .Between(0.0f, 64.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Exposure::Minimum>("Minimum")
+                        .Between(0.0f, 64.0f)
+                        .Stepped(0.01f),
+                    ZyReflection::Field::Property<&Exposure::Maximum>("Maximum")
                         .Between(0.0f, 64.0f)
                         .Stepped(0.01f),
                     ZyReflection::Field::Property<&Exposure::Curve>("Curve"));

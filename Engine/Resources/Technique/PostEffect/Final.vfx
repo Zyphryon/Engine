@@ -15,11 +15,13 @@
   "Signature": {
     "Textures": [
       { "Name": "Scene" },
-      { "Name": "Bloom", "Fallback": [0, 0, 0, 0] }
+      { "Name": "Bloom", "Fallback": [0, 0, 0, 0] },
+      { "Name": "Exposure", "Fallback": [0, 0, 0, 0] }
     ],
     "Samplers": [
       { "Name": "Scene", "Filter": "Linear" },
-      { "Name": "Bloom", "Filter": "Linear" }
+      { "Name": "Bloom", "Filter": "Linear" },
+      { "Name": "Exposure", "Filter": "Point" }
     ]
   },
   "Program": {

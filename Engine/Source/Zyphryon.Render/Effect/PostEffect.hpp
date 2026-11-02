@@ -13,7 +13,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "PostEffectBloom.hpp"
-#include "PostEffectFinal.hpp"
+#include "PostEffectExposure.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -21,7 +21,7 @@
 
 namespace ZyRender
 {
-    /// \brief Represents the post effect chain, which carries a scene image through the bloom onto the output.
+    /// \brief Represents the post effect chain, which carries a scene image through bloom and exposure onto the output.
     class ZY_API PostEffect final
     {
     public:
@@ -85,7 +85,7 @@ namespace ZyRender
         /// \param Output    The slot the final image is written into, or \ref Pass::kNone for the display surface.
         PostEffect(Ref<ZyEngine::Subsystem::Host> Host, Ref<Blueprint> Blueprint, UInt32 Scene, UInt32 Output);
 
-        /// \brief Stirs the grain by the time given.
+        /// \brief Stirs the grain and eases the exposure by the time given.
         ///
         /// \param Time The time of the frame, in seconds.
         void Advance(Real64 Time);
@@ -103,10 +103,7 @@ namespace ZyRender
         /// \brief Sets how much light the image is given, and the curve it is rolled off with.
         ///
         /// \param Exposure The exposure to give the image.
-        ZY_INLINE void SetExposure(ConstRef<Exposure> Exposure)
-        {
-            mFinal->SetExposure(Exposure);
-        }
+        void SetExposure(ConstRef<Exposure> Exposure);
 
         /// \brief Sets how the exposed image is pushed around in colour.
         ///
@@ -142,10 +139,12 @@ namespace ZyRender
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Blueprint>                 mBlueprint;
-        Array<UInt32, kLevels>         mDown;
-        Array<UInt32, kLevels - 1>     mUp;
-        Sequence<Ptr<PostEffectBloom>> mBloom;
-        Ptr<PostEffectFinal>           mFinal;
+        Ref<Blueprint>                    mBlueprint;
+        Array<UInt32, kLevels>            mDown;
+        Array<UInt32, kLevels - 1>        mUp;
+        Sequence<Ptr<PostEffectBloom>>    mBloom;
+        Sequence<Ptr<PostEffectExposure>> mMeter;
+        Ptr<PostEffectExposure>           mAdapt;
+        Ptr<PostEffectFinal>              mFinal;
     };
 }

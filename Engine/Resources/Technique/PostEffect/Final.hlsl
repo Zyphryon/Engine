@@ -23,8 +23,9 @@ cbuffer cb_Pass : register(b1)
 
 struct fs_Input
 {
-    float4 Position : SV_POSITION;
-    float2 Texture  : TEXCOORD0;
+    float4                Position : SV_POSITION;
+    float2                Texture  : TEXCOORD0;
+    nointerpolation float Exposure : TEXCOORD1;
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -32,6 +33,8 @@ struct fs_Input
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #ifdef VERTEX_SHADER
+
+Texture2D t_Exposure : register(t2);
 
 fs_Input main(uint VertexID : SV_VertexID)
 {
@@ -41,6 +44,7 @@ fs_Input main(uint VertexID : SV_VertexID)
 
     Result.Position = float4(Screen.xy, 0.0, 1.0);
     Result.Texture  = Screen.zw;
+    Result.Exposure = u_Grading.x * exp2(t_Exposure.Load(int3(0, 0, 0)).r);
 
     return Result;
 }
@@ -118,7 +122,7 @@ float4 main(fs_Input Input) : SV_Target
         Lit += t_Bloom.SampleLevel(s_Bloom, Input.Texture, 0).rgb * u_Gamma.w;
     }
 
-    float3 Color = Tonemap(Lit * u_Grading.x);
+    float3 Color = Tonemap(Lit * Input.Exposure);
 
     // Saturation and vignette hold only over light, so both are taken before the image is encoded.
     const float Luma = ZyLuminance(Color);

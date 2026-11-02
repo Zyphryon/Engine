@@ -66,14 +66,47 @@ namespace ZyRender
             mBloom.Append(AddressOf(Up));
         }
 
+        // The meter reads the scene into a small grid of its own, which the adaptation averages whole.
+        const UInt32 Meter = Blueprint.AddTarget({
+            .Format = ZyGraphic::TextureFormat::RG32Float,
+            .Sizing = Target::Scale::Fixed,
+            .Width  = PostEffectExposure::kMeter,
+            .Height = PostEffectExposure::kMeter });
+
+        Ref<PostEffectExposure> Measure = Blueprint.AddPass<PostEffectExposure>(
+            "Measure", Host, PostEffectExposure::Sweep::Measure);
+        Measure.AddColor({ .Target = Meter, .Load = ZyGraphic::Action::Discard });
+        Measure.AddInput({ .Name = "Scene"_Hash, .Target = Scene });
+        mMeter.Append(AddressOf(Measure));
+
+        // The exposure eased this frame is kept aside, since a pass never reads the target it writes.
+        constexpr Target Single(ZyGraphic::TextureFormat::R32Float, Target::Scale::Fixed, 1, 1);
+
+        const UInt32 Eased = Blueprint.AddTarget(Single);
+        const UInt32 Kept  = Blueprint.AddTarget(Single);
+
+        mAdapt = AddressOf(Blueprint.AddPass<PostEffectExposure>(
+            "Adapt", Host, PostEffectExposure::Sweep::Adapt));
+        mAdapt->AddColor({ .Target = Eased, .Load = ZyGraphic::Action::Discard });
+        mAdapt->AddInput({ .Name = "Scene"_Hash, .Target = Meter });
+        mAdapt->AddInput({ .Name = "Level"_Hash, .Target = Kept  });
+
+        Ref<PostEffectExposure> Keep = Blueprint.AddPass<PostEffectExposure>(
+            "Keep", Host, PostEffectExposure::Sweep::Keep);
+        Keep.AddColor({ .Target = Kept, .Load = ZyGraphic::Action::Discard });
+        Keep.AddInput({ .Name = "Scene"_Hash, .Target = Eased });
+        mMeter.Append(AddressOf(Keep));
+
         mFinal = AddressOf(Blueprint.AddPass<PostEffectFinal>("Final", Host, Scene, Output == Pass::kNone));
         mFinal->AddColor({ .Target = Output, .Load = ZyGraphic::Action::Discard });
-        mFinal->AddInput({ .Name = "Scene"_Hash, .Target = Scene  });
-        mFinal->AddInput({ .Name = "Bloom"_Hash, .Target = mUp[0] });
+        mFinal->AddInput({ .Name = "Scene"_Hash,    .Target = Scene  });
+        mFinal->AddInput({ .Name = "Bloom"_Hash,    .Target = mUp[0] });
+        mFinal->AddInput({ .Name = "Exposure"_Hash, .Target = Eased  });
 
-        // The bloom does not run until something asks for it.
+        // The bloom does not run, nor the exposure measure, until something asks for it.
         SetBloom(PostEffect::Bloom());
         SetBloomScale(Target::Scale::Quarter);
+        SetExposure(PostEffect::Exposure());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -82,6 +115,7 @@ namespace ZyRender
     void PostEffect::Advance(Real64 Time)
     {
         mFinal->SetTime(Time);
+        mAdapt->SetTime(Time);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -120,6 +154,20 @@ namespace ZyRender
             {
                 mBlueprint.ResizeTarget(mUp[Level], Step);
             }
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void PostEffect::SetExposure(ConstRef<Exposure> Exposure)
+    {
+        mFinal->SetExposure(Exposure);
+        mAdapt->SetExposure(Exposure);
+
+        for (const Ptr<PostEffectExposure> Step : mMeter)
+        {
+            Step->SetActive(Exposure.Auto);
         }
     }
 }

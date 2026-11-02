@@ -1,0 +1,45 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Scene" },
+      { "Name": "Level", "Fallback": [0, 0, 0, 0] }
+    ],
+    "Samplers": [
+      { "Name": "Scene", "Filter": "Linear" },
+      { "Name": "Level", "Filter": "Point" }
+    ]
+  },
+  "Features": [
+    { "Name": "Adapt", "Program": { "Defines": ["EXPOSURE_ADAPT"] } },
+    { "Name": "Keep",  "Program": { "Defines": ["EXPOSURE_KEEP"]  } }
+  ],
+  "Preload": [
+    ["Adapt"],
+    ["Keep"]
+  ],
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Exposure.hlsl", "Stage": "Vertex"   },
+        { "Path": "Exposure.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Exposure.glsl", "Stage": "Vertex"   },
+        { "Path": "Exposure.glsl", "Stage": "Fragment" }
+      ]
+    }
+  }
+}
