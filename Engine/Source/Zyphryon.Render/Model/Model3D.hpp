@@ -42,6 +42,9 @@ namespace ZyRender
 
             /// The way the clip behaves once it reaches its end.
             Repeat                Mode = Repeat::Loop;
+
+            /// The rate the clip plays at against its authored timing, where `1` plays as authored.
+            Real32                Rate = 1.0f;
         };
 
     public:

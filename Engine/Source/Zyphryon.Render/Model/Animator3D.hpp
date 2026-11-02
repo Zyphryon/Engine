@@ -88,23 +88,25 @@ namespace ZyRender
             return nullptr;
         }
 
-        /// \brief Sets the playback rate relative to the authored speed of every clip.
+        /// \brief Sets the playback rate relative to the speed every clip plays at by its own rate.
         ///
         /// \param Rate The rate, where `1` plays as authored, `0` holds the current pose and a negative one is `0`.
         ZY_INLINE void SetRate(Real32 Rate)
         {
+            mRate = Max(Rate, 0.0f);
+
             for (Ref<Source> Entry : mSources)
             {
-                Entry.Cursor.SetSpeed(Max(Rate, 0.0f));
+                Entry.Cursor.SetSpeed(mRate * Entry.Rate);
             }
         }
 
-        /// \brief Gets the playback rate relative to the authored speed of every clip.
+        /// \brief Gets the playback rate relative to the speed every clip plays at by its own rate.
         ///
         /// \return The rate, where `1` plays as authored.
         ZY_INLINE Real32 GetRate() const
         {
-            return mSources[mActive].Cursor.GetSpeed();
+            return mRate;
         }
 
         /// \brief Gets how far through the clip the animator is, counted the way \ref Play takes it back.
@@ -122,7 +124,8 @@ namespace ZyRender
         /// \param Timestamp The time playback starts, in seconds, on the clock \ref Sample is given.
         /// \param Phase     The share of the clip to start at, where zero is its first pose.
         /// \param Fade      The time to blend out of the clip already playing, in seconds, counted from the timestamp.
-        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Real64 Fade = 0.0);
+        /// \param Back      `true` to return to the loop it cuts once a play-once clip ends, `false` to hold its end.
+        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Real64 Fade = 0.0, Bool Back = false);
 
         /// \brief Advances the clip and samples the local pose it puts the rig in, leaving the palette as it was.
         ///
@@ -176,6 +179,9 @@ namespace ZyRender
             /// The share of the clip to start at, where zero is its first pose.
             Real32                Phase     = 0.0f;
 
+            /// The rate of the clip last paired, as its \ref Model3D::Clip::Rate gives it.
+            Real32                Rate      = 1.0f;
+
             /// The place of the clip in the model's list, or \ref kUnresolved while the model lists no such clip.
             UInt16                Slot      = kUnresolved;
 
@@ -220,6 +226,10 @@ namespace ZyRender
         Sequence<Matrix4x3> mPalette;
         Real64              mEpoch;
         Real64              mFade;
+        Real64              mBack;
+        UInt64              mReturn;
+        Real32              mResume;
+        Real32              mRate;
         UInt8               mActive;
     };
 }

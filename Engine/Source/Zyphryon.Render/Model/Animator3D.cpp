@@ -47,6 +47,10 @@ namespace ZyRender
     Animator3D::Animator3D()
         : mEpoch  { 0.0 },
           mFade   { 0.0 },
+          mBack   { 0.0 },
+          mReturn { 0 },
+          mResume { 0.0f },
+          mRate   { 1.0f },
           mActive { 0 }
     {
     }
@@ -56,7 +60,8 @@ namespace ZyRender
 
     void Animator3D::SetModel(ConstRetainer<Model3D> Model)
     {
-        mModel = Model;
+        mModel  = Model;
+        mReturn = 0;
 
         // The bone count is unknown until the rig lands, so sizing the palette again pairs every source with it anew.
         mPalette.Clear();
@@ -68,8 +73,20 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator3D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Real64 Fade)
+    void Animator3D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Real64 Fade, Bool Back)
     {
+        // A clip played once over another keeps the loop the first one cut, as only a loop is gone back to.
+        if (!Back)
+        {
+            mReturn = 0;
+        }
+        else if (const ConstPtr<Model3D::Clip> Leaving = GetClip(); Leaving && Leaving->Mode == Repeat::Loop)
+        {
+            mReturn = Leaving->Name;
+            mResume = GetPhase();
+            mBack   = Fade;
+        }
+
         // Only a clip already paired with the rig has a pose worth fading out of.
         if (Fade > 0.0 && mSources[mActive].Motion && mSources[mActive].Bound)
         {
@@ -117,6 +134,12 @@ namespace ZyRender
             {
                 Entry.Bound = false;
             }
+        }
+
+        // A clip played once that ran out on the last advance hands the rig back to the loop it cut.
+        if (mReturn != 0 && HasEnded())
+        {
+            Play(mReturn, Time, mResume, mBack);
         }
 
         Ref<Source> Active = mSources[mActive];
@@ -213,6 +236,7 @@ namespace ZyRender
         // A name the model does not list plays nothing, as a source holding no clip does.
         Entry.Slot    = Clip ? static_cast<UInt16>(Clip - mModel->GetClips().GetData()) : kUnresolved;
         Entry.Motion  = Clip ? Clip->Motion : Retainer<Animation3D>();
+        Entry.Rate    = Clip ? Clip->Rate : 1.0f;
         Entry.Covered = Entry.Motion && Entry.Motion->Resolve(Rig, Entry.Binding);
 
         const Real64 Duration = Entry.Motion ? Entry.Motion->GetDuration() : 0.0;
@@ -221,6 +245,7 @@ namespace ZyRender
         Entry.Cursor.Advance(Entry.Timestamp);
         Entry.Cursor.SetDuration(Duration);
         Entry.Cursor.SetRepeat(Clip ? Clip->Mode : Repeat::Loop);
+        Entry.Cursor.SetSpeed(mRate * Entry.Rate);
         Entry.Cursor.Seek(Entry.Phase * Duration);
         Entry.Cursor.Play();
 

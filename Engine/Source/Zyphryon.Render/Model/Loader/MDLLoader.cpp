@@ -107,6 +107,7 @@ namespace ZyRender
                 Clip.Label  = Name;
                 Clip.Motion = Service.Load<Animation3D>(Definition.GetString("Path"), AddressOf(Scope));
                 Clip.Mode   = Definition.GetEnum("Repeat", Repeat::Loop);
+                Clip.Rate   = Max(Definition.GetNumber("Rate", 1.0f), 0.0f);
             }
             Asset->SetClips(Move(Clips));
         }

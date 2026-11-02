@@ -21,6 +21,29 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Animator2D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Bool Back)
+    {
+        // A clip played once over another keeps the loop the first one cut, as only a loop is gone back to.
+        if (!Back)
+        {
+            mReturn = 0;
+        }
+        else if (const ConstPtr<Sheet2D::Clip> Leaving = GetClip(); Leaving && !Leaving->Frames.IsOnce())
+        {
+            mReturn = Leaving->Name;
+            mResume = GetPhase();
+        }
+
+        mClip  = Clip;
+        mPhase = Phase;
+        mSlot  = kUnresolved;
+
+        Resolve(Timestamp);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ConstPtr<Sheet2D::Clip> Animator2D::Resolve(Real64 Timestamp)
     {
         if (!mSheet || !mSheet->HasCompleted() || mClip == 0)

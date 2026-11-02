@@ -37,7 +37,9 @@ namespace ZyRender
         /// \brief Constructs an animator holding no sheet, on the first frame and direction, at the authored rate.
         ZY_INLINE Animator2D()
             : mClip      { 0 },
+              mReturn    { 0 },
               mPhase     { 0.0f },
+              mResume    { 0.0f },
               mSlot      { kUnresolved },
               mKeyframe  { 0 },
               mDirection { 0 },
@@ -50,9 +52,10 @@ namespace ZyRender
         /// \param Sheet The sheet to play from.
         ZY_INLINE void SetSheet(ConstRetainer<Sheet2D> Sheet)
         {
-            mSheet = Sheet;
-            mClip  = 0;
-            mSlot  = kUnresolved;
+            mSheet  = Sheet;
+            mClip   = 0;
+            mReturn = 0;
+            mSlot   = kUnresolved;
         }
 
         /// \brief Gets the sheet whose clips are played.
@@ -131,14 +134,8 @@ namespace ZyRender
         /// \param Clip      The hash of the clip's name.
         /// \param Timestamp The time playback starts, in seconds, on the clock \ref Advance is given.
         /// \param Phase     The share of the clip to start at, counted as it plays, with zero on the first frame shown.
-        ZY_INLINE void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f)
-        {
-            mClip  = Clip;
-            mPhase = Phase;
-            mSlot  = kUnresolved;
-
-            Resolve(Timestamp);
-        }
+        /// \param Back      `true` to return to the loop it cuts once a play-once clip ends, `false` to hold its end.
+        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Bool Back = false);
 
         /// \brief Advances playback to a time and records every frame entered on the way.
         ///
@@ -148,6 +145,12 @@ namespace ZyRender
         /// \param Visited Receives the frames entered, in the order they were entered.
         ZY_INLINE void Advance(Real64 Time, Ref<Visited> Visited)
         {
+            // A clip played once that ran out on the last advance hands the sheet back to the loop it cut.
+            if (mReturn != 0 && HasEnded())
+            {
+                Play(mReturn, Time, mResume);
+            }
+
             if (const ConstPtr<Sheet2D::Clip> Entry = Resolve(Time))
             {
                 Step(Time, Entry->Frames, Visited);
@@ -266,8 +269,10 @@ namespace ZyRender
 
         Retainer<Sheet2D> mSheet;
         UInt64            mClip;
+        UInt64            mReturn;
         Playback          mPlayback;
         Real32            mPhase;
+        Real32            mResume;
         UInt16            mSlot;
         UInt8             mKeyframe;
         UInt8             mDirection;
