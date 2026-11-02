@@ -11,8 +11,17 @@
 
 #include "Embedded://Shader/Affine.hlsl"
 
-/// Blends a vertex's four bones by weight, from the shader's `u_Palette` of three rows per bone.
-ZyAffine ZySkin(uint4 Joints, float4 Weights)
+/// The texels one line of a palette texture holds, as a power of two.
+#define ZY_SKIN_WIDTH_BITS 10u
+
+/// Reads one row of a palette texture, its texels laid line after line.
+float4 ZySkinRow(Texture2D<float4> Palette, uint Texel)
+{
+    return Palette.Load(int3(Texel & ((1u << ZY_SKIN_WIDTH_BITS) - 1u), Texel >> ZY_SKIN_WIDTH_BITS, 0));
+}
+
+/// Blends a vertex's four bones by weight, from a palette texture of three rows per bone starting at a texel.
+ZyAffine ZySkin(Texture2D<float4> Palette, uint Base, uint4 Joints, float4 Weights)
 {
     float4 Row0 = float4(0.0, 0.0, 0.0, 0.0);
     float4 Row1 = float4(0.0, 0.0, 0.0, 0.0);
@@ -21,11 +30,11 @@ ZyAffine ZySkin(uint4 Joints, float4 Weights)
     [unroll]
     for (int Slot = 0; Slot < 4; ++Slot)
     {
-        const uint Row = Joints[Slot] * 3u;
+        const uint Row = Base + Joints[Slot] * 3u;
 
-        Row0 += Weights[Slot] * u_Palette[Row];
-        Row1 += Weights[Slot] * u_Palette[Row + 1u];
-        Row2 += Weights[Slot] * u_Palette[Row + 2u];
+        Row0 += Weights[Slot] * ZySkinRow(Palette, Row);
+        Row1 += Weights[Slot] * ZySkinRow(Palette, Row + 1u);
+        Row2 += Weights[Slot] * ZySkinRow(Palette, Row + 2u);
     }
     return ZyReadAffine(Row0, Row1, Row2);
 }
