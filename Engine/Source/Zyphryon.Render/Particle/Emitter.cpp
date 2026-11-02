@@ -110,10 +110,10 @@ namespace ZyRender
         {
             const Bool  Held = mGradient.IsEmpty();
             const UInt  Pick = Held ? 0 : Min<UInt>(Index, mGradient.GetSize() - 1);
-            const Color Stop = Color::FromColor8(Held ? IntColor8::White() : mGradient[Pick].Value).ToLinear();
+            const Color Worn = Color::FromColor8(Held ? IntColor8::White() : mGradient[Pick].Value).ToLinear();
 
-            Output.Stops[Index] = Vector4(Stop.GetRed(), Stop.GetGreen(), Stop.GetBlue(), Stop.GetAlpha());
-            Times[Index]        = Held ? 0.0f : mGradient[Pick].Time;
+            Output.Colors[Index] = Vector4(Worn.GetRed(), Worn.GetGreen(), Worn.GetBlue(), Worn.GetAlpha());
+            Times[Index]         = Held ? 0.0f : mGradient[Pick].Time;
         }
         Output.Times = Vector4(Times[0], Times[1], Times[2], Times[3]);
     }

@@ -104,7 +104,7 @@ namespace ZyRender
             Vector4                   Card;
 
             /// The colours a particle passes through, in linear light with its cover in alpha.
-            Array<Vector4, kMaxStops> Stops;
+            Array<Vector4, kMaxStops> Colors;
 
             /// The share of life each colour is worn at, the unused ones held at the last.
             Vector4                   Times;

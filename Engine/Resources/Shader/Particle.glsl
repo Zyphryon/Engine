@@ -26,7 +26,7 @@ struct ZyEmitter
     vec4  Size;
     vec4  Crop;
     vec4  Card;
-    vec4  Stops[4];
+    vec4  Colors[4];
     vec4  Times;
     uvec4 Count;
     uvec4 Grid;
@@ -66,7 +66,7 @@ vec3 ZyParticleTurn(ZyEmitter Emitter, vec3 Direction)
 /// The colour a particle wears at a share of its life, held flat past the last stop.
 vec4 ZyParticleColor(ZyEmitter Emitter, float Elapsed)
 {
-    vec4 Result = Emitter.Stops[0];
+    vec4 Result = Emitter.Colors[0];
 
     for (int Next = 1; Next < 4; ++Next)
     {
@@ -75,7 +75,7 @@ vec4 ZyParticleColor(ZyEmitter Emitter, float Elapsed)
             ? clamp((Elapsed - Emitter.Times[Next - 1]) / Span, 0.0, 1.0)
             : step(Emitter.Times[Next], Elapsed);
 
-        Result = mix(Result, Emitter.Stops[Next], Amount);
+        Result = mix(Result, Emitter.Colors[Next], Amount);
     }
     return Result;
 }
@@ -88,16 +88,16 @@ ZyParticle ZyParticleAt(ZyEmitter Emitter, uint Slot)
     uint  Lasting = ZyScatter(Slot ^ ZyScatter(Emitter.Count.y));
     float Lived   = mix(Emitter.Launch.z, Emitter.Launch.w, ZyParticleRoll(Lasting));
     float Life    = max(Lived, ZY_EPSILON);
+
     float Clock = Emitter.Carry.w + ZyParticleRoll(Lasting) * Life;
     float Cycle = floor(Clock / Life);
     float Age   = Clock - Cycle * Life;
 
-    uint Stream = ZyScatter(Lasting ^ ZyScatter(uint(Cycle)));
-
-    vec3 Local = vec3(0.0);
-
+    uint  Stream = ZyScatter(Lasting ^ ZyScatter(uint(Cycle)));
     vec2  Spot   = vec2(ZyParticleRoll(Stream), ZyParticleRoll(Stream));
     float Height = ZyParticleRoll(Stream);
+
+    vec3 Local = vec3(0.0);
 
     if (Emitter.Count.z == 1u)
     {
