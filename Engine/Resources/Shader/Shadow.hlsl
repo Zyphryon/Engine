@@ -17,9 +17,9 @@
 /// Single taps the blocker search reads, where gather is not available.
 #define ZY_SHADOW_SEARCH 12
 
-/// Taps the filter reads.
-#ifndef ZY_SHADOW_TAPS
-#define ZY_SHADOW_TAPS   8
+/// Taps the filter reads along each side of its square grid.
+#ifndef ZY_SHADOW_GRID
+#define ZY_SHADOW_GRID   3
 #endif
 
 /// Widest the blocker search reaches, in texels of the map.
@@ -128,14 +128,20 @@ float ZyShadow(
         return ZyShadowSpread(Map, Compare, Uv, Depth, Texel);
     }
 
+    const float Step = 2.0 * Penumbra / float(ZY_SHADOW_GRID - 1);
+
     float Lit = 0.0;
 
     [unroll]
-    for (int Tap = 0; Tap < ZY_SHADOW_TAPS; ++Tap)
+    for (int Row = 0; Row < ZY_SHADOW_GRID; ++Row)
     {
-        Lit += Map.SampleCmpLevelZero(Compare, Uv + ZySpiral(Tap, float(ZY_SHADOW_TAPS), Turn) * Penumbra, Depth);
+        [unroll]
+        for (int Column = 0; Column < ZY_SHADOW_GRID; ++Column)
+        {
+            Lit += Map.SampleCmpLevelZero(Compare, Uv + (float2(Column, Row) * Step - Penumbra), Depth);
+        }
     }
-    return Lit / float(ZY_SHADOW_TAPS);
+    return Lit / float(ZY_SHADOW_GRID * ZY_SHADOW_GRID);
 }
 
 #endif // ZY_SHADOW_INCLUDED
