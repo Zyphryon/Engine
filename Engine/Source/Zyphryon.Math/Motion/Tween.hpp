@@ -90,6 +90,12 @@ inline namespace ZyMath
         {
             const Real64 Elapsed  = mAccumulator - mDelay;
             const Real64 Share    = mTime > 0.0 ? Clamp(Elapsed / mTime, 0.0, 1.0) : (Elapsed >= mTime ? 1.0 : 0.0);
+
+            if (Share >= 1.0)
+            {
+                return mEnd;
+            }
+
             const Real32 Progress = static_cast<Real32>(Share);
             const Real32 Eased    = Ease(mEasing, Progress);
 
