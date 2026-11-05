@@ -21,17 +21,23 @@ static const float3x3 ZY_ACES_OUTPUT = float3x3(
     -0.10208,  1.10813, -0.00605,
     -0.00327, -0.07276,  1.07602);
 
-/// Carries linear sRGB into the inset space AgX compresses in.
+/// Carries linear sRGB into the Rec.2020 inset space AgX compresses in.
 static const float3x3 ZY_AGX_INPUT = float3x3(
-    0.842479062253094,  0.0784335999999992, 0.0792237451477643,
-    0.0423282422610123, 0.878468636469772,  0.0791661274605434,
-    0.0423756549057051, 0.0784336,          0.879142973793104);
+    0.544812080, 0.373797444, 0.081380964,
+    0.140419345, 0.754107783, 0.105396747,
+    0.088817138, 0.178859755, 0.732315427);
 
-/// Carries AgX's compressed result back out of the inset space.
+/// Carries AgX's compressed result back out of the inset space, still in Rec.2020.
 static const float3x3 ZY_AGX_OUTPUT = float3x3(
-     1.19687900512017,   -0.0980208811401368, -0.0990297440797205,
-    -0.0528968517574562,  1.15190312990417,   -0.0989611768448433,
-    -0.0529716355144438, -0.0980434501171241,  1.15107367264116);
+     1.127100582, -0.110606643, -0.016493939,
+    -0.141329763,  1.157823702, -0.016493939,
+    -0.141329763, -0.110606643,  1.251936407);
+
+/// Carries linear Rec.2020 back to linear sRGB.
+static const float3x3 ZY_AGX_DISPLAY = float3x3(
+     1.6605, -0.5876, -0.0728,
+    -0.1246,  1.1329, -0.0083,
+    -0.0182, -0.1006,  1.1187);
 
 /// Default GT peak brightness.
 #define ZY_GT_PEAK            1.00
@@ -91,7 +97,7 @@ float3 ZyTonemapNeutral(float3 Color)
     return saturate(lerp(Color * (Shelved / Peak), Shelved.xxx, Fade));
 }
 
-/// AgX tonemap with its default contrast, to 0..1, which keeps hues as bright colours wash toward white.
+/// AgX tonemap over Rec.2020 primaries, to 0..1, which keeps hues as bright colours wash toward white.
 float3 ZyTonemapAgx(float3 Color)
 {
     const float Lowest  = -12.47393;
@@ -105,9 +111,10 @@ float3 ZyTonemapAgx(float3 Color)
     const float3 Fifth  = Fourth * Color;
     const float3 Sixth  = Fourth * Square;
 
-    Color = 15.5 * Sixth - 40.14 * Fifth + 31.96 * Fourth - 6.868 * Square * Color + 0.4298 * Square + 0.1191 * Color - 0.00232;
+    Color = saturate(34.730566 * Sixth - 98.640212 * Fifth + 98.056696 * Fourth - 40.213864 * Square * Color
+        + 7.37235 * Square - 0.301287 * Color);
 
-    return saturate(pow(max(mul(ZY_AGX_OUTPUT, Color), 0.0), 2.2));
+    return saturate(mul(ZY_AGX_DISPLAY, pow(max(mul(ZY_AGX_OUTPUT, Color), 0.0), 2.2)));
 }
 
 /// Uchimura's Gran Turismo tonemap for one channel, blending a toe, a line and a shoulder.
