@@ -279,6 +279,15 @@ namespace ZyGraphic::OGL
             Found              = Choose(Interface, Surface, Config, Format);
         }
 
+        // A window rarely offers more than 24 depth bits, so a deeper request takes 24 with 8 of stencil.
+        if (!Found && Config.DepthFormat != TextureFormat::D24S8UIntNorm)
+        {
+            LOG_W("Graphics: No pixel format holds the requested depth, so it falls back to 24 bits");
+
+            Config.DepthFormat = TextureFormat::D24S8UIntNorm;
+            Found              = Choose(Interface, Surface, Config, Format);
+        }
+
         if (!Found)
         {
             LOG_E("Graphics: Failed to choose a compatible pixel format");
