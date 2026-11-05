@@ -14,11 +14,17 @@
 /// The lowest roughness shaded, so a mirror never turns a light into one burning texel.
 #define ZY_ROUGHNESS_FLOOR 0.045
 
-/// Fit of what a white metal's single bounce misses (1/E - 1), by roughness and sqrt(NoV).
-#define ZY_BOUNCES_0 vec4( 0.11915,  -1.15002,   2.39832,  -1.44896)
-#define ZY_BOUNCES_1 vec4( 0.21413,   7.86972, -22.92279,  16.19535)
-#define ZY_BOUNCES_2 vec4(-2.42695,  -6.08632,  37.69816, -34.34492)
-#define ZY_BOUNCES_3 vec4( 2.22216,  -0.83850, -14.39541,  19.10697)
+/// Fit of the scale GGX's reflectance from every side puts on the head-on one, by roughness and sqrt(NoV).
+#define ZY_SCALE_0 vec4(-0.93389,   5.76245,  -5.57847,   1.69716)
+#define ZY_SCALE_1 vec4( 6.46865, -31.86981,  48.79980, -22.87373)
+#define ZY_SCALE_2 vec4(-6.81281,  47.51846, -89.36417,  47.28808)
+#define ZY_SCALE_3 vec4( 2.25848, -22.39072,  46.57426, -26.26733)
+
+/// Fit of the bias GGX's reflectance from every side adds, by roughness and sqrt(NoV).
+#define ZY_BIAS_0  vec4( 1.84821,  -4.95538,   3.99187,  -0.86727)
+#define ZY_BIAS_1  vec4(-6.75487,  26.66359, -33.98736,  14.09534)
+#define ZY_BIAS_2  vec4( 8.80842, -44.27804,  66.25260, -30.91070)
+#define ZY_BIAS_3  vec4(-3.86136,  22.66879, -36.64702,  17.93608)
 
 /// The diffuse colour, which a metal has none of.
 vec3 ZyDiffuse(vec3 Albedo, float Metalness)
@@ -72,32 +78,25 @@ vec3 ZyFresnel(vec3 Specular, float VoH)
     return Specular + (1.0 - Specular) * pow(1.0 - VoH, 5.0);
 }
 
-/// Reflectance under light from every side, after Karis' split-sum fit.
-vec3 ZyEnvironment(vec3 Specular, float Roughness, float NoV)
-{
-    vec4 Low  = vec4(-1.0, -0.0275, -0.572,  0.022);
-    vec4 High = vec4( 1.0,  0.0425,  1.040, -0.040);
-
-    vec4  Fit   = Roughness * Low + High;
-    float Bias  = min(Fit.x * Fit.x, exp2(-9.28 * NoV)) * Fit.x + Fit.y;
-    vec2  Scale = vec2(-1.04, 1.04) * Bias + Fit.zw;
-
-    return Specular * Scale.x + Scale.y;
-}
-
-/// The energy GGX's single bounce misses on a white metal.
-float ZyBounces(float Roughness, float NoV)
+/// Returns GGX's reflectance under light from every side, as the scale on the head-on reflectance and the bias.
+vec2 ZySplit(float Roughness, float NoV)
 {
     float Rough = max(Roughness, ZY_ROUGHNESS_FLOOR);
     float Root  = sqrt(max(NoV, 0.05));
     vec4  Along = vec4(1.0, Root, Root * Root, Root * Root * Root);
-    vec4  Terms = vec4(
-        dot(ZY_BOUNCES_0, Along),
-        dot(ZY_BOUNCES_1, Along),
-        dot(ZY_BOUNCES_2, Along),
-        dot(ZY_BOUNCES_3, Along));
+    vec4  Up    = vec4(1.0, Rough, Rough * Rough, Rough * Rough * Rough);
+    vec4  Scale = vec4(
+        dot(ZY_SCALE_0, Along),
+        dot(ZY_SCALE_1, Along),
+        dot(ZY_SCALE_2, Along),
+        dot(ZY_SCALE_3, Along));
+    vec4  Bias  = vec4(
+        dot(ZY_BIAS_0, Along),
+        dot(ZY_BIAS_1, Along),
+        dot(ZY_BIAS_2, Along),
+        dot(ZY_BIAS_3, Along));
 
-    return max(dot(vec4(1.0, Rough, Rough * Rough, Rough * Rough * Rough), Terms), 0.0);
+    return max(vec2(dot(Up, Scale), dot(Up, Bias)), 0.0);
 }
 
 /// Holds the BRDF terms every light on a point shares, for one view.
@@ -127,15 +126,17 @@ ZyLobe ZyPrepareLobe(vec3 Normal, vec3 Sight, vec3 Diffuse, vec3 Specular, float
 {
     ZyLobe Result;
     Result.NoV         = max(dot(Normal, Sight), ZY_EPSILON);
+
+    vec2 Split = ZySplit(Roughness, Result.NoV);
     Result.Alpha       = ZySquare(max(Roughness, ZY_ROUGHNESS_FLOOR));
     Result.Facing      = ZySmith(Result.NoV, Result.Alpha);
-    Result.Environment = ZyEnvironment(Specular, Roughness, Result.NoV);
+    Result.Environment = Specular * Split.x + Split.y;
 
     // Light the specular reflects is light the diffuse never gets.
     Result.Scatter     = Diffuse * ZY_INV_PI * (1.0 - Result.Environment);
 
-    // Put back the energy GGX's single bounce loses on rough surfaces.
-    Result.Gain        = 1.0 + Specular * ZyBounces(Roughness, Result.NoV);
+    // Put back the energy GGX's single bounce loses on rough surfaces, what a white metal's misses (1/E - 1).
+    Result.Gain        = 1.0 + Specular * (1.0 / (Split.x + Split.y) - 1.0);
     return Result;
 }
 
