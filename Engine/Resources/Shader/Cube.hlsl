@@ -27,6 +27,9 @@
 /// Single taps the blocker search reads, where gather is not available.
 #define ZY_CUBE_SEARCH 8
 
+/// The most taps the wide filter reads along each side of its grid, about one every two texels of penumbra.
+#define ZY_CUBE_GRID   9
+
 /// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(float3 Reach)
 {
@@ -243,22 +246,24 @@ float ZyCubeShadow(
         return ZyCubeSpread(Map, Compare, Uv, Depth, Least, Most, Texel);
     }
 
-    const float Step = 2.0 * Penumbra / float(ZY_SHADOW_GRID - 1);
+    // Taps more than a couple of texels apart show as copies of the shadow, so a wider penumbra reads more of them.
+    const int   Side = clamp(int(ceil(Penumbra / Texel)) + 1, ZY_SHADOW_GRID, ZY_CUBE_GRID);
+    const float Step = 2.0 * Penumbra / float(Side - 1);
 
     float Lit = 0.0;
 
-    [unroll]
-    for (int Row = 0; Row < ZY_SHADOW_GRID; ++Row)
+    [loop]
+    for (int Row = 0; Row < Side; ++Row)
     {
-        [unroll]
-        for (int Column = 0; Column < ZY_SHADOW_GRID; ++Column)
+        [loop]
+        for (int Column = 0; Column < Side; ++Column)
         {
             const float2 At = clamp(Uv + (float2(Column, Row) * Step - Penumbra), Least, Most);
 
             Lit += Map.SampleCmpLevelZero(Compare, At, Depth);
         }
     }
-    return Lit / float(ZY_SHADOW_GRID * ZY_SHADOW_GRID);
+    return Lit / float(Side * Side);
 }
 
 #endif // ZY_CUBE_INCLUDED
