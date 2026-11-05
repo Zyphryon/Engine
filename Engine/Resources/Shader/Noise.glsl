@@ -117,6 +117,12 @@ vec2 ZySpiral(int Index, float Count, vec2 Turn)
     return ZyRotate(ZY_SPIRAL_TURN[Index], Turn) * sqrt((float(Index) + 0.5) / Count);
 }
 
+/// Places a tap from the precomputed spiral as it lies, the same for every pixel.
+vec2 ZySpiral(int Index, float Count)
+{
+    return ZY_SPIRAL_TURN[Index] * sqrt((float(Index) + 0.5) / Count);
+}
+
 /// Dither offset that hides banding in a target with the given levels per channel.
 float ZyDither(vec2 Position, float Levels)
 {

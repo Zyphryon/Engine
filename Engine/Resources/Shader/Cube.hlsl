@@ -27,9 +27,6 @@
 /// Single taps the blocker search reads, where gather is not available.
 #define ZY_CUBE_SEARCH 8
 
-/// Taps the filter reads.
-#define ZY_CUBE_TAPS   12
-
 /// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(float3 Reach)
 {
@@ -164,7 +161,7 @@ float ZyCubeSpread(
 /// Soft lamp shadow from the cube atlas, wider with source size and distance past the blocker.
 float ZyCubeShadow(
     Texture2D Depths, SamplerState Point, Texture2D Map, SamplerComparisonState Compare, float4 Atlas,
-    float3 World, float3 Normal, float4 Light, float Source, float2 Tiles, float2 Spin)
+    float3 World, float3 Normal, float4 Light, float Source, float2 Tiles)
 {
     float2 Uv;
     float  Depth;
@@ -198,7 +195,7 @@ float ZyCubeShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_CUBE_GATHER; ++Probe)
     {
-        const float2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
+        const float2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER)) * Search, Least, Most);
         const float4 Stored  = Depths.GatherRed(Point, At);
         const float4 Blocked = float4(Stored < Depth);
 
@@ -213,7 +210,7 @@ float ZyCubeShadow(
     [unroll]
     for (int Probe = 0; Probe < ZY_CUBE_SEARCH; ++Probe)
     {
-        const float2 At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH), Spin) * Search, Least, Most);
+        const float2 At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH)) * Search, Least, Most);
         const float  Stored = Depths.SampleLevel(Point, At, 0.0).r;
 
         if (Stored < Depth)
@@ -246,16 +243,22 @@ float ZyCubeShadow(
         return ZyCubeSpread(Map, Compare, Uv, Depth, Least, Most, Texel);
     }
 
+    const float Step = 2.0 * Penumbra / float(ZY_SHADOW_GRID - 1);
+
     float Lit = 0.0;
 
     [unroll]
-    for (int Tap = 0; Tap < ZY_CUBE_TAPS; ++Tap)
+    for (int Row = 0; Row < ZY_SHADOW_GRID; ++Row)
     {
-        const float2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_TAPS), Spin) * Penumbra, Least, Most);
+        [unroll]
+        for (int Column = 0; Column < ZY_SHADOW_GRID; ++Column)
+        {
+            const float2 At = clamp(Uv + (float2(Column, Row) * Step - Penumbra), Least, Most);
 
-        Lit += Map.SampleCmpLevelZero(Compare, At, Depth);
+            Lit += Map.SampleCmpLevelZero(Compare, At, Depth);
+        }
     }
-    return Lit / float(ZY_CUBE_TAPS);
+    return Lit / float(ZY_SHADOW_GRID * ZY_SHADOW_GRID);
 }
 
 #endif // ZY_CUBE_INCLUDED

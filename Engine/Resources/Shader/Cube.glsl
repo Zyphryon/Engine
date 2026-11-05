@@ -27,9 +27,6 @@
 /// Single taps the blocker search reads, where gather is not available.
 #define ZY_CUBE_SEARCH 8
 
-/// Taps the filter reads.
-#define ZY_CUBE_TAPS   12
-
 /// Picks the cube face a direction from the light lands on.
 int ZyCubeFace(vec3 Reach)
 {
@@ -157,7 +154,7 @@ float ZyCubeSpread(sampler2DShadow Map, vec2 Uv, float Depth, vec2 Least, vec2 M
 /// Soft lamp shadow from the cube atlas, wider with source size and distance past the blocker.
 float ZyCubeShadow(
     sampler2D Depths, sampler2DShadow Map, vec4 Atlas,
-    vec3 World, vec3 Normal, vec4 Light, float Source, vec2 Tiles, vec2 Spin)
+    vec3 World, vec3 Normal, vec4 Light, float Source, vec2 Tiles)
 {
     vec2  Uv;
     float Depth;
@@ -190,7 +187,7 @@ float ZyCubeShadow(
 
     for (int Probe = 0; Probe < ZY_CUBE_GATHER; ++Probe)
     {
-        vec2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER), Spin) * Search, Least, Most);
+        vec2 At      = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_GATHER)) * Search, Least, Most);
         vec4 Stored  = textureGather(Depths, At);
         vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
 
@@ -204,7 +201,7 @@ float ZyCubeShadow(
 
     for (int Probe = 0; Probe < ZY_CUBE_SEARCH; ++Probe)
     {
-        vec2  At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH), Spin) * Search, Least, Most);
+        vec2  At     = clamp(Uv + ZySpiral(Probe, float(ZY_CUBE_SEARCH)) * Search, Least, Most);
         float Stored = textureLod(Depths, At, 0.0).r;
 
         if (Stored < Depth)
@@ -236,15 +233,19 @@ float ZyCubeShadow(
         return ZyCubeSpread(Map, Uv, Depth, Least, Most, Texel);
     }
 
-    float Lit = 0.0;
+    float Step = 2.0 * Penumbra / float(ZY_SHADOW_GRID - 1);
+    float Lit  = 0.0;
 
-    for (int Tap = 0; Tap < ZY_CUBE_TAPS; ++Tap)
+    for (int Row = 0; Row < ZY_SHADOW_GRID; ++Row)
     {
-        vec2 At = clamp(Uv + ZySpiral(Tap, float(ZY_CUBE_TAPS), Spin) * Penumbra, Least, Most);
+        for (int Column = 0; Column < ZY_SHADOW_GRID; ++Column)
+        {
+            vec2 At = clamp(Uv + (vec2(Column, Row) * Step - Penumbra), Least, Most);
 
-        Lit += textureLod(Map, vec3(At, Depth), 0.0);
+            Lit += textureLod(Map, vec3(At, Depth), 0.0);
+        }
     }
-    return Lit / float(ZY_CUBE_TAPS);
+    return Lit / float(ZY_SHADOW_GRID * ZY_SHADOW_GRID);
 }
 
 #endif // ZY_CUBE_INCLUDED

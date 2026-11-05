@@ -56,7 +56,7 @@ float ZyShadowSpread(sampler2DShadow Map, vec2 Uv, float Depth, float Texel)
 }
 
 /// Soft shadow from a depth map, sharp at contact and softer the further the blocker.
-float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, float Texel, float Spread, vec2 Turn)
+float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, float Texel, float Spread)
 {
     float Least = Texel;
     float Most  = Texel * ZY_SHADOW_WIDEST;
@@ -73,7 +73,7 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
 
     for (int Probe = 0; Probe < ZY_SHADOW_GATHER; ++Probe)
     {
-        vec4 Stored  = textureGather(Depths, Uv + ZySpiral(Probe, float(ZY_SHADOW_GATHER), Turn) * Search);
+        vec4 Stored  = textureGather(Depths, Uv + ZySpiral(Probe, float(ZY_SHADOW_GATHER)) * Search);
         vec4 Blocked = vec4(lessThan(Stored, vec4(Depth)));
 
         Found += dot(Stored, Blocked);
@@ -86,7 +86,7 @@ float ZyShadow(sampler2D Depths, sampler2DShadow Map, vec2 Uv, float Depth, floa
 
     for (int Probe = 0; Probe < ZY_SHADOW_SEARCH; ++Probe)
     {
-        float Stored = textureLod(Depths, Uv + ZySpiral(Probe, float(ZY_SHADOW_SEARCH), Turn) * Search, 0.0).r;
+        float Stored = textureLod(Depths, Uv + ZySpiral(Probe, float(ZY_SHADOW_SEARCH)) * Search, 0.0).r;
 
         if (Stored < Depth)
         {
