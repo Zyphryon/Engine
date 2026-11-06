@@ -90,7 +90,7 @@ float4 main(fs_Input Input) : SV_Target0
 
     const float Along = t_Reach.SampleLevel(s_Reach, Input.Texture, 0).r;
 
-    if (Along >= 1.0e6)
+    if (Along >= ZY_OCCLUSION_OPEN)
     {
         return float4(0.5, 1.0, 0.5, 1.0);
     }

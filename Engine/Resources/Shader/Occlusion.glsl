@@ -27,6 +27,9 @@
 /// Nearest a sample counts from the point, which a sample landing on the point itself never clears.
 #define ZY_OCCLUSION_NEAR   1e-4
 
+/// Reach a texel holds where no surface stands, at or past which it is left open to the sky.
+#define ZY_OCCLUSION_OPEN   1e6
+
 /// Two noises, each laying all sixteen of its values once in every 4x4 block of pixels, so a blur that wide settles both.
 vec2 ZyOcclusionNoise(vec2 Pixel)
 {

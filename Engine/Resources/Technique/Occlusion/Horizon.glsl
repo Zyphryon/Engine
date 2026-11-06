@@ -79,7 +79,7 @@ void main()
     vec2  Size  = vec2(textureSize(t_Reach, 0));
     float Along = textureLod(t_Reach, v_Texture, 0.0).r;
 
-    if (Along >= 1.0e6)
+    if (Along >= ZY_OCCLUSION_OPEN)
     {
         out_Occlusion = vec4(0.5, 1.0, 0.5, 1.0);
         return;
