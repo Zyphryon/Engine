@@ -423,6 +423,20 @@ namespace ZyScene
             return Wrap(GetSlot() ? mStorage->mDirectory.GetParent(GetIndex()) : 0);
         }
 
+        /// \brief Gets the outermost whole the entity was built into.
+        ///
+        /// \return The outermost whole, or this entity when it is not a part.
+        ZY_INLINE Entity GetAssembly() const
+        {
+            Entity Whole = (* this);
+
+            while (Whole.IsPart())
+            {
+                Whole = Whole.GetParent();
+            }
+            return Whole;
+        }
+
         /// \brief Checks whether anything is attached beneath the entity, without visiting it.
         ///
         /// \return `true` if the entity has at least one child, `false` otherwise.
