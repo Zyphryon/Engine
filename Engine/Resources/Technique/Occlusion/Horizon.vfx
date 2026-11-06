@@ -1,0 +1,42 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Normal" },
+      { "Name": "Reach" }
+    ],
+    "Samplers": [
+      { "Name": "Normal", "Filter": "Point" },
+      { "Name": "Reach",  "Filter": "Point" }
+    ]
+  },
+  "Features": [
+    { "Name": "Basic",       "Program": { "Defines": ["ZY_OCCLUSION_SLICES=1", "ZY_OCCLUSION_STEPS=4"] } },
+    { "Name": "Reduced",     "Program": { "Defines": ["ZY_OCCLUSION_SLICES=2", "ZY_OCCLUSION_STEPS=4"] } },
+    { "Name": "Perspective", "Program": { "Defines": ["HORIZON_PERSPECTIVE"] } }
+  ],
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Horizon.hlsl", "Stage": "Vertex"   },
+        { "Path": "Horizon.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Horizon.glsl", "Stage": "Vertex"   },
+        { "Path": "Horizon.glsl", "Stage": "Fragment" }
+      ]
+    }
+  }
+}

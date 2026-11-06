@@ -1,0 +1,39 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Normal" },
+      { "Name": "Reach" },
+      { "Name": "Occlusion", "Fallback": [255, 255, 255, 255] }
+    ],
+    "Samplers": [
+      { "Name": "Normal",    "Filter": "Point" },
+      { "Name": "Reach",     "Filter": "Point" },
+      { "Name": "Occlusion", "Filter": "Linear" }
+    ]
+  },
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Settle.hlsl", "Stage": "Vertex"   },
+        { "Path": "Settle.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Settle.glsl", "Stage": "Vertex"   },
+        { "Path": "Settle.glsl", "Stage": "Fragment" }
+      ]
+    }
+  }
+}

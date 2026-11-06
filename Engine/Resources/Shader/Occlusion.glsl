@@ -55,7 +55,7 @@ float ZyOcclusionBounce(float Visible, float Albedo)
 
 #ifdef ZY_OCCLUSION_READ
 
-/// Ground-truth horizon occlusion (Jimenez 2016) under parallel lines of sight, read through ZY_OCCLUSION_READ(Pixel).
+/// Ground-truth horizon occlusion (Jimenez 2016) about each point's own sight, read through ZY_OCCLUSION_READ(Pixel).
 ///
 /// \param Center The position of the point, in the space ZY_OCCLUSION_READ returns.
 /// \param Normal The way the point's surface faces, of unit length.
