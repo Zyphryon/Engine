@@ -39,6 +39,9 @@ namespace ZyGraphic
             /// The number of primitives the level draws.
             UInt16 Count;
 
+            /// The number of primitives shadow maps draw in the level's place, which follow its own.
+            UInt16 Casters;
+
             /// The smallest fraction of the viewport's height drawn at this level.
             Real32 Coverage;
         };
@@ -67,6 +70,9 @@ namespace ZyGraphic
 
             /// The level of detail this primitive belongs to, `0` being the geometry unreduced.
             UInt8      Level    = 0;
+
+            /// `true` when only shadow maps draw it, in place of its level's own, `false` when everything does.
+            Bool       Caster   = false;
         };
 
         /// \brief Enumerates optional per-mesh flags.
@@ -111,7 +117,7 @@ namespace ZyGraphic
 
         /// \brief Appends a primitive that draws a subrange of the shared buffers.
         ///
-        /// \param Definition The draw range, material slot and level of detail, a level the mesh already declares.
+        /// \param Definition The primitive to append.
         void AddPrimitive(ConstRef<Primitive> Definition);
 
         /// \brief Gets the primitives that compose this mesh, across every level.
@@ -127,6 +133,12 @@ namespace ZyGraphic
         /// \param Level The level to read, clamped to the coarsest the mesh carries.
         /// \return A read-only view over that level's primitives.
         ConstSpan<Primitive> GetPrimitives(UInt8 Level) const;
+
+        /// \brief Gets the primitives shadow maps draw for one level of detail.
+        ///
+        /// \param Level The level to read, clamped to the coarsest the mesh carries.
+        /// \return A read-only view over that level's casters, or its own primitives where it has none.
+        ConstSpan<Primitive> GetCasters(UInt8 Level) const;
 
         /// \brief Declares a level of detail and the coverage below which the next one takes over.
         ///

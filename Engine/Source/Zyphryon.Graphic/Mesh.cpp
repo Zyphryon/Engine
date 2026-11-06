@@ -39,11 +39,21 @@ namespace ZyGraphic
 
         Ref<Range> Level = mDetail[Definition.Level];
 
-        if (Level.Count == 0)
+        ZY_ASSERT(Definition.Caster || Level.Casters == 0, "A level's own primitives come before its casters");
+
+        if (Level.Count == 0 && Level.Casters == 0)
         {
             Level.First = static_cast<UInt16>(mPrimitives.GetSize());
         }
-        ++Level.Count;
+
+        if (Definition.Caster)
+        {
+            ++Level.Casters;
+        }
+        else
+        {
+            ++Level.Count;
+        }
 
         mPrimitives.Append(Definition);
     }
@@ -65,9 +75,28 @@ namespace ZyGraphic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ConstSpan<Mesh::Primitive> Mesh::GetCasters(UInt8 Level) const
+    {
+        if (mDetail.IsEmpty())
+        {
+            return mPrimitives;
+        }
+
+        ConstRef<Range> Range = mDetail[Min<UInt8>(Level, mDetail.GetSize() - 1)];
+
+        if (Range.Casters == 0)
+        {
+            return ConstSpan(mPrimitives.GetData() + Range.First, Range.Count);
+        }
+        return ConstSpan(mPrimitives.GetData() + Range.First + Range.Count, Range.Casters);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Mesh::AddDetail(Real32 Coverage)
     {
-        mDetail.Append(0, 0, Coverage);
+        mDetail.Append(0, 0, 0, Coverage);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
