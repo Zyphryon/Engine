@@ -673,6 +673,19 @@ inline namespace ZyMath
             return Incident - Normal * (Type(2) * Dot(Incident, Normal));
         }
 
+        /// \brief Slides the incident vector along the surface the given normal faces out of.
+        ///
+        /// \param Incident The incoming vector to slide.
+        /// \param Normal   The surface normal to slide along (should be normalized).
+        /// \return The part of the incident vector that runs along the surface.
+        ZY_INLINE static constexpr AnyVector2 Slide(AnyVector2 Incident, AnyVector2 Normal)
+            requires(IsReal<Type>)
+        {
+            ZY_ASSERT(Normal.IsNormalized(), "Normal must be normalized");
+
+            return Incident - Normal * Dot(Incident, Normal);
+        }
+
         /// \brief Rotates a vector by a given angle.
         ///
         /// \param Vector   The vector to rotate.
