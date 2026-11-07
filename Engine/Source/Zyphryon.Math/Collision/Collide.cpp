@@ -21,7 +21,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Test(ConstRef<Box> First, ConstRef<Box> Second, Ref<Manifold> Contact)
+    Bool Collide::Test(ConstRef<Box> First, ConstRef<Box> Second, Ref<Manifold3D> Contact)
     {
         const Vector3 Apart = First.GetCenter() - Second.GetCenter();
         const Vector3 Reach = First.GetExtents() + Second.GetExtents();
@@ -38,15 +38,15 @@ inline namespace ZyMath
         // The way out is the axis it is least deeply into, so the push is the shortest one that frees it.
         if (AlongX <= AlongY && AlongX <= AlongZ)
         {
-            Contact = Manifold(Vector3(Apart.GetX() < 0.0f ? -1.0f : 1.0f, 0.0f, 0.0f), 0.0f, AlongX);
+            Contact = Manifold3D(Vector3(Apart.GetX() < 0.0f ? -1.0f : 1.0f, 0.0f, 0.0f), 0.0f, AlongX);
         }
         else if (AlongY <= AlongZ)
         {
-            Contact = Manifold(Vector3(0.0f, Apart.GetY() < 0.0f ? -1.0f : 1.0f, 0.0f), 0.0f, AlongY);
+            Contact = Manifold3D(Vector3(0.0f, Apart.GetY() < 0.0f ? -1.0f : 1.0f, 0.0f), 0.0f, AlongY);
         }
         else
         {
-            Contact = Manifold(Vector3(0.0f, 0.0f, Apart.GetZ() < 0.0f ? -1.0f : 1.0f), 0.0f, AlongZ);
+            Contact = Manifold3D(Vector3(0.0f, 0.0f, Apart.GetZ() < 0.0f ? -1.0f : 1.0f), 0.0f, AlongZ);
         }
         return true;
     }
@@ -54,7 +54,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Ref<Manifold> Contact)
+    Bool Collide::Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Ref<Manifold3D> Contact)
     {
         const Real32 Standing = Shared(First.GetBottom(), First.GetTop(), Second.GetBottom(), Second.GetTop());
 
@@ -63,27 +63,19 @@ inline namespace ZyMath
             return false;
         }
 
-        const Vector2 Apart = First.GetCenter().GetXZ() - Second.GetCenter().GetXZ();
-        const Real32  Reach = First.GetRadius() + Second.GetRadius();
-        const Real32  Span  = Apart.GetLength();
+        Manifold2D Ground;
 
-        if (Span > Reach)
+        if (!Test(First.GetXZ(), Second.GetXZ(), Ground))
         {
             return false;
         }
-        return Escapes(
-            Apart,
-            Span,
-            Reach - Span,
-            Standing,
-            First.GetCenter().GetY() < Second.GetCenter().GetY(),
-            Contact);
+        return Escapes(Ground, Standing, First.GetCenter().GetY() < Second.GetCenter().GetY(), Contact);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Ref<Manifold> Contact)
+    Bool Collide::Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Ref<Manifold3D> Contact)
     {
         const Real32 Standing = Shared(First.GetBottom(), First.GetTop(), Second.GetMinimumY(), Second.GetMaximumY());
 
@@ -92,44 +84,19 @@ inline namespace ZyMath
             return false;
         }
 
-        const Vector2 Center = First.GetCenter().GetXZ();
-        const Vector2 Corner(
-            Clamp(Center.GetX(), Second.GetMinimumX(), Second.GetMaximumX()),
-            Clamp(Center.GetY(), Second.GetMinimumZ(), Second.GetMaximumZ()));
+        Manifold2D Ground;
 
-        const Vector2 Apart = Center - Corner;
-        const Real32  Span  = Apart.GetLength();
-
-        if (Span > First.GetRadius())
+        if (!Test(First.GetXZ(), Second.GetXZ(), Ground))
         {
             return false;
         }
-
-        const Bool Under = First.GetCenter().GetY() < Second.GetCenter().GetY();
-
-        // A center standing inside the footprint has no way of its own to leave by, so it takes the nearest side.
-        if (IsAlmostZero(Span))
-        {
-            const Real32 Left  = Center.GetX() - Second.GetMinimumX();
-            const Real32 Right = Second.GetMaximumX() - Center.GetX();
-            const Real32 Near  = Center.GetY() - Second.GetMinimumZ();
-            const Real32 Far   = Second.GetMaximumZ() - Center.GetY();
-            const Real32 Least = Min(Min(Left, Right), Min(Near, Far));
-
-            const Vector2 Facing = (Least == Left)  ? Vector2(-1.0f, 0.0f)
-                                 : (Least == Right) ? Vector2( 1.0f, 0.0f)
-                                 : (Least == Near)  ? Vector2( 0.0f, -1.0f)
-                                                    : Vector2( 0.0f,  1.0f);
-
-            return Escapes(Facing, 1.0f, Least + First.GetRadius(), Standing, Under, Contact);
-        }
-        return Escapes(Apart, Span, First.GetRadius() - Span, Standing, Under, Contact);
+        return Escapes(Ground, Standing, First.GetCenter().GetY() < Second.GetCenter().GetY(), Contact);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Ref<Manifold> Contact)
+    Bool Collide::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Ref<Manifold3D> Contact)
     {
         if (Test(Second, First, Contact))
         {
@@ -142,7 +109,120 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Test(ConstRef<Shape> First, ConstRef<Shape> Second, Ref<Manifold> Contact)
+    Bool Collide::Test(ConstRef<Shape3D> First, ConstRef<Shape3D> Second, Ref<Manifold3D> Contact)
+    {
+        return First.Visit([&]<typename Left>(ConstRef<Left> P0)
+        {
+            return Second.Visit([&]<typename Right>(ConstRef<Right> P1)
+            {
+                return Test(P0, P1, Contact);
+            });
+        });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Collide::Test(ConstRef<Rect> First, ConstRef<Rect> Second, Ref<Manifold2D> Contact)
+    {
+        const Vector2 Apart = First.GetCenter() - Second.GetCenter();
+        const Vector2 Reach = (First.GetSize() + Second.GetSize()) * 0.5f;
+
+        const Real32 AlongX = Reach.GetX() - Abs(Apart.GetX());
+        const Real32 AlongY = Reach.GetY() - Abs(Apart.GetY());
+
+        if (AlongX <= 0.0f || AlongY <= 0.0f)
+        {
+            return false;
+        }
+
+        // The way out is the axis it is least deeply into, so the push is the shortest one that frees it.
+        if (AlongX <= AlongY)
+        {
+            Contact = Manifold2D(Vector2(Apart.GetX() < 0.0f ? -1.0f : 1.0f, 0.0f), 0.0f, AlongX);
+        }
+        else
+        {
+            Contact = Manifold2D(Vector2(0.0f, Apart.GetY() < 0.0f ? -1.0f : 1.0f), 0.0f, AlongY);
+        }
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Collide::Test(ConstRef<Circle> First, ConstRef<Circle> Second, Ref<Manifold2D> Contact)
+    {
+        const Vector2 Apart = First.GetCenter() - Second.GetCenter();
+        const Real32  Reach = First.GetRadius() + Second.GetRadius();
+        const Real32  Span  = Apart.GetLength();
+
+        if (Span > Reach)
+        {
+            return false;
+        }
+
+        // Two centers on one spot have no way apart of their own, so they part along x.
+        const Vector2 Facing = IsAlmostZero(Span) ? Vector2(1.0f, 0.0f) : Apart * (1.0f / Span);
+
+        Contact = Manifold2D(Facing, 0.0f, Reach - Span);
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Collide::Test(ConstRef<Circle> First, ConstRef<Rect> Second, Ref<Manifold2D> Contact)
+    {
+        const Vector2 Center = First.GetCenter();
+        const Vector2 Apart  = Center - Second.GetNearest(Center);
+        const Real32  Span   = Apart.GetLength();
+
+        if (Span > First.GetRadius())
+        {
+            return false;
+        }
+
+        // A center standing inside the rectangle has no way of its own to leave by, so it takes the nearest side.
+        if (IsAlmostZero(Span))
+        {
+            const Real32 Left  = Center.GetX() - Second.GetMinimumX();
+            const Real32 Right = Second.GetMaximumX() - Center.GetX();
+            const Real32 Near  = Center.GetY() - Second.GetMinimumY();
+            const Real32 Far   = Second.GetMaximumY() - Center.GetY();
+            const Real32 Least = Min(Min(Left, Right), Min(Near, Far));
+
+            const Vector2 Facing = (Least == Left)  ? Vector2(-1.0f, 0.0f)
+                                 : (Least == Right) ? Vector2( 1.0f, 0.0f)
+                                 : (Least == Near)  ? Vector2( 0.0f, -1.0f)
+                                                    : Vector2( 0.0f,  1.0f);
+
+            Contact = Manifold2D(Facing, 0.0f, Least + First.GetRadius());
+        }
+        else
+        {
+            Contact = Manifold2D(Apart * (1.0f / Span), 0.0f, First.GetRadius() - Span);
+        }
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Collide::Test(ConstRef<Rect> First, ConstRef<Circle> Second, Ref<Manifold2D> Contact)
+    {
+        if (Test(Second, First, Contact))
+        {
+            Contact.SetNormal(-Contact.GetNormal());
+            return true;
+        }
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Collide::Test(ConstRef<Shape2D> First, ConstRef<Shape2D> Second, Ref<Manifold2D> Contact)
     {
         return First.Visit([&]<typename Left>(ConstRef<Left> P0)
         {
@@ -164,17 +244,15 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Collide::Escapes(Vector2 Apart, Real32 Span, Real32 Ground, Real32 Standing, Bool Under, Ref<Manifold> Contact)
+    Bool Collide::Escapes(ConstRef<Manifold2D> Ground, Real32 Standing, Bool Under, Ref<Manifold3D> Contact)
     {
-        if (Ground <= Standing)
+        if (Ground.GetDepth() <= Standing)
         {
-            const Vector2 Facing = IsAlmostZero(Span) ? Vector2(1.0f, 0.0f) : Apart * (1.0f / Span);
-
-            Contact = Manifold(Vector3::FromXZ(Facing), 0.0f, Ground);
+            Contact = Manifold3D(Vector3::FromXZ(Ground.GetNormal()), 0.0f, Ground.GetDepth());
         }
         else
         {
-            Contact = Manifold(Vector3(0.0f, Under ? -1.0f : 1.0f, 0.0f), 0.0f, Standing);
+            Contact = Manifold3D(Vector3(0.0f, Under ? -1.0f : 1.0f, 0.0f), 0.0f, Standing);
         }
         return true;
     }

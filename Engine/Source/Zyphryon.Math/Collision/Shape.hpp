@@ -20,8 +20,13 @@
 
 inline namespace ZyMath
 {
-    /// \brief Represents any one of the standing volumes a collision can be asked about.
+    /// \brief Represents any one of the volumes a collision is asked about, an axis-aligned box or an upright cylinder.
     ///
     /// \note A shape added here adds its pairs to \ref Collide and \ref Sweep and nothing else.
-    using Shape = Variant<Box, Cylinder>;
+    using Shape3D = Variant<Box, Cylinder>;
+
+    /// \brief Represents any one of the flat shapes a collision is asked about, an axis-aligned rectangle or a circle.
+    ///
+    /// \note A shape added here adds its pairs to \ref Collide and \ref Sweep and nothing else.
+    using Shape2D = Variant<Rect, Circle>;
 }

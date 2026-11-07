@@ -22,7 +22,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Test(ConstRef<Box> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact)
+    Bool Sweep::Test(ConstRef<Box> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold3D> Contact)
     {
         const Vector3 Apart = First.GetCenter() - Second.GetCenter();
         const Vector3 Reach = First.GetExtents() + Second.GetExtents();
@@ -39,7 +39,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact)
+    Bool Sweep::Test(ConstRef<Cylinder> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold3D> Contact)
     {
         const Vector3 Apart = First.GetCenter() - Second.GetCenter();
 
@@ -55,7 +55,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold> Contact)
+    Bool Sweep::Test(ConstRef<Cylinder> First, ConstRef<Box> Second, Vector3 Motion, Ref<Manifold3D> Contact)
     {
         const Vector3 Apart   = First.GetCenter() - Second.GetCenter();
         const Vector3 Extents = Second.GetExtents();
@@ -73,7 +73,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold> Contact)
+    Bool Sweep::Test(ConstRef<Box> First, ConstRef<Cylinder> Second, Vector3 Motion, Ref<Manifold3D> Contact)
     {
         // The swapped pair, moving the other way, meets at the same time on the opposite face.
         if (Test(Second, First, -Motion, Contact))
@@ -87,7 +87,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Test(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Ref<Manifold> Contact)
+    Bool Sweep::Test(ConstRef<Shape3D> First, ConstRef<Shape3D> Second, Vector3 Motion, Ref<Manifold3D> Contact)
     {
         return First.Visit([&]<typename Left>(ConstRef<Left> P0)
         {
@@ -101,33 +101,99 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real32 Sweep::Cast(ConstRef<Shape> First, ConstRef<Shape> Second, Vector3 Motion, Real32 Skin, Ref<Vector3> Normal)
+    Real32 Sweep::Cast(
+        ConstRef<Shape3D> First,
+        ConstRef<Shape3D> Second,
+        Vector3           Motion,
+        Real32            Skin,
+        Ref<Vector3>      Normal)
     {
-        if (Manifold Touch; Collide::Test(First, Second, Touch))
-        {
-            const Vector3 Facing = Touch.GetNormal();
+        return Free(First, Second, Motion, Skin, Normal);
+    }
 
-            if (Vector3::Dot(Motion, Facing) >= 0.0f)
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Test(ConstRef<Rect> First, ConstRef<Rect> Second, Vector2 Motion, Ref<Manifold2D> Contact)
+    {
+        const Vector2 Apart = First.GetCenter() - Second.GetCenter();
+        const Vector2 Reach = (First.GetSize() + Second.GetSize()) * 0.5f;
+
+        Interval Result;
+
+        // The plane is narrowed as the ground is, its y riding on the ground's z.
+        const Bool Met = NarrowSlab(Apart.GetX(), Reach.GetX(), Motion.GetX(), Vector3::UnitX(), Result)
+                      && NarrowSlab(Apart.GetY(), Reach.GetY(), Motion.GetY(), Vector3::UnitZ(), Result);
+
+        return Close(Result, Met, Contact);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Test(ConstRef<Circle> First, ConstRef<Circle> Second, Vector2 Motion, Ref<Manifold2D> Contact)
+    {
+        Interval Result;
+
+        const Bool Met = NarrowRound(
+            First.GetCenter() - Second.GetCenter(), First.GetRadius() + Second.GetRadius(), Motion, Result);
+
+        return Close(Result, Met, Contact);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Test(ConstRef<Circle> First, ConstRef<Rect> Second, Vector2 Motion, Ref<Manifold2D> Contact)
+    {
+        Interval Result;
+
+        // The rectangle is the one that grows, and it grows by the circle's radius.
+        const Bool Met = NarrowGrown(
+            First.GetCenter() - Second.GetCenter(), Second.GetSize() * 0.5f, First.GetRadius(), Motion, Result);
+
+        return Close(Result, Met, Contact);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Test(ConstRef<Rect> First, ConstRef<Circle> Second, Vector2 Motion, Ref<Manifold2D> Contact)
+    {
+        // The swapped pair, moving the other way, meets at the same time on the opposite face.
+        if (Test(Second, First, -Motion, Contact))
+        {
+            Contact.SetNormal(-Contact.GetNormal());
+            return true;
+        }
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Test(ConstRef<Shape2D> First, ConstRef<Shape2D> Second, Vector2 Motion, Ref<Manifold2D> Contact)
+    {
+        return First.Visit([&]<typename Left>(ConstRef<Left> P0)
+        {
+            return Second.Visit([&]<typename Right>(ConstRef<Right> P1)
             {
-                return 1.0f;
-            }
-            Normal = Facing;
-            return 0.0f;
-        }
+                return Test(P0, P1, Motion, Contact);
+            });
+        });
+    }
 
-        Manifold Contact;
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        if (Test(First, Second, Motion, Contact))
-        {
-            // The motion stops a skin short, so a volume resting against a face can still be asked to slide along it.
-            const Real32 Closing = -Vector3::Dot(Motion, Contact.GetNormal());
-            const Real32 Backoff = (Closing > kMinimumReach ? Skin / Closing : 0.0f);
-
-            Normal = Contact.GetNormal();
-
-            return Clamp(Contact.GetTime() - Backoff, 0.0f, 1.0f);
-        }
-        return 1.0f;
+    Real32 Sweep::Cast(
+        ConstRef<Shape2D> First,
+        ConstRef<Shape2D> Second,
+        Vector2           Motion,
+        Real32            Skin,
+        Ref<Vector2>      Normal)
+    {
+        return Free(First, Second, Motion, Skin, Normal);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -272,7 +338,7 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sweep::Close(ConstRef<Interval> Result, Bool Met, Ref<Manifold> Contact)
+    Bool Sweep::Close(ConstRef<Interval> Result, Bool Met, Ref<Manifold3D> Contact)
     {
         // A pair that already shares a spot has no face to have come in through, which is Collide's business.
         if (!Met || Result.Normal.IsAlmostZero())
@@ -284,5 +350,54 @@ inline namespace ZyMath
         Contact.SetTime(Max(Result.Entry, 0.0f));
 
         return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Sweep::Close(ConstRef<Interval> Result, Bool Met, Ref<Manifold2D> Contact)
+    {
+        if (!Met || Result.Normal.IsAlmostZero())
+        {
+            return false;
+        }
+
+        Contact.SetNormal(Result.Normal.GetXZ());
+        Contact.SetTime(Max(Result.Entry, 0.0f));
+
+        return true;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    template<typename Form, typename Vector>
+    Real32 Sweep::Free(ConstRef<Form> First, ConstRef<Form> Second, Vector Motion, Real32 Skin, Ref<Vector> Normal)
+    {
+        if (AnyManifold<Vector> Touch; Collide::Test(First, Second, Touch))
+        {
+            const Vector Facing = Touch.GetNormal();
+
+            if (Vector::Dot(Motion, Facing) >= 0.0f)
+            {
+                return 1.0f;
+            }
+            Normal = Facing;
+            return 0.0f;
+        }
+
+        AnyManifold<Vector> Contact;
+
+        if (Test(First, Second, Motion, Contact))
+        {
+            // The motion stops a skin short, so a shape resting against a face can still be asked to slide along it.
+            const Real32 Closing = -Vector::Dot(Motion, Contact.GetNormal());
+            const Real32 Backoff = (Closing > kMinimumReach ? Skin / Closing : 0.0f);
+
+            Normal = Contact.GetNormal();
+
+            return Clamp(Contact.GetTime() - Backoff, 0.0f, 1.0f);
+        }
+        return 1.0f;
     }
 }
