@@ -93,7 +93,9 @@ namespace ZyRender
             mIgnited  = true;
             mBacklog += Min(Emitter.GetBurst(), Limit);
 
-            mParticles.Reserve(Limit);
+            const Real32 Stream = Emitter.GetRate() * Emitter.GetLife().GetMaximum();
+
+            mParticles.Reserve(Min<UInt>(Limit, Emitter.GetBurst() + static_cast<UInt>(Ceil(Stream))));
         }
 
         // What a frame owes carries to the next so a slow rate still throws, thinned by the emitter's presence.
