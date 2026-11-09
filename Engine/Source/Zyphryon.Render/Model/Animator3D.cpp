@@ -114,6 +114,7 @@ namespace ZyRender
         // The rig and every clip load with the model, so there is nothing to pose until it has landed.
         if (!mModel || !mModel->HasCompleted())
         {
+            mPalette.Clear();
             return Skeleton3D::Pose();
         }
 

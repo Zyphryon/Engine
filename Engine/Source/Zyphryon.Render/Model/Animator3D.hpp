@@ -147,7 +147,7 @@ namespace ZyRender
 
         /// \brief Gets the matrices the vertex shader deforms by, one per bone.
         ///
-        /// \return The palette, or an empty span before the first \ref Update.
+        /// \return The palette, or an empty span until the model has landed and been posed.
         ZY_INLINE ConstSpan<Matrix4x3> GetPalette() const
         {
             return mPalette;
