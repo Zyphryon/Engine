@@ -46,27 +46,27 @@ namespace ZyRender
 
     ConstPtr<Sheet2D::Clip> Animator2D::Resolve(Real64 Timestamp)
     {
+        if (const ConstPtr<Sheet2D::Clip> Playing = GetClip())
+        {
+            return Playing;
+        }
+
+        // A slot that lost its clip is let go, so a sheet loading again starts the clip over once it lands.
+        mSlot = kUnresolved;
+
         if (!mSheet || !mSheet->HasCompleted() || mClip == 0)
         {
             return nullptr;
-        }
-
-        const ConstSpan<Sheet2D::Clip> Clips = mSheet->GetClips();
-
-        if (mSlot < Clips.GetSize() && Clips[mSlot].Name == mClip)
-        {
-            return AddressOf(Clips[mSlot]);
         }
 
         const ConstPtr<Sheet2D::Clip> Entry = mSheet->FindClip(mClip);
 
         if (Entry == nullptr)
         {
-            mSlot = kUnresolved;
             return nullptr;
         }
 
-        mSlot = static_cast<UInt16>(Entry - Clips.GetData());
+        mSlot = static_cast<UInt16>(Entry - mSheet->GetClips().GetData());
         Restart(Entry->Frames, Timestamp, mPhase);
         return Entry;
     }
