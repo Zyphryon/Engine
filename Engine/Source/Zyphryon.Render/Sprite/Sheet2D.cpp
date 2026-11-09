@@ -29,24 +29,17 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Sheet2D::Arrange()
+    Bool Sheet2D::Setup(AnyRef<Skeleton2D> Skeleton, AnyRef<Sequence<Clip>> Clips)
     {
-        const UInt32 Bones = static_cast<UInt32>(mSkeleton.GetBones().GetSize());
+        mSkeleton = Move(Skeleton);
+        mClips    = Move(Clips);
 
-        Sequence<SInt32> Binding;
-        Bool             Complete = true;
+        Bool Complete = true;
 
         for (Ref<Clip> Entry : mClips)
         {
-            Binding.Clear();
-
-            for (ConstRef<Motion2D::Lane> Lane : Entry.Motion.GetLanes())
-            {
-                Binding.Append(mSkeleton.Find(Lane.Bone));
-            }
-
             // Every clip is laid out even after one fails, so the loss is reported once and not compounded.
-            Complete = Entry.Motion.Arrange(Binding, Bones) && Complete;
+            Complete = Entry.Motion.Arrange(mSkeleton) && Complete;
         }
         return Complete;
     }

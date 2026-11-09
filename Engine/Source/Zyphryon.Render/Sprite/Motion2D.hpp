@@ -12,6 +12,7 @@
 // [  HEADER  ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#include "Skeleton2D.hpp"
 #include "Zyphryon.Math/Vector2.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,29 +26,36 @@ namespace ZyRender
     {
     public:
 
+        /// \brief Represents a bone's placement on one frame, as a key gives it or as the keys around it interpolate.
+        struct Placement final
+        {
+            /// The position of the bone, in the frame's own units from its bottom-left corner, x right and y up.
+            Vector2 Offset = Vector2::Zero();
+
+            /// The rotation of the bone's attachment, counter-clockwise from upright.
+            Angle   Roll   = Angle::FromDegrees(0.0f);
+
+            /// The rotation of the bone's attachment out of the sprite's plane, where a quarter turn is edge-on.
+            Angle   Turn   = Angle::FromDegrees(0.0f);
+
+            /// The scale of the bone's attachment, where one is as authored.
+            Real32  Scale  = 1.0f;
+
+            /// The draw order of the bone's attachment against the sprite, positive in front and negative behind.
+            SInt8   Layer  = 1;
+        };
+
         /// \brief Represents a bone's placement on one frame of one row.
         struct Key final
         {
             /// The sheet row the key belongs to, one per drawn direction.
-            UInt8   Row      = 0;
+            UInt8     Row      = 0;
 
             /// The frame the key sits on, with the frames between keys interpolated.
-            UInt8   Keyframe = 0;
+            UInt8     Keyframe = 0;
 
-            /// The position of the bone, in the frame's own units from its bottom-left corner, x right and y up.
-            Vector2 Offset   = Vector2::Zero();
-
-            /// The rotation of the bone's attachment, counter-clockwise from upright.
-            Angle   Roll     = Angle::FromDegrees(0.0f);
-
-            /// The rotation of the bone's attachment out of the sprite's plane, where a quarter turn is edge-on.
-            Angle   Turn     = Angle::FromDegrees(0.0f);
-
-            /// The scale of the bone's attachment, where one is as authored.
-            Real32  Scale    = 1.0f;
-
-            /// The draw order of the bone's attachment against the sprite, positive in front and negative behind.
-            SInt8   Layer    = 1;
+            /// The placement of the bone on that frame.
+            Placement Place;
         };
 
         /// \brief Represents the keys of one bone over the clip.
@@ -58,25 +66,6 @@ namespace ZyRender
 
             /// The keys, in authored order.
             Sequence<Key> Keys;
-        };
-
-        /// \brief Represents a bone's placement on one frame, interpolated between the keys around it.
-        struct Placement final
-        {
-            /// The position of the bone, in the frame's own units from its bottom-left corner.
-            Vector2 Offset = Vector2::Zero();
-
-            /// The rotation of the bone's attachment, counter-clockwise from upright.
-            Angle   Roll   = Angle::FromDegrees(0.0f);
-
-            /// The rotation of the bone's attachment out of the sprite's plane.
-            Angle   Turn   = Angle::FromDegrees(0.0f);
-
-            /// The scale of the bone's attachment.
-            Real32  Scale  = 1.0f;
-
-            /// The draw order of the bone's attachment against the sprite.
-            SInt8   Layer  = 1;
         };
 
     public:
@@ -157,10 +146,9 @@ namespace ZyRender
         ///
         /// \note A keyed lane with no bone of its own is kept after the last bone, so a later layout can place it.
         ///
-        /// \param Binding The bone index of each lane, as resolved by \ref Skeleton2D::Find.
-        /// \param Bones   The number of bones the skeleton carries.
+        /// \param Skeleton The skeleton whose bones the lanes are laid over, each found by its name.
         /// \return `true` when every keyed lane found a bone of its own, otherwise `false`.
-        Bool Arrange(ConstSpan<SInt32> Binding, UInt32 Bones);
+        Bool Arrange(ConstRef<Skeleton2D> Skeleton);
 
         /// \brief Computes a bone's placement on a frame from the keys around it on the same row.
         ///

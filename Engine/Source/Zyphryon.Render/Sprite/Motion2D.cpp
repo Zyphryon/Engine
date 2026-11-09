@@ -33,18 +33,16 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Motion2D::Arrange(ConstSpan<SInt32> Binding, UInt32 Bones)
+    Bool Motion2D::Arrange(ConstRef<Skeleton2D> Skeleton)
     {
-        ZY_ASSERT(Binding.GetSize() == mLanes.GetSize(), "Every lane must be bound to a bone or to none");
-
         Sequence<Lane> Arranged;
-        Arranged.Advance(Bones);
+        Arranged.Advance(Skeleton.GetBones().GetSize());
 
         Sequence<Lane> Unplaced;
 
         for (UInt Index = 0; Index < mLanes.GetSize(); ++Index)
         {
-            const SInt32 Bone = Binding[Index];
+            const SInt32 Bone = Skeleton.Find(mLanes[Index].Bone);
 
             if (Bone >= 0 && Arranged[Bone].Bone == 0)
             {
@@ -137,11 +135,11 @@ namespace ZyRender
         const Real32 Gap   = static_cast<Real32>(Into - From);
         const Real32 Share = Gap > 0.0f ? static_cast<Real32>(Keyframe - From) / Gap : 0.0f;
 
-        Output.Offset = Before->Offset + (After->Offset - Before->Offset) * Share;
-        Output.Roll   = Before->Roll + Angle::Between(Before->Roll, After->Roll) * Share;
-        Output.Turn   = Before->Turn + (After->Turn - Before->Turn) * Share;
-        Output.Scale  = Lerp(Before->Scale, After->Scale, Share);
-        Output.Layer  = Share < 0.5f ? Before->Layer : After->Layer;
+        Output.Offset = Before->Place.Offset + (After->Place.Offset - Before->Place.Offset) * Share;
+        Output.Roll   = Before->Place.Roll + Angle::Between(Before->Place.Roll, After->Place.Roll) * Share;
+        Output.Turn   = Before->Place.Turn + (After->Place.Turn - Before->Place.Turn) * Share;
+        Output.Scale  = Lerp(Before->Place.Scale, After->Place.Scale, Share);
+        Output.Layer  = Share < 0.5f ? Before->Place.Layer : After->Place.Layer;
         return true;
     }
 }

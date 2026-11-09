@@ -25,16 +25,16 @@ namespace ZyRender
     static Motion2D::Key ReadKey(ConstRef<JsonObject> Definition)
     {
         Motion2D::Key Key;
-        Key.Row      = Definition.GetNumber<UInt8>("Row");
-        Key.Keyframe = Definition.GetNumber<UInt8>("Frame");
-        Key.Roll     = Angle::FromDegrees(Definition.GetNumber<Real32>("Angle"));
-        Key.Turn     = Angle::FromDegrees(Definition.GetNumber<Real32>("Turn"));
-        Key.Scale    = Definition.GetNumber<Real32>("Scale", 1.0f);
-        Key.Layer    = Definition.GetNumber<SInt8>("Layer", 1);
+        Key.Row         = Definition.GetNumber<UInt8>("Row");
+        Key.Keyframe    = Definition.GetNumber<UInt8>("Frame");
+        Key.Place.Roll  = Angle::FromDegrees(Definition.GetNumber<Real32>("Angle"));
+        Key.Place.Turn  = Angle::FromDegrees(Definition.GetNumber<Real32>("Turn"));
+        Key.Place.Scale = Definition.GetNumber<Real32>("Scale", 1.0f);
+        Key.Place.Layer = Definition.GetNumber<SInt8>("Layer", 1);
 
         if (const JsonArray Offset = Definition.GetArray("Offset"); Offset.GetSize() == 2)
         {
-            Key.Offset = Vector2(Offset.GetNumber<Real32>(0), Offset.GetNumber<Real32>(1));
+            Key.Place.Offset = Vector2(Offset.GetNumber<Real32>(0), Offset.GetNumber<Real32>(1));
         }
         return Key;
     }
@@ -176,10 +176,7 @@ namespace ZyRender
             }
         }
 
-        // Bones first, so the clips are laid out over them once, as they arrive.
-        Asset->SetSkeleton(Move(Skeleton));
-
-        if (!Asset->SetClips(Move(Clips)))
+        if (!Asset->Setup(Move(Skeleton), Move(Clips)))
         {
             LOG_W("'{0}' has lanes for bones it does not list, or two lanes for one bone", Asset->GetKey());
         }

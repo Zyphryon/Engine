@@ -14,7 +14,6 @@
 
 #include "Animation2D.hpp"
 #include "Motion2D.hpp"
-#include "Skeleton2D.hpp"
 #include "Zyphryon.Content/Resource.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -51,15 +50,12 @@ namespace ZyRender
         /// \param Key The unique content key identifying this sheet.
         explicit Sheet2D(AnyRef<ZyContent::Uri> Key);
 
-        /// \brief Replaces the skeleton, laying every clip's lanes out again over its bones.
+        /// \brief Initializes the sheet with its skeleton and its clips, laying each clip's lanes out over the bones.
         ///
         /// \param Skeleton The bones attachments hang from, in the order the lanes are indexed by.
+        /// \param Clips    The clips, in authored order.
         /// \return `true` when every keyed lane drives a bone of the skeleton, otherwise `false`.
-        ZY_INLINE Bool SetSkeleton(AnyRef<Skeleton2D> Skeleton)
-        {
-            mSkeleton = Move(Skeleton);
-            return Arrange();
-        }
+        Bool Setup(AnyRef<Skeleton2D> Skeleton, AnyRef<Sequence<Clip>> Clips);
 
         /// \brief Gets the skeleton the sheet's bone keys were authored against.
         ///
@@ -67,16 +63,6 @@ namespace ZyRender
         ZY_INLINE ConstRef<Skeleton2D> GetSkeleton() const
         {
             return mSkeleton;
-        }
-
-        /// \brief Replaces every clip of the sheet, laying each clip's lanes out over the bones.
-        ///
-        /// \param Clips The clips, in authored order.
-        /// \return `true` when every keyed lane drives a bone of the skeleton, otherwise `false`.
-        ZY_INLINE Bool SetClips(AnyRef<Sequence<Clip>> Clips)
-        {
-            mClips = Move(Clips);
-            return Arrange();
         }
 
         /// \brief Gets every clip of the sheet.
@@ -99,13 +85,6 @@ namespace ZyRender
             });
             return Index < 0 ? nullptr : AddressOf(mClips[Index]);
         }
-
-    private:
-
-        /// \brief Lays every clip's lanes out over the skeleton, so the lane at an index drives the bone at that index.
-        ///
-        /// \return `true` when every keyed lane drives a bone of the skeleton, otherwise `false`.
-        Bool Arrange();
 
     private:
 
