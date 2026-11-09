@@ -147,7 +147,7 @@ namespace ZyScene
         {
             for (UInt32 Row = 0; !Target->Has(Identifier) && Row < Target->GetSize(); ++Row)
             {
-                Record(Identifier, Kind, Target->GetHandle(Row).GetIndex(), Value);
+                Record(Identifier, Kind, Target->GetHandle(Row), Value);
             }
         }
     }
@@ -163,12 +163,13 @@ namespace ZyScene
         }
 
         ConstRef<Chunk> Holder = * mDirectory[Index].Holder;
+        const Handle    Actor  = mDirectory.GetHandle(Index);
 
-        const auto Note = [this, Index, Before](UInt32 Identifier)
+        const auto Note = [this, Actor, Before](UInt32 Identifier)
         {
             if (!Before || !mDirectory.Sees(* Before, Identifier))
             {
-                Record(Identifier, Pull::Added, Index, nullptr);
+                Record(Identifier, Pull::Added, Actor, nullptr);
             }
         };
 
@@ -198,7 +199,7 @@ namespace ZyScene
         // Only what the entity sees can have changed.
         if (IsWatched(Identifier, Pull::Changed) && mDirectory.FindValue(* Entry.Holder, Entry.Row, Identifier))
         {
-            Record(Identifier, Pull::Changed, Actor.GetIndex(), nullptr);
+            Record(Identifier, Pull::Changed, Actor, nullptr);
         }
     }
 
@@ -439,7 +440,7 @@ namespace ZyScene
 
         if (!mDirectory.Sees(* mDirectory[Actor.GetIndex()].Holder, Identifier))
         {
-            Give(Actor.GetIndex(), Identifier, nullptr);
+            Give(Actor, Identifier, nullptr);
         }
     }
 
@@ -469,12 +470,12 @@ namespace ZyScene
         {
             if (mDirectory.FindLent(Source.GetBase(), Identifier))
             {
-                Record(Identifier, Pull::Changed, Index, nullptr);
+                Record(Identifier, Pull::Changed, Actor, nullptr);
             }
             else
             {
                 const ConstPtr<Byte> Value = mDirectory.FindValue(Source, mDirectory[Index].Row, Identifier);
-                Record(Identifier, Pull::Removed, Index, Value);
+                Record(Identifier, Pull::Removed, Actor, Value);
             }
         }
         Transfer(Index, * Narrow(Source, Identifier));
@@ -505,11 +506,11 @@ namespace ZyScene
             Chunk::Destruct(* Source.GetColumns()[Column].Info, Place, 1);
             Chunk::Relocate(* Source.GetColumns()[Column].Info, Place, Fresh, 1);
 
-            Record(Identifier, Pull::Changed, Index, nullptr);
+            Record(Identifier, Pull::Changed, Actor, nullptr);
         }
         else
         {
-            Give(Index, Identifier, Fresh);
+            Give(Actor, Identifier, Fresh);
         }
     }
 
@@ -535,12 +536,12 @@ namespace ZyScene
                 // Copied apart first, since the insertion moves the value in from a place of its own.
                 const Ptr<Byte> Fresh = Allocate<Byte>(Info.GetSize(), Info.GetAlignment());
                 Chunk::Copy(Info, Fresh, Lent, 1);
-                Give(Index, Identifier, Fresh);
+                Give(Actor, Identifier, Fresh);
                 Free(Fresh, Info.GetAlignment());
             }
             else
             {
-                Give(Index, Identifier, nullptr);
+                Give(Actor, Identifier, nullptr);
             }
         }
 
@@ -582,13 +583,13 @@ namespace ZyScene
 
         if (Column < 0)
         {
-            Give(Index, Identifier, nullptr);
+            Give(Actor, Identifier, nullptr);
         }
         else
         {
             Chunk::Destruct(Info, Source.At(Column, mDirectory[Index].Row), 1);
             Chunk::Construct(Info, Source.At(Column, mDirectory[Index].Row), 1);
-            Record(Identifier, Pull::Changed, Index, nullptr);
+            Record(Identifier, Pull::Changed, Actor, nullptr);
         }
 
         if (Info.Load)
@@ -802,13 +803,15 @@ namespace ZyScene
             return;
         }
 
+        const Handle Actor = mDirectory.GetHandle(Index);
+
         // Holding what it read from its archetype changes the value it sees rather than adding one.
         for (const UInt32 Identifier : Target.GetSignature())
         {
             if (Identifier != Except && !Source.Has(Identifier))
             {
                 const Bool Lent = mDirectory.FindLent(Source.GetBase(), Identifier) != nullptr;
-                Record(Identifier, Lent ? Pull::Changed : Pull::Added, Index, nullptr);
+                Record(Identifier, Lent ? Pull::Changed : Pull::Added, Actor, nullptr);
             }
         }
     }
@@ -907,10 +910,11 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Give(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh)
+    void Storage::Give(Handle Actor, UInt32 Identifier, Ptr<Byte> Fresh)
     {
-        const UInt32 Base = mDirectory[Index].Holder->GetBase();
-        const Bool   Seen = mDirectory.FindLent(Base, Identifier) != nullptr;
+        const UInt32 Index = Actor.GetIndex();
+        const UInt32 Base  = mDirectory[Index].Holder->GetBase();
+        const Bool   Seen  = mDirectory.FindLent(Base, Identifier) != nullptr;
 
         if (const Ptr<Byte> Place = Grow(Index, Identifier))
         {
@@ -927,7 +931,7 @@ namespace ZyScene
                 Chunk::Construct(Info, Place, 1);
             }
         }
-        Record(Identifier, Seen ? Pull::Changed : Pull::Added, Index, nullptr);
+        Record(Identifier, Seen ? Pull::Changed : Pull::Added, Actor, nullptr);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

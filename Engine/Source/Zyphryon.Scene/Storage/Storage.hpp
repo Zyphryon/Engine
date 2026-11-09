@@ -205,20 +205,6 @@ namespace ZyScene
         ///
         /// \param Identifier The identifier of the component that changed.
         /// \param Kind       The change, exactly one.
-        /// \param Index      The slot of the entity.
-        /// \param Value      The value leaving on a removal, or `nullptr`.
-        ZY_INLINE void Record(UInt32 Identifier, Pull Kind, UInt32 Index, ConstPtr<Byte> Value)
-        {
-            if (mLedger.IsWatched(Identifier, Kind))
-            {
-                Record(Identifier, Kind, mDirectory.GetHandle(Index), Value);
-            }
-        }
-
-        /// \brief Records a change like the one taking a slot, for a caller that holds the entity's handle already.
-        ///
-        /// \param Identifier The identifier of the component that changed.
-        /// \param Kind       The change, exactly one.
         /// \param Actor      The entity, which must be alive.
         /// \param Value      The value leaving on a removal, or `nullptr`.
         ZY_INLINE void Record(UInt32 Identifier, Pull Kind, Handle Actor, ConstPtr<Byte> Value)
@@ -481,10 +467,10 @@ namespace ZyScene
 
         /// \brief Gives an entity a component it does not hold, recording it.
         ///
-        /// \param Index      The slot of the entity.
+        /// \param Actor      The entity, which must be alive.
         /// \param Identifier The identifier of the component to give.
         /// \param Fresh      The value, moved into place, or `nullptr` to build a default.
-        void Give(UInt32 Index, UInt32 Identifier, Ptr<Byte> Fresh);
+        void Give(Handle Actor, UInt32 Identifier, Ptr<Byte> Fresh);
 
         /// \brief Makes a copy of every part of an archetype beneath an entity.
         ///
