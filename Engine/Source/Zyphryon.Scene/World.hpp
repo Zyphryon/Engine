@@ -78,8 +78,11 @@ namespace ZyScene
                 return Entity(this, Actor);
             }
 
-            // The slot is taken now, and the entity lands in order with the changes the walk held.
-            const Handle Actor = Create();
+            ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
+
+            // The slot is taken now where no query sees it, and the entity lands in order with the walk's changes.
+            const Handle Actor = mDirectory.Allocate(false);
+            Place(Actor.GetIndex(), * mLayout.GetPending());
 
             Postpone([this, Actor, From, Above, ...Values = Forward<Types>(Values)]() mutable
             {

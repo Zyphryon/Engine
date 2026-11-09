@@ -229,19 +229,6 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Handle Storage::Create()
-    {
-        ZY_ASSERT(!mDeferral.IsSpreading(), "An entity cannot be made while a walk is spread; Postpone the making");
-
-        // Made during a walk, it waits where no query sees it until the walk ends.
-        const Handle Actor = mDirectory.Allocate(false);
-        Place(Actor.GetIndex(), mDeferral.IsWalking() ? * mLayout.GetPending() : * mLayout.GetRoot());
-        return Actor;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     void Storage::Transfer(UInt32 Index, Ref<Chunk> Target)
     {
         Ref<Chunk> Source = * mDirectory[Index].Holder;
@@ -833,21 +820,10 @@ namespace ZyScene
     {
         mDeferral.SetFlushing(true);
 
-        for (UInt32 Next = 0;;)
+        for (UInt32 Next = 0; Next < mDeferral.GetCommands().GetSize(); ++Next)
         {
-            // Entities made meanwhile come out first, before any change naming them.
-            for (Ref<Chunk> Pending = * mLayout.GetPending(); Pending.GetSize() > 0;)
-            {
-                Transfer(Pending.GetHandle(Pending.GetSize() - 1).GetIndex(), * mLayout.GetRoot());
-            }
-
-            if (Next == mDeferral.GetCommands().GetSize())
-            {
-                break;
-            }
-
             // Copied, since applying it may hold more changes and move the list.
-            const Deferral::Command Change = mDeferral.GetCommands()[Next++];
+            const Deferral::Command Change = mDeferral.GetCommands()[Next];
             Apply(Change);
         }
 

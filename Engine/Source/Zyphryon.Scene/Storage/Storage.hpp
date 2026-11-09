@@ -156,7 +156,7 @@ namespace ZyScene
         /// \brief Marks a walk as ended, applying what waited once the outermost one is.
         ZY_INLINE void Leave()
         {
-            if (mDeferral.Leave() && (!mDeferral.GetCommands().IsEmpty() || mLayout.GetPending()->GetSize()))
+            if (mDeferral.Leave() && !mDeferral.GetCommands().IsEmpty())
             {
                 Flush();
             }
@@ -270,11 +270,6 @@ namespace ZyScene
         ///
         /// \param State The selection walked, whose chunks have not moved since the walk.
         void Mark(ConstRef<Selection> State);
-
-        /// \brief Makes an entity holding nothing, which waits outside every walk until the running one ends.
-        ///
-        /// \return The handle of the entity.
-        Handle Create();
 
         /// \brief Places an entity whose slot sits in no chunk at the end of one.
         ///
