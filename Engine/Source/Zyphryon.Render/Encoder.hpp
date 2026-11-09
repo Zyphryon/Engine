@@ -253,47 +253,12 @@ namespace ZyRender
             ZyGraphic::Object Image = 0;
         };
 
-        /// \brief Packs a uniform block for a frequency by resolving each declared field from a provider.
+        /// \brief Packs a material's uniform block by resolving each field the technique declares.
         ///
-        /// \param Frequency The uniform block to pack.
         /// \param Technique The technique describing the block's layout.
-        /// \param Source    The provider supplying field values by hash.
+        /// \param Material  The material supplying field values by hash.
         /// \return The transient stream holding the packed block, or an empty stream if the block declares no fields.
-        template<typename Provider>
-        ZY_INLINE ZyGraphic::Stream Pack(
-            ZyGraphic::Frequency           Frequency,
-            ConstRef<ZyGraphic::Technique> Technique,
-            ConstRef<Provider>             Source)
-        {
-            ConstRef<ZyGraphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(Frequency);
-
-            if (Block.Size == 0)
-            {
-                return ZyGraphic::Stream();
-            }
-
-            ZyGraphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
-
-            for (ConstRef<ZyGraphic::Schema::Uniform> Field : Block.Uniforms)
-            {
-                // Fall back to the technique's default when the material does not set the field.
-                ConstPtr<ZyGraphic::Parameter> Parameter = Source.GetParameter(Field.Hash);
-
-                if (Parameter == nullptr)
-                {
-                    Parameter = AddressOf(Field.Value);
-                }
-
-                if (Parameter->GetSlot() == ZyEnum::Cast(Field.Type))
-                {
-                    Parameter->Visit([&]<typename Type>(ConstRef<Type> Value)
-                    {
-                        Slice.Copy(ConstSpan(Value), Field.Offset);
-                    });
-                }
-            }
-            return Slice.GetStream();
-        }
+        ZyGraphic::Stream Pack(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material);
 
         /// \brief Resolves a material under a technique into \ref mBinding, unless both match the last resolution.
         ///

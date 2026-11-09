@@ -203,6 +203,41 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ZyGraphic::Stream Encoder::Pack(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material)
+    {
+        ConstRef<ZyGraphic::Schema::Block> Block = Technique.GetSchema().GetUniforms(ZyGraphic::Frequency::Material);
+
+        if (Block.Size == 0)
+        {
+            return ZyGraphic::Stream();
+        }
+
+        ZyGraphic::Transient<Byte> Slice = mService.AllocateInFlightUniforms<Byte>(Block.Size);
+
+        for (ConstRef<ZyGraphic::Schema::Uniform> Field : Block.Uniforms)
+        {
+            // Fall back to the technique's default when the material does not set the field.
+            ConstPtr<ZyGraphic::Parameter> Parameter = Material.GetParameter(Field.Hash);
+
+            if (Parameter == nullptr)
+            {
+                Parameter = AddressOf(Field.Value);
+            }
+
+            if (Parameter->GetSlot() == ZyEnum::Cast(Field.Type))
+            {
+                Parameter->Visit([&]<typename Type>(ConstRef<Type> Value)
+                {
+                    Slice.Copy(ConstSpan(Value), Field.Offset);
+                });
+            }
+        }
+        return Slice.GetStream();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Encoder::Resolve(ConstRef<ZyGraphic::Technique> Technique, ConstRef<ZyGraphic::Material> Material)
     {
         // A run of draws sharing a material under one technique packs and resolves it once.
@@ -217,7 +252,7 @@ namespace ZyRender
         mBinding.Material  = AddressOf(Material);
         mBinding.Overrides = 0;
         mBinding.Variant   = Technique.Resolve(Material);
-        mBinding.Uniforms  = Pack(ZyGraphic::Frequency::Material, Technique, Material);
+        mBinding.Uniforms  = Pack(Technique, Material);
 
         mBinding.Textures.Clear();
 
