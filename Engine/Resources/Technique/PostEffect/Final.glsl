@@ -103,9 +103,10 @@ void main()
     if (u_Lens.z > 0.0)
     {
         vec2 Shift = (v_Texture - 0.5) * u_Lens.zw;
+        vec3 Still = textureLod(t_Scene, v_Texture, 0.0).rgb;
 
-        Scene.r = textureLod(t_Scene, v_Texture + Shift, 0.0).r;
-        Scene.b = textureLod(t_Scene, v_Texture - Shift, 0.0).b;
+        Scene.r = max(Scene.r + textureLod(t_Scene, v_Texture + Shift, 0.0).r - Still.r, 0.0);
+        Scene.b = max(Scene.b + textureLod(t_Scene, v_Texture - Shift, 0.0).b - Still.b, 0.0);
     }
 
     // The halo is scene referred, so it joins before exposure carries the pair into the curve.

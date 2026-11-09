@@ -109,9 +109,10 @@ float4 main(fs_Input Input) : SV_Target
     if (u_Lens.z > 0.0)
     {
         const float2 Shift = (Input.Texture - 0.5) * u_Lens.zw;
+        const float3 Still = t_Scene.SampleLevel(s_Scene, Input.Texture, 0).rgb;
 
-        Scene.r = t_Scene.SampleLevel(s_Scene, Input.Texture + Shift, 0).r;
-        Scene.b = t_Scene.SampleLevel(s_Scene, Input.Texture - Shift, 0).b;
+        Scene.r = max(Scene.r + t_Scene.SampleLevel(s_Scene, Input.Texture + Shift, 0).r - Still.r, 0.0);
+        Scene.b = max(Scene.b + t_Scene.SampleLevel(s_Scene, Input.Texture - Shift, 0).b - Still.b, 0.0);
     }
 
     // The halo is scene referred, so it joins before exposure carries the pair into the curve.
