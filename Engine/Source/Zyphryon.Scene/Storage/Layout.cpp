@@ -93,7 +93,7 @@ namespace ZyScene
 
         for (ConstRef<Unique<Selection>> State : mSelections)
         {
-            State->Remove(Target);
+            State->Remove(Target, true);
         }
         mChunks[Target->GetIndex()].Reset();
     }

@@ -38,6 +38,9 @@ namespace ZyScene
         /// The source of a field read from an ancestor.
         static constexpr UInt16 kAncestor = 0xFFFC;
 
+        /// The position of a chunk destroyed while it matched, which the removals recorded from it still answer to.
+        static constexpr UInt32 kGone     = 0xFFFFFFFF;
+
         /// \brief Specifies how a field is read.
         enum class Mode : UInt8
         {
@@ -80,7 +83,7 @@ namespace ZyScene
         /// The source of each field in each matched chunk, one run per match.
         Sequence<UInt16>           Sources;
 
-        /// The position of each chunk among the matches plus one, indexed by chunk.
+        /// The position of each chunk among the matches plus one, indexed by chunk, \ref kGone once destroyed matching.
         Sequence<UInt32>           Positions;
 
         /// The first row of each matched chunk for a spread walk, or the row past each depth for a sorted one.
@@ -144,7 +147,8 @@ namespace ZyScene
         /// \brief Takes a chunk out of the matches, if it is there, keeping the others in order.
         ///
         /// \param Target The chunk to take out.
-        void Remove(ConstPtr<Chunk> Target);
+        /// \param Gone   `true` to keep matching the removals recorded from a chunk being destroyed, `false` otherwise.
+        void Remove(ConstPtr<Chunk> Target, Bool Gone);
 
         /// \brief Gets the position of a chunk among the matches.
         ///

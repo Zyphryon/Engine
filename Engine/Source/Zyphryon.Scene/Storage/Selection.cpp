@@ -71,7 +71,7 @@ namespace ZyScene
         // Pending and destroyed chunks are never updated, and the pending one sits past every position.
         if (!Matches(* Target, Slots))
         {
-            Remove(Target);
+            Remove(Target, false);
             return;
         }
 
@@ -129,7 +129,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Selection::Remove(ConstPtr<Chunk> Target)
+    void Selection::Remove(ConstPtr<Chunk> Target, Bool Gone)
     {
         const UInt32 Place = GetPosition(* Target);
 
@@ -151,7 +151,7 @@ namespace ZyScene
         {
             Positions[Chunks[Match]->GetIndex()] = Match + 1;
         }
-        Positions[Target->GetIndex()] = 0;
+        Positions[Target->GetIndex()] = Gone ? kGone : 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
