@@ -252,7 +252,7 @@ namespace ZyScene
         /// \param Identifier The identifier of the component written.
         void Notify(Handle Actor, UInt32 Identifier);
 
-        /// \brief Marks every page a walk handed a field out writable in, for readers of those components.
+        /// \brief Marks every page of the chunks a walk matched for each component it declared it writes.
         ///
         /// \param State The selection walked, whose chunks have not moved since the walk.
         void Mark(ConstRef<Selection> State);
@@ -545,7 +545,7 @@ namespace ZyScene
                         continue;
                     }
 
-                    if (const ConstPtr<Byte> Lent = mDirectory.FindLent(First, Identifier))
+                    if (const ConstPtr<Byte> Lent = mDirectory.FindLent(Base, Identifier))
                     {
                         Callback(Identifier, Lent);
                     }

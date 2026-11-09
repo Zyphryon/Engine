@@ -580,7 +580,7 @@ namespace ZyScene
             return true;
         }
 
-        /// \brief Marks the pages a walk handed fields out writable in, before its waiting changes move any row.
+        /// \brief Marks the pages of the components a walk declared it writes, before its waiting changes move any row.
         ///
         /// \param Owner The storage the query belongs to.
         /// \param State The query just walked.

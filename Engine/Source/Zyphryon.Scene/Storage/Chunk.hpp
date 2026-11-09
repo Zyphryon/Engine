@@ -255,7 +255,7 @@ namespace ZyScene
             return Moved;
         }
 
-        /// \brief Marks every row of a column written at a tick, as a walk handing it out writable does.
+        /// \brief Marks every row of a column written at a tick, as a walk that declared it writes the component does.
         ///
         /// \param Index The column, as \ref Find returns it.
         /// \param Tick  The tick of the walk, never \ref kNever.
