@@ -899,7 +899,7 @@ namespace ZyScene
         case Deferral::Operation::Notify:
             if (Alive)
             {
-                Notify(Change.Actor, Change.Identifier);
+                Record(Change.Identifier, Pull::Changed, Change.Actor, nullptr);
             }
             break;
         case Deferral::Operation::Invoke:
