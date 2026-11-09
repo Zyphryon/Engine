@@ -128,11 +128,11 @@ namespace ZyRender
         /// \return The glyph data, or `nullptr` if neither the codepoint nor the fallback exists.
         ZY_INLINE ConstPtr<Glyph> GetGlyph(UInt32 Codepoint, UInt32 Fallback = '?') const
         {
-            if (const ConstPtr<Glyph> Result = mGlyphs.Find(Codepoint))
+            if (const ConstPtr<Glyph> Result = Find(Codepoint))
             {
                 return Result;
             }
-            return Fallback != 0 && Codepoint != Fallback ? mGlyphs.Find(Fallback) : nullptr;
+            return Fallback != 0 && Codepoint != Fallback ? Find(Fallback) : nullptr;
         }
 
         /// \brief Gets the kerning adjustment between two consecutive glyphs.
@@ -240,6 +240,20 @@ namespace ZyRender
 
     private:
 
+        /// \brief The glyphs of the first codepoints, indexed by codepoint.
+        using Dense = Array<ConstPtr<Glyph>, 128>;
+
+        /// \brief Finds the glyph of a codepoint, reading the plain table for the ones it covers.
+        ///
+        /// \param Codepoint The Unicode codepoint to look up.
+        /// \return The glyph, or `nullptr` when the font has none for the codepoint.
+        ZY_INLINE ConstPtr<Glyph> Find(UInt32 Codepoint) const
+        {
+            return Codepoint < mDense.GetSize() ? mDense[Codepoint] : mGlyphs.Find(Codepoint);
+        }
+
+    private:
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -247,5 +261,6 @@ namespace ZyRender
         Glyphs  mGlyphs;
         Kerning mKerning;
         Atlases mAtlases;
+        Dense   mDense;
     };
 }

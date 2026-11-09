@@ -37,6 +37,12 @@ namespace ZyRender
         mGlyphs  = Move(Glyphs);
         mKerning = Move(Kerning);
         mAtlases = Move(Atlases);
+
+        // The first codepoints are the ones text asks for most, so each is found once here.
+        for (UInt32 Codepoint = 0; Codepoint < mDense.GetSize(); ++Codepoint)
+        {
+            mDense[Codepoint] = mGlyphs.Find(Codepoint);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
