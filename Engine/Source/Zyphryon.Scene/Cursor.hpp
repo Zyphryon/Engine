@@ -230,11 +230,7 @@ namespace ZyScene
         {
             using Blueprint = Plan<StripAll<Callable>>;
 
-            if (mState->Declared != Blueprint::GetKey())
-            {
-                Blueprint::Declare(* mState);
-                mOwner->mLayout.Populate(* mState, mOwner->mDirectory);
-            }
+            Walk::Declare<StripAll<Callable>>(* mOwner, * mState);
 
             // Every end is taken first, so what reading the additions causes waits for the next read like the rest.
             Ref<Ledger>                Lists = mOwner->mLedger;

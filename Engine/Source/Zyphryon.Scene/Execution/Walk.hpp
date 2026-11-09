@@ -29,6 +29,23 @@ namespace ZyScene
 
     public:
 
+        /// \brief Declares a query for the fields of the first callback it is walked with, which it keeps from then on.
+        ///
+        /// \param Owner The storage the query belongs to.
+        /// \param State The query, which asks only for its terms until it is declared.
+        template<typename Callable>
+        ZY_INLINE static void Declare(Ref<Storage> Owner, Ref<Selection> State)
+        {
+            if (!State.Declared)
+            {
+                Plan<Callable>::Declare(State);
+
+                Owner.mLayout.Populate(State, Owner.mDirectory);
+            }
+
+            ZY_ASSERT(State.Declared == Plan<Callable>::GetKey(), "A query keeps the fields of its first callback");
+        }
+
         /// \brief Hands every match to a callback on this thread, holding every structural change until it ends.
         ///
         /// \param Owner    The storage the query belongs to.
@@ -377,10 +394,7 @@ namespace ZyScene
                         Climb(Owner, State, Where, Actor, Above, Where.Fixed[Index]...);
                     }
 
-                    const Ptr<Byte> Base  = Target->GetPage(Row);
-                    const UInt      Place = Target->GetPlace(Row);
-
-                    Call(Owner, Callback, Actor, Fetch<Parts>(Where.Start(Base, Index), Where.Steps[Index], Place)...);
+                    Hand(Owner, Where, * Target, Actor, Row, Callback);
                 }
             }
 
@@ -432,7 +446,7 @@ namespace ZyScene
                 return ((Parts::kPointer || Parts::kTag || Where.Steps[Index] || Where.Fixed[Index]) && ...);
             }
 
-            /// \brief Calls back for one row of a prepared chunk, as a reader does for each entry of a run.
+            /// \brief Calls back for one row of a prepared chunk, as a reader or an ordered walk does for each.
             ///
             /// \param Owner    The storage the entity lives in.
             /// \param Where    The places each field of the chunk is read from.

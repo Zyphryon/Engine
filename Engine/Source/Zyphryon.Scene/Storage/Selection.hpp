@@ -101,7 +101,7 @@ namespace ZyScene
         /// The rows every match held when the rows gathered were sorted.
         Sequence<UInt32>           Sizes;
 
-        /// The list of fields the walks were declared for, so a callback asking for others declares them again.
+        /// The list of fields the walks were declared for by the first callback, or `nullptr` until one is handed.
         ConstPtr<void>             Declared;
 
         /// The seconds one row costs, from a walk alone or a cheaper spread walk, which decides whether to spread.

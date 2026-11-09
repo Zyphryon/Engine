@@ -161,23 +161,7 @@ namespace ZyScene
                 Emit(Body, Root.GetIndex(), 0, Indices, Names, Count);
             }
         }
-
-        Output.Write<UInt32>(kMagic);
-        Output.Write<UInt16>(kVersion);
-        Output.Write<UInt32>(kTypes);
-        Output.WriteBlock<UInt32>([&Names](Ref<Writer> Block)
-        {
-            Block.Write<UInt32>(static_cast<UInt32>(Names.GetSize()));
-
-            for (const Text Name : Names)
-            {
-                Block.WriteText(Name);
-            }
-        });
-        Output.Write<UInt32>(kEntities);
-        Output.Write<UInt32>(static_cast<UInt32>(sizeof(UInt32) + Body.GetSize()));
-        Output.Write<UInt32>(Count);
-        Output.Write(Body.GetData(), Body.GetSize());
+        Seal(Output, Names, Body, Count);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -620,23 +604,7 @@ namespace ZyScene
             }
             Count += Records;
         }
-
-        Output.Write<UInt32>(kMagic);
-        Output.Write<UInt16>(kVersion);
-        Output.Write<UInt32>(kTypes);
-        Output.WriteBlock<UInt32>([&](Ref<Writer> Block)
-        {
-            Block.Write<UInt32>(static_cast<UInt32>(Kept.GetSize()));
-
-            for (const Text Name : Kept)
-            {
-                Block.WriteText(Name);
-            }
-        });
-        Output.Write<UInt32>(kEntities);
-        Output.Write<UInt32>(static_cast<UInt32>(sizeof(UInt32) + Body.GetSize()));
-        Output.Write<UInt32>(Count);
-        Output.Write(Body.GetData(), Body.GetSize());
+        Seal(Output, Kept, Body, Count);
         return true;
     }
 }

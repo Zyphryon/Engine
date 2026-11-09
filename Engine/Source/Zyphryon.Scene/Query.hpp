@@ -70,28 +70,10 @@ namespace ZyScene
         template<typename Callable>
         ZY_INLINE void Run(AnyRef<Callable> Callback) const
         {
-            Walk::Run(* mOwner, Prepare<StripAll<Callable>>(), Callback);
-        }
-
-    private:
-
-        /// \brief Gets the selection, declared for the callback's fields on the first run.
-        ///
-        /// \return The selection, ready to walk with the callback.
-        template<typename Callable>
-        ZY_INLINE Ref<Selection> Prepare() const
-        {
             ZY_ASSERT(mState, "The query matches nothing");
 
-            if (!mState->Declared)
-            {
-                Plan<Callable>::Declare(* mState);
-
-                mOwner->mLayout.Populate(* mState, mOwner->mDirectory);
-            }
-
-            ZY_ASSERT(mState->Declared == Plan<Callable>::GetKey(), "A query keeps the fields of its first run");
-            return * mState;
+            Walk::Declare<StripAll<Callable>>(* mOwner, * mState);
+            Walk::Run(* mOwner, * mState, Callback);
         }
 
     private:
