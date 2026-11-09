@@ -90,9 +90,13 @@ namespace ZyRender
         // Only a clip already paired with the rig has a pose worth fading out of.
         if (Fade > 0.0 && mSources[mActive].Motion && mSources[mActive].Bound)
         {
-            mActive ^= 1;
-            mEpoch   = Timestamp;
-            mFade    = Fade;
+            // A fade cut short before its half keeps fading out of the clip that still weighs more.
+            if (mFade <= 0.0 || Timestamp - mEpoch >= mFade * 0.5)
+            {
+                mActive ^= 1;
+            }
+            mEpoch = Timestamp;
+            mFade  = Fade;
         }
         else
         {
