@@ -37,7 +37,7 @@ namespace ZyRender
     {
         // The pull is authored in the emitter's own frame, so it turns and stretches with whatever throws it.
         const Vector3          Gravity = Matrix4x3::ProjectDirection(Worldspace, Emitter.GetGravity()) * Delta;
-        const Real32           Drag    = Clamp(1.0f - Emitter.GetDrag() * Delta, 0.0f, 1.0f);
+        const Real32           Drag    = Exp(-Emitter.GetDrag() * Delta);
         const Emitter::Contact Meeting = Emitter.GetContact();
 
         // The wind carries a particle along with it rather than speeding it up, so it is laid on each step whole.
