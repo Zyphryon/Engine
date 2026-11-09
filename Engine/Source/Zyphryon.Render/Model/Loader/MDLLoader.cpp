@@ -61,56 +61,54 @@ namespace ZyRender
         {
             Asset->SetSkeleton(Service.Load<Skeleton3D>(Path, AddressOf(Scope)));
         }
+        else
+        {
+            Asset->SetSkeleton(Retainer<Skeleton3D>());
+        }
 
         // Resolve the material table, in the slot order primitives reference by index.
-        if (const JsonArray Materials = Root.GetArray("Materials"); !Materials.IsNullOrEmpty())
+        const JsonArray Materials = Root.GetArray("Materials");
+
+        Sequence<Retainer<ZyGraphic::Material>> Table;
+        Table.Reserve(Materials.GetSize());
+
+        for (UInt Slot = 0; Slot < Materials.GetSize(); ++Slot)
         {
-            const UInt Count = Materials.GetSize();
+            Retainer<ZyGraphic::Material> Object;
 
-            Sequence<Retainer<ZyGraphic::Material>> Table;
-            Table.Reserve(Count);
-
-            for (UInt Slot = 0; Slot < Count; ++Slot)
+            if (const JsonObject Definition = Materials.GetObject(Slot); Definition.IsValid())
             {
-                Retainer<ZyGraphic::Material> Object;
+                Object = Retainer<ZyGraphic::Material>::Create(ZyContent::Uri(Asset->GetKey()));
+                Object->SetPolicy(ZyContent::Resource::Policy::Exclusive);
 
-                if (const JsonObject Definition = Materials.GetObject(Slot); Definition.IsValid())
-                {
-                    Object = Retainer<ZyGraphic::Material>::Create(ZyContent::Uri(Asset->GetKey()));
-                    Object->SetPolicy(ZyContent::Resource::Policy::Exclusive);
-
-                    ZyGraphic::MTLLoader::Parse(Service, Scope, Definition, * Object);
-                }
-                else
-                {
-                    Object = Service.Load<ZyGraphic::Material>(Materials.GetString(Slot), AddressOf(Scope));
-                }
-                Table.Append(Move(Object));
+                ZyGraphic::MTLLoader::Parse(Service, Scope, Definition, * Object);
             }
-            Asset->SetMaterials(Move(Table));
+            else
+            {
+                Object = Service.Load<ZyGraphic::Material>(Materials.GetString(Slot), AddressOf(Scope));
+            }
+            Table.Append(Move(Object));
         }
+        Asset->SetMaterials(Move(Table));
 
-        if (const JsonArray List = Root.GetArray("Clips"); !List.IsNullOrEmpty())
+        const JsonArray List = Root.GetArray("Clips");
+
+        Sequence<Model3D::Clip> Clips;
+        Clips.Reserve(List.GetSize());
+
+        for (UInt Index = 0; Index < List.GetSize(); ++Index)
         {
-            const UInt Count = List.GetSize();
+            const JsonObject Definition = List.GetObject(Index);
+            const Text       Name       = Definition.GetString("Name");
 
-            Sequence<Model3D::Clip> Clips;
-            Clips.Reserve(Count);
-
-            for (UInt Index = 0; Index < Count; ++Index)
-            {
-                const JsonObject Definition = List.GetObject(Index);
-                const Text       Name       = Definition.GetString("Name");
-
-                Ref<Model3D::Clip> Clip = Clips.Append();
-                Clip.Name   = Hash(Name);
-                Clip.Label  = Name;
-                Clip.Motion = Service.Load<Animation3D>(Definition.GetString("Path"), AddressOf(Scope));
-                Clip.Mode   = Definition.GetEnum("Repeat", Repeat::Loop);
-                Clip.Rate   = Max(Definition.GetNumber("Rate", 1.0f), 0.0f);
-            }
-            Asset->SetClips(Move(Clips));
+            Ref<Model3D::Clip> Clip = Clips.Append();
+            Clip.Name   = Hash(Name);
+            Clip.Label  = Name;
+            Clip.Motion = Service.Load<Animation3D>(Definition.GetString("Path"), AddressOf(Scope));
+            Clip.Mode   = Definition.GetEnum("Repeat", Repeat::Loop);
+            Clip.Rate   = Max(Definition.GetNumber("Rate", 1.0f), 0.0f);
         }
+        Asset->SetClips(Move(Clips));
         return true;
     }
 }

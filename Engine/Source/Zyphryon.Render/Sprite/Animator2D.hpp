@@ -207,7 +207,8 @@ namespace ZyRender
             const UInt32 Count = Frames.GetCount();
             const Real64 Local = mPlayback.GetTime();
 
-            if (Count == 0)
+            // A clip with no frames or no length stays on its first frame.
+            if (Count == 0 || mPlayback.GetDuration() <= 0.0)
             {
                 return 0;
             }
