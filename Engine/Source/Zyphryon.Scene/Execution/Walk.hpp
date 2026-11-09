@@ -769,7 +769,12 @@ namespace ZyScene
             else
             {
                 const Real64 Row = Measure(Owner, State, Begin, End, Callback, Sorted);
-                State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
+
+                // A walk shorter than a share is timed too coarsely to say what a row costs.
+                if (Row * (End - Begin) >= kShareSeconds)
+                {
+                    State.Cost = State.Cost > 0 ? Min(Row, State.Cost * 1.25) : Row;
+                }
             }
         }
 
