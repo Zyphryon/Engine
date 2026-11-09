@@ -266,7 +266,7 @@ namespace ZyScene
 
         if (mLedger.IsActive())
         {
-            Carry(Source, From, AddressOf(Target), To);
+            Carry(Source, From, Target, To);
         }
 
         if (const Handle Moved = Source.Release(From); Moved.IsValid())
@@ -953,12 +953,10 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Storage::Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstPtr<Chunk> Target, UInt32 Landing)
+    void Storage::Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstRef<Chunk> Target, UInt32 Landing)
     {
-        const UInt32 Last   = Holder.GetSize() - 1;
-        const UInt32 Leaver = Holder.GetHandle(Row).GetIndex();
-        const UInt32 Filler = Holder.GetHandle(Last).GetIndex();
-        const Bool   Moving = Holder.GetPage(Row) != Holder.GetPage(Last);
+        // The row filling the hole lands in a page marked as late, since a walk marks every page of a chunk at once.
+        const Handle Leaver = Holder.GetHandle(Row);
 
         for (UInt32 Column = 0; Column < Holder.GetColumns().GetSize(); ++Column)
         {
@@ -970,17 +968,11 @@ namespace ZyScene
             }
 
             // A value a walk wrote in place leaves the page that says so, unless the page it lands in says so too.
-            const SInt16 Into = Target ? Target->Find(Identifier) : Chunk::kAbsent;
+            const SInt16 Into = Target.Find(Identifier);
 
-            if (Into >= 0 && Chunk::IsLater(Holder.GetMark(Column, Row), Target->GetMark(Into, Landing)))
+            if (Into >= 0 && Chunk::IsLater(Holder.GetMark(Column, Row), Target.GetMark(Into, Landing)))
             {
                 Record(Identifier, Pull::Changed, Leaver, nullptr);
-            }
-
-            // So does the last row's, filling the hole in a page a walk wrote earlier.
-            if (Moving && Chunk::IsLater(Holder.GetMark(Column, Last), Holder.GetMark(Column, Row)))
-            {
-                Record(Identifier, Pull::Changed, Filler, nullptr);
             }
         }
     }
@@ -1027,8 +1019,6 @@ namespace ZyScene
             {
                 mLedger.Record(Identifier, Pull::Removed, Actor, Value, Holder.GetIndex());
             });
-
-            Carry(Holder, Entry.Row, nullptr, 0);
         }
 
         if (const Handle Moved = Entry.Holder->Erase(Entry.Row); Moved.IsValid())

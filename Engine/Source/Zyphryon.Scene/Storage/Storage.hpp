@@ -492,13 +492,13 @@ namespace ZyScene
         /// \param Index  The slot of the entity the copies hang from, which decides whether they are archetypes too.
         void Copy(UInt32 Source, UInt32 Index);
 
-        /// \brief Lists what a walk marked written of the rows a row's leaving moves, before they leave their pages.
+        /// \brief Lists what a walk marked written of a row moving to another chunk, before it leaves its page.
         ///
         /// \param Holder  The chunk the row sits in.
-        /// \param Row     The row about to be taken out, which the last row fills.
-        /// \param Target  The chunk the row's entity moves to, or `nullptr` when it is destroyed.
-        /// \param Landing The row it takes there, ignored without a chunk to move to.
-        void Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstPtr<Chunk> Target, UInt32 Landing);
+        /// \param Row     The row about to be taken out.
+        /// \param Target  The chunk the row's entity moves to.
+        /// \param Landing The row it takes there.
+        void Carry(ConstRef<Chunk> Holder, UInt32 Row, ConstRef<Chunk> Target, UInt32 Landing);
 
         /// \brief Destroys one entity whose children are gone, its heirs first when it is an archetype.
         ///
