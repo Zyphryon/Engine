@@ -130,7 +130,7 @@ namespace ZyRender
             // The sort overwrites every element it lands on, so the scratch only ever needs raw capacity.
             if (mScratch.GetSize() < Size * sizeof(Command))
             {
-                mScratch = Blob::Allocate<Command>(Size);
+                mScratch = Blob::Allocate<Command>(mQueue.GetCapacity());
             }
 
             const ConstPtr<Command> Sorted = RadixSort64(mQueue.GetData(), mScratch.GetData<Command>(), Size);
