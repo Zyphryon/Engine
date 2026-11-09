@@ -95,12 +95,12 @@ float4 main(fs_Input Input) : SV_Target0
         return float4(0.5, 1.0, 0.5, 1.0);
     }
 
-    const float3 Center = Fetch(Input.Position.xy);
+    const float2 Uv     = (floor(Input.Position.xy) + 0.5) / Size;
+    const float2 Clip   = float2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0);
+    const float3 Center = Locate(Clip, Along);
     const float3 Normal = normalize(ZyDecodeNormalMap(t_Normal.SampleLevel(s_Normal, Input.Texture, 0).rgb));
 
 #if defined(HORIZON_PERSPECTIVE)
-    const float2 Uv     = (floor(Input.Position.xy) + 0.5) / Size;
-    const float2 Clip   = float2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0);
     const float3 Across = Locate(Clip + float2(2.0 / Size.x, 0.0), Along) - Center;
     const float3 Down   = Locate(Clip - float2(0.0, 2.0 / Size.y), Along) - Center;
     const float3 Viewer = normalize(u_Eye.xyz - Center);

@@ -47,9 +47,8 @@ layout(location = 0) out vec4 out_Occlusion;
 
 void main()
 {
-    vec2  Size  = vec2(textureSize(t_Reach, 0));
-    float Along = textureLod(t_Reach, v_Texture, 0.0).r;
-    vec2  Texel = 2.0 / vec2(textureSize(t_Normal, 0));
+    vec2 Size  = vec2(textureSize(t_Reach, 0));
+    vec2 Texel = 1.0 / Size;
 
 #if ZY_TIER >= 3
     vec2 Corner = floor(v_Texture * Size);
@@ -63,6 +62,9 @@ void main()
         Lower.x, Lower.y, Right.x, Right.y,
         Upper.w, Upper.z, Both.w,  Both.z,
         Upper.x, Upper.y, Both.x,  Both.y);
+    float Along = Lower.y;
+#else
+    float Along = textureLod(t_Reach, v_Texture, 0.0).r;
 #endif
 
     vec4  Total  = vec4(0.0);

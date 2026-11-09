@@ -57,11 +57,7 @@ float4 main(fs_Input Input) : SV_Target0
     float2 Size;
     t_Reach.GetDimensions(Size.x, Size.y);
 
-    float2 Full;
-    t_Normal.GetDimensions(Full.x, Full.y);
-
-    const float  Along = t_Reach.SampleLevel(s_Reach, Input.Texture, 0).r;
-    const float2 Texel = 2.0 / Full;
+    const float2 Texel = 1.0 / Size;
 
 #if ZY_TIER >= 3
     const float2 Corner = floor(Input.Position.xy);
@@ -77,6 +73,9 @@ float4 main(fs_Input Input) : SV_Target0
         Upper.w, Upper.z, Both.w,  Both.z,
         Upper.x, Upper.y, Both.x,  Both.y
     };
+    const float Along = Lower.y;
+#else
+    const float Along = t_Reach.SampleLevel(s_Reach, Input.Texture, 0).r;
 #endif
 
     float4 Total  = 0.0;

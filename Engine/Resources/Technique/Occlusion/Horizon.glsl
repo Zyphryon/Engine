@@ -86,12 +86,12 @@ void main()
     }
 
     vec2 Pixel  = v_Texture * Size;
-    vec3 Center = Fetch(Pixel);
+    vec2 Uv     = (floor(Pixel) + 0.5) / Size;
+    vec2 Clip   = vec2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0);
+    vec3 Center = Locate(Clip, Along);
     vec3 Normal = normalize(ZyDecodeNormalMap(textureLod(t_Normal, v_Texture, 0.0).rgb));
 
 #if defined(HORIZON_PERSPECTIVE)
-    vec2 Uv     = (floor(Pixel) + 0.5) / Size;
-    vec2 Clip   = vec2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0);
     vec3 Across = Locate(Clip + vec2(2.0 / Size.x, 0.0), Along) - Center;
     vec3 Down   = Locate(Clip - vec2(0.0, 2.0 / Size.y), Along) - Center;
     vec3 Viewer = normalize(u_Eye.xyz - Center);
