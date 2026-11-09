@@ -104,13 +104,10 @@ namespace ZyRender
     private:
 
         /// \brief The technique the search draws with.
-        static constexpr Text           kTechnique   = "Embedded://Technique/Occlusion/Horizon.vfx";
-
-        /// \brief Names the variant each detail is compiled as, none for the base's standard search.
-        static constexpr Array<Text, 4> kDetails     = { "", "Basic", "Reduced", "" };
+        static constexpr Text kTechnique   = "Embedded://Technique/Occlusion/Horizon.vfx";
 
         /// \brief Names the variant compiled for a view whose lines of sight leave from one point.
-        static constexpr Text           kPerspective = "Perspective";
+        static constexpr Text kPerspective = "Perspective";
 
         /// \brief Represents the per-pass data the search technique consumes.
         struct GpuHorizonLayout final

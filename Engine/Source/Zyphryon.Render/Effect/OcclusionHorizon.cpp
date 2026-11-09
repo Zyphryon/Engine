@@ -71,9 +71,9 @@ namespace ZyRender
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);
 
-        if (const Text Variant = kDetails[ZyEnum::Cast(mDetail)]; !Variant.IsEmpty())
+        if (mDetail != Detail::Standard)
         {
-            Binder.SetVariant(Variant);
+            Binder.SetVariant(ZyEnum::GetName(mDetail));
         }
 
         if (mPerspective)
