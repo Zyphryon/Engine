@@ -108,8 +108,11 @@ namespace ZyScene
 
     void Ledger::SetPosition(UInt32 Subscription, UInt64 Position)
     {
-        mSubscriptions[Subscription - 1].Position = Position;
-        Trim(mSubscriptions[Subscription - 1].List);
+        if (mSubscriptions[Subscription - 1].Position != Position)
+        {
+            mSubscriptions[Subscription - 1].Position = Position;
+            Trim(mSubscriptions[Subscription - 1].List);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
