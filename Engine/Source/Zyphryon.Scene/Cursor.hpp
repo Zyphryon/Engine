@@ -301,7 +301,10 @@ namespace ZyScene
 
             if constexpr ((List::kKind & Pull::Changed) != Pull())
             {
-                ReadMarks(Callback, Until);
+                if (Chunk::IsLater(Lists.GetStamp(mHandles.GetBack()), mLast))
+                {
+                    ReadMarks(Callback, Until);
+                }
             }
             mLast = Until;
 

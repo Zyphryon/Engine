@@ -157,6 +157,24 @@ namespace ZyScene
             return Target.Sources[Position - Target.First];
         }
 
+        /// \brief Sets the tick of the last walk that marked pages of a component, which tells its readers to scan.
+        ///
+        /// \param Identifier The identifier of the component, which some reader watches for changes.
+        /// \param Tick       The tick to set, never zero.
+        ZY_INLINE void SetStamp(UInt32 Identifier, UInt32 Tick)
+        {
+            mLists[GetListIndex(Identifier, Pull::Changed)]->Stamp = Tick;
+        }
+
+        /// \brief Gets the tick of the last walk that marked pages of the component a reader watches.
+        ///
+        /// \param Subscription The handle of the subscription, which reads changes.
+        /// \return The tick, or zero when no walk ever marked any.
+        ZY_INLINE UInt32 GetStamp(UInt32 Subscription) const
+        {
+            return mLists[mSubscriptions[Subscription - 1].List]->Stamp;
+        }
+
         /// \brief Destroys every value kept for a component before its code goes, leaving the entries without one.
         ///
         /// \param Identifier The identifier of the component to retire.
@@ -175,6 +193,9 @@ namespace ZyScene
 
             /// The number of readers of the list.
             UInt32              Subscribers = 0;
+
+            /// The tick of the last walk that marked pages of the component, kept by a list of changes, zero until one.
+            UInt32              Stamp       = 0;
 
             /// The position of the first entry held, counted from the list's first ever.
             UInt64              First       = 0;

@@ -213,6 +213,7 @@ namespace ZyScene
             {
                 continue;
             }
+            mLedger.SetStamp(Identifier, mTick);
 
             // An entity reading its archetype's value was not written, so only chunks holding their own are marked.
             for (const Ptr<Chunk> Target : State.Chunks)
