@@ -163,6 +163,16 @@ inline namespace ZyBase
         return std::pow(Base, Exponent);
     }
 
+    /// \brief Computes Euler's number raised to the power of the given exponent.
+    ///
+    /// \param Exponent The power to raise Euler's number to.
+    /// \return The result of raising Euler's number to the power of \p Exponent.
+    template<IsReal Type>
+    ZY_INLINE Type Exp(Type Exponent)
+    {
+        return std::exp(Exponent);
+    }
+
     /// \brief Computes the power of a base raised to an exponent for integer numbers.
     ///
     /// \param Base     The number to raise.
