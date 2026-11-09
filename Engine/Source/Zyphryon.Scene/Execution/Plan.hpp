@@ -88,14 +88,9 @@ namespace ZyScene
         /// \param State The selection, whose ancestor components are declared already.
         ZY_INLINE static void Declare(Ref<Selection> State)
         {
-            State.Fields.Clear();
-            State.Modes.Clear();
-            State.Globals.Clear();
             State.Chunks.Clear();
             State.Sources.Clear();
             State.Positions.Clear();
-            State.Gathered.Clear();
-            State.Snapshot.Clear();
 
             (AddField<Parts>(State), ...);
             State.Declared = GetKey();
