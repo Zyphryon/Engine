@@ -27,6 +27,10 @@
     { "Name": "Reduced",     "Program": { "Defines": ["ZY_OCCLUSION_SLICES=2", "ZY_OCCLUSION_STEPS=4"] } },
     { "Name": "Perspective", "Program": { "Defines": ["HORIZON_PERSPECTIVE"] } }
   ],
+  "Preload": [
+    ["Basic"],
+    ["Reduced"]
+  ],
   "Program": {
     "Shaders": {
       "HLSL": [
