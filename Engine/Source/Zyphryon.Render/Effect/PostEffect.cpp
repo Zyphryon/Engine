@@ -97,7 +97,7 @@ namespace ZyRender
         Keep.AddInput({ .Name = "Scene"_Hash, .Target = Eased });
         mMeter.Append(AddressOf(Keep));
 
-        mFinal = AddressOf(Blueprint.AddPass<PostEffectFinal>("Final", Host, Scene, Output == Pass::kNone));
+        mFinal = AddressOf(Blueprint.AddPass<PostEffectFinal>("Final", Host, Scene));
         mFinal->AddColor({ .Target = Output, .Load = ZyGraphic::Action::Discard });
         mFinal->AddInput({ .Name = "Scene"_Hash,    .Target = Scene  });
         mFinal->AddInput({ .Name = "Bloom"_Hash,    .Target = mUp[0] });

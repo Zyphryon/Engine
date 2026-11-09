@@ -166,10 +166,9 @@ namespace ZyRender
 
         /// \brief Constructs the final pass.
         ///
-        /// \param Host    The service host the technique is loaded through.
-        /// \param Source  The slot of the scene image the pass develops, whose size sets the antialiasing's step.
-        /// \param Surface `true` when the pass writes straight onto the display surface, `false` for a target.
-        PostEffectFinal(Ref<ZyEngine::Subsystem::Host> Host, UInt32 Source, Bool Surface);
+        /// \param Host   The service host the technique is loaded through.
+        /// \param Source The slot of the scene image the pass develops, whose size sets the antialiasing's step.
+        PostEffectFinal(Ref<ZyEngine::Subsystem::Host> Host, UInt32 Source);
 
         /// \copydoc Pass::Run
         void Run(Ref<Encoder> Encoder, ConstRef<Graph> Graph) override;
@@ -257,7 +256,6 @@ namespace ZyRender
 
         Retainer<ZyGraphic::Technique> mTechnique;
         UInt32                         mSource;
-        Bool                           mSurface;
         Antialias                      mAntialias;
         Exposure                       mExposure;
         Grade                          mGrade;

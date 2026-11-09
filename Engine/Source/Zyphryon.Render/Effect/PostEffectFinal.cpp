@@ -21,10 +21,9 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    PostEffectFinal::PostEffectFinal(Ref<ZyEngine::Subsystem::Host> Host, UInt32 Source, Bool Surface)
+    PostEffectFinal::PostEffectFinal(Ref<ZyEngine::Subsystem::Host> Host, UInt32 Source)
         : mTechnique { Host.GetService<ZyContent::Service>()->Load<ZyGraphic::Technique>(kTechnique) },
           mSource    { Source },
-          mSurface   { Surface },
           mAntialias { Antialias::None },
           mHalo      { 0.0f },
           mFrame     { 0 }
@@ -77,7 +76,7 @@ namespace ZyRender
 
 #ifdef    ZY_PLATFORM_WEB
         // The web's display surface stores what it is handed, so the image is encoded before it is written.
-        if (mSurface)
+        if (GetColor().Target == kNone)
         {
             Binder.SetVariant("Gamma");
         }
