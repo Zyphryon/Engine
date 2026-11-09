@@ -130,7 +130,8 @@ namespace ZyScene
         {
             Dense,   ///< Every field steps.
             Written, ///< The written fields step and the read ones stay in one place.
-            Chunk,   ///< Each field steps as the chunk says, and the ancestor ones climb.
+            Chunk,   ///< Each field steps as the chunk says.
+            Climb,   ///< Each field steps as the chunk says, and the ancestor ones climb.
         };
 
         /// \brief Represents the loops of a walk for one list of fields, spelled out only with their positions.
@@ -167,6 +168,9 @@ namespace ZyScene
 
                 /// `true` when the written fields step and the read ones stay in one place, `false` otherwise.
                 Bool      Invariant;
+
+                /// `true` when some field is read from the nearest ancestor, `false` when none climbs.
+                Bool      Climbing;
 
                 /// \brief Gets where a field starts in a page, or the one place every row reads it from.
                 ///
@@ -213,7 +217,7 @@ namespace ZyScene
             template<Stride Mode, typename Field>
             ZY_INLINE static UInt Step(ConstRef<Places> Where, UInt Position)
             {
-                if constexpr (Mode == Stride::Chunk)
+                if constexpr (Mode == Stride::Chunk || Mode == Stride::Climb)
                 {
                     return Where.Steps[Position];
                 }
@@ -270,6 +274,7 @@ namespace ZyScene
                         break;
                     case Selection::kAncestor:
                         Into.Climbs[Field] = true;
+                        Into.Climbing      = true;
                         break;
                     default:
                         break;
@@ -321,6 +326,10 @@ namespace ZyScene
                     else if (Where.Invariant)
                     {
                         Loop<Stride::Written>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
+                    }
+                    else if ((Parts::kPointer || ...) && Where.Climbing)
+                    {
+                        Loop<Stride::Climb>(Owner, Callback, State, Handles, Where, First, Last, Bases[Index]...);
                     }
                     else
                     {
@@ -401,7 +410,7 @@ namespace ZyScene
 
                 for (UInt Row = First; Row < Last; ++Row)
                 {
-                    if constexpr (Mode == Stride::Chunk && (Parts::kPointer || ...))
+                    if constexpr (Mode == Stride::Climb)
                     {
                         Climb(Owner, State, Where, Handles[Row], Above, Bases...);
                     }
