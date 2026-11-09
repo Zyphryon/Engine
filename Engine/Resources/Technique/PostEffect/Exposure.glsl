@@ -7,6 +7,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Embedded://Shader/Vertex.glsl"
+#include "Embedded://Shader/Color.glsl"
 
 layout(std140, binding = 1) uniform cb_Pass
 {
@@ -86,7 +87,7 @@ vec2 Measure(vec2 Uv)
             vec2 Offset = (vec2(X, Y) - 1.5) * 0.25 * u_Filter.xy;
             vec3 Color  = textureLod(t_Scene, Uv + Offset, 0.0).rgb;
 
-            Total += log2(max(dot(Color, vec3(0.2126, 0.7152, 0.0722)), 0.0001));
+            Total += log2(max(ZyLuminance(Color), 0.0001));
         }
     }
 

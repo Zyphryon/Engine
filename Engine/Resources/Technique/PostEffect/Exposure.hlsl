@@ -7,6 +7,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Embedded://Shader/Vertex.hlsl"
+#include "Embedded://Shader/Color.hlsl"
 
 cbuffer cb_Pass : register(b1)
 {
@@ -101,7 +102,7 @@ float2 Measure(float2 Uv)
             const float2 Offset = (float2(X, Y) - 1.5) * 0.25 * u_Filter.xy;
             const float3 Color  = t_Scene.SampleLevel(s_Scene, Uv + Offset, 0).rgb;
 
-            Total += log2(max(dot(Color, float3(0.2126, 0.7152, 0.0722)), 0.0001));
+            Total += log2(max(ZyLuminance(Color), 0.0001));
         }
     }
 
