@@ -180,8 +180,7 @@ namespace ZyRender
 
     void Encoder::SetFrame(ZyGraphic::Stream Stream)
     {
-        mFrame   = Stream;
-        mBinding = Binding();
+        mFrame = Stream;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -133,7 +133,7 @@ namespace ZyRender
             Height = Max(1, Height);
 
             // A texture already standing in the shape it is asked for again is left where it is.
-            if (Entry.Texture && Entry.Format == Description.Format && Entry.Width == Width && Entry.Height == Height)
+            if (Entry.Texture && Entry.Width == Width && Entry.Height == Height)
             {
                 continue;
             }
@@ -143,7 +143,6 @@ namespace ZyRender
                 mService->DeleteTexture(Entry.Texture);
             }
 
-            Entry.Format  = Description.Format;
             Entry.Width   = Width;
             Entry.Height  = Height;
             Entry.Texture = mService->CreateTexture(Description.Format, Width, Height, 1);

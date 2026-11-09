@@ -262,7 +262,7 @@ namespace ZyRender
 
         /// \brief Resolves a material under a technique into \ref mBinding, unless both match the last resolution.
         ///
-        /// \note The cache holds one entry and is dropped by \ref Reset and \ref SetFrame.
+        /// \note The cache holds one entry and is dropped by \ref Reset.
         ///
         /// \param Technique The technique whose schema names what to bind.
         /// \param Material  The material to source the variant, block, images and samplers from.

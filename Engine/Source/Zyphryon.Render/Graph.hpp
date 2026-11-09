@@ -107,16 +107,13 @@ namespace ZyRender
         struct Slot final
         {
             /// The texture the graph realized for the target, or zero while it holds none.
-            ZyGraphic::Object        Texture = 0;
-
-            /// The format the texture was realized with.
-            ZyGraphic::TextureFormat Format  = ZyGraphic::TextureFormat::Unspecified;
+            ZyGraphic::Object Texture = 0;
 
             /// The width the texture came out at, in pixels.
-            UInt16                   Width   = 0;
+            UInt16            Width   = 0;
 
             /// The height the texture came out at, in pixels.
-            UInt16                   Height  = 0;
+            UInt16            Height  = 0;
         };
 
         /// \brief Represents one pass the graph baked, and the surface it draws into.

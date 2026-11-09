@@ -48,10 +48,8 @@ namespace ZyRender
                         && mLens.Grain <= 0.0f
                         && mGrade.Posterize <= 1.0f;
 
-        const UInt16 Width  = Graph.GetWidth(mSource);
-        const UInt16 Height = Graph.GetHeight(mSource);
-        const Real32 TexelX = (Width  > 0 ? 1.0f / Width  : 0.0f);
-        const Real32 TexelY = (Height > 0 ? 1.0f / Height : 0.0f);
+        const Real32 TexelX = 1.0f / Graph.GetWidth(mSource);
+        const Real32 TexelY = 1.0f / Graph.GetHeight(mSource);
         const Real32 Steps  = Max(mGrade.Posterize - 1.0f, 0.0f);
 
         Encoder.SetPass(GpuFinalLayout {
