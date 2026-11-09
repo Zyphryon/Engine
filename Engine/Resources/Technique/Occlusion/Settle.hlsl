@@ -45,12 +45,10 @@ fs_Input main(uint VertexID : SV_VertexID)
 
 #ifdef FRAGMENT_SHADER
 
-Texture2D    t_Normal    : register(t0);
-SamplerState s_Normal    : register(s0);
-Texture2D    t_Reach     : register(t1);
-SamplerState s_Reach     : register(s1);
-Texture2D    t_Occlusion : register(t2);
-SamplerState s_Occlusion : register(s2);
+Texture2D    t_Reach     : register(t0);
+SamplerState s_Reach     : register(s0);
+Texture2D    t_Occlusion : register(t1);
+SamplerState s_Occlusion : register(s1);
 
 float4 main(fs_Input Input) : SV_Target0
 {

@@ -37,9 +37,8 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
-layout(binding = 0) uniform sampler2D t_Normal;
-layout(binding = 1) uniform highp sampler2D t_Reach;
-layout(binding = 2) uniform sampler2D t_Occlusion;
+layout(binding = 0) uniform highp sampler2D t_Reach;
+layout(binding = 1) uniform sampler2D t_Occlusion;
 
 in vec2 v_Texture;
 

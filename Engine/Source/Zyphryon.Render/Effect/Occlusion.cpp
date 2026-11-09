@@ -38,7 +38,6 @@ namespace ZyRender
 
         mSettle = AddressOf(Blueprint.AddPass<OcclusionSettle>("Occlusion", Host));
         mSettle->AddColor({ .Target = mOutput, .Load = ZyGraphic::Action::Discard });
-        mSettle->AddInput({ .Name = "Normal"_Hash,    .Target = Normal  });
         mSettle->AddInput({ .Name = "Reach"_Hash,     .Target = Reach   });
         mSettle->AddInput({ .Name = "Occlusion"_Hash, .Target = Horizon });
 
