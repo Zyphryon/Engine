@@ -33,15 +33,8 @@ namespace ZyGraphic
 
     Bool TEXLoader::Parse(Ref<Reader> Input, Ref<Image> Asset)
     {
-        if (Input.Read<UInt32>() != ('Z' | ('T' << 8) | ('E' << 16) | ('X' << 24)))
+        if (!Expect(Input, Asset.GetKey(), "ZTEX", 1))
         {
-            LOG_W("'{0}' is not a ZTEX file (bad magic)", Asset.GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZTEX version", Asset.GetKey());
             return false;
         }
 

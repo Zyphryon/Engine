@@ -121,17 +121,9 @@ namespace ZyRender
         const Retainer<Sheet2D> Asset = Retainer<Sheet2D>::Cast(Scope.GetResource());
 
         JsonValue Document;
-        JsonError Error;
 
-        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        if (!Interpret(Data, Asset->GetKey(), "2D sheet", Document))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
-            return false;
-        }
-
-        if (!Document.IsObject())
-        {
-            LOG_W("'{0}' is not a valid 2D sheet", Asset->GetKey());
             return false;
         }
 

@@ -29,15 +29,8 @@ namespace ZyRender
 
         Reader Input(Data);
 
-        if (Input.Read<UInt32>() != ('Z' | ('F' << 8) | ('N' << 16) | ('T' << 24)))
+        if (!Expect(Input, Asset->GetKey(), "ZFNT", 1))
         {
-            LOG_W("'{0}' is not a ZFNT file (bad magic)", Asset->GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZFNT version", Asset->GetKey());
             return false;
         }
 

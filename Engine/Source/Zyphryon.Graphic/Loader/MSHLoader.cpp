@@ -28,15 +28,8 @@ namespace ZyGraphic
 
         Reader Input(Data);
 
-        if (Input.Read<UInt32>() != ('Z' | ('M' << 8) | ('S' << 16) | ('H' << 24)))
+        if (!Expect(Input, Asset->GetKey(), "ZMSH", 1))
         {
-            LOG_W("'{0}' is not a ZMSH file (bad magic)", Asset->GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZMSH version", Asset->GetKey());
             return false;
         }
 

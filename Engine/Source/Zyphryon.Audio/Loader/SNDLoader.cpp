@@ -46,15 +46,8 @@ namespace ZyAudio
 
     Bool SNDLoader::Parse(Ref<Reader> Input, Ref<Sound> Asset)
     {
-        if (Input.Read<UInt32>() != ('Z' | ('S' << 8) | ('N' << 16) | ('D' << 24)))
+        if (!Expect(Input, Asset.GetKey(), "ZSND", 1))
         {
-            LOG_W("'{0}' is not a ZSND file (bad magic)", Asset.GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZSND version", Asset.GetKey());
             return false;
         }
 

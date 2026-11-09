@@ -322,17 +322,9 @@ namespace ZyGraphic
         ZyGraphic::Schema      Schema;
 
         JsonValue Document;
-        JsonError Error;
 
-        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        if (!Interpret(Data, Asset->GetKey(), "technique document", Document))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
-            return false;
-        }
-
-        if (!Document.IsObject())
-        {
-            LOG_W("'{0}' is not a valid technique document", Asset->GetKey());
             return false;
         }
 

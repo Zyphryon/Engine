@@ -56,15 +56,8 @@ namespace ZyRender
 
         Reader Input(Data);
 
-        if (Input.Read<UInt32>() != ('Z' | ('A' << 8) | ('N' << 16) | ('M' << 24)))
+        if (!Expect(Input, Asset->GetKey(), "ZANM", 1))
         {
-            LOG_W("'{0}' is not a ZANM file (bad magic)", Asset->GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZANM version", Asset->GetKey());
             return false;
         }
 

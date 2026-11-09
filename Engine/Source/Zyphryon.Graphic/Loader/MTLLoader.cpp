@@ -72,17 +72,9 @@ namespace ZyGraphic
         const Retainer<Material> Asset = Retainer<Material>::Cast(Scope.GetResource());
 
         JsonValue Document;
-        JsonError Error;
 
-        if (!JsonDocument::Parse(Text(Data.GetData<Char>(), Data.GetSize()), Document, Error))
+        if (!Interpret(Data, Asset->GetKey(), "material document", Document))
         {
-            LOG_W("'{0}' is not valid JSON: {1}", Asset->GetKey(), Error);
-            return false;
-        }
-
-        if (!Document.IsObject())
-        {
-            LOG_W("'{0}' is not a valid material document", Asset->GetKey());
             return false;
         }
 

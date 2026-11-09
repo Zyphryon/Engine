@@ -28,15 +28,8 @@ namespace ZyRender
 
         Reader Input(Data);
 
-        if (Input.Read<UInt32>() != ('Z' | ('S' << 8) | ('K' << 16) | ('L' << 24)))
+        if (!Expect(Input, Asset->GetKey(), "ZSKL", 1))
         {
-            LOG_W("'{0}' is not a ZSKL file (bad magic)", Asset->GetKey());
-            return false;
-        }
-
-        if (Input.Read<UInt16>() != 1)
-        {
-            LOG_W("'{0}' has an unsupported ZSKL version", Asset->GetKey());
             return false;
         }
 
