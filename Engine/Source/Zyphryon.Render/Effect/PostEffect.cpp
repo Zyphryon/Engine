@@ -141,7 +141,7 @@ namespace ZyRender
 
     void PostEffect::SetBloomScale(Target::Scale Sizing)
     {
-        constexpr UInt32 Smallest = ZyEnum::Cast(Target::Scale::Sixteenth);
+        constexpr UInt32 Smallest = ZyEnum::Cast(Target::Scale::ThirtySecond);
 
         // Each level halves the one above, down to the smallest fraction a target tracks the output by.
         for (UInt32 Level = 0; Level < kLevels; ++Level)
