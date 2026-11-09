@@ -58,7 +58,7 @@ namespace ZyRender
         Frames.SetHeading(Angle::FromDegrees(Definition.GetNumber<Real32>("Heading", 270.0f)));
         Frames.SetHysteresis(Definition.GetNumber<Real32>("Hysteresis", Animation2D::kHysteresis));
 
-        if (const JsonArray Stride = Definition.GetArray("Stride"); !Stride.IsNullOrEmpty() && Stride.GetSize() == 2)
+        if (const JsonArray Stride = Definition.GetArray("Stride"); Stride.GetSize() == 2)
         {
             Frames.SetStride(Vector2(Stride.GetNumber<Real32>(0), Stride.GetNumber<Real32>(1)));
         }
@@ -95,20 +95,19 @@ namespace ZyRender
     {
         Motion.SetCycle(Definition.GetNumber<UInt32>("Cycle"));
 
-        if (const JsonArray Lanes = Definition.GetArray("Lanes"); !Lanes.IsNullOrEmpty())
+        const JsonArray Lanes = Definition.GetArray("Lanes");
+
+        for (UInt Slot = 0; Slot < Lanes.GetSize(); ++Slot)
         {
-            for (UInt Slot = 0; Slot < Lanes.GetSize(); ++Slot)
+            const JsonObject Track = Lanes.GetObject(Slot);
+            const JsonArray  Keys  = Track.GetArray("Keys");
+
+            Ref<Motion2D::Lane> Lane = Motion.AddLane(Hash(Track.GetString("Bone")));
+            Lane.Keys.Reserve(Keys.GetSize());
+
+            for (UInt Step = 0; Step < Keys.GetSize(); ++Step)
             {
-                const JsonObject Track = Lanes.GetObject(Slot);
-                const JsonArray  Keys  = Track.GetArray("Keys");
-
-                Ref<Motion2D::Lane> Lane = Motion.AddLane(Hash(Track.GetString("Bone")));
-                Lane.Keys.Reserve(Keys.GetSize());
-
-                for (UInt Step = 0; Step < Keys.GetSize(); ++Step)
-                {
-                    Lane.Keys.Append(ReadKey(Keys.GetObject(Step)));
-                }
+                Lane.Keys.Append(ReadKey(Keys.GetObject(Step)));
             }
         }
     }
@@ -128,44 +127,41 @@ namespace ZyRender
         }
 
         const JsonObject Root(Document);
+        const JsonArray  Names = Root.GetArray("Bones");
 
         Sequence<Skeleton2D::Bone> Bones;
 
-        if (const JsonArray List = Root.GetArray("Bones"); !List.IsNullOrEmpty())
+        for (UInt Index = 0; Index < Names.GetSize(); ++Index)
         {
-            for (UInt Index = 0; Index < List.GetSize(); ++Index)
-            {
-                const Text Name = List.GetString(Index);
+            const Text Name = Names.GetString(Index);
 
-                Ref<Skeleton2D::Bone> Bone = Bones.Append();
-                Bone.Name  = Hash(Name);
-                Bone.Label = Name;
-            }
+            Ref<Skeleton2D::Bone> Bone = Bones.Append();
+            Bone.Name  = Hash(Name);
+            Bone.Label = Name;
         }
 
         Skeleton2D Skeleton;
         Skeleton.SetBones(Move(Bones));
 
+        const JsonArray List = Root.GetArray("Clips");
+
         Sequence<Sheet2D::Clip> Clips;
 
-        if (const JsonArray List = Root.GetArray("Clips"); !List.IsNullOrEmpty())
+        for (UInt Index = 0; Index < List.GetSize(); ++Index)
         {
-            for (UInt Index = 0; Index < List.GetSize(); ++Index)
+            const JsonObject Definition = List.GetObject(Index);
+            const Text       Name       = Definition.GetString("Name");
+
+            Ref<Sheet2D::Clip> Clip = Clips.Append();
+            Clip.Name  = Hash(Name);
+            Clip.Label = Name;
+
+            if (!ReadFrames(Definition, Clip.Frames))
             {
-                const JsonObject Definition = List.GetObject(Index);
-                const Text       Name       = Definition.GetString("Name");
-
-                Ref<Sheet2D::Clip> Clip = Clips.Append();
-                Clip.Name  = Hash(Name);
-                Clip.Label = Name;
-
-                if (!ReadFrames(Definition, Clip.Frames))
-                {
-                    LOG_W("'{0}' has a clip with too many frames or an easing that steps back", Asset->GetKey());
-                    return false;
-                }
-                ReadMotion(Definition, Clip.Motion);
+                LOG_W("'{0}' has a clip with too many frames or an easing that steps back", Asset->GetKey());
+                return false;
             }
+            ReadMotion(Definition, Clip.Motion);
         }
 
         if (!Asset->Setup(Move(Skeleton), Move(Clips)))
