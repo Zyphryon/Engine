@@ -131,7 +131,7 @@ namespace ZyScene
         Sequence<Text>        Names;
         UInt32                Count = 0;
 
-        // Archetypes go first, each after what it reads from when the save holds that too, so a load finds every base.
+        // Archetypes go first, each after the roots its tree reads from when the save holds them, so a load finds them.
         Sequence<UInt32> Pending;
 
         for (const Entity Root : Roots)
@@ -146,7 +146,7 @@ namespace ZyScene
         {
             UInt Next = 0;
 
-            while (Next + 1 < Pending.GetSize() && Pending.Contains(GetOrigin(Pending[Next])))
+            while (Next + 1 < Pending.GetSize() && IsWaiting(Pending[Next], Pending[Next], Pending))
             {
                 ++Next;
             }
@@ -469,15 +469,51 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 World::GetOrigin(UInt32 Index) const
+    Bool World::IsWaiting(UInt32 Index, UInt32 Root, ConstSpan<UInt32> Pending) const
     {
-        UInt32 Root = mDirectory[Index].Holder->GetBase();
+        UInt32 Origin = mDirectory[Index].Holder->GetBase();
 
-        while (Root && mDirectory.GetParent(Root))
+        while (Origin && mDirectory.GetParent(Origin))
         {
-            Root = mDirectory.GetParent(Root);
+            Origin = mDirectory.GetParent(Origin);
         }
-        return Root;
+
+        if (Origin != Root && Pending.Contains(Origin))
+        {
+            return true;
+        }
+
+        for (UInt32 Child = mDirectory.GetFirst(Index); Child; Child = mDirectory.GetNext(Child))
+        {
+            if (IsWaiting(Child, Root, Pending))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void World::Seal(Ref<Writer> Output, ConstSpan<Text> Names, ConstRef<Writer> Body, UInt32 Count)
+    {
+        Output.Write<UInt32>(kMagic);
+        Output.Write<UInt16>(kVersion);
+        Output.Write<UInt32>(kTypes);
+        Output.WriteBlock<UInt32>([Names](Ref<Writer> Block)
+        {
+            Block.Write<UInt32>(static_cast<UInt32>(Names.GetSize()));
+
+            for (const Text Name : Names)
+            {
+                Block.WriteText(Name);
+            }
+        });
+        Output.Write<UInt32>(kEntities);
+        Output.Write<UInt32>(static_cast<UInt32>(sizeof(UInt32) + Body.GetSize()));
+        Output.Write<UInt32>(Count);
+        Output.Write(Body.GetData(), Body.GetSize());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -329,11 +329,21 @@ namespace ZyScene
             Ref<Sequence<UInt32>>          Identifiers,
             Ref<Sequence<ConstSpan<Byte>>> Payloads);
 
-        /// \brief Gets the root of the hierarchy holding the archetype an archetype reads from.
+        /// \brief Checks whether an archetype, or anything beneath it, reads from beneath another root left to write.
         ///
-        /// \param Index The slot of the archetype.
-        /// \return The slot of the root, or zero when it reads from none.
-        UInt32 GetOrigin(UInt32 Index) const;
+        /// \param Index   The slot of the archetype.
+        /// \param Root    The slot of the root it stands beneath, its own for a root.
+        /// \param Pending The slots of the root archetypes a save has still to write.
+        /// \return `true` if something its tree reads from stands beneath another of them, `false` otherwise.
+        Bool IsWaiting(UInt32 Index, UInt32 Root, ConstSpan<UInt32> Pending) const;
+
+        /// \brief Writes a save around its records, the names of the components they hold first.
+        ///
+        /// \param Output The writer to append the save to.
+        /// \param Names  The name of each component the records hold, by the index it is written under.
+        /// \param Body   The records, each after its parent's.
+        /// \param Count  The number of records.
+        static void Seal(Ref<Writer> Output, ConstSpan<Text> Names, ConstRef<Writer> Body, UInt32 Count);
 
     public:
 
