@@ -21,6 +21,9 @@
 
 namespace ZyScene
 {
+    /// \brief Forward declaration of the description of the component a list records changes of.
+    struct Metatype;
+
     /// \brief Represents the pull lists of a world, one per component and change, and the position of every reader.
     class ZY_API Ledger final
     {
@@ -82,7 +85,7 @@ namespace ZyScene
 
             if (Kind == Pull::Removed)
             {
-                RecordRemoval(Target, Identifier, Value, Source);
+                RecordRemoval(Target, Value, Source);
             }
         }
 
@@ -188,8 +191,8 @@ namespace ZyScene
         /// \brief Represents one list, the entries some reader has still to read.
         struct List final
         {
-            /// The component it records changes of.
-            UInt32              Identifier;
+            /// The description of the component it records changes of, which stays put for the life of the process.
+            ConstPtr<Metatype>  Info;
 
             /// The number of readers of the list.
             UInt32              Subscribers = 0;
@@ -222,11 +225,10 @@ namespace ZyScene
 
         /// \brief Keeps what a removal holds beyond its entity, the chunk it left and a value its type keeps.
         ///
-        /// \param Target     The removal list, whose entity is appended already.
-        /// \param Identifier The identifier of the component removed.
-        /// \param Value      The value leaving, copied when the component keeps it, or `nullptr`.
-        /// \param Source     The index of the chunk the entity sits in before the removal.
-        void RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source);
+        /// \param Target The removal list, whose entity is appended already.
+        /// \param Value  The value leaving, copied when the component keeps it, or `nullptr`.
+        /// \param Source The index of the chunk the entity sits in before the removal.
+        void RecordRemoval(Ref<List> Target, ConstPtr<Byte> Value, UInt32 Source);
 
         /// \brief Gets the index a list of a component and change sits at.
         ///

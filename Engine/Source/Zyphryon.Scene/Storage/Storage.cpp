@@ -566,17 +566,19 @@ namespace ZyScene
 
     void Storage::Read(Handle Actor, UInt32 Identifier, Ref<Reader> Input)
     {
-        ConstRef<Metatype> Info = Registry::Get().GetColumn(Identifier);
+        const UInt32 Index  = Actor.GetIndex();
+        Ref<Chunk>   Source = * mDirectory[Index].Holder;
+        const SInt16 Column = Source.Find(Identifier);
+
+        // A column knows its type, which spares the registry's lock for a component the entity holds.
+        ConstRef<Metatype> Info
+            = Column >= 0 ? * Source.GetColumns()[Column].Info : Registry::Get().GetColumn(Identifier);
 
         if (Info.IsTag())
         {
             Add(Actor, Identifier);
             return;
         }
-
-        const UInt32 Index  = Actor.GetIndex();
-        Ref<Chunk>   Source = * mDirectory[Index].Holder;
-        const SInt16 Column = Source.Find(Identifier);
 
         if (mDeferral.IsWalking() && (Column < 0 || mDeferral.IsMarked(Index)))
         {
@@ -936,7 +938,9 @@ namespace ZyScene
 
         if (const Ptr<Byte> Place = Grow(Index, Identifier))
         {
-            ConstRef<Metatype> Info = Registry::Get().GetColumn(Identifier);
+            // The column knows its type, which spares the registry's lock.
+            ConstRef<Chunk>    Holder = * mDirectory[Index].Holder;
+            ConstRef<Metatype> Info   = * Holder.GetColumns()[Holder.Find(Identifier)].Info;
 
             if (Fresh)
             {

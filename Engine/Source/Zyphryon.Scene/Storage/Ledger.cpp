@@ -52,7 +52,7 @@ namespace ZyScene
 
         if (!mLists[Index])
         {
-            mLists[Index] = Unique<List>::Create(Identifier);
+            mLists[Index] = Unique<List>::Create(AddressOf(Registry::Get().GetMetatype(Identifier)));
         }
         Ref<List> Target = * mLists[Index];
 
@@ -98,7 +98,7 @@ namespace ZyScene
 
         if (--Target.Subscribers == 0)
         {
-            mWatched[Target.Identifier] &= static_cast<UInt8>(~(1u << (Index % 3)));
+            mWatched[Index / 3] &= static_cast<UInt8>(~(1u << (Index % 3)));
         }
         Trim(Index);
     }
@@ -127,7 +127,7 @@ namespace ZyScene
             return;
         }
 
-        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
+        ConstRef<Metatype> Info = * mLists[Index]->Info;
 
         for (Ref<Ptr<Byte>> Value : mLists[Index]->Values)
         {
@@ -142,7 +142,7 @@ namespace ZyScene
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Ledger::RecordRemoval(Ref<List> Target, UInt32 Identifier, ConstPtr<Byte> Value, UInt32 Source)
+    void Ledger::RecordRemoval(Ref<List> Target, ConstPtr<Byte> Value, UInt32 Source)
     {
         // Kept for every removal, since a reader with terms can only match what the entity was as it left.
         Target.Sources.Append(Source);
@@ -152,7 +152,7 @@ namespace ZyScene
             return;
         }
 
-        ConstRef<Metatype> Info = Registry::Get().GetMetatype(Identifier);
+        ConstRef<Metatype> Info = * Target.Info;
 
         if (Info.Has(Trait::Keeps) && !Info.IsTag())
         {
@@ -206,7 +206,7 @@ namespace ZyScene
         // Only a list keeping values holds any, and never for more entries than it has.
         if (const UInt Kept = Min(Count, Target.Values.GetSize()))
         {
-            ConstRef<Metatype> Info = Registry::Get().GetMetatype(Target.Identifier);
+            ConstRef<Metatype> Info = * Target.Info;
 
             for (UInt Item = 0; Item < Kept; ++Item)
             {
