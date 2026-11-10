@@ -58,8 +58,7 @@ inline namespace ZyMath
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr ZyFormat::Pattern<5> kPattern("({0}, {1})");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mX, mY);
+            ZyFormat::Processor::Format(Buffer, "({0}, {1})", mX, mY);
         }
 
     public:

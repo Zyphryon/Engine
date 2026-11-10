@@ -170,8 +170,7 @@ inline namespace ZyMath
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr ZyFormat::Pattern<2> kPattern("{0}°");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, GetDegrees());
+            ZyFormat::Processor::Format(Buffer, "{0}°", GetDegrees());
         }
 
     public:

@@ -210,7 +210,7 @@ inline namespace ZyBase
             if (!ParseValue(Element))
             {
                 Str Step;
-                Step.Format<"[{0}]">(Count);
+                Step.Format("[{0}]", Count);
                 Prepend(Step);
                 return false;
             }

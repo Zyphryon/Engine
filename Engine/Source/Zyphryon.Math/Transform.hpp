@@ -266,8 +266,7 @@ inline namespace ZyMath
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr ZyFormat::Pattern<7> kPattern("({0}, {1}, {2})");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, mTranslation, mScale, mRotation);
+            ZyFormat::Processor::Format(Buffer, "({0}, {1}, {2})", mTranslation, mScale, mRotation);
         }
 
         /// \brief Serializes the state of the transform to or from the specified archive.

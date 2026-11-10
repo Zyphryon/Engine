@@ -465,8 +465,7 @@ inline namespace ZyMath
             ZY_ALIGN(16) Array<Real32, 4> Result;
             Store(Result.GetData());
 
-            static constexpr ZyFormat::Pattern<9> kPattern("({0}, {1}, {2}, {3})");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, Result[0], Result[1], Result[2], Result[3]);
+            ZyFormat::Processor::Format(Buffer, "({0}, {1}, {2}, {3})", Result[0], Result[1], Result[2], Result[3]);
         }
 
     public:

@@ -75,7 +75,7 @@ inline namespace ZyBase
 
         for (UInt32 Processor = 0; Processor < Processors; ++Processor)
         {
-            const Str64 Path = Str64::Print<"/sys/devices/system/cpu/cpu{0}/topology/thread_siblings_list">(Processor);
+            const Str64 Path = Str64::Print("/sys/devices/system/cpu/cpu{0}/topology/thread_siblings_list", Processor);
             Char        Buffer[64];
             SInt64      Read = -1;
 

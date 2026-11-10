@@ -41,8 +41,7 @@ inline namespace ZyBase
         template<typename Output>
         ZY_INLINE constexpr void OnFormat(Ref<Output> Buffer) const
         {
-            static constexpr ZyFormat::Pattern<8> kPattern("{0}, at line {1}, column {2} ('{3}')");
-            ZyFormat::Processor<Output>::Format(Buffer, kPattern, Message, Line, Column, Path);
+            ZyFormat::Processor::Format(Buffer, "{0}, at line {1}, column {2} ('{3}')", Message, Line, Column, Path);
         }
     };
 }

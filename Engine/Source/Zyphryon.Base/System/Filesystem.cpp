@@ -59,8 +59,8 @@ inline namespace ZyBase
     static Bool CopyEntry(Text Source, Text Destination, ConstRef<Filesystem::Record> Entry,
         Ref<Filesystem::Result> Status)
     {
-        const Filesystem::Path From = Filesystem::Path::Print<"{0}/{1}">(Source, Entry.Name);
-        const Filesystem::Path To   = Filesystem::Path::Print<"{0}/{1}">(Destination, Entry.Name);
+        const Filesystem::Path From = Filesystem::Path::Print("{0}/{1}", Source, Entry.Name);
+        const Filesystem::Path To   = Filesystem::Path::Print("{0}/{1}", Destination, Entry.Name);
 
         if (Entry.Type == Filesystem::Type::Directory)
         {
@@ -97,7 +97,7 @@ inline namespace ZyBase
 
     static Bool DeleteEntry(Text Directory, ConstRef<Filesystem::Record> Entry, Ref<Filesystem::Result> Status)
     {
-        const Filesystem::Path Current = Filesystem::Path::Print<"{0}/{1}">(Directory, Entry.Name);
+        const Filesystem::Path Current = Filesystem::Path::Print("{0}/{1}", Directory, Entry.Name);
 
         Status = (Entry.Type == Filesystem::Type::Directory) ? Filesystem::DeleteAll(Current)
                                                              : Filesystem::Delete(Current);

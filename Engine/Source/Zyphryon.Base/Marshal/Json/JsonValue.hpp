@@ -224,11 +224,9 @@ inline namespace ZyBase
                 return;
             }
 
-            static constexpr ZyFormat::Pattern<1> kPattern("{0}");
-
             mData.Visit([&]<typename T0>(AnyRef<T0> Value)
             {
-                ZyFormat::Processor<Output>::Format(Buffer, kPattern, Value);
+                ZyFormat::Processor::Format(Buffer, "{0}", Value);
             });
         }
 

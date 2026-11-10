@@ -199,7 +199,7 @@ namespace ZyGraphic
                 {
                     for (UInt32 Element = 0; Element < Count; ++Element)
                     {
-                        Schema.AddUniform(Frequency, Str64::Print<"{0}[{1}]">(Name, Element), Type, Parameter());
+                        Schema.AddUniform(Frequency, Str64::Print("{0}[{1}]", Name, Element), Type, Parameter());
                     }
                 }
             }

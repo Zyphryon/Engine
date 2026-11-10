@@ -23,7 +23,7 @@ namespace ZyLog   // TODO: Proper implementation
     namespace Detail
     {
         template<typename ...Arguments>
-        ZY_INLINE Text Print(AnyRef<ZyFormat::Pattern<>> Format, AnyRef<Arguments>... Parameters)
+        ZY_INLINE Text Print(Text Format, AnyRef<Arguments>... Parameters)
         {
             thread_local String<4096> Buffer;
 

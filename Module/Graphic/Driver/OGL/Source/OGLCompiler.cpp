@@ -322,7 +322,7 @@ namespace ZyGraphic::OGL
             // 4.1 and newer get their own dialect, so a Level3 context has gather in core, while 4.0 stays on 3.30.
             const UInt32 Version = (Language >= 410) ? Min(Language - Language % 10u, 460u) : 330u;
 
-            mVersion.Format<"#version {0} core\n">(Version);
+            mVersion.Format("#version {0} core\n", Version);
 
             if (mDevice.Has(Feature::ShaderBinding) && Version < 420)
             {
@@ -333,7 +333,7 @@ namespace ZyGraphic::OGL
         {
             const UInt32 Version = (Language >= 320) ? 320u : (Language >= 310) ? 310u : 300u;
 
-            mVersion.Format<"#version {0} es\n">(Version);
+            mVersion.Format("#version {0} es\n", Version);
 
             // ES leaves most opaque types without a default precision, and every one used must then name it.
             mDefaults.Append("precision highp float;\n");

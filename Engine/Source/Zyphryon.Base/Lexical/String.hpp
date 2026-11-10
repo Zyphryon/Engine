@@ -485,30 +485,26 @@ inline namespace ZyBase
             return Text(* this).Slice(Offset, Count);
         }
 
-        /// \brief Formats the string using a runtime pattern and parameters.
+        /// \brief Formats the string using a pattern and parameters.
         ///
         /// \param Pattern    The format pattern string.
         /// \param Parameters The arguments to format into the pattern.
         template<typename... Arguments>
-        ZY_INLINE constexpr void Format(ZyFormat::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
+        ZY_INLINE void Format(Text Pattern, AnyRef<Arguments>... Parameters)
         {
             Clear();
 
-            ZyFormat::Processor<String>::Format(* this, Pattern, Parameters...);
+            ZyFormat::Processor::Format(* this, Pattern, Parameters...);
         }
 
-        /// \brief Formats the string using a compile-time pattern and parameters.
+        /// \brief Formats the string using a pattern given as a template argument and parameters.
         ///
-        /// \tparam Pattern   The compile-time format pattern.
+        /// \tparam Pattern   The format pattern string.
         /// \param Parameters The arguments to format into the pattern.
         template<Symbol Pattern, typename... Arguments>
-        ZY_INLINE constexpr void Format(AnyRef<Arguments>... Parameters)
+        ZY_INLINE void Format(AnyRef<Arguments>... Parameters)
         {
-            constexpr ZyFormat::Pattern<> kPattern(Pattern);
-
-            Clear();
-
-            ZyFormat::Processor<String>::Format(* this, kPattern, Parameters...);
+            Format(Text(Pattern), Parameters...);
         }
 
         /// \brief Computes a 64-bit hash of the string.
@@ -767,29 +763,29 @@ inline namespace ZyBase
             return Buffer;
         }
 
-        /// \brief Creates a formatted string from a runtime format pattern.
+        /// \brief Creates a formatted string from a format pattern.
         ///
         /// \param Pattern    The format pattern string.
         /// \param Parameters The arguments to format into the pattern.
         /// \return A string with the formatted text.
         template<typename... Arguments>
-        ZY_INLINE static constexpr String Print(ZyFormat::Pattern<> Pattern, AnyRef<Arguments>... Parameters)
+        ZY_INLINE static String Print(Text Pattern, AnyRef<Arguments>... Parameters)
         {
             String Buffer;
             Buffer.Format(Pattern, Parameters...);
             return Buffer;
         }
 
-        /// \brief Creates a formatted string from a compile-time format pattern.
+        /// \brief Creates a formatted string from a format pattern given as a template argument.
         ///
-        /// \tparam Pattern   The compile-time format pattern.
+        /// \tparam Pattern   The format pattern string.
         /// \param Parameters The arguments to format into the pattern.
         /// \return A string with the formatted text.
         template<Symbol Pattern, typename... Arguments>
-        ZY_INLINE static constexpr String Print(AnyRef<Arguments>... Parameters)
+        ZY_INLINE static String Print(AnyRef<Arguments>... Parameters)
         {
             String Buffer;
-            Buffer.template Format<Pattern>(Parameters...);
+            Buffer.Format(Text(Pattern), Parameters...);
             return Buffer;
         }
 

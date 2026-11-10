@@ -152,7 +152,7 @@ namespace ZyNetwork
         Hint.ai_flags    = Address.IsAny() ? AI_PASSIVE : 0;
 
         Str16 Service;
-        Service.Format<"{0}">(Address.Port);
+        Service.Format("{0}", Address.Port);
 
         Ptr<addrinfo> List = nullptr;
 

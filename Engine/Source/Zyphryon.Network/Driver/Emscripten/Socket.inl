@@ -44,7 +44,7 @@ namespace ZyNetwork
         const Text Schema = EM_ASM_INT({ return location.protocol === 'https:' ? 1 : 0; }) ? "wss"_Text : "ws"_Text;
 
         Str Locator;
-        Locator.Format<"{0}://{1}:{2}">(Schema, Peer.Host, Peer.Port);
+        Locator.Format("{0}://{1}:{2}", Schema, Peer.Host, Peer.Port);
 
         EmscriptenWebSocketCreateAttributes Attributes { };
         Attributes.url                = Locator.GetData();
