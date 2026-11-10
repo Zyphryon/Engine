@@ -76,7 +76,7 @@ FUNCTION(ZyApplyExports TARGET)
     LIST(REMOVE_DUPLICATES GATHERED)
     SET(OFFERED ${GATHERED})
 
-    # Everything inside the image compiles as the exporter, the graphic drivers included.
+    # The engine, its graphic drivers and the image compile as the exporter, and a module of the host without ALL.
     SET(MARKED ${OFFERED} ${TARGET})
 
     GET_PROPERTY(REGISTERED GLOBAL PROPERTY ZY_MODULES)
@@ -109,7 +109,16 @@ FUNCTION(ZyApplyExports TARGET)
 
     FOREACH(MEMBER ${MARKED})
 
-        TARGET_COMPILE_DEFINITIONS(${MEMBER} PRIVATE ZY_BUILD_SHARED ${EXPORTS})
+        # With ALL the generated exports carry a module of the host out whole, so it never marks the engine's again.
+        IF(ARG_ALL AND MEMBER IN_LIST OFFERED AND NOT MEMBER STREQUAL "ZyEngine")
+
+            TARGET_COMPILE_DEFINITIONS(${MEMBER} PRIVATE ${EXPORTS})
+
+        ELSE()
+
+            TARGET_COMPILE_DEFINITIONS(${MEMBER} PRIVATE ZY_BUILD_SHARED ${EXPORTS})
+
+        ENDIF()
 
     ENDFOREACH()
 
