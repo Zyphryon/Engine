@@ -13,7 +13,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Format/Processor.hpp"
-#include "Symbol.hpp"
 #include "Unicode.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -497,16 +496,6 @@ inline namespace ZyBase
             ZyFormat::Processor::Format(* this, Pattern, Parameters...);
         }
 
-        /// \brief Formats the string using a pattern given as a template argument and parameters.
-        ///
-        /// \tparam Pattern   The format pattern string.
-        /// \param Parameters The arguments to format into the pattern.
-        template<Symbol Pattern, typename... Arguments>
-        ZY_INLINE void Format(AnyRef<Arguments>... Parameters)
-        {
-            Format(Text(Pattern), Parameters...);
-        }
-
         /// \brief Computes a 64-bit hash of the string.
         ///
         /// \return A 64-bit hash of the characters, or zero if the string is empty.
@@ -773,19 +762,6 @@ inline namespace ZyBase
         {
             String Buffer;
             Buffer.Format(Pattern, Parameters...);
-            return Buffer;
-        }
-
-        /// \brief Creates a formatted string from a format pattern given as a template argument.
-        ///
-        /// \tparam Pattern   The format pattern string.
-        /// \param Parameters The arguments to format into the pattern.
-        /// \return A string with the formatted text.
-        template<Symbol Pattern, typename... Arguments>
-        ZY_INLINE static String Print(AnyRef<Arguments>... Parameters)
-        {
-            String Buffer;
-            Buffer.Format(Text(Pattern), Parameters...);
             return Buffer;
         }
 
