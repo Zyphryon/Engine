@@ -259,6 +259,7 @@ namespace ZyEnum
 
             UInt Cursor   = 0;
             UInt Position = 0;
+            UInt Cast     = 0;
 
             while (Cursor < Size)
             {
@@ -313,8 +314,18 @@ namespace ZyEnum
                 }
                 else
                 {
+                    // Every undeclared value is written behind the same cast, which is stepped over at once.
+                    if (Cast != 0 && Cursor + Cast <= Size && Head[Cursor + Cast - 1] == ')')
+                    {
+                        Cursor += Cast;
+                    }
+
                     while (Cursor < Size && Head[Cursor] != ',')
                     {
+                        if (Cast == 0 && Head[Cursor] == ')')
+                        {
+                            Cast = Cursor - Begin + 1;
+                        }
                         ++Cursor;
                     }
                 }
@@ -343,11 +354,54 @@ namespace ZyEnum
             return CaptureArguments<Type>(MakeIntegerSequence<SInt64, Range<Type>::Max - Range<Type>::Min + 1>{ });
         }
 
-        /// \brief The measured counts for \p Type, evaluated once per translation unit.
-        template<IsEnum Type>
-        inline constexpr Measurement kMeasurement = ScanArguments(GetArguments<Type>(), [](UInt, Text)
+        /// \brief Represents where one declared enumerator stands within a captured argument list.
+        struct Mark final
         {
-        });
+            /// The position of the enumerator among the probed values.
+            UInt32 Position;
+
+            /// The offset of the enumerator's name within the argument list.
+            UInt32 Offset;
+
+            /// The number of characters in the enumerator's name.
+            UInt32 Length;
+        };
+
+        /// \brief Represents every declared enumerator one scan of a captured argument list found.
+        template<UInt Capacity>
+        struct Survey final
+        {
+            /// The number of declared enumerators and their combined name length.
+            Measurement           Size { };
+
+            /// The declared enumerators, in the order they were probed.
+            Array<Mark, Capacity> Marks;
+        };
+
+        /// \brief Scans the argument list of \p Type once, keeping where each declared enumerator stands.
+        ///
+        /// \return The declared enumerators of \p Type.
+        template<IsEnum Type>
+        consteval auto Scan()
+        {
+            Survey<static_cast<UInt>(Range<Type>::Max - Range<Type>::Min + 1)> Result;
+
+            const Text Arguments = GetArguments<Type>();
+            UInt       Cursor    = 0;
+
+            Result.Size = ScanArguments(Arguments, [&](UInt Position, Text Name)
+            {
+                Result.Marks[Cursor++] = Mark(
+                    static_cast<UInt32>(Position),
+                    static_cast<UInt32>(Name.GetData() - Arguments.GetData()),
+                    static_cast<UInt32>(Name.GetSize()));
+            });
+            return Result;
+        }
+
+        /// \brief The declared enumerators of \p Type, scanned once per translation unit.
+        template<IsEnum Type>
+        inline constexpr auto kSurvey = Scan<Type>();
 
         /// \brief Builds the reflection data for \p Type, in ascending value order.
         ///
@@ -355,16 +409,23 @@ namespace ZyEnum
         template<IsEnum Type>
         consteval auto BuildReflection()
         {
-            Reflection<Type, kMeasurement<Type>.Entries, kMeasurement<Type>.Chars> Result;
+            Reflection<Type, kSurvey<Type>.Size.Entries, kSurvey<Type>.Size.Chars> Result;
 
-            UInt EntryCursor = 0;
-            UInt CharCursor  = 0;
+            const Text Arguments   = GetArguments<Type>();
+            UInt       EntryCursor = 0;
+            UInt       CharCursor  = 0;
 
-            ScanArguments(GetArguments<Type>(), [&](UInt Position, Text Name)
+            for (UInt Index = 0; Index < Result.Entries.GetSize(); ++Index)
             {
-                AppendEntry(Result, EntryCursor, CharCursor, Probe<Type>(Position), Name);
-            });
+                const Mark Found = kSurvey<Type>.Marks[Index];
 
+                AppendEntry(
+                    Result,
+                    EntryCursor,
+                    CharCursor,
+                    Probe<Type>(Found.Position),
+                    Text(Arguments.GetData() + Found.Offset, Found.Length));
+            }
             return Result;
         }
 
