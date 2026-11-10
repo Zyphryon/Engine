@@ -38,63 +38,6 @@ inline namespace ZyMath
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Frustum::Test(Vector3 Point) const
-    {
-        return Test(Sphere(Point, 0.0f));
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Frustum::Test(ConstRef<Sphere> Volume) const
-    {
-        const Vector3 Center = Volume.GetCenter();
-        const Vector4 X(Center.GetX());
-        const Vector4 Y(Center.GetY());
-        const Vector4 Z(Center.GetZ());
-        const Vector4 Reach(-Volume.GetRadius());
-
-        Vector4 Outside;
-
-        for (ConstRef<Quartet> Group : mQuartets)
-        {
-            Outside |= Measure(Group, X, Y, Z) < Reach;
-        }
-        return !Outside.IsAnyTrue();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Bool Frustum::Test(ConstRef<Box> Volume) const
-    {
-        const Vector3 Minimum = Volume.GetMinimum();
-        const Vector3 Maximum = Volume.GetMaximum();
-
-        const Vector4 MinimumX(Minimum.GetX());
-        const Vector4 MinimumY(Minimum.GetY());
-        const Vector4 MinimumZ(Minimum.GetZ());
-        const Vector4 MaximumX(Maximum.GetX());
-        const Vector4 MaximumY(Maximum.GetY());
-        const Vector4 MaximumZ(Maximum.GetZ());
-        const Vector4 Zero = Vector4::Zero();
-
-        Vector4 Outside;
-
-        for (ConstRef<Quartet> Group : mQuartets)
-        {
-            const Vector4 X = Vector4::Select(MaximumX, MinimumX, Group[0] < Zero);
-            const Vector4 Y = Vector4::Select(MaximumY, MinimumY, Group[1] < Zero);
-            const Vector4 Z = Vector4::Select(MaximumZ, MinimumZ, Group[2] < Zero);
-
-            Outside |= Measure(Group, X, Y, Z) < Zero;
-        }
-        return !Outside.IsAnyTrue();
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     Frustum Frustum::FromMatrix(ConstRef<Matrix4x4> ViewProjection)
     {
         Frustum Result;
@@ -136,13 +79,5 @@ inline namespace ZyMath
         {
             Coefficient = Coefficient / Divisor;
         }
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    Vector4 Frustum::Measure(ConstRef<Quartet> Group, Vector4 X, Vector4 Y, Vector4 Z)
-    {
-        return (Group[0] * X + Group[1] * Y) + (Group[2] * Z + Group[3]);
     }
 }

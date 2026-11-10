@@ -53,19 +53,61 @@ inline namespace ZyMath
         ///
         /// \param Point The point to test.
         /// \return `true` when the point is inside, `false` otherwise.
-        Bool Test(Vector3 Point) const;
+        ZY_INLINE Bool Test(Vector3 Point) const
+        {
+            return Test(Sphere(Point, 0.0f));
+        }
 
         /// \brief Checks whether any of a sphere lies inside every plane.
         ///
         /// \param Volume The sphere to test.
         /// \return `true` when any of the sphere is inside, `false` otherwise.
-        Bool Test(ConstRef<Sphere> Volume) const;
+        ZY_INLINE Bool Test(ConstRef<Sphere> Volume) const
+        {
+            const Vector3 Center = Volume.GetCenter();
+            const Vector4 X(Center.GetX());
+            const Vector4 Y(Center.GetY());
+            const Vector4 Z(Center.GetZ());
+            const Vector4 Reach(-Volume.GetRadius());
+
+            Vector4 Outside;
+
+            for (ConstRef<Quartet> Group : mQuartets)
+            {
+                Outside |= Measure(Group, X, Y, Z) < Reach;
+            }
+            return !Outside.IsAnyTrue();
+        }
 
         /// \brief Checks whether any of a box lies inside every plane.
         ///
         /// \param Volume The box to test.
         /// \return `true` when any of the box is inside, `false` otherwise.
-        Bool Test(ConstRef<Box> Volume) const;
+        ZY_INLINE Bool Test(ConstRef<Box> Volume) const
+        {
+            const Vector3 Minimum = Volume.GetMinimum();
+            const Vector3 Maximum = Volume.GetMaximum();
+
+            const Vector4 MinimumX(Minimum.GetX());
+            const Vector4 MinimumY(Minimum.GetY());
+            const Vector4 MinimumZ(Minimum.GetZ());
+            const Vector4 MaximumX(Maximum.GetX());
+            const Vector4 MaximumY(Maximum.GetY());
+            const Vector4 MaximumZ(Maximum.GetZ());
+            const Vector4 Zero = Vector4::Zero();
+
+            Vector4 Outside;
+
+            for (ConstRef<Quartet> Group : mQuartets)
+            {
+                const Vector4 X = Vector4::Select(MaximumX, MinimumX, Group[0] < Zero);
+                const Vector4 Y = Vector4::Select(MaximumY, MinimumY, Group[1] < Zero);
+                const Vector4 Z = Vector4::Select(MaximumZ, MinimumZ, Group[2] < Zero);
+
+                Outside |= Measure(Group, X, Y, Z) < Zero;
+            }
+            return !Outside.IsAnyTrue();
+        }
 
     public:
 
@@ -94,7 +136,10 @@ inline namespace ZyMath
         /// \param Y     The Y coordinate of the point, in every lane.
         /// \param Z     The Z coordinate of the point, in every lane.
         /// \return The signed distance to each plane, negative on the outside.
-        static Vector4 Measure(ConstRef<Quartet> Group, Vector4 X, Vector4 Y, Vector4 Z);
+        ZY_INLINE static Vector4 Measure(ConstRef<Quartet> Group, Vector4 X, Vector4 Y, Vector4 Z)
+        {
+            return (Group[0] * X + Group[1] * Y) + (Group[2] * Z + Group[3]);
+        }
 
     private:
 
