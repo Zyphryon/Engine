@@ -352,7 +352,9 @@ inline namespace ZyMath
 
         constexpr Type C1 = 1.70158;
         constexpr Type C3 = C1 + 1;
-        return 1 + C3 * Pow(Time - 1, Type(3)) + C1 * Pow(Time - 1, Type(2));
+
+        const Type Back = Time - 1;
+        return 1 + C3 * Back * Back * Back + C1 * Back * Back;
     }
 
     /// \brief Eases in and out with an overshoot at both ends.
@@ -366,8 +368,8 @@ inline namespace ZyMath
 
         constexpr Type C2 = 1.70158 * 1.525;
         return Time < 0.5
-            ? (Pow(2 * Time, Type(2)) * ((C2 + 1) * 2 * Time - C2)) / 2
-            : (Pow(2 * Time - 2, Type(2)) * ((C2 + 1) * (Time * 2 - 2) + C2) + 2) / 2;
+            ? ((2 * Time) * (2 * Time) * ((C2 + 1) * 2 * Time - C2)) / 2
+            : ((2 * Time - 2) * (2 * Time - 2) * ((C2 + 1) * (Time * 2 - 2) + C2) + 2) / 2;
     }
 
     /// \brief Applies the specified easing function to a time value.
