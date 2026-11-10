@@ -246,10 +246,7 @@ inline namespace ZyMath
         /// \return The normalized angle.
         ZY_INLINE static Angle Normalize(Angle Value)
         {
-            const Real32 Radians = Mod(Value.GetRadians(), kTwoPI<Real32>);
-            const Real32 Wrapped = (Radians < 0.0f ? Radians + kTwoPI<Real32> : Radians);
-
-            return FromRadians(Wrapped < kTwoPI<Real32> ? Wrapped : 0.0f);
+            return FromRadians(Wrap(Value.GetRadians(), kTwoPI<Real32>));
         }
 
         /// \brief Calculates the cosine of the given angle.

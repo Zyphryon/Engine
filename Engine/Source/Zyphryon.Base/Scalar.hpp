@@ -142,14 +142,9 @@ inline namespace ZyBase
     {
         ZY_ASSERT(Size > Type(0), "Size must be above zero");
 
-        const Type Rest = std::fmod(Value, Size);
+        const Type Rest = Value - Size * Floor(Value / Size);
 
-        if (Rest < Type(0))
-        {
-            const Type Raised = Rest + Size;
-            return (Raised < Size ? Raised : Type(0));
-        }
-        return Rest;
+        return (Rest >= Type(0) && Rest < Size ? Rest : Type(0));
     }
 
     /// \brief Computes the power of a base raised to an exponent for real numbers.
