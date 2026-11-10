@@ -457,15 +457,15 @@ inline namespace ZyMath
             const Quaternion Nearest = (Cosine < 0.0f ? -End : End);
             const Real32     Angular = Abs(Cosine);
 
-            if (Angular > 0.9995f)
+            if (Angular > 0.966f)
             {
                 return Normalize(Lerp(Start, Nearest, Percentage));
             }
 
             const Real32 Theta        = Angle::FromCosine(Angular).GetRadians();
-            const Real32 SinTheta     = Sqrt(1.0f - Angular * Angular);
-            const Real32 BlendWeightA = Angle::Sine((1 - Percentage) * Theta) / SinTheta;
-            const Real32 BlendWeightB = Angle::Sine(Percentage * Theta) / SinTheta;
+            const Real32 Inverse      = 1.0f / Sqrt(1.0f - Angular * Angular);
+            const Real32 BlendWeightA = Angle::Sine((1 - Percentage) * Theta) * Inverse;
+            const Real32 BlendWeightB = Angle::Sine(Percentage * Theta) * Inverse;
             return Start * BlendWeightA + Nearest * BlendWeightB;
         }
 
