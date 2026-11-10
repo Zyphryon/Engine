@@ -472,14 +472,7 @@ inline namespace ZyBase
     template<typename Value, IsReal Delta>
     constexpr Value Lerp(Value Start, Value End, Delta Percentage)
     {
-        if constexpr (IsReal<Value>)
-        {
-            return static_cast<Value>(std::lerp(Start, End, Percentage));
-        }
-        else
-        {
-            return static_cast<Value>(Start + (End - Start) * Percentage);
-        }
+        return static_cast<Value>(Start + (End - Start) * Percentage);
     }
 
     /// \brief Finds where a scalar value falls between two others.
