@@ -16,6 +16,10 @@
 #include <cmath>
 #include <limits>
 
+#if   defined(ZY_ARCH_X86_64)
+#include <emmintrin.h>
+#endif
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -239,7 +243,22 @@ inline namespace ZyBase
     template<typename Type>
     ZY_INLINE Type Sqrt(Type Value)
     {
+#if   defined(ZY_ARCH_X86_64)
+        if constexpr (IsAnyOf<Type, Real32>)
+        {
+            return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(Value)));
+        }
+        else if constexpr (IsAnyOf<Type, Real64>)
+        {
+            return _mm_cvtsd_f64(_mm_sqrt_sd(_mm_setzero_pd(), _mm_set_sd(Value)));
+        }
+        else
+        {
+            return static_cast<Type>(std::sqrt(Value));
+        }
+#else
         return std::sqrt(Value);
+#endif
     }
 
     /// \brief Computes the cube root of the given number.
