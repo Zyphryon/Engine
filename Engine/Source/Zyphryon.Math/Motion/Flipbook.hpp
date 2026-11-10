@@ -183,14 +183,10 @@ inline namespace ZyMath
                 return 0;
             }
 
-            Real64 Absolute = Mod(Time, Cycle);
-
-            if (Absolute < 0.0)
-            {
-                Absolute += Cycle;
-            }
-
-            const Real64 Elapsed = Clamp(Ease(Function, Absolute / Cycle), 0.0, 1.0) * Cycle;
+            const Real64 Absolute = (Time >= 0.0 && Time < Cycle) ? Time : Wrap(Time, Cycle);
+            const Real64 Elapsed  = (Function == Easing::Linear)
+                ? Absolute
+                : Clamp(Ease(Function, Absolute / Cycle), 0.0, 1.0) * Cycle;
 
             Real64 Consumed = 0.0;
 
