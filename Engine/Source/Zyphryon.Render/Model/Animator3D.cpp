@@ -108,6 +108,13 @@ namespace ZyRender
         Incoming.Timestamp = Timestamp;
         Incoming.Phase     = Phase;
         Incoming.Bound     = false;
+
+        // Found at once in a model that has landed, so the clip asked for is the one reported from here on.
+        if (mModel && mModel->HasCompleted())
+        {
+            const ConstPtr<Model3D::Clip> Entry = mModel->FindClip(Clip);
+            Incoming.Slot = Entry ? static_cast<UInt16>(Entry - mModel->GetClips().GetData()) : kUnresolved;
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -141,49 +148,23 @@ namespace ZyRender
             }
         }
 
-        // A clip played once that ran out on the last advance hands the rig back to the loop it cut.
-        if (mReturn != 0 && HasEnded())
-        {
-            Play(mReturn, Time, mResume, mBack);
-        }
-
-        Ref<Source> Active = mSources[mActive];
-
-        // Paired before the advance, so the clip runs from its timestamp however long the model took to land.
-        Rebind(Active, * Rig);
-        Active.Cursor.Advance(Time);
-
         // No clip, or one the model does not list, leaves the model in its rest pose.
-        if (!Active.Motion)
+        if (!Step(Time, * Rig))
         {
             return Skeleton3D::Pose();
         }
 
-        const Real32 Weight = mFade > 0.0
-            ? static_cast<Real32>(Clamp((Time - mEpoch) / mFade, 0.0, 1.0))
-            : 1.0f;
-
-        Ref<Source> Outgoing = mSources[mActive ^ 1];
-
-        // The outgoing clip keeps playing, so a stride caught mid-swing finishes instead of sliding.
-        const Bool Blending = Weight < 1.0f && Outgoing.Motion;
-
-        if (Blending)
-        {
-            Rebind(Outgoing, * Rig);
-            Outgoing.Cursor.Advance(Time);
-        }
-        else if (mFade > 0.0 || Outgoing.Motion)
-        {
-            Retire(Outgoing);
-        }
+        ConstRef<Source> Active   = mSources[mActive];
+        ConstRef<Source> Outgoing = mSources[mActive ^ 1];
 
         Skeleton3D::Pose Pose = Scratch.Acquire(Bones, 0);
         Evaluate(Active, * Rig, Pose);
 
-        if (Blending)
+        // Only a clip still fading out is left holding its motion by the step.
+        if (Outgoing.Motion)
         {
             const Skeleton3D::Pose Fading = Scratch.Acquire(Bones, 1);
+            const Real32           Weight = static_cast<Real32>(Clamp((Time - mEpoch) / mFade, 0.0, 1.0));
 
             Evaluate(Outgoing, * Rig, Fading);
 
@@ -224,6 +205,62 @@ namespace ZyRender
     void Animator3D::Update(Real64 Time, Ref<Scratch> Scratch)
     {
         Compose(Sample(Time, Scratch));
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Animator3D::Advance(Real64 Time)
+    {
+        // The rig and every clip load with the model, so there is nothing to play until it has landed.
+        if (!mModel || !mModel->HasCompleted())
+        {
+            return;
+        }
+
+        ConstRetainer<Skeleton3D> Rig = mModel->GetSkeleton();
+
+        if (Rig && !Rig->IsEmpty())
+        {
+            Step(Time, * Rig);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Animator3D::Step(Real64 Time, ConstRef<Skeleton3D> Rig)
+    {
+        // A clip played once that ran out on the last advance hands the rig back to the loop it cut.
+        if (mReturn != 0 && HasEnded())
+        {
+            Play(mReturn, Time, mResume, mBack);
+        }
+
+        Ref<Source> Active = mSources[mActive];
+
+        // Paired before the advance, so the clip runs from its timestamp however long the model took to land.
+        Rebind(Active, Rig);
+        Active.Cursor.Advance(Time);
+
+        if (!Active.Motion)
+        {
+            return false;
+        }
+
+        Ref<Source> Outgoing = mSources[mActive ^ 1];
+
+        // The outgoing clip keeps playing, so a stride caught mid-swing finishes instead of sliding.
+        if (Outgoing.Motion && mFade > 0.0 && Time - mEpoch < mFade)
+        {
+            Rebind(Outgoing, Rig);
+            Outgoing.Cursor.Advance(Time);
+        }
+        else if (mFade > 0.0 || Outgoing.Motion)
+        {
+            Retire(Outgoing);
+        }
+        return true;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

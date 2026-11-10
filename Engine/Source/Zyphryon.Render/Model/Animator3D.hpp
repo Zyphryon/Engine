@@ -145,6 +145,11 @@ namespace ZyRender
         /// \param Scratch The working room to pose in, which the call leaves in an indeterminate state.
         void Update(Real64 Time, Ref<Scratch> Scratch);
 
+        /// \brief Advances the clip without posing the rig, leaving the palette as it was.
+        ///
+        /// \param Time The current simulation time, in seconds, on the same clock every call is given.
+        void Advance(Real64 Time);
+
         /// \brief Gets the matrices the vertex shader deforms by, one per bone.
         ///
         /// \return The palette, or an empty span until the model has landed and been posed.
@@ -197,6 +202,13 @@ namespace ZyRender
             /// `true` when the clip writes every component of every bone, so no rest pose is seeded, otherwise `false`.
             Bool                  Covered   = false;
         };
+
+        /// \brief Moves the clip playing and the one it fades out of to a time, handing back the loop a once clip cut.
+        ///
+        /// \param Time The current simulation time, in seconds.
+        /// \param Rig  The skeleton the clips are playing over.
+        /// \return `true` when a clip is playing and has a pose to sample, `false` when the model rests.
+        Bool Step(Real64 Time, ConstRef<Skeleton3D> Rig);
 
         /// \brief Finds the clip in the model and pairs it with the rig, starting it from its timestamp and phase.
         ///
