@@ -34,10 +34,13 @@ namespace ZyGraphic
         kMaxAttributes  = 0x0010,
 
         /// \brief The maximum number of buffer resources.
-        kMaxBuffers     = 0x1000,
+        kMaxBuffers     = 0x2000,
 
         /// \brief The maximum number of frames in flight.
         kMaxFrames      = 0x0002,
+
+        /// \brief The maximum number of material resources.
+        kMaxMaterials   = 0x2000,
 
         /// \brief The maximum number of mipmap levels for a texture.
         kMaxMipmaps     = 0x0010,

@@ -566,7 +566,7 @@ namespace ZyGraphic
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Freelist<kMaxBuffers,   0>       mBuffers;
-        Freelist<kMaxTextures,  0>       mMaterials;
+        Freelist<kMaxMaterials, 0>       mMaterials;
         Freelist<kMaxPasses,    0>       mPasses;
         Freelist<kMaxPipelines, 0>       mPipelines;
         Freelist<kMaxSamplers,  0>       mSamplers;
