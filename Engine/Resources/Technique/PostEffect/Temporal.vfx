@@ -1,0 +1,37 @@
+{
+  "Properties": {
+    "Depth": {
+      "Mask": false,
+      "Condition": "Always"
+    },
+    "Rasterizer": {
+      "Cull": "None"
+    },
+    "Layout": {
+      "Attributes": [],
+      "Primitive": "TriangleList"
+    }
+  },
+  "Signature": {
+    "Textures": [
+      { "Name": "Scene" },
+      { "Name": "Level", "Fallback": [0, 0, 0, 0] }
+    ],
+    "Samplers": [
+      { "Name": "Scene", "Filter": "Point" },
+      { "Name": "Level", "Filter": "Linear" }
+    ]
+  },
+  "Program": {
+    "Shaders": {
+      "HLSL": [
+        { "Path": "Temporal.hlsl", "Stage": "Vertex"   },
+        { "Path": "Temporal.hlsl", "Stage": "Fragment" }
+      ],
+      "GLSL": [
+        { "Path": "Temporal.glsl", "Stage": "Vertex"   },
+        { "Path": "Temporal.glsl", "Stage": "Fragment" }
+      ]
+    }
+  }
+}

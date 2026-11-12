@@ -42,6 +42,7 @@ namespace ZyRender
         {
             None,       ///< Reads the image as it lies.
             FXAA,       ///< Smooths every edge the luma shows, at the cost of a little sharpness.
+            Temporal,   ///< Steadies the image over the ones before it, then smooths and sharpens what is left.
         };
 
         /// \brief Represents how much light the image is given, and the curve it is rolled off with.

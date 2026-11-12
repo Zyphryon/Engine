@@ -99,7 +99,9 @@ float3 Palette(float3 Color, float Steps, float2 Pixel)
 
 float4 main(fs_Input Input) : SV_Target
 {
-#if defined(ENABLE_ANTIALIAS_FXAA)
+#if defined(ENABLE_ANTIALIAS_TEMPORAL)
+    float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, u_Lens.xy, 0.6);
+#elif defined(ENABLE_ANTIALIAS_FXAA)
     float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, u_Lens.xy, 0.25);
 #else
     float3 Scene = t_Scene.SampleLevel(s_Scene, Input.Texture, 0).rgb;

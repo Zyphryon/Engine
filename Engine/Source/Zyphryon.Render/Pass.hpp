@@ -171,6 +171,15 @@ namespace ZyRender
             mInputAttachment.Append(Input);
         }
 
+        /// \brief Points an input the pass declared at another target.
+        ///
+        /// \param Index  The place of the input, in declaration order.
+        /// \param Target The slot of the target the input reads from the next run on.
+        ZY_INLINE void SetInput(UInt32 Index, UInt32 Target)
+        {
+            mInputAttachment[Index].Target = Target;
+        }
+
         /// \brief Gets the pass's inputs.
         ///
         /// \return The inputs, in declaration order.

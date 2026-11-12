@@ -93,7 +93,9 @@ vec3 Palette(vec3 Color, float Steps, vec2 Pixel)
 
 void main()
 {
-#if defined(ENABLE_ANTIALIAS_FXAA)
+#if defined(ENABLE_ANTIALIAS_TEMPORAL)
+    vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, u_Lens.xy, 0.6);
+#elif defined(ENABLE_ANTIALIAS_FXAA)
     vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, u_Lens.xy, 0.25);
 #else
     vec3 Scene = textureLod(t_Scene, v_Texture, 0.0).rgb;

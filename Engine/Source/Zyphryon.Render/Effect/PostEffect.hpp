@@ -14,6 +14,7 @@
 
 #include "PostEffectBloom.hpp"
 #include "PostEffectExposure.hpp"
+#include "PostEffectTemporal.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -98,12 +99,19 @@ namespace ZyRender
         /// \brief Sets the fraction of the output the first level of the bloom is gathered at.
         ///
         /// \param Sizing The fraction to gather it at, which every level below halves again.
-        void SetBloomScale(Target::Scale Sizing);
+        ZY_INLINE void SetBloomScale(Target::Scale Sizing)
+        {
+            mBloom.SetScale(Sizing);
+        }
 
         /// \brief Sets how much light the image is given, and the curve it is rolled off with.
         ///
         /// \param Exposure The exposure to give the image.
-        void SetExposure(ConstRef<Exposure> Exposure);
+        ZY_INLINE void SetExposure(ConstRef<Exposure> Exposure)
+        {
+            mFinal->SetExposure(Exposure);
+            mExposure.SetExposure(Exposure);
+        }
 
         /// \brief Sets how the exposed image is pushed around in colour.
         ///
@@ -127,24 +135,34 @@ namespace ZyRender
         ZY_INLINE void SetAntialias(Antialias Antialias)
         {
             mFinal->SetAntialias(Antialias);
+            mTemporal.SetActive(Antialias == PostEffect::Antialias::Temporal);
+        }
+
+        /// \brief Gets where the next image is to be drawn for the temporal smoothing to blend it back.
+        ///
+        /// \return The offset from where the view stands, in pixels, or zero unless the image is smoothed over time.
+        ZY_INLINE Vector2 GetJitter() const
+        {
+            return mTemporal.GetJitter();
+        }
+
+        /// \brief Sets where a point standing still was on the screen in the image before.
+        ///
+        /// \param Shift The move from this image back to the last, in clip space.
+        /// \param Scale The size the last image stood at against this one along each axis, one when the zoom held.
+        ZY_INLINE void SetShift(Vector2 Shift, Vector2 Scale)
+        {
+            mTemporal.SetShift(Shift, Scale);
         }
 
     private:
 
-        /// \brief The levels the bloom halves the image through, each spreading the glow twice as far as the one above.
-        static constexpr UInt32 kLevels = 4;
-
-    private:
-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Ref<Blueprint>                    mBlueprint;
-        Array<UInt32, kLevels>            mDown;
-        Array<UInt32, kLevels - 1>        mUp;
-        Sequence<Ptr<PostEffectBloom>>    mBloom;
-        Sequence<Ptr<PostEffectExposure>> mMeter;
-        Ptr<PostEffectExposure>           mAdapt;
-        Ptr<PostEffectFinal>              mFinal;
+        PostEffectTemporal   mTemporal;
+        PostEffectBloom      mBloom;
+        PostEffectExposure   mExposure;
+        Ptr<PostEffectFinal> mFinal;
     };
 }

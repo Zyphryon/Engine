@@ -66,15 +66,25 @@
       "Program": {
         "Defines": ["ENABLE_ANTIALIAS_FXAA"]
       }
+    },
+    {
+      "Name": "Temporal",
+      "Program": {
+        "Defines": ["ENABLE_ANTIALIAS_TEMPORAL"]
+      }
     }
   ],
   "Preload": [
     ["ACES"],
     ["ACES", "FXAA"],
+    ["ACES", "Temporal"],
     ["Neutral"],
     ["Neutral", "FXAA"],
+    ["Neutral", "Temporal"],
     ["AgX"],
     ["AgX", "FXAA"],
-    ["FXAA"]
+    ["AgX", "Temporal"],
+    ["FXAA"],
+    ["Temporal"]
   ]
 }
