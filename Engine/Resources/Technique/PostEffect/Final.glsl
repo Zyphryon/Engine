@@ -91,19 +91,20 @@ vec3 Palette(vec3 Color, float Steps, vec2 Pixel)
 
 void main()
 {
+    vec3 Still = textureLod(t_Scene, v_Texture, 0.0).rgb;
+
 #if defined(ENABLE_ANTIALIAS_TEMPORAL)
-    vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, u_Lens.xy, 0.6);
+    vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, Still, u_Lens.xy, 0.6);
 #elif defined(ENABLE_ANTIALIAS_FXAA)
-    vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, u_Lens.xy, 0.25);
+    vec3 Scene = ZyAntialiasFXAA(t_Scene, v_Texture, Still, u_Lens.xy, 0.25);
 #else
-    vec3 Scene = textureLod(t_Scene, v_Texture, 0.0).rgb;
+    vec3 Scene = Still;
 #endif
 
     // Red and blue part from green toward the corners, as a lens that bends each colour by its own amount.
     if (u_Lens.z > 0.0)
     {
         vec2 Shift = (v_Texture - 0.5) * u_Lens.zw;
-        vec3 Still = textureLod(t_Scene, v_Texture, 0.0).rgb;
 
         Scene.r = max(Scene.r + textureLod(t_Scene, v_Texture + Shift, 0.0).r - Still.r, 0.0);
         Scene.b = max(Scene.b + textureLod(t_Scene, v_Texture - Shift, 0.0).b - Still.b, 0.0);

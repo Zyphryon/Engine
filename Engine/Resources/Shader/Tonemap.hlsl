@@ -88,13 +88,10 @@ float3 ZyTonemapAgx(float3 Color)
     Color = mul(ZY_AGX_INPUT, Color);
     Color = (clamp(log2(max(Color, 1e-10)), Lowest, Highest) - Lowest) / (Highest - Lowest);
 
-    const float3 Square = Color * Color;
-    const float3 Fourth = Square * Square;
-    const float3 Fifth  = Fourth * Color;
-    const float3 Sixth  = Fourth * Square;
+    const float3 Upper = 98.056696 + Color * (-98.640212 + Color * 34.730566);
+    const float3 Lower = 7.37235 + Color * (-40.213864 + Color * Upper);
 
-    Color = saturate(34.730566 * Sixth - 98.640212 * Fifth + 98.056696 * Fourth - 40.213864 * Square * Color
-        + 7.37235 * Square - 0.301287 * Color);
+    Color = saturate(Color * (-0.301287 + Color * Lower));
 
     return saturate(mul(ZY_AGX_DISPLAY, pow(max(mul(ZY_AGX_OUTPUT, Color), 0.0), 2.2)));
 }

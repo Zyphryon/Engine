@@ -97,19 +97,20 @@ float3 Palette(float3 Color, float Steps, float2 Pixel)
 
 float4 main(fs_Input Input) : SV_Target
 {
+    const float3 Still = t_Scene.SampleLevel(s_Scene, Input.Texture, 0).rgb;
+
 #if defined(ENABLE_ANTIALIAS_TEMPORAL)
-    float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, u_Lens.xy, 0.6);
+    float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, Still, u_Lens.xy, 0.6);
 #elif defined(ENABLE_ANTIALIAS_FXAA)
-    float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, u_Lens.xy, 0.25);
+    float3 Scene = ZyAntialiasFXAA(t_Scene, s_Scene, Input.Texture, Still, u_Lens.xy, 0.25);
 #else
-    float3 Scene = t_Scene.SampleLevel(s_Scene, Input.Texture, 0).rgb;
+    float3 Scene = Still;
 #endif
 
     // Red and blue part from green toward the corners, as a lens that bends each colour by its own amount.
     if (u_Lens.z > 0.0)
     {
         const float2 Shift = (Input.Texture - 0.5) * u_Lens.zw;
-        const float3 Still = t_Scene.SampleLevel(s_Scene, Input.Texture, 0).rgb;
 
         Scene.r = max(Scene.r + t_Scene.SampleLevel(s_Scene, Input.Texture + Shift, 0).r - Still.r, 0.0);
         Scene.b = max(Scene.b + t_Scene.SampleLevel(s_Scene, Input.Texture - Shift, 0).b - Still.b, 0.0);

@@ -45,14 +45,13 @@ float ZyAntialiasRead(Texture2D Image, SamplerState Linear, float2 Uv)
     return ZyAntialiasLuma(Image.SampleLevel(Linear, Uv, 0).rgb);
 }
 
-/// FXAA, then contrast-adaptive sharpening from the same four neighbours, from none at zero to the most at one.
-float3 ZyAntialiasFXAA(Texture2D Image, SamplerState Linear, float2 Uv, float2 Texel, float Sharpen)
+/// FXAA over a pixel already read, then contrast-adaptive sharpening from the same four neighbours.
+float3 ZyAntialiasFXAA(Texture2D Image, SamplerState Linear, float2 Uv, float3 Middle, float2 Texel, float Sharpen)
 {
-    const float3 Middle = Image.SampleLevel(Linear, Uv, 0).rgb;
-    const float3 North  = Image.SampleLevel(Linear, Uv + float2(0.0, -Texel.y), 0).rgb;
-    const float3 South  = Image.SampleLevel(Linear, Uv + float2(0.0,  Texel.y), 0).rgb;
-    const float3 West   = Image.SampleLevel(Linear, Uv + float2(-Texel.x, 0.0), 0).rgb;
-    const float3 East   = Image.SampleLevel(Linear, Uv + float2( Texel.x, 0.0), 0).rgb;
+    const float3 North = Image.SampleLevel(Linear, Uv + float2(0.0, -Texel.y), 0).rgb;
+    const float3 South = Image.SampleLevel(Linear, Uv + float2(0.0,  Texel.y), 0).rgb;
+    const float3 West  = Image.SampleLevel(Linear, Uv + float2(-Texel.x, 0.0), 0).rgb;
+    const float3 East  = Image.SampleLevel(Linear, Uv + float2( Texel.x, 0.0), 0).rgb;
 
     const float M = ZyAntialiasLuma(Middle);
     const float N = ZyAntialiasLuma(North);
@@ -144,6 +143,12 @@ float3 ZyAntialiasFXAA(Texture2D Image, SamplerState Linear, float2 Uv, float2 T
     const float Weight = -Room * 0.2 * saturate(Sharpen);
 
     return max((Result + (North + South + West + East) * Weight) / (1.0 + 4.0 * Weight), 0.0);
+}
+
+/// FXAA, then contrast-adaptive sharpening, from none at zero to the most at one.
+float3 ZyAntialiasFXAA(Texture2D Image, SamplerState Linear, float2 Uv, float2 Texel, float Sharpen)
+{
+    return ZyAntialiasFXAA(Image, Linear, Uv, Image.SampleLevel(Linear, Uv, 0).rgb, Texel, Sharpen);
 }
 
 #endif // ZY_ANTIALIAS_INCLUDED

@@ -45,14 +45,13 @@ float ZyAntialiasRead(sampler2D Image, vec2 Uv)
     return ZyAntialiasLuma(textureLod(Image, Uv, 0.0).rgb);
 }
 
-/// FXAA, then contrast-adaptive sharpening from the same four neighbours, from none at zero to the most at one.
-vec3 ZyAntialiasFXAA(sampler2D Image, vec2 Uv, vec2 Texel, float Sharpen)
+/// FXAA over a pixel already read, then contrast-adaptive sharpening from the same four neighbours.
+vec3 ZyAntialiasFXAA(sampler2D Image, vec2 Uv, vec3 Middle, vec2 Texel, float Sharpen)
 {
-    vec3 Middle = textureLod(Image, Uv, 0.0).rgb;
-    vec3 North  = textureLod(Image, Uv + vec2(0.0, -Texel.y), 0.0).rgb;
-    vec3 South  = textureLod(Image, Uv + vec2(0.0,  Texel.y), 0.0).rgb;
-    vec3 West   = textureLod(Image, Uv + vec2(-Texel.x, 0.0), 0.0).rgb;
-    vec3 East   = textureLod(Image, Uv + vec2( Texel.x, 0.0), 0.0).rgb;
+    vec3 North = textureLod(Image, Uv + vec2(0.0, -Texel.y), 0.0).rgb;
+    vec3 South = textureLod(Image, Uv + vec2(0.0,  Texel.y), 0.0).rgb;
+    vec3 West  = textureLod(Image, Uv + vec2(-Texel.x, 0.0), 0.0).rgb;
+    vec3 East  = textureLod(Image, Uv + vec2( Texel.x, 0.0), 0.0).rgb;
 
     float M = ZyAntialiasLuma(Middle);
     float N = ZyAntialiasLuma(North);
@@ -143,6 +142,12 @@ vec3 ZyAntialiasFXAA(sampler2D Image, vec2 Uv, vec2 Texel, float Sharpen)
     float Weight = -Room * 0.2 * clamp(Sharpen, 0.0, 1.0);
 
     return max((Result + (North + South + West + East) * Weight) / (1.0 + 4.0 * Weight), vec3(0.0));
+}
+
+/// FXAA, then contrast-adaptive sharpening, from none at zero to the most at one.
+vec3 ZyAntialiasFXAA(sampler2D Image, vec2 Uv, vec2 Texel, float Sharpen)
+{
+    return ZyAntialiasFXAA(Image, Uv, textureLod(Image, Uv, 0.0).rgb, Texel, Sharpen);
 }
 
 #endif // ZY_ANTIALIAS_INCLUDED
