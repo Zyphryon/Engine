@@ -19,6 +19,7 @@ cbuffer cb_Pass : register(b1)
     float4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
     float4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
     float4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
+    float4 u_Output;    // X = Above zero when the target is the display
 };
 
 struct fs_Input
@@ -138,11 +139,11 @@ float4 main(fs_Input Input) : SV_Target
     // A grade that changes nothing past the curve hands the curve's image back as it stands.
     if (u_Lift.w < 0.0)
     {
-#if defined(ENABLE_ENCODED_OUTPUT)
-        return float4(ZyToGamma(saturate(Color)), 1.0);
+#if defined(ZY_DISPLAY_RAW)
+        return float4(u_Output.x > 0.0 ? ZyToGamma(saturate(Color)) : saturate(Color), 1.0);
 #else
         return float4(saturate(Color), 1.0);
-#endif // ENABLE_ENCODED_OUTPUT
+#endif // ZY_DISPLAY_RAW
     }
 
     // The rest is judged by eye, so it works on the encoded image, where even steps look even.
@@ -165,11 +166,11 @@ float4 main(fs_Input Input) : SV_Target
     }
 
     // The target encodes as it stores, so the image is handed back as light, unless it stores what it is handed.
-#if defined(ENABLE_ENCODED_OUTPUT)
-    return float4(Shown, 1.0);
+#if defined(ZY_DISPLAY_RAW)
+    return float4(u_Output.x > 0.0 ? Shown : ZyToLinear(Shown), 1.0);
 #else
     return float4(ZyToLinear(Shown), 1.0);
-#endif // ENABLE_ENCODED_OUTPUT
+#endif // ZY_DISPLAY_RAW
 }
 
 #endif // FRAGMENT_SHADER

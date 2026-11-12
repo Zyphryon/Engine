@@ -344,6 +344,10 @@ namespace ZyGraphic
         constexpr Text kTiers[] = { "1", "2", "3", "4", "5" };
         Description.Base.Macros.Append(Text("ZY_TIER"), kTiers[ZyEnum::Cast(mTier)]);
 
+#if defined(ZY_PLATFORM_WEB)
+        Description.Base.Macros.Append(Text("ZY_DISPLAY_RAW"), Text::Empty());
+#endif
+
         if (const JsonObject JsonProgram = JsonRoot.GetObject("Program"); JsonProgram.IsValid())
         {
             LoadProgram(Service, Scope, JsonProgram, Description.Base.Macros, Description.Base.Shaders);

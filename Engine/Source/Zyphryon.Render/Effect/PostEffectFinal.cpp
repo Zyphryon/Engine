@@ -57,7 +57,8 @@ namespace ZyRender
             .Lift    = Vector4(Lift, Plain ? -1.0f : static_cast<Real32>(mFrame)),
             .Gamma   = Vector4(Pow(2.0f, -Gamma.GetX()), Pow(2.0f, -Gamma.GetY()), Pow(2.0f, -Gamma.GetZ()), mHalo),
             .Gain    = Vector4(1.0f + Gain.GetX(), 1.0f + Gain.GetY(), 1.0f + Gain.GetZ(), Steps),
-            .Lens    = Vector4(TexelX, TexelY, 2.0f * mLens.Aberration * TexelX, 2.0f * mLens.Aberration * TexelY)
+            .Lens    = Vector4(TexelX, TexelY, 2.0f * mLens.Aberration * TexelX, 2.0f * mLens.Aberration * TexelY),
+            .Output  = Vector4(GetColor().Target == kNone ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f)
         });
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);
@@ -71,14 +72,6 @@ namespace ZyRender
         {
             Binder.SetVariant(ZyEnum::GetName(mAntialias));
         }
-
-#ifdef    ZY_PLATFORM_WEB
-        // The web's display surface stores what it is handed, so the image is encoded before it is written.
-        if (GetColor().Target == kNone)
-        {
-            Binder.SetVariant("Gamma");
-        }
-#endif // ZY_PLATFORM_WEB
 
         Binder.DrawFullscreen();
     }

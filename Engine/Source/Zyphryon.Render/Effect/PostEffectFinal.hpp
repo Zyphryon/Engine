@@ -198,6 +198,9 @@ namespace ZyRender
 
             /// The texel of the source across and up, then the aberration across the image in texels.
             Vector4 Lens;
+
+            /// Above zero in `X` when the pass writes to the display, which the web encodes the image for.
+            Vector4 Output;
         };
 
         /// \brief Sets how much light the image is given, and the curve it is rolled off with.

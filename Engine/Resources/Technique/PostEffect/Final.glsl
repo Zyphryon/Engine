@@ -19,6 +19,7 @@ layout(std140, binding = 1) uniform cb_Pass
     vec4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
     vec4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
     vec4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
+    vec4 u_Output;    // X = Above zero when the target is the display
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -132,11 +133,11 @@ void main()
     // A grade that changes nothing past the curve hands the curve's image back as it stands.
     if (u_Lift.w < 0.0)
     {
-#if defined(ENABLE_ENCODED_OUTPUT)
-        out_Color = vec4(ZyToGamma(clamp(Color, 0.0, 1.0)), 1.0);
+#if defined(ZY_DISPLAY_RAW)
+        out_Color = vec4(u_Output.x > 0.0 ? ZyToGamma(clamp(Color, 0.0, 1.0)) : clamp(Color, 0.0, 1.0), 1.0);
 #else
         out_Color = vec4(clamp(Color, 0.0, 1.0), 1.0);
-#endif // ENABLE_ENCODED_OUTPUT
+#endif // ZY_DISPLAY_RAW
         return;
     }
 
@@ -160,11 +161,11 @@ void main()
     }
 
     // The target encodes as it stores, so the image is handed back as light, unless it stores what it is handed.
-#if defined(ENABLE_ENCODED_OUTPUT)
-    out_Color = vec4(Shown, 1.0);
+#if defined(ZY_DISPLAY_RAW)
+    out_Color = vec4(u_Output.x > 0.0 ? Shown : ZyToLinear(Shown), 1.0);
 #else
     out_Color = vec4(ZyToLinear(Shown), 1.0);
-#endif // ENABLE_ENCODED_OUTPUT
+#endif // ZY_DISPLAY_RAW
 }
 
 #endif // FRAGMENT_SHADER
