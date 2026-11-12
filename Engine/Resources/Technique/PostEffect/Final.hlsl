@@ -65,12 +65,10 @@ SamplerState s_Bloom : register(s1);
 
 #if defined(ENABLE_TONEMAP_ACES)
     #define Tonemap ZyTonemapAces
-#elif defined(ENABLE_TONEMAP_NEUTRAL)
-    #define Tonemap ZyTonemapNeutral
 #elif defined(ENABLE_TONEMAP_AGX)
     #define Tonemap ZyTonemapAgx
 #else
-    #define Tonemap ZyTonemapGt
+    #define Tonemap ZyTonemapNeutral
 #endif // ENABLE_TONEMAP_ACES
 
 float Grain(float2 Pixel, uint Frame)

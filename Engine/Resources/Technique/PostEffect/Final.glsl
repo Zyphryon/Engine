@@ -60,12 +60,10 @@ layout(binding = 1) uniform sampler2D t_Bloom;
 
 #if defined(ENABLE_TONEMAP_ACES)
     #define Tonemap ZyTonemapAces
-#elif defined(ENABLE_TONEMAP_NEUTRAL)
-    #define Tonemap ZyTonemapNeutral
 #elif defined(ENABLE_TONEMAP_AGX)
     #define Tonemap ZyTonemapAgx
 #else
-    #define Tonemap ZyTonemapGt
+    #define Tonemap ZyTonemapNeutral
 #endif // ENABLE_TONEMAP_ACES
 
 float Grain(vec2 Pixel, uint Frame)

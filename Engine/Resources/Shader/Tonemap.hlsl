@@ -39,24 +39,6 @@ static const float3x3 ZY_AGX_DISPLAY = float3x3(
     -0.1246,  1.1329, -0.0083,
     -0.0182, -0.1006,  1.1187);
 
-/// Default GT peak brightness.
-#define ZY_GT_PEAK            1.00
-
-/// Default GT contrast, the slope of its straight section.
-#define ZY_GT_CONTRAST        1.00
-
-/// Default GT point where the toe ends and the straight section starts.
-#define ZY_GT_LINEAR_START    0.22
-
-/// Default GT length of the straight section, as a share of the range.
-#define ZY_GT_LINEAR_LENGTH   0.40
-
-/// Default GT pull of the toe towards black.
-#define ZY_GT_BLACK_TIGHTNESS 1.33
-
-/// Default GT black lift, for displays that cannot reach black.
-#define ZY_GT_PEDESTAL        0.00
-
 /// ACES filmic tonemap, to 0..1.
 float3 ZyTonemapAces(float3 Color)
 {
@@ -115,61 +97,6 @@ float3 ZyTonemapAgx(float3 Color)
         + 7.37235 * Square - 0.301287 * Color);
 
     return saturate(mul(ZY_AGX_DISPLAY, pow(max(mul(ZY_AGX_OUTPUT, Color), 0.0), 2.2)));
-}
-
-/// Uchimura's Gran Turismo tonemap for one channel, blending a toe, a line and a shoulder.
-float ZyTonemapGt(
-    float Channel,
-    float Peak,
-    float Contrast,
-    float LinearStart,
-    float LinearLength,
-    float BlackTightness,
-    float Pedestal)
-{
-    const float Length   = ((Peak - LinearStart) * LinearLength) / Contrast;
-    const float ToeEnd   = LinearStart + Length;
-    const float ToeSlope = LinearStart + Contrast * Length;
-    const float Falloff  = -((Contrast * Peak) / (Peak - ToeSlope)) / Peak;
-
-    const float ToeWeight      = 1.0 - smoothstep(0.0, LinearStart, Channel);
-    const float ShoulderWeight = step(ToeEnd, Channel);
-    const float LinearWeight   = 1.0 - ToeWeight - ShoulderWeight;
-
-    const float Toe      = LinearStart * pow(max(Channel, 0.0) / LinearStart, BlackTightness) + Pedestal;
-    const float Linear   = LinearStart + Contrast * (Channel - LinearStart);
-    const float Shoulder = Peak - (Peak - ToeSlope) * exp(Falloff * (Channel - ToeEnd));
-
-    return Toe * ToeWeight + Linear * LinearWeight + Shoulder * ShoulderWeight;
-}
-
-/// Gran Turismo tonemap for a color.
-float3 ZyTonemapGt(
-    float3 Color,
-    float  Peak,
-    float  Contrast,
-    float  LinearStart,
-    float  LinearLength,
-    float  BlackTightness,
-    float  Pedestal)
-{
-    return float3(
-        ZyTonemapGt(Color.r, Peak, Contrast, LinearStart, LinearLength, BlackTightness, Pedestal),
-        ZyTonemapGt(Color.g, Peak, Contrast, LinearStart, LinearLength, BlackTightness, Pedestal),
-        ZyTonemapGt(Color.b, Peak, Contrast, LinearStart, LinearLength, BlackTightness, Pedestal));
-}
-
-/// Gran Turismo tonemap with the engine's default shape.
-float3 ZyTonemapGt(float3 Color)
-{
-    return ZyTonemapGt(
-        Color,
-        ZY_GT_PEAK,
-        ZY_GT_CONTRAST,
-        ZY_GT_LINEAR_START,
-        ZY_GT_LINEAR_LENGTH,
-        ZY_GT_BLACK_TIGHTNESS,
-        ZY_GT_PEDESTAL);
 }
 
 #endif // ZY_TONEMAP_INCLUDED

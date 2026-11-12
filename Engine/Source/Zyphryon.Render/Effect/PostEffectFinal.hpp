@@ -31,9 +31,8 @@ namespace ZyRender
         /// \brief Enumerates the curves the image is compressed into the display range with.
         enum class Tonemap : UInt8
         {
-            GT7,        ///< Uchimura's Gran Turismo curve, which leaves the midtones where they were authored.
-            ACES,       ///< The ACES filmic curve, which adds contrast and rolls highlights further.
             Neutral,    ///< Khronos's PBR Neutral curve, which keeps colours as authored until they near white.
+            ACES,       ///< The ACES filmic curve, which adds contrast and rolls highlights further.
             AgX,        ///< The AgX curve, which keeps hues as bright colours wash toward white.
         };
 

@@ -62,7 +62,7 @@ namespace ZyRender
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);
 
-        if (mExposure.Curve != Tonemap::GT7)
+        if (mExposure.Curve != Tonemap::Neutral)
         {
             Binder.SetVariant(ZyEnum::GetName(mExposure.Curve));
         }
