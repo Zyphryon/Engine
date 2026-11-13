@@ -38,8 +38,10 @@ namespace ZyRender
         ZY_INLINE Animator2D()
             : mClip      { 0 },
               mReturn    { 0 },
+              mLength    { 0.0 },
               mPhase     { 0.0f },
               mResume    { 0.0f },
+              mRate      { 1.0f },
               mSlot      { kUnresolved },
               mKeyframe  { 0 },
               mDirection { 0 },
@@ -84,7 +86,8 @@ namespace ZyRender
         /// \param Rate The rate, where `1` plays as authored, `0` holds the current frame and a negative one is `0`.
         ZY_INLINE void SetRate(Real32 Rate)
         {
-            mPlayback.SetSpeed(mBackward ? -Max(Rate, 0.0f) : Max(Rate, 0.0f));
+            mRate = Max(Rate, 0.0f);
+            mPlayback.SetSpeed(GetSpeed());
         }
 
         /// \brief Gets the playback rate relative to the authored frame durations.
@@ -92,7 +95,7 @@ namespace ZyRender
         /// \return The rate, where `1` plays as authored.
         ZY_INLINE Real32 GetRate() const
         {
-            return Abs(mPlayback.GetSpeed());
+            return mRate;
         }
 
         /// \brief Gets how far through the clip the animator is, counted the way \ref Play takes it back.
@@ -135,7 +138,8 @@ namespace ZyRender
         /// \param Timestamp The time playback starts, in seconds, on the clock \ref Advance is given.
         /// \param Phase     The share of the clip to start at, counted as it plays, with zero on the first frame shown.
         /// \param Back      `true` to return to the loop it cuts once a play-once clip ends, `false` to hold its end.
-        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Bool Back = false);
+        /// \param Length    The seconds to play the clip over, or zero to play it at its authored frame durations.
+        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Bool Back = false, Real64 Length = 0.0);
 
         /// \brief Advances playback to a time and records every frame entered on the way.
         ///
@@ -197,6 +201,16 @@ namespace ZyRender
         /// \param Frames  The frames of the clip being played.
         /// \param Visited Receives the frames entered, in the order they were entered.
         void Step(Real64 Time, ConstRef<Animation2D> Frames, Ref<Visited> Visited);
+
+        /// \brief Gets the speed the cursor runs at, the rate fitted to the length asked for and signed by direction.
+        ///
+        /// \return The speed, negative while the clip plays backward.
+        ZY_INLINE Real32 GetSpeed() const
+        {
+            const Real64 Duration = mPlayback.GetDuration();
+            const Real32 Fit      = (mLength > 0.0 && Duration > 0.0 ? static_cast<Real32>(Duration / mLength) : 1.0f);
+            return (mBackward ? -mRate : mRate) * Fit;
+        }
 
         /// \brief Finds the frame the playback cursor is on, holding the final frame once a pass reaches its end.
         ///
@@ -272,8 +286,10 @@ namespace ZyRender
         UInt64            mClip;
         UInt64            mReturn;
         Playback          mPlayback;
+        Real64            mLength;
         Real32            mPhase;
         Real32            mResume;
+        Real32            mRate;
         UInt16            mSlot;
         UInt8             mKeyframe;
         UInt8             mDirection;

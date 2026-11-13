@@ -21,7 +21,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator2D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Bool Back)
+    void Animator2D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Bool Back, Real64 Length)
     {
         // A clip played once over another keeps the loop the first one cut, as only a loop is gone back to.
         if (!Back)
@@ -34,9 +34,10 @@ namespace ZyRender
             mResume = GetPhase();
         }
 
-        mClip  = Clip;
-        mPhase = Phase;
-        mSlot  = kUnresolved;
+        mClip   = Clip;
+        mPhase  = Phase;
+        mLength = Length;
+        mSlot   = kUnresolved;
 
         Resolve(Timestamp);
     }
@@ -80,7 +81,6 @@ namespace ZyRender
         static constexpr Array kRepeats(Repeat::Once, Repeat::Once, Repeat::Loop, Repeat::Mirror);
 
         const Real64 Duration = Frames.GetDuration();
-        const Real32 Rate     = GetRate();
 
         // A speed of zero compares the same either way, so the direction is kept apart from it.
         mBackward = (Frames.GetStatus() == Animation2D::Status::Backward);
@@ -89,7 +89,7 @@ namespace ZyRender
         mPlayback.Advance(Timestamp);
         mPlayback.SetDuration(Duration);
         mPlayback.SetRepeat(kRepeats[ZyEnum::Cast(Frames.GetStatus())]);
-        mPlayback.SetSpeed(mBackward ? -Rate : Rate);
+        mPlayback.SetSpeed(GetSpeed());
         mPlayback.Seek((mBackward ? 1.0 - Phase : Phase) * Duration);
         mPlayback.Play();
 
