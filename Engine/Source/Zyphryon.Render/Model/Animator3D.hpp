@@ -125,7 +125,14 @@ namespace ZyRender
         /// \param Phase     The share of the clip to start at, where zero is its first pose.
         /// \param Fade      The time to blend out of the clip already playing, in seconds, counted from the timestamp.
         /// \param Back      `true` to return to the loop it cuts once a play-once clip ends, `false` to hold its end.
-        void Play(UInt64 Clip, Real64 Timestamp, Real32 Phase = 0.0f, Real64 Fade = 0.0, Bool Back = false);
+        /// \param Length    The seconds to play the clip over, or zero to play it at its own rate.
+        void Play(
+            UInt64 Clip,
+            Real64 Timestamp,
+            Real32 Phase  = 0.0f,
+            Real64 Fade   = 0.0,
+            Bool   Back   = false,
+            Real64 Length = 0.0);
 
         /// \brief Advances the clip and samples the local pose it puts the rig in, leaving the palette as it was.
         ///
@@ -184,7 +191,10 @@ namespace ZyRender
             /// The share of the clip to start at, where zero is its first pose.
             Real32                Phase     = 0.0f;
 
-            /// The rate of the clip last paired, as its \ref Model3D::Clip::Rate gives it.
+            /// The seconds to play the clip over, or zero to play it at its own rate.
+            Real64                Length    = 0.0;
+
+            /// The rate of the clip last paired, as its \ref Model3D::Clip::Rate gives it or as fits it to the length.
             Real32                Rate      = 1.0f;
 
             /// The place of the clip in the model's list, or \ref kUnresolved while the model lists no such clip.

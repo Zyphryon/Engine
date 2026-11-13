@@ -73,7 +73,7 @@ namespace ZyRender
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Animator3D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Real64 Fade, Bool Back)
+    void Animator3D::Play(UInt64 Clip, Real64 Timestamp, Real32 Phase, Real64 Fade, Bool Back, Real64 Length)
     {
         // A clip played once over another keeps the loop the first one cut, as only a loop is gone back to.
         if (!Back)
@@ -107,6 +107,7 @@ namespace ZyRender
         Incoming.Name      = Clip;
         Incoming.Timestamp = Timestamp;
         Incoming.Phase     = Phase;
+        Incoming.Length    = Length;
         Incoming.Bound     = false;
 
         // Found at once in a model that has landed, so the clip asked for is the one reported from here on.
@@ -282,6 +283,12 @@ namespace ZyRender
         Entry.Covered = Entry.Motion && Entry.Motion->Resolve(Rig, Entry.Binding);
 
         const Real64 Duration = Entry.Motion ? Entry.Motion->GetDuration() : 0.0;
+
+        // A clip asked to play over a length runs at the rate that fits it to that length instead of its own.
+        if (Entry.Length > 0.0 && Duration > 0.0)
+        {
+            Entry.Rate = static_cast<Real32>(Duration / Entry.Length);
+        }
 
         // Move the clock to the start time first, so playback is anchored there and not at the last advance.
         Entry.Cursor.Advance(Entry.Timestamp);
