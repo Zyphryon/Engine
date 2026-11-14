@@ -92,7 +92,17 @@ namespace ZyPlatform
 
 #if defined(ZY_PLATFORM_WINDOWS)
 
-        ::Sleep(static_cast<DWORD>(Seconds * 1000.0));
+        const HANDLE Alarm = CreateWaitableTimerExW(
+            nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+
+        ZY_ASSERT(Alarm != nullptr, "The system offers no high-resolution timer");
+
+        LARGE_INTEGER Due;
+        Due.QuadPart = -static_cast<LONGLONG>(Seconds * 10'000'000.0);
+
+        SetWaitableTimer(Alarm, AddressOf(Due), 0, nullptr, nullptr, FALSE);
+        WaitForSingleObject(Alarm, INFINITE);
+        CloseHandle(Alarm);
 
 #else
 
