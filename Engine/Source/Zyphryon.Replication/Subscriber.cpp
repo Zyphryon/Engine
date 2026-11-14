@@ -495,7 +495,7 @@ namespace ZyReplication
             {
                 Actor.Attach(Above);
             }
-            Actor.Set(Above.IsAlive() ? Locus() : Locus(mSection));
+            Actor.Set(Above.IsAlive() && !(Parent & kPersistent) ? Locus() : Locus(mSection));
 
             Claim(Actor, Peer);
 

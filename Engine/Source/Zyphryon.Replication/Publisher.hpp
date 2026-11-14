@@ -101,6 +101,12 @@ namespace ZyReplication
         /// \return The entity, or one naming nothing when no living entity carries the identifier.
         ZyScene::Entity Find(UInt64 Identifier) const;
 
+        /// \brief Checks whether any peer sees a replica, which is whether one sees the key it was published under.
+        ///
+        /// \param Actor The entity, alive or just destroyed.
+        /// \return `true` when a peer sees it, `false` when none does or it was never published.
+        Bool IsWatched(ZyScene::Entity Actor);
+
     private:
 
         /// \brief Represents messages written back to back, and the places a section may be cut between them.
@@ -142,6 +148,12 @@ namespace ZyReplication
 
             /// `true` when the replica has to arrive whole again, as it does after changing owner, `false` otherwise.
             Bool   Reenter    = false;
+
+            /// `true` when the replica stands under a key of its own, a member of its channel, `false` for a child.
+            Bool   Root       = false;
+
+            /// `true` when its locus landed or was told changed since its last publish, `false` while it stood still.
+            Bool   Moved      = false;
         };
 
         /// \brief Represents one interest key's traffic for a tick and the roots standing under it.

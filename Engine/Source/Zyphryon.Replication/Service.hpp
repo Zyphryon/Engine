@@ -155,6 +155,12 @@ namespace ZyReplication
             Settle(true);
         }
 
+        /// \brief Checks whether any peer sees an entity, while this side serves.
+        ///
+        /// \param Actor The entity, alive or just destroyed.
+        /// \return `true` when a peer sees it, `false` when none does, it was never published or this side follows.
+        Bool IsWatched(ZyScene::Entity Actor);
+
         /// \brief Finds the entity a replica identifier names on this side.
         ///
         /// \param Identifier The identifier the replica travels under.

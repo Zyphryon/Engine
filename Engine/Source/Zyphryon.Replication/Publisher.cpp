@@ -206,8 +206,14 @@ namespace ZyReplication
         }
 
         // It rides in the channel the entity stands under, which every peer that sees it reads.
-        const UInt64 Skipped = (Audience == Audience::Others ? GetOwner(Actor) : 0);
-        WriteMessage(GetChannel(World ? kGlobal : Tracking->Key).Stream, Skipped, Message);
+        Ref<Channel> Target = GetChannel(World ? kGlobal : Tracking->Key);
+
+        // Nobody reads the stream of a key no peer sees, while every peer reads the world's.
+        if (World || Target.Subscribers > 0)
+        {
+            const UInt64 Skipped = (Audience == Audience::Others ? GetOwner(Actor) : 0);
+            WriteMessage(Target.Stream, Skipped, Message);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -270,6 +276,21 @@ namespace ZyReplication
             {
                 if (const Ptr<Tracker> Tracking = Track(mTouched[Entry]))
                 {
+                    const Bool Settled
+                        = Tracking->Key != 0 && !Tracking->Queued && !Tracking->Moved && !Tracking->Reenter;
+
+                    // A change under a key no peer sees is told to nobody, as a peer coming to see it reads it whole.
+                    const Ptr<Channel> Target = Settled ? FindChannel(Tracking->Key) : nullptr;
+                    
+                    if (Target && Target->Subscribers == 0)
+                    {
+                        if (Tracking->Identifier & kPersistent)
+                        {
+                            Tracking->Diverged.Set(Index);
+                        }
+                        continue;
+                    }
+
                     (Entry < Lost ? Tracking->Dropped : Tracking->Dirty).Set(Index);
                     Enqueue(mTouched[Entry], * Tracking);
                 }
@@ -284,6 +305,16 @@ namespace ZyReplication
     {
         const ZyScene::Entity Actor = mReplicas.FindOrDefault(Identifier);
         return Actor.IsAlive() ? Actor : ZyScene::Entity();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Publisher::IsWatched(ZyScene::Entity Actor)
+    {
+        const Ptr<Tracker> Tracking = Track(Actor);
+        const Ptr<Channel> Target   = Tracking && Tracking->Key != 0 ? FindChannel(Tracking->Key) : nullptr;
+        return Target && Target->Subscribers > 0;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -317,6 +348,9 @@ namespace ZyReplication
                 Actor.Set(Replica(Tracking.Identifier));
             }
         }
+
+        // The key and the parent it stands under are read anew, since either may be what changed.
+        Tracking.Moved = true;
         Enqueue(Actor, Tracking);
     }
 
@@ -338,7 +372,7 @@ namespace ZyReplication
     void Publisher::Retire(ZyScene::Entity Actor, Ref<Tracker> Tracking)
     {
         ZY_ASSERT(
-            !Actor.IsAlive() || Tracking.Parent != 0 || Tracking.Key == 0,
+            !Actor.IsAlive() || !Tracking.Root || Tracking.Key == 0,
             "A published root cannot lose its locus alive");
 
         // A child that died with its parent goes on the peer with it, so it needs no word of its own.
@@ -351,7 +385,7 @@ namespace ZyReplication
         {
             Ref<Channel> Target = GetChannel(Tracking.Key);
 
-            if (Tracking.Parent == 0)
+            if (Tracking.Root)
             {
                 Target.Members.Erase(Actor.GetID());
             }
@@ -386,6 +420,13 @@ namespace ZyReplication
             return;
         }
 
+        // A replica reattached or moved tells its locus changed, so one that did not stands where it was published.
+        if (Tracking->Key != 0 && !Tracking->Moved && !Tracking->Reenter)
+        {
+            Broadcast(Actor, * Tracking);
+            return;
+        }
+
         // Without a key nobody sees it yet, and setting one puts it in line again.
         const UInt64 Key = GetKey(Actor);
 
@@ -396,10 +437,11 @@ namespace ZyReplication
         }
 
         const Bool   Persistent = (Tracking->Identifier & kPersistent) != 0;
+        const Bool   Root       = IsRoot(Actor);
         const UInt64 Parent     = GetParentOf(Actor);
 
         // A child waits until its parent stands under the same key, since the parent's arrival there carries it.
-        if (Parent != 0)
+        if (Parent != 0 && !Root)
         {
             const ZyScene::Entity Above   = Find(Parent);
             const Ptr<Tracker>    Holding = Above.IsAlive() ? Track(Above) : nullptr;
@@ -409,6 +451,7 @@ namespace ZyReplication
                 return;
             }
         }
+        Tracking->Moved = false;
 
         if (Tracking->Key == 0)
         {
@@ -429,23 +472,25 @@ namespace ZyReplication
             Arrive(Actor, * Tracking, Key, Parent);
             return;
         }
-        else if (Tracking->Parent != Parent || Tracking->Reenter)
+        else if (Tracking->Parent != Parent || Tracking->Root != Root || Tracking->Reenter)
         {
             // Reattached under the same key or owned anew, arriving again is an upsert that sets it whole.
             Ref<Channel> Target = GetChannel(Key);
 
-            if (Tracking->Parent != Parent)
+            if (Tracking->Root != Root)
             {
-                if (Tracking->Parent == 0)
-                {
-                    Target.Members.Erase(Actor.GetID());
-                }
-                if (Parent == 0)
+                if (Root)
                 {
                     Target.Members.Insert(Actor.GetID());
                 }
-                Tracking->Parent = Parent;
+                else
+                {
+                    Target.Members.Erase(Actor.GetID());
+                }
+                Tracking->Root = Root;
             }
+            Tracking->Parent = Parent;
+
             Reveal(Target.Stream, Actor, * Tracking);
             return;
         }
@@ -460,12 +505,14 @@ namespace ZyReplication
         Ref<Channel> Target = GetChannel(Key);
 
         // A channel's members are its roots, while a child travels in its root's channel.
-        if (Parent == 0)
+        Tracking.Key    = Key;
+        Tracking.Parent = Parent;
+        Tracking.Root   = IsRoot(Actor);
+
+        if (Tracking.Root)
         {
             Target.Members.Insert(Actor.GetID());
         }
-        Tracking.Key    = Key;
-        Tracking.Parent = Parent;
 
         // Peers load a persistent replica themselves, so only its divergence travels.
         if ((Tracking.Identifier & kPersistent) == 0)
@@ -487,6 +534,7 @@ namespace ZyReplication
             {
                 Below->Key    = Key;
                 Below->Parent = GetParentOf(Child);
+                Below->Root   = false;
                 Enqueue(Child, * Below);
                 return;
             }
@@ -498,6 +546,7 @@ namespace ZyReplication
             }
             Below->Key    = Key;
             Below->Parent = GetParentOf(Child);
+            Below->Root   = false;
 
             // Looked up again, since a departure may have made room in the channels for the key it left.
             Reveal(GetChannel(Key).Stream, Child, * Below);
@@ -514,7 +563,7 @@ namespace ZyReplication
         Output.WriteUInt(Tracking.Identifier);
         Output.WriteUInt(Key);
 
-        if (Tracking.Parent == 0)
+        if (Tracking.Root)
         {
             Old.Members.Erase(Actor.GetID());
         }
@@ -853,9 +902,11 @@ namespace ZyReplication
 
     UInt64 Publisher::GetParentOf(ZyScene::Entity Actor)
     {
+        // A root stands under its own key, yet a persistent parent is loaded on every side, so the root names it.
         if (IsRoot(Actor))
         {
-            return 0;
+            const ConstPtr<Tracker> Holder = Actor.GetParent().IsAlive() ? Track(Actor.GetParent()) : nullptr;
+            return Holder && (Holder->Identifier & kPersistent) ? Holder->Identifier : 0;
         }
 
         for (ZyScene::Entity Above = Actor.GetParent(); Above.IsAlive(); Above = Above.GetParent())
