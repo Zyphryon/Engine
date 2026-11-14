@@ -103,6 +103,11 @@ namespace ZyRender
         }
 
         Binder.DrawFullscreen();
+
+        if (mSweep == Sweep::Adapt && !mAuto)
+        {
+            SetActive(false);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -112,6 +117,11 @@ namespace ZyRender
     {
         // An exposure turning automatic takes the meter's reading at once, rather than easing from what was kept.
         mFresh = mFresh || (Exposure.Auto && !mAuto);
+
+        if (Exposure.Auto || mAuto)
+        {
+            SetActive(true);
+        }
         mAuto  = Exposure.Auto;
 
         // A manual exposure is held at no stops at all, which leaves the level as the whole of it.
