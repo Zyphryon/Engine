@@ -197,7 +197,6 @@ namespace ZyNetwork
 
     Bool Proactor::Start()
     {
-        // Opened with no limit on its threads, since a limit holds a waiter back while another that waited here runs.
         mBackend->Port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, kMaximum<UInt32>);
 
         if (mBackend->Port == nullptr)

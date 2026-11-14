@@ -27,6 +27,7 @@
 #include "Zyphryon.Base/Container/Spool.hpp"
 #include "Zyphryon.Base/Container/Table.hpp"
 #include "Zyphryon.Base/Container/Variant.hpp"
+#include "Zyphryon.Base/Cryptography/SHA256.hpp"
 #include "Zyphryon.Base/Cryptography/Signer.hpp"
 #include "Zyphryon.Base/Functional/Delegate.hpp"
 #include "Zyphryon.Base/Functional/Journal.hpp"
