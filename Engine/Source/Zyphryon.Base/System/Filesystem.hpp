@@ -198,7 +198,7 @@ inline namespace ZyBase
         /// \return A \p Result indicating the success or failure of the operation.
         ZY_INLINE static Result Write(Text Path, Text Data)
         {
-            return Write(Path, ConstSpan<Byte>(reinterpret_cast<ConstPtr<Byte>>(Data.GetData()), Data.GetSize()));
+            return Write(Path, Data.GetBytes());
         }
 
         /// \brief Opens a file and keeps it open for repeated transfers at explicit offsets.

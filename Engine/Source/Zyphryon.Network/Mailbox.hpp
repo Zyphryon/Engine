@@ -91,7 +91,7 @@ namespace ZyNetwork
         /// \param Origin The address the peer is at, whose host is carried as the payload.
         ZY_INLINE void Connect(Connection Link, ConstRef<Address> Origin)
         {
-            const ConstSpan<Byte> Host(reinterpret_cast<ConstPtr<Byte>>(Origin.Host.GetData()), Origin.Host.GetSize());
+            const ConstSpan<Byte> Host = Text(Origin.Host).GetBytes();
 
             Push(Link, Signal::Connect, Delivery::Unreliable, Reason::None, Host).Port = Origin.Port;
         }

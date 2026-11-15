@@ -90,6 +90,14 @@ inline namespace ZyBase
             return mSize;
         }
 
+        /// \brief Gets the bytes the characters in the view are made of.
+        ///
+        /// \return The characters of the view as bytes, in place.
+        ZY_INLINE ConstSpan<Byte> GetBytes() const
+        {
+            return ConstSpan<Byte>(reinterpret_cast<ConstPtr<Byte>>(mData), mSize);
+        }
+
         /// \brief Checks whether the text view is empty.
         ///
         /// \return `true` if the view contains no characters, `false` otherwise.
