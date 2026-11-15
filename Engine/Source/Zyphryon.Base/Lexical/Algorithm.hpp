@@ -794,7 +794,7 @@ inline namespace ZyBase
         return Result;
     }
 
-    /// \brief Extracts a floating-point number from the text at the current cursor position.
+    /// \brief Extracts a floating-point number, its exponent, an infinity or a NaN from the text at the cursor.
     ///
     /// \tparam Type   The floating-point type to extract.
     /// \param Content The text to parse from.
@@ -807,6 +807,18 @@ inline namespace ZyBase
         const UInt Start      = Cursor;
         const Bool IsNegative = StrConsume(Content, Cursor, '-');
 
+        // An infinity is read as StrWriteReal writes it and as databases spell it.
+        if (StrConsume(Content, Cursor, "Inf"))
+        {
+            StrConsume(Content, Cursor, "inity");
+            return IsNegative ? -kInfinity<Type> : kInfinity<Type>;
+        }
+
+        if (!IsNegative && StrConsume(Content, Cursor, "NaN"))
+        {
+            return kNaN<Type>;
+        }
+
         const UInt   Whole   = Cursor;
         const UInt64 IntPart = StrExtractNumber<10, UInt64>(Content, Cursor);
         Bool         Digits  = Cursor > Whole;
@@ -818,11 +830,30 @@ inline namespace ZyBase
             const UInt64 IntFrac = StrExtractNumber<10, UInt64>(Content, Cursor);
 
             Digits  = Digits || Cursor > Point;
-            Result += static_cast<Type>(IntFrac) / static_cast<Type>(Pow10(Cursor - Point));
+            Result += static_cast<Type>(IntFrac) / Pow10<Type>(static_cast<SInt32>(Cursor - Point));
         }
 
         if (Digits)
         {
+            // An exponent counts only with digits behind it, or the `e` is left for whatever follows.
+            const UInt Mark = Cursor;
+
+            if (StrConsume(Content, Cursor, 'e') || StrConsume(Content, Cursor, 'E'))
+            {
+                StrConsume(Content, Cursor, '+');
+
+                const UInt   Power = Cursor;
+                const SInt32 Shift = StrExtractNumber<10, SInt32>(Content, Cursor);
+
+                if (Cursor > Power)
+                {
+                    Result = (Shift < 0 ? Result / Pow10<Type>(-Shift) : Result * Pow10<Type>(Shift));
+                }
+                else
+                {
+                    Cursor = Mark;
+                }
+            }
             return IsNegative ? Type(0) - Result : Result;
         }
 

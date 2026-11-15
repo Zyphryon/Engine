@@ -23,7 +23,7 @@ inline namespace ZyBase
 
     void StrWriteReal(Ref<Str32> Output, Real64 Number, UInt Significant)
     {
-        ZY_ASSERT(Significant >= 1 && Significant <= 15, "A real is written in one to fifteen significant digits");
+        ZY_ASSERT(Significant >= 1 && Significant <= 17, "A real is written in one to seventeen significant digits");
 
         if (IsNaN(Number))
         {
@@ -75,7 +75,7 @@ inline namespace ZyBase
         // Rounded up, the largest doubles would read back as infinity.
         if (Exponent == 308)
         {
-            Mantissa = Min<UInt64>(Mantissa, 179769313486231 / Pow10(15 - Limit));
+            Mantissa = Min<UInt64>(Mantissa, 17976931348623157 / Pow10(17 - Limit));
         }
 
         while (Mantissa % 10 == 0)

@@ -38,6 +38,10 @@ inline namespace ZyBase
     template<typename Type>
     inline constexpr Type kInfinity  = std::numeric_limits<Type>::infinity();
 
+    /// \brief Mathematical constant representing a quiet not-a-number.
+    template<typename Type>
+    inline constexpr Type kNaN       = std::numeric_limits<Type>::quiet_NaN();
+
     /// \brief Mathematical constant representing the minimum of an integral type, or the smallest positive normal real.
     template<typename Type>
     inline constexpr Type kMinimum   = std::numeric_limits<Type>::min();

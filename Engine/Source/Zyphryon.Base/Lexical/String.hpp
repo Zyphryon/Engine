@@ -848,9 +848,9 @@ inline namespace ZyBase
 
     /// \brief Writes a real number in at most the given significant digits, with no trailing zeros.
     ///
-    /// \param Output      Receives the characters, at most 22 of them.
+    /// \param Output      Receives the characters, at most 24 of them.
     /// \param Number      The number to write.
-    /// \param Significant The most significant digits to write, from one to fifteen.
+    /// \param Significant The most significant digits to write, from one to seventeen.
     ZY_API void StrWriteReal(Ref<Str32> Output, Real64 Number, UInt Significant);
 
     /// \brief Concatenates a string and a text into a new string.
