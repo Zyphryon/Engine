@@ -59,6 +59,9 @@ namespace ZyNetwork::TCP
         /// \see Channel::Retire(Ref<Proactor>, Connection, Reason, Ref<Mailbox>)
         void Retire(Ref<Proactor> Watcher, Connection Link, Reason Cause, Ref<Mailbox> Output) override;
 
+        /// \see Channel::Close(Ref<Proactor>, Connection, Ref<Mailbox>)
+        void Close(Ref<Proactor> Watcher, Connection Link, Ref<Mailbox> Output) override;
+
         /// \see Channel::SetTimeout(Connection, Real64)
         void SetTimeout(Connection Link, Real64 Seconds) override;
 

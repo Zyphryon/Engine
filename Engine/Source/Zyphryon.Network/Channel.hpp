@@ -36,6 +36,7 @@ namespace ZyNetwork
             Latent,  ///< Constructed, with no socket opened for it yet.
             Pending, ///< Reaching for a peer, with the attempt not yet settled.
             Live,    ///< Open and able to carry traffic.
+            Closing, ///< Closed by the application, still sending what it was handed before it retires.
             Retired, ///< Finished, and waiting for the platform to give back what it still holds.
         };
 
@@ -132,6 +133,16 @@ namespace ZyNetwork
         /// \param Cause   The reason it is retired.
         /// \param Output  Receives the notice for a peer that owned nothing of the platform's.
         virtual void Retire(Ref<Proactor> Watcher, Connection Link, Reason Cause, Ref<Mailbox> Output) = 0;
+
+        /// \brief Ends a peer, or the whole endpoint, as the application asks, once what it was handed has gone out.
+        ///
+        /// \param Watcher The proactor the last writes are posted to.
+        /// \param Link    The peer to end, or this endpoint.
+        /// \param Output  Receives the notice for a peer that owned nothing of the platform's.
+        virtual void Close(Ref<Proactor> Watcher, Connection Link, Ref<Mailbox> Output)
+        {
+            Retire(Watcher, Link, Reason::Closed, Output);
+        }
 
         /// \brief Sets how long a peer may say nothing before it is taken as gone.
         ///

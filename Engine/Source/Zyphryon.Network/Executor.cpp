@@ -328,7 +328,7 @@ namespace ZyNetwork
                 (* Target)->Broadcast(Entry.Mode, Batch.GetPayload(Entry));
                 break;
             case Order::Close:
-                (* Target)->Retire(mWatcher, Entry.Link, Reason::Closed, mReport);
+                (* Target)->Close(mWatcher, Entry.Link, mReport);
                 break;
             case Order::Timeout:
             {

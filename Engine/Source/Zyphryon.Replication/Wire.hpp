@@ -38,5 +38,7 @@ namespace ZyReplication
         Forget,  ///< Tells a peer an entity left its key, then the key it moved under or zero once destroyed.
         Message, ///< Hands peers the game's message, the peer that passes over it and its size first.
         Packed,  ///< Opens a frame packed with LZ4, its unpacked size first, which never appears inside a frame.
+        Knock,   ///< Shows the serving side the following one's ticket, its first message and never inside a frame.
+        Expel,   ///< Tells a peer why it is expelled, its last message and never inside a frame.
     };
 }

@@ -94,11 +94,13 @@ namespace ZyReplication
         /// \param Address   The address the serving side accepts peers on.
         /// \param Transport The transport to reach it over.
         /// \param Listener  The listener told when the serving side is reached and when it goes away.
+        /// \param Ticket    The ticket shown to the serving side before anything else, at most \ref kTicket bytes.
         /// \return `true` if the session is under way, `false` when one is open, the network is missing or refused it.
         Bool Join(
             ConstRef<ZyNetwork::Address> Address,
             ZyNetwork::Transport         Transport,
-            ConstRetainer<Listener>      Listener);
+            ConstRetainer<Listener>      Listener,
+            ConstSpan<Byte>              Ticket);
 
         /// \brief Closes the session, its peers or the serving side going with it.
         void Close();
@@ -115,10 +117,11 @@ namespace ZyReplication
         /// \param Actor The entity, which must be alive.
         void Possess(UInt64 Peer, ZyScene::Entity Actor);
 
-        /// \brief Ends a peer's part in the session, while this side serves.
+        /// \brief Ends a peer's part in the session, telling it why, while this side serves.
         ///
-        /// \param Peer The key the peer is known by, its listener told once the connection closed.
-        void Expel(UInt64 Peer);
+        /// \param Peer   The key the peer is known by, its listener told once the connection closed.
+        /// \param Reason The reason the peer is told, cut at 255 characters, or empty to tell none.
+        void Expel(UInt64 Peer, Text Reason = Text::Empty());
 
         /// \brief Gets where a peer connects from, while this side serves.
         ///
@@ -200,7 +203,8 @@ namespace ZyReplication
             ///
             /// \param Owner    The service, outliving the gate's use.
             /// \param Listener The listener the game hears the session through.
-            Gate(Ref<Service> Owner, ConstRetainer<Listener> Listener);
+            /// \param Ticket   The ticket the following side shows on reaching the serving one, empty when serving.
+            Gate(Ref<Service> Owner, ConstRetainer<Listener> Listener, ConstSpan<Byte> Ticket);
 
             /// \see ZyNetwork::Handler::OnConnect(ZyNetwork::Connection, ConstRef<ZyNetwork::Address>)
             void OnConnect(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin) override;
@@ -213,12 +217,36 @@ namespace ZyReplication
 
         private:
 
+            /// \brief Represents a peer that reached the serving side and has yet to join, until its connection closes.
+            struct Knock final
+            {
+                /// The connection the peer reached over.
+                ZyNetwork::Connection Link;
+
+                /// The address the peer connects from.
+                ZyNetwork::Address    Origin;
+
+                /// `true` once the peer showed its ticket, `false` while it has sent nothing.
+                Bool                  Shown = false;
+            };
+
+        private:
+
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-            Ref<Service>       mOwner;
-            Retainer<Listener> mListener;
+            Ref<Service>         mOwner;
+            Retainer<Listener>   mListener;
+            Table<UInt64, Knock> mKnocks;
+            Sequence<Byte>       mTicket;
+            Str                  mFarewell;
         };
+
+        /// \brief Tells a peer why it is let go, then closes its connection once that went out.
+        ///
+        /// \param Link   The connection the peer is reached through.
+        /// \param Reason The reason the peer is told, cut at 255 characters, or empty to tell none.
+        void Part(ZyNetwork::Connection Link, Text Reason);
 
         /// \brief Opens the session's endpoint once the table is sealed and a side is made.
         ///
@@ -226,12 +254,14 @@ namespace ZyReplication
         /// \param Transport The transport of the endpoint.
         /// \param Listener  The listener the game hears the session through, or null to hear nothing.
         /// \param Serving   `true` to accept peers, `false` to reach the serving side.
+        /// \param Ticket    The ticket the following side shows, empty when serving.
         /// \return `true` if the endpoint opened, `false` when one is open, the network is missing or refused it.
         Bool Open(
             ConstRef<ZyNetwork::Address> Address,
             ZyNetwork::Transport         Transport,
             ConstRetainer<Listener>      Listener,
-            Bool                         Serving);
+            Bool                         Serving,
+            ConstSpan<Byte>              Ticket);
 
         /// \brief Takes in the changes around a load from disk, whose values count as no change.
         ///

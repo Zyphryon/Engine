@@ -116,4 +116,26 @@ namespace ZyPlatform
 
 #endif
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    UInt64 Timer::GetEpoch()
+    {
+#if defined(ZY_PLATFORM_WINDOWS)
+
+        FILETIME Time;
+        GetSystemTimeAsFileTime(AddressOf(Time));
+
+        const UInt64 Steps = (static_cast<UInt64>(Time.dwHighDateTime) << 32) | Time.dwLowDateTime;
+        return Steps / 10'000'000ull - 11'644'473'600ull;
+
+#else
+
+        struct timespec Timestamp;
+        clock_gettime(CLOCK_REALTIME, AddressOf(Timestamp));
+        return static_cast<UInt64>(Timestamp.tv_sec);
+
+#endif
+    }
 }

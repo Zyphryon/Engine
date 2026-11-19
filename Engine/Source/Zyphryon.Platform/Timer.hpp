@@ -68,6 +68,11 @@ namespace ZyPlatform
         /// \param Seconds The least time to wait for, in seconds, zero or more.
         static void Wait(Real64 Seconds);
 
+        /// \brief Gets the wall-clock time, which machines agree on, unlike the monotonic time.
+        ///
+        /// \return The seconds since 1970-01-01 00:00 UTC, as the system's clock tells it.
+        static UInt64 GetEpoch();
+
     private:
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

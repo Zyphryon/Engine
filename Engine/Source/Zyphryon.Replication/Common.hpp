@@ -23,6 +23,9 @@ namespace ZyReplication
     /// \brief The bit set on the identifier of a replica both sides load from disk.
     inline constexpr UInt64 kPersistent = 1ull << 63;
 
+    /// \brief The most bytes the ticket a following side shows the serving one may take.
+    inline constexpr UInt32 kTicket     = 1024;
+
     /// \brief Specifies who receives a replicated component.
     enum class Audience : UInt8
     {

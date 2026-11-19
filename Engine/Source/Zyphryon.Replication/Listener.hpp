@@ -28,6 +28,16 @@ namespace ZyReplication
         /// \brief Destructor for proper cleanup in derived classes.
         virtual ~Listener() = default;
 
+        /// \brief Called when a peer reaching the session this side serves shows its ticket, before it is sent anything.
+        ///
+        /// \param Peer   The key the peer is known by, which joins under the same key.
+        /// \param Ticket The ticket the peer showed, as its side was handed it, at most \ref kTicket bytes.
+        /// \return `true` to let the peer join, `false` to turn it away with the reason `Ticket`.
+        virtual Bool OnKnock(UInt64 Peer, ConstSpan<Byte> Ticket)
+        {
+            return true;
+        }
+
         /// \brief Called when a peer joins the session this side serves, or when this side reaches the serving one.
         ///
         /// \param Peer The key the peer is known by, or zero on the following side for the serving one.
@@ -37,8 +47,9 @@ namespace ZyReplication
 
         /// \brief Called when a peer leaves the session this side serves, or when the serving side goes away.
         ///
-        /// \param Peer The key the peer is known by, or zero on the following side for the serving one.
-        virtual void OnLeave(UInt64 Peer)
+        /// \param Peer   The key the peer is known by, or zero on the following side for the serving one.
+        /// \param Reason The reason the serving side gave for expelling this side, or empty.
+        virtual void OnLeave(UInt64 Peer, Text Reason)
         {
         }
 

@@ -13,6 +13,7 @@
 #include "Service.hpp"
 #include "Publisher.hpp"
 #include "Subscriber.hpp"
+#include "Wire.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -77,7 +78,7 @@ namespace ZyReplication
         ZyNetwork::Transport         Transport,
         ConstRetainer<Listener>      Listener)
     {
-        return Open(Address, Transport, Listener, true);
+        return Open(Address, Transport, Listener, true, ConstSpan<Byte>());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -86,9 +87,12 @@ namespace ZyReplication
     Bool Service::Join(
         ConstRef<ZyNetwork::Address> Address,
         ZyNetwork::Transport         Transport,
-        ConstRetainer<Listener>      Listener)
+        ConstRetainer<Listener>      Listener,
+        ConstSpan<Byte>              Ticket)
     {
-        return Open(Address, Transport, Listener, false);
+        ZY_ASSERT(Ticket.GetSize() <= kTicket, "A ticket must fit in kTicket bytes");
+
+        return Open(Address, Transport, Listener, false, Ticket);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -140,7 +144,7 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Service::Expel(UInt64 Peer)
+    void Service::Expel(UInt64 Peer, Text Reason)
     {
         if (!mPublisher)
         {
@@ -150,7 +154,7 @@ namespace ZyReplication
         // The listener hears the peer leave once the network says the connection closed.
         if (const ZyNetwork::Connection Link = mPublisher->Expel(Peer); Link.IsValid())
         {
-            GetHost().GetService<ZyNetwork::Service>()->Close(Link);
+            Part(Link, Reason);
         }
     }
 
@@ -229,11 +233,27 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Service::Part(ZyNetwork::Connection Link, Text Reason)
+    {
+        Writer Output(kMaximum<UInt8> + 8);
+        Output.Write<UInt8>(static_cast<UInt8>(Opcode::Expel));
+        Output.WriteText(Reason.Slice(0, Min<UInt>(Reason.GetSize(), kMaximum<UInt8>)));
+
+        // The network closes the connection once the reason went out ahead of it.
+        Ref<ZyNetwork::Service> Network = * GetHost().GetService<ZyNetwork::Service>();
+        Network.Send(Link, ZyNetwork::Delivery::Reliable, ConstSpan<Byte>(Output.GetData(), Output.GetSize()));
+        Network.Close(Link);
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Bool Service::Open(
         ConstRef<ZyNetwork::Address> Address,
         ZyNetwork::Transport         Transport,
         ConstRetainer<Listener>      Listener,
-        Bool                         Serving)
+        Bool                         Serving,
+        ConstSpan<Byte>              Ticket)
     {
         ConstRetainer<ZyNetwork::Service> Network = GetHost().GetService<ZyNetwork::Service>();
 
@@ -261,7 +281,7 @@ namespace ZyReplication
             mSubscriber = Unique<Subscriber>::Create(Scene, mManifest, Hearing);
         }
 
-        mGate = Retainer<Gate>::Create(* this, Hearing);
+        mGate = Retainer<Gate>::Create(* this, Hearing, Ticket);
         mLink = Serving ? Network->Listen(Address, Transport, mGate) : Network->Connect(Address, Transport, mGate);
 
         if (!mLink.IsValid())
@@ -291,10 +311,11 @@ namespace ZyReplication
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Service::Gate::Gate(Ref<Service> Owner, ConstRetainer<Listener> Listener)
+    Service::Gate::Gate(Ref<Service> Owner, ConstRetainer<Listener> Listener, ConstSpan<Byte> Ticket)
         : mOwner    { Owner },
           mListener { Listener }
     {
+        mTicket.Append(Ticket);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -302,13 +323,20 @@ namespace ZyReplication
 
     void Service::Gate::OnConnect(ZyNetwork::Connection Link, ConstRef<ZyNetwork::Address> Origin)
     {
-        // The serving side's own endpoint opening is no peer.
+        // The serving side's own endpoint opening is no peer, and a peer is sent nothing before its ticket holds.
         if (mOwner.mPublisher && Link.IsPeer())
         {
-            mListener->OnJoin(mOwner.mPublisher->Admit(Link, Origin));
+            mKnocks.Assign(Link.GetValue(), Knock { Link, Origin });
         }
         else if (mOwner.mSubscriber)
         {
+            Writer Output(kTicket + 1);
+            Output.Write<UInt8>(static_cast<UInt8>(Opcode::Knock));
+            Output.Write(mTicket.GetData(), static_cast<UInt32>(mTicket.GetSize()));
+
+            Ref<ZyNetwork::Service> Network = * mOwner.GetHost().GetService<ZyNetwork::Service>();
+            Network.Send(Link, ZyNetwork::Delivery::Reliable, ConstSpan<Byte>(Output.GetData(), Output.GetSize()));
+
             mListener->OnJoin(0);
         }
     }
@@ -318,17 +346,18 @@ namespace ZyReplication
 
     void Service::Gate::OnDisconnect(ZyNetwork::Connection Link, ZyNetwork::Reason Reason)
     {
-        if (mOwner.mPublisher && Link.IsPeer())
+        // A peer that never got past its ticket never joined, so it is not heard leaving.
+        if (mOwner.mPublisher && Link.IsPeer() && !mKnocks.Erase(Link.GetValue()))
         {
             mOwner.mPublisher->Expel(Link.GetValue());
-            mListener->OnLeave(Link.GetValue());
+            mListener->OnLeave(Link.GetValue(), Text::Empty());
         }
         else if (mOwner.mSubscriber)
         {
             LOG_W("Replication: The serving side went away ({0})", static_cast<UInt32>(Reason));
 
             mOwner.mLink = ZyNetwork::Connection();
-            mListener->OnLeave(0);
+            mListener->OnLeave(0, mFarewell);
         }
     }
 
@@ -337,17 +366,49 @@ namespace ZyReplication
 
     void Service::Gate::OnMessage(ZyNetwork::Connection Link, ZyNetwork::Delivery Delivery, ConstSpan<Byte> Message)
     {
-        // The serving side hears only the game's messages, and the following side only frames.
+        Reader Input(Message);
+
+        // The serving side hears a waiting peer's ticket and then the game's messages, the following side only frames.
         if (mOwner.mPublisher)
         {
-            // A peer expelled hears nothing more, though its last messages are still on the way.
-            if (mOwner.mPublisher->GetAddress(Link.GetValue()))
+            const UInt64 Peer = Link.GetValue();
+
+            if (const Ptr<Knock> Waiting = mKnocks.Find(Peer))
             {
-                mListener->OnMessage(Link.GetValue(), Message);
+                // Only the first message is a ticket, and one turned away is heard no more while it goes.
+                if (Exchange(Waiting->Shown, true))
+                {
+                    return;
+                }
+
+                const Bool Knocked = Input.Read<UInt8>() == static_cast<UInt8>(Opcode::Knock);
+                const Bool Fits    = Input.GetAvailable() <= kTicket;
+                const ConstSpan<Byte> Ticket(Message.GetData() + Input.GetOffset(), Input.GetAvailable());
+
+                if (Knocked && Fits && mListener->OnKnock(Peer, Ticket))
+                {
+                    Knock Admitted;
+                    mKnocks.Extract(Peer, Admitted);
+                    mListener->OnJoin(mOwner.mPublisher->Admit(Admitted.Link, Admitted.Origin));
+                }
+                else
+                {
+                    mOwner.Part(Link, "Ticket");
+                }
+            }
+            else if (mOwner.mPublisher->GetAddress(Peer))
+            {
+                mListener->OnMessage(Peer, Message);
             }
         }
         else if (mOwner.mSubscriber)
         {
+            // The serving side's last word says why this side is expelled, and the connection closes behind it.
+            if (Input.Read<UInt8>() == static_cast<UInt8>(Opcode::Expel))
+            {
+                mFarewell = Input.ReadText();
+                return;
+            }
             mOwner.mSubscriber->Receive(Message);
         }
     }

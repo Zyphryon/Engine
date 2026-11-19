@@ -110,17 +110,22 @@ namespace ZyNetwork::TCP
             OnConnect(Watcher, Output);
             break;
         case Operation::Receive:
-            if (Event.Size > 0)
-            {
-                OnReceive(Watcher, Time, Event.Size, Output);
-            }
-            else
+            if (Event.Size == 0)
             {
                 Retire(Watcher, mLink, Reason::Closed, Output);
+            }
+            else if (mState == State::Live)
+            {
+                OnReceive(Watcher, Time, Event.Size, Output);
             }
             break;
         case Operation::Send:
             OnSend(Watcher, Event.Size);
+
+            if (mState == State::Closing && !IsAwaiting(Operation::Send))
+            {
+                Retire(Watcher, mLink, Reason::Closed, Output);
+            }
             break;
         default:
             break;
@@ -206,6 +211,23 @@ namespace ZyNetwork::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Stream::Close(Ref<Proactor> Watcher, Connection Link, Ref<Mailbox> Output)
+    {
+        if (mState == State::Live && (!mTransmit.IsEmpty() || !mOutbound.IsEmpty()))
+        {
+            mState = State::Closing;
+
+            Drain(Watcher);
+        }
+        else
+        {
+            Retire(Watcher, Link, Reason::Closed, Output);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Stream::Probe(Connection Link, Ref<Statistics> Metrics, Ref<Address> Origin) const
     {
         Metrics = mStats;
@@ -235,7 +257,7 @@ namespace ZyNetwork::TCP
 
     void Stream::Drain(Ref<Proactor> Watcher)
     {
-        if (mState == State::Live && !IsAwaiting(Operation::Send))
+        if ((mState == State::Live || mState == State::Closing) && !IsAwaiting(Operation::Send))
         {
             if (mTransmit.IsEmpty() && !mOutbound.IsEmpty())
             {

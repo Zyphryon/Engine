@@ -62,7 +62,7 @@ namespace ZyNetwork
 
         /// \brief Ends a peer, or the whole endpoint when the connection names the endpoint itself.
         ///
-        /// \param Link The peer to end, or the endpoint.
+        /// \param Link The peer to end once what it was sent over TCP has gone out, or the endpoint, at once.
         void Close(Connection Link);
 
         /// \brief Sets how long a peer, or every peer of an endpoint, may say nothing before it is taken as gone.

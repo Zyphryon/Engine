@@ -194,6 +194,21 @@ namespace ZyNetwork::TCP
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    void Server::Close(Ref<Proactor> Watcher, Connection Link, Ref<Mailbox> Output)
+    {
+        if (!Link.IsPeer())
+        {
+            Fold(Watcher, Reason::Closed, Output);
+        }
+        else if (const Ptr<Stream> Peer = Locate(Link))
+        {
+            Peer->Close(Watcher, Link, Output);
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     void Server::SetTimeout(Connection Link, Real64 Seconds)
     {
         if (!Link.IsPeer())
