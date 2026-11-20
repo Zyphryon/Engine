@@ -69,7 +69,7 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static GLenum GetTarget(TextureLayout Layout)
+    static GLenum GetBinding(TextureLayout Layout)
     {
         switch (Layout)
         {
@@ -105,7 +105,7 @@ namespace ZyGraphic::OGL
         const UInt16 Slices = IsCube ? 6 : Max<UInt16>(1, Layers);
 
         mFormat = Format;
-        mTarget = GetTarget(Layout);
+        mTarget = GetBinding(Layout);
 
         ConstRef<OGL::Format> Description = Convert(Format);
 
