@@ -314,6 +314,7 @@ namespace ZyGraphic
         Texture2D,      ///< 2D texture.
         Texture2DArray, ///< Array of 2D slices addressed by an integer layer, never filtered between layers.
         TextureCube,    ///< Six square faces addressed by a direction vector.
+        Texture3D,      ///< Volume of one level addressed by three coordinates, filtered between its slices.
     };
 
     /// \brief Describes the feature tier of the graphics backend, indicating supported capabilities.

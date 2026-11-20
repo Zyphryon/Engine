@@ -69,6 +69,24 @@ namespace ZyGraphic::OGL
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    static GLenum GetTarget(TextureLayout Layout)
+    {
+        switch (Layout)
+        {
+        case TextureLayout::TextureCube:
+            return GL_TEXTURE_CUBE_MAP;
+        case TextureLayout::Texture2DArray:
+            return GL_TEXTURE_2D_ARRAY;
+        case TextureLayout::Texture3D:
+            return GL_TEXTURE_3D;
+        default:
+            return GL_TEXTURE_2D;
+        }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     Texture::Texture()
         : mHandle { 0 },
           mTarget { GL_TEXTURE_2D },
@@ -83,12 +101,11 @@ namespace ZyGraphic::OGL
     {
         ZY_ASSERT(IsSupported(Device, Format), "The context lacks the feature the texture's format needs");
 
-        const Bool   IsCube  = (Layout == TextureLayout::TextureCube);
-        const Bool   IsArray = (Layout == TextureLayout::Texture2DArray);
-        const UInt16 Slices  = IsCube ? 6 : Max<UInt16>(1, Layers);
+        const Bool   IsCube = (Layout == TextureLayout::TextureCube);
+        const UInt16 Slices = IsCube ? 6 : Max<UInt16>(1, Layers);
 
         mFormat = Format;
-        mTarget = IsCube ? GL_TEXTURE_CUBE_MAP : (IsArray ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D);
+        mTarget = GetTarget(Layout);
 
         ConstRef<OGL::Format> Description = Convert(Format);
 
@@ -99,9 +116,9 @@ namespace ZyGraphic::OGL
         const UInt8    Count = Max<UInt8>(1, Levels);
 
         // Every level of every slice is allocated at once, so the uploads below only fill what already exists.
-        if (IsArray)
+        if (mTarget == GL_TEXTURE_2D_ARRAY || mTarget == GL_TEXTURE_3D)
         {
-            glTexStorage3D(GL_TEXTURE_2D_ARRAY, Count, Description.Internal, Width, Height, Slices);
+            glTexStorage3D(mTarget, Count, Description.Internal, Width, Height, Slices);
         }
         else
         {
@@ -197,12 +214,12 @@ namespace ZyGraphic::OGL
 
     void Texture::Upload(GLenum Face, ConstRef<Format> Format, UInt8 Level, UInt16 Layer, UInt16 X, UInt16 Y, UInt16 Width, UInt16 Height, UInt32 Size, ConstPtr<Byte> Bytes) const
     {
-        if (Face == GL_TEXTURE_2D_ARRAY)
+        if (Face == GL_TEXTURE_2D_ARRAY || Face == GL_TEXTURE_3D)
         {
             if (Format.Compressed)
             {
                 glCompressedTexSubImage3D(
-                    GL_TEXTURE_2D_ARRAY,
+                    Face,
                     Level,
                     X,
                     Y,
@@ -217,7 +234,7 @@ namespace ZyGraphic::OGL
             else
             {
                 glTexSubImage3D(
-                    GL_TEXTURE_2D_ARRAY,
+                    Face,
                     Level,
                     X,
                     Y,

@@ -39,6 +39,9 @@ namespace ZyRender
         /// \brief Names what the glass the image is seen through leaves on it.
         using Lens      = PostEffectFinal::Lens;
 
+        /// \brief Names the table the shown image is looked up in, as another tool baked it.
+        using Look      = PostEffectFinal::Look;
+
         /// \brief Names the curves the image is compressed into the display range with.
         using Tonemap   = PostEffectFinal::Tonemap;
 
@@ -119,6 +122,14 @@ namespace ZyRender
         ZY_INLINE void SetGrade(ConstRef<Grade> Grade)
         {
             mFinal->SetGrade(Grade);
+        }
+
+        /// \brief Sets the table the shown image is looked up in.
+        ///
+        /// \param Look The look to set.
+        ZY_INLINE void SetLook(ConstRef<Look> Look)
+        {
+            mFinal->SetLook(Look);
         }
 
         /// \brief Sets what the glass the image is seen through leaves on it.

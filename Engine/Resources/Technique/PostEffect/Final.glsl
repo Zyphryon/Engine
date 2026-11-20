@@ -19,7 +19,7 @@ layout(std140, binding = 1) uniform cb_Pass
     vec4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
     vec4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
     vec4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
-    vec4 u_Output;    // X = Above zero when the target is the display
+    vec4 u_Output;    // X = Above zero when the target is the display, Y = The share of the graded image
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -66,6 +66,19 @@ layout(binding = 1) uniform sampler2D t_Bloom;
 #else
     #define Tonemap ZyTonemapNeutral
 #endif // ENABLE_TONEMAP_ACES
+
+#if defined(ENABLE_GRADING)
+
+layout(binding = 3) uniform sampler3D t_Grading;
+
+vec3 Grade(vec3 Color)
+{
+    vec3 Side = vec3(textureSize(t_Grading, 0));
+
+    return textureLod(t_Grading, (clamp(Color, 0.0, 1.0) * (Side - 1.0) + 0.5) / Side, 0.0).rgb;
+}
+
+#endif // ENABLE_GRADING
 
 float Grain(vec2 Pixel, uint Frame)
 {
@@ -146,6 +159,10 @@ void main()
 
     // The bands are graded on the image the curve handed back, which is the range they are authored against.
     Shown = pow(max(Shown * u_Gain.rgb + u_Lift.rgb, vec3(0.0)), u_Gamma.rgb);
+
+#if defined(ENABLE_GRADING)
+    Shown = mix(Shown, Grade(Shown), u_Output.y);
+#endif // ENABLE_GRADING
 
     // Grain shows most at a halfway exposure of the encoded luma, so the corners the vignette darkened grain less.
     float Exposed = clamp(ZyLuminance(Shown), 0.0, 1.0);

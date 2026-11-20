@@ -31,13 +31,13 @@ namespace ZyGraphic::D3D11
         /// \brief Creates the texture with all its levels, and the view shaders sample it through.
         ///
         /// \param Device  The device the texture is created on.
-        /// \param Layout  The layout of the texture (2D, array or cube).
+        /// \param Layout  The layout of the texture (2D, array, cube or volume).
         /// \param Format  The pixel format of the texture.
         /// \param Storage The update frequency the texture is created for.
         /// \param Usage   The bindings the texture is drawn from or rendered into.
         /// \param Width   The width of the top level, in pixels.
         /// \param Height  The height of the top level, in pixels.
-        /// \param Layers  The number of array slices, ignored for a cube.
+        /// \param Layers  The number of array slices or the depth of a volume, ignored for a cube.
         /// \param Levels  The number of mip levels.
         /// \param Data    The initial contents, slice-major, or empty to leave the texture undefined.
         void Create(ConstRef<Device> Device, TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data);
@@ -46,7 +46,7 @@ namespace ZyGraphic::D3D11
         ///
         /// \param Device The device whose context records the write.
         /// \param Level  The mip level written.
-        /// \param Layer  The array slice written.
+        /// \param Layer  The array slice or the depth of the volume written.
         /// \param X      The left edge of the region, in pixels.
         /// \param Y      The top edge of the region, in pixels.
         /// \param Width  The width of the region, in pixels.
@@ -61,7 +61,7 @@ namespace ZyGraphic::D3D11
         /// \brief Gets the texture resource.
         ///
         /// \return The texture, or `nullptr` when none was created.
-        ZY_INLINE Ptr<ID3D11Texture2D> GetHandle() const
+        ZY_INLINE Ptr<ID3D11Resource> GetHandle() const
         {
             return mHandle.Get();
         }
@@ -95,10 +95,11 @@ namespace ZyGraphic::D3D11
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        ComPtr<ID3D11Texture2D>          mHandle;
+        ComPtr<ID3D11Resource>           mHandle;
         ComPtr<ID3D11ShaderResourceView> mView;
         TextureFormat                    mFormat;
         UInt8                            mLevels;
         UInt16                           mLayers;
+        Bool                             mVolume;
     };
 }

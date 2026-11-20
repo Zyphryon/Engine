@@ -21,7 +21,7 @@
 
 namespace ZyGraphic::OGL
 {
-    /// \brief Represents an OpenGL texture, a 2D, array or cube texture with all its levels allocated at once.
+    /// \brief Represents an OpenGL texture, a 2D, array, cube or volume texture with all its levels allocated at once.
     class Texture final
     {
     public:
@@ -38,7 +38,7 @@ namespace ZyGraphic::OGL
         /// \param Format The format the texels are stored in.
         /// \param Width  The width of the base level, in texels.
         /// \param Height The height of the base level, in texels.
-        /// \param Layers The number of array layers, ignored for cube textures.
+        /// \param Layers The number of array layers or the depth of a volume, ignored for cube textures.
         /// \param Levels The number of mip levels.
         /// \param Data   The initial contents, slice-major, or empty to leave the texture undefined.
         void Create(ConstRef<Device> Device, TextureLayout Layout, TextureFormat Format, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, ConstSpan<Byte> Data);
@@ -46,7 +46,7 @@ namespace ZyGraphic::OGL
         /// \brief Writes a region of one level of one slice.
         ///
         /// \param Level  The mip level to write.
-        /// \param Layer  The array layer or cube face to write.
+        /// \param Layer  The array layer, cube face or volume depth to write.
         /// \param X      The left edge of the region, in texels.
         /// \param Y      The top edge of the region, in texels.
         /// \param Width  The width of the region, in texels.
@@ -94,10 +94,10 @@ namespace ZyGraphic::OGL
 
         /// \brief Writes a region of one level of one face or layer, compressed or not.
         ///
-        /// \param Face   The target written, a cube face, the 2D target or the array target.
+        /// \param Face   The target written, a cube face, the 2D target, the array target or the volume target.
         /// \param Format The description of the format the texels are stored in.
         /// \param Level  The mip level written.
-        /// \param Layer  The array layer written, ignored outside an array.
+        /// \param Layer  The array layer or volume depth written, ignored outside either.
         /// \param X      The left edge of the region, in texels.
         /// \param Y      The top edge of the region, in texels.
         /// \param Width  The width of the region, in texels.

@@ -19,7 +19,7 @@ cbuffer cb_Pass : register(b1)
     float4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
     float4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
     float4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
-    float4 u_Output;    // X = Above zero when the target is the display
+    float4 u_Output;    // X = Above zero when the target is the display, Y = The share of the graded image
 };
 
 struct fs_Input
@@ -71,6 +71,21 @@ SamplerState s_Bloom : register(s1);
 #else
     #define Tonemap ZyTonemapNeutral
 #endif // ENABLE_TONEMAP_ACES
+
+#if defined(ENABLE_GRADING)
+
+Texture3D    t_Grading : register(t3);
+SamplerState s_Grading : register(s3);
+
+float3 Grade(float3 Color)
+{
+    float3 Side;
+    t_Grading.GetDimensions(Side.x, Side.y, Side.z);
+
+    return t_Grading.SampleLevel(s_Grading, (saturate(Color) * (Side - 1.0) + 0.5) / Side, 0).rgb;
+}
+
+#endif // ENABLE_GRADING
 
 float Grain(float2 Pixel, uint Frame)
 {
@@ -151,6 +166,10 @@ float4 main(fs_Input Input) : SV_Target
 
     // The bands are graded on the image the curve handed back, which is the range they are authored against.
     Shown = pow(max(Shown * u_Gain.rgb + u_Lift.rgb, 0.0), u_Gamma.rgb);
+
+#if defined(ENABLE_GRADING)
+    Shown = lerp(Shown, Grade(Shown), u_Output.y);
+#endif // ENABLE_GRADING
 
     // Grain shows most at a halfway exposure of the encoded luma, so the corners the vignette darkened grain less.
     const float Exposed = saturate(ZyLuminance(Shown));

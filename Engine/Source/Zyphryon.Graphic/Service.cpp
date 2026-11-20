@@ -248,6 +248,7 @@ namespace ZyGraphic
     Object Service::CreateTexture(TextureLayout Layout, TextureFormat Format, Storage Storage, Usage Usage, UInt16 Width, UInt16 Height, UInt16 Layers, UInt8 Levels, AnyRef<Blob> Data)
     {
         ZY_ASSERT(Layout != TextureLayout::TextureCube || Layers == 6, "A cube map is exactly six slices");
+        ZY_ASSERT(Layout != TextureLayout::Texture3D || Levels == 1, "A volume is exactly one level");
 
         const Object ID = mTextures.Allocate();
 

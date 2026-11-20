@@ -114,6 +114,16 @@ namespace ZyRender
             Real32  Posterize  = 0.0f;
         };
 
+        /// \brief Represents the table the shown image is looked up in, as another tool baked it.
+        struct Look final
+        {
+            /// The volume the shown image is graded through, red across, green down and blue deep, or zero for none.
+            ZyGraphic::Object Grading  = 0;
+
+            /// The share of the graded image laid over the shown one, from none at zero to all of it at one.
+            Real32            Strength = 1.0f;
+        };
+
         /// \brief Represents what the glass the image is seen through leaves on it.
         struct Lens final
         {
@@ -199,7 +209,7 @@ namespace ZyRender
             /// The texel of the source across and up, then the aberration across the image in texels.
             Vector4 Lens;
 
-            /// Above zero in `X` when the pass writes to the display, which the web encodes the image for.
+            /// Above zero in `X` when the pass writes to the display the web encodes for, the graded share in `Y`.
             Vector4 Output;
         };
 
@@ -217,6 +227,14 @@ namespace ZyRender
         ZY_INLINE void SetGrade(ConstRef<Grade> Grade)
         {
             mGrade = Grade;
+        }
+
+        /// \brief Sets the table the shown image is looked up in.
+        ///
+        /// \param Look The look to set.
+        ZY_INLINE void SetLook(ConstRef<Look> Look)
+        {
+            mLook = Look;
         }
 
         /// \brief Sets what the glass the image is seen through leaves on it.
@@ -262,6 +280,7 @@ namespace ZyRender
         Antialias                      mAntialias;
         Exposure                       mExposure;
         Grade                          mGrade;
+        Look                           mLook;
         Lens                           mLens;
         Real32                         mHalo;
         UInt32                         mFrame;

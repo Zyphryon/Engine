@@ -435,6 +435,7 @@ using GLsync     = Ptr<struct GLsyncObject>;
 #define GL_TEXTURE0                                   0x84C0
 #define GL_TEXTURE_2D                                 0x0DE1
 #define GL_TEXTURE_2D_ARRAY                           0x8C1A
+#define GL_TEXTURE_3D                                 0x806F
 #define GL_TEXTURE_BORDER_COLOR                       0x1004
 #define GL_TEXTURE_COMPARE_FUNC                       0x884D
 #define GL_TEXTURE_COMPARE_MODE                       0x884C

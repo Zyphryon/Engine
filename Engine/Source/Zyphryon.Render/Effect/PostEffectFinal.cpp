@@ -41,12 +41,15 @@ namespace ZyRender
         const Vector3 Gamma = mGrade.Gamma;
         const Vector3 Gain  = mGrade.Gain;
 
+        const Bool Graded = (mLook.Grading && mLook.Strength > 0.0f);
+
         // A grade that pushes no band, grains nothing and steps nothing hands back the curve's image as it stands.
         const Bool Plain = Lift.IsAlmostZero()
                         && Gamma.IsAlmostZero()
                         && Gain.IsAlmostZero()
                         && mLens.Grain <= 0.0f
-                        && mGrade.Posterize <= 1.0f;
+                        && mGrade.Posterize <= 1.0f
+                        && !Graded;
 
         const Real32 TexelX = 1.0f / Graph.GetWidth(mSource);
         const Real32 TexelY = 1.0f / Graph.GetHeight(mSource);
@@ -58,7 +61,7 @@ namespace ZyRender
             .Gamma   = Vector4(Pow(2.0f, -Gamma.GetX()), Pow(2.0f, -Gamma.GetY()), Pow(2.0f, -Gamma.GetZ()), mHalo),
             .Gain    = Vector4(1.0f + Gain.GetX(), 1.0f + Gain.GetY(), 1.0f + Gain.GetZ(), Steps),
             .Lens    = Vector4(TexelX, TexelY, 2.0f * mLens.Aberration * TexelX, 2.0f * mLens.Aberration * TexelY),
-            .Output  = Vector4(GetColor().Target == kNone ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f)
+            .Output  = Vector4(GetColor().Target == kNone ? 1.0f : 0.0f, mLook.Strength, 0.0f, 0.0f)
         });
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);
@@ -66,6 +69,12 @@ namespace ZyRender
         if (mExposure.Curve != Tonemap::Neutral)
         {
             Binder.SetVariant(ZyEnum::GetName(mExposure.Curve));
+        }
+
+        // The grade turns on with the table bound, so a missing table reads as none.
+        if (Graded)
+        {
+            Binder.SetImage("Grading"_Hash, mLook.Grading);
         }
 
         if (mAntialias != Antialias::None)
