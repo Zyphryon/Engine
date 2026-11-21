@@ -32,7 +32,7 @@ namespace ZyAudio
         static constexpr UInt32 kBlock = 128;
 #else
         /// The frames pulled from the mixer per scheduled buffer (~21 ms at 48 kHz).
-        static constexpr UInt32 kBlock = kMixerPeriod;
+        static constexpr UInt32 kBlock = 1024;
 #endif
 
         /// The render callback the service installs, through which the mixer fills `Mix` each block.

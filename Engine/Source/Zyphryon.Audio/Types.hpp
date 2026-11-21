@@ -26,9 +26,6 @@ namespace ZyAudio
         /// \brief The sample rate, in hertz, at which the mixer runs its internal graph.
         kMixerFrequency = 48000,
 
-        /// \brief The preferred number of frames per device period.
-        kMixerPeriod    = 1024,
-
         /// \brief The number of interleaved samples per frame the mixer produces.
         kMixerStride    = 2,
 
