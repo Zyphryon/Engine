@@ -182,7 +182,7 @@ inline namespace ZyBase
 
             if (Index - 1 == mTop)
             {
-                const UInt Last = mMask.FindLastSet();
+                const UInt Last = mMask.FindLastSet(Index - 1);
                 mTop = (Last == Capacity) ? Slot(0) : static_cast<Slot>(Last);
             }
             --mSize;
