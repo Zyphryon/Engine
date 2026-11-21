@@ -30,6 +30,9 @@ namespace ZyAudio
         /// \brief The resonance of the section, placing its two poles on a Butterworth circle.
         static constexpr Real32 kQuality       = 0.70710678f;
 
+        /// \brief The magnitude a channel's memory is dropped under, far beneath anything heard.
+        static constexpr Real32 kFloor         = 1.0e-15f;
+
     public:
 
         /// \brief Constructs the section for a cutoff at the mixer's sample rate.
@@ -53,6 +56,13 @@ namespace ZyAudio
                 State[1] = mNumerator[2] * Input - mDenominator[1] * Output;
 
                 Samples[Index] = Output;
+            }
+
+            // A memory this small is dropped, since left to decay it lingers as a denormal that slows every sample.
+            if (Abs(State[0]) < kFloor && Abs(State[1]) < kFloor)
+            {
+                State[0] = 0.0f;
+                State[1] = 0.0f;
             }
         }
 
