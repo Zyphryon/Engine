@@ -119,16 +119,21 @@ namespace ZyContent
 
     void Service::Delete(ConstRef<Uri> Key, AnyRef<Mount::OnResult> Callback)
     {
+        Mount::OnResult Checked([this, Key, Callback = Move(Callback)](Filesystem::Result Result)
+        {
+            Report(Key, "delete", Result, Filesystem::Result::Inexistent, Callback);
+        });
+
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            Route(Mount, [Key, Mount, Callback = Move(Callback)] mutable
+            Route(Mount, [Key, Mount, Callback = Move(Checked)] mutable
             {
                 Mount->Delete(Key.GetPath(), Move(Callback));
             });
         }
         else
         {
-            Callback(Filesystem::Result::Invalid);
+            Checked(Filesystem::Result::Invalid);
         }
     }
 
@@ -188,16 +193,21 @@ namespace ZyContent
 
     void Service::Write(ConstRef<Uri> Key, AnyRef<Blob> Data, AnyRef<Mount::OnResult> Callback)
     {
+        Mount::OnResult Checked([this, Key, Callback = Move(Callback)](Filesystem::Result Result)
+        {
+            Report(Key, "write", Result, Filesystem::Result::Success, Callback);
+        });
+
         if (ConstRetainer<Mount> Mount = mMounts.FindOrDefault(Digest(Hash(Key.GetSchema()))))
         {
-            Route(Mount, [Key, Mount, Data = Move(Data), Callback = Move(Callback)] mutable
+            Route(Mount, [Key, Mount, Data = Move(Data), Callback = Move(Checked)] mutable
             {
                 Mount->Write(Key.GetPath(), Move(Data), Move(Callback));
             });
         }
         else
         {
-            Callback(Filesystem::Result::Invalid);
+            Checked(Filesystem::Result::Invalid);
         }
     }
 
@@ -233,6 +243,23 @@ namespace ZyContent
 
             mBacklog.fetch_sub(1, std::memory_order_release);
         });
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Service::Report(
+        ConstRef<Uri>             Key,
+        Text                      Change,
+        Filesystem::Result        Result,
+        Filesystem::Result        Tolerated,
+        ConstRef<Mount::OnResult> Callback)
+    {
+        if (Result != Filesystem::Result::Success && Result != Tolerated)
+        {
+            LOG_W("Content: Failed to {0} '{1}' = '{2}'", Change, Key, ZyEnum::GetName(Result));
+        }
+        Callback(Result);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

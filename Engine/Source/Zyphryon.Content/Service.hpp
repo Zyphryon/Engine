@@ -246,6 +246,20 @@ namespace ZyContent
         /// \param Callback The callback handed the result and the bytes.
         void Deliver(ZyJob::Lane Lane, Filesystem::Result Result, AnyRef<Blob> Data, AnyRef<Mount::OnRead> Callback);
 
+        /// \brief Hands the result of a write or a delete to its callback, warning of one that failed.
+        ///
+        /// \param Key       The URI the operation ran on.
+        /// \param Change    The name a warning calls the operation by.
+        /// \param Result    The result of the operation.
+        /// \param Tolerated The result besides success that is no failure, as deleting a missing file is.
+        /// \param Callback  The callback handed the result.
+        void Report(
+            ConstRef<Uri>             Key,
+            Text                      Change,
+            Filesystem::Result        Result,
+            Filesystem::Result        Tolerated,
+            ConstRef<Mount::OnResult> Callback);
+
         /// \brief Initializes the loading process for a resource, scheduling it for asynchronous loading.
         ///
         /// \param Asset  The resource to load.
