@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -408,5 +409,58 @@ inline namespace ZyBase
 
             Handle.Value = Handle::kInvalid;
         }
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Map(Text Path, Ref<View> Output)
+    {
+        Unmap(Output);
+
+        if (const Result Opened = Open(Path, Access::Read, Output.File); Opened != Result::Success)
+        {
+            return Opened;
+        }
+
+        Result Status = Tell(Output.File, Output.Size);
+
+        // A file with no bytes has nothing to lay out, and is handed back as an empty view.
+        if (Status == Result::Success && Output.Size > 0)
+        {
+            const SInt32    Native  = static_cast<SInt32>(Output.File.Value);
+            const Ptr<void> Address = mmap(nullptr, static_cast<size_t>(Output.Size), PROT_READ, MAP_PRIVATE, Native, 0);
+
+            if (Address == MAP_FAILED)
+            {
+                Status = GetResult(errno);
+            }
+            else
+            {
+                Output.Data = static_cast<ConstPtr<Byte>>(Address);
+            }
+        }
+
+        if (Status != Result::Success)
+        {
+            Unmap(Output);
+        }
+        return Status;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Filesystem::Unmap(Ref<View> View)
+    {
+        if (View.Data)
+        {
+            munmap(const_cast<Ptr<Byte>>(View.Data), static_cast<size_t>(View.Size));
+
+            View.Data = nullptr;
+        }
+        View.Size = 0;
+
+        Close(View.File);
     }
 }

@@ -105,6 +105,27 @@ inline namespace ZyBase
             }
         };
 
+        /// \brief Represents a whole file laid into memory, read where it lies rather than copied out of it.
+        struct View final
+        {
+            /// The first byte of the file in memory, or `nullptr` for a view that lays nothing out.
+            ConstPtr<Byte> Data = nullptr;
+
+            /// The size of the file in bytes.
+            UInt64         Size = 0;
+
+            /// The file the view was laid from, held open so nothing writes to it meanwhile.
+            Handle         File;
+
+            /// \brief Checks whether the view lays a file out.
+            ///
+            /// \return `true` if there are bytes to read, otherwise `false`.
+            ZY_INLINE explicit operator Bool() const
+            {
+                return Data != nullptr;
+            }
+        };
+
     public:
 
         /// \brief Gets the folder the application runs from.
@@ -236,5 +257,17 @@ inline namespace ZyBase
         ///
         /// \param Handle The handle to close.
         static void Close(Ref<Handle> Handle);
+
+        /// \brief Lays a whole file into memory for reading, which the system pages in as it is touched.
+        ///
+        /// \param Path   The path of the file to lay out.
+        /// \param Output Receives the view, left empty when the file could not be laid out or holds no bytes.
+        /// \return A \p Result indicating the success or failure of the operation.
+        static Result Map(Text Path, Ref<View> Output);
+
+        /// \brief Takes a view out of memory, closes the file it was laid from and resets the view.
+        ///
+        /// \param View The view to take out, whose bytes nothing may read afterwards.
+        static void Unmap(Ref<View> View);
     };
 }

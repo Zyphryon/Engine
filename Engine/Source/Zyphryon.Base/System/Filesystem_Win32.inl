@@ -384,4 +384,64 @@ inline namespace ZyBase
             Handle.Value = Handle::kInvalid;
         }
     }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Filesystem::Result Filesystem::Map(Text Path, Ref<View> Output)
+    {
+        Unmap(Output);
+
+        if (const Result Opened = Open(Path, Access::Read, Output.File); Opened != Result::Success)
+        {
+            return Opened;
+        }
+
+        Result Status = Tell(Output.File, Output.Size);
+
+        // A file with no bytes has nothing to lay out, and is handed back as an empty view.
+        if (Status == Result::Success && Output.Size > 0)
+        {
+            const HANDLE Native  = reinterpret_cast<HANDLE>(Output.File.Value);
+            const HANDLE Section = CreateFileMappingW(Native, nullptr, PAGE_READONLY, 0, 0, nullptr);
+
+            if (Section)
+            {
+                Output.Data = static_cast<ConstPtr<Byte>>(MapViewOfFile(Section, FILE_MAP_READ, 0, 0, 0));
+            }
+
+            if (!Output.Data)
+            {
+                Status = GetResult(GetLastError());
+            }
+
+            // The view keeps the section alive by itself, so the handle to it is not needed any longer.
+            if (Section)
+            {
+                CloseHandle(Section);
+            }
+        }
+
+        if (Status != Result::Success)
+        {
+            Unmap(Output);
+        }
+        return Status;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Filesystem::Unmap(Ref<View> View)
+    {
+        if (View.Data)
+        {
+            UnmapViewOfFile(View.Data);
+
+            View.Data = nullptr;
+        }
+        View.Size = 0;
+
+        Close(View.File);
+    }
 }
