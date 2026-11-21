@@ -26,11 +26,10 @@ namespace ZyAudio::Codec
           mFrequency { Frequency },
           mStride    { Stride },
           mFrames    { Frames },
-          mCursor    { 0 }
+          mCursor    { 0 },
+          mStale     { false }
     {
         ZY_ASSERT(Stride > 0 && Stride <= kMixerStride, "ADPCM carries at most the mixer's channel count");
-
-        Prime(0);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -53,18 +52,8 @@ namespace ZyAudio::Codec
             return false;
         }
 
-        // A block only decodes from its preamble, so restart there and walk forward to the frame.
-        const UInt64 Block = Frame / kBlockFrames;
-
-        Prime(Block);
-        mCursor = Block * kBlockFrames;
-
-        Array<Real32, kMixerStride> Discard;
-
-        while (mCursor < Frame)
-        {
-            Read(Span(Discard.GetData(), mStride));
-        }
+        mCursor = Frame;
+        mStale  = true;
         return true;
     }
 
@@ -83,25 +72,30 @@ namespace ZyAudio::Codec
     {
         const UInt64 Count = Min<UInt64>(Output.GetSize() / mStride, mFrames - mCursor);
 
-        for (UInt64 Frame = 0; Frame < Count; ++Frame)
+        for (UInt64 Done = 0; Done < Count; )
         {
-            const UInt64 Position = mCursor + Frame;
+            const UInt64 Position = mCursor + Done;
             const UInt64 Block    = Position / kBlockFrames;
             const UInt32 Offset   = static_cast<UInt32>(Position % kBlockFrames);
+            const UInt32 Batch    = static_cast<UInt32>(Min<UInt64>(Count - Done, kBlockFrames - Offset));
 
-            // The preamble carries the block's first frame verbatim, and restarts the channel state with it.
-            if (Offset == 0)
+            // A block decodes only from its preamble, which restarts every channel with the block's first frame.
+            if (Offset == 0 || mStale)
             {
                 Prime(Block);
+
+                // A cursor moved without decoding stands inside a block, whose frames before it are walked over.
+                if (Offset > 0)
+                {
+                    Array<Real32, kBlockFrames * kMixerStride> Discard;
+
+                    Unpack(Block, 0, Offset, Discard.GetData());
+                }
+                mStale = false;
             }
 
-            for (UInt16 Index = 0; Index < mStride; ++Index)
-            {
-                Ref<Channel> State = mChannels[Index];
-
-                const SInt32 Value = (Offset == 0) ? State.Predictor : Expand(State, Fetch(Block, Index, Offset - 1));
-                Output[Frame * mStride + Index] = static_cast<Real32>(Value) * (1.0f / 32768.0f);
-            }
+            Unpack(Block, Offset, Batch, Output.GetData() + Done * mStride);
+            Done += Batch;
         }
 
         mCursor += Count;
@@ -113,24 +107,12 @@ namespace ZyAudio::Codec
 
     UInt64 Adaptive::Skip(UInt64 Frames)
     {
-        constexpr UInt64 kChunk = 64;
+        const UInt64 Advance = Min(Frames, mFrames - mCursor);
 
-        Array<Real32, kChunk * kMixerStride> Discard;
-
-        UInt64 Done = 0;
-
-        while (Done < Frames)
-        {
-            const UInt64 Request = Min(Frames - Done, kChunk) * mStride;
-            const UInt64 Decoded = Read(Span(Discard.GetData(), Request));
-
-            if (Decoded == 0)
-            {
-                break;
-            }
-            Done += Decoded;
-        }
-        return Done;
+        // The channels are left behind for the next read to walk up, so the frames skipped are never decoded.
+        mCursor += Advance;
+        mStale   = true;
+        return Advance;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -185,43 +167,32 @@ namespace ZyAudio::Codec
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt8 Adaptive::Fetch(UInt64 Block, UInt16 Channel, UInt32 Index) const
+    void Adaptive::Unpack(UInt64 Block, UInt32 First, UInt32 Count, Ptr<Real32> Output)
     {
-        const UInt64 Base = (Block * mStride + Channel) * kBlockStride + 4 + (Index >> 1);
+        const UInt64 Size   = mSamples.GetSize();
+        const UInt32 Stride = mStride;
 
-        if (Base < mSamples.GetSize())
+        for (UInt32 Index = 0; Index < Stride; ++Index)
         {
-            const Byte Packed = mSamples[Base];
-            return (Index & 1) ? (Packed >> 4) : (Packed & 0x0F);
+            const UInt64         Base = Min<UInt64>((Block * Stride + Index) * kBlockStride + 4, Size);
+            const ConstPtr<Byte> Run  = mSamples.GetData() + Base;
+            const UInt64         Held = (Size - Base) * 2;
+
+            Channel     State  = mChannels[Index];
+            Ptr<Real32> Target = Output + Index;
+
+            for (UInt32 Frame = First; Frame < First + Count; ++Frame, Target += Stride)
+            {
+                if (Frame > 0)
+                {
+                    const UInt32 Nibble = Frame - 1;
+                    const Byte   Packed = (Nibble < Held ? Run[Nibble >> 1] : 0);
+
+                    Expand(State, (Nibble & 1) ? (Packed >> 4) : (Packed & 0x0F));
+                }
+                (* Target) = static_cast<Real32>(State.Predictor) * (1.0f / 32768.0f);
+            }
+            mChannels[Index] = State;
         }
-        return 0;
-    }
-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    SInt32 Adaptive::Expand(Ref<Channel> State, UInt8 Nibble)
-    {
-        const SInt32 Step = kStepTable[State.Step];
-
-        // The magnitude is the step scaled by each set bit, which is the reconstruction IMA specifies.
-        SInt32 Delta = Step >> 3;
-
-        if (Nibble & 0x1)
-        {
-            Delta += Step >> 2;
-        }
-        if (Nibble & 0x2)
-        {
-            Delta += Step >> 1;
-        }
-        if (Nibble & 0x4)
-        {
-            Delta += Step;
-        }
-
-        State.Predictor = Clamp<SInt32>(State.Predictor + ((Nibble & 0x8) ? -Delta : Delta), -32768, 32767);
-        State.Step      = Clamp<SInt32>(State.Step + kStepIndex[Nibble], 0, kStepLimit);
-        return State.Predictor;
     }
 }

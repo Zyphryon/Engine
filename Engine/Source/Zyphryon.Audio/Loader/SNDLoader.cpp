@@ -90,6 +90,11 @@ namespace ZyAudio
             Factory = Decode<Codec::Linear, SInt16>;
             break;
         case Encoding::Adaptive:
+            if ((Buffer.GetSize() / (Codec::Adaptive::kBlockStride * Stride)) * Codec::Adaptive::kBlockFrames < Frames)
+            {
+                LOG_W("'{0}' declares more frames than its payload holds", Asset.GetKey());
+                return false;
+            }
             Factory = Decode<Codec::Adaptive, Byte>;
             break;
         case Encoding::Opus:

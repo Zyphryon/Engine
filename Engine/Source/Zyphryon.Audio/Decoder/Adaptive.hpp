@@ -106,20 +106,43 @@ namespace ZyAudio::Codec
         /// \param Block The zero-based index of the block to restart from.
         void Prime(UInt64 Block);
 
-        /// \brief Fetches one nibble from a channel's run within a block.
+        /// \brief Decodes a run of frames within one block, advancing every channel past it.
         ///
-        /// \param Block   The zero-based index of the block to read.
-        /// \param Channel The channel whose run holds the nibble.
-        /// \param Index   The zero-based position of the nibble within the run.
-        /// \return The four bits at that position, or zero when the block runs past the payload.
-        UInt8 Fetch(UInt64 Block, UInt16 Channel, UInt32 Index) const;
+        /// \param Block  The zero-based index of the block the run lies in.
+        /// \param First  The zero-based frame of the block the run starts at, which the channels must stand before.
+        /// \param Count  The number of frames in the run, which must end within the block.
+        /// \param Output Receives the interleaved samples of the run.
+        void Unpack(UInt64 Block, UInt32 First, UInt32 Count, Ptr<Real32> Output);
 
         /// \brief Reconstructs one sample from a single nibble, advancing the channel that produced it.
         ///
         /// \param State  The channel state to advance.
         /// \param Nibble The four bits to expand.
         /// \return The reconstructed sample.
-        static SInt32 Expand(Ref<Channel> State, UInt8 Nibble);
+        ZY_INLINE static SInt32 Expand(Ref<Channel> State, UInt8 Nibble)
+        {
+            const SInt32 Step = kStepTable[State.Step];
+
+            // The magnitude is the step scaled by each set bit, which is the reconstruction IMA specifies.
+            SInt32 Delta = Step >> 3;
+
+            if (Nibble & 0x1)
+            {
+                Delta += Step >> 2;
+            }
+            if (Nibble & 0x2)
+            {
+                Delta += Step >> 1;
+            }
+            if (Nibble & 0x4)
+            {
+                Delta += Step;
+            }
+
+            State.Predictor = Clamp<SInt32>(State.Predictor + ((Nibble & 0x8) ? -Delta : Delta), -32768, 32767);
+            State.Step      = Clamp<SInt32>(State.Step + kStepIndex[Nibble], 0, kStepLimit);
+            return State.Predictor;
+        }
 
     private:
 
@@ -131,6 +154,7 @@ namespace ZyAudio::Codec
         UInt16                       mStride;
         UInt64                       mFrames;
         UInt64                       mCursor;
+        Bool                         mStale;
         Array<Channel, kMixerStride> mChannels;
     };
 }
