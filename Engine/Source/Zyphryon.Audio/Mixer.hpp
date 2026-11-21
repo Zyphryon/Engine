@@ -263,8 +263,8 @@ namespace ZyAudio
         /// \brief Reads a voice's decoded PCM into planar scratch, handling looping (audio thread).
         ///
         /// \param Voice  The voice to read from.
-        /// \param Left   Receives the left channel, or the whole image of a spatial voice.
-        /// \param Right  Receives the right channel, left untouched by a spatial voice.
+        /// \param Left   Receives the left channel, or the whole image of a spatial or a mono voice.
+        /// \param Right  Receives the right channel, left untouched by a spatial or a mono voice.
         /// \param Frames The number of frames to read.
         /// \return The number of frames actually read, fewer than \p Frames once the stream ended.
         UInt32 Read(Ref<Voice> Voice, Ptr<Real32> Left, Ptr<Real32> Right, UInt32 Frames);

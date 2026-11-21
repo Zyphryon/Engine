@@ -413,16 +413,24 @@ namespace ZyAudio
             }
             else
             {
+                // A mono voice has its one image in the left scratch, filtered once and read by both sides.
+                const Bool        Mono  = (Voice.Stride == 1);
+                const Ptr<Real32> Right = (Mono ? mScratchLeft.GetData() : mScratchRight.GetData());
+
                 if (Occluded)
                 {
                     const Filter Section(Voice.Cutoff);
 
-                    Section.Apply(Voice.FilterLeft,  mScratchLeft.GetData(),  Produced);
-                    Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
+                    Section.Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
+
+                    if (!Mono)
+                    {
+                        Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
+                    }
                 }
 
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(),  Produced, Voice.Gain.GetX(), TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchRight.GetData(), Produced, Voice.Gain.GetY(), TargetRight);
+                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.GetX(), TargetLeft);
+                MixAccumulate(mMasterRight.GetData(), Right,                  Produced, Voice.Gain.GetY(), TargetRight);
             }
 
             Voice.Gain = Vector2(TargetLeft, TargetRight);
@@ -449,7 +457,10 @@ namespace ZyAudio
         {
             const UInt32 Request = Min(Frames - Done, Capacity) * Voice.Stride;
 
-            UInt32 Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Request)));
+            // A mono voice decodes straight into the left scratch, which is the one image both sides read.
+            const Ptr<Real32> Landing = (Voice.Stride == 1 ? Left + Done : mDecode.GetData());
+
+            UInt32 Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(Landing, Request)));
 
             if (Decoded == 0)
             {
@@ -467,24 +478,17 @@ namespace ZyAudio
                     break;
                 }
 
-                Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(mDecode.GetData(), Request)));
+                Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(Landing, Request)));
                 if (Decoded == 0)
                 {
                     break;
                 }
             }
 
-            // Deinterleave the source frames, folding a spatial voice to the one image its pan reads.
-            if (Voice.Spatial)
+            // Deinterleave a stereo source, folding a spatial voice to the one image its pan reads.
+            if (Voice.Stride != 1)
             {
-                if (Voice.Stride == 1)
-                {
-                    for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
-                    {
-                        Left[Done + Frame] = mDecode[Frame];
-                    }
-                }
-                else
+                if (Voice.Spatial)
                 {
                     for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
                     {
@@ -493,22 +497,15 @@ namespace ZyAudio
                         Left[Done + Frame] = 0.5f * (mDecode[Base] + mDecode[Base + 1]);
                     }
                 }
-            }
-            else if (Voice.Stride == 1)
-            {
-                for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
+                else
                 {
-                    Left[Done + Frame] = Right[Done + Frame] = mDecode[Frame];
-                }
-            }
-            else
-            {
-                for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
-                {
-                    const UInt32 Base = Frame * Voice.Stride;
+                    for (UInt32 Frame = 0; Frame < Decoded; ++Frame)
+                    {
+                        const UInt32 Base = Frame * Voice.Stride;
 
-                    Left[Done + Frame]  = mDecode[Base];
-                    Right[Done + Frame] = mDecode[Base + 1];
+                        Left[Done + Frame]  = mDecode[Base];
+                        Right[Done + Frame] = mDecode[Base + 1];
+                    }
                 }
             }
             Done += Decoded;
