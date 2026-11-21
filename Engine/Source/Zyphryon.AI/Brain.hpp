@@ -39,9 +39,8 @@ namespace ZyAI
 
         /// \brief Stops every running node, halting each running leaf through the host.
         ///
-        /// \param Tree The behaviour last ticked.
-        /// \param Host The host that runs the leaves.
-        void Halt(ConstRef<Behaviour> Tree, Ref<Host> Host);
+        /// \param Host The host that ran the leaves of the behaviour last ticked, whether or not it was reloaded since.
+        void Halt(Ref<Host> Host);
 
         /// \brief Clears the running state without halting any leaf, and keeps the blackboard.
         void Reset();
@@ -87,6 +86,9 @@ namespace ZyAI
             /// The status of the last tick.
             Status Last   = Status::Idle;
 
+            /// `true` for a leaf, which is halted through the host when stopped, `false` for any other node.
+            Bool   Leaf   = false;
+
             /// The node index of the child a sequence or selector resumes from.
             UInt16 Cursor = 0;
 
@@ -105,12 +107,12 @@ namespace ZyAI
         /// \return The status the node reached this tick.
         Status Visit(ConstSpan<Behaviour::Node> Nodes, UInt32 Index, Ref<Host> Host);
 
-        /// \brief Stops every running node of a subtree, halting each running leaf through the host.
+        /// \brief Stops every running node of a range, halting each running leaf through the host.
         ///
-        /// \param Nodes The nodes of the behaviour.
-        /// \param Index The index of the subtree's root.
+        /// \param First The index of the first node to stop.
+        /// \param Last  The index one past the last node to stop.
         /// \param Host  The host that runs the leaves.
-        void Stop(ConstSpan<Behaviour::Node> Nodes, UInt32 Index, Ref<Host> Host);
+        void Stop(UInt32 First, UInt32 Last, Ref<Host> Host);
 
         /// \brief Applies a compare node's test to the blackboard.
         ///

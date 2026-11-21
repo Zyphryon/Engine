@@ -46,6 +46,12 @@ namespace ZyAI
 
             mMemory.Clear();
             mMemory.Resize(Nodes.GetSize());
+
+            // The leaves are marked here, so they can still be halted once the nodes they came from are gone.
+            for (UInt32 Index = 0; Index < Nodes.GetSize(); ++Index)
+            {
+                mMemory[Index].Leaf = (Nodes[Index].Type == Behaviour::Kind::Leaf);
+            }
         }
 
         mClock += Delta;
@@ -56,14 +62,9 @@ namespace ZyAI
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Brain::Halt(ConstRef<Behaviour> Tree, Ref<Host> Host)
+    void Brain::Halt(Ref<Host> Host)
     {
-        const ConstSpan<Behaviour::Node> Nodes = Tree.GetNodes();
-
-        if (!Nodes.IsEmpty() && mNodes == Nodes.GetData() && mMemory.GetSize() == Nodes.GetSize())
-        {
-            Stop(Nodes, 0, Host);
-        }
+        Stop(0, static_cast<UInt32>(mMemory.GetSize()), Host);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -141,7 +142,7 @@ namespace ZyAI
                 // An earlier child taking over stops the later one left running, halting its leaves.
                 if (Watched && Got != Status::Failure && Running != 0 && Running != Child)
                 {
-                    Stop(Nodes, Running, Host);
+                    Stop(Running, Running + Nodes[Running].Span, Host);
                 }
 
                 if (Got == Status::Running)
@@ -195,7 +196,7 @@ namespace ZyAI
             // Stopping the whole subtree also idles this node, which is overwritten with the result below.
             if (Result != Status::Running)
             {
-                Stop(Nodes, Index, Host);
+                Stop(Index, Last, Host);
             }
             break;
         }
@@ -282,7 +283,7 @@ namespace ZyAI
 
             if (mClock - State.Mark >= Current.Value)
             {
-                Stop(Nodes, First, Host);
+                Stop(First, Last, Host);
                 Result = Status::Failure;
                 break;
             }
@@ -310,18 +311,16 @@ namespace ZyAI
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Brain::Stop(ConstSpan<Behaviour::Node> Nodes, UInt32 Index, Ref<Host> Host)
+    void Brain::Stop(UInt32 First, UInt32 Last, Ref<Host> Host)
     {
-        const UInt32 Last = Index + Nodes[Index].Span;
-
-        for (UInt32 Each = Index; Each < Last; ++Each)
+        for (UInt32 Each = First; Each < Last; ++Each)
         {
             if (mMemory[Each].Last != Status::Running)
             {
                 continue;
             }
 
-            if (Nodes[Each].Type == Behaviour::Kind::Leaf)
+            if (mMemory[Each].Leaf)
             {
                 Host.Halt(Each);
             }
