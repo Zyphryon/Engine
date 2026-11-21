@@ -140,6 +140,22 @@ namespace ZyAudio
             return mMasterVolume.load(std::memory_order_relaxed);
         }
 
+        /// \brief Sets whether the final mix is eased under full scale instead of being cut off at it.
+        ///
+        /// \param Limited `true` to ease the mix down as it passes full scale, `false` to clip it there.
+        ZY_INLINE void SetMasterLimiter(Bool Limited)
+        {
+            mMasterLimiter.store(Limited, std::memory_order_relaxed);
+        }
+
+        /// \brief Checks whether the final mix is eased under full scale instead of being cut off at it.
+        ///
+        /// \return `true` if the mix is eased down as it passes full scale, `false` if it is clipped there.
+        ZY_INLINE Bool HasMasterLimiter() const
+        {
+            return mMasterLimiter.load(std::memory_order_relaxed);
+        }
+
         /// \brief Sets the volume of a submix category.
         ///
         /// \param Category The submix category to adjust.
@@ -299,6 +315,8 @@ namespace ZyAudio
         Ring<Command, kMaxCommands>                      mCommands;
         Ring<Completion, kMaxCommands>                   mCompletions;
         Atomic<Real32>                                   mMasterVolume;
+        Atomic<Bool>                                     mMasterLimiter;
+        Real32                                           mMasterGain;
         Array<Atomic<Real32>, ZyEnum::Count<Category>()> mSubmixVolume;
         Array<Atomic<Real32>, kMaxInstances>             mRanks;
 

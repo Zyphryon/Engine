@@ -70,6 +70,16 @@ namespace ZyAudio
         /// \return The master volume level (0.0 = silent, 1.0 = full volume).
         Real32 GetMasterVolume() const;
 
+        /// \brief Sets whether the final mix is eased under full scale instead of being cut off at it.
+        ///
+        /// \param Limited `true` to ease the mix down as it passes full scale, `false` to clip it there.
+        void SetMasterLimiter(Bool Limited);
+
+        /// \brief Checks whether the final mix is eased under full scale instead of being cut off at it.
+        ///
+        /// \return `true` if the mix is eased down as it passes full scale, `false` if it is clipped there.
+        Bool HasMasterLimiter() const;
+
         /// \brief Sets the volume for a specific audio category.
         ///
         /// \param Category The audio category to adjust.

@@ -64,7 +64,9 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Mixer::Mixer()
-        : mMasterVolume { 1.0f }
+        : mMasterVolume  { 1.0f },
+          mMasterLimiter { true },
+          mMasterGain    { 1.0f }
     {
         for (UInt32 Index = 0; Index < ZyEnum::Count<Category>(); ++Index)
         {
@@ -365,9 +367,7 @@ namespace ZyAudio
         }
 
         // Publishes what the voice is worth this block, so the game thread can weigh a newcomer against it.
-        mRanks[Voice.Handle.GetSlot() - 1].store(
-            Rank(Voice.Category, Max(TargetLeft, TargetRight)),
-            std::memory_order_relaxed);
+        mRanks[Voice.Handle.GetSlot() - 1].store(Rank(Voice.Category, Max(TargetLeft, TargetRight)), std::memory_order_relaxed);
 
         if (!Voice.Primed)
         {
@@ -570,13 +570,30 @@ namespace ZyAudio
             }
         });
 
-        const Real32 Master = mMasterVolume.load(std::memory_order_relaxed);
+        const Real32 Master  = mMasterVolume.load(std::memory_order_relaxed);
+        const Bool   Limited = mMasterLimiter.load(std::memory_order_relaxed);
+
+        // The gain climbs back by this much a frame, so a mix eased all the way down recovers in a sixth of a second.
+        constexpr Real32 kRelease = 1.0f / (0.15f * static_cast<Real32>(kMixerFrequency));
+
+        Real32 Gain = mMasterGain;
 
         for (UInt32 Frame = 0; Frame < Frames; ++Frame)
         {
-            Output[Frame * kMixerStride + 0] = Clamp(mMasterLeft[Frame]  * Master, -1.0f, 1.0f);
-            Output[Frame * kMixerStride + 1] = Clamp(mMasterRight[Frame] * Master, -1.0f, 1.0f);
+            const Real32 Left  = mMasterLeft[Frame]  * Master;
+            const Real32 Right = mMasterRight[Frame] * Master;
+
+            // The gain drops at once to hold a peak at full scale, then climbs back so the wave keeps its shape.
+            const Real32 Peak = Max(Abs(Left), Abs(Right));
+            const Real32 Held = (Limited && Peak > 1.0f ? 1.0f / Peak : 1.0f);
+
+            Gain = Min(Held, Gain + kRelease);
+
+            Output[Frame * kMixerStride + 0] = Clamp(Left  * Gain, -1.0f, 1.0f);
+            Output[Frame * kMixerStride + 1] = Clamp(Right * Gain, -1.0f, 1.0f);
         }
+
+        mMasterGain = Gain;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
