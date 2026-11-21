@@ -63,9 +63,6 @@ namespace ZyRuntime
             /// The name of the driver to draw with, or empty for the preferred one.
             Str16                    Driver;
 
-            /// The name of the adapter to draw on, or empty for the default one.
-            Str                      Adapter;
-
             /// `true` when presentation waits for the vertical blank, `false` to present as soon as a frame is ready.
             Bool                     Tearless    = true;
 

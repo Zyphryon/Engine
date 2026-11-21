@@ -42,7 +42,6 @@ namespace ZyRuntime
         if (const JsonObject Section = Root.GetObject("Graphic"); Section.IsValid())
         {
             mGraphic.Driver   = Section.GetString("driver", mGraphic.Driver);
-            mGraphic.Adapter  = Section.GetString("adapter", mGraphic.Adapter);
             mGraphic.Tearless = Section.GetBool("tearless", mGraphic.Tearless);
         }
 
@@ -66,7 +65,6 @@ namespace ZyRuntime
 
         JsonObject Graphic = Root.SetObject("Graphic");
         Graphic.SetString("driver", mGraphic.Driver);
-        Graphic.SetString("adapter", mGraphic.Adapter);
         Graphic.SetBool("tearless", mGraphic.Tearless);
 
         JsonObject Audio = Root.SetObject("Audio");

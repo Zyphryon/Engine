@@ -56,20 +56,18 @@ namespace ZyRuntime
             ConstRef<ZyPlatform::Display> Display = Platform->GetDisplay();
 
             Startup::Window Settings = mStartup.GetWindow();
-            Real32          Scale    = 1.0f;
 
             if (const ConstPtr<ZyPlatform::Monitor> Monitor = Display.GetMonitor(Window))
             {
                 Settings.Monitor = Monitor->GetName();
-                Scale            = Monitor->GetScale();
-            }
-            else if (!Display.GetMonitors().IsEmpty())
-            {
-                Scale = Display.GetMonitor(Settings.Monitor).GetScale();
             }
 
-            Settings.Width      = static_cast<UInt32>(Round(Window.GetWidth() / Scale));
-            Settings.Height     = static_cast<UInt32>(Round(Window.GetHeight() / Scale));
+            // A window covering its monitor has no size of its own, so the one it had before is left as it was.
+            if (!Window.IsFullscreen())
+            {
+                Settings.Width  = static_cast<UInt32>(Round(Window.GetWidth() / Window.GetScale()));
+                Settings.Height = static_cast<UInt32>(Round(Window.GetHeight() / Window.GetScale()));
+            }
             Settings.Fullscreen = Window.IsFullscreen();
             mStartup.SetWindow(Settings);
         }
@@ -149,8 +147,6 @@ namespace ZyRuntime
         const Bool Shown = !mStartup.IsHeadless();
 
         Retainer<ZyPlatform::Service> Platform;
-        Retainer<ZyGraphic::Service>  Graphic;
-        Retainer<ZyAudio::Service>    Audio;
 
         if (Shown)
         {
@@ -199,6 +195,9 @@ namespace ZyRuntime
 
 #if !defined(ZY_MODE_HEADLESS)
 
+        Retainer<ZyGraphic::Service>  Graphic;
+        Retainer<ZyAudio::Service>    Audio;
+        
         if (Shown)
         {
             LOG_I("Kernel: Creating graphic service");
