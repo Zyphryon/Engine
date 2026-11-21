@@ -19,6 +19,19 @@ namespace ZyAudio
     {
     public:
 
+        /// \brief Constructs a decoder at the start of a stream of the given shape.
+        ///
+        /// \param Frequency The rate the stream was baked at, in hertz.
+        /// \param Stride    The number of interleaved samples in each frame.
+        /// \param Frames    The total number of frames the stream holds.
+        ZY_INLINE Decoder(UInt32 Frequency, UInt16 Stride, UInt64 Frames)
+            : mFrequency { Frequency },
+              mStride    { Stride },
+              mFrames    { Frames },
+              mCursor    { 0 }
+        {
+        }
+
         /// \brief Destructs the decoder and releases any associated resources.
         virtual ~Decoder() = default;
 
@@ -27,7 +40,12 @@ namespace ZyAudio
         /// \param Frequency Receives the audio frequency in hertz.
         /// \param Stride    Receives the number of interleaved samples in each frame.
         /// \param Frames    Receives the total number of frames available.
-        virtual void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const = 0;
+        ZY_INLINE void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const
+        {
+            (* Frequency) = mFrequency;
+            (* Stride)    = mStride;
+            (* Frames)    = mFrames;
+        }
 
         /// \brief Seeks to the specified frame index within the audio data.
         ///
@@ -38,7 +56,10 @@ namespace ZyAudio
         /// \brief Gets the current frame index within the audio data.
         ///
         /// \return The zero-based index of the current frame position.
-        virtual UInt64 Tell() const = 0;
+        ZY_INLINE UInt64 Tell() const
+        {
+            return mCursor;
+        }
 
         /// \brief Reads audio data into the provided output buffer, from the current frame position.
         ///
@@ -51,5 +72,15 @@ namespace ZyAudio
         /// \param Frames The number of frames to advance past.
         /// \return The number of frames actually advanced, fewer than \p Frames once the stream ended.
         virtual UInt64 Skip(UInt64 Frames) = 0;
+
+    protected:
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        UInt32 mFrequency;
+        UInt16 mStride;
+        UInt64 mFrames;
+        UInt64 mCursor;
     };
 }

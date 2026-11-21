@@ -36,14 +36,8 @@ namespace ZyAudio::Codec
         /// \brief Releases the native decoder.
         ~Opus() override;
 
-        /// \see Decoder::Probe(Ptr<UInt32>, Ptr<UInt32>, Ptr<UInt64>) const
-        void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const override;
-
         /// \see Decoder::Seek(UInt64)
         Bool Seek(UInt64 Frame) override;
-
-        /// \see Decoder::Tell() const
-        UInt64 Tell() const override;
 
         /// \see Decoder::Read(Span<Real32>)
         UInt64 Read(Span<Real32> Output) override;
@@ -82,10 +76,6 @@ namespace ZyAudio::Codec
         ConstSpan<UInt16> mLengths;
         ConstSpan<Byte>   mPackets;
         Blob              mOffsets;
-        UInt32            mFrequency;
-        UInt16            mStride;
-        UInt64            mFrames;
-        UInt64            mCursor;
         UInt32            mPreskip;
         UInt32            mPacketFrames;
         UInt32            mStaged;

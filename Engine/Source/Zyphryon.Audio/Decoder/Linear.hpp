@@ -33,14 +33,8 @@ namespace ZyAudio::Codec
         /// \param Frames    The number of frames the samples hold.
         Linear(ConstSpan<SInt16> Samples, UInt32 Frequency, UInt16 Stride, UInt64 Frames);
 
-        /// \see Decoder::Probe(Ptr<UInt32>, Ptr<UInt32>, Ptr<UInt64>) const
-        void Probe(Ptr<UInt32> Frequency, Ptr<UInt32> Stride, Ptr<UInt64> Frames) const override;
-
         /// \see Decoder::Seek(UInt64)
         Bool Seek(UInt64 Frame) override;
-
-        /// \see Decoder::Tell() const
-        UInt64 Tell() const override;
 
         /// \see Decoder::Read(Span<Real32>)
         UInt64 Read(Span<Real32> Output) override;
@@ -54,9 +48,5 @@ namespace ZyAudio::Codec
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         ConstSpan<SInt16> mSamples;
-        UInt32            mFrequency;
-        UInt16            mStride;
-        UInt64            mFrames;
-        UInt64            mCursor;
     };
 }
