@@ -76,8 +76,8 @@ namespace ZyJob
         ///
         /// \param Target    The lane to spread the range over, which cannot be \ref Lane::Main.
         /// \param Count     The number of indices to visit.
-        /// \param Callback  The callback invoked with one half-open chunk of the range, on whichever worker took it.
-        /// \param Partition The number of chunks to cut per worker, raised when the per-index cost is very uneven.
+        /// \param Callback  The callback invoked with one half-open chunk of the range, on the caller or a worker.
+        /// \param Partition The number of chunks to cut per thread, raised when the per-index cost is very uneven.
         template<typename Callable>
         void Parallel(Lane Target, UInt32 Count, AnyRef<Callable> Callback, UInt32 Partition = 8)
         {
@@ -88,25 +88,27 @@ namespace ZyJob
                 return;
             }
 
-            const UInt32 Concurrency = Max(1u, GetConcurrency(Target));
-            const UInt32 Grain       = Max(1u, Count / (Concurrency * Max(1u, Partition)));
-            const UInt32 Workers     = Min(Concurrency, (Count + Grain - 1) / Grain);
+            const UInt32 Threads = GetConcurrency(Target) + 1;
+            const UInt32 Grain   = Max(1u, Count / (Threads * Max(1u, Partition)));
+            const UInt32 Helpers = Min(Min(Threads, (Count + Grain - 1) / Grain) - 1, kMaxHelpers);
 
             Atomic<UInt32> Cursor { 0 };
 
-            Sequence<Handle> Jobs(Workers);
+            Array<Handle, kMaxHelpers> Jobs;
 
-            for (UInt32 Worker = 0; Worker < Workers; ++Worker)
+            for (UInt32 Helper = 0; Helper < Helpers; ++Helper)
             {
-                Jobs.Append(Submit(Target, [&]
+                Jobs[Helper] = Submit(Target, [&]
                 {
                     Sweep(Cursor, Grain, Count, Callback);
-                }));
+                });
             }
 
-            for (const Handle Job : Jobs)
+            Sweep(Cursor, Grain, Count, Callback);
+
+            for (UInt32 Helper = 0; Helper < Helpers; ++Helper)
             {
-                Wait(Job);
+                Wait(Jobs[Helper]);
             }
         }
 
@@ -114,6 +116,9 @@ namespace ZyJob
 
         /// \brief The time in seconds a tick may spend on the main lane without threads before the rest waits.
         static constexpr Real64 kMaxTickBudget = 0.006;
+
+        /// \brief The most workers one spread range calls on, which bounds the handles it waits on.
+        static constexpr UInt32 kMaxHelpers    = 63;
 
         /// \brief Runs a job to completion, then publishes it to its waiters.
         ///

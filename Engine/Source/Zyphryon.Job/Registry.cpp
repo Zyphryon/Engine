@@ -21,22 +21,23 @@ namespace ZyJob
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Slot Registry::Acquire(AnyRef<Task> Work)
+    Handle Registry::Acquire(AnyRef<Task> Work, Lane Target)
     {
         if (mAllocator.IsFull())
         {
             LOG_W("Job: Exhausted the job table with too many jobs in flight at once");
-            return 0;
+            return Handle();
         }
 
-        const Slot Value = mAllocator.Allocate().GetSlot();
+        const Handle Result = mAllocator.Allocate();
 
-        Ref<Entry> Job = mEntries[Index(Value)];
+        Ref<Entry> Job = mEntries[Index(Result.GetSlot())];
         Job.Work       = Forward<Task>(Work);
         Job.References = 2;
         Job.Complete   = false;
+        Job.Target     = Target;
 
-        return Value;
+        return Result;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

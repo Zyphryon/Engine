@@ -149,18 +149,16 @@ namespace ZyJob
         const Lane Actual = Reconcile(Target);
 
         Handle Result;
-        Bool   Queued  = false;
         Bool   Starved = false;
 
         {
             Guard Guard(mMutex);
 
-            if (const Slot Value = mRegistry.Acquire(Forward<Task>(Work)); Value)
-            {
-                Result = mRegistry.Mint(Value);
-                Queued = true;
+            Result = mRegistry.Acquire(Forward<Task>(Work), Actual);
 
-                GetExecutor(Actual).Push(Value);
+            if (Result.IsValid())
+            {
+                GetExecutor(Actual).Push(Result.GetSlot());
             }
             else if (Actual == Lane::Main && Thread::GetID() != mMain)
             {
@@ -172,7 +170,7 @@ namespace ZyJob
             }
         }
 
-        if (Queued)
+        if (Result.IsValid())
         {
             GetExecutor(Actual).Signal();
         }
@@ -213,6 +211,9 @@ namespace ZyJob
             }
             else
             {
+                ZY_ASSERT(Thread::GetID() != mMain || mRegistry[Value].Target != Lane::Main,
+                    "Waited on the main thread for a job only its own tick runs");
+
                 mGate.Wait(Lock);
             }
         }

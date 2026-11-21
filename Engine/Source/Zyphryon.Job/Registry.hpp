@@ -36,32 +36,19 @@ namespace ZyJob
 
             /// `true` once the job has finished executing, `false` while it is queued or running.
             Bool   Complete   = false;
+
+            /// The lane the job runs on.
+            Lane   Target     = Lane::Main;
         };
 
     public:
 
-        /// \brief Checks whether every slot is already spoken for.
-        ///
-        /// \return `true` if no further job can be acquired, otherwise `false`.
-        ZY_INLINE Bool IsFull() const
-        {
-            return mAllocator.IsFull();
-        }
-
         /// \brief Takes a free slot and installs the given work in it.
         ///
-        /// \param Work The job to execute.
-        /// \return The slot the job occupies with claims for its execution and its handle, or `0` if the table is full.
-        Slot Acquire(AnyRef<Task> Work);
-
-        /// \brief Mints the handle that names the given slot.
-        ///
-        /// \param Value The slot to name.
-        /// \return The handle resolving back to the slot until the slot is recycled.
-        ZY_INLINE Handle Mint(Slot Value) const
-        {
-            return mAllocator.GetKey(static_cast<Handle::Slot>(Value));
-        }
+        /// \param Work   The job to execute, left untouched when the table is full.
+        /// \param Target The lane the job runs on.
+        /// \return The handle of the slot, claimed for its execution and for the handle, or none if the table is full.
+        Handle Acquire(AnyRef<Task> Work, Lane Target);
 
         /// \brief Resolves a handle to the slot it names.
         ///
