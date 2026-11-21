@@ -104,6 +104,22 @@ namespace ZyRuntime
             return mHeadless;
         }
 
+        /// \brief Sets the most times a second the engine ticks, waiting out what each tick leaves of its share.
+        ///
+        /// \param Rate The ticks in a second, or `0` to tick as fast as the frames come.
+        ZY_INLINE void SetRate(UInt32 Rate)
+        {
+            mRate = Rate;
+        }
+
+        /// \brief Gets the most times a second the engine ticks.
+        ///
+        /// \return The ticks in a second, or `0` when nothing holds the loop back.
+        ZY_INLINE UInt32 GetRate() const
+        {
+            return mRate;
+        }
+
         /// \brief Sets the window the engine opens.
         ///
         /// \param Window The window to open.
@@ -158,6 +174,7 @@ namespace ZyRuntime
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Bool    mHeadless;
+        UInt32  mRate;
         Window  mWindow;
         Audio   mAudio;
         Graphic mGraphic;

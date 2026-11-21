@@ -22,7 +22,8 @@ namespace ZyRuntime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Startup::Startup()
-        : mHeadless { false }
+        : mHeadless { false },
+          mRate     { 0 }
     {
     }
 

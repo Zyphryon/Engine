@@ -39,7 +39,8 @@ namespace ZyRuntime
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Kernel::Kernel()
-        : mAlive { false }
+        : mAlive { false },
+          mDue   { 0.0 }
     {
     }
 
@@ -288,6 +289,25 @@ namespace ZyRuntime
         OnTick(Delta);
 
         ZyEngine::Subsystem::Host::Tick(Delta);
+
+#if !defined(ZY_PLATFORM_WEB)
+
+        if (const UInt32 Rate = mStartup.GetRate(); Rate > 0)
+        {
+            // Each tick is due a share of the second after the one before, so a wait that ran long is made up next.
+            mDue += 1.0 / Rate;
+
+            if (const Real64 Now = mTimer.GetSeconds(); mDue > Now)
+            {
+                ZyPlatform::Timer::Wait(mDue - Now);
+            }
+            else
+            {
+                mDue = Now;
+            }
+        }
+
+#endif
 
         ZY_PROFILE_FRAME;
         return mAlive;

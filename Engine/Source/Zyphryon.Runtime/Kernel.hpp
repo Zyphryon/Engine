@@ -161,6 +161,7 @@ namespace ZyRuntime
 
         Bool              mAlive;
         ZyPlatform::Timer mTimer;
+        Real64            mDue;
         Meter             mMeter;
         Environment       mEnvironment;
         Startup           mStartup;
