@@ -11,6 +11,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include "Mixer.hpp"
+#include "Zyphryon.Math/Vector4.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -119,16 +120,15 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     Bool Mixer::Play(
-        Object              Handle,
-        Category            Category,
-        Ptr<Decoder>        Decoder,
-        UInt32              Stride,
-        Real32              Volume,
-        ConstPtr<Emitter>   Emitter,
-        ConstPtr<Matrix4x3> Transform)
+        Object            Handle,
+        Category          Category,
+        Ptr<Decoder>      Decoder,
+        UInt32            Stride,
+        Real32            Volume,
+        ConstPtr<Emitter> Emitter,
+        Vector3           Position,
+        Vector3           Forward)
     {
-        ZY_ASSERT(!Emitter == !Transform, "A spatial playback needs both an emitter and a transform");
-
         Command Command  = Make(Op::Play, Handle);
         Command.Category = Category;
         Command.Spatial  = (Emitter != nullptr);
@@ -139,8 +139,8 @@ namespace ZyAudio
         if (Emitter)
         {
             Command.Emitter  = * Emitter;
-            Command.Position = Transform->GetTranslation();
-            Command.Forward  = Vector3::Normalize(Transform->GetForward());
+            Command.Position = Position;
+            Command.Forward  = Forward;
         }
         return mCommands.Push(Command);
     }
@@ -178,11 +178,11 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mixer::SetTransform(Object Handle, ConstRef<Matrix4x3> Transform)
+    void Mixer::SetPose(Object Handle, Vector3 Position, Vector3 Forward)
     {
         Command Command  = Make(Op::Move, Handle);
-        Command.Position = Transform.GetTranslation();
-        Command.Forward  = Vector3::Normalize(Transform.GetForward());
+        Command.Position = Position;
+        Command.Forward  = Forward;
         mCommands.Push(Command);
     }
 
@@ -213,12 +213,12 @@ namespace ZyAudio
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    void Mixer::SetListener(ConstRef<Matrix4x3> Transform)
+    void Mixer::SetListener(Vector3 Position, Vector3 Forward, Vector3 Right)
     {
         Command Command  = Make(Op::Listener);
-        Command.Position = Transform.GetTranslation();
-        Command.Forward  = Vector3::Normalize(Transform.GetForward());
-        Command.Right    = Vector3::Normalize(Transform.GetRight());
+        Command.Position = Position;
+        Command.Forward  = Forward;
+        Command.Right    = Right;
         mCommands.Push(Command);
     }
 
@@ -402,37 +402,24 @@ namespace ZyAudio
             // Only a voice under the open cutoff pays for a section, whose coefficients follow from that cutoff alone.
             const Bool Occluded = Voice.Cutoff < static_cast<Real32>(kMixerCutoff);
 
-            if (Voice.Spatial)
+            // A spatial or a mono voice has its one image in the left scratch, filtered once and read by both sides.
+            const Bool        Single = (Voice.Spatial || Voice.Stride == 1);
+            const Ptr<Real32> Right  = (Single ? mScratchLeft.GetData() : mScratchRight.GetData());
+
+            if (Occluded)
             {
-                if (Occluded)
+                const Filter Section(Voice.Cutoff);
+
+                Section.Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
+
+                if (!Single)
                 {
-                    Filter(Voice.Cutoff).Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
+                    Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
                 }
-
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.GetX(), TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), mScratchLeft.GetData(), Produced, Voice.Gain.GetY(), TargetRight);
             }
-            else
-            {
-                // A mono voice has its one image in the left scratch, filtered once and read by both sides.
-                const Bool        Mono  = (Voice.Stride == 1);
-                const Ptr<Real32> Right = (Mono ? mScratchLeft.GetData() : mScratchRight.GetData());
 
-                if (Occluded)
-                {
-                    const Filter Section(Voice.Cutoff);
-
-                    Section.Apply(Voice.FilterLeft, mScratchLeft.GetData(), Produced);
-
-                    if (!Mono)
-                    {
-                        Section.Apply(Voice.FilterRight, mScratchRight.GetData(), Produced);
-                    }
-                }
-
-                MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.GetX(), TargetLeft);
-                MixAccumulate(mMasterRight.GetData(), Right,                  Produced, Voice.Gain.GetY(), TargetRight);
-            }
+            MixAccumulate(mMasterLeft.GetData(),  mScratchLeft.GetData(), Produced, Voice.Gain.GetX(), TargetLeft);
+            MixAccumulate(mMasterRight.GetData(), Right,                  Produced, Voice.Gain.GetY(), TargetRight);
 
             Voice.Gain = Vector2(TargetLeft, TargetRight);
         }
@@ -463,23 +450,16 @@ namespace ZyAudio
 
             UInt32 Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(Landing, Request)));
 
+            // A stream that ran out is read again from its start when the voice loops, and ends the read otherwise.
             if (Decoded == 0)
             {
-                // Restart from the top when looping, otherwise the stream has ended.
-                if (Voice.Looping)
-                {
-                    if (!Voice.Decoder->Seek(0))
-                    {
-                        Voice.Looping = false;
-                        break;
-                    }
-                }
-                else
+                if (!Rewind(Voice))
                 {
                     break;
                 }
 
                 Decoded = static_cast<UInt32>(Voice.Decoder->Read(Span(Landing, Request)));
+
                 if (Decoded == 0)
                 {
                     break;
@@ -527,15 +507,7 @@ namespace ZyAudio
 
             if (Skipped == 0)
             {
-                if (Voice.Looping)
-                {
-                    if (!Voice.Decoder->Seek(0))
-                    {
-                        Voice.Looping = false;
-                        break;
-                    }
-                }
-                else
+                if (!Rewind(Voice))
                 {
                     break;
                 }
@@ -550,6 +522,19 @@ namespace ZyAudio
             Done += Skipped;
         }
         return Done;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    Bool Mixer::Rewind(Ref<Voice> Voice)
+    {
+        // A stream that cannot go back to its start stops looping, so it is not asked to again on every block.
+        if (Voice.Looping && !Voice.Decoder->Seek(0))
+        {
+            Voice.Looping = false;
+        }
+        return Voice.Looping;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

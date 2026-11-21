@@ -173,13 +173,14 @@ namespace ZyAudio
 
     void Service::SetListenerPose(ConstRef<Matrix4x3> Transform)
     {
-        // The service keeps its own listener so a newcomer can be placed without reading the audio thread's copy.
-        mListener.SetListener(
-            Transform.GetTranslation(),
-            Vector3::Normalize(Transform.GetForward()),
-            Vector3::Normalize(Transform.GetRight()));
+        const Vector3 Position = Transform.GetTranslation();
+        const Vector3 Forward  = Vector3::Normalize(Transform.GetForward());
+        const Vector3 Right    = Vector3::Normalize(Transform.GetRight());
 
-        mMixer.SetListener(Transform);
+        // The service keeps its own listener so a newcomer can be placed without reading the audio thread's copy.
+        mListener.SetListener(Position, Forward, Right);
+
+        mMixer.SetListener(Position, Forward, Right);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -219,14 +220,16 @@ namespace ZyAudio
             return Object();
         }
 
-        Real32 Gain = Volume * mMixer.GetSubmixVolume(Category);
+        Real32  Gain = Volume * mMixer.GetSubmixVolume(Category);
+        Vector3 Position;
+        Vector3 Forward;
 
         if (Emitter)
         {
-            const Vector2 Placement = mListener.Compute(
-                Transform->GetTranslation(),
-                Vector3::Normalize(Transform->GetForward()),
-                * Emitter);
+            Position = Transform->GetTranslation();
+            Forward  = Vector3::Normalize(Transform->GetForward());
+
+            const Vector2 Placement = mListener.Compute(Position, Forward, * Emitter);
 
             Gain *= Max(Placement.GetX(), Placement.GetY());
         }
@@ -238,7 +241,7 @@ namespace ZyAudio
             return Object();
         }
 
-        if (!mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Transform))
+        if (!mMixer.Play(Playback, Category, Decoder.Grab(), Sound->GetStride(), Volume, Emitter, Position, Forward))
         {
             mInstances.Free(Playback);
             return Object();
@@ -270,7 +273,7 @@ namespace ZyAudio
 
     void Service::SetPlaybackPose(Object Handle, ConstRef<Matrix4x3> Transform)
     {
-        mMixer.SetTransform(Handle, Transform);
+        mMixer.SetPose(Handle, Transform.GetTranslation(), Vector3::Normalize(Transform.GetForward()));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

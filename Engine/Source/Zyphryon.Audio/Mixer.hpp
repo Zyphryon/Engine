@@ -14,7 +14,6 @@
 
 #include "Spatializer.hpp"
 #include "Voice.hpp"
-#include "Zyphryon.Math/Matrix4x3.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -41,24 +40,26 @@ namespace ZyAudio
         /// \param Output Receives the ended playbacks.
         void Drain(Ref<Sequence<Completion>> Output);
 
-        /// \brief Enqueues a playback command, spatial when an emitter and a transform are given.
+        /// \brief Enqueues a playback command, spatial when an emitter is given.
         ///
-        /// \param Handle    The pre-allocated playback handle.
-        /// \param Category  The submix category the voice is routed through.
-        /// \param Decoder   The decoder whose ownership transfers to the mixer.
-        /// \param Stride    The decoder's interleaved sample count per frame.
-        /// \param Volume    The playback volume (0.0 = silent, 1.0 = full volume).
-        /// \param Emitter   The spatial configuration of the source, or `nullptr` for a non-spatial playback.
-        /// \param Transform The source's world transform, or `nullptr` for a non-spatial playback.
+        /// \param Handle   The pre-allocated playback handle.
+        /// \param Category The submix category the voice is routed through.
+        /// \param Decoder  The decoder whose ownership transfers to the mixer.
+        /// \param Stride   The decoder's interleaved sample count per frame.
+        /// \param Volume   The playback volume (0.0 = silent, 1.0 = full volume).
+        /// \param Emitter  The spatial configuration of the source, or `nullptr` for a non-spatial playback.
+        /// \param Position The source's world-space position, read by a spatial playback alone.
+        /// \param Forward  The source's normalized forward axis, read by a spatial playback alone.
         /// \return `true` if the command was enqueued, `false` if the queue was full.
         Bool Play(
-            Object              Handle,
-            Category            Category,
-            Ptr<Decoder>        Decoder,
-            UInt32              Stride,
-            Real32              Volume,
-            ConstPtr<Emitter>   Emitter   = nullptr,
-            ConstPtr<Matrix4x3> Transform = nullptr);
+            Object            Handle,
+            Category          Category,
+            Ptr<Decoder>      Decoder,
+            UInt32            Stride,
+            Real32            Volume,
+            ConstPtr<Emitter> Emitter  = nullptr,
+            Vector3           Position = Vector3(),
+            Vector3           Forward  = Vector3());
 
         /// \brief Enqueues a command to set whether a voice loops.
         ///
@@ -78,11 +79,12 @@ namespace ZyAudio
         /// \param Cutoff The cutoff frequency in hertz, or `0` to leave the voice unfiltered.
         void SetCutoff(Object Handle, Real32 Cutoff);
 
-        /// \brief Enqueues a command to set a spatial voice's world transform.
+        /// \brief Enqueues a command to set where a spatial voice stands and faces.
         ///
-        /// \param Handle    The playback to move.
-        /// \param Transform The source's world transform.
-        void SetTransform(Object Handle, ConstRef<Matrix4x3> Transform);
+        /// \param Handle   The playback to move.
+        /// \param Position The source's world-space position.
+        /// \param Forward  The source's normalized forward axis.
+        void SetPose(Object Handle, Vector3 Position, Vector3 Forward);
 
         /// \brief Enqueues a command to stop a voice.
         ///
@@ -99,10 +101,12 @@ namespace ZyAudio
         /// \param Handle The playback to resume.
         void Resume(Object Handle);
 
-        /// \brief Enqueues a command to set the listener's world transform.
+        /// \brief Enqueues a command to set where the listener stands and faces.
         ///
-        /// \param Transform The listener's new world transform.
-        void SetListener(ConstRef<Matrix4x3> Transform);
+        /// \param Position The listener's world-space position.
+        /// \param Forward  The listener's normalized forward axis.
+        /// \param Right    The listener's normalized right axis.
+        void SetListener(Vector3 Position, Vector3 Forward, Vector3 Right);
 
         /// \brief Enqueues a command to set the listener's directional cone.
         ///
@@ -291,6 +295,12 @@ namespace ZyAudio
         /// \param Frames The number of frames to advance past.
         /// \return The number of frames actually advanced, fewer than \p Frames once the stream ended.
         UInt32 Silence(Ref<Voice> Voice, UInt32 Frames);
+
+        /// \brief Takes a looping voice back to the start of its stream once it ran out (audio thread).
+        ///
+        /// \param Voice The voice whose stream ran out.
+        /// \return `true` if the voice loops and went back to its start, `false` if its stream has ended.
+        Bool Rewind(Ref<Voice> Voice);
 
         /// \brief Renders one sub-block of up to \ref kMixerBlock frames (audio thread).
         ///
