@@ -23,6 +23,9 @@ namespace ZyAudio
 
     struct Driver::Backend
     {
+        /// The frames pulled from the mixer per write (~5 ms at 48 kHz), which is also the period asked of ALSA.
+        static constexpr UInt32 kBlock = 256;
+
         /// The endpoint the game asked for, or empty for the system default.
         Str              Request;
 
@@ -48,7 +51,7 @@ namespace ZyAudio
         Real64           Retry     = 0.0;
 
         /// The interleaved stereo scratch the mixer fills each block before it is written to `Device`.
-        Real32           Mix[kMixerPeriod * kMixerStride];
+        Real32           Mix[kBlock * kMixerStride];
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -145,7 +148,7 @@ namespace ZyAudio
 
             while (!Token.Stopped())
             {
-                if (!ALSAFill(* Backend, kMixerPeriod))
+                if (!ALSAFill(* Backend, kBlock))
                 {
                     Backend->Faulted.store(true, std::memory_order_relaxed);
 
@@ -203,7 +206,7 @@ namespace ZyAudio
                 kMixerStride,
                 kMixerFrequency,
                 1,
-                (static_cast<UInt64>(kMixerPeriod) * 4 * 1000000) / kMixerFrequency);
+                (static_cast<UInt64>(kBlock) * 4 * 1000000) / kMixerFrequency);
 
             if (Result < 0)
             {
