@@ -33,7 +33,7 @@ namespace ZyAudio
         kMixerStride    = 2,
 
         /// \brief The capacity of the control and completion command queues.
-        kMaxCommands    = 512,
+        kMaxCommands    = 4096,
 
         /// \brief The maximum number of active audio instances.
         kMaxInstances   = 256,
