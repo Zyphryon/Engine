@@ -66,7 +66,8 @@ namespace ZyAudio
     Mixer::Mixer()
         : mMasterVolume  { 1.0f },
           mMasterLimiter { true },
-          mMasterGain    { 1.0f }
+          mMasterGain    { 1.0f },
+          mMasterLevel   { 1.0f }
     {
         for (UInt32 Index = 0; Index < ZyEnum::Count<Category>(); ++Index)
         {
@@ -576,12 +577,18 @@ namespace ZyAudio
         // The gain climbs back by this much a frame, so a mix eased all the way down recovers in a sixth of a second.
         constexpr Real32 kRelease = 1.0f / (0.15f * static_cast<Real32>(kMixerFrequency));
 
-        Real32 Gain = mMasterGain;
+        // The master volume walks from where the last block left it to where it is now, so a change makes no jump.
+        const Real32 Step = (Master - mMasterLevel) / static_cast<Real32>(Frames);
+
+        Real32 Gain  = mMasterGain;
+        Real32 Level = mMasterLevel;
 
         for (UInt32 Frame = 0; Frame < Frames; ++Frame)
         {
-            const Real32 Left  = mMasterLeft[Frame]  * Master;
-            const Real32 Right = mMasterRight[Frame] * Master;
+            Level += Step;
+
+            const Real32 Left  = mMasterLeft[Frame]  * Level;
+            const Real32 Right = mMasterRight[Frame] * Level;
 
             // The gain drops at once to hold a peak at full scale, then climbs back so the wave keeps its shape.
             const Real32 Peak = Max(Abs(Left), Abs(Right));
@@ -593,7 +600,8 @@ namespace ZyAudio
             Output[Frame * kMixerStride + 1] = Clamp(Right * Gain, -1.0f, 1.0f);
         }
 
-        mMasterGain = Gain;
+        mMasterGain  = Gain;
+        mMasterLevel = Master;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

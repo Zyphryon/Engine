@@ -317,6 +317,7 @@ namespace ZyAudio
         Atomic<Real32>                                   mMasterVolume;
         Atomic<Bool>                                     mMasterLimiter;
         Real32                                           mMasterGain;
+        Real32                                           mMasterLevel;
         Array<Atomic<Real32>, ZyEnum::Count<Category>()> mSubmixVolume;
         Array<Atomic<Real32>, kMaxInstances>             mRanks;
 
