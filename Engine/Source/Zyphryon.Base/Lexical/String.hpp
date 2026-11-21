@@ -232,10 +232,17 @@ inline namespace ZyBase
 
         /// \brief Appends text to the end of the string.
         ///
-        /// \param Content The text to append.
+        /// \param Content The text to append, cut short where a fixed string has no room for all of it.
         ZY_INLINE constexpr void Append(Text Content)
         {
-            mBuffer.Append(Content);
+            if constexpr (Capacity == 0)
+            {
+                mBuffer.Append(Content);
+            }
+            else
+            {
+                mBuffer.Append(Content.Slice(0, Min(Content.GetSize(), Capacity - mBuffer.GetSize())));
+            }
             Seal();
         }
 

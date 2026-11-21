@@ -62,10 +62,12 @@ namespace ZyLog
 
         const UInt8 Level = static_cast<UInt8>(Priority);
 
+        static constexpr Text kSuffix = "\033[0m\n";
+
         String<4096> Output;
         Output.Append(kPrefixes[Level]);
-        Output.Append(Message);
-        Output.Append("\033[0m\n"_Text);
+        Output.Append(Message.Slice(0, Min(Message.GetSize(), Output.GetCapacity() - Output.GetSize() - kSuffix.GetSize())));
+        Output.Append(kSuffix);
 
         fwrite(Output.GetData(), 1, Output.GetSize(), stdout);
 
