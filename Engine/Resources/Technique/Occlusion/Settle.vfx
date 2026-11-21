@@ -15,11 +15,13 @@
   "Signature": {
     "Textures": [
       { "Name": "Reach" },
-      { "Name": "Occlusion", "Fallback": [255, 255, 255, 255] }
+      { "Name": "Occlusion", "Fallback": [255, 255, 255, 255] },
+      { "Name": "Bounce",    "Fallback": [0, 0, 0, 0] }
     ],
     "Samplers": [
       { "Name": "Reach",     "Filter": "Point" },
-      { "Name": "Occlusion", "Filter": "Linear" }
+      { "Name": "Occlusion", "Filter": "Linear" },
+      { "Name": "Bounce",    "Filter": "Linear" }
     ]
   },
   "Program": {

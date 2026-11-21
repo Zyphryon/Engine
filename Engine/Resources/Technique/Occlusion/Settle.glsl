@@ -39,10 +39,12 @@ void main()
 
 layout(binding = 0) uniform highp sampler2D t_Reach;
 layout(binding = 1) uniform sampler2D t_Occlusion;
+layout(binding = 2) uniform sampler2D t_Bounce;
 
 in vec2 v_Texture;
 
 layout(location = 0) out vec4 out_Occlusion;
+layout(location = 1) out vec4 out_Bounce;
 
 void main()
 {
@@ -67,6 +69,7 @@ void main()
 #endif
 
     vec4  Total  = vec4(0.0);
+    vec4  Glow   = vec4(0.0);
     float Weight = 0.0;
 
     for (int Y = 0; Y < 4; ++Y)
@@ -83,6 +86,7 @@ void main()
             float Near  = clamp(1.0 - abs(Reach - Along) / u_Settle.y, 0.0, 1.0);
 
             Total  += textureLod(t_Occlusion, Uv, 0.0) * Near;
+            Glow   += textureLod(t_Bounce, Uv, 0.0) * Near;
             Weight += Near;
         }
     }
@@ -90,6 +94,7 @@ void main()
     vec3 Open    = normalize(Settled.rgb * 2.0 - 1.0 + 1e-6);
 
     out_Occlusion = vec4(Open * 0.5 + 0.5, mix(1.0, Settled.a, u_Settle.x));
+    out_Bounce    = Glow / max(Weight, 1e-4) * vec4(vec3(u_Settle.x), 1.0);
 }
 
 #endif // FRAGMENT_SHADER

@@ -69,13 +69,16 @@ float ZyOcclusionBounce(float Visible, float Albedo)
 /// \param Radius The farthest a horizon is searched, in the units of the positions.
 /// \param Noise  The pixel's two noises, from 0 to 1, which turn its slices and offset its steps.
 /// \param Bent   Receives the way the open sky above the point lies on the whole, of unit length.
+/// \param Bounce Receives the light the closing surfaces send back, read through ZY_OCCLUSION_GLOW(Pixel), or nought.
 /// \return The share of the hemisphere the point sees, 1 for wholly open.
 float ZyHorizonOcclusion(
     float3 Center, float3 Normal, float3 Viewer, float2 Pixel, float3 Across, float3 Down, float Radius, float2 Noise,
-    out float3 Bent)
+    out float3 Bent, out float3 Bounce)
 {
     float  Visible = 0.0;
     float3 Open    = 0.0;
+    float3 Glow    = 0.0;
+    float  Closed  = 0.0;
 
     [unroll]
     for (int Slice = 0; Slice < ZY_OCCLUSION_SLICES; ++Slice)
@@ -107,8 +110,19 @@ float ZyHorizonOcclusion(
             const float Weight0 = saturate((Radius - Gap0) / (Radius * ZY_OCCLUSION_FADE)) * step(ZY_OCCLUSION_NEAR, Gap0);
             const float Weight1 = saturate((Radius - Gap1) / (Radius * ZY_OCCLUSION_FADE)) * step(ZY_OCCLUSION_NEAR, Gap1);
 
-            Highest0 = max(Highest0, lerp(cos(Lean + ZY_HALF_PI), dot(Near, Viewer) / max(Gap0, 1e-6), Weight0));
-            Highest1 = max(Highest1, lerp(cos(Lean - ZY_HALF_PI), dot(Far,  Viewer) / max(Gap1, 1e-6), Weight1));
+            const float Lifted0 = lerp(cos(Lean + ZY_HALF_PI), dot(Near, Viewer) / max(Gap0, 1e-6), Weight0);
+            const float Lifted1 = lerp(cos(Lean - ZY_HALF_PI), dot(Far,  Viewer) / max(Gap1, 1e-6), Weight1);
+
+#ifdef ZY_OCCLUSION_GLOW
+            const float Rise0 = max(Lifted0 - Highest0, 0.0);
+            const float Rise1 = max(Lifted1 - Highest1, 0.0);
+
+            Glow   += ZY_OCCLUSION_GLOW(Pixel + Reach * Along) * Rise0 + ZY_OCCLUSION_GLOW(Pixel - Reach * Along) * Rise1;
+            Closed += Rise0 + Rise1;
+#endif
+
+            Highest0 = max(Highest0, Lifted0);
+            Highest1 = max(Highest1, Lifted1);
         }
 
         const float Horizon0 = Lean + max(-acos(clamp(Highest1, -1.0, 1.0)) - Lean, -ZY_HALF_PI);
@@ -126,8 +140,11 @@ float ZyHorizonOcclusion(
         Open    += Length * (Side * Sideway + Viewer * Upward) / 12.0;
     }
 
-    Bent = normalize(Open + Normal * 1e-6);
-    return saturate(Visible / float(ZY_OCCLUSION_SLICES));
+    const float Seen = saturate(Visible / float(ZY_OCCLUSION_SLICES));
+
+    Bent   = normalize(Open + Normal * 1e-6);
+    Bounce = Glow / max(Closed, 1e-4) * (1.0 - Seen);
+    return Seen;
 }
 
 #endif // ZY_OCCLUSION_READ

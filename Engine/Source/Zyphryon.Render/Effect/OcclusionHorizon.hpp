@@ -93,6 +93,14 @@ namespace ZyRender
             mRadius = Radius;
         }
 
+        /// \brief Sets how much of the last image's light the closing surfaces send back.
+        ///
+        /// \param Share The share of the glow read, 1 with a last image bound and 0 with none.
+        ZY_INLINE void SetGlow(Real32 Share)
+        {
+            mGlow = Share;
+        }
+
         /// \brief Sets the view the reach was laid along, orthographic or perspective as its matrix tells.
         ///
         /// \param Inverse The matrix that carries clip space back into the space the surfaces are searched in.
@@ -118,7 +126,7 @@ namespace ZyRender
             /// The direction the view looks along, of unit length, then the radius in world units.
             Vector4   Toward;
 
-            /// The point every line of sight leaves from, unused for an orthographic view.
+            /// The point every line of sight leaves from, unused for an orthographic view, then the share of glow read.
             Vector4   Eye;
         };
 
@@ -133,6 +141,7 @@ namespace ZyRender
         Matrix4x4                      mInverse;
         Vector3                        mToward;
         Vector3                        mEye;
+        Real32                         mGlow;
         Bool                           mPerspective;
     };
 }

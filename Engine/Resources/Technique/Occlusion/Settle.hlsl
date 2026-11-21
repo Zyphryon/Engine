@@ -49,8 +49,16 @@ Texture2D    t_Reach     : register(t0);
 SamplerState s_Reach     : register(s0);
 Texture2D    t_Occlusion : register(t1);
 SamplerState s_Occlusion : register(s1);
+Texture2D    t_Bounce    : register(t2);
+SamplerState s_Bounce    : register(s2);
 
-float4 main(fs_Input Input) : SV_Target0
+struct fs_Output
+{
+    float4 Occlusion : SV_Target0;
+    float4 Bounce    : SV_Target1;
+};
+
+fs_Output main(fs_Input Input)
 {
     float2 Size;
     t_Reach.GetDimensions(Size.x, Size.y);
@@ -77,6 +85,7 @@ float4 main(fs_Input Input) : SV_Target0
 #endif
 
     float4 Total  = 0.0;
+    float4 Glow   = 0.0;
     float  Weight = 0.0;
 
     [unroll]
@@ -95,13 +104,17 @@ float4 main(fs_Input Input) : SV_Target0
             const float Near  = saturate(1.0 - abs(Reach - Along) / u_Settle.y);
 
             Total  += t_Occlusion.SampleLevel(s_Occlusion, Uv, 0) * Near;
+            Glow   += t_Bounce.SampleLevel(s_Bounce, Uv, 0) * Near;
             Weight += Near;
         }
     }
     const float4 Settled = Total / max(Weight, 1e-4);
     const float3 Open    = normalize(Settled.rgb * 2.0 - 1.0 + 1e-6);
 
-    return float4(Open * 0.5 + 0.5, lerp(1.0, Settled.a, u_Settle.x));
+    fs_Output Result;
+    Result.Occlusion = float4(Open * 0.5 + 0.5, lerp(1.0, Settled.a, u_Settle.x));
+    Result.Bounce    = Glow / max(Weight, 1e-4) * float4(u_Settle.xxx, 1.0);
+    return Result;
 }
 
 #endif // FRAGMENT_SHADER

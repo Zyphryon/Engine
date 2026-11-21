@@ -26,20 +26,27 @@ namespace ZyRender
           mStrength { Shading().Strength }
     {
         constexpr Target Half(ZyGraphic::TextureFormat::RGBA8UIntNorm, Target::Scale::Half);
+        constexpr Target Glow(ZyGraphic::TextureFormat::RGBA16Float, Target::Scale::Half);
 
         const UInt32 Horizon = Blueprint.AddTarget(Half);
+        const UInt32 Light   = Blueprint.AddTarget(Glow);
         mOutput = Blueprint.AddTarget(Half);
+        mBounce = Blueprint.AddTarget(Glow);
 
         // The search finds each texel's horizons, and the settle weighs the noise away over texels at its depth.
         mHorizon = AddressOf(Blueprint.AddPass<OcclusionHorizon>("Horizon", Host));
         mHorizon->AddColor({ .Target = Horizon, .Load = ZyGraphic::Action::Discard });
+        mHorizon->AddColor({ .Target = Light,   .Load = ZyGraphic::Action::Discard });
         mHorizon->AddInput({ .Name = "Reach"_Hash,  .Target = Reach  });
         mHorizon->AddInput({ .Name = "Normal"_Hash, .Target = Normal });
+        mHorizon->AddInput({ .Name = "Glow"_Hash });
 
         mSettle = AddressOf(Blueprint.AddPass<OcclusionSettle>("Occlusion", Host));
         mSettle->AddColor({ .Target = mOutput, .Load = ZyGraphic::Action::Discard });
+        mSettle->AddColor({ .Target = mBounce, .Load = ZyGraphic::Action::Discard });
         mSettle->AddInput({ .Name = "Reach"_Hash,     .Target = Reach   });
         mSettle->AddInput({ .Name = "Occlusion"_Hash, .Target = Horizon });
+        mSettle->AddInput({ .Name = "Bounce"_Hash,    .Target = Light   });
 
         Apply();
     }
@@ -65,6 +72,15 @@ namespace ZyRender
         mSettle->SetShading(Shading);
 
         Apply();
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    void Occlusion::SetGlow(UInt32 Image)
+    {
+        mHorizon->SetInput(kGlow, Image);
+        mHorizon->SetGlow(Image != Pass::kNone ? 1.0f : 0.0f);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -52,6 +52,14 @@ Texture2D    t_Normal : register(t0);
 SamplerState s_Normal : register(s0);
 Texture2D    t_Reach  : register(t1);
 SamplerState s_Reach  : register(s1);
+Texture2D    t_Glow   : register(t2);
+SamplerState s_Glow   : register(s2);
+
+struct fs_Output
+{
+    float4 Occlusion : SV_Target0;
+    float4 Bounce    : SV_Target1;
+};
 
 float3 Locate(float2 Clip, float Along)
 {
@@ -79,20 +87,33 @@ float3 Fetch(float2 Pixel)
     return Locate(float2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0), t_Reach.SampleLevel(s_Reach, Uv, 0).r);
 }
 
+float3 Shine(float2 Pixel)
+{
+    float2 Size;
+    t_Reach.GetDimensions(Size.x, Size.y);
+
+    return t_Glow.SampleLevel(s_Glow, Pixel / Size, 0).rgb * u_Eye.w;
+}
+
 #define ZY_OCCLUSION_READ(Pixel) Fetch(Pixel)
+#define ZY_OCCLUSION_GLOW(Pixel) Shine(Pixel)
 
 #include "Embedded://Shader/Occlusion.hlsl"
 
-float4 main(fs_Input Input) : SV_Target0
+fs_Output main(fs_Input Input)
 {
     float2 Size;
     t_Reach.GetDimensions(Size.x, Size.y);
 
     const float Along = t_Reach.SampleLevel(s_Reach, Input.Texture, 0).r;
 
+    fs_Output Result;
+
     if (Along >= ZY_OCCLUSION_OPEN)
     {
-        return float4(0.5, 1.0, 0.5, 1.0);
+        Result.Occlusion = float4(0.5, 1.0, 0.5, 1.0);
+        Result.Bounce    = float4(0.0, 0.0, 0.0, u_Eye.w);
+        return Result;
     }
 
     const float2 Uv     = (floor(Input.Position.xy) + 0.5) / Size;
@@ -111,11 +132,14 @@ float4 main(fs_Input Input) : SV_Target0
 #endif
 
     float3      Bent;
+    float3      Bounce;
     const float Visible = ZyHorizonOcclusion(
         Center, Normal, Viewer, Input.Position.xy, Across, Down, u_Toward.w,
-        ZyOcclusionNoise(Input.Position.xy), Bent);
+        ZyOcclusionNoise(Input.Position.xy), Bent, Bounce);
 
-    return float4(Bent * 0.5 + 0.5, Visible);
+    Result.Occlusion = float4(Bent * 0.5 + 0.5, Visible);
+    Result.Bounce    = float4(Bounce, u_Eye.w);
+    return Result;
 }
 
 #endif // FRAGMENT_SHADER

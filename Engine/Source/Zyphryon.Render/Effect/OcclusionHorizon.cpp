@@ -28,6 +28,7 @@ namespace ZyRender
           mInverse     { Matrix4x4::Identity() },
           mToward      { Vector3::Zero() },
           mEye         { Vector3::Zero() },
+          mGlow        { 0.0f },
           mPerspective { false }
     {
     }
@@ -66,7 +67,7 @@ namespace ZyRender
         Encoder.SetPass(GpuHorizonLayout {
             .Inverse = mInverse,
             .Toward  = Vector4(mToward, mRadius),
-            .Eye     = Vector4(mEye, 0.0f)
+            .Eye     = Vector4(mEye, mGlow)
         });
 
         Encoder::Binder Binder = Encoder.Begin(* mTechnique);

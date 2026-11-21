@@ -157,6 +157,14 @@ namespace ZyRender
             return mTemporal.GetJitter();
         }
 
+        /// \brief Gets the lit image steadied the frame before, read after \ref Advance took this frame's turn.
+        ///
+        /// \return The slot of the last steadied image, or \ref Pass::kNone unless the image is smoothed over time.
+        ZY_INLINE UInt32 GetHistory() const
+        {
+            return mTemporal.GetHistory();
+        }
+
         /// \brief Sets where a point standing still was on the screen in the image before.
         ///
         /// \param Shift The move from this image back to the last, in clip space.

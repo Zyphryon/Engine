@@ -61,6 +61,14 @@ namespace ZyRender
         /// \return The offset from where the view stands, in pixels, or zero while the smoothing is off.
         Vector2 GetJitter() const;
 
+        /// \brief Gets the image the smoothing steadied the frame before, which this frame's turn blends into.
+        ///
+        /// \return The slot of the last steadied image, or \ref Pass::kNone while the smoothing is off or has none yet.
+        ZY_INLINE UInt32 GetHistory() const
+        {
+            return (mActive && mRound > 1) ? mSteady[mRound & 1] : Pass::kNone;
+        }
+
     private:
 
         /// \brief The share of each new image taken into the blend while the view stands still.

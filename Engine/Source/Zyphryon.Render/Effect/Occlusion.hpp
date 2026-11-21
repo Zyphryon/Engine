@@ -59,12 +59,25 @@ namespace ZyRender
             mHorizon->SetView(Inverse);
         }
 
+        /// \brief Sets the last image whose light the closing surfaces send back.
+        ///
+        /// \param Image The slot of the last lit image, or \ref Pass::kNone to send nothing back.
+        void SetGlow(UInt32 Image);
+
         /// \brief Gets the slot the settled occlusion is written into.
         ///
         /// \return The slot, holding the way the open sky lies in `RGB` and its share in alpha, at half size.
         ZY_INLINE UInt32 GetOutput() const
         {
             return mOutput;
+        }
+
+        /// \brief Gets the slot the settled light sent back is written into.
+        ///
+        /// \return The slot, holding the light in `RGB` and `1` in alpha where a last image was read, at half size.
+        ZY_INLINE UInt32 GetBounce() const
+        {
+            return mBounce;
         }
 
         /// \brief Checks whether the chain searches anything this frame.
@@ -82,12 +95,18 @@ namespace ZyRender
 
     private:
 
+        /// \brief The place of the search's input that reads the last image, in declaration order.
+        static constexpr UInt32 kGlow = 2;
+
+    private:
+
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Ptr<OcclusionHorizon> mHorizon;
         Ptr<OcclusionSettle>  mSettle;
         UInt32                mOutput;
+        UInt32                mBounce;
         Detail                mDetail;
         Real32                mStrength;
     };

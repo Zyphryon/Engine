@@ -15,11 +15,13 @@
   "Signature": {
     "Textures": [
       { "Name": "Normal" },
-      { "Name": "Reach" }
+      { "Name": "Reach" },
+      { "Name": "Glow", "Fallback": [0, 0, 0, 0] }
     ],
     "Samplers": [
       { "Name": "Normal", "Filter": "Point" },
-      { "Name": "Reach",  "Filter": "Point" }
+      { "Name": "Reach",  "Filter": "Point" },
+      { "Name": "Glow",   "Filter": "Linear" }
     ]
   },
   "Features": [

@@ -42,10 +42,12 @@ void main()
 
 layout(binding = 0) uniform sampler2D t_Normal;
 layout(binding = 1) uniform highp sampler2D t_Reach;
+layout(binding = 2) uniform sampler2D t_Glow;
 
 in vec2 v_Texture;
 
 layout(location = 0) out vec4 out_Occlusion;
+layout(location = 1) out vec4 out_Bounce;
 
 vec3 Locate(vec2 Clip, float Along)
 {
@@ -70,7 +72,13 @@ vec3 Fetch(vec2 Pixel)
     return Locate(vec2(Uv.x * 2.0 - 1.0, 1.0 - Uv.y * 2.0), textureLod(t_Reach, Uv, 0.0).r);
 }
 
+vec3 Shine(vec2 Pixel)
+{
+    return textureLod(t_Glow, Pixel / vec2(textureSize(t_Reach, 0)), 0.0).rgb * u_Eye.w;
+}
+
 #define ZY_OCCLUSION_READ(Pixel) Fetch(Pixel)
+#define ZY_OCCLUSION_GLOW(Pixel) Shine(Pixel)
 
 #include "Embedded://Shader/Occlusion.glsl"
 
@@ -82,6 +90,7 @@ void main()
     if (Along >= ZY_OCCLUSION_OPEN)
     {
         out_Occlusion = vec4(0.5, 1.0, 0.5, 1.0);
+        out_Bounce    = vec4(0.0, 0.0, 0.0, u_Eye.w);
         return;
     }
 
@@ -102,10 +111,12 @@ void main()
 #endif
 
     vec3  Bent;
+    vec3  Bounce;
     float Visible = ZyHorizonOcclusion(
-        Center, Normal, Viewer, Pixel, Across, Down, u_Toward.w, ZyOcclusionNoise(gl_FragCoord.xy), Bent);
+        Center, Normal, Viewer, Pixel, Across, Down, u_Toward.w, ZyOcclusionNoise(gl_FragCoord.xy), Bent, Bounce);
 
     out_Occlusion = vec4(Bent * 0.5 + 0.5, Visible);
+    out_Bounce    = vec4(Bounce, u_Eye.w);
 }
 
 #endif // FRAGMENT_SHADER
