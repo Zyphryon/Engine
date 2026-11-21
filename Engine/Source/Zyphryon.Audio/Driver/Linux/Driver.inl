@@ -23,6 +23,9 @@ namespace ZyAudio
 
     struct Driver::Backend
     {
+        /// The endpoint the game asked for, or empty for the system default.
+        Str              Request;
+
         /// The endpoint `Device` was opened from, matched literally by ALSA, so the default is lower case.
         Str              Name      = "default";
 
@@ -38,8 +41,11 @@ namespace ZyAudio
         /// `true` while output is suspended, so the worker writes silence instead of pulling the mixer.
         Atomic<Bool>     Suspended { false };
 
-        /// `true` once the worker abandoned the stream after an unrecoverable write error.
+        /// `true` once the worker abandoned the stream after an unrecoverable write error, `false` while it runs.
         Atomic<Bool>     Faulted   { false };
+
+        /// The seconds left before a faulted stream is next tried again.
+        Real64           Retry     = 0.0;
 
         /// The interleaved stereo scratch the mixer fills each block before it is written to `Device`.
         Real32           Mix[kMixerPeriod * kMixerStride];
@@ -129,6 +135,108 @@ namespace ZyAudio
             ::snd_device_name_free_hint(Hints);
             return Result;
         }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static void ALSAThread(ConstRef<Thread::Token> Token, Ptr<Driver::Backend> Backend)
+        {
+            ZY_PROFILE_THREAD("Audio Thread");
+
+            while (!Token.Stopped())
+            {
+                if (!ALSAFill(* Backend, kMixerPeriod))
+                {
+                    Backend->Faulted.store(true, std::memory_order_relaxed);
+
+                    LOG_E("Audio: ALSA endpoint '{0}' stopped accepting frames", Backend->Name);
+                    break;
+                }
+            }
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static Bool ALSAStart(Ref<Driver::Backend> Backend)
+        {
+            Backend.Name = (Backend.Request.IsEmpty() ? Str("default") : Backend.Request);
+
+            // ALSA addresses endpoints by exact name, so the request is honoured verbatim before anything else.
+            SInt32 Result = ::snd_pcm_open(AddressOf(Backend.Device), Backend.Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+
+            // A name that does not open verbatim may still be a fragment of one the hint list knows.
+            if (Result < 0 && !Backend.Request.IsEmpty())
+            {
+                if (Str Match = ALSASelect(Backend.Request); !Match.IsEmpty())
+                {
+                    Backend.Name = Move(Match);
+
+                    Result = ::snd_pcm_open(AddressOf(Backend.Device), Backend.Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+                }
+            }
+
+            // The default endpoint is the last resort, so a bad request degrades instead of leaving the app mute.
+            if (Result < 0 && !Backend.Request.IsEmpty())
+            {
+                LOG_W("Audio: No ALSA endpoint matches '{0}', falling back to the default", Backend.Request);
+
+                Backend.Name = "default";
+
+                Result = ::snd_pcm_open(AddressOf(Backend.Device), Backend.Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
+            }
+
+            if (Result < 0)
+            {
+                LOG_E("Audio: Failed to open ALSA endpoint '{0}' ({1})", Backend.Name, StrConvert(::snd_strerror(Result)));
+
+                // ALSA leaves the handle untouched when the open fails, so drop it before the stop would read it.
+                Backend.Device = nullptr;
+                return false;
+            }
+
+            // The mixer always produces 48 kHz interleaved stereo float, buffered four periods deep.
+            Result = ::snd_pcm_set_params(
+                Backend.Device,
+                SND_PCM_FORMAT_FLOAT_LE,
+                SND_PCM_ACCESS_RW_INTERLEAVED,
+                kMixerStride,
+                kMixerFrequency,
+                1,
+                (static_cast<UInt64>(kMixerPeriod) * 4 * 1000000) / kMixerFrequency);
+
+            if (Result < 0)
+            {
+                LOG_E("Audio: Failed to configure ALSA endpoint '{0}' ({1})", Backend.Name, StrConvert(::snd_strerror(Result)));
+                return false;
+            }
+
+            Backend.Worker = Thread([Owner = AddressOf(Backend)](ConstRef<Thread::Token> Token)
+            {
+                ALSAThread(Token, Owner);
+            });
+            return true;
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        static void ALSAStop(Ref<Driver::Backend> Backend)
+        {
+            if (Backend.Worker.Joinable())
+            {
+                Backend.Worker.Stop();
+                Backend.Worker.Join();
+            }
+
+            if (Backend.Device)
+            {
+                ::snd_pcm_drop(Backend.Device);
+                ::snd_pcm_close(Backend.Device);
+
+                Backend.Device = nullptr;
+            }
+        }
     };
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -158,77 +266,13 @@ namespace ZyAudio
         }
 
         mBackend->Callback = Move(Render);
-        mBackend->Name     = (Device.IsEmpty() ? Str("default") : Str(Device));
+        mBackend->Request  = Device;
 
-        // ALSA addresses endpoints by exact name, so the request is honoured verbatim before anything else.
-        SInt32 Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
-
-        // A name that does not open verbatim may still be a fragment of one the hint list knows.
-        if (Result < 0 && !Device.IsEmpty())
+        if (!Backend::ALSAStart(* mBackend))
         {
-            if (Str Match = Backend::ALSASelect(Device); !Match.IsEmpty())
-            {
-                mBackend->Name = Move(Match);
-
-                Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
-            }
-        }
-
-        // The default endpoint is the last resort, so a bad request degrades instead of leaving the app mute.
-        if (Result < 0 && !Device.IsEmpty())
-        {
-            LOG_W("Audio: No ALSA endpoint matches '{0}', falling back to the default", Device);
-
-            mBackend->Name = "default";
-
-            Result = ::snd_pcm_open(AddressOf(mBackend->Device), mBackend->Name.GetData(), SND_PCM_STREAM_PLAYBACK, 0);
-        }
-
-        if (Result < 0)
-        {
-            LOG_E("Audio: Failed to open ALSA endpoint '{0}' ({1})", mBackend->Name, StrConvert(::snd_strerror(Result)));
-
-            // ALSA leaves the handle untouched when the open fails, so drop it before Close would read it.
-            mBackend->Device = nullptr;
-
             Close();
             return false;
         }
-
-        // The mixer always produces 48 kHz interleaved stereo float, buffered four periods deep.
-        Result = ::snd_pcm_set_params(
-            mBackend->Device,
-            SND_PCM_FORMAT_FLOAT_LE,
-            SND_PCM_ACCESS_RW_INTERLEAVED,
-            kMixerStride,
-            kMixerFrequency,
-            1,
-            (static_cast<UInt64>(kMixerPeriod) * 4 * 1000000) / kMixerFrequency);
-
-        if (Result < 0)
-        {
-            LOG_E("Audio: Failed to configure ALSA endpoint '{0}' ({1})", mBackend->Name, StrConvert(::snd_strerror(Result)));
-
-            Close();
-            return false;
-        }
-
-        mBackend->Worker = Thread([this](ConstRef<Thread::Token> Token)
-        {
-            ZY_PROFILE_THREAD("Audio Thread");
-
-            while (!Token.Stopped())
-            {
-                if (!Backend::ALSAFill(* mBackend, kMixerPeriod))
-                {
-                    mBackend->Faulted.store(true, std::memory_order_relaxed);
-
-                    LOG_E("Audio: ALSA endpoint '{0}' stopped accepting frames; output is now silent", mBackend->Name);
-                    break;
-                }
-            }
-        });
-
         return true;
     }
 
@@ -237,19 +281,7 @@ namespace ZyAudio
 
     void Driver::Close()
     {
-        if (mBackend->Worker.Joinable())
-        {
-            mBackend->Worker.Stop();
-            mBackend->Worker.Join();
-        }
-
-        if (mBackend->Device)
-        {
-            ::snd_pcm_drop(mBackend->Device);
-            ::snd_pcm_close(mBackend->Device);
-
-            mBackend->Device = nullptr;
-        }
+        Backend::ALSAStop(* mBackend);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -294,6 +326,35 @@ namespace ZyAudio
 
     void Driver::Advance(Real64 Delta)
     {
+        if (!mBackend->Faulted.load(std::memory_order_relaxed))
+        {
+            return;
+        }
+
+        // An endpoint may stay gone for a while, so the stream is tried again once a second rather than every frame.
+        mBackend->Retry -= Delta;
+
+        if (mBackend->Retry > 0.0)
+        {
+            return;
+        }
+        mBackend->Retry = 1.0;
+
+        Backend::ALSAStop(* mBackend);
+
+        // The flag is lowered before the stream starts, so a fault the new stream raises at once is not lost.
+        mBackend->Faulted.store(false, std::memory_order_relaxed);
+
+        if (Backend::ALSAStart(* mBackend))
+        {
+            mBackend->Retry = 0.0;
+
+            LOG_I("Audio: Moved to endpoint '{0}'", mBackend->Name);
+        }
+        else
+        {
+            mBackend->Faulted.store(true, std::memory_order_relaxed);
+        }
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
