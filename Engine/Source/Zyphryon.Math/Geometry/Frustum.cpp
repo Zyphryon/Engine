@@ -64,6 +64,15 @@ inline namespace ZyMath
 
         Normalize(Result.mQuartets[0]);
         Normalize(Result.mQuartets[1]);
+
+        // The corner of a box a plane asks about depends only on the way its normal faces, so it is settled here.
+        for (UInt32 Index = 0; Index < Result.mQuartets.GetSize(); ++Index)
+        {
+            for (UInt32 Axis = 0; Axis < Result.mFacings[Index].GetSize(); ++Axis)
+            {
+                Result.mFacings[Index][Axis] = Result.mQuartets[Index][Axis] < Vector4::Zero();
+            }
+        }
         return Result;
     }
 

@@ -98,13 +98,15 @@ inline namespace ZyMath
 
             Vector4 Outside;
 
-            for (ConstRef<Quartet> Group : mQuartets)
+            for (UInt32 Index = 0; Index < mQuartets.GetSize(); ++Index)
             {
-                const Vector4 X = Vector4::Select(MaximumX, MinimumX, Group[0] < Zero);
-                const Vector4 Y = Vector4::Select(MaximumY, MinimumY, Group[1] < Zero);
-                const Vector4 Z = Vector4::Select(MaximumZ, MinimumZ, Group[2] < Zero);
+                ConstRef<Facing> Down = mFacings[Index];
 
-                Outside |= Measure(Group, X, Y, Z) < Zero;
+                const Vector4 X = Vector4::Select(MaximumX, MinimumX, Down[0]);
+                const Vector4 Y = Vector4::Select(MaximumY, MinimumY, Down[1]);
+                const Vector4 Z = Vector4::Select(MaximumZ, MinimumZ, Down[2]);
+
+                Outside |= Measure(mQuartets[Index], X, Y, Z) < Zero;
             }
             return !Outside.IsAnyTrue();
         }
@@ -123,6 +125,9 @@ inline namespace ZyMath
         ///
         /// \note The registers hold the X, Y and Z of the four normals, then the four distances.
         using Quartet = Array<Vector4, 4>;
+
+        /// \brief Represents which of four normals point down each axis, one mask per axis, worked out once per frustum.
+        using Facing  = Array<Vector4, 3>;
 
         /// \brief Scales four planes so each normal has unit length, leaving a plane with no normal as it is.
         ///
@@ -147,5 +152,6 @@ inline namespace ZyMath
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         Array<Quartet, 2> mQuartets;
+        Array<Facing, 2>  mFacings;
     };
 }
