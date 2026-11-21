@@ -484,7 +484,8 @@ namespace ZyPlatform
                 Canvas->mDispatcher.QueueWindowResize(Canvas->mWidth, Canvas->mHeight);
 
                 // Zooming the page resizes it and changes its pixel ratio, so the ratio is told with every resize.
-                Canvas->mDispatcher.QueueWindowScale(static_cast<Real32>(DPI));
+                Canvas->mScale = static_cast<Real32>(DPI);
+                Canvas->mDispatcher.QueueWindowScale(Canvas->mScale);
             }
             return EM_TRUE;
         }
@@ -729,8 +730,18 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Window::Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
+    Bool Window::Initialize(
+        Text   Title,
+        SInt32 X,
+        SInt32 Y,
+        UInt32 Width,
+        UInt32 Height,
+        Real32 Scale,
+        Bool   Borderless,
+        Bool   Fullscreen)
     {
+        mScale = Scale;
+
         // The html5 calls below find the canvas by this name.
         EM_ASM(
         {

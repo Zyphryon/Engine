@@ -409,15 +409,15 @@ namespace ZyPlatform
             }
             case WM_SIZE:
             {
-                Window->mWidth  = LOWORD(Arg1);
-                Window->mHeight = HIWORD(Arg1);
-
+                // A minimized window reports no size at all, so the one it had is kept for when it comes back.
                 if (Arg0 == SIZE_MINIMIZED)
                 {
                     Window->mStates = ClearBit(Window->mStates, State::Visible);
                 }
                 else if (Arg0 == SIZE_MAXIMIZED || Arg0 == SIZE_RESTORED)
                 {
+                    Window->mWidth  = LOWORD(Arg1);
+                    Window->mHeight = HIWORD(Arg1);
                     Window->mStates = SetBit(Window->mStates, State::Visible);
 
                     if (!HasBit(Window->mStates, State::Held))
@@ -462,7 +462,8 @@ namespace ZyPlatform
                 ::SetWindowPos(Handle, nullptr, Left, Top, Right - Left, Bottom - Top, SWP_NOZORDER | SWP_NOACTIVATE);
 
                 // The window moved to a monitor of another scale, or the user changed it, so the new one is told.
-                Dispatcher.QueueWindowScale(static_cast<Real32>(HIWORD(Arg0)) / USER_DEFAULT_SCREEN_DPI);
+                Window->mScale = static_cast<Real32>(HIWORD(Arg0)) / USER_DEFAULT_SCREEN_DPI;
+                Dispatcher.QueueWindowScale(Window->mScale);
                 break;
             }
             case WM_CLOSE:
@@ -912,7 +913,15 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Window::Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
+    Bool Window::Initialize(
+        Text   Title,
+        SInt32 X,
+        SInt32 Y,
+        UInt32 Width,
+        UInt32 Height,
+        Real32 Scale,
+        Bool   Borderless,
+        Bool   Fullscreen)
     {
         WNDCLASSEXW Win32Class   = { };
         Win32Class.cbSize        = sizeof(WNDCLASSEXW);
@@ -969,8 +978,11 @@ namespace ZyPlatform
         const RECT Bounds = Fullscreen ? Measure(Monitor) : mBackend->Region;
 
         mTitle  = Title;
+        mX      = Bounds.left;
+        mY      = Bounds.top;
         mWidth  = Fullscreen ? static_cast<UInt32>(Bounds.right - Bounds.left) : Width;
         mHeight = Fullscreen ? static_cast<UInt32>(Bounds.bottom - Bounds.top) : Height;
+        mScale  = Scale;
         mStates = SetOrClearBit(mStates, State::Borderless, Borderless);
         mStates = SetOrClearBit(mStates, State::Fullscreen, Fullscreen);
 

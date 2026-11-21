@@ -41,6 +41,7 @@ namespace ZyPlatform
               mY          { 0 },
               mWidth      { 0 },
               mHeight     { 0 },
+              mScale      { 1.0f },
               mStates     { State::None }
         {
         }
@@ -163,6 +164,14 @@ namespace ZyPlatform
             return mHeight;
         }
 
+        /// \brief Gets the scale of the monitor the window stands on.
+        ///
+        /// \return The number of pixels one unit of a standard density display takes, `1.0` at 96 DPI.
+        ZY_INLINE Real32 GetScale() const
+        {
+            return mScale;
+        }
+
         /// \brief Sets the cursor position relative to the window.
         ///
         /// \param X The new X position of the cursor.
@@ -214,10 +223,19 @@ namespace ZyPlatform
         /// \param Y          The initial Y position of the window.
         /// \param Width      The initial width of the window.
         /// \param Height     The initial height of the window.
+        /// \param Scale      The scale of the monitor the window opens on.
         /// \param Borderless `true` to create a borderless window, otherwise `false`.
         /// \param Fullscreen `true` to create a fullscreen window, otherwise `false`.
         /// \return `true` if the window was successfully initialized, otherwise `false`.
-        Bool Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen);
+        Bool Initialize(
+            Text   Title,
+            SInt32 X,
+            SInt32 Y,
+            UInt32 Width,
+            UInt32 Height,
+            Real32 Scale,
+            Bool   Borderless,
+            Bool   Fullscreen);
 
         /// \brief Drains the platform's event queue, translating each event into a dispatcher event.
         void Poll();
@@ -239,6 +257,7 @@ namespace ZyPlatform
         SInt32          mY;
         UInt32          mWidth;
         UInt32          mHeight;
+        Real32          mScale;
         State           mStates;
     };
 }

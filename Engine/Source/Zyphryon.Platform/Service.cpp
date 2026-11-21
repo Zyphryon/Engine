@@ -84,7 +84,7 @@ namespace ZyPlatform
         if (mDisplay.GetMonitors().IsEmpty())
         {
             LOG_W("Platform: No monitor was reported, placing the window at the origin");
-            return mWindow.Initialize(Title, 0, 0, Width, Height, Borderless, Fullscreen);
+            return mWindow.Initialize(Title, 0, 0, Width, Height, 1.0f, Borderless, Fullscreen);
         }
 
         ConstRef<Monitor> Monitor = mDisplay.GetMonitor(Target);
@@ -99,6 +99,6 @@ namespace ZyPlatform
 
         const SInt32 PositionX = Monitor.GetX() + static_cast<SInt32>(Monitor.GetWidth() - Width) / 2;
         const SInt32 PositionY = Monitor.GetY() + static_cast<SInt32>(Monitor.GetHeight() - Height) / 2;
-        return mWindow.Initialize(Title, PositionX, PositionY, Width, Height, Borderless, Fullscreen);
+        return mWindow.Initialize(Title, PositionX, PositionY, Width, Height, Monitor.GetScale(), Borderless, Fullscreen);
     }
 }

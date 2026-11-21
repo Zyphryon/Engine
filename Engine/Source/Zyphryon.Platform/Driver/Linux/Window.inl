@@ -923,7 +923,15 @@ namespace ZyPlatform
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Bool Window::Initialize(Text Title, SInt32 X, SInt32 Y, UInt32 Width, UInt32 Height, Bool Borderless, Bool Fullscreen)
+    Bool Window::Initialize(
+        Text   Title,
+        SInt32 X,
+        SInt32 Y,
+        UInt32 Width,
+        UInt32 Height,
+        Real32 Scale,
+        Bool   Borderless,
+        Bool   Fullscreen)
     {
         mBackend = Unique<Backend>::Create();
 
@@ -997,6 +1005,7 @@ namespace ZyPlatform
         }
 
         mTitle  = Title;
+        mScale  = Scale;
         mX      = X;
         mY      = Y;
         mWidth  = Width;
