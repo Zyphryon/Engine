@@ -123,7 +123,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static UInt32 LZ4Read32(ConstPtr<Byte> Pointer)
+    ZY_INLINE static UInt32 LZ4Read32(ConstPtr<Byte> Pointer)
     {
         UInt32 Value;
         Blit(AddressOf(Value), sizeof(Value), Pointer);
@@ -169,7 +169,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static UInt32 LZ4Hash(ConstPtr<Byte> Pointer, UInt32 Shift)
+    ZY_INLINE static UInt32 LZ4Hash(ConstPtr<Byte> Pointer, UInt32 Shift)
     {
         return (LZ4Read32(Pointer) * 2654435761u) >> Shift;
     }
