@@ -14,7 +14,7 @@
 
 namespace ZyContent
 {
-    /// \brief Represents many files packed into one, which stays open and is read by name without unpacking it.
+    /// \brief Represents many files packed into one, which is laid into memory and read by name where it lies.
     class ZY_API Package final
     {
     public:
@@ -46,7 +46,7 @@ namespace ZyContent
         /// \brief Closes the package.
         ~Package();
 
-        /// \brief Packages are not copied, since each holds its file open.
+        /// \brief Packages are not copied, since each holds its file in memory.
         Package(ConstRef<Package> Other) = delete;
 
         /// \brief Opens a package and reads its index, closing whichever one was open.
@@ -56,7 +56,7 @@ namespace ZyContent
         /// \return `true` if the package is open, `false` if the file is missing, is not a package or bears another seal.
         Bool Open(Text Path, Signer Key = Signer());
 
-        /// \brief Closes the package and forgets its index.
+        /// \brief Closes the package and forgets its index, leaving the blobs it lent as good as they were.
         void Close();
 
         /// \brief Checks whether a package is open.
@@ -90,10 +90,10 @@ namespace ZyContent
         /// \return The entry of the file, or `nullptr` when the package holds none by that path.
         ConstPtr<Entry> Find(Text Path) const;
 
-        /// \brief Reads the bytes of a file and checks them against the index, from any thread.
+        /// \brief Lends the bytes of a file where they lie, once they check against the index, from any thread.
         ///
         /// \param Entry  The entry of the file, taken from this package.
-        /// \param Output Receives the bytes, or nothing when they are not the ones that were packed.
+        /// \param Output Receives the bytes, which must not be written to, or nothing when they are not the ones packed.
         /// \return The result of the read, \ref Filesystem::Result::Invalid when the bytes fail their checksum.
         Filesystem::Result Read(ConstRef<Entry> Entry, Ref<Blob> Output) const;
 
@@ -128,6 +128,19 @@ namespace ZyContent
 
             /// The signature of the entries and the names, under the key the package was packed with.
             UInt64 Seal;
+        };
+
+        /// \brief Represents the package file laid into memory, kept there until the last blob lent out of it is gone.
+        struct Mapper final : Retainable<Mapper>
+        {
+            /// The file as it lies in memory.
+            Filesystem::View Memory;
+
+            /// \brief Takes the file out of memory.
+            ZY_INLINE ~Mapper()
+            {
+                Filesystem::Unmap(Memory);
+            }
         };
 
         /// \brief Reads and checks the header and the index of the file that was just opened.
@@ -204,8 +217,8 @@ namespace ZyContent
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-        Filesystem::Handle mFile;
-        Blob               mIndex;
-        UInt32             mCount;
+        Retainer<Mapper> mFile;
+        Blob             mIndex;
+        UInt32           mCount;
     };
 }

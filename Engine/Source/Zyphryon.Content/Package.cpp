@@ -41,11 +41,14 @@ namespace ZyContent
     {
         Close();
 
-        if (Filesystem::Open(Path, Filesystem::Access::Read, mFile) != Filesystem::Result::Success)
+        const Retainer<Mapper> File = Retainer<Mapper>::Create();
+
+        if (Filesystem::Map(Path, File->Memory) != Filesystem::Result::Success)
         {
             LOG_W("Content: Failed to open the package '{0}'", Path);
             return false;
         }
+        mFile = File;
 
         if (!Load(Key))
         {
@@ -62,7 +65,8 @@ namespace ZyContent
 
     void Package::Close()
     {
-        Filesystem::Close(mFile);
+        // The file stays in memory until the last blob lent out of it is gone, which may be well after this.
+        mFile = nullptr;
 
         mIndex.Clear();
         mCount = 0;
@@ -100,19 +104,25 @@ namespace ZyContent
 
     Filesystem::Result Package::Read(ConstRef<Entry> Entry, Ref<Blob> Output) const
     {
-        Output = Blob::Allocate<Byte>(Entry.Size);
-
-        Filesystem::Result Result = Filesystem::Read(mFile, Entry.Offset, Output);
+        const Ptr<Byte> Data = const_cast<Ptr<Byte>>(mFile->Memory.Data) + Entry.Offset;
 
         // Bytes other than the ones that were packed are never handed out, whatever it was that changed them.
-        if (Result == Filesystem::Result::Success && Hash(Output.GetData<Char>(), Output.GetSize()) != Entry.Checksum)
+        if (Hash(reinterpret_cast<ConstPtr<Char>>(Data), Entry.Size) != Entry.Checksum)
         {
             LOG_W("Content: '{0}' does not match its checksum", GetName(Entry));
 
             Output.Clear();
-            Result = Filesystem::Result::Invalid;
+            return Filesystem::Result::Invalid;
         }
-        return Result;
+
+        // The blob lends the bytes where they lie, and holds the file in memory until it lets go of them.
+        mFile->Retain();
+
+        Output = Blob(Data, Entry.Size, [File = AddressOf(* mFile)](Ptr<Byte>)
+        {
+            File->Release();
+        });
+        return Filesystem::Result::Success;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -120,48 +130,38 @@ namespace ZyContent
 
     Bool Package::Load(Signer Key)
     {
-        UInt64 Size = 0;
-        Header Head { };
+        ConstRef<Filesystem::View> View = mFile->Memory;
 
-        if (Filesystem::Tell(mFile, Size) != Filesystem::Result::Success || Size < sizeof(Header))
+        if (View.Size < sizeof(Header))
         {
             return false;
         }
 
-        const Span Opening(reinterpret_cast<Ptr<Byte>>(AddressOf(Head)), sizeof(Header));
-
-        if (Filesystem::Read(mFile, 0, Opening) != Filesystem::Result::Success)
-        {
-            return false;
-        }
+        Reader       Input(View.Data, sizeof(Header));
+        const Header Head = Input.Read<Header>();
 
         if (Head.Magic != kMagic || Head.Version != kVersion)
         {
             return false;
         }
 
-        // The index is read whole and used as it lies, so it has to fit both the file and a blob.
+        // The index is used as it lies in the file, so it has to fit both the file and a blob.
         const UInt64 Length = static_cast<UInt64>(Head.Count) * sizeof(Entry) + Head.Names;
 
-        if (Length > Size - sizeof(Header) || Length > kMaximum<UInt32>)
+        if (Length > View.Size - sizeof(Header) || Length > kMaximum<UInt32>)
         {
             return false;
         }
 
-        mIndex = Blob::Allocate<Byte>(Length);
+        mIndex = Blob::Borrow(View.Data + sizeof(Header), Length);
         mCount = Head.Count;
-
-        if (Filesystem::Read(mFile, sizeof(Header), mIndex) != Filesystem::Result::Success)
-        {
-            return false;
-        }
 
         // The seal speaks for every entry and every name, so an index changed without the key is refused here.
         if (Key.Sign(mIndex) != Head.Seal)
         {
             return false;
         }
-        return Verify(Size, Head.Names);
+        return Verify(View.Size, Head.Names);
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
