@@ -90,7 +90,7 @@ namespace ZyAI
             /// The node index of the child a sequence or selector resumes from.
             UInt16 Cursor = 0;
 
-            /// The runs a repeat has completed.
+            /// The runs a repeat or retry has completed.
             UInt16 Count  = 0;
 
             /// The time a cooldown ends, or a timeout or leaf started, on the brain's clock.

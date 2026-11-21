@@ -33,7 +33,9 @@ namespace ZyAI
             Priority, ///< Reruns its children from the first each tick, and stops a running one an earlier overtakes.
             Parallel, ///< Runs every child each tick, and succeeds once `Count` children succeed, or all at `0`.
             Invert,   ///< Runs its child and swaps success with failure.
+            Succeed,  ///< Runs its child and succeeds whether the child succeeded or failed.
             Repeat,   ///< Runs its child again after each success, `Count` times, or forever at `0`.
+            Retry,    ///< Runs its child again after each failure, `Count` times, or forever at `0`.
             Cooldown, ///< Fails without running its child until `Value` seconds after the child last finished.
             Timeout,  ///< Runs its child, and stops it and fails once it has run for `Value` seconds.
             Chance,   ///< Runs its child with a probability of `Value`, from `0` to `1`, and fails otherwise.
@@ -68,7 +70,7 @@ namespace ZyAI
             /// The number of nodes in its subtree, itself included, which is the offset to its next sibling.
             UInt16 Span      = 1;
 
-            /// The count a parallel or repeat reads.
+            /// The count a parallel, repeat or retry reads.
             UInt16 Count     = 0;
 
             /// The seconds, probability or operand a cooldown, timeout, wait, chance, compare or set reads.

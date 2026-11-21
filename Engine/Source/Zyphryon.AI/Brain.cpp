@@ -213,8 +213,22 @@ namespace ZyAI
             }
             break;
         }
-        case Behaviour::Kind::Repeat:
+        case Behaviour::Kind::Succeed:
         {
+            Result = Visit(Nodes, First, Host);
+
+            if (Result == Status::Failure)
+            {
+                Result = Status::Success;
+            }
+            break;
+        }
+        case Behaviour::Kind::Repeat:
+        case Behaviour::Kind::Retry:
+        {
+            // A repeat goes again after a success and a retry after a failure, each until its count runs out.
+            const Status Again = (Current.Type == Behaviour::Kind::Repeat) ? Status::Success : Status::Failure;
+
             if (Fresh)
             {
                 State.Count = 0;
@@ -222,7 +236,7 @@ namespace ZyAI
 
             Result = Visit(Nodes, First, Host);
 
-            if (Result == Status::Success)
+            if (Result == Again)
             {
                 ++State.Count;
 
