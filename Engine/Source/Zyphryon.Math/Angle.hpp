@@ -248,6 +248,27 @@ inline namespace ZyMath
             return FromRadians(Wrap(Value.GetRadians(), kTwoPI<Real32>));
         }
 
+        /// \brief Encodes an angle into the whole range of an unsigned integer, one turn spread over all its steps.
+        ///
+        /// \param Value The angle to encode, of any size and sign.
+        /// \return The steps into the turn, where the one past the last comes back round to zero.
+        template<IsUnsigned Integer>
+        ZY_INLINE static Integer Encode(Angle Value)
+        {
+            constexpr Real32 kSteps = static_cast<Real32>(kMaximum<Integer>) + 1.0f;
+            return static_cast<Integer>(static_cast<UInt64>(Round(Normalize(Value).GetTurns() * kSteps)));
+        }
+
+        /// \brief Decodes an angle \ref Encode spread over an unsigned integer.
+        ///
+        /// \param Value The steps into the turn.
+        /// \return The angle the steps stand for, within [0, 2π).
+        template<IsUnsigned Integer>
+        ZY_INLINE static constexpr Angle Decode(Integer Value)
+        {
+            return FromTurns(static_cast<Real32>(Value) / (static_cast<Real32>(kMaximum<Integer>) + 1.0f));
+        }
+
         /// \brief Calculates the cosine of the given angle.
         ///
         /// \param Value The angle to calculate the cosine for.
