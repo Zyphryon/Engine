@@ -449,7 +449,7 @@ inline namespace ZyMath
             {
                 const UInt Middle = Lower + (Upper - Lower) / 2;
 
-                if (mTimes[Middle] < Time)
+                if (mTimes[Middle] <= Time)
                 {
                     Lower = Middle + 1;
                 }
@@ -459,7 +459,7 @@ inline namespace ZyMath
                 }
             }
 
-            while (Lower < Upper && mTimes[Lower] < Time)
+            while (Lower < Upper && mTimes[Lower] <= Time)
             {
                 ++Lower;
             }

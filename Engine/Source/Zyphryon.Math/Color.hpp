@@ -491,8 +491,10 @@ inline namespace ZyMath
                 Real32 Turn = Offset + Shade.GetX() * 6.0f;
                 Turn -= Floor(Turn / 6.0f) * 6.0f;
 
-                const Real32 Drop = Shade.GetY() * ::Max(0.0f, ::Min(Turn, ::Min(4.0f - Turn, 1.0f)));
-                return static_cast<Type>(Shade.GetZ() * (1.0f - Drop) * static_cast<Real32>(Limit()));
+                const Real32 Drop  = Shade.GetY() * ::Max(0.0f, ::Min(Turn, ::Min(4.0f - Turn, 1.0f)));
+                const Real32 Level = Shade.GetZ() * (1.0f - Drop) * static_cast<Real32>(Limit());
+
+                return static_cast<Type>(IsReal<Type> ? Level : Level + 0.5f);
             };
             return AnyColor(Channel(5.0f), Channel(3.0f), Channel(1.0f), Alpha);
         }

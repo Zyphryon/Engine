@@ -176,6 +176,15 @@ inline namespace ZyMath
             const Real32 C2 = Vector2::Cross(mCorners[3] - mCorners[2], Point - mCorners[2]);
             const Real32 C3 = Vector2::Cross(mCorners[0] - mCorners[3], Point - mCorners[3]);
 
+            // Every cross is zero only along a quad with no area, where the point also has to lie between its corners.
+            if (C0 == 0.0f && C1 == 0.0f && C2 == 0.0f && C3 == 0.0f)
+            {
+                const Rect Reach = GetBoundaries();
+
+                return Point.GetX() >= Reach.GetMinimumX() && Point.GetX() <= Reach.GetMaximumX()
+                    && Point.GetY() >= Reach.GetMinimumY() && Point.GetY() <= Reach.GetMaximumY();
+            }
+
             return (C0 >= 0.0f && C1 >= 0.0f && C2 >= 0.0f && C3 >= 0.0f) ||
                    (C0 <= 0.0f && C1 <= 0.0f && C2 <= 0.0f && C3 <= 0.0f);
         }

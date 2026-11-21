@@ -26,6 +26,14 @@ inline namespace ZyMath
         const Real32 QX   = GetX(), QY = GetY(), QZ = GetZ(), QW = GetW();
         const Real32 SinY = Clamp(2.0f * (QX * QZ + QW * QY), -1.0f, 1.0f);
 
+        // Facing straight along the yaw's pole, the pitch and the roll turn about one axis, so the pitch takes both.
+        if (Abs(SinY) > 0.999999f)
+        {
+            const Angle Whole = Angle::FromCartesian(1.0f - 2.0f * (QX * QX + QZ * QZ), 2.0f * (QY * QZ + QW * QX));
+
+            return Vector3(Whole.GetRadians(), SinY > 0.0f ? kPI<Real32> * 0.5f : -kPI<Real32> * 0.5f, 0.0f);
+        }
+
         const Angle Pitch = Angle::FromCartesian(1.0f - 2.0f * (QX * QX + QY * QY), 2.0f * (QW * QX - QY * QZ));
         const Angle Yaw   = Angle::FromSine(SinY);
         const Angle Roll  = Angle::FromCartesian(1.0f - 2.0f * (QY * QY + QZ * QZ), 2.0f * (QW * QZ - QX * QY));

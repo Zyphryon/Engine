@@ -60,8 +60,7 @@ inline namespace ZyMath
 
             using Unsigned = Unsigned<Type>;
 
-            const UInt64 Span = static_cast<UInt64>(
-                static_cast<Unsigned>(Maximum) - static_cast<Unsigned>(Minimum));
+            const UInt64 Span = static_cast<Unsigned>(static_cast<Unsigned>(Maximum) - static_cast<Unsigned>(Minimum));
 
             if (Span == kMaximum<UInt64>)
             {

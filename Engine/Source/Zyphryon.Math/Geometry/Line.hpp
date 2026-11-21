@@ -200,14 +200,27 @@ inline namespace ZyMath
         {
             const Vector2 Direction = mEnd - mStart;
             const Vector2 Offset    = Point - mStart;
+            const Real32  Length    = Vector2::Dot(Direction, Direction);
 
-            if (const Real32 Cross = Vector2::Cross(Direction, Offset); Abs(Cross) > kEpsilon<Real32>)
+            // Two points this near count as one, squared, measured against how large the coordinates at hand are.
+            const Real32 Extent = Max(1.0f, mStart.GetLengthSquared(), mEnd.GetLengthSquared(), Point.GetLengthSquared());
+            const Real32 Reach  = kTolerance<Real32> * kTolerance<Real32> * Extent;
+
+            // A line of no length is a point, which holds nothing but itself.
+            if (Length <= Reach)
+            {
+                return Vector2::Dot(Offset, Offset) <= Reach;
+            }
+
+            if (const Real32 Cross = Vector2::Cross(Direction, Offset); Cross * Cross > Reach * Length)
             {
                 return false;
             }
 
             const Real32 Projection = Vector2::Dot(Direction, Offset);
-            return !(Projection < 0.0f || Projection > Vector2::Dot(Direction, Direction));
+            const Real32 Beyond     = Max(-Projection, Projection - Length, 0.0f);
+
+            return Beyond * Beyond <= Reach * Length;
         }
 
         /// \brief Checks if this line segment intersects with another line segment.
