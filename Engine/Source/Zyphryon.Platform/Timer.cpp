@@ -95,7 +95,11 @@ namespace ZyPlatform
         const HANDLE Alarm = CreateWaitableTimerExW(
             nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
 
-        ZY_ASSERT(Alarm != nullptr, "The system offers no high-resolution timer");
+        if (Alarm == nullptr)
+        {
+            Sleep(static_cast<DWORD>(Seconds * 1'000.0));
+            return;
+        }
 
         LARGE_INTEGER Due;
         Due.QuadPart = -static_cast<LONGLONG>(Seconds * 10'000'000.0);
