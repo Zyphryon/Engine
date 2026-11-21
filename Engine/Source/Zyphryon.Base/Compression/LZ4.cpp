@@ -81,7 +81,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void LZ4CopyWild(Ptr<Byte> Destination, ConstPtr<Byte> Source, UInt32 Count)
+    ZY_INLINE static void LZ4CopyWild(Ptr<Byte> Destination, ConstPtr<Byte> Source, UInt32 Count)
     {
         Ptr<Byte>       Cursor = Destination;
         const Ptr<Byte> Finish = Destination + Count;
@@ -98,7 +98,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void LZ4CopyOverlap(Ptr<Byte> Destination, ConstPtr<Byte> Match, UInt32 Length, UInt32 Offset)
+    ZY_INLINE static void LZ4CopyOverlap(Ptr<Byte> Destination, ConstPtr<Byte> Match, UInt32 Length, UInt32 Offset)
     {
         if (Offset == 1)
         {
@@ -177,7 +177,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void LZ4WriteLength(Ref<Ptr<Byte>> Output, UInt32 Remainder)
+    ZY_INLINE static void LZ4WriteLength(Ref<Ptr<Byte>> Output, UInt32 Remainder)
     {
         while (Remainder >= 255)
         {
@@ -190,7 +190,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static Ptr<Byte> LZ4WriteLiterals(Ref<Ptr<Byte>> Output, ConstPtr<Byte> Anchor, UInt32 Literals)
+    ZY_INLINE static Ptr<Byte> LZ4WriteLiterals(Ref<Ptr<Byte>> Output, ConstPtr<Byte> Anchor, UInt32 Literals)
     {
         const Ptr<Byte> Token = Output++;
 
@@ -213,7 +213,7 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static void LZ4WriteMatch(Ref<Ptr<Byte>> Output, Ptr<Byte> Token, UInt32 Offset, UInt32 Excess)
+    ZY_INLINE static void LZ4WriteMatch(Ref<Ptr<Byte>> Output, Ptr<Byte> Token, UInt32 Offset, UInt32 Excess)
     {
         (* Output++) = static_cast<Byte>(Offset & 0xFF);
         (* Output++) = static_cast<Byte>(Offset >> 8);
