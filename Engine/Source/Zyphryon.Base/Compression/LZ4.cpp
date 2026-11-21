@@ -133,9 +133,45 @@ inline namespace ZyBase
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    static UInt32 LZ4Hash(ConstPtr<Byte> Pointer)
+    ZY_INLINE static UInt64 LZ4Read64(ConstPtr<Byte> Pointer)
     {
-        return (LZ4Read32(Pointer) * 2654435761u) >> (32 - kLZ4HashLog);
+        UInt64 Value;
+        Blit(AddressOf(Value), sizeof(Value), Pointer);
+        return Value;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ZY_INLINE static ConstPtr<Byte> LZ4Extend(ConstPtr<Byte> Cursor, ConstPtr<Byte> Reference, ConstPtr<Byte> Limit)
+    {
+        // Eight bytes are compared at a time, and the lowest set bit of their difference names the first that differs.
+        while (Cursor + sizeof(UInt64) <= Limit)
+        {
+            const UInt64 Difference = LZ4Read64(Cursor) ^ LZ4Read64(Reference);
+
+            if (Difference != 0)
+            {
+                return Cursor + (CountTrailingZeros(Difference) >> 3);
+            }
+            Cursor    += sizeof(UInt64);
+            Reference += sizeof(UInt64);
+        }
+
+        while (Cursor < Limit && * Cursor == * Reference)
+        {
+            ++Cursor;
+            ++Reference;
+        }
+        return Cursor;
+    }
+
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    static UInt32 LZ4Hash(ConstPtr<Byte> Pointer, UInt32 Shift)
+    {
+        return (LZ4Read32(Pointer) * 2654435761u) >> Shift;
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -243,12 +279,8 @@ inline namespace ZyBase
 
             if (LZ4Read32(Reference) == LZ4Read32(Input))
             {
-                UInt32 Length = kLZ4MinMatch;
-
-                while (Input + Length < MatchLimit && Input[Length] == Reference[Length])
-                {
-                    ++Length;
-                }
+                const ConstPtr<Byte> Finish = LZ4Extend(Input + kLZ4MinMatch, Reference + kLZ4MinMatch, MatchLimit);
+                const UInt32         Length = static_cast<UInt32>(Finish - Input);
 
                 if (Length > Best)
                 {
@@ -285,7 +317,11 @@ inline namespace ZyBase
         // Inputs too small to hold a match are emitted verbatim as a single literal run.
         if (Length >= kLZ4MatchFindMargin + 1)
         {
-            UInt32 Table[kLZ4HashSize] { };
+            // A short input reaches few buckets, so the table is cut to its size and cleared only that far.
+            const UInt32 Log = Min(CountDigitsBinary(Length), kLZ4HashLog);
+
+            UInt32 Table[kLZ4HashSize];
+            Zero(Table, 1u << Log);
 
             const ConstPtr<Byte> MatchFindLimit = InputEnd - kLZ4MatchFindMargin;
             const ConstPtr<Byte> MatchLimit     = InputEnd - kLZ4LastLiterals;
@@ -309,7 +345,7 @@ inline namespace ZyBase
                             goto Trailing;
                         }
 
-                        const UInt32 Hash = LZ4Hash(Input);
+                        const UInt32 Hash = LZ4Hash(Input, 32 - Log);
                         Match       = Origin + Table[Hash];
                         Table[Hash] = static_cast<UInt32>(Input - Origin);
 
@@ -332,14 +368,7 @@ inline namespace ZyBase
                 const Ptr<Byte> Token = LZ4WriteLiterals(Output, Anchor, static_cast<UInt32>(Input - Anchor));
 
                 // Count the match length past the guaranteed minimum, then fold it into the token.
-                ConstPtr<Byte> Cursor    = Input + kLZ4MinMatch;
-                ConstPtr<Byte> Reference = Match + kLZ4MinMatch;
-
-                while (Cursor < MatchLimit && * Cursor == * Reference)
-                {
-                    ++Cursor;
-                    ++Reference;
-                }
+                const ConstPtr<Byte> Cursor = LZ4Extend(Input + kLZ4MinMatch, Match + kLZ4MinMatch, MatchLimit);
 
                 LZ4WriteMatch(
                     Output,
