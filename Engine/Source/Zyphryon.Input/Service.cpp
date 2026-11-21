@@ -74,6 +74,9 @@ namespace ZyInput
         // Handlers run after every device has updated, so they read this frame's state.
         for (ConstRef<Event> Event : Frame)
         {
+            Invoke(Event);
+
+            // A focus loss is heard before the releases it brings, so a handler can tell them from the user's own.
             if (Event.Kind == Event::Type::WindowFocus && !Event.WindowFocus.State)
             {
                 for (ConstRef<ZyInput::Event> Release : mSynthetic)
@@ -82,7 +85,6 @@ namespace ZyInput
                 }
                 mSynthetic.Clear();
             }
-            Invoke(Event);
         }
 
         mMapping.ForEachChange([this](UInt64 Action, ZyInput::Action State)

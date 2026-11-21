@@ -332,6 +332,22 @@ namespace ZyPlatform
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+        void Hold(WPARAM Buttons)
+        {
+            // A button held keeps the mouse with the window, so its release is heard wherever the cursor went.
+            if (GET_KEYSTATE_WPARAM(Buttons) & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON | MK_XBUTTON1 | MK_XBUTTON2))
+            {
+                ::SetCapture(Handle);
+            }
+            else
+            {
+                ::ReleaseCapture();
+            }
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
         ZY_INLINE LRESULT OnWindowMessage(Ptr<Window> Window, UINT Message, WPARAM Arg0, LPARAM Arg1)
         {
             Ref<Dispatcher> Dispatcher = Window->mDispatcher;
@@ -489,31 +505,37 @@ namespace ZyPlatform
             }
             case WM_LBUTTONDOWN:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonDown(ZyInput::Button::Left);
                 break;
             }
             case WM_LBUTTONUP:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonUp(ZyInput::Button::Left);
                 break;
             }
             case WM_MBUTTONDOWN:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonDown(ZyInput::Button::Middle);
                 break;
             }
             case WM_MBUTTONUP:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonUp(ZyInput::Button::Middle);
                 break;
             }
             case WM_RBUTTONDOWN:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonDown(ZyInput::Button::Right);
                 break;
             }
             case WM_RBUTTONUP:
             {
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonUp(ZyInput::Button::Right);
                 break;
             }
@@ -522,6 +544,8 @@ namespace ZyPlatform
                 const ZyInput::Button Button = (GET_XBUTTON_WPARAM(Arg0) == XBUTTON1)
                     ? ZyInput::Button::Back
                     : ZyInput::Button::Forward;
+
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonDown(Button);
                 break;
             }
@@ -530,6 +554,8 @@ namespace ZyPlatform
                 const ZyInput::Button Button = (GET_XBUTTON_WPARAM(Arg0) == XBUTTON1)
                     ? ZyInput::Button::Back
                     : ZyInput::Button::Forward;
+
+                Hold(Arg0);
                 Dispatcher.QueueMouseButtonUp(Button);
                 break;
             }
@@ -553,8 +579,8 @@ namespace ZyPlatform
             {
                 if (!Window->IsCursorLocked())
                 {
-                    const UInt32 X      = GET_X_LPARAM(Arg1);
-                    const UInt32 Y      = GET_Y_LPARAM(Arg1);
+                    const SInt32 X      = GET_X_LPARAM(Arg1);
+                    const SInt32 Y      = GET_Y_LPARAM(Arg1);
                     const SInt32 DeltaX = X - Cursor.x;
                     const SInt32 DeltaY = Y - Cursor.y;
 

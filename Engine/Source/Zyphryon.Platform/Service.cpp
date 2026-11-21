@@ -64,14 +64,15 @@ namespace ZyPlatform
             mDisplay.Poll();
         }
 
+        // The events are taken before they are handled, so one a handler queues waits for the next tick.
+        mDispatcher.Drain(mEvents);
+
         if (ConstRetainer<ZyInput::Service> Input = GetHost().GetService<ZyInput::Service>())
         {
-            mDispatcher.Drain(mEvents);
-
             Input->Process(mEvents);
-
-            mEvents.Clear();
         }
+        mEvents.Clear();
+        
         mDispatcher.Reset();
     }
 

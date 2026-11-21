@@ -41,18 +41,17 @@ namespace ZyPlatform
         {
         }
 
-        /// \brief Resets the dispatcher queues.
+        /// \brief Forgets the notifications and the text the drained events pointed into.
         ZY_INLINE void Reset()
         {
             mNotifications = Notification::None;
 
-            mInputEvents.Clear();
             mInputText.Clear();
         }
 
         /// \brief Hands over the events queued so far, leaving the dispatcher with none.
         ///
-        /// \param Output Receives the events queued since the last reset.
+        /// \param Output Receives the events queued since the last drain.
         ZY_INLINE void Drain(Ref<Sequence<ZyInput::Event> > Output)
         {
             ZyBase::Swap(mInputEvents, Output);
