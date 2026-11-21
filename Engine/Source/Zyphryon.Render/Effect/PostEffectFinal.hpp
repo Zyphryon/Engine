@@ -99,29 +99,25 @@ namespace ZyRender
         struct Grade final
         {
             /// The factor the colour's distance from grey is scaled by, where zero is grey and one leaves it be.
-            Real32  Saturation = 1.0f;
+            Real32            Saturation = 1.0f;
 
             /// The push black is raised or lowered by on each channel, from -0.25 to 0.25 of the display range.
-            Vector3 Lift       = Vector3::Zero();
+            Vector3           Lift       = Vector3::Zero();
 
             /// The push the midtones are bent by on each channel, from -1 to 1 and zero to leave them be.
-            Vector3 Gamma      = Vector3::Zero();
+            Vector3           Gamma      = Vector3::Zero();
 
             /// The push the highlights are gained by on each channel, from -1 to 1 and zero to leave them be.
-            Vector3 Gain       = Vector3::Zero();
+            Vector3           Gain       = Vector3::Zero();
 
             /// The number of steps each channel is rounded to, or one and below to leave it as it lies.
-            Real32  Posterize  = 0.0f;
-        };
+            Real32            Posterize  = 0.0f;
 
-        /// \brief Represents the table the shown image is looked up in, as another tool baked it.
-        struct Look final
-        {
-            /// The volume the shown image is graded through, red across, green down and blue deep, or zero for none.
-            ZyGraphic::Object Grading  = 0;
+            /// The volume the pushed image is looked up in, red across, green down and blue deep, or zero for none.
+            ZyGraphic::Object Table      = 0;
 
-            /// The share of the graded image laid over the shown one, from none at zero to all of it at one.
-            Real32            Strength = 1.0f;
+            /// The share of the looked up image laid over the pushed one, from none at zero to all of it at one.
+            Real32            Blend      = 1.0f;
         };
 
         /// \brief Represents what the glass the image is seen through leaves on it.
@@ -229,14 +225,6 @@ namespace ZyRender
             mGrade = Grade;
         }
 
-        /// \brief Sets the table the shown image is looked up in.
-        ///
-        /// \param Look The look to set.
-        ZY_INLINE void SetLook(ConstRef<Look> Look)
-        {
-            mLook = Look;
-        }
-
         /// \brief Sets what the glass the image is seen through leaves on it.
         ///
         /// \param Lens The lens to see the image through.
@@ -280,7 +268,6 @@ namespace ZyRender
         Antialias                      mAntialias;
         Exposure                       mExposure;
         Grade                          mGrade;
-        Look                           mLook;
         Lens                           mLens;
         Real32                         mHalo;
         UInt32                         mFrame;
