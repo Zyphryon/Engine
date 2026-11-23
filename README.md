@@ -67,6 +67,7 @@ Median work per frame on a Ryzen 7 5700X, RTX 3070 and Windows 10, release build
 | **Platform**, **Input** | Windows, displays and timers per OS; keyboard, mouse, touch and named action mappings. |
 | **Network** | TCP and UDP transport on its own thread, reporting to the main thread. |
 | **AI** | Behaviour trees with a shared blackboard. |
+| **Navigation** | Navigation meshes baked from a grid of cells, with floors over one another, tiles that come and go, and path finding. |
 | **Runtime** | The kernel that brings the services up, runs the frame loop and tears it all down. |
 
 Assets are baked offline into native binary formats that load without any conversion at runtime.
