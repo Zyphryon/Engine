@@ -453,6 +453,12 @@ namespace ZyReplication
         }
         Tracking->Moved = false;
 
+        // Peers keep what they hold of a replica arriving again, so what it changed goes first where they read it.
+        if (Tracking->Key != 0)
+        {
+            Broadcast(Actor, * Tracking);
+        }
+
         if (Tracking->Key == 0)
         {
             Arrive(Actor, * Tracking, Key, Parent);

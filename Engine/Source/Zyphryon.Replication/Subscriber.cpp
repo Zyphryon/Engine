@@ -445,10 +445,11 @@ namespace ZyReplication
         }
 
         ZyScene::Entity Actor = Find(Identifier);
+        const Bool      Known = Actor.IsAlive();
 
-        ZY_ASSERT(!(Identifier & kPersistent) || !Actor.IsAlive(), "A loaded persistent replica never arrives again");
+        ZY_ASSERT(!(Identifier & kPersistent) || !Known, "A loaded persistent replica never arrives again");
 
-        if (!Actor.IsAlive())
+        if (!Known)
         {
             // A persistent replica comes from disk, never from an arrival, which would make a copy of it.
             if (Identifier & kPersistent)
@@ -499,8 +500,8 @@ namespace ZyReplication
 
             Claim(Actor, Peer);
 
-            // What this side already plays keeps its own state, unless it moved under a parent that state isn't in.
-            if (Fresh || Moved)
+            // A replica held already keeps its state, as the publisher sent its changes first, unless it moved parent.
+            if (!Known || Moved)
             {
                 Apply(Actor, Set, Fresh && IsMine(Peer) ? mManifest.GetOthersMask() : Mask());
             }
