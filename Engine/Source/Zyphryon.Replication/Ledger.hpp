@@ -287,7 +287,10 @@ namespace ZyReplication
         /// \brief Grows the marks to a word for every slot, each new word clear, so marking never grows them.
         ZY_INLINE void Fit()
         {
-            mMarks.Expand((GetSize() + kBits - 1) / kBits);
+            const UInt32 Words = (GetSize() + kBits - 1) / kBits;
+
+            mMarks.Reserve(Words);
+            mMarks.Expand(Words);
         }
 
         /// \brief Marks a slot for the next delta.
