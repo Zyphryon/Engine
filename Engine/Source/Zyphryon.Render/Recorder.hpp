@@ -100,7 +100,7 @@ namespace ZyRender
                 mTechnique->GetHandle(),
                 Material.GetHandle());
 
-            mBatches.Append(Batch(AddressOf(* mTechnique), AddressOf(Material), Variant, Group));
+            mBatches.Append(AddressOf(* mTechnique), AddressOf(Material), Variant, Group);
 
             return mLayouts.Append();
         }

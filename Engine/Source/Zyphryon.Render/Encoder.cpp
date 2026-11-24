@@ -112,7 +112,7 @@ namespace ZyRender
 
             if (!Bound)
             {
-                mCommand.Vertices.Append(ZyGraphic::Stream(Vertices, Block.Stride, Block.Offset));
+                mCommand.Vertices.Append(Vertices, Block.Stride, Block.Offset);
             }
         }
 

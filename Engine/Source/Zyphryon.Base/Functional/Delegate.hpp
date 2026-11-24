@@ -749,7 +749,7 @@ inline namespace ZyBase
         /// \param Function The function pointer to add.
         ZY_INLINE void AddFunction(Return (* Function)(Arguments...))
         {
-            mDelegates.Append(Type(Function));
+            mDelegates.Append(Function);
         }
 
         /// \brief Adds a member function and object instance to the multicast list.
@@ -768,7 +768,7 @@ inline namespace ZyBase
         template<typename Callable>
         ZY_INLINE void AddLambda(AnyRef<Callable> Lambda)
         {
-            mDelegates.Append(Type(Forward<Callable>(Lambda)));
+            mDelegates.Append(Forward<Callable>(Lambda));
         }
 
         /// \brief Removes the first delegate equal to \p Entry from the multicast list.

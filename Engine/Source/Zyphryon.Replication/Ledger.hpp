@@ -91,13 +91,14 @@ namespace ZyReplication
 
         /// \brief Adds a slot at the end, marking it.
         ///
-        /// \param Value The value of the slot.
+        /// \param Parameters The arguments the slot's value is made from.
         /// \return The place of the slot.
-        ZY_INLINE UInt32 Append(ConstRef<Type> Value)
+        template<typename... Arguments>
+        ZY_INLINE UInt32 Append(AnyRef<Arguments>... Parameters)
         {
             ZY_ASSERT(mSlots.GetSize() < kLimit, "A ledger holds at most kLimit slots");
 
-            mSlots.Append(Value);
+            mSlots.Append(Forward<Arguments>(Parameters)...);
             Fit();
             Mark(GetSize() - 1);
             return GetSize() - 1;
