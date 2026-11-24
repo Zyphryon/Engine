@@ -115,37 +115,41 @@ namespace ZyNavigation
 
         /// \brief Finds the polygon nearest a position and moves the position onto it.
         ///
-        /// \param Spot  The position in cells with its height in height steps, moved onto the polygon found.
-        /// \param Reach The farthest horizontal distance to search, in cells.
+        /// \param Anchor The tile the position is counted from, whose corner is cell zero.
+        /// \param Spot   The position in cells from the anchor with its height in height steps, moved onto the polygon.
+        /// \param Reach  The farthest horizontal distance to search, in cells.
         /// \return The polygon found, or \ref kNowhere when none lies within reach and the position is left as is.
-        UInt32 Snap(Ref<Vector3> Spot, Real32 Reach) const;
+        UInt32 Snap(IntVector2 Anchor, Ref<Vector3> Spot, Real32 Reach) const;
 
         /// \brief Gets the point of a polygon nearest a position, ignoring height.
         ///
+        /// \param Anchor  The tile the position is counted from, whose corner is cell zero.
         /// \param Polygon The polygon to clamp to.
-        /// \param Spot    The position to clamp, in cells, whose height is ignored.
+        /// \param Spot    The position to clamp, in cells from the anchor, whose height is ignored.
         /// \return The position itself when inside the polygon, else the nearest point on its outline, at floor height.
-        Vector3 GetNearest(UInt32 Polygon, Vector3 Spot) const;
+        Vector3 GetNearest(IntVector2 Anchor, UInt32 Polygon, Vector3 Spot) const;
 
         /// \brief Gets the floor height of a polygon under a position.
         ///
+        /// \param Anchor  The tile the position is counted from, whose corner is cell zero.
         /// \param Polygon The polygon to read.
-        /// \param Spot    The horizontal position, in cells.
+        /// \param Spot    The horizontal position, in cells from the anchor.
         /// \return The floor height in height steps, interpolated from the polygon's corners.
-        Real32 GetHeight(UInt32 Polygon, Vector2 Spot) const;
+        Real32 GetHeight(IntVector2 Anchor, UInt32 Polygon, Vector2 Spot) const;
 
         /// \brief Invokes an action for every side of a polygon, once per polygon past it, with the side's two ends.
         ///
+        /// \param Anchor  The tile the ends are counted from, whose corner is cell zero.
         /// \param Polygon The polygon to walk.
         /// \param Action  The action invoked with the polygon past the side or \ref kNowhere, then the two ends in cells.
         template<typename Callable>
-        ZY_INLINE void Visit(UInt32 Polygon, AnyRef<Callable> Action) const
+        ZY_INLINE void Visit(IntVector2 Anchor, UInt32 Polygon, AnyRef<Callable> Action) const
         {
             ConstRef<Tile>          Held     = mTiles[Polygon >> 16];
             const ConstSpan<UInt16> Each     = Held.Floor.GetPolygon(Polygon & 0xFFFF);
             const ConstPtr<UInt16>  Vertices = Held.Floor.GetVertices().GetData();
 
-            const Vector2 Origin(static_cast<Real32>(Held.X) * mSpan, static_cast<Real32>(Held.Z) * mSpan);
+            const Vector2 Origin = GetOrigin(Held, Anchor);
             const Vector2 First  = Origin + GetSpot(Vertices, Each[0]);
             Vector2       Before = First;
 
@@ -172,8 +176,8 @@ namespace ZyNavigation
                     for (UInt32 At = Door.First; At < Door.First + Door.Count; ++At)
                     {
                         ConstRef<Link> Link  = Held.Links[At];
-                        const Vector2  Begin = Clip(Before, Link, Along);
-                        const Vector2  End   = Clip(After, Link, Along);
+                        const Vector2  Begin = Clip(Before, Link, Along, Origin);
+                        const Vector2  End   = Clip(After, Link, Along, Origin);
 
                         ZY_INLINE_CALL Action(Link.Into, Begin, End);
                     }
@@ -190,10 +194,10 @@ namespace ZyNavigation
             /// The polygon past the side, or \ref kNowhere when unset.
             UInt32 Into  = kNowhere;
 
-            /// The low end of the stretch both sides share along the edge, in cells.
+            /// The low end of the stretch both sides share along the edge, in cells from the tile's corner.
             Real32 Lower = 0.0f;
 
-            /// The high end of the stretch both sides share along the edge, in cells.
+            /// The high end of the stretch both sides share along the edge, in cells from the tile's corner.
             Real32 Upper = 0.0f;
         };
 
@@ -289,7 +293,7 @@ namespace ZyNavigation
         ///
         /// \param Held    The tile the polygon belongs to.
         /// \param Polygon The index of the polygon within the tile.
-        /// \param Spot    The horizontal position, in cells.
+        /// \param Spot    The horizontal position, in cells from the tile's corner.
         /// \return The floor height in height steps, clamped between the lowest and highest floor under the polygon.
         Real32 Sample(ConstRef<Tile> Held, UInt32 Polygon, Vector2 Spot) const;
 
@@ -297,8 +301,8 @@ namespace ZyNavigation
         ///
         /// \param Held    The tile the polygon belongs to.
         /// \param Polygon The index of the polygon within the tile.
-        /// \param Spot    The horizontal position to measure from, in cells.
-        /// \param Nearest Receives the nearest point of the polygon, the position itself when inside.
+        /// \param Spot    The horizontal position to measure from, in cells from the tile's corner.
+        /// \param Nearest Receives the nearest point of the polygon from the tile's corner, the position itself inside.
         /// \return The squared distance in cells, zero when the position is inside the polygon.
         Real32 Measure(ConstRef<Tile> Held, UInt32 Polygon, Vector2 Spot, Ref<Vector2> Nearest) const;
 
@@ -322,19 +326,33 @@ namespace ZyNavigation
             return Vector2(Vertices[Corner * 3], Vertices[Corner * 3 + 2]);
         }
 
+        /// \brief Gets the corner of a tile, counted from the corner of the anchor.
+        ///
+        /// \param Held   The tile to place.
+        /// \param Anchor The tile positions are counted from.
+        /// \return The corner, in cells, which stays small for any tile near the anchor wherever the two stand.
+        ZY_INLINE Vector2 GetOrigin(ConstRef<Tile> Held, IntVector2 Anchor) const
+        {
+            const SInt32 X = Held.X - Anchor.GetX();
+            const SInt32 Z = Held.Z - Anchor.GetY();
+
+            return Vector2(static_cast<Real32>(X), static_cast<Real32>(Z)) * mSpan;
+        }
+
         /// \brief Clamps an end of a side on the tile edge to the stretch it shares with a linked polygon.
         ///
-        /// \param Spot  The end to clamp, in cells.
-        /// \param Link  The link whose stretch bounds the end.
-        /// \param Along `true` when the edge runs along x, `false` when it runs along z.
+        /// \param Spot   The end to clamp, in cells from the anchor.
+        /// \param Link   The link whose stretch bounds the end.
+        /// \param Along  `true` when the edge runs along x, `false` when it runs along z.
+        /// \param Origin The corner of the tile the side belongs to, in cells from the anchor.
         /// \return The end itself when within the stretch, else the nearest end of the stretch.
-        ZY_INLINE static Vector2 Clip(Vector2 Spot, ConstRef<Link> Link, Bool Along)
+        ZY_INLINE static Vector2 Clip(Vector2 Spot, ConstRef<Link> Link, Bool Along, Vector2 Origin)
         {
             if (Along)
             {
-                return Vector2(Clamp(Spot.GetX(), Link.Lower, Link.Upper), Spot.GetY());
+                return Vector2(Clamp(Spot.GetX(), Origin.GetX() + Link.Lower, Origin.GetX() + Link.Upper), Spot.GetY());
             }
-            return Vector2(Spot.GetX(), Clamp(Spot.GetY(), Link.Lower, Link.Upper));
+            return Vector2(Spot.GetX(), Clamp(Spot.GetY(), Origin.GetY() + Link.Lower, Origin.GetY() + Link.Upper));
         }
 
     private:

@@ -40,30 +40,46 @@ namespace ZyNavigation
 
         /// \brief Constructs a finder that has run no search yet.
         ZY_INLINE Finder()
-            : mEpoch { 0 }
+            : mEpoch  { 0 },
+              mAnchor { IntVector2::Zero() }
         {
         }
 
         /// \brief Finds a way between two points of a chart, as the corners to walk straight between.
         ///
-        /// \param Map   The chart to search.
-        /// \param From  The point to start from, in cells with its height in height steps.
-        /// \param Into  The point to reach, in cells with its height in height steps.
-        /// \param Reach The farthest either point may lie off the floor and still be snapped onto it, in cells.
-        /// \param Limit The most polygons to expand before settling for the one nearest the goal, or zero for no limit.
-        /// \param Way   Receives the corners of the way at floor height, or nothing when no way is found.
+        /// \param Map    The chart to search.
+        /// \param Anchor The tile both points and the corners found are counted from, best the one set out from.
+        /// \param From   The point to start from, in cells from the anchor with its height in height steps.
+        /// \param Into   The point to reach, in cells from the anchor with its height in height steps.
+        /// \param Reach  The farthest either point may lie off the floor and still be snapped onto it, in cells.
+        /// \param Limit  The most polygons to expand before settling for the one nearest the goal, or zero for none.
+        /// \param Way    Receives the corners of the way from the anchor at floor height, or nothing when none is.
         /// \return The part of the way found, from none through the point nearest the goal to the goal itself.
-        Outcome Find(ConstRef<Chart> Map, Vector3 From, Vector3 Into, Real32 Reach, UInt32 Limit, Ref<Way> Way);
+        Outcome Find(
+            ConstRef<Chart> Map,
+            IntVector2      Anchor,
+            Vector3         From,
+            Vector3         Into,
+            Real32          Reach,
+            UInt32          Limit,
+            Ref<Way>        Way);
 
         /// \brief Moves a point toward another across the floor, sliding along any wall in the way.
         ///
         /// \param Map     The chart to move over.
+        /// \param Anchor  The tile both points are counted from, best the one the move starts on.
         /// \param Polygon The polygon the point starts on.
-        /// \param From    The point to move, in cells.
-        /// \param Into    The point to move toward, in cells.
+        /// \param From    The point to move, in cells from the anchor.
+        /// \param Into    The point to move toward, in cells from the anchor.
         /// \param Stop    Receives the point reached at floor height, the target itself when nothing blocks the move.
         /// \return The polygon under the point reached.
-        UInt32 Glide(ConstRef<Chart> Map, UInt32 Polygon, Vector2 From, Vector2 Into, Ref<Vector3> Stop);
+        UInt32 Glide(
+            ConstRef<Chart> Map,
+            IntVector2      Anchor,
+            UInt32          Polygon,
+            Vector2         From,
+            Vector2         Into,
+            Ref<Vector3>    Stop);
 
     private:
 
@@ -149,6 +165,7 @@ namespace ZyNavigation
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         UInt32           mEpoch;
+        IntVector2       mAnchor;
         Sequence<Node>   mNodes;
         Heap<Candidate>  mFrontier;
         Sequence<Side>   mSides;

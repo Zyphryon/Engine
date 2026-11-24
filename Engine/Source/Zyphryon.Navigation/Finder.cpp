@@ -23,6 +23,7 @@ namespace ZyNavigation
 
     Finder::Outcome Finder::Find(
         ConstRef<Chart> Map,
+        IntVector2      Anchor,
         Vector3         From,
         Vector3         Into,
         Real32          Reach,
@@ -31,8 +32,10 @@ namespace ZyNavigation
     {
         Way.Clear();
 
-        const UInt32 Start = Map.Snap(From, Reach);
-        const UInt32 Goal  = Map.Snap(Into, Reach);
+        mAnchor = Anchor;
+
+        const UInt32 Start = Map.Snap(mAnchor, From, Reach);
+        const UInt32 Goal  = Map.Snap(mAnchor, Into, Reach);
 
         if (Start == Chart::kNowhere || Goal == Chart::kNowhere)
         {
@@ -104,7 +107,7 @@ namespace ZyNavigation
                 Nearest = At;
             }
 
-            Map.Visit(At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
+            Map.Visit(mAnchor, At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
             {
                 if (Next == Chart::kNowhere)
                 {
@@ -158,7 +161,7 @@ namespace ZyNavigation
 
         if (!Arrived)
         {
-            Into = Map.GetNearest(Last, Into);
+            Into = Map.GetNearest(mAnchor, Last, Into);
         }
 
         // The end goes in first as a side of no length, then the sides crossed back to the start.
@@ -179,15 +182,23 @@ namespace ZyNavigation
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 Finder::Glide(ConstRef<Chart> Map, UInt32 Polygon, Vector2 From, Vector2 Into, Ref<Vector3> Stop)
+    UInt32 Finder::Glide(
+        ConstRef<Chart> Map,
+        IntVector2      Anchor,
+        UInt32          Polygon,
+        Vector2         From,
+        Vector2         Into,
+        Ref<Vector3>    Stop)
     {
+        mAnchor = Anchor;
+
         // Walk the straight line first, polygon by polygon, which keeps the point on the floor it started on.
         for (UInt32 At = Polygon, Before = Chart::kNowhere, Step = 0; At != Chart::kNowhere && Step < kStride; ++Step)
         {
             Bool   Inside = true;
             UInt32 Onto   = Chart::kNowhere;
 
-            Map.Visit(At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
+            Map.Visit(mAnchor, At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
             {
                 if (Vector2::Cross(Left, Right, Into) > 0.0f)
                 {
@@ -206,7 +217,7 @@ namespace ZyNavigation
 
             if (Inside)
             {
-                Stop = Vector3::FromXZ(Into, Map.GetHeight(At, Into));
+                Stop = Vector3::FromXZ(Into, Map.GetHeight(mAnchor, At, Into));
                 return At;
             }
 
@@ -236,7 +247,7 @@ namespace ZyNavigation
             // Polygons wind so a point inside lies right of every side.
             Bool Inside = true;
 
-            Map.Visit(At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
+            Map.Visit(mAnchor, At, [&](UInt32 Next, Vector2 Left, Vector2 Right)
             {
                 Inside = Inside && Vector2::Cross(Left, Right, Into) <= 0.0f;
 
@@ -266,12 +277,12 @@ namespace ZyNavigation
 
             if (Inside)
             {
-                Stop = Vector3::FromXZ(Into, Map.GetHeight(At, Into));
+                Stop = Vector3::FromXZ(Into, Map.GetHeight(mAnchor, At, Into));
                 return At;
             }
         }
 
-        Stop = Vector3(Landed.GetX(), Map.GetHeight(Nearest, Landed), Landed.GetY());
+        Stop = Vector3(Landed.GetX(), Map.GetHeight(mAnchor, Nearest, Landed), Landed.GetY());
         return Nearest;
     }
 
@@ -354,7 +365,7 @@ namespace ZyNavigation
             // A corner takes the height of the floor past its side, and the end is appended once after the loop.
             if (ApexAt < Last)
             {
-                Way.Append(Vector3::FromXZ(Apex, Map.GetHeight(mSides[Last - ApexAt].Into, Apex)));
+                Way.Append(Vector3::FromXZ(Apex, Map.GetHeight(mAnchor, mSides[Last - ApexAt].Into, Apex)));
             }
 
             // Restart the funnel at the corner, from the side it lies on.

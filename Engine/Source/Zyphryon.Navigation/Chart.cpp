@@ -122,7 +122,7 @@ namespace ZyNavigation
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    UInt32 Chart::Snap(Ref<Vector3> Spot, Real32 Reach) const
+    UInt32 Chart::Snap(IntVector2 Anchor, Ref<Vector3> Spot, Real32 Reach) const
     {
         const Vector2 Flat = Spot.GetXZ();
 
@@ -130,11 +130,12 @@ namespace ZyNavigation
         Real32  Closest   = kMaximum<Real32>;
         UInt32  Narrowest = 0;
         Vector2 Landed    = Flat;
+        Vector2 Local     = Flat;
 
-        const SInt32 LowX  = static_cast<SInt32>(Floor((Flat.GetX() - Reach) / mSpan));
-        const SInt32 LowZ  = static_cast<SInt32>(Floor((Flat.GetY() - Reach) / mSpan));
-        const SInt32 HighX = static_cast<SInt32>(Floor((Flat.GetX() + Reach) / mSpan));
-        const SInt32 HighZ = static_cast<SInt32>(Floor((Flat.GetY() + Reach) / mSpan));
+        const SInt32 LowX  = Anchor.GetX() + static_cast<SInt32>(Floor((Flat.GetX() - Reach) / mSpan));
+        const SInt32 LowZ  = Anchor.GetY() + static_cast<SInt32>(Floor((Flat.GetY() - Reach) / mSpan));
+        const SInt32 HighX = Anchor.GetX() + static_cast<SInt32>(Floor((Flat.GetX() + Reach) / mSpan));
+        const SInt32 HighZ = Anchor.GetY() + static_cast<SInt32>(Floor((Flat.GetY() + Reach) / mSpan));
 
         for (SInt32 Z = LowZ; Z <= HighZ; ++Z)
         {
@@ -149,7 +150,7 @@ namespace ZyNavigation
 
                 ConstRef<Tile> Held = mTiles[* Slot];
 
-                const Vector2 Origin(static_cast<Real32>(X) * mSpan, static_cast<Real32>(Z) * mSpan);
+                const Vector2 Origin = GetOrigin(Held, Anchor);
 
                 // Only the buckets within reach are searched.
                 const Real32 LocalX = Flat.GetX() - Origin.GetX();
@@ -194,7 +195,7 @@ namespace ZyNavigation
 
                             Vector2 Nearest;
 
-                            const Real32 Distance = Measure(Held, Held.Items[At], Flat, Nearest);
+                            const Real32 Distance = Measure(Held, Held.Items[At], Flat - Origin, Nearest);
 
                             if (Distance > Reach * Reach)
                             {
@@ -210,7 +211,8 @@ namespace ZyNavigation
                                 Closest   = Apart;
                                 Narrowest = Width;
                                 Found     = ((* Slot) << 16) | Held.Items[At];
-                                Landed    = Nearest;
+                                Local     = Nearest;
+                                Landed    = Nearest + Origin;
                             }
                         }
                     }
@@ -220,7 +222,7 @@ namespace ZyNavigation
 
         if (Found != kNowhere)
         {
-            Spot = Vector3(Landed.GetX(), Sample(mTiles[Found >> 16], Found & 0xFFFF, Landed), Landed.GetY());
+            Spot = Vector3(Landed.GetX(), Sample(mTiles[Found >> 16], Found & 0xFFFF, Local), Landed.GetY());
         }
         return Found;
     }
@@ -228,20 +230,26 @@ namespace ZyNavigation
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Vector3 Chart::GetNearest(UInt32 Polygon, Vector3 Spot) const
+    Vector3 Chart::GetNearest(IntVector2 Anchor, UInt32 Polygon, Vector3 Spot) const
     {
+        ConstRef<Tile> Held   = mTiles[Polygon >> 16];
+        const Vector2  Origin = GetOrigin(Held, Anchor);
+
         Vector2 Nearest;
 
-        Measure(mTiles[Polygon >> 16], Polygon & 0xFFFF, Spot.GetXZ(), Nearest);
-        return Vector3(Nearest.GetX(), Sample(mTiles[Polygon >> 16], Polygon & 0xFFFF, Nearest), Nearest.GetY());
+        Measure(Held, Polygon & 0xFFFF, Spot.GetXZ() - Origin, Nearest);
+
+        const Vector2 Landed = Nearest + Origin;
+        return Vector3(Landed.GetX(), Sample(Held, Polygon & 0xFFFF, Nearest), Landed.GetY());
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    Real32 Chart::GetHeight(UInt32 Polygon, Vector2 Spot) const
+    Real32 Chart::GetHeight(IntVector2 Anchor, UInt32 Polygon, Vector2 Spot) const
     {
-        return Sample(mTiles[Polygon >> 16], Polygon & 0xFFFF, Spot);
+        ConstRef<Tile> Held = mTiles[Polygon >> 16];
+        return Sample(Held, Polygon & 0xFFFF, Spot - GetOrigin(Held, Anchor));
     }
 
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -410,7 +418,6 @@ namespace ZyNavigation
             // A side links to every facing side it overlaps by more than a sliver.
             ConstRef<Tile>          Other = mTiles[Beside];
             const ConstSpan<UInt16> Mine  = Held.Floor.GetLevel(Door.Polygon);
-            const Real32            Base  = static_cast<Real32>((Edge & 1) != 0 ? Held.X : Held.Z) * mSpan;
 
             for (UInt32 At = 0; At < Other.Gates.GetSize(); ++At)
             {
@@ -424,8 +431,8 @@ namespace ZyNavigation
                 // The two floors must lie within the climb, or a floor would link to the one stacked over it.
                 const ConstSpan<UInt16> Theirs = Other.Floor.GetLevel(Facing.Polygon);
                 const Real32            Apart  = static_cast<Real32>(Max(0, Mine[0] - Theirs[1], Theirs[0] - Mine[1]));
-                const Real32            From   = Base + Max(Door.Lower, Facing.Lower);
-                const Real32            Into   = Base + Min(Door.Upper, Facing.Upper);
+                const Real32            From   = Max(Door.Lower, Facing.Lower);
+                const Real32            Into   = Min(Door.Upper, Facing.Upper);
 
                 if (Into - From > 0.01f && Apart <= mClimb)
                 {
@@ -454,11 +461,9 @@ namespace ZyNavigation
             return Level[0];
         }
 
-        const Vector2 Origin(static_cast<Real32>(Held.X) * mSpan, static_cast<Real32>(Held.Z) * mSpan);
-
         // The polygon is a fan of triangles from its first corner, and the one holding the position gives the height.
         const Vector2 Base   = GetSpot(Vertices, Each[0]);
-        const Vector2 Offset = Spot - Origin - Base;
+        const Vector2 Offset = Spot - Base;
         const Real32  BaseY  = Vertices[Each[0] * 3 + 1];
 
         // A polygon whose corners share one height needs no fan.
@@ -510,15 +515,13 @@ namespace ZyNavigation
         const ConstSpan<UInt16> Each     = Held.Floor.GetPolygon(Polygon);
         const ConstPtr<UInt16>  Vertices = Held.Floor.GetVertices().GetData();
 
-        const Vector2 Origin(static_cast<Real32>(Held.X) * mSpan, static_cast<Real32>(Held.Z) * mSpan);
-
         Array<Vector2, Mesh::kSides> Corner;
         UInt32                       Count  = 0;
         Bool                         Inside = true;
 
         for (; Count < Mesh::kSides && Each[Count] != Mesh::kNone; ++Count)
         {
-            Corner[Count] = Origin + GetSpot(Vertices, Each[Count]);
+            Corner[Count] = GetSpot(Vertices, Each[Count]);
         }
 
         // Polygons are wound so their inside lies right of every side.
