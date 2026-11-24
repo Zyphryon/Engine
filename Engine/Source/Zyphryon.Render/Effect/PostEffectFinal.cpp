@@ -37,19 +37,10 @@ namespace ZyRender
     {
         ZY_PROFILE_SCOPE("Render::PostEffectFinal::Run");
 
-        const Vector3 Lift  = mGrade.Lift;
-        const Vector3 Gamma = mGrade.Gamma;
-        const Vector3 Gain  = mGrade.Gain;
-
         const Bool Graded = (mGrade.Table && mGrade.Blend > 0.0f);
 
-        // A grade that pushes no band, grains nothing and steps nothing hands back the curve's image as it stands.
-        const Bool Plain = Lift.IsAlmostZero()
-                        && Gamma.IsAlmostZero()
-                        && Gain.IsAlmostZero()
-                        && mLens.Grain <= 0.0f
-                        && mGrade.Posterize <= 1.0f
-                        && !Graded;
+        // A grade that looks nothing up, grains nothing and steps nothing hands back the curve's image as it stands.
+        const Bool Plain = (!Graded && mLens.Grain <= 0.0f && mGrade.Posterize <= 1.0f);
 
         const Real32 TexelX = 1.0f / Graph.GetWidth(mSource);
         const Real32 TexelY = 1.0f / Graph.GetHeight(mSource);
@@ -57,9 +48,7 @@ namespace ZyRender
 
         Encoder.SetPass(GpuFinalLayout {
             .Grading = Vector4(mExposure.Level, mGrade.Saturation, 2.0f * mLens.Vignette, mLens.Grain),
-            .Lift    = Vector4(Lift, Plain ? -1.0f : static_cast<Real32>(mFrame)),
-            .Gamma   = Vector4(Pow(2.0f, -Gamma.GetX()), Pow(2.0f, -Gamma.GetY()), Pow(2.0f, -Gamma.GetZ()), mHalo),
-            .Gain    = Vector4(1.0f + Gain.GetX(), 1.0f + Gain.GetY(), 1.0f + Gain.GetZ(), Steps),
+            .Finish  = Vector4(Plain ? -1.0f : static_cast<Real32>(mFrame), mHalo, Steps, 0.0f),
             .Lens    = Vector4(TexelX, TexelY, 2.0f * mLens.Aberration * TexelX, 2.0f * mLens.Aberration * TexelY),
             .Output  = Vector4(GetColor().Target == kNone ? 1.0f : 0.0f, mGrade.Blend, 0.0f, 0.0f)
         });

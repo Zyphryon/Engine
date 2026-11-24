@@ -15,9 +15,7 @@
 cbuffer cb_Pass : register(b1)
 {
     float4 u_Grading;   // X = Exposure, Y = Saturation, Z = Twice the vignette, W = Grain
-    float4 u_Lift;      // RGB = Lift,   W = The grain's frame, or below zero when nothing past the curve is graded
-    float4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
-    float4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
+    float4 u_Finish;    // X = The grain's frame, or below zero when ungraded, Y = Halo, Z = Steps between levels
     float4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
     float4 u_Output;    // X = Above zero when the target is the display, Y = The share of the graded image
 };
@@ -135,9 +133,9 @@ float4 main(fs_Input Input) : SV_Target
     // The halo is scene referred, so it joins before exposure carries the pair into the curve.
     float3 Lit = Scene;
 
-    if (u_Gamma.w > 0.0)
+    if (u_Finish.y > 0.0)
     {
-        Lit += t_Bloom.SampleLevel(s_Bloom, Input.Texture, 0).rgb * u_Gamma.w;
+        Lit += t_Bloom.SampleLevel(s_Bloom, Input.Texture, 0).rgb * u_Finish.y;
     }
 
     float3 Color = Tonemap(Lit * Input.Exposure);
@@ -152,7 +150,7 @@ float4 main(fs_Input Input) : SV_Target
     Color *= Vignette;
 
     // A grade that changes nothing past the curve hands the curve's image back as it stands.
-    if (u_Lift.w < 0.0)
+    if (u_Finish.x < 0.0)
     {
 #if defined(ZY_DISPLAY_RAW)
         return float4(u_Output.x > 0.0 ? ZyToGamma(saturate(Color)) : saturate(Color), 1.0);
@@ -164,9 +162,6 @@ float4 main(fs_Input Input) : SV_Target
     // The rest is judged by eye, so it works on the encoded image, where even steps look even.
     float3 Shown = ZyToGamma(saturate(Color));
 
-    // The bands are graded on the image the curve handed back, which is the range they are authored against.
-    Shown = pow(max(Shown * u_Gain.rgb + u_Lift.rgb, 0.0), u_Gamma.rgb);
-
 #if defined(ENABLE_GRADING)
     Shown = lerp(Shown, Grade(Shown), u_Output.y);
 #endif // ENABLE_GRADING
@@ -176,12 +171,12 @@ float4 main(fs_Input Input) : SV_Target
     const float Density = sqrt(saturate(4.0 * Exposed * (1.0 - Exposed)));
 
     // The grain is stirred by the scene's clock, at a film's cadence, which keeps it from reading as dirt on the lens.
-    Shown = saturate(Shown + Grain(Input.Position.xy, uint(u_Lift.w)) * (u_Grading.w * Density));
+    Shown = saturate(Shown + Grain(Input.Position.xy, uint(u_Finish.x)) * (u_Grading.w * Density));
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
-    if (u_Gain.w > 0.0)
+    if (u_Finish.z > 0.0)
     {
-        Shown = Palette(Shown, u_Gain.w, Input.Position.xy);
+        Shown = Palette(Shown, u_Finish.z, Input.Position.xy);
     }
 
     // The target encodes as it stores, so the image is handed back as light, unless it stores what it is handed.

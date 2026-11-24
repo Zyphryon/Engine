@@ -101,22 +101,13 @@ namespace ZyRender
             /// The factor the colour's distance from grey is scaled by, where zero is grey and one leaves it be.
             Real32            Saturation = 1.0f;
 
-            /// The push black is raised or lowered by on each channel, from -0.25 to 0.25 of the display range.
-            Vector3           Lift       = Vector3::Zero();
-
-            /// The push the midtones are bent by on each channel, from -1 to 1 and zero to leave them be.
-            Vector3           Gamma      = Vector3::Zero();
-
-            /// The push the highlights are gained by on each channel, from -1 to 1 and zero to leave them be.
-            Vector3           Gain       = Vector3::Zero();
-
             /// The number of steps each channel is rounded to, or one and below to leave it as it lies.
             Real32            Posterize  = 0.0f;
 
-            /// The volume the pushed image is looked up in, red across, green down and blue deep, or zero for none.
+            /// The volume the image is looked up in, red across, green down and blue deep, or zero for none.
             ZyGraphic::Object Table      = 0;
 
-            /// The share of the looked up image laid over the pushed one, from none at zero to all of it at one.
+            /// The share of the looked up image laid over the one read, from none at zero to all of it at one.
             Real32            Blend      = 1.0f;
         };
 
@@ -193,14 +184,8 @@ namespace ZyRender
             /// The exposure, the saturation, twice the vignette and the grain, in that order.
             Vector4 Grading;
 
-            /// The offset the shadows are lifted by, with the grain's frame in `W`, below zero when nothing is graded.
-            Vector4 Lift;
-
-            /// The exponent the midtones are bent by, with the strength of the halo in `W`.
-            Vector4 Gamma;
-
-            /// The factor the highlights are gained by, with the steps between the levels in `W`, or zero for none.
-            Vector4 Gain;
+            /// The grain's frame, below zero when nothing is graded, the halo's strength and the steps between levels.
+            Vector4 Finish;
 
             /// The texel of the source across and up, then the aberration across the image in texels.
             Vector4 Lens;

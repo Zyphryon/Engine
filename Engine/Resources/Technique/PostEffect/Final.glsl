@@ -15,9 +15,7 @@
 layout(std140, binding = 1) uniform cb_Pass
 {
     vec4 u_Grading;   // X = Exposure, Y = Saturation, Z = Twice the vignette, W = Grain
-    vec4 u_Lift;      // RGB = Lift,   W = The grain's frame, or below zero when nothing past the curve is graded
-    vec4 u_Gamma;     // RGB = Gamma,  W = The strength of the halo
-    vec4 u_Gain;      // RGB = Gain,   W = The steps between the levels each channel is stepped to
+    vec4 u_Finish;    // X = The grain's frame, or below zero when ungraded, Y = Halo, Z = Steps between levels
     vec4 u_Lens;      // XY = A texel of the scene, ZW = The aberration across the image, in texels
     vec4 u_Output;    // X = Above zero when the target is the display, Y = The share of the graded image
 };
@@ -127,9 +125,9 @@ void main()
     // The halo is scene referred, so it joins before exposure carries the pair into the curve.
     vec3 Lit = Scene;
 
-    if (u_Gamma.w > 0.0)
+    if (u_Finish.y > 0.0)
     {
-        Lit += textureLod(t_Bloom, v_Texture, 0.0).rgb * u_Gamma.w;
+        Lit += textureLod(t_Bloom, v_Texture, 0.0).rgb * u_Finish.y;
     }
 
     vec3 Color = Tonemap(Lit * v_Exposure);
@@ -144,7 +142,7 @@ void main()
     Color *= Vignette;
 
     // A grade that changes nothing past the curve hands the curve's image back as it stands.
-    if (u_Lift.w < 0.0)
+    if (u_Finish.x < 0.0)
     {
 #if defined(ZY_DISPLAY_RAW)
         out_Color = vec4(u_Output.x > 0.0 ? ZyToGamma(clamp(Color, 0.0, 1.0)) : clamp(Color, 0.0, 1.0), 1.0);
@@ -157,9 +155,6 @@ void main()
     // The rest is judged by eye, so it works on the encoded image, where even steps look even.
     vec3 Shown = ZyToGamma(clamp(Color, 0.0, 1.0));
 
-    // The bands are graded on the image the curve handed back, which is the range they are authored against.
-    Shown = pow(max(Shown * u_Gain.rgb + u_Lift.rgb, vec3(0.0)), u_Gamma.rgb);
-
 #if defined(ENABLE_GRADING)
     Shown = mix(Shown, Grade(Shown), u_Output.y);
 #endif // ENABLE_GRADING
@@ -169,12 +164,12 @@ void main()
     float Density = sqrt(clamp(4.0 * Exposed * (1.0 - Exposed), 0.0, 1.0));
 
     // The grain is stirred by the scene's clock, at a film's cadence, which keeps it from reading as dirt on the lens.
-    Shown = clamp(Shown + Grain(gl_FragCoord.xy, uint(u_Lift.w)) * (u_Grading.w * Density), 0.0, 1.0);
+    Shown = clamp(Shown + Grain(gl_FragCoord.xy, uint(u_Finish.x)) * (u_Grading.w * Density), 0.0, 1.0);
 
     // The palette is what the display carried, so the steps land last, over the grain that dithers them.
-    if (u_Gain.w > 0.0)
+    if (u_Finish.z > 0.0)
     {
-        Shown = Palette(Shown, u_Gain.w, gl_FragCoord.xy);
+        Shown = Palette(Shown, u_Finish.z, gl_FragCoord.xy);
     }
 
     // The target encodes as it stores, so the image is handed back as light, unless it stores what it is handed.
