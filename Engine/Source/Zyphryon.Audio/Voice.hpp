@@ -36,7 +36,7 @@ namespace ZyAudio
         Vector3         Position;
 
         /// The source's normalized forward axis (spatial voices only).
-        Vector3         Forward      = -Vector3::UnitZ();
+        Vector3         Forward      = Vector3::UnitZ();
 
         /// The base linear volume of the voice (range [0, 1]).
         Real32          Volume       = 1.0f;

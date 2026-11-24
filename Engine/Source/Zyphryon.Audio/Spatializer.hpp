@@ -30,7 +30,7 @@ namespace ZyAudio
         ZY_INLINE Spatializer()
             : mPosition   { },
               mRight      { Vector3::UnitX() },
-              mForward    { -Vector3::UnitZ() },
+              mForward    { Vector3::UnitZ() },
               mInnerAngle { Angle::FromDegrees(360.0f) },
               mOuterAngle { Angle::FromDegrees(360.0f) },
               mOuterGain  { 1.0f }

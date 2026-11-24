@@ -90,8 +90,8 @@ namespace ZyAudio
         /// \param OuterGain  The gain applied outside the outer cone (range [0, 1]).
         ZY_INLINE void SetCone(Angle InnerAngle, Angle OuterAngle, Real32 OuterGain)
         {
-            ZY_ASSERT(InnerAngle.IsValid(), "Inner angle must be normalized (0 <= angle < 2π)");
-            ZY_ASSERT(OuterAngle.IsValid(), "Outer angle must be normalized (0 <= angle < 2π)");
+            ZY_ASSERT(InnerAngle.IsValid(), "Inner angle must be normalized (0 <= angle <= 2π)");
+            ZY_ASSERT(OuterAngle.IsValid(), "Outer angle must be normalized (0 <= angle <= 2π)");
             ZY_ASSERT(InnerAngle <= OuterAngle, "Inner angle cannot exceed outer angle");
             ZY_ASSERT(IsBetween(OuterGain, 0.0f, 1.0f), "Outer gain must be [0,1]");
 

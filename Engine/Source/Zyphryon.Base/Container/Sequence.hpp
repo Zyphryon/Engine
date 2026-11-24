@@ -193,7 +193,10 @@ inline namespace ZyBase
         {
             if (mSize == mCapacity)
             {
+                Type Element(Forward<Arguments>(Parameters)...);
+
                 Reallocate(mCapacity > 0 ? mCapacity * 2 : 16);
+                return Construct<Type>(mData + mSize++, Move(Element));
             }
             return Construct<Type>(mData + mSize++, Forward<Arguments>(Parameters)...);
         }

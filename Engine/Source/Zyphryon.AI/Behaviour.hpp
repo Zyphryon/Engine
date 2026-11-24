@@ -33,7 +33,7 @@ namespace ZyAI
             Priority, ///< Reruns its children from the first each tick, and stops a running one an earlier overtakes.
             Parallel, ///< Runs every child each tick, and succeeds once `Count` children succeed, or all at `0`.
             Invert,   ///< Runs its child and swaps success with failure.
-            Succeed,  ///< Runs its child and succeeds whether the child succeeded or failed.
+            Succeed,  ///< Runs its child and turns its failure into success, a running child staying running.
             Repeat,   ///< Runs its child again after each success, `Count` times, or forever at `0`.
             Retry,    ///< Runs its child again after each failure, `Count` times, or forever at `0`.
             Cooldown, ///< Fails without running its child until `Value` seconds after the child last finished.

@@ -226,7 +226,7 @@ inline namespace ZyBase
             }
         }
 
-        /// \brief Writes a data block with a length prefix, using a user-defined function to populate the contents.
+        /// \brief Writes bytes a function fills behind their count, which `ReadBlock<Header, Byte>` reads back.
         ///
         /// \param Trampoline The user-defined function that writes the block contents.
         template<typename Header, typename Function>

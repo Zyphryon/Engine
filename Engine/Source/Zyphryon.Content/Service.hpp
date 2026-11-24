@@ -159,13 +159,23 @@ namespace ZyContent
         template<typename Type>
         ZY_INLINE void Unload(ConstRetainer<Type> Asset)
         {
-            if (Type::GetCache().Remove(Asset->GetKey()))
+            if (!Asset->HasFinished())
             {
-                OnAssetDelete(* Asset);
+                Subscribe(Asset->GetKey(), [this, Asset](Ref<Resource>)
+                {
+                    Unload(Asset);
+                });
+            }
+            else
+            {
+                if (Type::GetCache().Remove(Asset->GetKey()))
+                {
+                    OnAssetDelete(* Asset);
+                } 
             }
         }
 
-        /// \brief Evicts unreferenced resources from the cache of the specified resource type, never one still loading.
+        /// \brief Evicts finished resources from a type's cache, only the unreferenced ones unless forced.
         ///
         /// \tparam Type  The resource type whose cache to prune.
         /// \param  Force `true` to remove every finished asset, `false` to remove only the unreferenced ones.

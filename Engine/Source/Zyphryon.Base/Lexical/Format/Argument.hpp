@@ -14,6 +14,7 @@
 
 #include "Output.hpp"
 #include "Placeholder.hpp"
+#include "Zyphryon.Base/Pattern/Enumerator.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // [   CODE   ]
@@ -68,6 +69,20 @@ namespace ZyFormat
             {
                 mKind    = Kind::Flag;
                 mInteger = Value;
+            }
+            else if constexpr (IsEnum<Type>)
+            {
+                if (const Text Name = ZyEnum::GetName(Value); Name.IsEmpty())
+                {
+                    mKind    = IsSigned<Underlying<Type>> ? Kind::Signed : Kind::Unsigned;
+                    mInteger = static_cast<UInt64>(Value);
+                }
+                else
+                {
+                    mKind = Kind::Text;
+                    mData = Name.GetData();
+                    mSize = Name.GetSize();
+                }
             }
             else if constexpr (IsContiguousOf<Type, Char>)
             {

@@ -785,11 +785,12 @@ inline namespace ZyBase
     /// \return The value in steps, rounded to the nearest one and held to what the type can carry.
     template<IsIntegral Type>
     ZY_INLINE Type EncodeFixed(Real32 Value, Real32 Scale)
+        requires (sizeof(Type) <= sizeof(UInt32))
     {
-        constexpr Real32 Bottom = static_cast<Real32>(kMinimum<Type>);
-        constexpr Real32 Top    = static_cast<Real32>(kMaximum<Type>);
+        constexpr Real64 Bottom = static_cast<Real64>(kMinimum<Type>);
+        constexpr Real64 Top    = static_cast<Real64>(kMaximum<Type>);
 
-        return static_cast<Type>(Clamp(Round(Value * Scale), Bottom, Top));
+        return static_cast<Type>(Clamp(Round(static_cast<Real64>(Value) * Scale), Bottom, Top));
     }
 
     /// \brief Decodes a value \ref EncodeFixed cut into steps.

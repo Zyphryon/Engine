@@ -36,8 +36,14 @@ namespace ZyAI
         const UInt32 Index = static_cast<UInt32>(Nodes.GetSize());
 
         Ref<Behaviour::Node> Node = Nodes.Append();
-        Node.Type  = Definition.GetEnum("Type", Behaviour::Kind::Leaf);
+        Node.Type  = Behaviour::Kind::Leaf;
         Node.Count = Definition.GetNumber<UInt16>("Count");
+
+        // A node naming no type is a leaf, while one naming a type that does not exist is refused, not read as a leaf.
+        if (const Text Type = Definition.GetString("Type"); !Type.IsEmpty() && !ZyEnum::Find(Type, Node.Type))
+        {
+            return false;
+        }
         Node.Value = Definition.GetNumber<Real64>("Value");
 
         if (Node.Type == Behaviour::Kind::Leaf)

@@ -72,7 +72,7 @@ namespace ZyReflection
                 {
                     for (ConstRef<Option> Choice : Each.GetOptions())
                     {
-                        if ((Written = (Choice.Name == Given->GetString())))
+                        if ((Written = StrEqualCaseInsensitive(Choice.Name, Given->GetString())))
                         {
                             Each.Write(Instance, Value::FromInteger(Kind::Enumeration, Choice.Content));
                             break;

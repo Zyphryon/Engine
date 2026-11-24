@@ -85,6 +85,13 @@ namespace ZyContent
 
     void Disk::Write(Text Path, AnyRef<Blob> Bytes, AnyRef<OnResult> Callback)
     {
-        Callback(Filesystem::Write(Filesystem::Path::Join(mPath, '/', Path), Bytes));
+        const Filesystem::Path Target = Filesystem::Path::Join(mPath, '/', Path);
+
+        if (const Filesystem::Result Made = Filesystem::Ensure(Target); Made != Filesystem::Result::Success)
+        {
+            Callback(Made);
+            return;
+        }
+        Callback(Filesystem::Write(Target, Bytes));
     }
 }

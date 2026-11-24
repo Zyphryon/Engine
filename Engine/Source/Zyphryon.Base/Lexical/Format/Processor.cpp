@@ -53,11 +53,12 @@ namespace ZyFormat
                     continue;
                 }
 
+                const UInt Start         = Cursor;
                 const Text Specification = StrExtractText(Pattern, ++Cursor, '}');
 
                 if (!StrConsume(Pattern, Cursor, '}') || Specification.IsEmpty())
                 {
-                    Buffer.Append(Pattern[Cursor - 1]);
+                    Buffer.Append(Pattern.Slice(Start, Cursor - Start));
                 }
                 else if (const Placeholder Properties(Specification); Properties.Parameter < Parameters.GetSize())
                 {
