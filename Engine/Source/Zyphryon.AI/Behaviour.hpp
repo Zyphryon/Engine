@@ -46,7 +46,7 @@ namespace ZyAI
             Wait,     ///< Runs until `Value` seconds have gone by since it started, and succeeds then.
         };
 
-        /// \brief Specifies the tests a compare node applies to a blackboard entry.
+        /// \brief Specifies the tests a compare node applies to a flag or a number, any other entry answering `Exists`.
         enum class Test : UInt8
         {
             Exists,       ///< The entry exists, whatever it holds.
@@ -82,7 +82,7 @@ namespace ZyAI
             /// The test a compare node applies.
             Test   Check     = Test::Exists;
 
-            /// The name of the host action a leaf runs, or of the entry a compare, set or clear node works on.
+            /// The host action a leaf runs, read as `Name`, or the entry a compare, set or clear node reads, as `Key`.
             Str32  Name;
         };
 
