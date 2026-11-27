@@ -237,6 +237,22 @@ namespace ZyGraphic
             return mIndices;
         }
 
+        /// \brief Gets the shared vertex buffer's CPU data, held until the next `Upload`.
+        ///
+        /// \return The raw vertex data, empty once the mesh has uploaded.
+        ZY_INLINE ConstRef<Blob> GetGeometry() const
+        {
+            return mGeometry;
+        }
+
+        /// \brief Gets the shared index buffer's CPU data, held until the next `Upload`.
+        ///
+        /// \return The raw index data, empty once the mesh has uploaded.
+        ZY_INLINE ConstRef<Blob> GetElements() const
+        {
+            return mElements;
+        }
+
         /// \brief Uploads the shared vertex/index buffers to the GPU, creating the buffer resources.
         ///
         /// \param Service The graphic service used to create the resources.
